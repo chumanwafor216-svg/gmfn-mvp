@@ -1070,6 +1070,7 @@ export default function IdentityIntegrityPage() {
   const [phoneCode, setPhoneCode] = useState("");
   const [phoneVerificationId, setPhoneVerificationId] = useState<number | null>(null);
   const [phoneOtpPreview, setPhoneOtpPreview] = useState("");
+  const [phoneTaskMessage, setPhoneTaskMessage] = useState("");
   const [phoneBusy, setPhoneBusy] = useState(false);
   const [officialIdType, setOfficialIdType] = useState("Passport");
   const [officialIdReference, setOfficialIdReference] = useState("");
@@ -1347,11 +1348,18 @@ export default function IdentityIntegrityPage() {
           safeStr(event.event_type || event.type || event.kind).toLowerCase() ===
           eventType
       );
-    const phoneReady = Boolean(
+    const phoneVerified = Boolean(
       me?.phone_verified ||
         me?.phone_verified_at ||
         me?.phone_e164_verified ||
         me?.verified_phone_at
+    );
+    const phoneRecorded = Boolean(
+      phoneVerified ||
+        me?.phone_recorded ||
+        me?.phone_e164 ||
+        hasEvent("identity.phone_registered") ||
+        hasEvent("identity.phone_verified")
     );
     const bankReady = Boolean(
       me?.bank_verified ||
@@ -1378,14 +1386,16 @@ export default function IdentityIntegrityPage() {
     const recoveryReady = Boolean(recovery.configured);
 
     return {
-      phoneReady,
+      phoneReady: phoneVerified,
+      phoneVerified,
+      phoneRecorded,
       bankReady,
       photoReady,
       officialIdReady,
       communityReady,
       recoveryReady,
       missingCount: [
-        phoneReady,
+        phoneRecorded,
         communityReady,
         bankReady,
         photoReady,
@@ -1422,20 +1432,30 @@ export default function IdentityIntegrityPage() {
       key: "phone",
       icon: "phone",
       title: "Phone",
-      status: identitySignals.phoneReady ? "Ready" : "Start check",
-      tone: identitySignals.phoneReady ? "ready" : "pending",
-      detail: identitySignals.phoneReady
-        ? "Phone proof is already visible to the identity layer."
-        : "Enter your phone and confirm the signed-in code so this identity can carry phone proof.",
-      actionLabel: identitySignals.phoneReady ? "Open TrustSlip" : "Use phone form",
-      completionSteps: identitySignals.phoneReady
+      status: identitySignals.phoneVerified
+        ? "Verified"
+        : identitySignals.phoneRecorded
+          ? "Recorded"
+          : "Start check",
+      tone: identitySignals.phoneVerified
+        ? "ready"
+        : identitySignals.phoneRecorded
+          ? "watch"
+          : "pending",
+      detail: identitySignals.phoneVerified
+        ? "Phone proof is already verified and visible to the identity layer."
+        : identitySignals.phoneRecorded
+          ? "Phone number is recorded. Confirm the code to turn it into verified phone proof."
+          : "Enter your phone and confirm the signed-in code so this identity can carry phone proof.",
+      actionLabel: identitySignals.phoneVerified ? "Open TrustSlip" : "Use phone form",
+      completionSteps: identitySignals.phoneVerified
         ? ["Phone is already verified.", "Use TrustSlip when someone needs portable proof."]
         : [
             "Enter phone number.",
-            "Receive and confirm a code.",
-            "GSN records the proof on this identity.",
+            "GSN records the number on this identity.",
+            "Confirm the system code to mark it verified.",
           ],
-      to: identitySignals.phoneReady ? routes.trustSlip : identityTaskTarget("phone"),
+      to: identitySignals.phoneVerified ? routes.trustSlip : identityTaskTarget("phone"),
     },
     {
       key: "community",
@@ -1769,13 +1789,24 @@ export default function IdentityIntegrityPage() {
       setPhoneVerificationId(Number(out?.verification_id || 0) || null);
       setPhoneOtpPreview(safeStr(out?.otp_preview));
       setPhoneCode(safeStr(out?.otp_preview));
+      setMe((prev: any) => ({
+        ...(prev || {}),
+        phone_e164: out?.phone_e164 || phoneInput,
+        phone_recorded: true,
+      }));
+      setPhoneTaskMessage(
+        out?.otp_preview
+          ? `System code generated: ${out.otp_preview}. Confirm it below.`
+          : "Phone number recorded. Waiting for delivery provider code; confirmation is still pending."
+      );
       showNotice(
         "success",
         out?.otp_preview
-          ? "Phone code is ready. Confirm it to attach this phone."
-          : "Phone code started. Enter the code when it arrives."
+          ? "System phone code is ready in the phone task."
+          : "Phone number recorded. Confirmation is still pending."
       );
     } catch (err: any) {
+      setPhoneTaskMessage(err?.message || "Phone verification could not start.");
       showNotice("error", err?.message || "Phone verification could not start.");
     } finally {
       setPhoneBusy(false);
@@ -1801,8 +1832,10 @@ export default function IdentityIntegrityPage() {
       setPhoneVerificationId(null);
       setPhoneCode("");
       setPhoneOtpPreview("");
+      setPhoneTaskMessage(out?.message || "Phone proof is now verified and connected.");
       showNotice("success", out?.message || "Phone proof is now connected.");
     } catch (err: any) {
+      setPhoneTaskMessage(err?.message || "Phone code could not be confirmed.");
       showNotice("error", err?.message || "Phone code could not be confirmed.");
     } finally {
       setPhoneBusy(false);
@@ -2413,6 +2446,24 @@ export default function IdentityIntegrityPage() {
                     }}
                   >
                     Pilot code: {phoneOtpPreview}
+                  </div>
+                ) : null}
+                {phoneTaskMessage ? (
+                  <div
+                    data-identity-integrity-phone-response="true"
+                    style={{
+                      gridColumn: "1 / -1",
+                      borderRadius: 13,
+                      border: "1px solid rgba(46,155,98,0.18)",
+                      background: "#F3FBF5",
+                      color: "#166534",
+                      fontSize: 12,
+                      fontWeight: 950,
+                      lineHeight: 1.35,
+                      padding: "8px 10px",
+                    }}
+                  >
+                    {phoneTaskMessage}
                   </div>
                 ) : null}
                 <PrimaryButton

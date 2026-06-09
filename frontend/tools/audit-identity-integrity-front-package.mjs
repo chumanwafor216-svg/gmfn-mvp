@@ -106,8 +106,23 @@ assertContains(
 );
 
 assertContains(
-  /startSignedInPhoneVerification[\s\S]*?confirmSignedInPhoneVerification[\s\S]*?data-identity-integrity-phone-completion="true"[\s\S]*?debugId="identity-integrity\.phone-completion-submit"/,
-  "Identity Integrity must provide the signed-in phone completion form instead of a dead phone requirement."
+  /startSignedInPhoneVerification/,
+  "Identity Integrity must use the signed-in phone start API."
+);
+
+assertContains(
+  /confirmSignedInPhoneVerification/,
+  "Identity Integrity must use the signed-in phone confirm API."
+);
+
+assertContains(
+  /phoneTaskMessage[\s\S]*?setPhoneTaskMessage\(/,
+  "Identity Integrity must keep local phone task response state."
+);
+
+assertContains(
+  /data-identity-integrity-phone-completion="true"[\s\S]*?data-identity-integrity-phone-response="true"[\s\S]*?\{phoneTaskMessage\}[\s\S]*?debugId="identity-integrity\.phone-completion-submit"/,
+  "Identity Integrity must show the phone completion response inside the phone form instead of a dead or disappearing phone requirement."
 );
 
 assertContains(

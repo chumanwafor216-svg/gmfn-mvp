@@ -196,6 +196,47 @@ def test_signed_in_payout_save_logs_bank_recorded_trust_event(
     assert payload["identity_context"]["bank_evidence_status"] == "recorded"
 
 
+def test_signed_in_phone_start_records_system_generated_phone_evidence(
+    client: TestClient,
+    monkeypatch,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+
+    start_res = client.post(
+        "/entry/signed-in/phone/start",
+        json={"phone_e164": "+447700900111", "country": "GB"},
+    )
+    assert start_res.status_code == 201, start_res.text
+    body = start_res.json()
+    assert body["registered"] is True
+    assert body["delivery_mode"] == "preview"
+    assert body["otp_preview"]
+
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user.phone_e164 == "+447700900111"
+        assert user.phone_verified_at is None
+        event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.subject_user_id == 1,
+                TrustEvent.event_type == "identity.phone_registered",
+            )
+            .one()
+        )
+        assert event.clan_id == 1
+        payload = get_trust_slip_payload(db, user_id=1)
+
+    assert payload["identity_context"]["phone_recorded"] is True
+    assert payload["identity_context"]["phone_verified"] is False
+    assert payload["identity_context"]["phone_status_label"] == (
+        "Phone number recorded; network verification pending"
+    )
+
+
 def test_signed_in_identity_completion_records_phone_and_official_id(
     client: TestClient,
     monkeypatch,

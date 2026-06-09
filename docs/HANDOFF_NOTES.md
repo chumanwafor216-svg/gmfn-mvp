@@ -1,3 +1,49 @@
+### Signed-in phone evidence start/response pass (2026-06-09)
+
+- Trigger:
+  - product owner tested Identity Integrity phone verification and Start
+    blinked/closed without giving a usable system-generated code;
+  - Trust Passport / Identity Integrity still treated the phone task as
+    incomplete after Start, even though the number had been entered.
+- Scope:
+  - backend route `/entry/signed-in/phone/start`;
+  - frontend route `/app/identity-integrity?task=phone&mode=complete`;
+  - Identity Integrity front-package audit;
+  - no schema, auth core, SMS provider, payment, Dashboard, Marketplace,
+    Community Home, or shared tap guard behavior changed.
+- Fix:
+  - signed-in phone Start now defaults to `preview` delivery unless live SMS is
+    explicitly configured with `GMFN_ENTRY_PHONE_DELIVERY=sms/live/provider`;
+  - Start now records the phone number onto the signed-in user immediately;
+  - Start now logs `identity.phone_registered` as recorded evidence;
+  - Start returns `registered: true` plus the system-generated `otp_preview`
+    in pilot/default mode;
+  - Confirm still remains the only path that writes `identity.phone_verified`
+    and `phone_verified_at`;
+  - Identity Integrity now separates phone recorded from phone verified, so
+    Start moves the task from missing/incomplete to recorded while keeping
+    verification pending;
+  - the phone task now keeps the generated code / error / success response
+    inside the phone form instead of relying on a disappearing top notice.
+- Audit cage updated:
+  - `frontend/tools/audit-identity-integrity-front-package.mjs` now protects
+    the signed-in phone start/confirm APIs, local `phoneTaskMessage`, and the
+    in-form response block.
+- Verification:
+  - passed `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py -q`;
+  - passed `npm --prefix frontend run audit:identity-integrity-front-package`;
+  - passed `npm --prefix frontend run audit:trust-passport-front-package`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs`
+    from `frontend`;
+  - passed `npm exec -- tsc -b --pretty false` from `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only.
+- Unabated truth:
+  - this is still not live network/SMS verification. It is the correct pilot
+    behavior: system-generated code is shown in-app, Start records the phone,
+    Confirm verifies it.
+
 ### Trust Passport signed-in identity evidence source-of-truth pass (2026-06-09)
 
 - Trigger:

@@ -154,7 +154,7 @@ def _signed_in_phone_delivery_mode() -> str:
         return "preview"
     if configured in {"sms", "live", "provider", "pending-sms"}:
         return "pending-sms"
-    return "pending-sms"
+    return "preview"
 
 
 def _generate_code() -> str:
@@ -359,11 +359,42 @@ def start_signed_in_phone_verification(
         consumed_at=None,
     )
     db.add(verification)
+    db_user.phone_e164 = phone
+    db.add(db_user)
+    db.flush()
+
+    clan_id = _active_clan_id_for_user(db, int(db_user.id))
+    meta = build_trust_meta(
+        reason="signed_in_phone_registered",
+        note=(
+            "Phone number was recorded from the signed-in Identity Integrity task. "
+            "It is recorded phone evidence until the code is confirmed."
+        ),
+        system=True,
+        extra={
+            "verification_source": "identity.signed_in.phone.start",
+            "phone_e164": phone,
+            "delivery_mode": delivery_mode,
+            "verified": False,
+        },
+    )
+    log_trust_event(
+        db,
+        event_type="identity.phone_registered",
+        clan_id=clan_id,
+        actor_user_id=int(db_user.id),
+        subject_user_id=int(db_user.id),
+        meta=meta,
+        dedupe_key=f"signed-in-phone-registered:{int(verification.id)}:{int(db_user.id)}",
+        commit=False,
+        refresh=False,
+    )
     db.commit()
     db.refresh(verification)
 
     return {
         "ok": True,
+        "registered": True,
         "verification_id": int(verification.id),
         "phone_e164": phone,
         "expires_at": verification.expires_at.isoformat(),
