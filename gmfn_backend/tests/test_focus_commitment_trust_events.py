@@ -196,6 +196,41 @@ def test_signed_in_payout_save_logs_bank_recorded_trust_event(
     assert payload["identity_context"]["bank_evidence_status"] == "recorded"
 
 
+def test_trustslip_me_exposes_bank_context_before_phone_verification(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user is not None
+        user.phone_e164 = "+447700900222"
+        user.phone_verified_at = None
+        db.add(
+            UserPayoutDestination(
+                user_id=1,
+                destination_name="Ada Member",
+                bank_name="Pilot Bank",
+                account_number="12345678",
+                phone_number="+447700900222",
+                country="GB",
+                currency="GBP",
+                verification_status="recorded",
+                verification_note="Recorded before phone verification.",
+            )
+        )
+        db.commit()
+
+    res = client.get("/trust-slips/me")
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["active"] is False
+    assert body["reason"] == "phone_unverified"
+    assert body["identity_context"]["phone_recorded"] is True
+    assert body["identity_context"]["bank_details_recorded"] is True
+    assert body["identity_context"]["bank_evidence_status"] == "recorded"
+
+
 def test_signed_in_phone_start_records_system_generated_phone_evidence(
     client: TestClient,
     monkeypatch,

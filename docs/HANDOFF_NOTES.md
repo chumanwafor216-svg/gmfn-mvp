@@ -1,3 +1,45 @@
+### Bank / wallet evidence visibility and upsert pass (2026-06-09)
+
+- Trigger:
+  - product owner saved both personal destination bank details and community
+    bank details, but Trust Passport / Identity Integrity still reported bank
+    evidence as not recorded.
+- Scope:
+  - backend TrustSlip owner route `/trust-slips/me`;
+  - frontend Payout Details route `/app/payout-details`;
+  - shared community-money destination helper used by Loans / Support money-out
+    surfaces;
+  - Identity Integrity task readiness reader;
+  - no schema, payment execution, ledger movement, auth core, Dashboard,
+    Marketplace, Community Home, or tap guard behavior changed.
+- Fix:
+  - `/trust-slips/me` now still returns the full identity evidence context when
+    phone verification is pending, while keeping TrustSlip portability inactive
+    with `reason: phone_unverified`;
+  - this separates "TrustSlip cannot be portable yet" from "bank evidence is
+    missing";
+  - Payout Details now sends `sort_code` and `bank_sort_code` as real API
+    fields instead of only hiding sort code inside the note text;
+  - Payout Details now uses the update/upsert route so existing payout
+    destinations are updated instead of failing create and leaving stale
+    evidence;
+  - `saveCommunitySettlementDestination` now tries
+    `updateWithdrawalDestination` before create, so Loans / Support repeated
+    bank saves update the server instead of falling back to local-only data;
+  - Identity Integrity now preserves and reads TrustSlip `identity_context`
+    for phone, bank, photo, and official-ID readiness.
+- Audit cage updated:
+  - payout protocol audit protects sort-code API fields and upsert save;
+  - Identity Integrity audit protects TrustSlip identity-context preservation
+    and task readiness from canonical evidence;
+  - Loans audit protects community-money update-first save behavior.
+- Unabated truth:
+  - community bank details are not the same as personal identity bank evidence;
+    the personal payout/destination bank record is what should satisfy the
+    member bank/wallet identity task.
+  - this still does not add live external bank ownership verification. It
+    records bank/wallet evidence and marks provider verification as pending.
+
 ### Signed-in phone evidence start/response pass (2026-06-09)
 
 - Trigger:

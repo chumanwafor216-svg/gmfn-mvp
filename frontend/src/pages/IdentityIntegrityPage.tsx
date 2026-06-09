@@ -66,6 +66,14 @@ type TrustSlipRecord = {
   id?: number;
   code?: string | null;
   status?: string | null;
+  phone_recorded?: boolean | null;
+  phone_verified?: boolean | null;
+  bank_details_recorded?: boolean | null;
+  bank_verified?: boolean | null;
+  official_id_recorded?: boolean | null;
+  official_id_verified?: boolean | null;
+  photo_recorded?: boolean | null;
+  identity_context?: Record<string, any> | null;
   trust_band?: string | null;
   trust_class?: string | null;
   trust_score?: string | number | null;
@@ -499,12 +507,23 @@ function normalizeCollapseState(raw: any): CollapseState {
 function normalizeTrustSlipRecord(raw: any): TrustSlipRecord | null {
   if (!raw) return null;
 
-  const src = raw?.item || raw?.trust_slip || raw;
+  const src = raw?.item || raw?.summary || raw?.trust_slip || raw?.data || raw;
 
   return {
     id: positiveNumber(firstTruthy(src?.id, src?.trust_slip_id)) || undefined,
     code: firstTruthy(src?.code, src?.trust_slip_code),
     status: firstTruthy(src?.status, src?.state, src?.verification_status),
+    phone_recorded: src?.phone_recorded ?? src?.identity_context?.phone_recorded ?? null,
+    phone_verified: src?.phone_verified ?? src?.identity_context?.phone_verified ?? null,
+    bank_details_recorded:
+      src?.bank_details_recorded ?? src?.identity_context?.bank_details_recorded ?? null,
+    bank_verified: src?.bank_verified ?? src?.identity_context?.bank_verified ?? null,
+    official_id_recorded:
+      src?.official_id_recorded ?? src?.identity_context?.official_id_recorded ?? null,
+    official_id_verified:
+      src?.official_id_verified ?? src?.identity_context?.official_id_verified ?? null,
+    photo_recorded: src?.photo_recorded ?? src?.identity_context?.photo_recorded ?? null,
+    identity_context: src?.identity_context || null,
     trust_band: firstTruthy(src?.trust_band, src?.trust_class),
     trust_class: firstTruthy(src?.trust_class, src?.trust_band),
     trust_score: firstNumberLike(src?.trust_score),
@@ -1342,6 +1361,7 @@ export default function IdentityIntegrityPage() {
   }, [continuity.status, identityRecovery]);
 
   const identitySignals = useMemo(() => {
+    const identityContext = trustSlip?.identity_context || {};
     const hasEvent = (eventType: string) =>
       events.some(
         (event) =>
@@ -1352,12 +1372,16 @@ export default function IdentityIntegrityPage() {
       me?.phone_verified ||
         me?.phone_verified_at ||
         me?.phone_e164_verified ||
-        me?.verified_phone_at
+        me?.verified_phone_at ||
+        trustSlip?.phone_verified ||
+        identityContext?.phone_verified
     );
     const phoneRecorded = Boolean(
       phoneVerified ||
         me?.phone_recorded ||
         me?.phone_e164 ||
+        trustSlip?.phone_recorded ||
+        identityContext?.phone_recorded ||
         hasEvent("identity.phone_registered") ||
         hasEvent("identity.phone_verified")
     );
@@ -1367,11 +1391,17 @@ export default function IdentityIntegrityPage() {
         me?.bank_details_recorded ||
         me?.payout_destination_id ||
         me?.withdrawal_destination_id ||
+        trustSlip?.bank_details_recorded ||
+        trustSlip?.bank_verified ||
+        identityContext?.bank_details_recorded ||
+        identityContext?.bank_verified ||
         hasEvent("identity.bank_destination_recorded")
     );
     const photoReady = Boolean(
       me?.photo_recorded ||
         me?.profile_image_url ||
+        trustSlip?.photo_recorded ||
+        identityContext?.photo_recorded ||
         hasEvent("identity.photo_evidence_recorded")
     );
     const officialIdReady = Boolean(
@@ -1380,6 +1410,10 @@ export default function IdentityIntegrityPage() {
         me?.official_id_recorded ||
         me?.official_id_verified_at ||
         me?.identity_document_recorded ||
+        trustSlip?.official_id_recorded ||
+        trustSlip?.official_id_verified ||
+        identityContext?.official_id_recorded ||
+        identityContext?.official_id_verified ||
         hasEvent("identity.official_id_recorded")
     );
     const communityReady = Boolean(selectedClanId && currentClan);
@@ -1403,7 +1437,7 @@ export default function IdentityIntegrityPage() {
         recoveryReady,
       ].filter((ready) => !ready).length,
     };
-  }, [currentClan, events, me, recovery.configured, selectedClanId]);
+  }, [currentClan, events, me, recovery.configured, selectedClanId, trustSlip]);
 
   const identityHealthLabel =
     identitySignals.missingCount <= 0

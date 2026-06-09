@@ -439,7 +439,9 @@ def _ensure_my_trust_slip_payload(
         not getattr(current_user, "phone_verified_at", None)
         or not getattr(current_user, "phone_e164", None)
     ):
+        payload = _payload_with_identity(db, user_id=int(current_user.id))
         return {
+            **payload,
             "ok": True,
             "active": False,
             "reason": "phone_unverified",

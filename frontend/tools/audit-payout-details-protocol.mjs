@@ -38,6 +38,11 @@ assertContains(
 );
 
 assertContains(
+  /sort_code: normalizeSortCode\(form\.sort_code\) \|\| undefined,[\s\S]*?bank_sort_code: normalizeSortCode\(form\.sort_code\) \|\| undefined,[\s\S]*?const saved = await updateWithdrawalDestination\(payload\);/,
+  "Payout Details must send sort code as real API fields and use the server upsert path so existing destinations do not fall back to local-only saves."
+);
+
+assertContains(
   /server\?\.sort_code[\s\S]*?server\?\.bank_sort_code[\s\S]*?local\?\.sort_code[\s\S]*?extractSortCodeFromNote\(server\?\.note\)/,
   "Payout Details must read sort code from future server fields, local fallback, or the current note fallback."
 );

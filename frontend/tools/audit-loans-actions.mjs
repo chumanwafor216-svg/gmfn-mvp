@@ -137,6 +137,12 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/communityMoney.ts",
+  /let viaWrapper = null;[\s\S]*updateWithdrawalDestination\(payload\)[\s\S]*if \(!viaWrapper[\s\S]*saveWithdrawalDestination\(payload\)/,
+  "Community money destination saves must update existing server records before falling back to create/local behavior."
+);
+
+assertContains(
   "src/lib/api.ts",
   /sort_code\?: string \| null;[\s\S]*bank_sort_code\?: string \| null;[\s\S]*cleaned\.sort_code = sortCode;[\s\S]*cleaned\.bank_sort_code = sortCode;/,
   "Withdrawal destination API payloads must keep sort_code and bank_sort_code aliases."

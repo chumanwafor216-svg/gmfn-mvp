@@ -71,6 +71,16 @@ assertContains(
 );
 
 assertContains(
+  /type TrustSlipRecord = \{[\s\S]*?bank_details_recorded\?: boolean \| null;[\s\S]*?identity_context\?: Record<string, any> \| null;[\s\S]*?function normalizeTrustSlipRecord[\s\S]*?src\?\.identity_context \|\| null/,
+  "Identity Integrity must preserve TrustSlip identity context so recorded bank, phone, photo, and ID evidence are not thrown away before rendering."
+);
+
+assertContains(
+  /const identityContext = trustSlip\?\.identity_context \|\| \{\};[\s\S]*?trustSlip\?\.bank_details_recorded[\s\S]*?identityContext\?\.bank_details_recorded[\s\S]*?trustSlip\?\.official_id_recorded[\s\S]*?identityContext\?\.official_id_recorded/,
+  "Identity Integrity task readiness must read canonical TrustSlip identity evidence, not only /me fields and clan-filtered events."
+);
+
+assertContains(
   /linear-gradient\(180deg, #0B3E78 0%, #061827 100%\)[\s\S]*?linear-gradient\(180deg, #F8D56B 0%, #D6AA45 100%\)/,
   "Identity Integrity icon tiles must use strong navy and gold contrast surfaces."
 );

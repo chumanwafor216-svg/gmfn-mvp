@@ -11,7 +11,6 @@ import {
   getMyWithdrawalDestination,
   getSelectedClanId,
   safeCopy,
-  saveWithdrawalDestination,
   updateWithdrawalDestination,
 } from "../lib/api";
 
@@ -544,15 +543,15 @@ export default function PayoutDetailsPage() {
         destination_name: safeStr(form.account_name),
         bank_name: safeStr(form.bank_name),
         account_number: safeStr(form.account_number),
+        sort_code: normalizeSortCode(form.sort_code) || undefined,
+        bank_sort_code: normalizeSortCode(form.sort_code) || undefined,
         phone_number: safeStr(me?.phone_e164 || "") || undefined,
         country: safeStr(form.country) || undefined,
         currency: safeStr(form.currency).toUpperCase() || undefined,
         note: buildPayoutNote(form),
       };
 
-      const saved = loadedFromServer
-        ? await updateWithdrawalDestination(payload)
-        : await saveWithdrawalDestination(payload);
+      const saved = await updateWithdrawalDestination(payload);
 
       setProofFeedback({
         confirmation_message: safeStr(saved?.confirmation_message),

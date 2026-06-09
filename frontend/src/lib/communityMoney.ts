@@ -1000,12 +1000,13 @@ export async function saveCommunitySettlementDestination(
     note: noteWithSortCode(destination.note, destination.sortCode),
   };
 
-  const viaWrapper =
-    typeof (api as any).saveWithdrawalDestination === "function"
-      ? await (api as any).saveWithdrawalDestination(payload).catch(() => null)
-      : typeof (api as any).updateWithdrawalDestination === "function"
-      ? await (api as any).updateWithdrawalDestination(payload).catch(() => null)
-      : null;
+  let viaWrapper = null;
+  if (typeof (api as any).updateWithdrawalDestination === "function") {
+    viaWrapper = await (api as any).updateWithdrawalDestination(payload).catch(() => null);
+  }
+  if (!viaWrapper && typeof (api as any).saveWithdrawalDestination === "function") {
+    viaWrapper = await (api as any).saveWithdrawalDestination(payload).catch(() => null);
+  }
 
   const src =
     viaWrapper?.item || viaWrapper?.destination || viaWrapper?.data || viaWrapper;
