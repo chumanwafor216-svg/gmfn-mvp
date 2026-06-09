@@ -41695,3 +41695,31 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining risk:
   - physical-phone testing is still needed after deployment to confirm the
     Money In header and state badge feel sharper in the real browser.
+
+### Pipeline minute saving workflow change (2026-06-09)
+
+- Trigger:
+  - the product owner turned Render frontend Auto-Deploy off in the Render
+    dashboard and asked to stop burning pipeline minutes on every small commit.
+- Changed:
+  - `.github/workflows/render-deploy.yml`
+    - removed the automatic `push` trigger;
+    - Render deploy is now `workflow_dispatch` only, so frontend/API deployment
+      happens when intentionally triggered from GitHub Actions.
+  - `.github/workflows/tests.yml`
+    - backend tests are now path-filtered to backend-relevant files:
+      `gmfn_backend/**`, `render.yaml`, and the backend test workflow itself;
+    - added manual `workflow_dispatch` so backend tests can still be run on
+      demand.
+- Operating rule going forward:
+  - local audits/build remain the first protection for frontend polish work;
+  - push frontend/docs polish without automatically deploying;
+  - manually run `Trigger Render Deploy` only when the product owner says the
+    current commit should go live;
+  - manually run `Backend Tests` when backend safety proof is needed for a
+    frontend-only commit.
+- Unabated truth:
+  - this saves routine pipeline/deploy minutes, but it also means pushes to
+    `main` no longer guarantee an automatic Render deployment or automatic
+    backend test run for frontend-only work. Deployment is now an intentional
+    step, not a side effect.

@@ -1,9 +1,6 @@
 name: Trigger Render Deploy
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       deploy_api:
