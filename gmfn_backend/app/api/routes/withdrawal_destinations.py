@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import User, UserPayoutDestination
+from app.db.models import ClanMembership, User, UserPayoutDestination
+from app.services.trust_events_services import build_trust_meta, log_trust_event
 
 router = APIRouter(prefix="/withdrawal-destinations", tags=["withdrawal-destinations"])
 
@@ -132,6 +133,55 @@ def _trust_event_response(row: UserPayoutDestination) -> dict:
         "status": status,
         "message": message,
     }
+
+
+def _active_clan_id_for_user(db: Session, user_id: int) -> Optional[int]:
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+        .first()
+    )
+    return int(membership.clan_id) if membership else None
+
+
+def _record_bank_destination_event(
+    db: Session,
+    *,
+    current_user: User,
+    row: UserPayoutDestination,
+) -> None:
+    response = _trust_event_response(row)
+    meta = build_trust_meta(
+        reason="signed_in_bank_destination_recorded",
+        note=response["message"],
+        system=True,
+        extra={
+            "payout_destination_id": int(row.id),
+            "bank_name": row.bank_name,
+            "currency": row.currency,
+            "country": row.country,
+            "verification_status": row.verification_status,
+            "provider_verified": False,
+        },
+    )
+    log_trust_event(
+        db,
+        event_type="identity.bank_destination_recorded",
+        clan_id=_active_clan_id_for_user(db, int(current_user.id)),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta=meta,
+        dedupe_key=(
+            f"signed-in-bank-destination:"
+            f"{int(current_user.id)}:{int(row.id)}"
+        ),
+        commit=False,
+        refresh=False,
+    )
 
 
 class WithdrawalDestinationIn(BaseModel):
@@ -257,6 +307,8 @@ def create_my_withdrawal_destination(
         verified_at=None,
     )
     db.add(row)
+    db.flush()
+    _record_bank_destination_event(db, current_user=current_user, row=row)
     db.commit()
     db.refresh(row)
     return _payload(row)
@@ -290,6 +342,8 @@ def update_my_withdrawal_destination(
     row.updated_at = _now()
 
     db.add(row)
+    db.flush()
+    _record_bank_destination_event(db, current_user=current_user, row=row)
     db.commit()
     db.refresh(row)
     return _payload(row)

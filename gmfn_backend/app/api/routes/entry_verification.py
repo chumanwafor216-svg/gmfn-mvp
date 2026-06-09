@@ -762,6 +762,168 @@ async def record_identity_photo(
     return _serialize_check(check)
 
 
+@router.post(
+    "/signed-in/identity-photo/record",
+    response_model=VerificationCheckOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def record_signed_in_identity_photo(
+    document_type: str = Form(default="selfie"),
+    note: Optional[str] = Form(default=None, max_length=500),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_user = db.get(User, int(current_user.id))
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="Signed-in user was not found")
+
+    existing_photo_count = (
+        db.query(IdentityVerificationCheck)
+        .filter(
+            IdentityVerificationCheck.user_id == int(db_user.id),
+            IdentityVerificationCheck.verification_type == "identity_photo",
+        )
+        .count()
+    )
+    if existing_photo_count >= ENTRY_IDENTITY_PHOTO_MAX_PER_SESSION:
+        raise HTTPException(
+            status_code=400,
+            detail="A maximum of 5 identity photos can be attached to this identity.",
+        )
+
+    ext = _validate_identity_photo_type(file)
+    raw = await _read_identity_photo_bytes(file)
+
+    upload_dir = _entry_identity_upload_dir()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    normalized_document_type = _clean_text(document_type).lower().replace(" ", "_") or "selfie"
+    allowed_document_types = {"selfie", "passport_photo", "identity_photo"}
+    if normalized_document_type not in allowed_document_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Identity photo type must be selfie, passport_photo, or identity_photo.",
+        )
+
+    generated = (
+        f"signedin_{int(db_user.id)}_"
+        f"{normalized_document_type}_"
+        f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_"
+        f"{secrets.token_hex(6)}{ext}"
+    )
+    target = upload_dir / generated
+    target.write_bytes(raw)
+    evidence_url = f"/uploads/entry/identity/{generated}"
+
+    explanation = (
+        "Signed-in photo/selfie evidence was recorded for identity continuity. "
+        "No live passport or face-match provider is connected yet, so this evidence requires review before it is treated as provider-verified."
+    )
+    check = IdentityVerificationCheck(
+        entry_phone_verification_id=None,
+        user_id=int(db_user.id),
+        verification_type="identity_photo",
+        region_code=None,
+        provider_key="identity-photo.signed-in-manual-review",
+        status="manual_review_required",
+        subject_reference=_display_name_for_user(db_user),
+        confidence_score=20,
+        explanation=explanation,
+        submitted_payload_json=_json_text(
+            {
+                "document_type": normalized_document_type,
+                "note": _clean_text(note) or None,
+            }
+        ),
+        normalized_identity_json=_json_text(
+            {
+                "display_name": _display_name_for_user(db_user),
+                "phone_e164": _clean_text(getattr(db_user, "phone_e164", None)) or None,
+                "document_type": normalized_document_type,
+            }
+        ),
+        provider_response_json=_json_text(
+            {
+                "provider_configured": False,
+                "provider_key": "identity-photo.signed-in-manual-review",
+                "evidence_url": evidence_url,
+                "document_type": normalized_document_type,
+                "review_required": True,
+                "private_evidence": True,
+            }
+        ),
+        verified_at=None,
+    )
+    db.add(check)
+    db.flush()
+
+    if normalized_document_type == "selfie":
+        db_user.profile_image_url = evidence_url
+        db.add(db_user)
+
+    clan_id = _active_clan_id_for_user(db, int(db_user.id))
+    photo_meta = build_trust_meta(
+        reason="signed_in_identity_photo_recorded",
+        note=explanation,
+        system=True,
+        extra={
+            "verification_check_id": int(check.id),
+            "verification_type": "identity_photo",
+            "verification_status": check.status,
+            "provider_key": check.provider_key,
+            "document_type": normalized_document_type,
+            "evidence_url": evidence_url,
+            "provider_verified": False,
+        },
+    )
+    log_trust_event(
+        db,
+        event_type="identity.photo_evidence_recorded",
+        clan_id=clan_id,
+        actor_user_id=int(db_user.id),
+        subject_user_id=int(db_user.id),
+        meta=photo_meta,
+        dedupe_key=f"signed-in-identity-photo:{int(check.id)}:{int(db_user.id)}",
+        commit=False,
+        refresh=False,
+    )
+
+    if normalized_document_type in {"passport_photo", "identity_photo"}:
+        official_meta = build_trust_meta(
+            reason="signed_in_official_id_image_recorded",
+            note=(
+                "Official ID image evidence was recorded for review. "
+                "It is recorded evidence, not provider-verified identity."
+            ),
+            system=True,
+            extra={
+                "verification_check_id": int(check.id),
+                "verification_type": "official_id",
+                "verification_status": check.status,
+                "provider_key": check.provider_key,
+                "document_type": normalized_document_type,
+                "evidence_url": evidence_url,
+                "provider_verified": False,
+            },
+        )
+        log_trust_event(
+            db,
+            event_type="identity.official_id_recorded",
+            clan_id=clan_id,
+            actor_user_id=int(db_user.id),
+            subject_user_id=int(db_user.id),
+            meta=official_meta,
+            dedupe_key=f"signed-in-official-id-image:{int(check.id)}:{int(db_user.id)}",
+            commit=False,
+            refresh=False,
+        )
+
+    db.commit()
+    db.refresh(check)
+    return _serialize_check(check)
+
+
 @router.get("/verification/{verification_check_id}", response_model=VerificationCheckOut)
 def get_verification_check(verification_check_id: int, db: Session = Depends(get_db)):
     row = (

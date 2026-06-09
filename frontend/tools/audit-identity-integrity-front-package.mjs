@@ -116,6 +116,11 @@ assertContains(
 );
 
 assertContains(
+  /recordSignedInIdentityPhoto[\s\S]*?data-identity-integrity-photo-completion="true"[\s\S]*?debugId="identity-integrity\.identity-photo\.selfie"[\s\S]*?debugId="identity-integrity\.identity-photo\.id-photo"[\s\S]*?debugId="identity-integrity\.identity-photo\.record"/,
+  "Identity Integrity must provide signed-in selfie and ID-photo evidence capture instead of an explanation-only ID route."
+);
+
+assertContains(
   /payoutDetails: routeTarget\([\s\S]*?"payoutDetails"[\s\S]*?communityConfirmations: routeTarget\([\s\S]*?"communityConfirmationInbox"[\s\S]*?to: routes\.communityConfirmations[\s\S]*?to: routes\.payoutDetails/,
   "Identity Integrity must route real bank/wallet and community tasks to real completion surfaces."
 );

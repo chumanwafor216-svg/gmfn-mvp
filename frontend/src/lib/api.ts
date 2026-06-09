@@ -924,6 +924,19 @@ export async function recordSignedInOfficialId(payload: {
   });
 }
 
+export async function recordSignedInIdentityPhoto(payload: {
+  file: File;
+  document_type?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  const form = new FormData();
+  form.append("document_type", String(payload?.document_type || "selfie").trim() || "selfie");
+  const note = String(payload?.note || "").trim();
+  if (note) form.append("note", note);
+  form.append("file", payload.file);
+  return httpMultipart("/entry/signed-in/identity-photo/record", form);
+}
+
 export async function submitJoinEntry(payload: Record<string, any>): Promise<any> {
   return httpJsonPaths(
     ["/entry/join", "/clans/join-requests"],

@@ -1,3 +1,75 @@
+### Trust Passport signed-in identity evidence source-of-truth pass (2026-06-09)
+
+- Trigger:
+  - product owner saved bank details again on phone and Trust Passport still
+    showed bank/wallet as not recorded;
+  - product owner also needed a real signed-in path to add selfie / official ID
+    photo evidence from the Identity Integrity completion task, not an
+    explanation-only page.
+- Scope:
+  - backend evidence routes:
+    - `/withdrawal-destinations/me`
+    - `/entry/signed-in/identity-photo/record`
+    - TrustSlip / Trust Passport payload construction;
+  - frontend route:
+    - `/app/identity-integrity?task=official_id&mode=complete`;
+  - changed audits for Identity Integrity and Trust Passport button inventory;
+  - no database schema, auth contract, payment execution, ledger movement,
+    Dashboard Market Wisdom, Community Home, Marketplace, or shared tap guard
+    behavior changed.
+- Fix:
+  - withdrawal destination create/update now writes a real
+    `identity.bank_destination_recorded` TrustEvent instead of only returning a
+    response object named `trust_event_response`;
+  - Trust Passport identity context now counts recorded bank evidence from
+    entry verification, payout destination rows, or the canonical TrustEvent
+    stream;
+  - Trust Passport identity context now counts official-ID evidence from
+    `IdentityVerificationCheck` rows or the canonical TrustEvent stream;
+  - Trust Passport identity evidence meter now counts recorded photo evidence
+    from the member profile image or `identity.photo_evidence_recorded`;
+  - added signed-in identity photo upload endpoint using the same file
+    validation, private upload path, `IdentityVerificationCheck`, and
+    TrustEvent pattern as the entry flow;
+  - signed-in selfie uploads record `identity.photo_evidence_recorded` and may
+    update the profile image;
+  - signed-in passport/ID image uploads record
+    `identity.photo_evidence_recorded` plus
+    `identity.official_id_recorded`, but still mark provider verification as
+    false/manual review required;
+  - Identity Integrity Passport / ID task now exposes real Selfie and ID photo
+    file controls with an in-place record action, alongside the existing
+    official-ID reference form;
+  - Identity Integrity bank readiness now also reads
+    `identity.bank_destination_recorded` from TrustEvents.
+- Audit cage updated:
+  - `frontend/tools/audit-identity-integrity-front-package.mjs` now protects
+    the signed-in selfie / ID-photo controls;
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs` now protects the
+    current recorded-but-not-verified chip call shape with `item.muted`.
+- Verification:
+  - passed `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py -q`;
+  - passed `npm --prefix frontend run audit:identity-integrity-front-package`;
+  - passed `npm --prefix frontend run audit:trust-passport-front-package`;
+  - passed `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - passed `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx src/lib/api.ts tools/audit-identity-integrity-front-package.mjs tools/audit-trust-passport-button-inventory.mjs`
+    from `frontend`;
+  - passed `npm exec -- tsc -b --pretty false` from `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this fixes the system-level evidence bridge for the bank-recorded symptom
+    and adds a real signed-in photo/ID capture route.
+  - It still does not create a live external bank-ownership provider, passport
+    provider, or face-match provider. Recorded evidence is recorded evidence;
+    verified evidence remains separate.
+
 ### Identity Integrity secondary-section density pass (2026-06-08)
 
 - Trigger:

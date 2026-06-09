@@ -166,7 +166,7 @@ assertContains(
 );
 
 assertContains(
-  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 36[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "24px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok\)[\s\S]*?<TrustPaperIcon name=\{item\.icon\} size=\{15\} strokeWidth=\{2\.65\}[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\}/,
+  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 36[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "24px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok, item\.muted\)[\s\S]*?<TrustPaperIcon name=\{item\.icon\} size=\{15\} strokeWidth=\{2\.65\}[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\}/,
   "Trust Passport verification badges must stay as compact one-line snapshot status chips."
 );
 

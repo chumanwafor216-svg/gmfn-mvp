@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import io
 import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -124,6 +126,76 @@ def test_trust_passport_identity_context_uses_signed_in_payout_and_membership(
     assert payload["community_role_counts"] == {"member": 1, "admin": 1}
 
 
+def test_trust_passport_identity_context_uses_bank_recorded_trust_event(
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="identity.bank_destination_recorded",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "reason": "signed_in_bank_destination_recorded",
+                        "verification_status": "recorded",
+                        "provider_verified": False,
+                    }
+                ),
+                dedupe_key="pytest-bank-event-only",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+        payload = get_trust_slip_payload(db, user_id=1)
+
+    identity_context = payload["identity_context"]
+    assert identity_context["bank_details_recorded"] is True
+    assert identity_context["bank_verified"] is False
+    assert identity_context["bank_evidence_status"] == "recorded"
+    assert identity_context["bank_verification_label"] == "Bank destination recorded in identity events"
+    assert "bank" in payload["identity_evidence_summary"]["pending_verification"]
+
+
+def test_signed_in_payout_save_logs_bank_recorded_trust_event(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    res = client.post(
+        "/withdrawal-destinations/me",
+        json={
+            "destination_name": "Ada Member",
+            "bank_name": "Pilot Bank",
+            "account_number": "12345678",
+            "sort_code": "12-34-56",
+            "country": "GB",
+            "currency": "GBP",
+        },
+    )
+    assert res.status_code == 201, res.text
+    body = res.json()
+    assert body["trust_event_response"]["event_type"] == "identity.bank_destination_recorded"
+
+    with SessionLocal() as db:
+        event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.subject_user_id == 1,
+                TrustEvent.event_type == "identity.bank_destination_recorded",
+            )
+            .one()
+        )
+        assert event.clan_id == 1
+        payload = get_trust_slip_payload(db, user_id=1)
+
+    assert payload["identity_context"]["bank_details_recorded"] is True
+    assert payload["identity_context"]["bank_evidence_status"] == "recorded"
+
+
 def test_signed_in_identity_completion_records_phone_and_official_id(
     client: TestClient,
     monkeypatch,
@@ -183,6 +255,68 @@ def test_signed_in_identity_completion_records_phone_and_official_id(
         }
         assert "identity.phone_verified" in event_types
         assert "identity.official_id_recorded" in event_types
+
+
+def test_signed_in_identity_completion_records_photo_and_id_image(
+    client: TestClient,
+    monkeypatch,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    upload_root = Path("test_uploads/signed_in_photo_focus")
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+
+    selfie_res = client.post(
+        "/entry/signed-in/identity-photo/record",
+        data={"document_type": "selfie", "note": "Pilot selfie"},
+        files={"file": ("selfie.jpg", io.BytesIO(b"selfie-bytes"), "image/jpeg")},
+    )
+    assert selfie_res.status_code == 201, selfie_res.text
+    selfie_body = selfie_res.json()
+    assert selfie_body["verification_type"] == "identity_photo"
+    assert selfie_body["status"] == "manual_review_required"
+    assert selfie_body["evidence_url"].startswith("/uploads/entry/identity/")
+
+    id_photo_res = client.post(
+        "/entry/signed-in/identity-photo/record",
+        data={"document_type": "passport_photo", "note": "Passport image"},
+        files={"file": ("passport.jpg", io.BytesIO(b"passport-bytes"), "image/jpeg")},
+    )
+    assert id_photo_res.status_code == 201, id_photo_res.text
+    id_photo_body = id_photo_res.json()
+    assert id_photo_body["verification_type"] == "identity_photo"
+    assert id_photo_body["evidence_url"].startswith("/uploads/entry/identity/")
+
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user.profile_image_url == selfie_body["evidence_url"]
+        checks = (
+            db.query(IdentityVerificationCheck)
+            .filter(
+                IdentityVerificationCheck.user_id == 1,
+                IdentityVerificationCheck.verification_type == "identity_photo",
+            )
+            .all()
+        )
+        assert len(checks) == 2
+        event_types = [
+            row.event_type
+            for row in db.query(TrustEvent).filter(TrustEvent.subject_user_id == 1).all()
+        ]
+        assert event_types.count("identity.photo_evidence_recorded") == 2
+        assert "identity.official_id_recorded" in event_types
+
+        payload = get_trust_slip_payload(db, user_id=1)
+
+    summary_items = {
+        item["key"]: item
+        for item in payload["identity_evidence_summary"]["items"]
+    }
+    assert summary_items["photo"]["recorded"] is True
+    assert summary_items["official_id"]["recorded"] is True
+    assert payload["identity_context"]["photo_recorded"] is True
+    assert payload["identity_context"]["official_id_recorded"] is True
+    assert payload["identity_context"]["official_id_verified"] is False
 
 
 def test_trustslip_payload_includes_personal_commitment_discipline(

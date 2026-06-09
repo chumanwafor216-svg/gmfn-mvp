@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
@@ -22,6 +22,7 @@ import {
   getTrustWhyMe,
   listTrustEvents,
   confirmSignedInPhoneVerification,
+  recordSignedInIdentityPhoto,
   recordSignedInOfficialId,
   safeCopy,
   setupIdentityRecovery,
@@ -1074,7 +1075,15 @@ export default function IdentityIntegrityPage() {
   const [officialIdReference, setOfficialIdReference] = useState("");
   const [officialIdCountry, setOfficialIdCountry] = useState("");
   const [officialIdBusy, setOfficialIdBusy] = useState(false);
+  const [identityPhotoFile, setIdentityPhotoFile] = useState<File | null>(null);
+  const [identityPhotoPreview, setIdentityPhotoPreview] = useState("");
+  const [identityPhotoKind, setIdentityPhotoKind] = useState<
+    "selfie" | "identity_photo"
+  >("selfie");
+  const [identityPhotoBusy, setIdentityPhotoBusy] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState("");
+  const selfiePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const idPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1115,6 +1124,12 @@ export default function IdentityIntegrityPage() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    return () => {
+      if (identityPhotoPreview) URL.revokeObjectURL(identityPhotoPreview);
+    };
+  }, [identityPhotoPreview]);
 
   useEffect(() => {
     let alive = true;
@@ -1326,6 +1341,12 @@ export default function IdentityIntegrityPage() {
   }, [continuity.status, identityRecovery]);
 
   const identitySignals = useMemo(() => {
+    const hasEvent = (eventType: string) =>
+      events.some(
+        (event) =>
+          safeStr(event.event_type || event.type || event.kind).toLowerCase() ===
+          eventType
+      );
     const phoneReady = Boolean(
       me?.phone_verified ||
         me?.phone_verified_at ||
@@ -1337,7 +1358,13 @@ export default function IdentityIntegrityPage() {
         me?.bank_verified_at ||
         me?.bank_details_recorded ||
         me?.payout_destination_id ||
-        me?.withdrawal_destination_id
+        me?.withdrawal_destination_id ||
+        hasEvent("identity.bank_destination_recorded")
+    );
+    const photoReady = Boolean(
+      me?.photo_recorded ||
+        me?.profile_image_url ||
+        hasEvent("identity.photo_evidence_recorded")
     );
     const officialIdReady = Boolean(
       me?.passport_verified ||
@@ -1345,11 +1372,7 @@ export default function IdentityIntegrityPage() {
         me?.official_id_recorded ||
         me?.official_id_verified_at ||
         me?.identity_document_recorded ||
-        events.some((event) =>
-          safeStr(event.event_type || event.type || event.kind)
-            .toLowerCase()
-            .includes("identity.official_id_recorded")
-        )
+        hasEvent("identity.official_id_recorded")
     );
     const communityReady = Boolean(selectedClanId && currentClan);
     const recoveryReady = Boolean(recovery.configured);
@@ -1357,6 +1380,7 @@ export default function IdentityIntegrityPage() {
     return {
       phoneReady,
       bankReady,
+      photoReady,
       officialIdReady,
       communityReady,
       recoveryReady,
@@ -1364,6 +1388,7 @@ export default function IdentityIntegrityPage() {
         phoneReady,
         communityReady,
         bankReady,
+        photoReady,
         officialIdReady,
         recoveryReady,
       ].filter((ready) => !ready).length,
@@ -1454,7 +1479,9 @@ export default function IdentityIntegrityPage() {
       tone: identitySignals.officialIdReady ? "ready" : "pending",
       detail: identitySignals.officialIdReady
         ? "Official ID evidence is already visible to the identity layer."
-        : "Record passport, national ID, licence, or local official ID evidence for review.",
+        : identitySignals.photoReady
+          ? "Photo evidence is recorded. Add passport, national ID, licence, or local official ID details when ready."
+          : "Record passport, national ID, licence, local official ID, selfie, or ID photo evidence for review.",
       actionLabel: identitySignals.officialIdReady
         ? "Open TrustSlip"
         : "Use ID form",
@@ -1462,7 +1489,7 @@ export default function IdentityIntegrityPage() {
         ? ["Official ID evidence is already recorded.", "Use TrustSlip when someone needs portable proof."]
         : [
             "Choose passport, national ID, licence, or local official ID.",
-            "Record reference or private evidence for review.",
+            "Record reference, selfie, or ID photo evidence for review.",
             "GSN attaches the evidence to this identity.",
           ],
       to: identitySignals.officialIdReady ? routes.trustSlip : identityTaskTarget("official_id"),
@@ -1808,6 +1835,85 @@ export default function IdentityIntegrityPage() {
       showNotice("error", err?.message || "Official ID evidence could not be recorded.");
     } finally {
       setOfficialIdBusy(false);
+    }
+  }
+
+  function handleIdentityPhotoSelected(
+    files: FileList | null,
+    kind: "selfie" | "identity_photo"
+  ) {
+    const file = files?.[0] || null;
+    if (!file) {
+      showNotice("error", "No photo was selected. Try the camera or choose a file.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      showNotice("error", "Use a jpg, png, or webp image for identity evidence.");
+      return;
+    }
+    if (identityPhotoPreview) URL.revokeObjectURL(identityPhotoPreview);
+    setIdentityPhotoFile(file);
+    setIdentityPhotoKind(kind);
+    setIdentityPhotoPreview(URL.createObjectURL(file));
+    showNotice(
+      "success",
+      kind === "selfie"
+        ? "Selfie selected. Record it to attach photo evidence."
+        : "ID photo selected. Record it to attach official ID evidence for review."
+    );
+  }
+
+  async function handleRecordIdentityPhoto() {
+    if (identityPhotoBusy || !identityPhotoFile) return;
+
+    setIdentityPhotoBusy(true);
+    try {
+      const documentType =
+        identityPhotoKind === "selfie"
+          ? "selfie"
+          : officialIdType.toLowerCase().includes("passport")
+            ? "passport_photo"
+            : "identity_photo";
+      const out = await recordSignedInIdentityPhoto({
+        file: identityPhotoFile,
+        document_type: documentType,
+        note:
+          identityPhotoKind === "selfie"
+            ? "Signed-in selfie evidence from Identity Integrity."
+            : `Signed-in ${officialIdType} image evidence from Identity Integrity.`,
+      });
+      const evidenceUrl = safeStr(out?.evidence_url);
+      setMe((prev: any) => ({
+        ...(prev || {}),
+        photo_recorded: true,
+        profile_image_url:
+          identityPhotoKind === "selfie"
+            ? evidenceUrl || identityPhotoPreview || prev?.profile_image_url
+            : prev?.profile_image_url,
+        official_id_recorded:
+          identityPhotoKind === "identity_photo"
+            ? true
+            : prev?.official_id_recorded,
+      }));
+      if (identityPhotoKind === "selfie") {
+        const nextAvatar = evidenceUrl || identityPhotoPreview;
+        setAvatarSrc(nextAvatar);
+        if (typeof window !== "undefined" && nextAvatar) {
+          window.localStorage.setItem(DASHBOARD_AVATAR_STORAGE_KEY, nextAvatar);
+        }
+      }
+      setIdentityPhotoFile(null);
+      setIdentityPhotoPreview("");
+      showNotice(
+        "success",
+        identityPhotoKind === "selfie"
+          ? "Selfie evidence is recorded for review."
+          : "ID photo evidence is recorded for review. It is not provider-verified yet."
+      );
+    } catch (err: any) {
+      showNotice("error", err?.message || "Photo evidence could not be recorded.");
+    } finally {
+      setIdentityPhotoBusy(false);
     }
   }
 
@@ -2399,6 +2505,140 @@ export default function IdentityIntegrityPage() {
                     }}
                   />
                 </label>
+
+                <div
+                  data-identity-integrity-photo-completion="true"
+                  style={{
+                    gridColumn: "1 / -1",
+                    borderRadius: 15,
+                    border: "1px solid rgba(37,78,119,0.12)",
+                    background: "#FFFFFF",
+                    padding: 10,
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                      gap: 8,
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: "#07172C", fontSize: 13, fontWeight: 1000 }}>
+                        Photo / ID image
+                      </div>
+                      <div style={{ marginTop: 2, ...compactHelperText() }}>
+                        Attach a selfie or an ID photo for review. GSN records it; a provider has not verified it yet.
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => {
+                          if (selfiePhotoInputRef.current) {
+                            selfiePhotoInputRef.current.value = "";
+                            selfiePhotoInputRef.current.click();
+                          }
+                        }}
+                        stableHeight={42}
+                        fullWidth
+                        debugId="identity-integrity.identity-photo.selfie"
+                        style={{ borderRadius: 13 }}
+                      >
+                        Selfie
+                      </SecondaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => {
+                          if (idPhotoInputRef.current) {
+                            idPhotoInputRef.current.value = "";
+                            idPhotoInputRef.current.click();
+                          }
+                        }}
+                        stableHeight={42}
+                        fullWidth
+                        debugId="identity-integrity.identity-photo.id-photo"
+                        style={{ borderRadius: 13 }}
+                      >
+                        ID photo
+                      </SecondaryButton>
+                    </div>
+                  </div>
+
+                  <input
+                    ref={selfiePhotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={(event) =>
+                      handleIdentityPhotoSelected(event.target.files, "selfie")
+                    }
+                    style={{ display: "none" }}
+                    aria-label="Take selfie evidence"
+                  />
+                  <input
+                    ref={idPhotoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(event) =>
+                      handleIdentityPhotoSelected(event.target.files, "identity_photo")
+                    }
+                    style={{ display: "none" }}
+                    aria-label="Choose ID photo evidence"
+                  />
+
+                  {identityPhotoPreview ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact ? "88px minmax(0, 1fr)" : "104px minmax(0, 1fr) auto",
+                        gap: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      <img
+                        src={identityPhotoPreview}
+                        alt="Selected identity evidence"
+                        style={{
+                          width: isCompact ? 88 : 104,
+                          height: isCompact ? 68 : 78,
+                          borderRadius: 14,
+                          objectFit: "cover",
+                          border: "1px solid rgba(37,78,119,0.16)",
+                          display: "block",
+                        }}
+                      />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: "#07172C", fontSize: 13, fontWeight: 1000 }}>
+                          {identityPhotoKind === "selfie" ? "Selfie ready" : "ID photo ready"}
+                        </div>
+                        <div style={{ marginTop: 2, ...compactHelperText() }}>
+                          Tap Record photo evidence to attach it to this identity.
+                        </div>
+                      </div>
+                      <PrimaryButton
+                        type="button"
+                        onClick={handleRecordIdentityPhoto}
+                        disabled={identityPhotoBusy || !identityPhotoFile}
+                        stableHeight={42}
+                        fullWidth={isCompact}
+                        debugId="identity-integrity.identity-photo.record"
+                        style={{ borderRadius: 13 }}
+                      >
+                        {identityPhotoBusy ? "Recording..." : "Record photo evidence"}
+                      </PrimaryButton>
+                    </div>
+                  ) : null}
+                </div>
                 <PrimaryButton
                   type="submit"
                   disabled={

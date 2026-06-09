@@ -744,6 +744,23 @@ def _payout_destination_is_recorded(row: Optional[UserPayoutDestination]) -> boo
     return True
 
 
+def _latest_identity_event(
+    db: Session,
+    *,
+    user_id: int,
+    event_type: str,
+) -> Optional[TrustEvent]:
+    return (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.subject_user_id == int(user_id),
+            TrustEvent.event_type == event_type,
+        )
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .first()
+    )
+
+
 def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[str, Any]:
     if user is None:
         return {
@@ -794,7 +811,13 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
 
     entry_bank_recorded = bool(getattr(row, "bank_details_recorded_at", None)) if row else False
     payout_bank_recorded = _payout_destination_is_recorded(payout)
-    bank_recorded = entry_bank_recorded or payout_bank_recorded
+    bank_recorded_event = _latest_identity_event(
+        db,
+        user_id=int(user.id),
+        event_type="identity.bank_destination_recorded",
+    )
+    bank_event_recorded = bank_recorded_event is not None
+    bank_recorded = entry_bank_recorded or payout_bank_recorded or bank_event_recorded
     bank_provider_verified = bool(
         (payout and getattr(payout, "verified_at", None))
         or (
@@ -822,7 +845,12 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
         .order_by(IdentityVerificationCheck.created_at.desc(), IdentityVerificationCheck.id.desc())
         .first()
     )
-    official_id_recorded = official_id_check is not None
+    official_id_recorded_event = _latest_identity_event(
+        db,
+        user_id=int(user.id),
+        event_type="identity.official_id_recorded",
+    )
+    official_id_recorded = official_id_check is not None or official_id_recorded_event is not None
     official_id_verified = bool(
         official_id_check
         and (
@@ -839,6 +867,14 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
         bank_recorded_at = getattr(payout, "updated_at", None) or getattr(
             payout, "created_at", None
         )
+    elif bank_event_recorded and bank_recorded_event:
+        bank_recorded_at = getattr(bank_recorded_event, "created_at", None)
+
+    official_id_recorded_at = None
+    if official_id_check and getattr(official_id_check, "created_at", None):
+        official_id_recorded_at = getattr(official_id_check, "created_at", None)
+    elif official_id_recorded_event and getattr(official_id_recorded_event, "created_at", None):
+        official_id_recorded_at = getattr(official_id_recorded_event, "created_at", None)
 
     return {
         "phone_recorded": phone_recorded,
@@ -868,6 +904,8 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
             if entry_bank_recorded
             else "Bank destination recorded in payout details"
             if payout_bank_recorded
+            else "Bank destination recorded in identity events"
+            if bank_event_recorded
             else "Bank check not connected yet"
         ),
         "bank_verified_at": (
@@ -895,8 +933,8 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
             else "Official ID not connected yet"
         ),
         "official_id_recorded_at": (
-            getattr(official_id_check, "created_at", None).isoformat()
-            if official_id_check and getattr(official_id_check, "created_at", None)
+            official_id_recorded_at.isoformat()
+            if official_id_recorded_at
             else None
         ),
         "official_id_verified": official_id_verified,
@@ -1247,7 +1285,18 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         else False
     )
     details_recorded = bool(display_name or gmfn_id)
-    photo_recorded = bool(getattr(user, "profile_image_url", None)) if user else False
+    photo_recorded_event = (
+        _latest_identity_event(
+            db,
+            user_id=uid,
+            event_type="identity.photo_evidence_recorded",
+        )
+        if user
+        else None
+    )
+    photo_recorded = bool(
+        getattr(user, "profile_image_url", None) or photo_recorded_event
+    ) if user else False
     identity_evidence_summary = _identity_evidence_summary(
         details_recorded=details_recorded,
         phone_recorded=phone_recorded,
@@ -1263,6 +1312,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
     )
     identity_context = {
         "profile_image_url": getattr(user, "profile_image_url", None) if user else None,
+        "photo_recorded": photo_recorded,
         "gmfn_id": gmfn_id,
         "display_name": display_name,
         "phone_recorded": phone_recorded,
