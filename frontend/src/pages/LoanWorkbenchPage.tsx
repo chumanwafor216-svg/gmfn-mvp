@@ -1306,6 +1306,8 @@ export default function LoanWorkbenchPage() {
                 disabled={refreshing}
                 busy={refreshing}
                 busyLabel="Refreshing..."
+                minWidth={isCompact ? undefined : 176}
+                stableHeight={48}
                 debugId="loan-workbench.refresh"
                 style={{
                   border: "1px solid rgba(121,149,190,0.20)",
@@ -1313,28 +1315,32 @@ export default function LoanWorkbenchPage() {
                     "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
                   color: refreshing ? "#94A3B8" : "#E6EEF8",
                   fontWeight: 800,
+                  whiteSpace: "nowrap",
                 }}
               >
                 Refresh Workbench
               </SecondaryButton>
 
               <SubtleButton
-                  onClick={() =>
-                    handleCopy(
-                      selectedLoanId ? String(selectedLoanId) : "",
-                      "Loan ID copied.",
-                      "Loan ID is not ready yet."
-                    )
-                  }
-                  disabled={!selectedLoanId}
-                  debugId="loan-workbench.copy-loan-id"
-                  style={{
-                    border: "1px solid rgba(121,149,190,0.20)",
-                    background:
-                      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-                    color: !selectedLoanId ? "#94A3B8" : "#E6EEF8",
-                    fontWeight: 800,
-                  }}
+                onClick={() =>
+                  handleCopy(
+                    selectedLoanId ? String(selectedLoanId) : "",
+                    "Loan ID copied.",
+                    "Loan ID is not ready yet."
+                  )
+                }
+                disabled={!selectedLoanId}
+                minWidth={isCompact ? undefined : 132}
+                stableHeight={48}
+                debugId="loan-workbench.copy-loan-id"
+                style={{
+                  border: "1px solid rgba(121,149,190,0.20)",
+                  background:
+                    "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+                  color: !selectedLoanId ? "#94A3B8" : "#E6EEF8",
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                }}
               >
                 Copy Loan ID
               </SubtleButton>
@@ -1372,6 +1378,8 @@ export default function LoanWorkbenchPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.selection ? "Open" : "Collapse"}
@@ -1457,6 +1465,8 @@ export default function LoanWorkbenchPage() {
                         {active ? (
                           <PrimaryButton
                             onClick={() => handleSelectLoan(positiveNumber(item.id))}
+                            minWidth={isCompact ? undefined : 116}
+                            stableHeight={44}
                             debugId={`loan-workbench.select.${positiveNumber(item.id) || "none"}`}
                           >
                             Selected
@@ -1464,6 +1474,8 @@ export default function LoanWorkbenchPage() {
                         ) : (
                           <SecondaryButton
                             onClick={() => handleSelectLoan(positiveNumber(item.id))}
+                            minWidth={isCompact ? undefined : 156}
+                            stableHeight={44}
                             debugId={`loan-workbench.select.${positiveNumber(item.id) || "none"}`}
                             style={{
                               border: "1px solid rgba(121,149,190,0.20)",
@@ -1471,6 +1483,7 @@ export default function LoanWorkbenchPage() {
                                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
                               color: "#E6EEF8",
                               fontWeight: 800,
+                              whiteSpace: "nowrap",
                             }}
                           >
                             Open Workbench
@@ -1515,6 +1528,8 @@ export default function LoanWorkbenchPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.summary ? "Open" : "Collapse"}
@@ -1836,6 +1851,8 @@ export default function LoanWorkbenchPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.supporters ? "Open" : "Collapse"}
@@ -2076,6 +2093,8 @@ export default function LoanWorkbenchPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.routes ? "Open" : "Collapse"}

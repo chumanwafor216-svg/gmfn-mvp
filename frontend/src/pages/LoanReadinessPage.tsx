@@ -1243,6 +1243,8 @@ export default function LoanReadinessPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.overview ? "Open" : "Collapse"}
@@ -1451,6 +1453,8 @@ export default function LoanReadinessPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.reading ? "Open" : "Collapse"}
@@ -1581,6 +1585,8 @@ export default function LoanReadinessPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.blockers ? "Open" : "Collapse"}
@@ -1722,6 +1728,8 @@ export default function LoanReadinessPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.routes ? "Open" : "Collapse"}

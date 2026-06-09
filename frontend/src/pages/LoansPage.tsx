@@ -883,12 +883,16 @@ export default function LoansPage() {
 
           <SubtleButton
             onClick={() => toggleSection("overview")}
-            minWidth={126}
+            minWidth={132}
             stableHeight={48}
             debugId="loans.toggle-overview"
-            style={{ borderRadius: 999 }}
+            style={{
+              borderRadius: 999,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
+            }}
           >
-            {collapsed.overview ? "View details" : "View details "}
+            {collapsed.overview ? "View details" : "Hide details"}
           </SubtleButton>
         </div>
 

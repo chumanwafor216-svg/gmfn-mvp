@@ -41181,3 +41181,42 @@ GSN-branded invite composer and invite-entry continuity.
     after deploy.
   - The live identity evidence and bank/wallet reflection issue remains blocked
     on the API service serving stale or incomplete backend code.
+
+### Loans and Support inner-button stabilization (2026-06-09)
+
+- Trigger:
+  - continuing the backward page-by-page button tightening pass after TrustSlip
+    Verify and Finance.
+- Changed:
+  - `frontend/src/pages/LoansPage.tsx`
+    - removed a fragile trailing-space label trick on the overview toggle;
+    - the overview toggle now has a real `View details` / `Hide details`
+      state plus no-wrap fixed-flex geometry.
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+    - all collapse controls now keep no-wrap fixed-flex geometry while the
+      existing stable route tiles remain untouched.
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+    - refresh and collapse controls now use explicit stable heights, desktop
+      minimum widths where needed, and no-wrap behavior.
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+    - refresh, copy, loan-selection, and collapse controls now use explicit
+      stable height/min-width/no-wrap geometry.
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - copy, guarantor approve/decline, disabled bulk, revenue-preview, and
+      collapse controls now use explicit stable geometry.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now protects the Loans landing, Loan Readiness, Loan Suggestions, Loan
+      Workbench, and Loan Summary geometry tightened above.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm exec -- eslint src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/LoanSuggestionsPage.tsx src/pages/LoanWorkbenchPage.tsx src/pages/LoanSummaryPage.tsx tools/audit-button-stability.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild `spawn EPERM`;
+    elevated `npm run build` from `frontend` passed.
+- Remaining risk:
+  - this is still source/audit/compiler verified. The physical-phone tactile
+    check should happen after deploy, especially on Loan Summary and Loan
+    Workbench where busy/disabled states are most visible.

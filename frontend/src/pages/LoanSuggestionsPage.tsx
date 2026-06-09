@@ -1192,6 +1192,8 @@ export default function LoanSuggestionsPage() {
                   disabled={refreshing}
                   busy={refreshing}
                   busyLabel="Refreshing..."
+                  minWidth={isCompact ? undefined : 168}
+                  stableHeight={48}
                   debugId="loan-suggestions.refresh-fit"
                   style={{
                     border: "1px solid rgba(121,149,190,0.20)",
@@ -1199,6 +1201,7 @@ export default function LoanSuggestionsPage() {
                       "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
                     color: refreshing ? "#94A3B8" : "#E6EEF8",
                     fontWeight: 800,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   Refresh Fit Check
@@ -1238,6 +1241,8 @@ export default function LoanSuggestionsPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.overview ? "Open" : "Collapse"}
@@ -1439,6 +1444,8 @@ export default function LoanSuggestionsPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.reading ? "Open" : "Collapse"}
@@ -1561,6 +1568,8 @@ export default function LoanSuggestionsPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.supporters ? "Open" : "Collapse"}
@@ -1690,6 +1699,8 @@ export default function LoanSuggestionsPage() {
                 "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
               color: "#E6EEF8",
               fontWeight: 800,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
             }}
           >
             {collapsed.routes ? "Open" : "Collapse"}

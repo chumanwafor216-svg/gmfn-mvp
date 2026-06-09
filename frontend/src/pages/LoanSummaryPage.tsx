@@ -1352,12 +1352,16 @@ export default function LoanSummaryPage() {
             >
               <SecondaryButton
                 onClick={copyLoanSummary}
+                minWidth={isCompact ? undefined : 164}
+                stableHeight={48}
                 debugId="loan-summary.copy-summary"
               >
                 Copy loan summary
               </SecondaryButton>
               <SecondaryButton
                 onClick={copyLoanAuditLink}
+                minWidth={isCompact ? undefined : 148}
+                stableHeight={48}
                 debugId="loan-summary.copy-audit-link"
               >
                 Copy audit link
@@ -1423,7 +1427,13 @@ export default function LoanSummaryPage() {
 
           <SubtleButton
             onClick={() => toggleSection("overview")}
+            minWidth={124}
+            stableHeight={48}
             debugId="loan-summary.toggle-overview"
+            style={{
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
+            }}
           >
             {collapsed.overview ? "Open" : "Collapse"}
           </SubtleButton>
@@ -1653,7 +1663,13 @@ export default function LoanSummaryPage() {
 
             <SubtleButton
               onClick={() => toggleSection("guarantors")}
+              minWidth={124}
+              stableHeight={48}
               debugId="loan-summary.toggle-guarantors"
+              style={{
+                whiteSpace: "nowrap",
+                flex: "0 0 auto",
+              }}
             >
               {collapsed.guarantors ? "Open" : "Collapse"}
             </SubtleButton>
@@ -1780,6 +1796,8 @@ export default function LoanSummaryPage() {
                             disabled={!canDecide || busyDecline}
                             busy={busyApprove}
                             busyLabel="Approving..."
+                            minWidth={isCompact ? undefined : 112}
+                            stableHeight={44}
                             debugId={`loan-summary.guarantor.${g.id || idx}.approve`}
                           >
                             Approve
@@ -1790,6 +1808,8 @@ export default function LoanSummaryPage() {
                             disabled={!canDecide || busyApprove}
                             busy={busyDecline}
                             busyLabel="Declining..."
+                            minWidth={isCompact ? undefined : 112}
+                            stableHeight={44}
                             debugId={`loan-summary.guarantor.${g.id || idx}.decline`}
                           >
                             Decline
@@ -1829,12 +1849,16 @@ export default function LoanSummaryPage() {
             >
               <SecondaryButton
                 disabled
+                minWidth={isCompact ? undefined : 190}
+                stableHeight={48}
                 debugId="loan-summary.bulk-approve-disabled"
               >
                 Bulk approve disabled
               </SecondaryButton>
               <SecondaryButton
                 disabled
+                minWidth={isCompact ? undefined : 190}
+                stableHeight={48}
                 debugId="loan-summary.bulk-decline-disabled"
               >
                 Bulk decline disabled
@@ -1945,7 +1969,13 @@ export default function LoanSummaryPage() {
 
             <SubtleButton
               onClick={() => toggleSection("repayment")}
+              minWidth={124}
+              stableHeight={48}
               debugId="loan-summary.toggle-repayment"
+              style={{
+                whiteSpace: "nowrap",
+                flex: "0 0 auto",
+              }}
             >
               {collapsed.repayment ? "Open" : "Collapse"}
             </SubtleButton>
@@ -2076,7 +2106,13 @@ export default function LoanSummaryPage() {
 
               <SubtleButton
                 onClick={() => toggleSection("evidence")}
+                minWidth={124}
+                stableHeight={48}
                 debugId="loan-summary.toggle-evidence"
+                style={{
+                  whiteSpace: "nowrap",
+                  flex: "0 0 auto",
+                }}
               >
                 {collapsed.evidence ? "Open" : "Collapse"}
               </SubtleButton>
@@ -2221,6 +2257,8 @@ export default function LoanSummaryPage() {
             <div style={{ marginTop: 14 }}>
               <StableCtaLink
                 to={revenueRoute}
+                minWidth={isCompact ? undefined : 210}
+                stableHeight={48}
                 debugId="loan-summary.open-revenue-preview"
               >
                 {canOpenCommandRevenue ? "Open Revenue Allocation" : "Open Finance File"}
@@ -2253,7 +2291,13 @@ export default function LoanSummaryPage() {
 
           <SubtleButton
             onClick={() => toggleSection("routes")}
+            minWidth={124}
+            stableHeight={48}
             debugId="loan-summary.toggle-routes"
+            style={{
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
+            }}
           >
             {collapsed.routes ? "Open" : "Collapse"}
           </SubtleButton>

@@ -644,6 +644,12 @@ assertContains(
   "Loans landing page must use shared stable CTA primitives and shared CTA resolution for collapse and support route tiles."
 );
 
+assertContains(
+  "src/pages/LoansPage.tsx",
+  /minWidth=\{132\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loans\.toggle-overview"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?\{collapsed\.overview \? "View details" : "Hide details"\}/,
+  "Loans overview toggle must keep fixed no-wrap geometry and a real open/closed label."
+);
+
 assertNotContains(
   "src/pages/LoansPage.tsx",
   /(import OriginLink|function (stableTapStyle|collapseToggle)\(|routeTile\(|stableTapStyle\(|collapseToggle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|communityTo\("\/app)/,
@@ -654,6 +660,12 @@ assertContains(
   "src/pages/LoanReadinessPage.tsx",
   /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="loan-readiness\.toggle-overview"[\s\S]*?debugId="loan-readiness\.toggle-reading"[\s\S]*?debugId="loan-readiness\.route\.recommended"[\s\S]*?debugId="loan-readiness\.route\.suggestions"[\s\S]*?debugId="loan-readiness\.route\.guarantor-inbox"/,
   "Loan Readiness must use shared stable CTA primitives and shared CTA resolution for collapse controls and next-route tiles."
+);
+
+assertContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /debugId="loan-readiness\.toggle-overview"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?debugId="loan-readiness\.toggle-reading"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?debugId="loan-readiness\.toggle-blockers"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?debugId="loan-readiness\.toggle-routes"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"/,
+  "Loan Readiness collapse controls must keep no-wrap fixed-flex geometry."
 );
 
 assertNotContains(
@@ -668,6 +680,12 @@ assertContains(
   "Loan Suggestions must use shared stable CTA primitives and shared CTA resolution for refresh, collapse controls, and next-route tiles."
 );
 
+assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /minWidth=\{isCompact \? undefined : 168\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-suggestions\.refresh-fit"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-suggestions\.toggle-overview"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?debugId="loan-suggestions\.toggle-reading"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-suggestions\.toggle-supporters"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-suggestions\.toggle-routes"[\s\S]*?whiteSpace: "nowrap"/,
+  "Loan Suggestions refresh and collapse controls must keep stable no-wrap geometry."
+);
+
 assertNotContains(
   "src/pages/LoanSuggestionsPage.tsx",
   /(import OriginLink|function (stableTapStyle|buttonGuardProps|actionBtn|collapseToggle)\(|guardButtonPress|routeTile\(|stableTapStyle\(|buttonGuardProps\(|actionBtn\(|collapseToggle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|communityTo\("\/app)/,
@@ -680,6 +698,12 @@ assertContains(
   "Loan Workbench must use shared stable CTA primitives and shared CTA resolution for refresh, copy, selection, collapse, and next-route actions."
 );
 
+assertContains(
+  "src/pages/LoanWorkbenchPage.tsx",
+  /minWidth=\{isCompact \? undefined : 176\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-workbench\.refresh"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-workbench\.copy-loan-id"[\s\S]*?debugId="loan-workbench\.toggle-selection"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 116\}[\s\S]*?stableHeight=\{44\}[\s\S]*?debugId=\{`loan-workbench\.select\.\$\{positiveNumber\(item\.id\) \|\| "none"\}`\}[\s\S]*?minWidth=\{isCompact \? undefined : 156\}[\s\S]*?stableHeight=\{44\}[\s\S]*?debugId=\{`loan-workbench\.select\.\$\{positiveNumber\(item\.id\) \|\| "none"\}`\}[\s\S]*?debugId="loan-workbench\.toggle-summary"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-workbench\.toggle-supporters"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-workbench\.toggle-routes"[\s\S]*?whiteSpace: "nowrap"/,
+  "Loan Workbench action and collapse controls must keep stable no-wrap geometry."
+);
+
 assertNotContains(
   "src/pages/LoanWorkbenchPage.tsx",
   /(import OriginLink|function (stableTapStyle|buttonGuardProps|actionBtn|collapseToggle)\(|guardButtonPress|routeTile\(|stableTapStyle\(|buttonGuardProps\(|actionBtn\(|collapseToggle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|communityTo\("\/app|withCommunityQuery)/,
@@ -690,6 +714,12 @@ assertContains(
   "src/pages/LoanSummaryPage.tsx",
   /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="loan-summary\.copy-summary"[\s\S]*?debugId="loan-summary\.toggle-overview"[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.approve`\}[\s\S]*?debugId="loan-summary\.toggle-repayment"[\s\S]*?debugId="loan-summary\.open-revenue-preview"[\s\S]*?debugId="loan-summary\.route\.workbench"[\s\S]*?debugId="loan-summary\.route\.payment-or-finance"/,
   "Loan Summary must use shared stable primitives and shared CTA resolution for copy, collapse, guarantor decisions, revenue, and route actions."
+);
+
+assertContains(
+  "src/pages/LoanSummaryPage.tsx",
+  /minWidth=\{isCompact \? undefined : 164\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-summary\.copy-summary"[\s\S]*?minWidth=\{isCompact \? undefined : 148\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-summary\.copy-audit-link"[\s\S]*?debugId="loan-summary\.toggle-overview"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-summary\.toggle-guarantors"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 112\}[\s\S]*?stableHeight=\{44\}[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.approve`\}[\s\S]*?minWidth=\{isCompact \? undefined : 112\}[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.decline`\}[\s\S]*?minWidth=\{isCompact \? undefined : 190\}[\s\S]*?debugId="loan-summary\.bulk-approve-disabled"[\s\S]*?minWidth=\{isCompact \? undefined : 190\}[\s\S]*?debugId="loan-summary\.bulk-decline-disabled"[\s\S]*?debugId="loan-summary\.toggle-repayment"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-summary\.toggle-evidence"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?debugId="loan-summary\.open-revenue-preview"[\s\S]*?debugId="loan-summary\.toggle-routes"[\s\S]*?whiteSpace: "nowrap"/,
+  "Loan Summary copy, decision, disabled, revenue, and collapse controls must keep stable no-wrap geometry."
 );
 
 assertNotContains(
