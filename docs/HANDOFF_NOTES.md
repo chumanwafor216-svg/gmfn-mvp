@@ -40707,3 +40707,74 @@ GSN-branded invite composer and invite-entry continuity.
     capture/review route. Those must be implemented as a separate backend +
     frontend identity-completion task before Passport / ID and phone
     re-verification can be truly completed inside the app.
+
+### Trust Passport multi-community identity completion pass (2026-06-09)
+
+- Trigger:
+  - product owner clarified that `Identity Overview` must not imply one GSN
+    identity belongs to only one community. A user may belong to multiple
+    communities, with different community IDs and roles, and that footprint is
+    part of cross-community integrity / CCI.
+  - product owner also clarified that incomplete Phone and Passport / ID rows
+    must route to the actual completion task, not to explanation-only pages.
+- Unabated truth:
+  - This pass connects real signed-in phone confirmation and reviewable
+    official-ID evidence recording. It does not connect a live SMS provider or
+    a government/passport KYC provider.
+  - Official ID is intentionally labelled as evidence recorded for review, not
+    provider-verified identity.
+  - Multi-community footprint comes from active `ClanMembership` rows. If a
+    membership is missing or has the wrong role in the database, Trust Passport
+    will honestly reflect that wrong/missing backend state until the membership
+    record is corrected.
+- Fix:
+  - `gmfn_backend/app/services/trust_slips_services.py` now emits
+    `community_footprint`: active communities for the signed-in user, including
+    community name, community code, role, and join timestamp.
+  - Trust Passport payload and merchant summary now include
+    `active_community_count` and the full `community_footprint`, so the
+    frontend can show one identity across many communities instead of one
+    identity locked to one community.
+  - `frontend/src/pages/TrustScorePage.tsx` now renders a compact `Community
+    footprint` block inside the Identity Overview snapshot and cages it with
+    `data-trust-passport-community-footprint`.
+  - `gmfn_backend/app/api/routes/entry_verification.py` now adds signed-in
+    endpoints for phone start/confirm and official-ID evidence recording:
+    `/entry/signed-in/phone/start`, `/entry/signed-in/phone/confirm`, and
+    `/entry/signed-in/official-id/record`.
+  - `frontend/src/lib/api.ts` exposes those endpoints through
+    `startSignedInPhoneVerification`, `confirmSignedInPhoneVerification`, and
+    `recordSignedInOfficialId`.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx` now provides inline focused
+    forms for the Phone and Passport / ID tasks, records success against the
+    signed-in identity, and keeps the action response in the active task area.
+  - Trust Passport now treats recorded official-ID evidence as satisfying the
+    current Passport / ID status copy, while the copy remains honest that the
+    evidence is reviewable rather than provider-verified.
+  - `frontend/tools/audit-trust-passport-front-package.mjs` now protects the
+    community-footprint snapshot block.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs` now protects
+    the signed-in phone and official-ID completion forms.
+- Verification:
+  - Passed `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py -q`.
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- eslint src/pages/TrustScorePage.tsx src/pages/IdentityIntegrityPage.tsx tools/audit-trust-passport-front-package.mjs tools/audit-identity-integrity-front-package.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Remaining risk:
+  - Signed-in phone confirmation currently returns a preview code in pilot/dev
+    mode or a pending-SMS state when configured for live delivery. A real SMS
+    provider still needs to be attached before public OTP delivery is complete.
+  - Official ID currently stores manual-review evidence only. A real provider
+    or admin review workflow is still needed before the system can honestly
+    say `provider verified`.
+  - CCI can now see the community footprint in the Trust Passport payload, but
+    a deeper CCI scoring pass should later decide how role, tenure, and
+    multi-community activity affect the score.

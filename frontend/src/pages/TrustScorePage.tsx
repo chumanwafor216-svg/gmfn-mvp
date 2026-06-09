@@ -112,6 +112,8 @@ type MerchantSummary = {
   bank_verification_label?: string | null;
   passport_verified?: boolean | null;
   passport_verification_label?: string | null;
+  official_id_recorded?: boolean | null;
+  official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
 };
@@ -138,12 +140,15 @@ type TrustSlipSummary = {
   bank_verification_label?: string | null;
   passport_verified?: boolean | null;
   passport_verification_label?: string | null;
+  official_id_recorded?: boolean | null;
+  official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
   identity_verified?: boolean | null;
   identity_status_label?: string | null;
   identity_context?: Record<string, any> | null;
   community_context?: Record<string, any> | null;
+  community_footprint?: Array<Record<string, any>> | null;
   community_global_id?: string | null;
   community_code?: string | null;
   holder_role?: string | null;
@@ -203,6 +208,7 @@ type ClanListItem = {
   marketplace_name?: string | null;
   marketplace_description?: string | null;
   community_code?: string | null;
+  role?: string | null;
 };
 
 function safeStr(x: any): string {
@@ -479,10 +485,20 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     community: firstTruthy(src?.community),
     phone_verified: src?.phone_verified ?? null,
     bank_verified: src?.bank_verified ?? null,
+    bank_verification_label: firstTruthy(src?.bank_verification_label),
+    passport_verified: src?.passport_verified ?? null,
+    passport_verification_label: firstTruthy(src?.passport_verification_label),
+    official_id_recorded: src?.official_id_recorded ?? null,
+    official_id_label: firstTruthy(src?.official_id_label),
     identity_verified: src?.identity_verified ?? null,
     identity_status_label: firstTruthy(src?.identity_status_label),
     identity_context: src?.identity_context || null,
     community_context: src?.community_context || null,
+    community_footprint: Array.isArray(src?.community_footprint)
+      ? src.community_footprint
+      : Array.isArray(src?.merchant_summary?.community_footprint)
+        ? src.merchant_summary.community_footprint
+        : [],
     community_global_id: firstTruthy(src?.community_global_id),
     community_code: firstTruthy(src?.community_code),
     holder_role: firstTruthy(src?.holder_role),
@@ -1389,6 +1405,65 @@ export default function TrustScorePage() {
   const communityVerifyPath = communityVerifyKey
     ? `/verify/community/${encodeURIComponent(communityVerifyKey)}`
     : "";
+  const communityFootprint = useMemo(() => {
+    const byKey = new Map<string, {
+      id: string;
+      name: string;
+      code: string;
+      role: string;
+    }>();
+
+    function addCommunity(raw: any) {
+      const id = safeStr(raw?.clan_id || raw?.id || raw?.community_id);
+      const code = firstTruthy(
+        raw?.community_code,
+        raw?.community_global_id,
+        raw?.code,
+        id ? `GSN-COM-${String(id).padStart(4, "0")}` : ""
+      );
+      const name = firstTruthy(
+        raw?.community_name,
+        raw?.marketplace_name,
+        raw?.name,
+        raw?.display_name,
+        id ? `Community ${id}` : ""
+      );
+      if (!name && !code) return;
+      const key = code || id || name;
+      byKey.set(key, {
+        id,
+        name: name || "Community",
+        code: code || "Awaiting issue",
+        role: firstTruthy(raw?.role, raw?.holder_role, "member"),
+      });
+    }
+
+    (trustSlipSummary?.community_footprint || []).forEach(addCommunity);
+    clansList.forEach(addCommunity);
+
+    if (byKey.size <= 0 && (communityName || communityCode)) {
+      addCommunity({
+        clan_id: selectedClanId,
+        community_name: communityName,
+        community_code: communityCode,
+        role: firstTruthy(
+          trustSlipSummary?.holder_role,
+          communityContext?.holder_role,
+          "member"
+        ),
+      });
+    }
+
+    return Array.from(byKey.values());
+  }, [
+    clansList,
+    communityCode,
+    communityName,
+    communityContext?.holder_role,
+    selectedClanId,
+    trustSlipSummary?.holder_role,
+    trustSlipSummary?.community_footprint,
+  ]);
 
   const currentBand = useMemo(() => {
     return firstTruthy(
@@ -1518,6 +1593,7 @@ export default function TrustScorePage() {
   const visibleActiveClanCount =
     Number(trustSlipSummary?.active_clan_count || 0) ||
     Number(communityContext?.active_community_count || 0) ||
+    communityFootprint.length ||
     clansList.length ||
     (selectedClanId ? 1 : 0);
   const activeClanCount = safeStr(visibleActiveClanCount || "0");
@@ -1602,12 +1678,18 @@ export default function TrustScorePage() {
       trustSlipSummary?.merchant_summary?.bank_verification_label,
       identityContext?.bank_verification_label
     ),
-    passportVerified:
-      trustSlipSummary?.passport_verified ?? identityContext?.passport_verified,
+    passportVerified: Boolean(
+      trustSlipSummary?.passport_verified ||
+        identityContext?.passport_verified ||
+        trustSlipSummary?.official_id_recorded ||
+        identityContext?.official_id_recorded
+    ),
     passportVerificationLabel: firstTruthy(
       trustSlipSummary?.passport_verification_label,
       trustSlipSummary?.merchant_summary?.passport_verification_label,
-      identityContext?.passport_verification_label
+      identityContext?.passport_verification_label,
+      trustSlipSummary?.official_id_label,
+      identityContext?.official_id_label
     ),
     communityIdentityConfirmed:
       Boolean(
@@ -2136,6 +2218,127 @@ export default function TrustScorePage() {
               One lane open
             </span>
           </div>
+
+          {communityFootprint.length > 0 ? (
+            <div
+              data-trust-passport-community-footprint="true"
+              style={{
+                marginTop: isCompact ? 10 : 14,
+                borderRadius: isCompact ? 14 : 18,
+                border: "1px solid rgba(216,227,238,0.78)",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.92) 100%)",
+                padding: isCompact ? 8 : 12,
+                display: "grid",
+                gap: 8,
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    color: "#07172C",
+                    fontWeight: 1000,
+                    fontSize: isCompact ? 12 : 14,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Community footprint
+                </span>
+                <span style={overviewStatusBox(true, true)}>
+                  <span style={overviewBadge(true, true)}>
+                    <TrustPaperIcon name="community" size={15} strokeWidth={2.65} />
+                  </span>
+                  {communityFootprint.length} active
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                  gap: 7,
+                }}
+              >
+                {communityFootprint.slice(0, isCompact ? 3 : 4).map((item) => (
+                  <div
+                    key={`${item.code}-${item.name}`}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gap: 8,
+                      alignItems: "center",
+                      minHeight: isCompact ? 42 : 48,
+                      borderRadius: 12,
+                      border: "1px solid rgba(216,227,238,0.68)",
+                      background: "#FFFFFF",
+                      padding: isCompact ? "7px 8px" : "8px 10px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <span style={{ minWidth: 0 }}>
+                      <span
+                        style={{
+                          display: "block",
+                          color: "#07172C",
+                          fontWeight: 1000,
+                          fontSize: isCompact ? 12 : 13.5,
+                          lineHeight: 1.12,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.name}
+                      </span>
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 2,
+                          color: "#617085",
+                          fontWeight: 900,
+                          fontSize: isCompact ? 10.5 : 11.5,
+                          lineHeight: 1.1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.code}
+                      </span>
+                    </span>
+                    <span
+                      style={{
+                        borderRadius: 999,
+                        background: "#EEF6FF",
+                        border: "1px solid rgba(11,99,209,0.14)",
+                        color: "#073E83",
+                        fontWeight: 1000,
+                        fontSize: isCompact ? 10.5 : 11.5,
+                        padding: "4px 7px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {titleCaseWords(item.role)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {communityFootprint.length > (isCompact ? 3 : 4) ? (
+                <div style={{ ...helperText(), fontSize: 11.5, margin: 0 }}>
+                  +{communityFootprint.length - (isCompact ? 3 : 4)} more communities
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div
             style={{

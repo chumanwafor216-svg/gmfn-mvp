@@ -8,7 +8,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
-from app.db.models import TrustEvent, TrustSlip, User, UserPayoutDestination
+from app.db.models import Clan, ClanMembership, TrustEvent, TrustSlip, User, UserPayoutDestination
+from app.db.verification_models import IdentityVerificationCheck
 from app.api.routes.trust_slips import _public_visibility_level
 from app.services.trust_slips_services import get_trust_slip_payload, issue_trust_slip_for_user
 
@@ -82,6 +83,22 @@ def test_trust_passport_identity_context_uses_signed_in_payout_and_membership(
                 verification_note="Recorded in signed-in payout details.",
             )
         )
+        db.add(
+            Clan(
+                id=2,
+                name="Second Circle",
+                marketplace_name="Second Circle Marketplace",
+                community_code="GMFN-C-000002",
+                invite_code="second-circle-invite",
+            )
+        )
+        db.add(
+            ClanMembership(
+                clan_id=2,
+                user_id=1,
+                role="admin",
+            )
+        )
         db.commit()
 
         payload = get_trust_slip_payload(db, user_id=1)
@@ -93,6 +110,75 @@ def test_trust_passport_identity_context_uses_signed_in_payout_and_membership(
     assert identity_context["bank_verification_label"] == "Bank destination recorded in payout details"
     assert identity_context["community_identity_confirmed"] is True
     assert payload["active_clan_count"] >= 1
+    assert payload["active_community_count"] == 2
+    footprint = payload["community_footprint"]
+    assert len(footprint) == 2
+    assert {item["community_code"] for item in footprint} == {
+        "GMFN-C-000001",
+        "GMFN-C-000002",
+    }
+    assert {item["role"] for item in footprint} == {"user", "admin"}
+
+
+def test_signed_in_identity_completion_records_phone_and_official_id(
+    client: TestClient,
+    monkeypatch,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "preview")
+
+    start_res = client.post(
+        "/entry/signed-in/phone/start",
+        json={"phone_e164": "+447700900999", "country": "GB"},
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+    assert start_body["otp_preview"]
+
+    confirm_res = client.post(
+        "/entry/signed-in/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+    assert confirm_res.json()["verified"] is True
+
+    official_res = client.post(
+        "/entry/signed-in/official-id/record",
+        json={
+            "document_type": "Passport",
+            "document_reference": "P1234567",
+            "country": "GB",
+            "note": "Pilot official ID record",
+        },
+    )
+    assert official_res.status_code == 201, official_res.text
+    official_body = official_res.json()
+    assert official_body["verification_type"] == "official_id"
+    assert official_body["status"] == "manual_review_required"
+
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user.phone_e164 == "+447700900999"
+        assert user.phone_verified_at is not None
+        check = (
+            db.query(IdentityVerificationCheck)
+            .filter(
+                IdentityVerificationCheck.user_id == 1,
+                IdentityVerificationCheck.verification_type == "official_id",
+            )
+            .one()
+        )
+        assert check.provider_key == "official-id.signed-in-manual-record"
+        event_types = {
+            row.event_type
+            for row in db.query(TrustEvent).filter(TrustEvent.subject_user_id == 1).all()
+        }
+        assert "identity.phone_verified" in event_types
+        assert "identity.official_id_recorded" in event_types
 
 
 def test_trustslip_payload_includes_personal_commitment_discipline(

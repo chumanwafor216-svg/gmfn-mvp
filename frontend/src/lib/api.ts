@@ -890,6 +890,40 @@ export async function getEntryVerificationCheck(
   );
 }
 
+export async function startSignedInPhoneVerification(payload: {
+  phone_e164: string;
+  country?: string | null;
+}): Promise<any> {
+  return httpJson("/entry/signed-in/phone/start", "POST", {
+    phone_e164: String(payload?.phone_e164 || "").trim(),
+    country: String(payload?.country || "").trim() || undefined,
+  });
+}
+
+export async function confirmSignedInPhoneVerification(payload: {
+  verification_id: number | string;
+  code: string;
+}): Promise<any> {
+  return httpJson("/entry/signed-in/phone/confirm", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
+    code: String(payload?.code || "").trim(),
+  });
+}
+
+export async function recordSignedInOfficialId(payload: {
+  document_type: string;
+  document_reference: string;
+  country: string;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson("/entry/signed-in/official-id/record", "POST", {
+    document_type: String(payload?.document_type || "").trim(),
+    document_reference: String(payload?.document_reference || "").trim(),
+    country: String(payload?.country || "").trim(),
+    note: String(payload?.note || "").trim() || undefined,
+  });
+}
+
 export async function submitJoinEntry(payload: Record<string, any>): Promise<any> {
   return httpJsonPaths(
     ["/entry/join", "/clans/join-requests"],

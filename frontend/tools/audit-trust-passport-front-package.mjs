@@ -154,6 +154,12 @@ assertOrderedSnippets(
 );
 
 assertContains(
+  "trust",
+  /community_footprint[\s\S]*?data-trust-passport-community-footprint="true"[\s\S]*?Community footprint[\s\S]*?communityFootprint\.length[\s\S]*?titleCaseWords\(item\.role\)/,
+  "Trust Passport Identity Overview must show a compact multi-community footprint with community IDs and member roles."
+);
+
+assertContains(
   "package",
   /"audit:trust-passport-front-package"/,
   "Trust Passport front package audit must stay registered in package scripts."

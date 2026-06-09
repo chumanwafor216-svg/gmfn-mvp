@@ -21,8 +21,11 @@ import {
   getSelectedClanId,
   getTrustWhyMe,
   listTrustEvents,
+  confirmSignedInPhoneVerification,
+  recordSignedInOfficialId,
   safeCopy,
   setupIdentityRecovery,
+  startSignedInPhoneVerification,
   verifyIdentityRecovery,
 } from "../lib/api";
 import {
@@ -1062,6 +1065,15 @@ export default function IdentityIntegrityPage() {
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryError, setRecoveryError] = useState("");
   const [recoverySuccess, setRecoverySuccess] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [phoneCode, setPhoneCode] = useState("");
+  const [phoneVerificationId, setPhoneVerificationId] = useState<number | null>(null);
+  const [phoneOtpPreview, setPhoneOtpPreview] = useState("");
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [officialIdType, setOfficialIdType] = useState("Passport");
+  const [officialIdReference, setOfficialIdReference] = useState("");
+  const [officialIdCountry, setOfficialIdCountry] = useState("");
+  const [officialIdBusy, setOfficialIdBusy] = useState(false);
   const [avatarSrc, setAvatarSrc] = useState("");
 
   useEffect(() => {
@@ -1088,6 +1100,11 @@ export default function IdentityIntegrityPage() {
   useEffect(() => {
     if (requestedIdentityTask) setActiveIdentityTask(requestedIdentityTask);
   }, [requestedIdentityTask]);
+
+  useEffect(() => {
+    setPhoneInput((prev) => prev || safeStr(me?.phone_e164 || me?.phone || ""));
+    setOfficialIdCountry((prev) => prev || safeStr(me?.country || me?.country_code || ""));
+  }, [me]);
 
   useEffect(() => {
     if (!notice) return;
@@ -1327,7 +1344,12 @@ export default function IdentityIntegrityPage() {
         me?.passport_verified_at ||
         me?.official_id_recorded ||
         me?.official_id_verified_at ||
-        me?.identity_document_recorded
+        me?.identity_document_recorded ||
+        events.some((event) =>
+          safeStr(event.event_type || event.type || event.kind)
+            .toLowerCase()
+            .includes("identity.official_id_recorded")
+        )
     );
     const communityReady = Boolean(selectedClanId && currentClan);
     const recoveryReady = Boolean(recovery.configured);
@@ -1346,7 +1368,7 @@ export default function IdentityIntegrityPage() {
         recoveryReady,
       ].filter((ready) => !ready).length,
     };
-  }, [currentClan, me, recovery.configured, selectedClanId]);
+  }, [currentClan, events, me, recovery.configured, selectedClanId]);
 
   const identityHealthLabel =
     identitySignals.missingCount <= 0
@@ -1375,18 +1397,18 @@ export default function IdentityIntegrityPage() {
       key: "phone",
       icon: "phone",
       title: "Phone",
-      status: identitySignals.phoneReady ? "Ready" : "Not wired yet",
+      status: identitySignals.phoneReady ? "Ready" : "Start check",
       tone: identitySignals.phoneReady ? "ready" : "pending",
       detail: identitySignals.phoneReady
         ? "Phone proof is already visible to the identity layer."
-        : "This proof still needs a signed-in phone-code page. GSN should not mark it complete from explanation copy.",
-      actionLabel: identitySignals.phoneReady ? "Open TrustSlip" : "Open phone requirement",
+        : "Enter your phone and confirm the signed-in code so this identity can carry phone proof.",
+      actionLabel: identitySignals.phoneReady ? "Open TrustSlip" : "Use phone form",
       completionSteps: identitySignals.phoneReady
         ? ["Phone is already verified.", "Use TrustSlip when someone needs portable proof."]
         : [
             "Enter phone number.",
             "Receive and confirm a code.",
-            "Signed-in phone completion is still pending.",
+            "GSN records the proof on this identity.",
           ],
       to: identitySignals.phoneReady ? routes.trustSlip : identityTaskTarget("phone"),
     },
@@ -1428,20 +1450,20 @@ export default function IdentityIntegrityPage() {
       key: "official_id",
       icon: "document",
       title: "Passport / ID",
-      status: identitySignals.officialIdReady ? "Recorded" : "Not wired yet",
+      status: identitySignals.officialIdReady ? "Recorded" : "Record ID",
       tone: identitySignals.officialIdReady ? "ready" : "pending",
       detail: identitySignals.officialIdReady
         ? "Official ID evidence is already visible to the identity layer."
-        : "This proof still needs a signed-in ID capture and review route. GSN should not send users to a why-page and call it complete.",
+        : "Record passport, national ID, licence, or local official ID evidence for review.",
       actionLabel: identitySignals.officialIdReady
         ? "Open TrustSlip"
-        : "Open ID requirement",
+        : "Use ID form",
       completionSteps: identitySignals.officialIdReady
         ? ["Official ID evidence is already recorded.", "Use TrustSlip when someone needs portable proof."]
         : [
             "Choose passport, national ID, licence, or local official ID.",
             "Record reference or private evidence for review.",
-            "Signed-in ID capture is still pending.",
+            "GSN attaches the evidence to this identity.",
           ],
       to: identitySignals.officialIdReady ? routes.trustSlip : identityTaskTarget("official_id"),
     },
@@ -1705,6 +1727,88 @@ export default function IdentityIntegrityPage() {
       "error",
       `${item.title} needs a dedicated signed-in identity-completion route before it can be finished here.`
     );
+  }
+
+  async function handleStartPhoneVerification(e: React.FormEvent) {
+    e.preventDefault();
+    if (phoneBusy) return;
+
+    setPhoneBusy(true);
+    try {
+      const out = await startSignedInPhoneVerification({
+        phone_e164: phoneInput,
+        country: officialIdCountry || undefined,
+      });
+      setPhoneVerificationId(Number(out?.verification_id || 0) || null);
+      setPhoneOtpPreview(safeStr(out?.otp_preview));
+      setPhoneCode(safeStr(out?.otp_preview));
+      showNotice(
+        "success",
+        out?.otp_preview
+          ? "Phone code is ready. Confirm it to attach this phone."
+          : "Phone code started. Enter the code when it arrives."
+      );
+    } catch (err: any) {
+      showNotice("error", err?.message || "Phone verification could not start.");
+    } finally {
+      setPhoneBusy(false);
+    }
+  }
+
+  async function handleConfirmPhoneVerification(e: React.FormEvent) {
+    e.preventDefault();
+    if (phoneBusy || !phoneVerificationId) return;
+
+    setPhoneBusy(true);
+    try {
+      const out = await confirmSignedInPhoneVerification({
+        verification_id: phoneVerificationId,
+        code: phoneCode,
+      });
+      setMe((prev: any) => ({
+        ...(prev || {}),
+        phone_e164: out?.phone_e164 || phoneInput,
+        phone_verified: true,
+        phone_verified_at: out?.phone_verified_at || new Date().toISOString(),
+      }));
+      setPhoneVerificationId(null);
+      setPhoneCode("");
+      setPhoneOtpPreview("");
+      showNotice("success", out?.message || "Phone proof is now connected.");
+    } catch (err: any) {
+      showNotice("error", err?.message || "Phone code could not be confirmed.");
+    } finally {
+      setPhoneBusy(false);
+    }
+  }
+
+  async function handleRecordOfficialId(e: React.FormEvent) {
+    e.preventDefault();
+    if (officialIdBusy) return;
+
+    setOfficialIdBusy(true);
+    try {
+      const out = await recordSignedInOfficialId({
+        document_type: officialIdType,
+        document_reference: officialIdReference,
+        country: officialIdCountry,
+        note: "Recorded from signed-in Identity Integrity task.",
+      });
+      setMe((prev: any) => ({
+        ...(prev || {}),
+        official_id_recorded: true,
+        official_id_verified_at: out?.verified_at || undefined,
+      }));
+      setOfficialIdReference("");
+      showNotice(
+        "success",
+        "Official ID evidence is recorded for review. It is not provider-verified yet."
+      );
+    } catch (err: any) {
+      showNotice("error", err?.message || "Official ID evidence could not be recorded.");
+    } finally {
+      setOfficialIdBusy(false);
+    }
   }
 
   if (loading) {
@@ -2132,6 +2236,186 @@ export default function IdentityIntegrityPage() {
                 </div>
               ))}
             </div>
+
+            {activeTask.key === "phone" && !identitySignals.phoneReady ? (
+              <form
+                onSubmit={
+                  phoneVerificationId
+                    ? handleConfirmPhoneVerification
+                    : handleStartPhoneVerification
+                }
+                data-identity-integrity-phone-completion="true"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 160px",
+                  gap: 8,
+                  alignItems: "end",
+                }}
+              >
+                <label style={{ display: "grid", gap: 5 }}>
+                  <span style={{ color: "#334155", fontSize: 12, fontWeight: 1000 }}>
+                    Phone number
+                  </span>
+                  <input
+                    value={phoneInput}
+                    onChange={(event) => setPhoneInput(event.target.value)}
+                    placeholder="+447700900123"
+                    disabled={phoneBusy || Boolean(phoneVerificationId)}
+                    style={{
+                      minHeight: 46,
+                      borderRadius: 13,
+                      border: "1px solid rgba(37,78,119,0.16)",
+                      padding: "0 12px",
+                      color: "#07172C",
+                      fontWeight: 900,
+                      fontSize: 14,
+                    }}
+                  />
+                </label>
+                {phoneVerificationId ? (
+                  <label style={{ display: "grid", gap: 5 }}>
+                    <span style={{ color: "#334155", fontSize: 12, fontWeight: 1000 }}>
+                      Code
+                    </span>
+                    <input
+                      value={phoneCode}
+                      onChange={(event) => setPhoneCode(event.target.value)}
+                      placeholder="6 digits"
+                      style={{
+                        minHeight: 46,
+                        borderRadius: 13,
+                        border: "1px solid rgba(37,78,119,0.16)",
+                        padding: "0 12px",
+                        color: "#07172C",
+                        fontWeight: 900,
+                        fontSize: 14,
+                      }}
+                    />
+                  </label>
+                ) : null}
+                {phoneOtpPreview ? (
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      borderRadius: 13,
+                      border: "1px solid rgba(11,99,209,0.14)",
+                      background: "#EEF6FF",
+                      color: "#073E83",
+                      fontSize: 12,
+                      fontWeight: 1000,
+                      padding: "8px 10px",
+                    }}
+                  >
+                    Pilot code: {phoneOtpPreview}
+                  </div>
+                ) : null}
+                <PrimaryButton
+                  type="submit"
+                  disabled={phoneBusy || !phoneInput || (Boolean(phoneVerificationId) && !phoneCode)}
+                  stableHeight={46}
+                  fullWidth
+                  debugId="identity-integrity.phone-completion-submit"
+                >
+                  {phoneBusy
+                    ? "Working..."
+                    : phoneVerificationId
+                      ? "Confirm phone"
+                      : "Start phone check"}
+                </PrimaryButton>
+              </form>
+            ) : null}
+
+            {activeTask.key === "official_id" && !identitySignals.officialIdReady ? (
+              <form
+                onSubmit={handleRecordOfficialId}
+                data-identity-integrity-official-id-completion="true"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
+                  alignItems: "end",
+                }}
+              >
+                <label style={{ display: "grid", gap: 5 }}>
+                  <span style={{ color: "#334155", fontSize: 12, fontWeight: 1000 }}>
+                    Document
+                  </span>
+                  <select
+                    value={officialIdType}
+                    onChange={(event) => setOfficialIdType(event.target.value)}
+                    style={{
+                      minHeight: 46,
+                      borderRadius: 13,
+                      border: "1px solid rgba(37,78,119,0.16)",
+                      padding: "0 12px",
+                      color: "#07172C",
+                      fontWeight: 900,
+                      fontSize: 14,
+                      background: "#FFFFFF",
+                    }}
+                  >
+                    <option>Passport</option>
+                    <option>National ID</option>
+                    <option>Driving licence</option>
+                    <option>Voter card</option>
+                    <option>Local official ID</option>
+                  </select>
+                </label>
+                <label style={{ display: "grid", gap: 5 }}>
+                  <span style={{ color: "#334155", fontSize: 12, fontWeight: 1000 }}>
+                    Reference
+                  </span>
+                  <input
+                    value={officialIdReference}
+                    onChange={(event) => setOfficialIdReference(event.target.value)}
+                    placeholder="Last digits or reference"
+                    style={{
+                      minHeight: 46,
+                      borderRadius: 13,
+                      border: "1px solid rgba(37,78,119,0.16)",
+                      padding: "0 12px",
+                      color: "#07172C",
+                      fontWeight: 900,
+                      fontSize: 14,
+                    }}
+                  />
+                </label>
+                <label style={{ display: "grid", gap: 5 }}>
+                  <span style={{ color: "#334155", fontSize: 12, fontWeight: 1000 }}>
+                    Country
+                  </span>
+                  <input
+                    value={officialIdCountry}
+                    onChange={(event) => setOfficialIdCountry(event.target.value)}
+                    placeholder="GB, NG, GH..."
+                    style={{
+                      minHeight: 46,
+                      borderRadius: 13,
+                      border: "1px solid rgba(37,78,119,0.16)",
+                      padding: "0 12px",
+                      color: "#07172C",
+                      fontWeight: 900,
+                      fontSize: 14,
+                    }}
+                  />
+                </label>
+                <PrimaryButton
+                  type="submit"
+                  disabled={
+                    officialIdBusy ||
+                    !officialIdType ||
+                    !officialIdReference ||
+                    !officialIdCountry
+                  }
+                  stableHeight={46}
+                  fullWidth
+                  debugId="identity-integrity.official-id-completion-submit"
+                  style={{ gridColumn: "1 / -1" }}
+                >
+                  {officialIdBusy ? "Recording..." : "Record ID evidence"}
+                </PrimaryButton>
+              </form>
+            ) : null}
           </div>
         </div>
 

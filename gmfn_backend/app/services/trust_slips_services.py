@@ -11,6 +11,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.db.bank_models import ExpectedPayment
+from app.db.verification_models import IdentityVerificationCheck
 from app.db.models import (
     Clan,
     ClanMembership,
@@ -578,6 +579,45 @@ def _active_membership_count(db: Session, *, user_id: int) -> int:
     )
 
 
+def _community_footprint(db: Session, *, user_id: int) -> list[dict[str, Any]]:
+    rows = (
+        db.query(ClanMembership, Clan)
+        .join(Clan, Clan.id == ClanMembership.clan_id)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+        .all()
+    )
+
+    footprint: list[dict[str, Any]] = []
+    for membership, clan in rows:
+        clan_id = int(getattr(clan, "id", 0) or getattr(membership, "clan_id", 0) or 0)
+        community_code = (
+            _safe_str(getattr(clan, "community_code", None))
+            or (f"GSN-COM-{clan_id:04d}" if clan_id else "")
+        )
+        footprint.append(
+            {
+                "clan_id": clan_id,
+                "community_name": (
+                    _safe_str(getattr(clan, "marketplace_name", None))
+                    or _safe_str(getattr(clan, "name", None))
+                    or f"Community {clan_id}"
+                ),
+                "community_code": community_code,
+                "role": _safe_str(getattr(membership, "role", None), "member"),
+                "joined_at": (
+                    getattr(membership, "created_at", None).isoformat()
+                    if getattr(membership, "created_at", None)
+                    else None
+                ),
+            }
+        )
+    return footprint
+
+
 def _safe_positive_int(value: Any) -> int:
     try:
         parsed = int(value or 0)
@@ -605,9 +645,15 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
     if user is None:
         return {
             "bank_details_recorded": False,
+            "bank_verified": False,
             "bank_verification_label": "Bank check not connected yet",
+            "bank_verified_at": None,
             "driver_licence_recorded": False,
             "driver_licence_label": "Driving licence not shown",
+            "driver_licence_recorded_at": None,
+            "official_id_recorded": False,
+            "official_id_label": "Official ID not connected yet",
+            "official_id_recorded_at": None,
             "passport_verified": False,
             "passport_verification_label": "Passport check not connected yet",
         }
@@ -641,6 +687,26 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
     payout_bank_recorded = _payout_destination_is_recorded(payout)
     bank_recorded = entry_bank_recorded or payout_bank_recorded
     driver_recorded = bool(getattr(row, "driver_licence_recorded_at", None)) if row else False
+    official_id_check = (
+        db.query(IdentityVerificationCheck)
+        .filter(
+            IdentityVerificationCheck.user_id == int(user.id),
+            IdentityVerificationCheck.verification_type == "official_id",
+        )
+        .order_by(IdentityVerificationCheck.created_at.desc(), IdentityVerificationCheck.id.desc())
+        .first()
+    )
+    driver_check = (
+        db.query(IdentityVerificationCheck)
+        .filter(
+            IdentityVerificationCheck.user_id == int(user.id),
+            IdentityVerificationCheck.verification_type == "drivers_licence",
+        )
+        .order_by(IdentityVerificationCheck.created_at.desc(), IdentityVerificationCheck.id.desc())
+        .first()
+    )
+    official_id_recorded = official_id_check is not None
+    driver_recorded = driver_recorded or driver_check is not None
     bank_recorded_at = None
     if entry_bank_recorded and row:
         bank_recorded_at = getattr(row, "bank_details_recorded_at", None)
@@ -675,8 +741,23 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
             if row and getattr(row, "driver_licence_recorded_at", None)
             else None
         ),
-        "passport_verified": False,
-        "passport_verification_label": "Passport check not connected yet",
+        "official_id_recorded": official_id_recorded,
+        "official_id_label": (
+            "Official ID evidence recorded for review"
+            if official_id_recorded
+            else "Official ID not connected yet"
+        ),
+        "official_id_recorded_at": (
+            getattr(official_id_check, "created_at", None).isoformat()
+            if official_id_check and getattr(official_id_check, "created_at", None)
+            else None
+        ),
+        "passport_verified": official_id_recorded,
+        "passport_verification_label": (
+            "Official ID evidence recorded for review"
+            if official_id_recorded
+            else "Passport check not connected yet"
+        ),
     }
 
 
@@ -1003,6 +1084,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
     community_identity_confirmed = bool(
         community_context.get("current_user_is_active_member")
     )
+    community_footprint = _community_footprint(db, user_id=uid)
     identity_context = {
         "profile_image_url": getattr(user, "profile_image_url", None) if user else None,
         "gmfn_id": gmfn_id,
@@ -1015,6 +1097,9 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "driver_licence_recorded": entry_verification_context["driver_licence_recorded"],
         "driver_licence_label": entry_verification_context["driver_licence_label"],
         "driver_licence_recorded_at": entry_verification_context["driver_licence_recorded_at"],
+        "official_id_recorded": entry_verification_context["official_id_recorded"],
+        "official_id_label": entry_verification_context["official_id_label"],
+        "official_id_recorded_at": entry_verification_context["official_id_recorded_at"],
         "passport_verified": entry_verification_context["passport_verified"],
         "passport_verification_label": entry_verification_context["passport_verification_label"],
         "community_identity_confirmed": community_identity_confirmed,
@@ -1134,6 +1219,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "community": community,
         "identity_context": identity_context,
         "community_context": community_context,
+        "community_footprint": community_footprint,
         "cci_explainer": cci_explainer,
         "owner": owner,
         "phone_e164": getattr(user, "phone_e164", None) if user else None,
@@ -1145,6 +1231,8 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "bank_verification_label": entry_verification_context["bank_verification_label"],
         "driver_licence_recorded": entry_verification_context["driver_licence_recorded"],
         "driver_licence_label": entry_verification_context["driver_licence_label"],
+        "official_id_recorded": entry_verification_context["official_id_recorded"],
+        "official_id_label": entry_verification_context["official_id_label"],
         "passport_verified": entry_verification_context["passport_verified"],
         "passport_verification_label": entry_verification_context["passport_verification_label"],
         "community_identity_confirmed": community_identity_confirmed,
@@ -1177,6 +1265,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "cci_band": cci.get("cci_band"),
         "graph_score": graph_summary.get("graph_score"),
         "active_clan_count": active_community_count,
+        "active_community_count": active_community_count,
         "sponsor_count": graph_summary.get("sponsor_count"),
         "unique_counterparties": graph_summary.get("unique_counterparties"),
         "risk_flags": cci.get("risk_flags", []),
@@ -1200,6 +1289,8 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "cci_explainer": cci_explainer,
             "sponsor_count": graph_summary.get("sponsor_count"),
             "active_clan_count": active_community_count,
+            "active_community_count": active_community_count,
+            "community_footprint": community_footprint,
             "expiry_policy": "weekly",
             "expires_at": effective_expiry,
             "phone_verified": phone_verified,
@@ -1209,6 +1300,8 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "bank_verification_label": entry_verification_context["bank_verification_label"],
             "passport_verified": entry_verification_context["passport_verified"],
             "passport_verification_label": entry_verification_context["passport_verification_label"],
+            "official_id_recorded": entry_verification_context["official_id_recorded"],
+            "official_id_label": entry_verification_context["official_id_label"],
             "community_identity_confirmed": community_identity_confirmed,
             "community_identity_label": identity_context["community_identity_label"],
         },

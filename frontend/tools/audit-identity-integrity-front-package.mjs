@@ -106,8 +106,13 @@ assertContains(
 );
 
 assertContains(
-  /Not wired yet[\s\S]*?signed-in phone-code page[\s\S]*?Signed-in phone completion is still pending[\s\S]*?signed-in ID capture and review route[\s\S]*?Signed-in ID capture is still pending/,
-  "Identity Integrity must be honest that phone and official ID completion still need signed-in backend routes."
+  /startSignedInPhoneVerification[\s\S]*?confirmSignedInPhoneVerification[\s\S]*?data-identity-integrity-phone-completion="true"[\s\S]*?debugId="identity-integrity\.phone-completion-submit"/,
+  "Identity Integrity must provide the signed-in phone completion form instead of a dead phone requirement."
+);
+
+assertContains(
+  /recordSignedInOfficialId[\s\S]*?data-identity-integrity-official-id-completion="true"[\s\S]*?debugId="identity-integrity\.official-id-completion-submit"/,
+  "Identity Integrity must provide the signed-in official-ID evidence form instead of a dead ID requirement."
 );
 
 assertContains(

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -11,9 +11,11 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import EntryPhoneVerification
+from app.db.models import ClanMembership, EntryPhoneVerification, User
 from app.db.verification_models import IdentityVerificationCheck
+from app.services.trust_events_services import build_trust_meta, log_trust_event
 from app.services.verification_adapters.base import VerificationAdapterRequest
 from app.services.verification_router import (
     route_bank_verification,
@@ -45,6 +47,23 @@ class DriversLicenceVerificationIn(BaseModel):
 
 class OfficialIdRecordIn(BaseModel):
     verification_id: int = Field(..., gt=0)
+    document_type: str = Field(..., min_length=2, max_length=120)
+    document_reference: str = Field(..., min_length=2, max_length=160)
+    country: str = Field(..., min_length=2, max_length=64)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
+class SignedInPhoneStartIn(BaseModel):
+    phone_e164: str = Field(..., min_length=8, max_length=32)
+    country: Optional[str] = Field(default=None, max_length=64)
+
+
+class SignedInPhoneConfirmIn(BaseModel):
+    verification_id: int = Field(..., gt=0)
+    code: str = Field(..., min_length=3, max_length=12)
+
+
+class SignedInOfficialIdRecordIn(BaseModel):
     document_type: str = Field(..., min_length=2, max_length=120)
     document_reference: str = Field(..., min_length=2, max_length=160)
     country: str = Field(..., min_length=2, max_length=64)
@@ -102,6 +121,57 @@ def _normalize_region_code(value: object) -> Optional[str]:
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _normalize_phone(value: object) -> str:
+    raw = _clean_text(value)
+    if not raw:
+        return ""
+    compact = raw.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    if compact.startswith("00"):
+        compact = f"+{compact[2:]}"
+    elif compact and not compact.startswith("+"):
+        compact = f"+{compact}"
+    return compact
+
+
+def _display_name_for_user(user: User) -> str:
+    return (
+        _clean_text(getattr(user, "display_name", None))
+        or _clean_text(getattr(user, "email", None))
+        or f"User {int(user.id)}"
+    )
+
+
+def _signed_in_phone_delivery_mode() -> str:
+    configured = str(os.getenv("GMFN_ENTRY_PHONE_DELIVERY") or "").strip().lower()
+    if configured in {"preview", "pilot", "manual"} or str(os.getenv("GMFN_DEV_MODE") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        return "preview"
+    if configured in {"sms", "live", "provider", "pending-sms"}:
+        return "pending-sms"
+    return "pending-sms"
+
+
+def _generate_code() -> str:
+    return f"{secrets.randbelow(1000000):06d}"
+
+
+def _active_clan_id_for_user(db: Session, user_id: int) -> Optional[int]:
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+        .first()
+    )
+    return int(membership.clan_id) if membership else None
 
 
 def _json_text(data: Any) -> str:
@@ -251,6 +321,215 @@ def _serialize_check(row: IdentityVerificationCheck) -> dict[str, Any]:
 def _document_reference_last4(value: object) -> str:
     compact = "".join(ch for ch in _clean_text(value) if ch.isalnum())
     return compact[-4:] if compact else ""
+
+
+@router.post("/signed-in/phone/start", status_code=status.HTTP_201_CREATED)
+def start_signed_in_phone_verification(
+    payload: SignedInPhoneStartIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_user = db.get(User, int(current_user.id))
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="Signed-in user was not found")
+    phone = _normalize_phone(payload.phone_e164)
+    if not phone.startswith("+") or len(phone) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Phone number must be in international format, for example +447700900123.",
+        )
+
+    clash = (
+        db.query(User)
+        .filter(User.phone_e164 == phone, User.id != int(db_user.id))
+        .first()
+    )
+    if clash:
+        raise HTTPException(status_code=409, detail="This phone number is already used by another account.")
+
+    delivery_mode = _signed_in_phone_delivery_mode()
+    verification = EntryPhoneVerification(
+        display_name=_display_name_for_user(db_user),
+        phone_e164=phone,
+        email=_clean_text(getattr(db_user, "email", None)) or None,
+        phone_country_hint=_normalize_region_code(payload.country),
+        code=_generate_code(),
+        expires_at=_now() + timedelta(minutes=15),
+        verified_at=None,
+        consumed_at=None,
+    )
+    db.add(verification)
+    db.commit()
+    db.refresh(verification)
+
+    return {
+        "ok": True,
+        "verification_id": int(verification.id),
+        "phone_e164": phone,
+        "expires_at": verification.expires_at.isoformat(),
+        "delivery_mode": delivery_mode,
+        "otp_preview": verification.code if delivery_mode == "preview" else None,
+        "message": (
+            "Phone code created. Confirm the code to attach this phone to your signed-in identity."
+        ),
+    }
+
+
+@router.post("/signed-in/phone/confirm")
+def confirm_signed_in_phone_verification(
+    payload: SignedInPhoneConfirmIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_user = db.get(User, int(current_user.id))
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="Signed-in user was not found")
+    row = (
+        db.query(EntryPhoneVerification)
+        .filter(EntryPhoneVerification.id == int(payload.verification_id))
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Phone verification session not found")
+    if row.consumed_at is not None:
+        raise HTTPException(status_code=400, detail="Phone verification session has already been used")
+    if _verification_expired(row):
+        raise HTTPException(status_code=400, detail="Phone verification code has expired")
+    if _clean_text(row.email).lower() and _clean_text(row.email).lower() != _clean_text(getattr(db_user, "email", None)).lower():
+        raise HTTPException(status_code=403, detail="Phone verification session does not belong to this user")
+    if _clean_text(payload.code) != str(row.code):
+        raise HTTPException(status_code=400, detail="Verification code is not correct")
+
+    verified_at = _now()
+    row.verified_at = verified_at
+    row.consumed_at = verified_at
+    db_user.phone_e164 = row.phone_e164
+    db_user.phone_verified_at = verified_at
+    db.add(row)
+    db.add(db_user)
+
+    clan_id = _active_clan_id_for_user(db, int(db_user.id))
+    meta = build_trust_meta(
+        reason="signed_in_phone_verified",
+        note="Phone number was verified from the signed-in Identity Integrity task.",
+        system=True,
+        extra={
+            "verification_source": "identity.signed_in.phone.confirm",
+            "phone_e164": row.phone_e164,
+        },
+    )
+    log_trust_event(
+        db,
+        event_type="identity.phone_verified",
+        clan_id=clan_id,
+        actor_user_id=int(db_user.id),
+        subject_user_id=int(db_user.id),
+        meta=meta,
+        dedupe_key=f"signed-in-phone:{int(row.id)}:{int(db_user.id)}",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(db_user)
+
+    return {
+        "ok": True,
+        "verified": True,
+        "phone_e164": db_user.phone_e164,
+        "phone_verified_at": db_user.phone_verified_at.isoformat()
+        if db_user.phone_verified_at
+        else None,
+        "message": "Phone proof is now connected to your signed-in GSN identity.",
+    }
+
+
+@router.post(
+    "/signed-in/official-id/record",
+    response_model=VerificationCheckOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def record_signed_in_official_id(
+    payload: SignedInOfficialIdRecordIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_user = db.get(User, int(current_user.id))
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="Signed-in user was not found")
+    region_code = _normalize_region_code(payload.country)
+    document_type = _clean_text(payload.document_type) or "Official ID"
+    explanation = (
+        f"{document_type} evidence was recorded on the signed-in identity. "
+        "Live provider verification is not connected yet, so this is recorded evidence for review, not provider-verified identity."
+    )
+    check = IdentityVerificationCheck(
+        entry_phone_verification_id=None,
+        user_id=int(db_user.id),
+        verification_type="official_id",
+        region_code=region_code,
+        provider_key="official-id.signed-in-manual-record",
+        status="manual_review_required",
+        subject_reference=document_type,
+        confidence_score=25,
+        explanation=explanation,
+        submitted_payload_json=_json_text(payload.model_dump()),
+        normalized_identity_json=_json_text(
+            {
+                "display_name": _display_name_for_user(db_user),
+                "phone_e164": _clean_text(getattr(db_user, "phone_e164", None)) or None,
+                "document_type": document_type,
+                "document_reference_last4": _document_reference_last4(
+                    payload.document_reference
+                ),
+                "country": region_code or _clean_text(payload.country),
+            }
+        ),
+        provider_response_json=_json_text(
+            {
+                "provider_configured": False,
+                "provider_verified": False,
+                "manual_review": True,
+                "verification_suspended_for_pilot": True,
+                "document_type": document_type,
+                "document_reference_last4": _document_reference_last4(
+                    payload.document_reference
+                ),
+                "country": region_code or _clean_text(payload.country),
+            }
+        ),
+        verified_at=None,
+    )
+    db.add(check)
+    db.flush()
+
+    clan_id = _active_clan_id_for_user(db, int(db_user.id))
+    meta = build_trust_meta(
+        reason="signed_in_official_id_recorded",
+        note=explanation,
+        system=True,
+        extra={
+            "verification_check_id": int(check.id),
+            "verification_type": "official_id",
+            "verification_status": check.status,
+            "provider_key": check.provider_key,
+            "region_code": region_code,
+            "provider_verified": False,
+        },
+    )
+    log_trust_event(
+        db,
+        event_type="identity.official_id_recorded",
+        clan_id=clan_id,
+        actor_user_id=int(db_user.id),
+        subject_user_id=int(db_user.id),
+        meta=meta,
+        dedupe_key=f"signed-in-official-id:{int(check.id)}:{int(db_user.id)}",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(check)
+    return _serialize_check(check)
 
 
 @router.post("/bank/verify", response_model=VerificationCheckOut, status_code=status.HTTP_201_CREATED)
