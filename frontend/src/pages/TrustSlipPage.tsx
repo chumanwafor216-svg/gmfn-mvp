@@ -12,7 +12,6 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import {
-  TrustPaperBadgeIcon,
   TrustPaperIcon,
   TrustPaperSeal,
   TrustPaperSecurityFooter,
@@ -564,7 +563,10 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    flex: "0 0 auto",
+    boxSizing: "border-box",
     minHeight: 40,
+    minWidth: 96,
     padding: "9px 13px",
     borderRadius: 13,
     border: "1px solid rgba(121,149,190,0.18)",
@@ -573,9 +575,10 @@ function collapseToggle(): React.CSSProperties {
     boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
     fontWeight: 900,
     fontSize: 13,
+    lineHeight: 1.1,
     textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "normal",
+    whiteSpace: "nowrap",
   };
 }
 
@@ -2804,6 +2807,8 @@ export default function TrustSlipPage() {
                     "TrustSlip code is not ready yet."
                   )
                 }
+                stableHeight={isCompact ? 46 : 50}
+                minWidth={isCompact ? undefined : 176}
                 debugId="trust-slip.copy-code"
               >
                 Copy TrustSlip Code
@@ -2817,6 +2822,8 @@ export default function TrustSlipPage() {
                     "Verify link is not ready yet."
                   )
                 }
+                stableHeight={isCompact ? 46 : 50}
+                minWidth={isCompact ? undefined : 158}
                 debugId="trust-slip.copy-verify-link"
               >
                 Copy Verify Link
@@ -2830,6 +2837,8 @@ export default function TrustSlipPage() {
                     "GSN ID is not ready yet."
                   )
                 }
+                stableHeight={isCompact ? 46 : 50}
+                minWidth={isCompact ? undefined : 124}
                 debugId="trust-slip.copy-gmfn-id"
               >
                 Copy GSN ID
@@ -2846,6 +2855,8 @@ export default function TrustSlipPage() {
                     "Print is not available in this browser. Use Copy snapshot or Copy verify link."
                   );
                 }}
+                stableHeight={isCompact ? 46 : 50}
+                minWidth={isCompact ? undefined : 136}
                 debugId="trust-slip.print"
               >
                 Print TrustSlip
@@ -2853,6 +2864,8 @@ export default function TrustSlipPage() {
 
               <SubtleButton
                 onClick={copyTrustSlipSnapshot}
+                stableHeight={isCompact ? 46 : 50}
+                minWidth={isCompact ? undefined : 190}
                 debugId="trust-slip.copy-snapshot"
               >
                 Copy TrustSlip snapshot
@@ -3083,6 +3096,7 @@ export default function TrustSlipPage() {
           </div>
           <SubtleButton
             onClick={() => toggleSection("reader")}
+            stableHeight={42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-reader"
           >
@@ -3127,6 +3141,7 @@ export default function TrustSlipPage() {
           </div>
           <SubtleButton
             onClick={() => toggleSection("nextActions")}
+            stableHeight={42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-help"
           >
@@ -3189,6 +3204,7 @@ export default function TrustSlipPage() {
 
           <SubtleButton
             onClick={() => toggleSection("merchantVerify")}
+            stableHeight={42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-merchant-verify"
           >
@@ -3326,6 +3342,9 @@ export default function TrustSlipPage() {
                   <StableCtaLink
                     to={verifyPath}
                     kind="primary"
+                    stableHeight={isCompact ? 46 : 50}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 190}
                     debugId="trust-slip.open-verify"
                   >
                     Open TrustSlip Verify
@@ -3339,6 +3358,9 @@ export default function TrustSlipPage() {
                         "TrustSlip verify is not ready yet. Refresh TrustSlip first so a public code is available."
                       );
                     }}
+                    stableHeight={isCompact ? 46 : 50}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 160}
                     debugId="trust-slip.open-verify"
                   >
                     Verify not ready
@@ -3353,6 +3375,9 @@ export default function TrustSlipPage() {
                       "Verify link is not ready yet."
                     )
                   }
+                  stableHeight={isCompact ? 46 : 50}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 168}
                   debugId="trust-slip.copy-verify-link-merchant"
                 >
                   Copy Verify Link
@@ -3364,6 +3389,9 @@ export default function TrustSlipPage() {
                     target="_blank"
                     rel="noreferrer"
                     kind="soft"
+                    stableHeight={isCompact ? 46 : 50}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 176}
                     debugId="trust-slip.open-merchant-verify"
                   >
                     Open Public Verify
@@ -3394,6 +3422,7 @@ export default function TrustSlipPage() {
 
           <SubtleButton
             onClick={() => toggleSection("evidence")}
+            stableHeight={42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-evidence"
           >
@@ -3662,6 +3691,7 @@ export default function TrustSlipPage() {
 
           <SubtleButton
             onClick={() => toggleSection("notes")}
+            stableHeight={42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-notes"
           >
@@ -3714,7 +3744,13 @@ export default function TrustSlipPage() {
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <StableCtaLink to={routes.trust} debugId="trust-slip.open-trust">
+                <StableCtaLink
+                  to={routes.trust}
+                  stableHeight={isCompact ? 44 : 48}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 172}
+                  debugId="trust-slip.open-trust"
+                >
                   Open Trust Passport
                 </StableCtaLink>
               </div>
@@ -3746,6 +3782,9 @@ export default function TrustSlipPage() {
                   to={GMFN_EXEC_SUMMARY_URL}
                   target="_blank"
                   rel="noreferrer"
+                  stableHeight={isCompact ? 44 : 48}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 214}
                   debugId="trust-slip.open-executive-summary"
                 >
                   Open Executive Summary
@@ -3754,6 +3793,9 @@ export default function TrustSlipPage() {
                 <StableCtaLink
                   to={routes.guide}
                   kind="soft"
+                  stableHeight={isCompact ? 44 : 48}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 126}
                   debugId="trust-slip.open-guide"
                 >
                   Open Guide

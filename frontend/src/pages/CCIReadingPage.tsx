@@ -355,14 +355,32 @@ export default function CCIReadingPage() {
             <div style={{ marginTop: 10, ...helperText() }}>
               {loading ? "Loading the consistency reading..." : cci.whyText}
             </div>
-            <CardActionRow style={{ marginTop: 16 }}>
-              <StableCtaLink to={routes.identity} debugId="cci-reading.identity">
+            <CardActionRow minHeight={isCompact ? 44 : 48} style={{ marginTop: 16 }}>
+              <StableCtaLink
+                to={routes.identity}
+                stableHeight={isCompact ? 44 : 48}
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 210}
+                debugId="cci-reading.identity"
+              >
                 Open Identity & Integrity
               </StableCtaLink>
-              <StableCtaLink to={routes.trust} debugId="cci-reading.trust">
+              <StableCtaLink
+                to={routes.trust}
+                stableHeight={isCompact ? 44 : 48}
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 178}
+                debugId="cci-reading.trust"
+              >
                 Open Trust Passport
               </StableCtaLink>
-              <SecondaryButton onClick={copyCciSnapshot} debugId="cci-reading.copy-snapshot">
+              <SecondaryButton
+                onClick={copyCciSnapshot}
+                stableHeight={isCompact ? 44 : 48}
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 216}
+                debugId="cci-reading.copy-snapshot"
+              >
                 Copy consistency snapshot
               </SecondaryButton>
             </CardActionRow>

@@ -266,7 +266,10 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    flex: "0 0 auto",
+    boxSizing: "border-box",
     minHeight: 38,
+    minWidth: 94,
     padding: "8px 12px",
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
@@ -274,8 +277,9 @@ function collapseToggle(): React.CSSProperties {
     color: "#24415C",
     fontWeight: 800,
     fontSize: 13,
+    lineHeight: 1.1,
     cursor: "pointer",
-    whiteSpace: "normal",
+    whiteSpace: "nowrap",
   };
 }
 
@@ -2214,6 +2218,7 @@ export default function IdentityIntegrityPage() {
             onClick={copyGmfnId}
             disabled={!gmfnId || gmfnId === "Pending"}
             stableHeight={isCompact ? 46 : 52}
+            minWidth={isCompact ? undefined : 132}
             debugId="identity-integrity.copy-gmfn-id"
           >
             Copy GSN ID
@@ -2223,6 +2228,7 @@ export default function IdentityIntegrityPage() {
             onClick={copyTrustSlipCode}
             disabled={!trustSlipCode}
             stableHeight={isCompact ? 46 : 52}
+            minWidth={isCompact ? undefined : 146}
             debugId="identity-integrity.copy-trust-slip-code"
           >
             Copy TrustSlip
@@ -2231,6 +2237,7 @@ export default function IdentityIntegrityPage() {
           <SubtleButton
             onClick={copyIdentitySnapshot}
             stableHeight={isCompact ? 46 : 52}
+            minWidth={isCompact ? undefined : 140}
             debugId="identity-integrity.copy-snapshot"
           >
             Copy snapshot
@@ -2353,6 +2360,7 @@ export default function IdentityIntegrityPage() {
             onClick={() => openIdentityTask(activeTask)}
             stableHeight={isCompact ? 48 : 52}
             fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 190}
             debugId="identity-integrity.active-task-action"
             style={{
               borderRadius: 14,
@@ -2810,6 +2818,7 @@ export default function IdentityIntegrityPage() {
           "Local trust, wider consistency, and TrustSlip status.",
           <SubtleButton
             onClick={() => toggleSection("summary")}
+            stableHeight={40}
             style={collapseToggle()}
             debugId="identity-integrity.toggle-summary"
           >
@@ -2938,6 +2947,7 @@ export default function IdentityIntegrityPage() {
             </span>
             <SubtleButton
               onClick={() => toggleSection("continuity")}
+              stableHeight={40}
               style={collapseToggle()}
               debugId="identity-integrity.toggle-continuity"
             >
@@ -3025,6 +3035,7 @@ export default function IdentityIntegrityPage() {
             </span>
             <SubtleButton
               onClick={() => toggleSection("recovery")}
+              stableHeight={40}
               style={collapseToggle()}
               debugId="identity-integrity.toggle-recovery"
             >
@@ -3135,6 +3146,9 @@ export default function IdentityIntegrityPage() {
                 type="submit"
                 busy={recoveryBusy}
                 busyLabel="Saving..."
+                stableHeight={48}
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 260}
                 debugId="identity-integrity.recovery-save"
               >
                 Save private recovery challenge
@@ -3185,6 +3199,9 @@ export default function IdentityIntegrityPage() {
                 busy={recoveryBusy}
                 busyLabel="Checking..."
                 disabled={recovery.locked}
+                stableHeight={48}
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 280}
                 debugId="identity-integrity.recovery-verify"
               >
                 Verify private recovery challenge
@@ -3201,6 +3218,7 @@ export default function IdentityIntegrityPage() {
           "What helped, what weakened, and the next repair line.",
           <SubtleButton
             onClick={() => toggleSection("reasons")}
+            stableHeight={40}
             style={collapseToggle()}
             debugId="identity-integrity.toggle-reasons"
           >
@@ -3314,6 +3332,7 @@ export default function IdentityIntegrityPage() {
             </span>
             <SubtleButton
               onClick={() => toggleSection("timeline")}
+              stableHeight={40}
               style={collapseToggle()}
               debugId="identity-integrity.toggle-timeline"
             >
@@ -3398,6 +3417,7 @@ export default function IdentityIntegrityPage() {
           "The next useful move after the identity reading.",
           <SubtleButton
             onClick={() => toggleSection("next")}
+            stableHeight={40}
             style={collapseToggle()}
             debugId="identity-integrity.toggle-next"
           >
@@ -3435,6 +3455,9 @@ export default function IdentityIntegrityPage() {
                 <StableCtaLink
                   to={nextMoveTo}
                   kind="primary"
+                  stableHeight={isCompact ? 46 : 50}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 210}
                   debugId="identity-integrity.next-move"
                 >
                   {nextMoveLabel}
@@ -3442,6 +3465,9 @@ export default function IdentityIntegrityPage() {
 
                 <StableCtaLink
                   to={routes.trustSlip}
+                  stableHeight={isCompact ? 46 : 50}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 132}
                   debugId="identity-integrity.open-trust-slip"
                 >
                   TrustSlip
@@ -3449,6 +3475,9 @@ export default function IdentityIntegrityPage() {
 
                 <StableCtaLink
                   to={routes.notifications}
+                  stableHeight={isCompact ? 46 : 50}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 146}
                   debugId="identity-integrity.open-notifications"
                 >
                   Action Inbox

@@ -41082,3 +41082,53 @@ GSN-branded invite composer and invite-entry continuity.
   - This means the live `gmfn-api` service is still not serving the backend code
     that exists locally on `main`. The next step needs Render deploy/service
     investigation, not more Identity Integrity UI changes.
+
+### Trust inner-page button stabilization pass (2026-06-09)
+
+- Trigger:
+  - product owner saw a payment failure warning and asked to use the meantime
+    for button stabilization from the Trust/backward inner pages while payment
+    details are being updated.
+- Unabated truth:
+  - the payment warning may affect hosting/deploy/account health, but the
+    jumpy-button problem addressed here is frontend geometry. It is separate
+    from the live API issue where signed-in identity evidence routes still
+    returned `404` after deploy.
+- Changed:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - collapse toggles now have fixed width, no wrapping, fixed height, and
+      fixed flex behavior;
+    - copy, active-task, recovery-save, recovery-verify, and next-step buttons
+      now have stable heights plus desktop minimum widths.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - collapse toggles now have fixed width, no wrapping, fixed height, and
+      fixed flex behavior;
+    - TrustSlip copy/print/snapshot actions, merchant-verify actions, notes,
+      evidence, help, reader toggles, and support links now have stable heights
+      and desktop minimum widths;
+    - removed an unused `TrustPaperBadgeIcon` import caught by lint.
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - Identity & Integrity, Trust Passport, and copy-snapshot actions now have
+      stable heights, compact full-width phone behavior, and desktop minimum
+      widths.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now explicitly rejects losing the fixed geometry on the Trust inner-page
+      actions above.
+- Verification:
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx src/pages/TrustSlipPage.tsx src/pages/CCIReadingPage.tsx tools/audit-button-stability.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild `spawn EPERM`;
+    elevated `npm run build` from `frontend` passed.
+- Remaining risk:
+  - this is a source/audit/build-verified button geometry pass, not a live phone
+    tactile test. The product owner should still check the Trust inner pages on
+    the physical phone after deploy.
+  - This does not fix the live signed-in identity evidence route mismatch; that
+    still needs Render/backend deployment investigation.

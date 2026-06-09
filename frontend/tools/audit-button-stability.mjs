@@ -512,6 +512,12 @@ assertContains(
   "CCI reading must use shared stable CTA primitives and shared CTA resolution for identity, trust, and copy actions."
 );
 
+assertContains(
+  "src/pages/CCIReadingPage.tsx",
+  /stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?debugId="cci-reading\.identity"[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 178\}[\s\S]*?debugId="cci-reading\.trust"[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 216\}[\s\S]*?debugId="cci-reading\.copy-snapshot"/,
+  "CCI reading inner actions must keep fixed height and desktop width so identity/trust/copy buttons do not jump."
+);
+
 assertNotContains(
   "src/pages/CCIReadingPage.tsx",
   /(import OriginLink|function (actionBtn|stableTapStyle)\(|actionBtn\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app)/,
@@ -572,6 +578,12 @@ assertContains(
   "TrustSlip must use shared stable primitives and shared CTA resolution for copy, collapse, verification, and supporting document actions."
 );
 
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /function collapseToggle\(\): React\.CSSProperties \{[\s\S]*?minWidth: 96[\s\S]*?whiteSpace: "nowrap"[\s\S]*?stableHeight=\{isCompact \? 46 : 50\}[\s\S]*?minWidth=\{isCompact \? undefined : 176\}[\s\S]*?debugId="trust-slip\.copy-code"[\s\S]*?stableHeight=\{42\}[\s\S]*?debugId="trust-slip\.toggle-reader"[\s\S]*?stableHeight=\{isCompact \? 46 : 50\}[\s\S]*?debugId="trust-slip\.open-verify"[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?debugId="trust-slip\.open-guide"/,
+  "TrustSlip inner proof actions and disclosure toggles must keep fixed geometry on mobile and desktop."
+);
+
 assertNotContains(
   "src/pages/TrustSlipPage.tsx",
   /(import OriginLink|function (actionBtn|stableTapStyle|buttonGuardProps)\(|const stableTapTarget|guardButtonPress|actionBtn\(|stableTapStyle\(|buttonGuardProps\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app)/,
@@ -582,6 +594,12 @@ assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
   /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="identity-integrity\.copy-gmfn-id"[\s\S]*?debugId="identity-integrity\.toggle-summary"[\s\S]*?debugId="identity-integrity\.recovery-save"[\s\S]*?debugId="identity-integrity\.toggle-next"[\s\S]*?debugId="identity-integrity\.open-notifications"/,
   "Identity & Integrity must use shared stable primitives and shared CTA resolution for copy, recovery, collapse, and next-step actions."
+);
+
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
+  /function collapseToggle\(\): React\.CSSProperties \{[\s\S]*?minWidth: 94[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?debugId="identity-integrity\.copy-gmfn-id"[\s\S]*?stableHeight=\{40\}[\s\S]*?debugId="identity-integrity\.toggle-summary"[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="identity-integrity\.recovery-save"[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?debugId="identity-integrity\.next-move"/,
+  "Identity & Integrity inner copy, collapse, recovery, and next-step buttons must keep fixed geometry."
 );
 
 assertNotContains(
