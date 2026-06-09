@@ -2279,7 +2279,7 @@ function marketplaceInlineActionsStyle(
     gridTemplateColumns: isCompact
       ? "repeat(2, minmax(0, 1fr))"
       : "repeat(auto-fit, minmax(168px, 1fr))",
-    gridAutoRows: isCompact ? "52px" : "58px",
+    gridAutoRows: "58px",
     gap: 8,
     alignItems: "stretch",
     alignContent: "start",
@@ -2296,9 +2296,9 @@ function marketplaceInlineActionStyle(
   return {
     ...marketplaceActionStyle(kind, disabled),
     width: "100%",
-    height: _isCompact ? 52 : 58,
-    minHeight: _isCompact ? 52 : 58,
-    maxHeight: _isCompact ? 52 : 58,
+    height: 58,
+    minHeight: 58,
+    maxHeight: 58,
     padding: _isCompact ? "0 8px" : "0 11px",
     pointerEvents: "auto",
     touchAction: "manipulation",
@@ -2315,20 +2315,16 @@ function marketplaceMoneyPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
     marginTop: isCompact ? 12 : 16,
     display: "grid",
-    gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
+    gridTemplateColumns: "1fr",
     gap: isCompact ? 8 : 12,
     overflowAnchor: "none",
     transition: "none",
   };
 }
 
-function marketplaceMoneyRouteCardStyle(
-  isCompact: boolean,
-  wide = false
-): React.CSSProperties {
+function marketplaceMoneyRouteCardStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? (wide ? 84 : 112) : 150,
-    gridColumn: isCompact && wide ? "1 / -1" : undefined,
+    minHeight: isCompact ? 92 : 150,
     borderRadius: isCompact ? 16 : 24,
     border: "1px solid rgba(16,37,59,0.08)",
     background:
@@ -2338,17 +2334,13 @@ function marketplaceMoneyRouteCardStyle(
     padding: isCompact ? "10px" : "22px 24px",
     display: "grid",
     gridTemplateColumns: isCompact
-      ? wide
-        ? "42px minmax(0, 1fr) auto"
-        : "38px minmax(0, 1fr)"
+      ? "50px minmax(0, 1fr) auto"
       : "92px minmax(0, 1fr) auto",
     gridTemplateAreas: isCompact
-      ? wide
-        ? '"icon text status"'
-        : '"icon status" "text text"'
+      ? '"icon text status"'
       : '"icon text status"',
     gap: isCompact ? "9px" : "14px 24px",
-    alignItems: wide || !isCompact ? "center" : "start",
+    alignItems: "center",
     overflow: "hidden",
     overflowAnchor: "none",
     transform: "none",
@@ -6253,7 +6245,7 @@ export default function MarketplacePage() {
 
         {sectionsOpen.money ? (
           <div style={marketplaceMoneyPanelStyle(isCompact)}>
-            <div style={marketplaceMoneyRouteCardStyle(isCompact, true)}>
+            <div style={marketplaceMoneyRouteCardStyle(isCompact)}>
               <span
                 aria-hidden="true"
                 style={marketplaceMoneyIconBubbleStyle(isCompact, "soft")}

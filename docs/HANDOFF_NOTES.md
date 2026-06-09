@@ -40621,3 +40621,38 @@ GSN-branded invite composer and invite-entry continuity.
     failure is in `MarketplacePage.tsx`, not the Loans/Support or Money-Out
     files changed here, and should be handled in the next Marketplace guard
     pass rather than silently mixed into this payout fix.
+
+### Marketplace geometry audit repair (2026-06-09)
+
+- Trigger:
+  - continuing from the Loans & Support pass, the remaining known blocker was
+    `npm --prefix frontend run audit:button-stability`, which failed on
+    Marketplace grouped-lane and money-detail geometry guard patterns.
+- Fix:
+  - `frontend/src/pages/MarketplacePage.tsx` now restores the stricter
+    Marketplace inline action geometry: all inline action rows and buttons use
+    a fixed 58px height instead of the compact 52px variant.
+  - Marketplace money route cards now use one phone-safe geometry contract:
+    compact cards use a 92px minimum height, a `50px minmax(0, 1fr) auto`
+    grid, the `icon text status` area layout, hidden overflow, no transform,
+    no transition, and a single-column money panel on phone to avoid squeezed
+    text columns.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now cages the stricter
+    58px Marketplace inline-action contract so tap stability and button
+    stability guards agree.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-mobile-tap-stability.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm --prefix frontend run build` hit Windows `esbuild` spawn
+    `EPERM`; approved elevated `npm run build` from `frontend` passed.
+- Remaining risk:
+  - This repairs the Marketplace geometry guard and prevents one source of
+    button jumpiness. It is not a full visual phone review of every Marketplace
+    lane; the next page-by-page Marketplace work should still inspect Money
+    Pool, ROSCA, Support Request, and Trusted Trade one lane at a time on
+    phone.
