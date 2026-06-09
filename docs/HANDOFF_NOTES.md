@@ -41302,3 +41302,39 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining risk:
   - physical-phone testing should still confirm the tightened Money Out
     controls feel stable under real tap/scroll behavior.
+
+### Payment Rails page-body/button polish (2026-06-09)
+
+- Trigger:
+  - continuing the backwards inner-page tightening pass after Money Out;
+  - Payment Rails still had a long raw-response toggle label and text-only
+    route tiles that could feel loose beside the newer SVG-led finance pages.
+- Changed:
+  - `frontend/src/pages/PaymentRailsPage.tsx`
+    - raw-response toggle is now compact (`Show raw` / `Hide raw`) with
+      explicit stable height/min-width and no-wrap geometry;
+    - route tiles now use `TrustPaperIcon` SVG pictograms for Money In,
+      Money Out, Readiness, Workbench, Marketplace, and Community;
+    - long helper copy was shortened so each route choice reads quickly on
+      phone without turning into a paragraph.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages the Payment Rails no-wrap soft controls, compact raw toggle,
+      SVG-led route headings, shortened route labels, and absence of old long
+      labels/mojibake glyphs.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm exec -- eslint src/pages/PaymentRailsPage.tsx tools/audit-button-stability.mjs`
+    from the `frontend` directory.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild `spawn EPERM`;
+    elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this does not change rail data, payment routing, wallet, bank, ledger,
+    identity evidence, or backend API behavior. It is a route-local UI
+    tightening/passport-style icon polish.
+- Remaining risk:
+  - physical-phone testing is still needed after deploy to confirm the compact
+    route tiles feel stable in the real mobile browser.

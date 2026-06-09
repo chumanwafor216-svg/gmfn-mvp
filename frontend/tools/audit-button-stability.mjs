@@ -752,6 +752,30 @@ assertContains(
   "Payment Rails must use shared stable CTA primitives and shared CTA resolution for raw-response toggle and next-route tiles."
 );
 
+assertContains(
+  "src/pages/PaymentRailsPage.tsx",
+  /import \{ TrustPaperIcon \} from "\.\.\/components\/TrustPaperMarks";[\s\S]*?function paymentRailsSoftButtonStyle\(\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?function routeTileHeading\([\s\S]*?<TrustPaperIcon name=\{icon\}[\s\S]*?whiteSpace: "nowrap"/,
+  "Payment Rails must keep no-wrap soft controls and SVG-led route tile headings."
+);
+
+assertContains(
+  "src/pages/PaymentRailsPage.tsx",
+  /minWidth=\{112\}[\s\S]*?stableHeight=\{42\}[\s\S]*?debugId="payment-rails\.toggle-raw"[\s\S]*?Hide raw[\s\S]*?Show raw/,
+  "Payment Rails raw-response toggle must keep compact stable geometry and labels."
+);
+
+assertContains(
+  "src/pages/PaymentRailsPage.tsx",
+  /routeTileHeading\("wallet", "Money In"\)[\s\S]*?routeTileHeading\("bank", "Money Out"\)[\s\S]*?routeTileHeading\("shield", "Readiness"\)[\s\S]*?routeTileHeading\("briefcase", "Workbench"\)[\s\S]*?routeTileHeading\("shop", "Marketplace"\)[\s\S]*?routeTileHeading\("community", "Community"\)/,
+  "Payment Rails next-route tiles must keep compact SVG-led labels."
+);
+
+assertNotContains(
+  "src/pages/PaymentRailsPage.tsx",
+  /(Hide raw response|Show raw response|Loan Readiness|Loan Workbench|Open this when|support-continuation|actively withdrawing|actively paying|ð|â„|ï¸|Ÿ)/,
+  "Payment Rails must not keep long raw-toggle/route labels or mojibake glyphs."
+);
+
 assertNotContains(
   "src/pages/PaymentRailsPage.tsx",
   /(import OriginLink|function stableTapStyle\(|softBtn\(|routeTile\(|stableTapStyle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app)/,

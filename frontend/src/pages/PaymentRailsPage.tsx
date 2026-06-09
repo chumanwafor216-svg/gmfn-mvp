@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
+import { TrustPaperIcon } from "../components/TrustPaperMarks";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -82,6 +83,9 @@ function paymentRailsSoftButtonStyle(): React.CSSProperties {
       "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
     fontWeight: 900,
     fontSize: 13,
+    whiteSpace: "nowrap",
+    flex: "0 0 auto",
+    transition: "none",
   };
 }
 
@@ -160,6 +164,38 @@ function helperText(): React.CSSProperties {
     fontSize: 14.5,
     lineHeight: 1.75,
   };
+}
+
+function routeTileHeading(
+  icon: React.ComponentProps<typeof TrustPaperIcon>["name"],
+  label: string
+): React.ReactElement {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        color: "#0B1F33",
+        fontWeight: 1000,
+        fontSize: 17,
+        lineHeight: 1.25,
+      }}
+    >
+      <TrustPaperIcon name={icon} size={18} color="#164AAE" strokeWidth={2.4} />
+      <span
+        style={{
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  );
 }
 
 function safeStr(x: any): string {
@@ -958,11 +994,12 @@ export default function PaymentRailsPage() {
             >
               <SubtleButton
                 onClick={() => setShowRaw((prev) => !prev)}
+                minWidth={112}
                 stableHeight={42}
                 debugId="payment-rails.toggle-raw"
                 style={paymentRailsSoftButtonStyle()}
               >
-                {showRaw ? "Hide raw response" : "Show raw response"}
+                {showRaw ? "Hide raw" : "Show raw"}
               </SubtleButton>
             </div>
           </div>
@@ -1170,18 +1207,9 @@ export default function PaymentRailsPage() {
             fullWidth
             style={routeTileStyle(true)}
           >
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 1000,
-                fontSize: 17,
-                lineHeight: 1.3,
-              }}
-            >
-              Money In
-            </div>
+            {routeTileHeading("wallet", "Money In")}
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Open this when you are actively paying into the pool.
+              Pay into the pool.
             </div>
           </StableCtaLink>
 
@@ -1192,18 +1220,9 @@ export default function PaymentRailsPage() {
             fullWidth
             style={routeTileStyle(false)}
           >
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 1000,
-                fontSize: 17,
-                lineHeight: 1.3,
-              }}
-            >
-              Money Out
-            </div>
+            {routeTileHeading("bank", "Money Out")}
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Open this when you are actively withdrawing or checking payout route readiness.
+              Withdraw or check payout readiness.
             </div>
           </StableCtaLink>
 
@@ -1214,18 +1233,9 @@ export default function PaymentRailsPage() {
             fullWidth
             style={routeTileStyle(false)}
           >
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 1000,
-                fontSize: 17,
-                lineHeight: 1.3,
-              }}
-            >
-              Loan Readiness
-            </div>
+            {routeTileHeading("shield", "Readiness")}
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Open this when the money question has already become a support-continuation question.
+              Continue a support-backed money path.
             </div>
           </StableCtaLink>
 
@@ -1236,18 +1246,9 @@ export default function PaymentRailsPage() {
             fullWidth
             style={routeTileStyle(false)}
           >
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 1000,
-                fontSize: 17,
-                lineHeight: 1.3,
-              }}
-            >
-              Loan Workbench
-            </div>
+            {routeTileHeading("briefcase", "Workbench")}
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Open this when the support flow is already deep and operational.
+              Handle deeper support work.
             </div>
           </StableCtaLink>
 
@@ -1258,18 +1259,9 @@ export default function PaymentRailsPage() {
             fullWidth
             style={routeTileStyle(false)}
           >
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 1000,
-                fontSize: 17,
-                lineHeight: 1.3,
-              }}
-            >
-              Marketplace
-            </div>
+            {routeTileHeading("shop", "Marketplace")}
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Go back to your community page after the current money reading is complete.
+              Return to marketplace lanes.
             </div>
           </StableCtaLink>
 
@@ -1280,18 +1272,9 @@ export default function PaymentRailsPage() {
             fullWidth
             style={routeTileStyle(false)}
           >
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 1000,
-                fontSize: 17,
-                lineHeight: 1.3,
-              }}
-            >
-              Community Home
-            </div>
+            {routeTileHeading("community", "Community")}
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-              Return to the wider community page.
+              Return to community home.
             </div>
           </StableCtaLink>
         </div>
