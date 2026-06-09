@@ -72,6 +72,7 @@ export type WelcomeIntent = "invited" | "founder" | "approved" | "existing";
 type RequestOptions = {
   header_clan_id?: number | null;
   quiet?: boolean;
+  timeoutMs?: number;
 };
 
 class HttpStatusError extends Error {
@@ -81,6 +82,34 @@ class HttpStatusError extends Error {
     super(message);
     this.name = "HttpStatusError";
     this.status = status;
+  }
+}
+
+const DEFAULT_JSON_TIMEOUT_MS = 30000;
+const DEFAULT_MULTIPART_TIMEOUT_MS = 60000;
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
   }
 }
 
@@ -415,11 +444,15 @@ async function httpJson(
 
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
-  const res = await fetch(buildUrl(path), {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const res = await fetchWithTimeout(
+    buildUrl(path),
+    {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    },
+    options?.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS
+  );
 
   if (!res.ok) {
     const message = await parseError(res);
@@ -485,14 +518,27 @@ async function httpForm(path: string, form: Record<string, any>): Promise<any> {
   return readJsonOrTextSafe(res);
 }
 
-async function httpMultipart(path: string, form: FormData): Promise<any> {
-  const res = await fetch(buildUrl(path), {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
+async function httpMultipart(
+  path: string,
+  form: FormData,
+  options?: RequestOptions
+): Promise<any> {
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
+
+  const tok = getAccessToken();
+  if (tok) headers["Authorization"] = `Bearer ${tok}`;
+
+  const res = await fetchWithTimeout(
+    buildUrl(path),
+    {
+      method: "POST",
+      headers,
+      body: form,
     },
-    body: form,
-  });
+    options?.timeoutMs ?? DEFAULT_MULTIPART_TIMEOUT_MS
+  );
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return readJsonOrTextSafe(res);
@@ -934,7 +980,9 @@ export async function recordSignedInIdentityPhoto(payload: {
   const note = String(payload?.note || "").trim();
   if (note) form.append("note", note);
   form.append("file", payload.file);
-  return httpMultipart("/entry/signed-in/identity-photo/record", form);
+  return httpMultipart("/entry/signed-in/identity-photo/record", form, {
+    timeoutMs: 60000,
+  });
 }
 
 export async function submitJoinEntry(payload: Record<string, any>): Promise<any> {

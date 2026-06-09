@@ -41038,3 +41038,34 @@ GSN-branded invite composer and invite-entry continuity.
   - CCI / trust score policy still needs a later explicit decision on how much
     recorded-only evidence should affect numerical trust readings versus
     verified evidence.
+
+### Live identity evidence failure triage (2026-06-09)
+
+- Trigger:
+  - product owner tested on phone and reported that selfie/photo evidence stayed
+    on `Recording...`, passport details gave no visible completion, phone check
+    returned `not found`, and repeated bank/wallet saves still did not reflect
+    in Identity Overview.
+- Unabated truth:
+  - A live check of `https://gmfn-api.onrender.com/openapi.json` showed
+    `/trust-slips/me` and `/withdrawal-destinations/me`, but did not show the
+    newer signed-in identity routes:
+    `/entry/signed-in/phone/start`,
+    `/entry/signed-in/phone/confirm`,
+    `/entry/signed-in/official-id/record`, or
+    `/entry/signed-in/identity-photo/record`.
+  - If the deployed API is missing those routes, the live phone cannot complete
+    the new signed-in identity tasks even though the local code contains them.
+- Fix in progress:
+  - `frontend/src/lib/api.ts` now gives JSON requests and multipart uploads
+    deterministic timeouts, so a failed live API/upload cannot leave a button
+    stuck on `Recording...` forever.
+  - `gmfn_backend/app/services/trust_slips_services.py` now counts saved
+    `identity_photo` verification rows directly as photo evidence, not only the
+    profile image URL or TrustEvent side channel.
+- Required next verification:
+  - After deployment, re-check live OpenAPI for the four
+    `/entry/signed-in/...` routes before asking the product owner to retest.
+  - If the routes are still absent after a successful API deploy, the Render API
+    service is not serving the latest backend commit and deployment must be
+    fixed before more UI polishing can solve the issue.

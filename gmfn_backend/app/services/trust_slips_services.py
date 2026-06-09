@@ -833,7 +833,10 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
             IdentityVerificationCheck.user_id == int(user.id),
             IdentityVerificationCheck.verification_type == "official_id",
         )
-        .order_by(IdentityVerificationCheck.created_at.desc(), IdentityVerificationCheck.id.desc())
+        .order_by(
+            IdentityVerificationCheck.created_at.desc(),
+            IdentityVerificationCheck.id.desc(),
+        )
         .first()
     )
     driver_check = (
@@ -1294,8 +1297,21 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         if user
         else None
     )
+    photo_recorded_check = (
+        db.query(IdentityVerificationCheck)
+        .filter(
+            IdentityVerificationCheck.user_id == uid,
+            IdentityVerificationCheck.verification_type == "identity_photo",
+        )
+        .order_by(IdentityVerificationCheck.created_at.desc(), IdentityVerificationCheck.id.desc())
+        .first()
+        if user
+        else None
+    )
     photo_recorded = bool(
-        getattr(user, "profile_image_url", None) or photo_recorded_event
+        getattr(user, "profile_image_url", None)
+        or photo_recorded_event
+        or photo_recorded_check
     ) if user else False
     identity_evidence_summary = _identity_evidence_summary(
         details_recorded=details_recorded,
