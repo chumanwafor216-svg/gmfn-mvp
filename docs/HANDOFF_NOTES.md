@@ -30,6 +30,15 @@
   - `npm exec -- tsc -b --pretty false` passed from `frontend`;
   - `git diff --check` passed with only expected Windows line-ending warnings;
   - `npm run build` passed from `frontend`.
+- Post-push verification:
+  - commit `1322659` (`Tighten legacy activation actions`) was pushed to
+    `main`;
+  - `Trigger Render Deploy` run `27203223723` completed successfully and the
+    frontend deploy hook returned `dep-d8jvjcmq1p3s73a6rd20`;
+  - `Backend Tests` run `27203223714` completed successfully;
+  - backend deploy was correctly skipped because no backend files changed;
+  - GitHub Actions repeated the Node 20 deprecation warning for
+    `actions/checkout@v4`, but it did not fail the workflow.
 - Unabated truth:
   - this tightens a legacy/frontend activation surface only. It does not alter
     the newer Member Activation page behavior and does not fix the live
