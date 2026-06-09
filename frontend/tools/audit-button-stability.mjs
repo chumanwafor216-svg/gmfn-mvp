@@ -458,6 +458,18 @@ assertNotContains(
   "Member activation must not keep local button/tap/link primitives or hard-coded app route CTAs after migration."
 );
 
+assertNotContains(
+  "src/pages/MemberActivationPage.tsx",
+  /\p{Extended_Pictographic}|ðŸ|âœ|â„/u,
+  "Member activation must use app-native SVG pictograms instead of emoji or mojibake symbols."
+);
+
+assertContains(
+  "src/pages/MemberActivationPage.tsx",
+  /type ActivationIconName[\s\S]*?\| "eyeOff"[\s\S]*?\| "rocket"[\s\S]*?function ActivationIcon[\s\S]*?ActivationIcon name="id"[\s\S]*?ActivationIcon name=\{showPassword \? "eyeOff" : "eye"\}[\s\S]*?ActivationIcon name="shield"[\s\S]*?ActivationIcon name="rocket"/,
+  "Member activation ID, password, notice, and submit marks must stay on route-local SVG pictograms."
+);
+
 assertContains(
   "src/pages/ActivateMembershipPage.tsx",
   /import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="activate-membership\.activate"[\s\S]*?debugId="activate-membership\.clear-password"/,

@@ -49,6 +49,117 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
+type ActivationIconName =
+  | "check"
+  | "community"
+  | "eye"
+  | "eyeOff"
+  | "id"
+  | "info"
+  | "lock"
+  | "request"
+  | "rocket"
+  | "shield";
+
+function ActivationIcon({ name, size = 18 }: { name: ActivationIconName; size?: number }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "check":
+      return (
+        <svg {...common}>
+          <path d="m5 12.5 4.2 4.1L19 7" />
+        </svg>
+      );
+    case "community":
+      return (
+        <svg {...common}>
+          <circle cx="8" cy="9" r="3" />
+          <circle cx="16" cy="9" r="3" />
+          <path d="M3.5 20c.7-3.1 2.4-5 4.5-5s3.8 1.9 4.5 5" />
+          <path d="M11.5 20c.7-3.1 2.4-5 4.5-5s3.8 1.9 4.5 5" />
+        </svg>
+      );
+    case "eye":
+      return (
+        <svg {...common}>
+          <path d="M3.5 12s3-5 8.5-5 8.5 5 8.5 5-3 5-8.5 5-8.5-5-8.5-5z" />
+          <circle cx="12" cy="12" r="2.4" />
+        </svg>
+      );
+    case "eyeOff":
+      return (
+        <svg {...common}>
+          <path d="m4 4 16 16" />
+          <path d="M9.6 9.7A2.5 2.5 0 0 0 12 14.5c.7 0 1.3-.3 1.8-.7" />
+          <path d="M6.4 6.9C4.6 8.2 3.5 10 3.5 12c0 0 3 5 8.5 5 1.6 0 2.9-.4 4.1-1" />
+          <path d="M10.3 7.2c.5-.1 1.1-.2 1.7-.2 5.5 0 8.5 5 8.5 5a12.5 12.5 0 0 1-2 2.4" />
+        </svg>
+      );
+    case "id":
+      return (
+        <svg {...common}>
+          <rect x="4" y="6" width="16" height="12" rx="2.4" />
+          <circle cx="9" cy="11" r="1.7" />
+          <path d="M7 15c.5-1.4 1.2-2.1 2-2.1s1.5.7 2 2.1" />
+          <path d="M13.5 10h3.5" />
+          <path d="M13.5 14h3" />
+        </svg>
+      );
+    case "info":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M12 11v5" />
+          <path d="M12 8h.01" />
+        </svg>
+      );
+    case "lock":
+      return (
+        <svg {...common}>
+          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          <path d="M6.5 11h11v9h-11z" />
+          <path d="M12 15v2" />
+        </svg>
+      );
+    case "request":
+      return (
+        <svg {...common}>
+          <path d="M7 4h10v16H7z" />
+          <path d="M10 8h4" />
+          <path d="M10 12h4" />
+          <path d="M10 16h3" />
+        </svg>
+      );
+    case "rocket":
+      return (
+        <svg {...common}>
+          <path d="M14 4c3.3.7 5.3 2.7 6 6l-6.5 6.5-4-4z" />
+          <path d="M9.5 12.5 6 13l-2 4 4-2 .5-3.5" />
+          <path d="M14 4 9 6 7.5 9.5" />
+          <circle cx="15" cy="9" r="1.4" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
+          <path d="m8.6 12.2 2.2 2.2 4.8-5" />
+        </svg>
+      );
+  }
+}
+
 type ActivationNoticeTone = "success" | "error" | "warning" | "info";
 
 type ActivationNotice = {
@@ -1041,7 +1152,7 @@ export default function MemberActivationPage() {
                 {initialGmfnId ? (
                   <div style={chipStyle("green", isCompact)}>
                     <span style={{ ...labelIconStyle("id"), width: 36, height: 28 }}>
-                      🪪
+                      <ActivationIcon name="id" size={18} />
                     </span>
                     <span>GSN ID detected</span>
                   </div>
@@ -1049,7 +1160,7 @@ export default function MemberActivationPage() {
                 {initialRequestId ? (
                   <div style={chipStyle("blue", isCompact)}>
                     <span style={{ ...labelIconStyle("number"), width: 32, height: 36 }}>
-                      🧾
+                      <ActivationIcon name="request" size={17} />
                     </span>
                     <span>Request ID: {initialRequestId}</span>
                   </div>
@@ -1060,7 +1171,9 @@ export default function MemberActivationPage() {
             <div style={{ display: "grid", gap: 24 }}>
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-gsn-id">
-                  <span style={labelIconStyle("id")}>🆔</span>
+                  <span style={labelIconStyle("id")}>
+                    <ActivationIcon name="id" size={18} />
+                  </span>
                   GSN ID
                 </label>
                 <div style={inputShell()}>
@@ -1072,13 +1185,19 @@ export default function MemberActivationPage() {
                     autoComplete="username"
                     style={inputStyle(false)}
                   />
-                  {hasGsnId ? <span style={fieldCheckStyle()}>✓</span> : null}
+                  {hasGsnId ? (
+                    <span style={fieldCheckStyle()}>
+                      <ActivationIcon name="check" size={16} />
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-request-id">
-                  <span style={labelIconStyle("number")}>🔢</span>
+                  <span style={labelIconStyle("number")}>
+                    <ActivationIcon name="request" size={17} />
+                  </span>
                   Request ID
                 </label>
                 <div style={inputShell()}>
@@ -1091,13 +1210,19 @@ export default function MemberActivationPage() {
                     style={inputStyle(Boolean(initialRequestId))}
                     readOnly={Boolean(initialRequestId)}
                   />
-                  {hasRequestId ? <span style={fieldCheckStyle()}>✓</span> : null}
+                  {hasRequestId ? (
+                    <span style={fieldCheckStyle()}>
+                      <ActivationIcon name="check" size={16} />
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-password">
-                  <span style={labelIconStyle("lock")}>🔒</span>
+                  <span style={labelIconStyle("lock")}>
+                    <ActivationIcon name="lock" size={18} />
+                  </span>
                   Password
                 </label>
                 <div style={inputShell()}>
@@ -1119,14 +1244,16 @@ export default function MemberActivationPage() {
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     style={passwordToggleStyle()}
                   >
-                    {showPassword ? "🙈" : "👁️"}
+                    <ActivationIcon name={showPassword ? "eyeOff" : "eye"} size={18} />
                   </SubtleButton>
                 </div>
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-confirm-password">
-                  <span style={labelIconStyle("check")}>✅</span>
+                  <span style={labelIconStyle("check")}>
+                    <ActivationIcon name="check" size={18} />
+                  </span>
                   Confirm password
                 </label>
                 <div style={inputShell()}>
@@ -1152,7 +1279,7 @@ export default function MemberActivationPage() {
                     }
                     style={passwordToggleStyle()}
                   >
-                    {showConfirmPassword ? "🙈" : "👁️"}
+                    <ActivationIcon name={showConfirmPassword ? "eyeOff" : "eye"} size={18} />
                   </SubtleButton>
                 </div>
               </div>
@@ -1160,18 +1287,26 @@ export default function MemberActivationPage() {
 
             <div style={infoPanel()}>
               <div style={infoRowStyle(false, isCompact)}>
-                <span style={infoIconStyle("info", isCompact)}>ℹ️</span>
+                <span style={infoIconStyle("info", isCompact)}>
+                  <ActivationIcon name="info" size={isCompact ? 20 : 23} />
+                </span>
                 <span style={infoTextStyle("primary", isCompact)}>
                   Use the approved GSN ID and request ID linked to your membership.
                 </span>
-                <span style={ghostIconStyle(isCompact)}>👥</span>
+                <span style={ghostIconStyle(isCompact)}>
+                  <ActivationIcon name="community" size={34} />
+                </span>
               </div>
               <div style={infoRowStyle(true, isCompact)}>
-                <span style={infoIconStyle("shield", isCompact)}>🛡️</span>
+                <span style={infoIconStyle("shield", isCompact)}>
+                  <ActivationIcon name="shield" size={isCompact ? 20 : 23} />
+                </span>
                 <span style={infoTextStyle("muted", isCompact)}>
                   Your password protects your account.
                 </span>
-                <span style={ghostIconStyle(isCompact)}>🛡️</span>
+                <span style={ghostIconStyle(isCompact)}>
+                  <ActivationIcon name="shield" size={34} />
+                </span>
               </div>
             </div>
 
@@ -1201,7 +1336,7 @@ export default function MemberActivationPage() {
                     marginRight: 8,
                   }}
                 >
-                  🚀
+                  <ActivationIcon name="rocket" size={isCompact ? 22 : 27} />
                 </span>
                 Finish activation
               </PrimaryButton>

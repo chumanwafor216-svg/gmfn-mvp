@@ -1,3 +1,40 @@
+### Member activation icon/button polish pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue inner-page tightening, page polish, and
+    replacement of weak emoji-style icons with stronger app-native marks.
+- Scope:
+  - frontend activation route `frontend/src/pages/MemberActivationPage.tsx`;
+  - frontend button-stability audit only;
+  - no activation API, approval logic, auth, membership status, payment,
+    identity evidence, or route contract changed.
+- Changed:
+  - added route-local `ActivationIcon` SVG pictograms for ID, request,
+    password lock, show/hide password, check, info, community, shield, and
+    activation finish;
+  - replaced the remaining emoji/mojibake marks in the activation form,
+    password toggles, info panel, detected-ID chips, field checks, and
+    `Finish activation` CTA;
+  - kept existing stable action debug ids including
+    `member-activation.password.toggle`,
+    `member-activation.confirm-password.toggle`, and
+    `member-activation.finish`.
+- Audit cage updated:
+  - `audit-button-stability` now rejects emoji / mojibake symbols in
+    `MemberActivationPage.tsx` and protects the SVG activation icon pattern.
+- Verification before push:
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings;
+  - `npm run build` passed from `frontend`.
+- Unabated truth:
+  - this pass improves activation page visual seriousness and icon stability
+    only. It does not change whether the live backend can record or reflect
+    identity evidence.
+
 ### Join pending helper-button SVG tightening pass (2026-06-09)
 
 - Trigger:
