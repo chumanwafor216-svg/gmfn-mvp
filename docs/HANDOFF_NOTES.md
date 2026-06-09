@@ -56,6 +56,26 @@
   - if the live audit still fails, open the Render `gmfn-api` service dashboard
     and inspect deploy logs for the exact deploy, branch, root directory, build
     command, start command, and promoted commit.
+- Post-push verification:
+  - commit `b7afba6` was pushed to `main`;
+  - `Backend Tests` run `27199553903` completed successfully;
+  - `Trigger Render Deploy` run `27199553952` detected a backend deploy need
+    because the backend deploy marker changed;
+  - the workflow showed `RENDER_API_KEY` and `RENDER_API_SERVICE_ID` were not
+    available, so the exact-commit Render API path was skipped;
+  - the workflow fell back to `RENDER_API_DEPLOY_HOOK_URL`;
+  - Render accepted frontend deploy `dep-d8juh64m0tmc73fobpt0` and API deploy
+    `dep-d8juh66gvqtc73erdthg`;
+  - the live identity-contract check then failed after all 18 attempts with the
+    same missing signed-in identity routes and missing sort-code fields.
+- Current blocker:
+  - This is now outside normal repo code. The repository has the routes and the
+    live audit guard; the live `gmfn-api` host is still not serving that code
+    after the hook deploy.
+  - The fastest honest fix is to configure `RENDER_API_KEY` in GitHub secrets
+    so the workflow can deploy the exact commit through Render API, or inspect
+    the Render dashboard for deploy `dep-d8juh66gvqtc73erdthg` to see why the
+    service did not promote code containing the identity routes.
 
 ### Live API identity contract guard (2026-06-09)
 
