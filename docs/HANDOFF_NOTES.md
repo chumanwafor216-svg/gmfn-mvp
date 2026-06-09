@@ -50,6 +50,11 @@
   - `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx src/pages/CommunityConfirmationInboxPage.tsx tools/audit-community-join-requests-layout.mjs tools/audit-button-stability.mjs` passed from `frontend`;
   - `npm exec -- tsc -b --pretty false` passed from `frontend`;
   - `git diff --check` passed with only expected Windows line-ending warnings.
+- Post-push verification:
+  - commit `84764a1` (`Tighten inner voting surfaces`) was pushed to `main`;
+  - `Trigger Render Deploy` run `27201284841` completed successfully and the
+    frontend deploy hook returned `dep-d8jv1kgjs32c73e4ofs0`;
+  - `Backend Tests` run `27201284836` completed successfully.
 - Unabated truth:
   - this pass improves frontend voting/category clarity and button stability
     only. It does not fix the live Identity Overview backend because that is
