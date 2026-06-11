@@ -47037,3 +47037,37 @@ GSN-branded invite composer and invite-entry continuity.
   - the coin and chain/ring treatment is still built with CSS, not a dedicated
     realistic 3D asset;
   - this is build/audit verified, not a rendered phone screenshot comparison.
+
+### Dashboard passport blend and connector correction (2026-06-11)
+
+- Trigger:
+  - product owner reviewed the restored Trust / CCI / TrustSlip strip and said
+    the deep blue row did not blend with the passport card;
+  - product owner also noted the GSN connector rings still looked incomplete
+    and not clearly connected;
+  - product owner wanted the GSN ID closer to the original compact reference,
+    not a scattered letter-by-letter code.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changed the Trust / CCI / TrustSlip row from a heavy navy slab to a light
+      embedded evidence strip that blends with the white/soft-blue passport
+      pack while keeping gold status emphasis;
+    - replaced the separated CSS ring spans around the central `GSN` seal with
+      continuous inline SVG chain/network motifs on both sides so the visual
+      reads as linked partnership rather than loose decoration;
+    - removed letter-scattered formatting from the Global ID and now preserves
+      the compact uppercase code format, for example `GSN-U-9867079C`;
+    - kept letter spacing at `0` in the corrected ID and GSN seal areas.
+- Verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx tools\audit-dashboard-actions.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+- Deployment protocol:
+  - no push or Render deploy was triggered; keep batching local work until the
+    product owner says the current batch is ready to publish.
+- Unabated truth:
+  - the connector is now visually linked as one SVG motif, but it is still a
+    code-drawn graphic, not a premium generated/imported 3D chain or hand asset;
+  - this is build/audit verified, not a live phone screenshot comparison.
