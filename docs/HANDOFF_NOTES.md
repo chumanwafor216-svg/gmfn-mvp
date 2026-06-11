@@ -1,5 +1,17 @@
 ### GSN icon meaning and borrowing repayment queue (2026-06-11)
 
+- Operational update - pipeline shortage / batch publishing:
+  - Product owner clarified that Render/pipeline capacity is currently not
+    available for repeated pushes/deploys.
+  - Current working mode is now: continue implementation locally, verify
+    locally, keep the batch ready, and push/deploy only once when the owner
+    explicitly says the whole batch is ready to publish.
+  - Updated `docs/PROJECT_PROTOCOL.md` and `docs/FREEZE_POLICY.md` to make
+    this batch-first / push-last rule explicit.
+  - Do not trigger Render or push routine continuation work just because a
+    local fix is complete. A local commit/checkpoint is acceptable when it
+    helps keep the worktree clean, but remote publish waits for owner approval.
+
 - Continuation update - broad light-tile icon wrapper sweep:
   - Removed the exact old dark navy/black 3D icon wrapper pattern from the
     remaining `frontend/src` matches found by:

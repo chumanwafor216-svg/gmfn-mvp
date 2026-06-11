@@ -86,6 +86,7 @@ Current explicit frozen paths:
 - `.github/workflows/render-deploy.yml` is frozen in manual-only mode during the active pilot to conserve Render pipeline minutes. Do not restore a `push` trigger or automatic deploy behavior unless the product owner explicitly approves it.
 - `.github/workflows/tests.yml` is frozen with backend-relevant path filters plus manual dispatch during the active pilot. Do not remove the path filters or make frontend/docs-only pushes run backend tests automatically unless the product owner explicitly approves it.
 - Render dashboard frontend Auto-Deploy is an external frozen operational setting and should remain off during the active pilot unless the product owner explicitly approves turning it back on.
+- Git publishing is also frozen into batch mode during the current pipeline-shortage period: do not push routine continuation work after every local fix. Build, verify, and optionally commit locally; push only once the product owner explicitly says the current batch is ready to publish.
 - [ADD EXACT PATHS HERE]
 - [ADD EXACT PATHS HERE]
 

@@ -118,7 +118,7 @@ The original phone flow should currently be treated as the reference point for p
 ### 4.0 Pilot pipeline conservation protocol
 
 During the active pilot, deployment must be intentional rather than automatic.
-The current pipeline-saving posture is:
+The current pipeline-saving posture is now **batch-first / push-last**:
 
 - Render frontend Auto-Deploy is turned off in the Render dashboard.
 - `.github/workflows/render-deploy.yml` must stay manual-only
@@ -131,7 +131,15 @@ The current pipeline-saving posture is:
   run the backend locally on `0.0.0.0:8012`, run Vite locally on
   `0.0.0.0:5173`, and test from the phone on the same Wi-Fi before spending
   Render pipeline minutes.
+- Work should be made ready locally first. Prefer local verification and local
+  commits/checkpoints over pushing every finished slice.
+- Do not push to GitHub and do not trigger Render for routine continuation
+  work. Push only once the product owner explicitly says the current batch is
+  ready to publish.
 - Deploy only when the product owner says the current batch should go live.
+- If Render credits/minutes are exhausted or Render is unavailable, continue
+  local implementation and verification. Do not spend time trying repeated
+  deploys unless the owner explicitly asks for a deploy attempt.
 
 Unabated truth: this saves pipeline minutes but removes automatic deployment as
 a safety net. A pushed commit is not necessarily live until a manual Render
@@ -646,17 +654,21 @@ If uncertainty remains, the assistant should clearly separate:
 
 ### 11.1 Active pilot publish and deploy protocol
 
-During active pilot testing, completed verified fixes must be published unless
-the product owner explicitly says not to publish yet.
+During the current active pilot pipeline-shortage period, completed verified
+fixes should **not** be pushed automatically. The default is to keep building
+and verifying locally, then push/deploy once for the full ready batch when the
+product owner explicitly says to publish.
 
-The assistant should:
+The assistant should normally:
 
 1. Stage only files that belong to the completed fix.
-2. Commit the fix with a concrete message.
-3. Push the working branch.
-4. Promote the same verified commit to `main`, because `main` is the Render
-   deployment branch.
-5. Verify the `Trigger Render Deploy` GitHub Actions run after the `main` push.
+2. Commit locally with a concrete message when a stable checkpoint should keep
+   the worktree clean.
+3. Do not push the working branch unless the owner says this batch is ready to
+   publish.
+4. When the owner approves publishing, push the verified batch once.
+5. If a deploy is approved and Render is available, trigger the manual
+   `Trigger Render Deploy` workflow and report the result.
 6. If GitHub deploy credentials are missing, use an owner-provided Render deploy
    hook only as a secret/out-of-band trigger and report the returned deploy id.
 7. Never store Render deploy hooks, API keys, or other deployment credentials in
