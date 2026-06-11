@@ -232,6 +232,63 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
+function railPackageCardStyle(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    border: "1px solid rgba(202,168,84,0.30)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.98) 58%, rgba(239,247,255,0.96) 100%)",
+    padding: 14,
+    boxShadow:
+      "0 18px 36px rgba(8,35,58,0.12), inset 0 1px 0 rgba(255,255,255,0.96)",
+  };
+}
+
+function railFactGridStyle(): React.CSSProperties {
+  return {
+    marginTop: 12,
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+    gap: 9,
+  };
+}
+
+function railFactCardStyle(wide = false): React.CSSProperties {
+  return {
+    gridColumn: wide ? "1 / -1" : undefined,
+    minHeight: wide ? 58 : 72,
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,252,255,0.98) 100%)",
+    padding: "11px 12px",
+    boxShadow:
+      "0 12px 22px rgba(8,35,58,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+    overflow: "hidden",
+  };
+}
+
+function railFactLabelStyle(): React.CSSProperties {
+  return {
+    color: "#6F8194",
+    fontSize: 11,
+    fontWeight: 950,
+    lineHeight: 1.1,
+    textTransform: "uppercase",
+  };
+}
+
+function railFactValueStyle(): React.CSSProperties {
+  return {
+    marginTop: 6,
+    color: "#08233A",
+    fontSize: 15,
+    fontWeight: 900,
+    lineHeight: 1.25,
+    overflowWrap: "anywhere",
+  };
+}
+
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -259,6 +316,27 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 1000,
     whiteSpace: "normal",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+  };
+}
+
+function railLineParts(line: string): { label: string; value: string; wide: boolean } {
+  const text = safeStr(line);
+  const index = text.indexOf(":");
+
+  if (index > 0) {
+    const label = safeStr(text.slice(0, index));
+    const value = safeStr(text.slice(index + 1));
+    return {
+      label: label || "Rail note",
+      value: value || "Not stated",
+      wide: value.length > 34,
+    };
+  }
+
+  return {
+    label: "Rail note",
+    value: text || "Not stated",
+    wide: true,
   };
 }
 
@@ -2214,7 +2292,15 @@ export default function WithdrawalInstructionsPage() {
         ) : null}
       </section>
 
-      <section id="community-money-out-rail" style={pageCard("#FFFFFF")}>
+      <section
+        id="community-money-out-rail"
+        style={{
+          ...pageCard(
+            "linear-gradient(180deg, rgba(248,252,255,0.98) 0%, rgba(235,245,255,0.98) 100%)"
+          ),
+          border: "1px solid rgba(202,168,84,0.24)",
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -2224,10 +2310,46 @@ export default function WithdrawalInstructionsPage() {
             flexWrap: "wrap",
           }}
         >
-          <div>
-            {iconLabel("document", "Community Money-Out Rail")}
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Fixed community withdrawal rail.
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "44px minmax(0, 1fr)",
+              gap: 12,
+              alignItems: "center",
+              minWidth: 0,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 15,
+                display: "grid",
+                placeItems: "center",
+                background: "rgba(255,255,255,0.96)",
+                border: "1px solid rgba(226,192,106,0.34)",
+                boxShadow:
+                  "0 12px 22px rgba(8,35,58,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
+              }}
+            >
+              <GsnLegacyIcon name="financeInstitution" size={38} decorative />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...sectionLabel(), color: "#173750" }}>
+                Community money-out rail
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#4F6275",
+                  fontSize: 14,
+                  fontWeight: 760,
+                  lineHeight: 1.35,
+                }}
+              >
+                Withdrawal destination for this community.
+              </div>
             </div>
           </div>
 
@@ -2253,30 +2375,71 @@ export default function WithdrawalInstructionsPage() {
               alignItems: "start",
             }}
           >
-            <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Rail details</div>
+            <div style={railPackageCardStyle()}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ ...sectionLabel(), color: "#173750" }}>
+                  Rail details
+                </div>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    minHeight: 30,
+                    borderRadius: 999,
+                    padding: "6px 10px",
+                    border: communityRailReady
+                      ? "1px solid rgba(46,155,98,0.22)"
+                      : "1px solid rgba(200,58,58,0.18)",
+                    background: communityRailReady
+                      ? "linear-gradient(180deg, #F0FBF5 0%, #E2F4EA 100%)"
+                      : "linear-gradient(180deg, #FFF7ED 0%, #FEEBD2 100%)",
+                    color: communityRailReady ? "#166534" : "#9A3412",
+                    fontSize: 12,
+                    fontWeight: 950,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {communityRailReady ? "Ready" : "Not ready"}
+                </span>
+              </div>
 
               {!communityRailReady ? (
-                <div style={{ marginTop: 10, ...helperText(), color: "#991B1B" }}>
-                  Community withdrawal rail is not visible yet. Do not continue
-                  until the community rail is ready.
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#8A4B0F",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  The community withdrawal rail is not visible yet. Refresh the
+                  rail before sending money out.
                 </div>
               ) : (
-                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                  {settlementRouteLines.map((line, index) => (
-                    <div key={`withdraw-route-line-${index}`} style={innerCard("#FFFFFF")}>
-                      <div style={{ ...helperText(), color: "#F8FBFF" }}>{line}</div>
-                    </div>
-                  ))}
-
-                  {communitySettlementLines.map((line, index) => (
-                    <div
-                      key={`withdraw-settlement-line-${index}`}
-                      style={innerCard("#FFFFFF")}
-                    >
-                      <div style={{ ...helperText(), color: "#F8FBFF" }}>{line}</div>
-                    </div>
-                  ))}
+                <div style={railFactGridStyle()}>
+                  {[...settlementRouteLines, ...communitySettlementLines].map(
+                    (line, index) => {
+                      const fact = railLineParts(line);
+                      return (
+                        <div
+                          key={`withdraw-rail-line-${index}`}
+                          style={railFactCardStyle(fact.wide)}
+                        >
+                          <div style={railFactLabelStyle()}>{fact.label}</div>
+                          <div style={railFactValueStyle()}>{fact.value}</div>
+                        </div>
+                      );
+                    }
+                  )}
                 </div>
               )}
             </div>

@@ -1,3 +1,45 @@
+### Money-out rail and ROSCA phone audit polish (2026-06-11)
+
+- Product owner supplied phone screenshots showing:
+  - the Loans & Support / Money Out community rail looked like a dark raw data
+    console and used tall stacked cards for short facts;
+  - the Marketplace ROSCA action row clipped long button labels on phone;
+  - ROSCA cycle status facts were stacked too tall for short state values.
+- Frontend changes:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx` now presents
+    `#community-money-out-rail` as a lighter institutional rail package with a
+    3D bank-building icon, ready/not-ready chip, and compact labelled rail
+    facts instead of separate dark raw-line cards.
+  - The rail copy was shortened from `Fixed community withdrawal rail.` to a
+    clearer user-facing line: `Withdrawal destination for this community.`
+  - The not-ready rail message now tells the user to refresh before sending
+    money out instead of sounding like backend/admin language.
+  - `frontend/src/pages/MarketplacePage.tsx` keeps the same ROSCA action
+    debug IDs and backend actions, but makes the ROSCA action strip one column
+    on phone so `Activate yearly service`, `Start ROSCA Cycle`, and
+    `Record payout` no longer fight for half-width space.
+  - ROSCA cycle status now uses a two-column mini-card grid on phone for short
+    facts.
+- Verification passed locally:
+  - `npm run audit:loans-actions`
+  - `npm run audit:marketplace-rosca-lane`
+  - `npm run audit:marketplace-button-lines`
+  - `npm run audit:protected-button-freeze`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm exec -- eslint src\pages\WithdrawalInstructionsPage.tsx src\pages\MarketplacePage.tsx`
+  - `npm run build`
+  - `git diff --check`
+- Unabated truth:
+  - this is a targeted phone polish/audit fix, not a full redesign of all
+    finance, marketplace, and shop pages;
+  - the public shop certificate-like surface was inspected as the reference
+    quality direction and was not changed in this slice;
+  - accepted visual proof still needs the owner to reload the local phone view
+    and confirm the rail/ROSCA screenshots.
+- Publishing posture:
+  - no push and no Render deploy; keep batching locally until the owner says
+    the current batch is ready to publish.
+
 ### Dashboard Spotlight copy/button tightening (2026-06-11)
 
 - Product owner reviewed the phone view and called out that the Spotlight

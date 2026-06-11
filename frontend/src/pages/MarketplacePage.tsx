@@ -6811,6 +6811,9 @@ export default function MarketplacePage() {
               {...marketplaceFieldTouchProps("marketplace.rosca.actions")}
               style={{
                 ...marketplaceInlineActionsStyle(isCompact),
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(auto-fit, minmax(168px, 1fr))",
                 marginTop: 14,
               }}
             >
@@ -6898,6 +6901,9 @@ export default function MarketplacePage() {
               style={{
                 marginTop: 10,
                 display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "1fr",
                 gap: 9,
               }}
             >
