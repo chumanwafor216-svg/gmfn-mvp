@@ -45788,3 +45788,48 @@ GSN-branded invite composer and invite-entry continuity.
     statuses;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Older report PDF shell checkpoint (2026-06-11)
+
+- Trigger:
+  - after the first backend PDF shell pass, the remaining older proof/report
+    generators were `trust_timeline_pdf_service.py` and `reports_service.py`.
+    These still looked structurally separate from the new official GSN evidence
+    papers.
+- Changed locally, not pushed:
+  - `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+    - changed Trust Timeline pages to use the shared official GSN PDF header,
+      watermark, and footer;
+    - changed the visible report title from `GMFN Trust Timeline Evidence
+      Report` to `GSN Trust Timeline Evidence Report`;
+    - kept the existing TrustSlip payload, event loading, scoring, sponsor,
+      capacity, and evidence-context logic intact.
+  - `gmfn_backend/app/services/reports_service.py`
+    - changed Loan Trust Report pages to use the shared GSN institutional
+      header, watermark, and footer;
+    - changed Clan Exposure Report pages to use the shared GSN institutional
+      header, watermark, and footer;
+    - replaced the old top-level `GMFN Loan Trust Report` and
+      `GMFN Clan Exposure Report` headings with GSN official evidence-summary
+      shells while preserving the existing report calculations.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - extended the PDF shell guard to cover Trust Timeline, Loan Trust Report,
+      and Clan Exposure Report;
+    - added footer-count checks so the loan and clan report footer calls do
+      not accidentally duplicate or disappear.
+- Verification:
+  - Passed Python compilation for `institutional_pdf.py`,
+    `trust_timeline_pdf_service.py`, `reports_service.py`, and the focused
+    PDF shell test.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed source scan confirming the touched older report titles now use GSN
+    institutional titles and footer/header hooks.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - this completes the current source-level backend PDF shell pass locally,
+    including the older report generators, but it is still not a visual PDF
+    rendering review;
+  - this does not solve borrowing repayment logic, end-to-end payment
+    installment behavior, or stale protocol `partial` statuses;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

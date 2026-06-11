@@ -41,3 +41,29 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "draw_gsn_watermark" in text
     assert "draw_institutional_footer" in text
     assert "GMFN TrustSlip Evidence Snapshot" not in text
+
+
+def test_trust_timeline_pdf_uses_institutional_shell():
+    text = read_service("app/services/trust_timeline_pdf_service.py")
+
+    assert "GSN Trust Timeline Evidence Report" in text
+    assert "draw_institutional_header" in text
+    assert "draw_institutional_footer" in text
+    assert "safe_pdf_text(text)" in text
+    assert "GMFN Trust Timeline Evidence Report" not in text
+
+
+def test_report_pdfs_use_gsn_institutional_shells():
+    text = read_service("app/services/reports_service.py")
+
+    assert "GSN Loan Trust Report" in text
+    assert "GSN Clan Exposure Report" in text
+    assert "draw_institutional_header" in text
+    assert "draw_institutional_footer" in text
+    assert "safe_pdf_text" in text
+    assert "Official evidence summary" in text
+    assert "Official exposure summary" in text
+    assert text.count("GSN loan trust report - controlled community trust record.") == 2
+    assert text.count("GSN clan exposure report - controlled community trust record.") == 2
+    assert "GMFN Loan Trust Report" not in text
+    assert "GMFN Clan Exposure Report" not in text

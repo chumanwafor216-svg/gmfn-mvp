@@ -12,6 +12,12 @@ from reportlab.pdfgen import canvas
 from sqlalchemy.orm import Session
 
 from app.db.models import TrustEvent, User
+from app.services.institutional_pdf import (
+    draw_institutional_footer,
+    draw_institutional_header,
+    safe_pdf_text,
+    utc_generated_label,
+)
 from app.services.trust_slips_services import get_trust_slip_payload
 
 PAGE_WIDTH, PAGE_HEIGHT = A4
@@ -91,7 +97,7 @@ def _draw_text(c: canvas.Canvas, x: float, y: float, text: str, *, size: int = 1
                color=colors.black) -> None:
     c.setFont(FONT_BOLD if bold else FONT, size)
     c.setFillColor(color)
-    c.drawString(x, y, text)
+    c.drawString(x, y, safe_pdf_text(text))
 
 
 def _draw_right_text(c: canvas.Canvas, x_right: float, y: float, text: str, *, size: int = 10, bold: bool = False,
@@ -158,23 +164,23 @@ def _ensure_space(c: canvas.Canvas, y: float, needed: float, footer_text: Option
 
 
 def _draw_page_frame(c: canvas.Canvas) -> float:
-    c.setFillColor(colors.white)
-    c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
-
-    c.setStrokeColor(colors.HexColor("#E2E8F0"))
-    c.setLineWidth(1)
-    c.roundRect(12 * mm, 12 * mm, PAGE_WIDTH - 24 * mm, PAGE_HEIGHT - 24 * mm, 6 * mm, stroke=1, fill=0)
-
-    return TOP
+    return draw_institutional_header(
+        c,
+        PAGE_WIDTH,
+        PAGE_HEIGHT,
+        title="GSN Trust Timeline Evidence Report",
+        subtitle="Trust history, TrustSlip portability, and cross-community integrity context.",
+        generated_at=utc_generated_label(),
+        reference="Trust Timeline",
+    )
 
 
 def _draw_footer(c: canvas.Canvas, *, footer_text: Optional[str]) -> None:
-    footer = _safe_str(footer_text, "")
-    c.setFont(FONT, 8)
-    c.setFillColor(colors.HexColor("#64748B"))
-    if footer:
-        c.drawString(LEFT, 9 * mm, footer)
-
+    draw_institutional_footer(
+        c,
+        PAGE_WIDTH,
+        footer_text or "GSN trust timeline evidence paper - controlled community trust record.",
+    )
     page_no = f"Page {c.getPageNumber()}"
     _draw_right_text(c, RIGHT, 9 * mm, page_no, size=8, color=colors.HexColor("#64748B"))
 
@@ -601,21 +607,8 @@ def build_trust_timeline_pdf(
 
     y = _draw_page_frame(c)
 
-    _draw_text(c, LEFT, y, "GMFN Trust Timeline Evidence Report", size=18, bold=True, color=colors.HexColor("#0F172A"))
     _draw_right_text(c, RIGHT, y, f"Audience: {_safe_str(audience, 'user')}", size=9, bold=True, color=colors.HexColor("#475569"))
-    y -= 7 * mm
-
-    y = _draw_wrapped_block(
-        c,
-        LEFT,
-        y,
-        "Institutional evidence view for trust history, TrustSlip portability, and cross-clan integrity context.",
-        max_width=(RIGHT - LEFT),
-        size=10,
-        leading=12,
-        color=colors.HexColor("#475569"),
-    )
-    y -= 4 * mm
+    y -= 5 * mm
     _line(c, y)
     y -= 6 * mm
 

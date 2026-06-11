@@ -9,6 +9,12 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from app.db.models import Loan, Clan, User, LoanGuarantor, Repayment, TrustEvent
+from app.services.institutional_pdf import (
+    draw_institutional_footer,
+    draw_institutional_header,
+    safe_pdf_text,
+    utc_generated_label,
+)
 
 
 def _d(x: Any) -> Decimal:
@@ -144,30 +150,48 @@ def build_loan_trust_report_pdf(
 
     left = 18 * mm
     right = width - 18 * mm
-    y = height - 18 * mm
+    generated_at = utc_generated_label()
+    y = draw_institutional_header(
+        c,
+        width,
+        height,
+        title="GSN Loan Trust Report",
+        subtitle="Loan decision, repayment, guarantor, exposure, and trust timeline evidence.",
+        generated_at=generated_at,
+        reference=f"Loan {getattr(loan, 'id', '-')}",
+    )
 
     def ensure_space(min_y: float = 30 * mm) -> None:
         nonlocal y
         if y < min_y:
+            draw_institutional_footer(c, width, "GSN loan trust report - controlled community trust record.")
             c.showPage()
-            y = height - 18 * mm
+            y = draw_institutional_header(
+                c,
+                width,
+                height,
+                title="GSN Loan Trust Report",
+                subtitle="Loan decision, repayment, guarantor, exposure, and trust timeline evidence.",
+                generated_at=generated_at,
+                reference=f"Loan {getattr(loan, 'id', '-')}",
+            )
 
     def h1(text: str) -> None:
         nonlocal y
         c.setFont("Helvetica-Bold", 16)
-        c.drawString(left, y, text)
+        c.drawString(left, y, safe_pdf_text(text))
         y -= 10 * mm
 
     def h2(text: str) -> None:
         nonlocal y
         c.setFont("Helvetica-Bold", 12)
-        c.drawString(left, y, text)
+        c.drawString(left, y, safe_pdf_text(text))
         y -= 7 * mm
 
     def p(label: str, value: str) -> None:
         nonlocal y
         c.setFont("Helvetica", 10)
-        c.drawString(left, y, f"{label}: {value}")
+        c.drawString(left, y, safe_pdf_text(f"{label}: {value}"))
         y -= 5 * mm
 
     def line() -> None:
@@ -176,13 +200,7 @@ def build_loan_trust_report_pdf(
         c.line(left, y, right, y)
         y -= 6 * mm
 
-    h1("GMFN Loan Trust Report")
-    c.setFont("Helvetica", 9)
-    c.drawRightString(
-        right,
-        height - 18 * mm,
-        f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
-    )
+    h1("Official evidence summary")
     line()
 
     h2("Loan Summary")
@@ -416,6 +434,7 @@ def build_loan_trust_report_pdf(
                 y -= 4.2 * mm
                 c.setFont("Helvetica", 8)
 
+    draw_institutional_footer(c, width, "GSN loan trust report - controlled community trust record.")
     c.showPage()
     c.save()
     return bio.getvalue()
@@ -435,24 +454,42 @@ def build_clan_exposure_report_pdf(
 
     left = 18 * mm
     right = width - 18 * mm
-    y = height - 18 * mm
+    generated_at = utc_generated_label()
+    y = draw_institutional_header(
+        c,
+        width,
+        height,
+        title="GSN Clan Exposure Report",
+        subtitle="Community pool, exposure, and available support capacity evidence.",
+        generated_at=generated_at,
+        reference=f"Clan {clan_id}",
+    )
 
     def ensure_space(min_y: float = 30 * mm) -> None:
         nonlocal y
         if y < min_y:
+            draw_institutional_footer(c, width, "GSN clan exposure report - controlled community trust record.")
             c.showPage()
-            y = height - 18 * mm
+            y = draw_institutional_header(
+                c,
+                width,
+                height,
+                title="GSN Clan Exposure Report",
+                subtitle="Community pool, exposure, and available support capacity evidence.",
+                generated_at=generated_at,
+                reference=f"Clan {clan_id}",
+            )
 
     def h1(text: str) -> None:
         nonlocal y
         c.setFont("Helvetica-Bold", 16)
-        c.drawString(left, y, text)
+        c.drawString(left, y, safe_pdf_text(text))
         y -= 10 * mm
 
     def h2(text: str) -> None:
         nonlocal y
         c.setFont("Helvetica-Bold", 12)
-        c.drawString(left, y, text)
+        c.drawString(left, y, safe_pdf_text(text))
         y -= 7 * mm
 
     def line() -> None:
@@ -461,13 +498,7 @@ def build_clan_exposure_report_pdf(
         c.line(left, y, right, y)
         y -= 6 * mm
 
-    h1("GMFN Clan Exposure Report")
-    c.setFont("Helvetica", 9)
-    c.drawRightString(
-        right,
-        height - 18 * mm,
-        f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
-    )
+    h1("Official exposure summary")
     line()
 
     h2("Clan")
@@ -541,6 +572,7 @@ def build_clan_exposure_report_pdf(
     c.drawString(left, y, "Available = current remaining support capacity after existing exposure.")
     y -= 5 * mm
 
+    draw_institutional_footer(c, width, "GSN clan exposure report - controlled community trust record.")
     c.showPage()
     c.save()
     return bio.getvalue()
