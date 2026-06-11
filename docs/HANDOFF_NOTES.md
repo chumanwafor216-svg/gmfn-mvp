@@ -46350,3 +46350,30 @@ GSN-branded invite composer and invite-entry continuity.
   - do not commit private captured evidence unless it is redacted and approved;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Protocol readiness admin language checkpoint (2026-06-11)
+
+- Trigger:
+  - after the backend readiness truth refresh, the Trust Command Centre still
+    showed the cold visible label `Partial` in top readiness count summaries.
+- Changed locally, not pushed:
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - changed visible readiness count labels from `Partial` to `Needs proof`
+      while preserving the backend status value and detailed readiness cards.
+  - `frontend/tools/audit-protocol-readiness.mjs`
+    - added a guard requiring the Trust Command Centre to translate partial
+      counts into user-facing `Needs proof` language and block the old visible
+      `| Partial` count label.
+- Verification:
+  - Passed `npm run audit:protocol-readiness` from `frontend`.
+  - Passed ESLint for `TrustCommandCentrePage.tsx` and
+    `tools/audit-protocol-readiness.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - this improves the admin-facing language around readiness gaps;
+  - it does not reduce the number of actual proof gaps;
+  - it does not visually test the Trust Command Centre on a phone;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

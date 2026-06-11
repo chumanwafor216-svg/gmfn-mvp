@@ -1612,7 +1612,7 @@ export default function TrustCommandCentrePage() {
                     {pilotOverallLabel}
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Partial: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
+                    Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Needs proof: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
                   </div>
                 </div>
 
@@ -1877,7 +1877,7 @@ export default function TrustCommandCentrePage() {
                   {pilotOverallLabel}
                 </div>
                 <div style={{ marginTop: 10, ...helperText() }}>
-                  Ready {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Partial{" "}
+                  Ready {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Needs proof{" "}
                   {Number(executiveReading.pilotReadiness?.partial_count || 0)} | Blocked{" "}
                   {Number(executiveReading.pilotReadiness?.blocked_count || 0)}
                 </div>

@@ -20,6 +20,13 @@ function assertContains(file, pattern, message) {
   }
 }
 
+function assertNotContains(file, pattern, message) {
+  const text = read(file);
+  if (pattern.test(text)) {
+    findings.push({ file, message, text: "Forbidden pattern was found." });
+  }
+}
+
 assertContains(
   "gmfn_backend/app/api/routes/pilot_readiness.py",
   /def pilot_readiness_checks\(\)[\s\S]*?"loan_repayment_e2e"[\s\S]*?"TrustSlip presentation"[\s\S]*?"Frontend route consistency"[\s\S]*?"Evidence capture pack"/,
@@ -54,6 +61,18 @@ assertContains(
   "frontend/src/pages/TrustCommandCentrePage.tsx",
   /pilotOverallLabel[\s\S]*?pilotTruthStatement/,
   "Trust Command Centre must show backend overall readiness labels and truth statements."
+);
+
+assertContains(
+  "frontend/src/pages/TrustCommandCentrePage.tsx",
+  /Needs proof: \{Number\(executiveReading\.pilotReadiness\?\.partial_count[\s\S]*?Needs proof\{" "\}\s*\{Number\(executiveReading\.pilotReadiness\?\.partial_count/,
+  "Trust Command Centre must translate protocol partial counts into user-facing Needs proof language."
+);
+
+assertNotContains(
+  "frontend/src/pages/TrustCommandCentrePage.tsx",
+  /\|\s*Partial/,
+  "Trust Command Centre must not expose the raw Partial label in visible readiness count copy."
 );
 
 assertContains(
