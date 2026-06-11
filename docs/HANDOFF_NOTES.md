@@ -46480,3 +46480,28 @@ GSN-branded invite composer and invite-entry continuity.
     called screenshot-ready;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Guarantor Earnings micro-label polish checkpoint (2026-06-11)
+
+- Trigger:
+  - after the Finance/Marketplace label pass, the active loans lane still had
+    one positive `letterSpacing` value on Guarantor Earnings section labels.
+- Changed locally, not pushed:
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+    - removed positive letter spacing from section labels.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - added a guard so Guarantor Earnings cannot reintroduce spaced-out
+      micro-label typography.
+- Verification:
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed ESLint for `GuarantorEarningsPage.tsx` and
+    `tools/audit-loans-actions.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - this tightens the active guarantor earnings route;
+  - it is not a phone screenshot review and does not solve the remaining
+    guarantor payout-route decision;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

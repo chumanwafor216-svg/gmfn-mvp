@@ -154,6 +154,12 @@ assertNotContains(
   "Repayment page must not restore spaced-out micro-label typography."
 );
 
+assertNotContains(
+  "src/pages/GuarantorEarningsPage.tsx",
+  /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
+  "Guarantor Earnings page must not restore spaced-out micro-label typography."
+);
+
 assertContains(
   "src/lib/communityMoney.ts",
   /export type CommunitySettlementDestination = \{[\s\S]*sortCode: string;[\s\S]*country: string;[\s\S]*currency: string;[\s\S]*noteWithSortCode[\s\S]*sort_code: normalizeSortCode\(destination\.sortCode\)/,
