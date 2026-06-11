@@ -483,7 +483,7 @@ function sectionLabel(align: "left" | "center" = "left"): React.CSSProperties {
     fontSize: 12,
     color: "#48657D",
     fontWeight: 900,
-    letterSpacing: 1.8,
+    letterSpacing: 0,
     textTransform: "uppercase",
     textAlign: align,
     width: align === "center" ? "100%" : undefined,

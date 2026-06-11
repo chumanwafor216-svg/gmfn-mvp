@@ -46505,3 +46505,33 @@ GSN-branded invite composer and invite-entry continuity.
     guarantor payout-route decision;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Community Home micro-label polish checkpoint (2026-06-11)
+
+- Trigger:
+  - Community Home already had the protected 3D icon adapter and larger phone
+    icon geometry, but one spaced-out section label style remained on the
+    protected phone surface.
+- Changed locally, not pushed:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - removed positive letter spacing from `sectionLabel` so compact phone
+      headings read more naturally and less stretched.
+  - `frontend/tools/audit-community-home-phone-buttons.mjs`
+    - added a guard so Community Home cannot restore spaced-out micro-label
+      typography while the phone button/icon freeze is active.
+- Verification:
+  - Passed `npm run audit:community-home-phone-buttons` from `frontend`.
+  - Passed `npm run audit:community-home-button-inventory` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for `CommunityHomePage.tsx` and
+    `tools/audit-community-home-phone-buttons.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - Community Home route targets, action inventory, button geometry, and the
+    protected 3D icon adapter were not changed;
+  - this is a precise typography polish checkpoint, not a real-phone screenshot
+    review;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

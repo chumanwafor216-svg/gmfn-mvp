@@ -127,6 +127,11 @@ assertNotContains(
   "Community Home must not keep legacy hidden owner-actions or circle debug surfaces; use compact tool rows and First Circle routes."
 );
 
+assertNotContains(
+  /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/g,
+  "Community Home must not restore spaced-out micro-label typography on the phone surface."
+);
+
 if (findings.length > 0) {
   console.error("Community Home phone button audit failed:");
   for (const finding of findings) {
