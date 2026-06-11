@@ -9151,6 +9151,20 @@ export default function DashboardPage() {
                     <GsnLegacyIcon name="megaphone" size={isPhone ? 38 : 42} />
                   </span>
                 ) : null}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: isPhone ? 18 : 22,
+                    right: isPhone ? 18 : 22,
+                    bottom: isPhone ? 16 : 18,
+                    zIndex: 5,
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    gap: isPhone ? 8 : 10,
+                    alignItems: "end",
+                    pointerEvents: "none",
+                  }}
+                >
                 <StableButton
                   debugId="dashboard.spotlight.whatsapp"
                   type="button"
@@ -9158,10 +9172,9 @@ export default function DashboardPage() {
                   onPointerDown={consumeDashboardPointerEvent}
                   stableHeight={52}
                   style={{
-                    position: "absolute",
-                    right: isPhone ? 16 : 18,
-                    bottom: isPhone ? 16 : 18,
-                    zIndex: 5,
+                    gridColumn: 2,
+                    gridRow: 1,
+                    justifySelf: "end",
                     minWidth: isPhone ? 138 : 164,
                     width: "auto",
                     minHeight: 52,
@@ -9191,16 +9204,14 @@ export default function DashboardPage() {
                 </StableButton>
                 <div
                   style={{
-                    position: "absolute",
-                    left: isPhone ? 18 : 22,
-                    right: isPhone ? 168 : 198,
-                    bottom: isPhone ? 22 : 24,
+                    gridColumn: 1,
+                    gridRow: 1,
+                    minWidth: 0,
                     display: "flex",
                     gap: isPhone ? 7 : 9,
                     flexWrap: "wrap",
                     alignItems: "center",
                     pointerEvents: "none",
-                    zIndex: 4,
                   }}
                 >
                   <span
@@ -9219,6 +9230,10 @@ export default function DashboardPage() {
                       fontSize: isPhone ? 12.5 : 14,
                       fontWeight: 900,
                       lineHeight: 1,
+                      maxWidth: "100%",
+                      minWidth: 0,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
                     }}
                   >
                     <span
@@ -9239,11 +9254,20 @@ export default function DashboardPage() {
                         background: "rgba(255,255,255,0.16)",
                       }}
                     />
-                    <span>Spotlight is active</span>
+                    <span
+                      style={{
+                        minWidth: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {isPhone ? "Active" : "Spotlight is active"}
+                    </span>
                   </span>
                   <span
                     style={{
                       ...badge(false),
+                      display: isPhone ? "none" : "inline-flex",
                       minHeight: isPhone ? 32 : 36,
                       padding: isPhone ? "6px 9px" : "7px 11px",
                       background: "rgba(255,255,255,0.88)",
@@ -9255,6 +9279,7 @@ export default function DashboardPage() {
                   >
                     {spotlightExpiryStatus.chip}
                   </span>
+                </div>
                 </div>
                 <div
                   style={{

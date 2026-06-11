@@ -1,3 +1,33 @@
+### Dashboard Spotlight overlay anti-overlap pass (2026-06-11)
+
+- Continued the dashboard Spotlight reference polish with a phone-width geometry
+  pass.
+- Frontend change:
+  - `frontend/src/pages/DashboardPage.tsx` now places the live status pill and
+    WhatsApp CTA inside one shared bottom overlay grid instead of two separate
+    absolute positions.
+  - The live status owns the left `minmax(0, 1fr)` cell and the WhatsApp action
+    owns the right `auto` cell, so they cannot slide into each other on narrow
+    phones.
+  - Phone copy in the overlay is shortened to `Live | Active` while desktop
+    keeps `Live | Spotlight is active`.
+  - The expiry chip is hidden inside the media overlay on phone to avoid
+    crowding; the rotation/status information remains visible in the top chip
+    row.
+- Verification passed locally:
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:dashboard-actions`
+  - `npm run audit:protected-button-freeze`
+  - `npm exec -- eslint src\pages\DashboardPage.tsx`
+  - `npm run build`
+- Unabated truth:
+  - this proves the protected action count and build still pass;
+  - there is no local Playwright/screenshot harness in `frontend`, so accepted
+    phone-photo proof still requires manual phone review.
+- Publishing posture:
+  - no push and no Render deploy; keep batching locally until the owner says
+    the current batch is ready to publish.
+
 ### Dashboard Spotlight reference polish (2026-06-11)
 
 - Product owner supplied a phone screenshot reference for the dashboard live
