@@ -72,6 +72,45 @@
     screenshot pass remains required before declaring Community Home fully
     production-perfect.
 
+### Marketplace production polish slice (2026-06-11)
+
+- Applied the production polish gate to the next route target:
+  `frontend/src/pages/MarketplacePage.tsx`.
+- Changes made:
+  - Marketplace front-lane and opened-lane icon tiles now use light/near-white
+    embossed containers by default instead of heavy color shields;
+  - the colored lane meaning is now carried through restrained borders, inset
+    accents, and the 3D object itself;
+  - Support & Loans now maps to the repayment-schedule 3D object instead of a
+    generic community-building icon, so borrowing/support reads as a loan or
+    payment-plan lane before the user reads the text.
+- Updated `frontend/tools/audit-marketplace-front-package.mjs` so the audit now
+  protects:
+  - Support & Loans using the repayment-schedule semantic icon;
+  - Marketplace row icons staying on light embossed tiles by default.
+- Verification passed locally from `frontend`:
+  - `npm run audit:marketplace-front-package`;
+  - `npm run audit:marketplace-button-lines`;
+  - `npm run audit:marketplace-button-inventory`;
+  - `npm run audit:marketplace-support-lane`;
+  - `npm run audit:marketplace-money-pool-lane`;
+  - `npm run audit:marketplace-rosca-lane`;
+  - `npm run audit:marketplace-trusted-trade-lane`;
+  - `npm run audit:marketplace-records-links-lane`;
+  - `npm run audit:marketplace-more-tools-lane`;
+  - `npm run audit:marketplace-trust-pill`;
+  - `npm run audit:marketplace-demand-box-lane`;
+  - `npm run audit:marketplace-actions`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx
+    tools/audit-marketplace-front-package.mjs`;
+  - `npm exec -- tsc -b --pretty false`;
+  - `npm run build`.
+- Current truth:
+  - this completes a targeted Marketplace icon-container and Support & Loans
+    semantic correction under the new standard;
+  - it does not prove all Marketplace subpanels are visually perfect on a real
+    phone. Physical screenshot review is still required for final polish.
+
 ### GSN icon meaning and borrowing repayment queue (2026-06-11)
 
 - Operational update - pipeline shortage / batch publishing:

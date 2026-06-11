@@ -2561,11 +2561,15 @@ function marketplaceOsIconStyle(bg: string, isCompact = false): React.CSSPropert
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: bg,
-    color: "#FFFFFF",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.96) 100%)",
+    border: "1px solid rgba(13,95,168,0.12)",
+    color: "#0B2D4A",
     fontSize: isCompact ? 26 : 30,
     boxShadow:
-      "0 14px 26px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.22)",
+      "0 12px 22px rgba(10,24,49,0.10), inset 4px 0 0 rgba(214,170,69,0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
+    outline: `1px solid ${bg.includes("#25A65A") ? "rgba(46,155,98,0.10)" : "rgba(214,170,69,0.08)"}`,
+    outlineOffset: -2,
   };
 }
 
@@ -2670,11 +2674,15 @@ function marketplaceOsRowIconStyle(bg: string, isCompact = false): React.CSSProp
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: bg,
-    color: "#FFFFFF",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.96) 100%)",
+    border: "1px solid rgba(13,95,168,0.12)",
+    color: "#0B2D4A",
     fontSize: isCompact ? 20 : 22,
     boxShadow:
-      "0 12px 22px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.2)",
+      "0 10px 18px rgba(10,24,49,0.09), inset 4px 0 0 rgba(214,170,69,0.16), inset 0 1px 0 rgba(255,255,255,0.96)",
+    outline: `1px solid ${bg.includes("#25A65A") ? "rgba(46,155,98,0.10)" : "rgba(214,170,69,0.08)"}`,
+    outlineOffset: -2,
   };
 }
 
@@ -2794,7 +2802,7 @@ const MARKETPLACE_GLYPH_ICON_MAP = {
   rosca: "repaymentSchedule",
   shop: "marketplace",
   spark: "spark",
-  support: "community",
+  support: "repaymentSchedule",
   target: "qr",
   trade: "marketplace",
   trust: "shield",

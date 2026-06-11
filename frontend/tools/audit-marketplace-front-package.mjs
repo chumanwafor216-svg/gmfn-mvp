@@ -71,8 +71,15 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /const MARKETPLACE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "proof"[\s\S]*?payment: "repaymentSchedule"[\s\S]*?pool: "financeInstitution"[\s\S]*?rosca: "repaymentSchedule"[\s\S]*?shop: "marketplace"[\s\S]*?trade: "marketplace"[\s\S]*?verify: "proof"/,
+  /const MARKETPLACE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "proof"[\s\S]*?payment: "repaymentSchedule"[\s\S]*?pool: "financeInstitution"[\s\S]*?rosca: "repaymentSchedule"[\s\S]*?shop: "marketplace"[\s\S]*?support: "repaymentSchedule"[\s\S]*?trade: "marketplace"[\s\S]*?verify: "proof"/,
   "Marketplace semantic icons must use the market stall, finance institution, repayment schedule, and proof meanings for front-page lanes."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /function marketplaceOsRowIconStyle\(bg: string, isCompact = false\): React\.CSSProperties \{[\s\S]*?background:\s*"linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?border: "1px solid rgba\(13,95,168,0\.12\)"[\s\S]*?inset 4px 0 0 rgba\(214,170,69,0\.16\)/,
+  "Marketplace row icons must use light embossed tiles by default, not heavy color shields."
 );
 
 [
