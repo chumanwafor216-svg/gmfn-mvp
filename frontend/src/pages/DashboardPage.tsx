@@ -7039,13 +7039,13 @@ export default function DashboardPage() {
                 display: "block",
                 minWidth: 0,
                 height: isPhone ? 38 : 44,
-                marginRight: isPhone ? -1 : -2,
+                marginRight: isPhone ? -7 : -10,
               }}
             >
               <svg
                 width="100%"
                 height={isPhone ? 38 : 44}
-                viewBox="0 0 126 44"
+                viewBox="0 0 132 44"
                 role="presentation"
                 focusable="false"
                 style={{ display: "block", overflow: "visible" }}
@@ -7081,7 +7081,7 @@ export default function DashboardPage() {
                   <ellipse cx="80" cy="22" rx="16" ry="9" transform="rotate(-6 80 22)" />
                 </g>
                 <path
-                  d="M92 22 H126"
+                  d="M92 22 H132"
                   fill="none"
                   stroke="#D6AA45"
                   strokeWidth="2.4"
@@ -7110,14 +7110,14 @@ export default function DashboardPage() {
                   padding: isPhone ? "5px 16px" : "6px 22px",
                   borderRadius: 999,
                   background:
-                    "linear-gradient(180deg, rgba(255,247,218,1) 0%, rgba(238,194,79,0.98) 54%, rgba(211,153,38,0.95) 100%)",
-                  border: "1px solid rgba(145,103,19,0.28)",
+                    "radial-gradient(circle at 32% 18%, rgba(255,255,255,0.98) 0%, rgba(255,247,218,0.96) 22%, rgba(238,194,79,0.98) 58%, rgba(211,153,38,0.97) 100%)",
+                  border: "1px solid rgba(145,103,19,0.38)",
                   color: "#3B2400",
                   fontSize: isPhone ? 18 : 21,
                   fontWeight: 1000,
                   letterSpacing: 0,
                   boxShadow:
-                    "0 12px 22px rgba(145,103,19,0.15), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(145,103,19,0.14)",
+                    "0 12px 22px rgba(145,103,19,0.16), 0 0 0 3px rgba(255,255,255,0.72), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -2px 0 rgba(145,103,19,0.16)",
                 }}
               >
                 GSN
@@ -7140,13 +7140,13 @@ export default function DashboardPage() {
                 display: "block",
                 minWidth: 0,
                 height: isPhone ? 38 : 44,
-                marginLeft: isPhone ? -1 : -2,
+                marginLeft: isPhone ? -7 : -10,
               }}
             >
               <svg
                 width="100%"
                 height={isPhone ? 38 : 44}
-                viewBox="0 0 126 44"
+                viewBox="0 0 132 44"
                 role="presentation"
                 focusable="false"
                 style={{ display: "block", overflow: "visible" }}
@@ -7162,7 +7162,7 @@ export default function DashboardPage() {
                   </filter>
                 </defs>
                 <path
-                  d="M0 22 H34"
+                  d="M0 22 H40"
                   fill="none"
                   stroke="#D6AA45"
                   strokeWidth="2.4"
@@ -7176,12 +7176,12 @@ export default function DashboardPage() {
                   strokeWidth="3.1"
                   filter="url(#passport-chain-glow-right)"
                 >
-                  <ellipse cx="46" cy="22" rx="16" ry="9" transform="rotate(6 46 22)" />
-                  <ellipse cx="68" cy="22" rx="16" ry="9" transform="rotate(-7 68 22)" />
-                  <ellipse cx="90" cy="22" rx="16" ry="9" transform="rotate(5 90 22)" />
+                  <ellipse cx="50" cy="22" rx="16" ry="9" transform="rotate(6 50 22)" />
+                  <ellipse cx="72" cy="22" rx="16" ry="9" transform="rotate(-7 72 22)" />
+                  <ellipse cx="94" cy="22" rx="16" ry="9" transform="rotate(5 94 22)" />
                 </g>
                 <path
-                  d="M94 22 C103 13 111 12 124 23"
+                  d="M98 22 C107 13 115 12 130 23"
                   fill="none"
                   stroke="url(#passport-chain-right)"
                   strokeWidth="9"
@@ -7205,7 +7205,7 @@ export default function DashboardPage() {
               border: "1px solid rgba(15,59,116,0.10)",
               borderTop: "0",
               background:
-                "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.94) 100%)",
+                "radial-gradient(circle at 50% 0%, rgba(214,170,69,0.08) 0%, rgba(214,170,69,0) 42%), linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.95) 100%)",
               boxShadow:
                 "0 14px 26px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
               overflow: "hidden",
@@ -7286,12 +7286,12 @@ export default function DashboardPage() {
                       display: "inline-flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      borderRadius: 14,
+                      borderRadius: 999,
                       background:
                         "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(240,247,255,0.95) 100%)",
                       border: "1px solid rgba(16,37,59,0.08)",
                       boxShadow:
-                        "0 10px 18px rgba(10,24,49,0.08), 0 0 0 4px rgba(255,255,255,0.86), inset 0 1px 0 rgba(255,255,255,0.94)",
+                        "0 10px 18px rgba(10,24,49,0.08), 0 0 0 4px rgba(255,255,255,0.86), 0 0 0 5px rgba(214,170,69,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
                       color: "#0D3A63",
                       lineHeight: 1,
                     }}
@@ -7343,8 +7343,22 @@ export default function DashboardPage() {
               overflow: "hidden",
               boxShadow:
                 "0 14px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.82)",
+              position: "relative",
             }}
           >
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: 0,
+                height: 2,
+                background:
+                  "linear-gradient(90deg, rgba(214,170,69,0), rgba(214,170,69,0.42), rgba(214,170,69,0))",
+                zIndex: 0,
+              }}
+            />
             {[
               {
                 label: "Trust",
@@ -7393,6 +7407,8 @@ export default function DashboardPage() {
                   color: DASHBOARD_BRAND.ink,
                   cursor: "pointer",
                   textAlign: "center",
+                  position: "relative",
+                  zIndex: 1,
                 })}
               >
                 <DashboardSignalIcon
@@ -7554,21 +7570,58 @@ export default function DashboardPage() {
                 zIndex: 1,
               }}
             >
-              <span
+              <svg
+                width={isPhone ? 42 : 54}
+                height={isPhone ? 42 : 54}
+                viewBox="0 0 64 64"
+                role="presentation"
+                focusable="false"
                 style={{
-                  display: "grid",
-                  justifyItems: "center",
-                  gap: 0,
-                  color: "#F8E7A3",
-                  fontSize: isPhone ? 12 : 14,
-                  fontWeight: 1000,
-                  lineHeight: 1,
-                  textShadow: "0 1px 1px rgba(0,0,0,0.22)",
+                  display: "block",
+                  filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.2))",
                 }}
               >
-                <GSNBrandMark width={isPhone ? 25 : 31} height={isPhone ? 30 : 37} />
-                <span>GSN</span>
-              </span>
+                <circle cx="32" cy="32" r="29" fill="rgba(7,21,38,0.82)" />
+                <circle cx="32" cy="32" r="25" fill="rgba(13,49,84,0.72)" stroke="#F8E7A3" strokeWidth="1.2" />
+                <path
+                  d="M19 43 C11 34 13 21 24 14"
+                  fill="none"
+                  stroke="#F8E7A3"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M45 43 C53 34 51 21 40 14"
+                  fill="none"
+                  stroke="#F8E7A3"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+                {[0, 1, 2, 3].map((leaf) => (
+                  <g key={`left-${leaf}`} transform={`translate(${17 + leaf * 2.2} ${38 - leaf * 5.2}) rotate(${-42 + leaf * 8})`}>
+                    <ellipse cx="0" cy="0" rx="2.1" ry="4.2" fill="#F8E7A3" opacity="0.9" />
+                  </g>
+                ))}
+                {[0, 1, 2, 3].map((leaf) => (
+                  <g key={`right-${leaf}`} transform={`translate(${47 - leaf * 2.2} ${38 - leaf * 5.2}) rotate(${42 - leaf * 8})`}>
+                    <ellipse cx="0" cy="0" rx="2.1" ry="4.2" fill="#F8E7A3" opacity="0.9" />
+                  </g>
+                ))}
+                <text
+                  x="32"
+                  y="38"
+                  textAnchor="middle"
+                  fill="#F8E7A3"
+                  fontSize="16"
+                  fontWeight="1000"
+                  fontFamily="ui-sans-serif, system-ui, sans-serif"
+                >
+                  GSN
+                </text>
+                <circle cx="32" cy="17" r="1.8" fill="#F8E7A3" />
+                <circle cx="26" cy="19" r="1.2" fill="#F8E7A3" opacity="0.86" />
+                <circle cx="38" cy="19" r="1.2" fill="#F8E7A3" opacity="0.86" />
+              </svg>
             </span>
 
             <span
@@ -7584,6 +7637,9 @@ export default function DashboardPage() {
             >
               <span
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
                   color: DASHBOARD_BRAND.ink,
                   fontSize: isPhone ? 18 : 24,
                   fontWeight: 1000,
@@ -7591,7 +7647,8 @@ export default function DashboardPage() {
                   overflowWrap: "break-word",
                 }}
               >
-                GSN Global ID
+                <span>GSN Global ID</span>
+                <DashboardSignalIcon name="trust" size={isPhone ? 14 : 16} strokeWidth={2.2} />
               </span>
               <span
                 style={{
@@ -7625,11 +7682,11 @@ export default function DashboardPage() {
                   width: "100%",
                   padding: isPhone ? "9px 8px" : "10px 12px",
                   borderRadius: 11,
-                  border: "1px solid rgba(201,154,39,0.46)",
+                  border: "1px solid rgba(201,154,39,0.5)",
                   background:
-                    "linear-gradient(180deg, rgba(255,252,242,0.98) 0%, rgba(255,255,255,0.96) 100%)",
+                    "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(255,255,255,0.97) 100%)",
                   boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.96), 0 8px 14px rgba(10,24,49,0.05)",
+                    "inset 0 1px 0 rgba(255,255,255,0.96), 0 8px 14px rgba(10,24,49,0.05), 0 0 0 3px rgba(214,170,69,0.06)",
                   fontFamily:
                     'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                   fontSize: isPhone ? 15 : 18,

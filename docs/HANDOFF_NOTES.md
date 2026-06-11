@@ -47111,3 +47111,38 @@ GSN-branded invite composer and invite-entry continuity.
   - the coin/chain are still code-rendered SVG/CSS treatments, not imported
     photorealistic 3D assets;
   - this is build/audit verified, not a live phone screenshot comparison.
+
+### Dashboard passport polish enhancement (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue polishing and enhancing the dashboard
+    passport treatment after the reference-detail pass.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - strengthened the central `GSN` pill material with a radial gold finish,
+      rim, and soft white outer lift;
+    - tucked the left and right connector chains further under the central GSN
+      pill so the chain reads as physically connected;
+    - softened the Visible / Portable / Usable row with a warmer institutional
+      wash and rounded proof icon badges;
+    - added a subtle gold top rule to the Trust / CCI / TrustSlip evidence row
+      so it reads more deliberately as an embedded proof strip;
+    - replaced the generic inner brand mark inside the Global ID circle with a
+      code-drawn laurel-style GSN coin seal;
+    - added a small trust seal icon beside `GSN Global ID` and refined the ID
+      code well with a quieter gold rim.
+- Verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+  - Passed `git diff --check`.
+- Deployment protocol:
+  - no push or Render deploy was triggered; keep batching local work until the
+    product owner says the batch is ready to publish.
+- Unabated truth:
+  - this is a meaningful polish improvement in code, especially the coin seal
+    and chain connection;
+  - it is still not a true photorealistic/generated 3D asset pass, and it has
+    not been validated by a live phone screenshot comparison.
