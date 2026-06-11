@@ -395,6 +395,85 @@ def test_loan_repayment_part_instruction_keeps_expected_total_outstanding(db):
     assert repeat_instruction["expected_total_amount"] == "100.00"
 
 
+def test_loan_repayment_instruction_repairs_existing_part_sized_expected_payment(db):
+    clan, borrower, loan, _guarantor_row = _seed_supported_loan_for_reconciliation(db)
+
+    legacy_expected = ensure_loan_repayment_expected_payment(
+        db,
+        clan_id=int(clan.id),
+        loan_id=int(loan.id),
+        borrower_user_id=int(borrower.id),
+        amount=Decimal("40.00"),
+        currency="NGN",
+        meta={"source": "legacy.part-sized.expected-payment"},
+        commit=True,
+        refresh=True,
+    )
+
+    assert legacy_expected.amount == Decimal("40.00")
+    assert legacy_expected.remaining_amount == Decimal("40.00")
+
+    instruction = create_loan_repayment_instruction(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(borrower.id),
+        loan_id=int(loan.id),
+        amount=Decimal("25.00"),
+        currency="NGN",
+    )
+
+    repaired = db.get(ExpectedPayment, int(instruction["expected_payment_id"]))
+    assert repaired.id == legacy_expected.id
+    assert instruction["amount"] == "25.00"
+    assert instruction["expected_total_amount"] == "100.00"
+    assert instruction["expected_remaining_amount"] == "100.00"
+    assert repaired.amount == Decimal("100.00")
+    assert repaired.paid_amount == Decimal("0.00")
+    assert repaired.remaining_amount == Decimal("100.00")
+    assert repaired.status == "expected"
+
+
+def test_loan_repayment_instruction_reopens_confirmed_part_sized_expected_payment(db):
+    clan, borrower, loan, _guarantor_row = _seed_supported_loan_for_reconciliation(db)
+
+    legacy_expected = ensure_loan_repayment_expected_payment(
+        db,
+        clan_id=int(clan.id),
+        loan_id=int(loan.id),
+        borrower_user_id=int(borrower.id),
+        amount=Decimal("40.00"),
+        currency="NGN",
+        meta={"source": "legacy.confirmed-part-sized.expected-payment"},
+        commit=True,
+        refresh=True,
+    )
+    legacy_expected.paid_amount = Decimal("40.00")
+    legacy_expected.remaining_amount = Decimal("0.00")
+    legacy_expected.status = "confirmed"
+    db.add(legacy_expected)
+    db.commit()
+    db.refresh(legacy_expected)
+
+    instruction = create_loan_repayment_instruction(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(borrower.id),
+        loan_id=int(loan.id),
+        amount=Decimal("60.00"),
+        currency="NGN",
+    )
+
+    repaired = db.get(ExpectedPayment, int(instruction["expected_payment_id"]))
+    assert repaired.id == legacy_expected.id
+    assert instruction["amount"] == "60.00"
+    assert instruction["expected_total_amount"] == "100.00"
+    assert instruction["expected_remaining_amount"] == "60.00"
+    assert repaired.amount == Decimal("100.00")
+    assert repaired.paid_amount == Decimal("40.00")
+    assert repaired.remaining_amount == Decimal("60.00")
+    assert repaired.status == "partial"
+
+
 def test_loan_repayment_reconciliation_applies_part_payment_then_full_closure(db):
     clan, borrower, loan, guarantor_row = _seed_supported_loan_for_reconciliation(db)
 

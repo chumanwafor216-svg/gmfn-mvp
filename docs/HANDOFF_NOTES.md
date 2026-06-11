@@ -46835,3 +46835,36 @@ GSN-branded invite composer and invite-entry continuity.
   - admin/bank reconciliation is still the final proof path for loan closure,
     guarantor release, and trust impact;
   - no push or Render deploy was triggered.
+
+### Repayment stale expected-payment repair checkpoint (2026-06-11)
+
+- Trigger:
+  - continued the repayment expected-payment audit one layer deeper;
+  - devil's-advocate finding: the previous fix protects new repayment
+    instructions, but an already-created part-sized expected-payment row could
+    still be returned unchanged because `create_expected_payment()` returns
+    existing rows for the same reference.
+- Changed locally, not pushed:
+  - `gmfn_backend/app/services/expected_payments_service.py`
+    - `ensure_loan_repayment_expected_payment()` now widens an existing loan
+      repayment expected-payment row when the requested ledger total is higher;
+    - recalculates `remaining_amount` from `amount - paid_amount`;
+    - changes stale confirmed part-sized rows back to `partial` when money has
+      already been paid but the full outstanding total is not yet complete;
+    - merges the new metadata without dropping existing repayment metadata.
+  - `gmfn_backend/tests/test_reconciliation_integrity.py`
+    - added a regression test for an unpaid legacy part-sized expected-payment
+      row;
+    - added a regression test for an already-confirmed part-sized row, proving
+      it is reopened to `partial` with the remaining balance visible.
+- Verification:
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_reconciliation_integrity.py gmfn_backend\tests\test_repayment_completion_service.py`
+    with `8 passed`.
+  - Passed `npm run audit:loans-actions`.
+- Unabated truth:
+  - this repairs the current single-reference repayment model for existing bad
+    part-sized rows;
+  - it still does not create a dated instalment calendar or multiple scheduled
+    repayment references;
+  - no push or Render deploy was triggered.

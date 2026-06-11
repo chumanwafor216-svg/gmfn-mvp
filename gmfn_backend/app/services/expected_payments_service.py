@@ -274,7 +274,7 @@ def ensure_loan_repayment_expected_payment(
     if meta:
         payload.update(meta)
 
-    return create_expected_payment(
+    row = create_expected_payment(
         db,
         clan_id=int(clan_id),
         user_id=int(borrower_user_id),
@@ -288,6 +288,45 @@ def ensure_loan_repayment_expected_payment(
         commit=commit,
         refresh=refresh,
     )
+
+    target_amount = _d(amount)
+    current_amount = _d(getattr(row, "amount", None))
+    if target_amount > current_amount:
+        paid_amount = _d(getattr(row, "paid_amount", None))
+        row.amount = target_amount
+        row.remaining_amount = max(Decimal("0.00"), target_amount - paid_amount)
+        if row.remaining_amount == Decimal("0.00"):
+            row.status = "confirmed"
+        elif paid_amount > Decimal("0.00"):
+            row.status = "partial"
+            row.status_reason = "repayment_expected_total_refreshed"
+        else:
+            row.status = "expected"
+            row.status_reason = None
+
+        existing_meta: Dict[str, Any] = {}
+        if row.meta_json:
+            try:
+                parsed = json.loads(row.meta_json)
+                if isinstance(parsed, dict):
+                    existing_meta = parsed
+            except Exception:
+                existing_meta = {}
+        existing_meta.update(payload)
+        existing_meta["expected_total_refreshed_to"] = str(target_amount)
+        row.meta_json = json.dumps(existing_meta, ensure_ascii=False)
+
+        db.add(row)
+        if commit:
+            db.commit()
+            if refresh:
+                db.refresh(row)
+        else:
+            db.flush()
+            if refresh:
+                db.refresh(row)
+
+    return row
 
 
 def calc_vault_subscription_amount(quantity_total: int) -> Decimal:
