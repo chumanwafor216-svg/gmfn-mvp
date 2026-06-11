@@ -47351,3 +47351,51 @@ GSN-branded invite composer and invite-entry continuity.
     and chain connection;
   - it is still not a true photorealistic/generated 3D asset pass, and it has
     not been validated by a live phone screenshot comparison.
+
+### Trust Passport TrustSlip verify button audit (2026-06-11)
+
+- Trigger:
+  - product owner supplied a Trust Passport phone screenshot and reported that
+    the `Open TrustSlip verify` button could not be opened from the shareable
+    trust tools section.
+- Confirmed from code:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` already exists and supports
+    `/app/trust-slip/verify?code=...`;
+  - the verifier can also recover the current signed-in user's TrustSlip when
+    no code is supplied and can show a manual TrustSlip code checker;
+  - the Trust Passport button was using the public paper path
+    `/trust-slips/verify/:code/page` from inside the authenticated app surface,
+    while the audits did not require the signed-in verifier route.
+- Changed locally, not pushed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - added a signed-in TrustSlip Verify route target through the existing
+      `merchantVerify` CTA intent;
+    - added `trustSlipVerifyAppPath(...)` so the button opens
+      `/app/trust-slip/verify?code=<visible-code>` when a code is present;
+    - changed `Open TrustSlip verify` so it always opens the verifier route
+      instead of falling back to TrustSlip preparation copy.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - now protects the signed-in verifier route and button handler.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated the older trust-domain audit from the weak fallback contract to
+      the corrected verifier route contract.
+- Verification:
+  - Passed `npm run audit:trust-passport-button-inventory`.
+  - Passed `npm run audit:trust-actions`.
+  - Passed `npm run audit:trust-passport-front-package`.
+  - Passed `npm run audit:trust-passport-lane-map`.
+  - Passed `npm run audit:action-response-protocol`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src\pages\TrustScorePage.tsx tools\audit-trust-passport-button-inventory.mjs tools\audit-trust-actions.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+  - Passed `git diff --check` with only existing CRLF normalization warnings.
+- Deployment protocol:
+  - no push or Render deploy was triggered; keep batching local work until the
+    product owner says the batch is ready to publish.
+- Unabated truth:
+  - this fixes the code-level route/button contract and protects it with
+    audits;
+  - it still needs a live phone tap check against the running local app to prove
+    the user's exact device session opens the verifier and loads the expected
+    TrustSlip record.

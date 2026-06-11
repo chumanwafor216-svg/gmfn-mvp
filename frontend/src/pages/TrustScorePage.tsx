@@ -947,6 +947,15 @@ function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
   return rawFallback.startsWith("/trust-slips/verify") ? rawFallback : "";
 }
 
+function trustSlipVerifyAppPath(code: string, fallback: string): string {
+  const cleanFallback = safeStr(fallback) || "/app/trust-slip/verify";
+  const cleanCode = safeStr(code);
+  if (!cleanCode) return cleanFallback;
+
+  const separator = cleanFallback.includes("?") ? "&" : "?";
+  return `${cleanFallback}${separator}code=${encodeURIComponent(cleanCode)}`;
+}
+
 function frontendAbsoluteUrl(pathOrUrl: string): string {
   const raw = safeStr(pathOrUrl);
   if (!raw) return "";
@@ -1286,6 +1295,11 @@ export default function TrustScorePage() {
       openTrust: routeTarget("openTrust", selectedClanId, "trust-score.route.open-trust"),
       cciReading: routeTarget("cciReading", selectedClanId, "trust-score.route.cci-reading"),
       trustSlip: routeTarget("trustSlip", selectedClanId, "trust-score.route.trust-slip"),
+      trustSlipVerify: routeTarget(
+        "merchantVerify",
+        selectedClanId,
+        "trust-score.route.trust-slip-verify"
+      ),
       payoutDetails: routeTarget(
         "payoutDetails",
         selectedClanId,
@@ -1745,14 +1759,22 @@ export default function TrustScorePage() {
     };
   }, [guidance, routes.notifications]);
 
+  const trustSlipCode = useMemo(
+    () =>
+      firstTruthy(
+        trustSlipSummary?.code,
+        trustSlipSummary?.verification_code,
+        trustSlipSummary?.token
+      ),
+    [trustSlipSummary]
+  );
   const verifyPath = useMemo(() => {
-    const code = firstTruthy(
-      trustSlipSummary?.verification_code,
-      trustSlipSummary?.code,
-      trustSlipSummary?.token
-    );
-    return trustSlipVerifyFrontendPath(code, trustSlipSummary?.public_verify_url || "");
-  }, [trustSlipSummary]);
+    return trustSlipVerifyFrontendPath(trustSlipCode, trustSlipSummary?.public_verify_url || "");
+  }, [trustSlipSummary, trustSlipCode]);
+  const verifyAppPath = useMemo(
+    () => trustSlipVerifyAppPath(trustSlipCode, routes.trustSlipVerify),
+    [routes.trustSlipVerify, trustSlipCode]
+  );
   const verifyUrl = useMemo(() => frontendAbsoluteUrl(verifyPath), [verifyPath]);
 
   const capacityContext = trustSlipSummary?.evidence_summary?.capacity_context || null;
@@ -1776,15 +1798,6 @@ export default function TrustScorePage() {
     [me, trustSlipSummary, hasSelectedCommunity]
   );
   const cci = useMemo(() => getCciState(me, trustSlipSummary), [me, trustSlipSummary]);
-  const trustSlipCode = useMemo(
-    () =>
-      firstTruthy(
-        trustSlipSummary?.code,
-        trustSlipSummary?.verification_code,
-        trustSlipSummary?.token
-      ),
-    [trustSlipSummary]
-  );
   const trustSlipStatus = firstTruthy(
     trustSlipSummary?.status,
     trustSlipSummary?.active || trustSlipSummary?.verified || trustSlipCode
@@ -3973,17 +3986,7 @@ export default function TrustScorePage() {
                   Open TrustSlip
                 </SecondaryButton>
                 <SecondaryButton
-                  onClick={() => {
-                    if (verifyPath) {
-                      openTrustRoute(verifyPath);
-                      return;
-                    }
-                    setNotice({
-                      tone: "error",
-                      text: "TrustSlip verify is not ready because no current public code is visible. Open TrustSlip first and refresh or generate the current TrustSlip.",
-                    });
-                    openTrustRoute(routes.trustSlip);
-                  }}
+                  onClick={() => openTrustRoute(verifyAppPath)}
                   fullWidth
                   stableHeight={isCompact ? 48 : 58}
                   debugId="trust-score.verify"
@@ -3995,7 +3998,7 @@ export default function TrustScorePage() {
                   }}
                 >
                   {trustIconBadge("search", isCompact ? 26 : 28, "navy")}
-                  {verifyPath ? "Open TrustSlip verify" : "Prepare TrustSlip verify"}
+                  Open TrustSlip verify
                 </SecondaryButton>
               </div>
               <div

@@ -155,8 +155,8 @@ assertContains(
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /if \(verifyPath\) \{[\s\S]*?openTrustRoute\(verifyPath\);[\s\S]*?Open TrustSlip first and refresh or generate the current TrustSlip\.[\s\S]*?openTrustRoute\(routes\.trustSlip\);[\s\S]*?debugId="trust-score\.verify"/,
-  "Trust Passport verify action must open a coded verify path when available and fall back to TrustSlip preparation when no code is visible."
+  /trustSlipVerify: routeTarget\([\s\S]*?"merchantVerify"[\s\S]*?"trust-score\.route\.trust-slip-verify"[\s\S]*?const verifyAppPath = useMemo\([\s\S]*?trustSlipVerifyAppPath\(trustSlipCode, routes\.trustSlipVerify\)[\s\S]*?onClick=\{\(\) => openTrustRoute\(verifyAppPath\)\}[\s\S]*?debugId="trust-score\.verify"/,
+  "Trust Passport verify action must open the signed-in TrustSlip Verify page and carry the visible code when one is available."
 );
 
 assertContains(

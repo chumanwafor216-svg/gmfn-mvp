@@ -191,6 +191,11 @@ assertContains(
 );
 
 assertContains(
+  /trustSlipVerify: routeTarget\([\s\S]*?"merchantVerify"[\s\S]*?"trust-score\.route\.trust-slip-verify"[\s\S]*?const verifyAppPath = useMemo\([\s\S]*?trustSlipVerifyAppPath\(trustSlipCode, routes\.trustSlipVerify\)[\s\S]*?onClick=\{\(\) => openTrustRoute\(verifyAppPath\)\}[\s\S]*?debugId="trust-score\.verify"/,
+  "Trust Passport TrustSlip verify action must open the signed-in verifier with the visible TrustSlip code instead of drifting to the wrong TrustSlip surface."
+);
+
+assertContains(
   /stableHeight=\{isCompact \? 50 : 58\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?OpenRecordGlyph/,
   "Trust Passport public community record action must keep the screenshot-style fixed CTA."
 );
