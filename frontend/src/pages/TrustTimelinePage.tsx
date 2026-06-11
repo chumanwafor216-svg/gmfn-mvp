@@ -317,7 +317,7 @@ export default function TrustTimelinePage() {
     try {
       const blob = await authedBlob("/trust/me/timeline.pdf?limit=200");
       const suffix = packId ? `_${packId}` : "";
-      downloadBlob(blob, `gmfn_trust_timeline${suffix}.pdf`);
+      downloadBlob(blob, `gsn_trust_timeline${suffix}.pdf`);
     } catch (e: any) {
       setErr(String(e?.message || e));
     }
@@ -328,7 +328,7 @@ export default function TrustTimelinePage() {
     try {
       const blob = await authedBlob("/trust/me/evidence-pack.zip");
       const pid = packId || "pack";
-      downloadBlob(blob, `gmfn_evidence_pack_${pid}.zip`);
+      downloadBlob(blob, `gsn_evidence_pack_${pid}.zip`);
     } catch (e: any) {
       setErr(String(e?.message || e));
     }

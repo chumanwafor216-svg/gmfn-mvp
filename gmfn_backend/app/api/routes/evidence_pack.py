@@ -70,7 +70,7 @@ def download_evidence_pack_zip(
     )
 
     headers = {
-        "Content-Disposition": 'attachment; filename="gmfn_evidence_pack.zip"',
+        "Content-Disposition": 'attachment; filename="gsn_evidence_pack.zip"',
         "Content-Type": "application/zip",
     }
     return Response(content=zbytes, headers=headers, media_type="application/zip")

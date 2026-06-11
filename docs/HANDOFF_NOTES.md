@@ -1,3 +1,44 @@
+### GSN evidence pack package polish (2026-06-11)
+
+- Continued the institutional proof/evidence-pack pass.
+- Confirmed the active route remains:
+  - `/trust/me/evidence-pack/meta`
+  - `/trust/me/evidence-pack.zip`
+- Backend changes:
+  - `gmfn_backend/app/services/evidence_pack_service.py` now faces the package
+    as `GSN Evidence Pack` instead of user-facing `GMFN Evidence Pack`.
+  - Pack IDs now use `GSN-PACK-...`.
+  - Manifest/meta now include:
+    - `title`;
+    - `surface_brand`;
+    - `surface_brand_full`;
+    - `document_type`;
+    - `authority_note`;
+    - `limitation_statement`;
+    - GSN footer.
+  - README inside the zip now starts as `GSN Evidence Pack` and carries the
+    limitation statement.
+  - `gmfn_backend/app/api/routes/evidence_pack.py` now serves the download as
+    `gsn_evidence_pack.zip`.
+- Frontend changes:
+  - `frontend/src/pages/TrustTimelinePage.tsx` now downloads timeline/evidence
+    files as `gsn_trust_timeline...pdf` and `gsn_evidence_pack...zip`.
+- Test coverage:
+  - Added `gmfn_backend/tests/test_gsn_evidence_pack_package.py`.
+  - The test opens the generated zip and verifies `manifest.json`,
+    `trustslip_snapshot.json`, `README.txt`, `checksums.json`, GSN title,
+    GSN pack id, authority note, limitation statement, and checksums.
+- Verification passed locally:
+  - `python -m py_compile gmfn_backend\app\services\evidence_pack_service.py gmfn_backend\app\api\routes\evidence_pack.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`
+  - `python -m pytest -q gmfn_backend\tests\test_gsn_evidence_pack_package.py`
+  - `npm exec -- eslint src/pages/TrustTimelinePage.tsx`
+  - `npm exec -- tsc -b --pretty false`
+- Unabated truth:
+  - this improves the package authority and naming;
+  - it does not yet attach real phone screenshots into the evidence pack;
+  - evidence-pack readiness still remains partial until accepted screenshots
+    and pilot proof files are captured.
+
 ### Repayment screen part-payment visibility follow-up (2026-06-11)
 
 - Continued the repayment/installment truth pass on the frontend.
