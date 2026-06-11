@@ -46278,3 +46278,44 @@ GSN-branded invite composer and invite-entry continuity.
   - stale protocol `partial` statuses still need a separate truth pass;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Protocol partial status truth refresh (2026-06-11)
+
+- Trigger:
+  - the product owner asked whether the admin/protocol `partial` labels are
+    still real or stale after the PDF, repayment, trust-route, and guarantor
+    earnings work.
+- Changed locally, not pushed:
+  - `gmfn_backend/app/api/routes/pilot_readiness.py`
+    - updated Guarantor Flow complete work to include the new Guarantor
+      Earnings payout-truth wording;
+    - replaced stale guarantor reward wording with the remaining decision:
+      whether a real guided withdrawal workflow must be pilot-ready before
+      rewards move beyond visibility;
+    - updated TrustSlip and Evidence Pack completion notes to include the
+      older PDF/report institutional shell pass;
+    - kept TrustSlip, frontend consistency, evidence pack, loan repayment
+      end-to-end proof, and guarantor flow as `partial` because phone proof,
+      accepted screenshots/PDFs, and final money-route decisions are still not
+      captured.
+  - `gmfn_backend/app/api/routes/protocol_status.py`
+    - updated next priorities so they no longer imply trust-event route
+      consistency is still undone; the remaining trust priority is phone
+      evidence audit.
+  - `gmfn_backend/tests/test_protocol_readiness_status.py`
+    - added regression checks that the readiness copy reflects completed
+      PDF/earnings work without overclaiming payout or visual evidence proof.
+- Verification:
+  - Passed Python compilation for the touched readiness/status route files and
+    test.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - the `partial` labels are still correct for these items because the missing
+    evidence is real;
+  - the stale wording has been tightened so the status screen should better
+    explain what is done versus what still needs phone/proof review;
+  - this does not visually test the admin/protocol screen on a phone and does
+    not assemble the final evidence folder;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

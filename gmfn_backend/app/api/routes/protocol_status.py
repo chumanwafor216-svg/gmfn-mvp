@@ -130,9 +130,9 @@ def protocol_status():
         "status_counts": status_counts,
         "next_priority": [
             "phone screenshot proof for polished routes",
-            "guarantor borrower/admin invite phone proof",
+            "guarantor borrower/admin invite phone proof and payout-route decision",
             "loan repayment full and part-payment phone proof",
             "evidence capture pack assembly",
-            "trust-event route consistency and phone evidence audit",
+            "trust-event phone evidence audit",
         ],
     }

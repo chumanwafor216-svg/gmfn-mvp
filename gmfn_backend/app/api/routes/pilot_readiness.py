@@ -97,12 +97,13 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
                 "Repayment proof now covers guarantor exposure release after full repayment, and earnings tests show rewards stay pending until the loan is repaid.",
                 "Frontend support surfaces show fit suggestions, selected guarantors, line-by-line decisions, and guarantor earnings routes.",
                 "Guarantor invite permission is locked to the borrower who owns the loan or a clan admin; ordinary non-borrower members are forbidden.",
+                "Guarantor Earnings now tells users that earned value is a visible record, not an automatic payout.",
             ],
             remaining=[
                 "Run the borrower, guarantor, and admin views on a phone and capture proof that invite, decision, exposure, release, and earnings language is clear.",
-                "Confirm whether guarantor reward payout is only visibility for pilot or needs a payable withdrawal flow before pilot sign-off.",
+                "Decide whether a real guided withdrawal workflow must be pilot-ready before guarantor rewards move beyond visibility.",
             ],
-            next_step="Run a phone proof pass across support draft, guarantor decision, loan summary, repayment closure, and guarantor earnings.",
+            next_step="Run a phone proof pass across support draft, guarantor decision, loan summary, repayment closure, and guarantor earnings; then decide the reward payout route.",
             next_route="/app/loans",
         ),
         _partial_check(
@@ -175,10 +176,11 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             complete=[
                 "Public TrustSlip Verify and TrustSlip proof paper have institutional visual treatment.",
                 "GSN PDF shells now share official header, watermark, footer, generated time, and limitation language.",
+                "Older Trust Timeline, Loan Trust Report, and Clan Exposure Report PDFs now use the same GSN institutional shell.",
             ],
             remaining=[
                 "Run phone screenshot review for TrustSlip Verify, Trust Passport, and public proof surfaces.",
-                "Confirm exported/shared proof packages read clearly without surrounding page context.",
+                "Render and review exported/shared proof packages visually so they read clearly without surrounding page context.",
             ],
             next_step="Review the TrustSlip and Trust Passport proof surfaces on a real phone and capture accepted screenshots.",
             next_route="/app/trust-passport",
@@ -189,7 +191,8 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             why_it_matters="Users should not be asked to decode route names, wrong icons, jumping buttons, or dead-end actions.",
             complete=[
                 "Major button routes and mobile tap stability are protected by audits.",
-                "Community Home, Marketplace, Finance, Shop Control, Trust Passport, TrustSlip, and repayment screens have received targeted polish passes.",
+                "Community Home, Marketplace, Finance, Shop Control, Trust Passport, TrustSlip, repayment, and guarantor earnings screens have received targeted polish passes.",
+                "Repayment and guarantor earnings now use plainer user-facing money truth where payout or instalment behavior could be misunderstood.",
             ],
             remaining=[
                 "Physical phone screenshot pass for remaining oversized blocks, wrapping, icon size, and action density.",
@@ -206,9 +209,11 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
                 "Institutional PDF header, watermark, footer, and limitation shells are in place for key generated reports.",
                 "Trust Timeline, Loan Trust Report, Clan Exposure Report, Trust Passport, and TrustSlip proof surfaces have official GSN treatment.",
                 "Evidence-pack meta and zip routes now share the same GSN package contract and are owned by the active evidence-pack route module.",
+                "The current source-level PDF shell pass covers the known evidence/report generators.",
             ],
             remaining=[
                 "Assemble accepted screenshots/PDFs for entry, community, marketplace, repayment, TrustSlip, Trust Passport, and admin readiness.",
+                "Visually open generated PDFs and screenshots before treating them as accepted pilot evidence.",
                 "Record which proofs are system-generated, which are screenshots, and which still need live pilot data.",
             ],
             next_step="Create a local evidence folder or checklist after the next phone screenshot run, then attach each accepted proof to this readiness item.",

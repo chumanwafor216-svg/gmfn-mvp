@@ -62,4 +62,23 @@ def test_protocol_status_keeps_summary_and_structured_truth_details():
     assert details_by_key["loan_repayment_e2e"]["next_route"] == "/app/loans"
     assert details_by_key["guarantor_flow"]["remaining"]
     assert details_by_key["guarantor_flow"]["next_route"] == "/app/loans"
-    assert "guarantor borrower/admin invite phone proof" in " ".join(payload["next_priority"])
+    assert "guarantor borrower/admin invite phone proof and payout-route decision" in " ".join(payload["next_priority"])
+    assert "trust-event route consistency" not in " ".join(payload["next_priority"])
+
+
+def test_readiness_partial_text_reflects_latest_completed_work_without_overclaiming():
+    payload = pilot_readiness()
+    checks_by_key = {check["key"]: check for check in payload["checks"]}
+
+    guarantor_flow = checks_by_key["guarantor_flow"]
+    assert any("not an automatic payout" in item for item in guarantor_flow["complete"])
+    assert any("guided withdrawal workflow" in item for item in guarantor_flow["remaining"])
+    assert not any("only visibility for pilot" in item for item in guarantor_flow["remaining"])
+
+    trustslip = checks_by_key["trustslip"]
+    assert any("Older Trust Timeline" in item for item in trustslip["complete"])
+    assert any("Render and review" in item for item in trustslip["remaining"])
+
+    evidence = checks_by_key["evidence"]
+    assert any("source-level PDF shell pass" in item for item in evidence["complete"])
+    assert any("Visually open generated PDFs" in item for item in evidence["remaining"])
