@@ -46449,3 +46449,34 @@ GSN-branded invite composer and invite-entry continuity.
     reviewed;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Finance and Marketplace micro-label polish checkpoint (2026-06-11)
+
+- Trigger:
+  - a follow-up scan found two remaining positive `letterSpacing` values on
+    core Finance and Marketplace surfaces, which can make small phone labels
+    feel spaced-out and less native.
+- Changed locally, not pushed:
+  - `frontend/src/pages/FinancePage.tsx`
+    - removed positive letter spacing from compact mobile record labels.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - removed positive letter spacing from marketplace section labels.
+  - `frontend/tools/audit-icon-protocol.mjs`
+    - added a guard so Finance and Marketplace cannot reintroduce spaced-out
+      micro-label typography while the 3D icon/product-polish protocol is in
+      force.
+- Verification:
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for `FinancePage.tsx`, `MarketplacePage.tsx`, and
+    `tools/audit-icon-protocol.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - this is a precise polish fix, not a full phone screenshot review of Finance
+    or Marketplace;
+  - icon placement still needs real device review before those routes can be
+    called screenshot-ready;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

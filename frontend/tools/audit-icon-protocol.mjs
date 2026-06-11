@@ -270,6 +270,17 @@ for (const file of [
   );
 }
 
+for (const file of [
+  "frontend/src/pages/FinancePage.tsx",
+  "frontend/src/pages/MarketplacePage.tsx",
+]) {
+  assertNotContains(
+    file,
+    /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
+    "Core finance and marketplace polish must not reintroduce spaced-out micro-label typography."
+  );
+}
+
 if (findings.length) {
   console.error("GSN icon protocol audit failed:");
   for (const finding of findings) {

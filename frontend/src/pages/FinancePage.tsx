@@ -795,7 +795,7 @@ function FinanceMobileRecord({
                 color: "#5D7389",
                 fontSize: 11,
                 fontWeight: 900,
-                letterSpacing: 0.2,
+                letterSpacing: 0,
                 lineHeight: 1.25,
                 textTransform: "uppercase",
               }}
