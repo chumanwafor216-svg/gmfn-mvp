@@ -47,12 +47,15 @@ type ExpectedPaymentRow = {
   expected_type?: string | null;
   status?: string | null;
   amount?: string | number | null;
+  paid_amount?: string | number | null;
+  remaining_amount?: string | number | null;
   currency?: string | null;
   reference_display?: string | null;
   reference_normalized?: string | null;
   confirmed_at?: string | null;
   due_at?: string | null;
   status_reason?: string | null;
+  bank_event_id?: number | string | null;
   matched_bank_event_id?: number | string | null;
   meta?: any;
   meta_json?: any;
@@ -500,6 +503,9 @@ export default function RepaymentPage() {
       ? "Pay the full remaining balance. After reconciliation, the loan can close and guarantor exposure can release."
       : "Pay one part now. GSN records the part payment and keeps the remaining balance visible for the next repayment.";
 
+  const repaymentPlanTruth =
+    "Part payment is supported here. A separate dated installment calendar is not opened on this screen yet.";
+
   const currentExpectedPayment = useMemo(() => {
     const instructionExpectedId = Number(instruction?.expected_payment_id || 0);
     const instructionReference = firstTruthy(
@@ -525,6 +531,11 @@ export default function RepaymentPage() {
       }) || null
     );
   }, [expectedPayments, instruction, numericLoanId]);
+
+  const currentExpectedPaymentBankEventId = firstTruthy(
+    currentExpectedPayment?.matched_bank_event_id,
+    currentExpectedPayment?.bank_event_id
+  );
 
   const routeState = useMemo(() => {
     if (!numericLoanId || !summary) {
@@ -970,6 +981,9 @@ export default function RepaymentPage() {
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                   {repaymentModeText}
                 </div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1", fontSize: 13 }}>
+                  {repaymentPlanTruth}
+                </div>
                 <div
                   style={{
                     marginTop: 12,
@@ -1190,8 +1204,14 @@ export default function RepaymentPage() {
                         {safeStr(currentExpectedPayment.currency || currency)}
                       </div>
                       <div style={helperText()}>
-                        {currentExpectedPayment.matched_bank_event_id
-                          ? `Matched bank event visible: ${safeStr(currentExpectedPayment.matched_bank_event_id)}`
+                        Paid so far: {fmtMoney(currentExpectedPayment.paid_amount, safeStr(currentExpectedPayment.currency || currency))}
+                      </div>
+                      <div style={helperText()}>
+                        Still left: {fmtMoney(currentExpectedPayment.remaining_amount, safeStr(currentExpectedPayment.currency || currency))}
+                      </div>
+                      <div style={helperText()}>
+                        {currentExpectedPaymentBankEventId
+                          ? `Matched bank event visible: ${currentExpectedPaymentBankEventId}`
                           : currentExpectedPayment.confirmed_at
                           ? `Confirmed at: ${safeDateTime(currentExpectedPayment.confirmed_at)}`
                           : currentExpectedPayment.due_at

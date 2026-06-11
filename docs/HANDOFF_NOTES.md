@@ -1,3 +1,35 @@
+### Repayment screen part-payment visibility follow-up (2026-06-11)
+
+- Continued the repayment/installment truth pass on the frontend.
+- Confirmed:
+  - the mounted repayment creation path lives in `loans.py`;
+  - the older `gmfn_backend/app/api/routes/repayments.py` file appears
+    unmounted in `app/api/router.py`, so it was not changed in this slice;
+  - backend `/bank/expected/loan-repayment` returns `paid_amount`,
+    `remaining_amount`, and `bank_event_id` on expected payment rows.
+- Frontend changes:
+  - `frontend/src/pages/RepaymentPage.tsx` now reads `paid_amount`,
+    `remaining_amount`, and both `bank_event_id` / `matched_bank_event_id`.
+  - The repayment result block now shows:
+    - paid so far;
+    - still left;
+    - the matched bank event id when either backend field shape is present.
+  - The repayment choice card now states the current product truth:
+    part payment is supported here, but a separate dated installment calendar is
+    not opened on this screen yet.
+- Audit coverage:
+  - `frontend/tools/audit-loans-actions.mjs` now protects the full/part-payment
+    choice, selected-amount instruction generation, paid/left expected-payment
+    visibility, bank-event id fallback, and the installment-calendar truth copy.
+- Verification passed locally:
+  - `npm run audit:loans-actions`
+  - `npm exec -- eslint src/pages/RepaymentPage.tsx tools/audit-loans-actions.mjs`
+  - `npm exec -- tsc -b --pretty false`
+- Unabated truth:
+  - this improves user-facing repayment clarity;
+  - it does not create a multi-date installment schedule model;
+  - it does not replace the still-needed phone UI proof run.
+
 ### Loan repayment E2E backend proof (2026-06-11)
 
 - Continued from the readiness truth pass into the biggest remaining logic
