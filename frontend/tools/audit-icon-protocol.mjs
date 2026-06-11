@@ -340,6 +340,18 @@ assertNotContains(
   "CCI Reading must not restore spaced-out micro-label typography."
 );
 
+assertContains(
+  "frontend/src/pages/TrustSlipPage.tsx",
+  /<GsnLegacyIcon name="proof" size=\{40\} \/>[\s\S]*?<span>GSN<\/span>/,
+  "TrustSlip hero must use a proof/certificate 3D icon instead of a generic globe mark."
+);
+
+assertContains(
+  "frontend/src/pages/CCIReadingPage.tsx",
+  /cciIconBadge\("community", <>Class \{cci\.classText\}<\/>, true\)[\s\S]*?labelWithIcon\("community", "Reading"\)[\s\S]*?labelWithIcon\("proof", "Open Trust Passport"\)/,
+  "CCI first viewport must use community/proof icon meaning instead of finance-chart meaning."
+);
+
 if (findings.length) {
   console.error("GSN icon protocol audit failed:");
   for (const finding of findings) {

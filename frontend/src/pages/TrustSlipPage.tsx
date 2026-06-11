@@ -2014,7 +2014,7 @@ export default function TrustSlipPage() {
                     background: "rgba(246,215,122,0.08)",
                   }}
                 >
-                  <GsnLegacyIcon name="globe" size={40} />
+                  <GsnLegacyIcon name="proof" size={40} />
                 </span>
                 <span>GSN</span>
               </div>

@@ -383,7 +383,7 @@ export default function CCIReadingPage() {
           See how steady this member's visible trust signals look beyond one community.
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {cciIconBadge("chart", <>Class {cci.classText}</>, true)}
+          {cciIconBadge("community", <>Class {cci.classText}</>, true)}
           {cciIconBadge("search", <>Score {cci.scoreText}</>)}
         </div>
 
@@ -397,7 +397,7 @@ export default function CCIReadingPage() {
           }}
         >
           <div style={{ ...innerCard(tone.bg), border: tone.border }}>
-            <div style={sectionLabel()}>{labelWithIcon("chart", "Reading")}</div>
+            <div style={sectionLabel()}>{labelWithIcon("community", "Reading")}</div>
             <div style={{ marginTop: 12, color: tone.text, fontWeight: 900, fontSize: 34, lineHeight: 1 }}>
               Class {cci.classText}
             </div>
@@ -431,7 +431,7 @@ export default function CCIReadingPage() {
                 minWidth={isCompact ? undefined : 178}
                 debugId="cci-reading.trust"
               >
-                {labelWithIcon("document", "Open Trust Passport")}
+                {labelWithIcon("proof", "Open Trust Passport")}
               </StableCtaLink>
               <SecondaryButton
                 onClick={copyCciSnapshot}

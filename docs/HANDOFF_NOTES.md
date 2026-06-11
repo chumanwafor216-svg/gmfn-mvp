@@ -46685,3 +46685,33 @@ GSN-branded invite composer and invite-entry continuity.
   - it does not prove the exact phone screenshot appearance yet;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### TrustSlip and CCI first-viewport icon meaning checkpoint (2026-06-11)
+
+- Trigger:
+  - continuing phone-first icon sweep after shared trust-document cards;
+  - TrustSlip hero still used a generic globe mark where proof/certificate
+    authority is stronger;
+  - CCI first viewport still used `chart`, which routes through the legacy
+    adapter to the finance-bank icon and weakens the cross-community meaning.
+- Changed locally, not pushed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed the TrustSlip hero GSN authority mark from `globe` to `proof` so
+      it reads as certificate/evidence authority.
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - changed the first viewport class/reading icons from `chart` to
+      `community`;
+    - changed the Trust Passport action icon from `document` to `proof`.
+  - `frontend/tools/audit-icon-protocol.mjs`
+    - added guards for TrustSlip proof icon and CCI community/proof icon
+      meaning.
+- Verification:
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for `TrustSlipPage.tsx`, `CCIReadingPage.tsx`, and
+    `tools/audit-icon-protocol.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this improves icon meaning only; it is not a full phone screenshot proof;
+  - no push or Render deploy was triggered.
