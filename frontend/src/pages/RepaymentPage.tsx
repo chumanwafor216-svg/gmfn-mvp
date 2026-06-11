@@ -22,6 +22,7 @@ import {
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type NoticeTone = "success" | "error";
+type RepaymentMode = "full" | "part";
 
 type LoanInstruction = {
   expected_payment_id?: number;
@@ -153,7 +154,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: "#9CB4CF",
     fontWeight: 1000,
-    letterSpacing: 0.45,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -221,6 +222,22 @@ function collapseToggle(): React.CSSProperties {
     flex: "0 0 auto",
     transition: "none",
     boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+  };
+}
+
+function amountInput(): React.CSSProperties {
+  return {
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+    borderRadius: 14,
+    border: "1px solid rgba(123,161,204,0.20)",
+    background: "rgba(255,255,255,0.96)",
+    color: "#07172C",
+    padding: "12px 13px",
+    fontSize: 16,
+    fontWeight: 900,
+    outline: "none",
   };
 }
 
@@ -341,6 +358,8 @@ export default function RepaymentPage() {
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
   const [instruction, setInstruction] = useState<LoanInstruction | null>(null);
+  const [repaymentMode, setRepaymentMode] = useState<RepaymentMode>("full");
+  const [partAmount, setPartAmount] = useState("");
   const [paymentConfirmedAt, setPaymentConfirmedAt] = useState<string | null>(null);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRow[]>([]);
   const selectedClanId = Number(getSelectedClanId() || 0);
@@ -469,6 +488,18 @@ export default function RepaymentPage() {
     return n(summary?.amount);
   }, [summary]);
 
+  const requestedRepaymentAmount = useMemo(() => {
+    if (repaymentMode === "full") return outstandingAmount;
+    const requested = n(partAmount);
+    if (requested <= 0) return 0;
+    return Math.min(requested, outstandingAmount);
+  }, [outstandingAmount, partAmount, repaymentMode]);
+
+  const repaymentModeText =
+    repaymentMode === "full"
+      ? "Pay the full remaining balance. After reconciliation, the loan can close and guarantor exposure can release."
+      : "Pay one part now. GSN records the part payment and keeps the remaining balance visible for the next repayment.";
+
   const currentExpectedPayment = useMemo(() => {
     const instructionExpectedId = Number(instruction?.expected_payment_id || 0);
     const instructionReference = firstTruthy(
@@ -582,12 +613,27 @@ export default function RepaymentPage() {
       return;
     }
 
+    if (repaymentMode === "part") {
+      const requested = n(partAmount);
+      if (requested <= 0) {
+        setNotice({ tone: "error", text: "Enter the part-payment amount first." });
+        return;
+      }
+      if (requested > outstandingAmount) {
+        setNotice({
+          tone: "error",
+          text: "Part payment cannot be higher than the outstanding balance.",
+        });
+        return;
+      }
+    }
+
     setGeneratingInstruction(true);
     try {
       const generated = await createLoanInstruction({
         clan_id: clanId,
         loan_id: numericLoanId,
-        amount: String(outstandingAmount.toFixed(2)),
+        amount: String(requestedRepaymentAmount.toFixed(2)),
         currency,
       });
 
@@ -648,7 +694,9 @@ export default function RepaymentPage() {
       memberRole ? `Role: ${memberRole}` : "",
       `Loan ID: ${numericLoanId}`,
       `Current step: ${routeState.step}`,
+      `Repayment choice: ${repaymentMode === "full" ? "Full balance" : "Part payment"}`,
       `Outstanding amount: ${fmtMoney(outstandingAmount, currency)}`,
+      `Repayment amount: ${fmtMoney(instruction.amount || requestedRepaymentAmount, currency)}`,
       firstTruthy(instruction?.reference_display, instruction?.reference)
         ? `Reference: ${firstTruthy(instruction?.reference_display, instruction?.reference)}`
         : "",
@@ -917,16 +965,83 @@ export default function RepaymentPage() {
             <div style={innerCard("#FCFEFF")}>
               <div style={sectionLabel()}>Instruction details</div>
 
+              <div style={{ marginTop: 10, ...innerCard("#FFFFFF") }}>
+                <div style={sectionLabel()}>Repayment choice</div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
+                  {repaymentModeText}
+                </div>
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                    gap: 10,
+                  }}
+                >
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      setRepaymentMode("full");
+                      setPaymentConfirmedAt(null);
+                    }}
+                    stableHeight={52}
+                    fullWidth
+                    debugId="repayment.mode.full"
+                  >
+                    {actionText(
+                      repaymentMode === "full" ? "check" : "repaymentSchedule",
+                      "Full balance"
+                    )}
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      setRepaymentMode("part");
+                      setPaymentConfirmedAt(null);
+                    }}
+                    stableHeight={52}
+                    fullWidth
+                    debugId="repayment.mode.part"
+                  >
+                    {actionText(
+                      repaymentMode === "part" ? "check" : "repaymentSchedule",
+                      "Part payment"
+                    )}
+                  </SecondaryButton>
+                </div>
+                {repaymentMode === "part" ? (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={sectionLabel()}>Part-payment amount</div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={partAmount}
+                      onChange={(event) => {
+                        setPartAmount(event.target.value);
+                        setPaymentConfirmedAt(null);
+                      }}
+                      placeholder={`Up to ${fmtMoney(outstandingAmount, currency)}`}
+                      style={amountInput()}
+                    />
+                    <div style={{ marginTop: 8, ...helperText(), color: "#D7E3F1" }}>
+                      Balance after this part payment:{" "}
+                      {fmtMoney(Math.max(0, outstandingAmount - requestedRepaymentAmount), currency)}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
               {!instruction ? (
                 <div style={{ marginTop: 10, ...helperText() }}>
-                  Generate the instruction to reveal the exact reference and settlement details.
+                  Generate the instruction to reveal the repayment reference and settlement details.
                 </div>
               ) : (
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>Exact amount</div>
+                    <div style={sectionLabel()}>Repayment amount</div>
                     <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 18 }}>
-                      {fmtMoney(instruction.amount || outstandingAmount, currency)}
+                      {fmtMoney(instruction.amount || requestedRepaymentAmount, currency)}
                     </div>
                   </div>
 

@@ -45833,3 +45833,52 @@ GSN-branded invite composer and invite-entry continuity.
     installment behavior, or stale protocol `partial` statuses;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Repayment full/part choice checkpoint (2026-06-11)
+
+- Trigger:
+  - the product owner asked whether borrowing repayment supports paying in
+    full and paying in parts/installments, and wanted the route to make that
+    behavior visible instead of hidden.
+- Confirmed from code:
+  - backend `repayments_service.create_repayment()` already supports partial
+    repayment progression by applying only the paid amount and marking the loan
+    `repaid` only when `remaining_amount` reaches zero;
+  - backend bank expected-payment route `/bank/expected/loan-repayment`
+    accepts a requested repayment amount below the outstanding balance and caps
+    overpayment to the remaining amount;
+  - the frontend `RepaymentPage` was not calling `repayLoan()` directly; it
+    generates a bank/payment instruction and waits for reconciliation, which is
+    the safer money path.
+- Changed locally, not pushed:
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - added an explicit repayment choice: `Full balance` or `Part payment`;
+    - added part-payment amount entry and balance-after-this-payment preview;
+    - changed instruction generation to use the selected repayment amount, not
+      always the full outstanding balance;
+    - validates part-payment amount before creating an instruction;
+    - updates copied repayment instructions to include repayment choice,
+      outstanding amount, and repayment amount;
+    - removed remaining spaced-out section-label typography.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - added guards so Repayment must keep full/part choices, selected-amount
+      instruction generation, part-payment amount input, and no spaced labels.
+- Verification:
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed ESLint for `RepaymentPage.tsx` and `tools/audit-loans-actions.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - this makes full repayment and part payment visible on the frontend route,
+    and aligns it with the backend expected-payment behavior;
+  - this is not a live bank reconciliation test and does not prove actual
+    external payment matching on Render;
+  - installment schedules with multiple planned future due dates are still not
+    a full product feature here; this is partial-payment instruction support,
+    not a complete loan amortization schedule;
+  - stale protocol `partial` statuses still need a separate truth pass;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

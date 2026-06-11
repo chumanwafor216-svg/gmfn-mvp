@@ -137,6 +137,18 @@ assertAsciiOnly(
 );
 
 assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /type RepaymentMode = "full" \| "part";[\s\S]*?const \[repaymentMode, setRepaymentMode\] = useState<RepaymentMode>\("full"\);[\s\S]*?const \[partAmount, setPartAmount\] = useState\(""\);[\s\S]*?const requestedRepaymentAmount = useMemo[\s\S]*?repaymentMode === "full"[\s\S]*?Math\.min\(requested, outstandingAmount\)[\s\S]*?amount: String\(requestedRepaymentAmount\.toFixed\(2\)\)[\s\S]*?debugId="repayment\.mode\.full"[\s\S]*?debugId="repayment\.mode\.part"[\s\S]*?Part-payment amount/,
+  "Repayment page must expose full-balance and part-payment choices and generate instructions for the selected amount."
+);
+
+assertNotContains(
+  "src/pages/RepaymentPage.tsx",
+  /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
+  "Repayment page must not restore spaced-out micro-label typography."
+);
+
+assertContains(
   "src/lib/communityMoney.ts",
   /export type CommunitySettlementDestination = \{[\s\S]*sortCode: string;[\s\S]*country: string;[\s\S]*currency: string;[\s\S]*noteWithSortCode[\s\S]*sort_code: normalizeSortCode\(destination\.sortCode\)/,
   "Community money destination must carry sort code, country, and currency through shared frontend logic."
