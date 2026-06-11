@@ -7247,21 +7247,38 @@ export default function DashboardPage() {
               />
             ))}
             {[
-              ["eye", "Visible"],
-              ["briefcase", "Portable"],
-              ["check", "Usable"],
-            ].map(([icon, label], index) => {
+              {
+                icon: "eye" as const,
+                label: "Visible",
+                to: DASHBOARD_TARGETS.TRUST,
+              },
+              {
+                icon: "briefcase" as const,
+                label: "Portable",
+                to: DASHBOARD_TARGETS.TRUST,
+              },
+              {
+                icon: "check" as const,
+                label: "Usable",
+                to: DASHBOARD_TARGETS.TRUST,
+              },
+            ].map((item, index) => {
               const helper =
-                label === "Visible"
+                item.label === "Visible"
                   ? "Verifiable identity you can see"
-                  : label === "Portable"
+                  : item.label === "Portable"
                   ? "Your identity, anytime, anywhere"
                   : "Accepted and trusted where it matters";
 
               return (
-                <div
-                  key={label}
-                  style={{
+                <StableButton
+                  debugId={`dashboard.passport-feature.${item.label.toLowerCase()}`}
+                  key={item.label}
+                  type="button"
+                  onClick={(event) => openDashboardRoute(event, item.to)}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  aria-label={`${item.label}: open Trust Passport`}
+                  style={dashboardStableActionFrame({
                     display: "grid",
                     gridTemplateRows: "auto auto 1fr",
                     alignItems: "start",
@@ -7276,7 +7293,8 @@ export default function DashboardPage() {
                     lineHeight: 1,
                     position: "relative",
                     zIndex: 2,
-                  }}
+                    cursor: "pointer",
+                  })}
                 >
                   <span
                     aria-hidden="true"
@@ -7297,7 +7315,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <DashboardPassportFeatureIcon
-                      name={icon as "eye" | "briefcase" | "check"}
+                      name={item.icon}
                       size={isPhone ? 24 : 28}
                     />
                   </span>
@@ -7310,7 +7328,7 @@ export default function DashboardPage() {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {label}
+                    {item.label}
                   </span>
                   <span
                     style={{
@@ -7324,7 +7342,7 @@ export default function DashboardPage() {
                   >
                     {helper}
                   </span>
-                </div>
+                </StableButton>
               );
             })}
           </div>
@@ -7379,7 +7397,9 @@ export default function DashboardPage() {
                 value: trustSlipCode || "Pending",
                 detail: "",
                 strength: 0,
-                to: trustSlipCode ? `/app/trust-slip?code=${encodeURIComponent(trustSlipCode)}` : DASHBOARD_TARGETS.TRUST_SLIP,
+                to: trustSlipCode
+                  ? `${DASHBOARD_TARGETS.TRUST_SLIP_VERIFY}?code=${encodeURIComponent(trustSlipCode)}`
+                  : DASHBOARD_TARGETS.TRUST_SLIP_VERIFY,
               },
             ].map((item, index) => (
               <StableButton

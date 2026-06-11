@@ -186,8 +186,13 @@ assertContains(
 );
 
 assertContains(
-  /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?triggerHeight=\{isPhone \? 40 : 42\}[\s\S]*?label: "Upload"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Change"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
-  "Dashboard passport must keep one Frame tools button hiding active file-backed Upload, Change, and Remove actions plus the Visible/Portable/Usable strip."
+  /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?triggerHeight=\{isPhone \? 40 : 42\}[\s\S]*?label: "Upload"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Change"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?label: "Visible"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST[\s\S]*?label: "Portable"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST[\s\S]*?label: "Usable"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST[\s\S]*?debugId=\{`dashboard\.passport-feature\.\$\{item\.label\.toLowerCase\(\)\}`\}[\s\S]*?onClick=\{\(event\) => openDashboardRoute\(event, item\.to\)\}/,
+  "Dashboard passport must keep one Frame tools button hiding active file-backed Upload, Change, and Remove actions plus clickable Visible/Portable/Usable Trust Passport surfaces."
+);
+
+assertContains(
+  /label: "TrustSlip"[\s\S]*?to: trustSlipCode[\s\S]*?DASHBOARD_TARGETS\.TRUST_SLIP_VERIFY[\s\S]*?encodeURIComponent\(trustSlipCode\)[\s\S]*?: DASHBOARD_TARGETS\.TRUST_SLIP_VERIFY/,
+  "Dashboard passport TrustSlip surface must route to the TrustSlip Verify decoder, prefilled when a code exists."
 );
 
 assertContains(

@@ -1,3 +1,40 @@
+### Dashboard passport action wiring (2026-06-11)
+
+- Continued the dashboard proof-surface button pass without changing the frozen
+  Market Wisdom area.
+- Frontend changes:
+  - `frontend/src/pages/DashboardPage.tsx` now treats the `Visible`,
+    `Portable`, and `Usable` passport feature tiles as stable dashboard action
+    surfaces instead of inert visual blocks.
+  - All three route to the current Trust Passport / trust-standing surface at
+    `/app/trust`.
+  - The dashboard passport signal row remains intentionally routed as:
+    - `Trust` -> `/app/trust`;
+    - `CCI` -> `/app/identity`;
+    - `TrustSlip` -> `/app/trust-slip/verify?code=...` when a code exists,
+      otherwise `/app/trust-slip/verify`.
+  - The TrustSlip code decoder already exists in
+    `frontend/src/pages/TrustSlipVerifyPage.tsx`: it reads route params and
+    `?code=...`, shows a manual `Enter TrustSlip code` checker when no public
+    code is supplied, and can open public verification routes such as
+    `/trust-slips/verify/:code/page`.
+  - Updated dashboard button/action audits to protect the new action count and
+    the TrustSlip decoder target.
+- Verification passed locally:
+  - `npm run audit:dashboard-actions`
+  - `npm run audit:protected-button-freeze`
+  - `npm exec -- eslint src\pages\DashboardPage.tsx tools\audit-dashboard-actions.mjs tools\audit-dashboard-button-inventory.mjs`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run build`
+- Unabated truth:
+  - this wires the dashboard surfaces and confirms the decoder screen exists;
+  - it does not prove a real backend record exists for every displayed
+    TrustSlip code;
+  - it does not run a phone tap test against a live local backend session.
+- Publishing posture:
+  - no push and no Render deploy; keep batching locally until the owner says
+    the current batch is ready to publish.
+
 ### Guarantor invite permission lock (2026-06-11)
 
 - Continued the guarantor readiness pass by closing the soft policy gap.
