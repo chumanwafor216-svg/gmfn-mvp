@@ -47452,3 +47452,51 @@ GSN-branded invite composer and invite-entry continuity.
   - it still needs a live anonymous-browser check and a live signed-in phone
     check to visually prove the strip is hidden for visitors and visible for
     members.
+
+### Institutional proof/PDF line auditor (2026-06-11)
+
+- Trigger:
+  - product owner asked to keep searching visually for weak PDF/paper surfaces
+    while Codex treats the proof work with line auditors.
+- Changed locally, not pushed:
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added a cross-stack auditor for institutional proof surfaces;
+    - checks backend PDF helpers and generators for GSN watermark/header/footer,
+      generated time, reference, GSN public brand, limitation language, and
+      no mojibake/non-ASCII punctuation in official PDF source strings;
+    - checks frontend TrustSlip Verify public/private paper surfaces, TrustSlip,
+      Trust Passport share tools, EvidencePackPanel, and proof/PDF checklists.
+  - `frontend/package.json`
+    - registered `npm run audit:proof-surfaces`.
+  - `frontend/src/components/EvidencePackPanel.tsx`
+    - changed generic "Evidence Bundle" copy to "GSN Evidence Pack (PDF)";
+    - moved the panel icons to the shared 3D icon system;
+    - added plain limitation copy: evidence papers support trust decisions but
+      are not bank guarantees and do not start automatic debit.
+  - backend PDF services:
+    - normalized official-paper fallback punctuation in community, loan, member,
+      trust timeline, and report PDF generators from em dash style characters
+      to ASCII hyphens so generated papers do not risk garbled text.
+  - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - made the generated-PDF acceptance wording explicit about the "not a bank
+      guarantee" limitation and the GSN institutional shell.
+- Verification:
+  - Passed `npm run audit:proof-surfaces`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `npm exec -- eslint tools\audit-institutional-proof-surfaces.mjs src\components\EvidencePackPanel.tsx`.
+  - Passed `npm run audit:trust-actions`.
+  - Passed `npm run audit:trust-passport-front-package`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build`.
+  - Passed `git diff --check` with only CRLF normalization warnings on touched
+    frontend files.
+- Deployment protocol:
+  - no push or Render deploy was triggered; keep batching local work until the
+    product owner says the batch is ready to publish.
+- Unabated truth:
+  - the line auditor now protects the hidden proof/PDF contract;
+  - it does not replace visual inspection of generated PDFs on phone and desktop;
+  - the next visual pass should open actual generated PDFs/screenshots and
+    confirm the watermark, title, generated time, reference, limitation/footer,
+    spacing, and paper dignity are acceptable to the product owner.

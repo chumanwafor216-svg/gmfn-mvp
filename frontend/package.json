@@ -29,6 +29,7 @@
     "audit:demand-box-front-package": "node tools/audit-demand-box-front-package.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
+    "audit:proof-surfaces": "node tools/audit-institutional-proof-surfaces.mjs",
     "audit:trust-passport-button-inventory": "node tools/audit-trust-passport-button-inventory.mjs",
     "audit:trust-passport-community-confirmation-lane": "node tools/audit-trust-passport-community-confirmation-lane.mjs",
     "audit:trust-passport-evidence-story-lane": "node tools/audit-trust-passport-evidence-story-lane.mjs",

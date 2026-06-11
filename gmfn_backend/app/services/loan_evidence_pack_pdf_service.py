@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
@@ -229,25 +229,25 @@ def build_loan_evidence_pack_pdf(
     line("Official evidence summary", size=14, gap=20, bold=True)
     kv("Generated", ts)
     kv("Loan ID", str(loan_id))
-    kv("Clan", clan_name or "—")
-    kv("Borrower", borrower_email or (str(borrower_user_id) if borrower_user_id is not None else "—"))
+    kv("Clan", clan_name or "-")
+    kv("Borrower", borrower_email or (str(borrower_user_id) if borrower_user_id is not None else "-"))
     kv("Redaction", "ON (masked emails)" if redact else "OFF (full emails)")
     line("")
 
     # Trust Snapshot
     line("Trust Snapshot (Explainable)", bold=True)
-    kv("Borrower score", str(borrower_trust.get("score")) if borrower_trust.get("score") is not None else "—")
-    kv("Borrower band", borrower_trust.get("band") or "—")
+    kv("Borrower score", str(borrower_trust.get("score")) if borrower_trust.get("score") is not None else "-")
+    kv("Borrower band", borrower_trust.get("band") or "-")
     if borrower_trust.get("updated_at"):
         kv("Borrower trust updated", str(borrower_trust.get("updated_at")))
     else:
-        kv("Borrower trust updated", "—")
+        kv("Borrower trust updated", "-")
 
     if guarantor_trust_rows:
         line("Guarantors trust (stored + fallback compute)", size=10, gap=14, bold=True)
         for r in guarantor_trust_rows[:12]:
             line(
-                f"- {r['email'] or r['user_id']} | score={r['score'] if r['score'] is not None else '—'} | band={r['band'] or '—'}",
+                f"- {r['email'] or r['user_id']} | score={r['score'] if r['score'] is not None else '-'} | band={r['band'] or '-'}",
                 size=9,
                 gap=13,
             )
@@ -258,10 +258,10 @@ def build_loan_evidence_pack_pdf(
 
     # Loan summary
     line("Loan summary", bold=True)
-    kv("Status", str(getattr(loan, "status", "—")))
-    kv("Amount", str(getattr(loan, "amount", getattr(loan, "principal_amount", "—"))))
-    kv("Created", str(getattr(loan, "created_at", "—")))
-    kv("Due date", str(getattr(loan, "due_date", "—")))
+    kv("Status", str(getattr(loan, "status", "-")))
+    kv("Amount", str(getattr(loan, "amount", getattr(loan, "principal_amount", "-"))))
+    kv("Created", str(getattr(loan, "created_at", "-")))
+    kv("Due date", str(getattr(loan, "due_date", "-")))
     line("")
 
     # Guarantors list
@@ -272,7 +272,7 @@ def build_loan_evidence_pack_pdf(
         for g in guarantors:
             gid = getattr(g, "guarantor_user_id", None)
             gemail = show_email(gid)
-            status = getattr(g, "status", "—")
+            status = getattr(g, "status", "-")
             responded_at = getattr(g, "responded_at", None)
             expires_at = getattr(g, "expires_at", None)
 
@@ -293,8 +293,8 @@ def build_loan_evidence_pack_pdf(
         for r in repayments[:60]:
             payer_id = getattr(r, "payer_user_id", None)
             payer_email = show_email(payer_id)
-            amount = getattr(r, "amount", "—")
-            created_at = getattr(r, "created_at", "—")
+            amount = getattr(r, "amount", "-")
+            created_at = getattr(r, "created_at", "-")
             line(f"- {created_at} | payer={payer_email or payer_id} | amount={amount}", size=9, gap=13)
         if len(repayments) > 60:
             line(f"... ({len(repayments)-60} more not shown)", size=9, gap=13)
@@ -307,8 +307,8 @@ def build_loan_evidence_pack_pdf(
         line("- None", size=10, gap=14)
     else:
         for ev in trust_events[:90]:
-            created_at = getattr(ev, "created_at", "—")
-            etype = getattr(ev, "event_type", "—")
+            created_at = getattr(ev, "created_at", "-")
+            etype = getattr(ev, "event_type", "-")
             actor_id = getattr(ev, "actor_user_id", None)
             subject_id = getattr(ev, "subject_user_id", None)
             actor_email = show_email(actor_id)

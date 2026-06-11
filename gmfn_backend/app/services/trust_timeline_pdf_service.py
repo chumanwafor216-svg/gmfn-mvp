@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime, timezone
 from io import BytesIO
@@ -35,7 +35,7 @@ def _now_utc_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _safe_str(x: Any, default: str = "—") -> str:
+def _safe_str(x: Any, default: str = "-") -> str:
     if x is None:
         return default
     s = str(x).strip()
@@ -51,7 +51,7 @@ def _safe_int(x: Any, default: int = 0) -> int:
 
 def _mask_email(email: Optional[str]) -> str:
     if not email:
-        return "—"
+        return "-"
     e = email.strip()
     if "@" not in e:
         return e
@@ -63,7 +63,7 @@ def _mask_email(email: Optional[str]) -> str:
 
 def _fmt_dt(value: Any) -> str:
     if value is None:
-        return "—"
+        return "-"
     if isinstance(value, datetime):
         try:
             if value.tzinfo is None:
@@ -72,7 +72,7 @@ def _fmt_dt(value: Any) -> str:
         except Exception:
             return str(value)
     s = str(value).strip()
-    return s or "—"
+    return s or "-"
 
 
 def _load_events(db: Session, *, user_id: int, limit: int) -> list[TrustEvent]:
@@ -115,7 +115,7 @@ def _wrap_text(c: canvas.Canvas, text: str, max_width: float, *, size: int = 10,
 
     words = (text or "").split()
     if not words:
-        return ["—"]
+        return ["-"]
 
     lines: list[str] = []
     current = words[0]
@@ -531,7 +531,7 @@ def _draw_events_block(
             c,
             LEFT + 92 * mm,
             y,
-            meta_summary or "—",
+            meta_summary or "-",
             max_width=(RIGHT - (LEFT + 92 * mm)),
             size=8,
             leading=10,

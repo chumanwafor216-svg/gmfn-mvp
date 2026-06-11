@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
@@ -206,7 +206,7 @@ def build_loan_trust_report_pdf(
     h2("Loan Summary")
     borrower_email = user_email_by_id.get(
         int(getattr(loan, "borrower_user_id", 0)),
-        getattr(borrower, "email", "—"),
+        getattr(borrower, "email", "-"),
     )
 
     amount = _d(getattr(loan, "amount", 0))
@@ -215,9 +215,9 @@ def build_loan_trust_report_pdf(
     guarantors_required = int(getattr(loan, "guarantors_required", 0) or 0)
 
     p("Loan ID", str(getattr(loan, "id", "-")))
-    p("Clan", f"{getattr(clan, 'name', None) or '—'} (ID: {getattr(loan, 'clan_id', '-')})")
+    p("Clan", f"{getattr(clan, 'name', None) or '-'} (ID: {getattr(loan, 'clan_id', '-')})")
     p("Borrower", borrower_email)
-    p("Status", str(getattr(loan, "status", "—")))
+    p("Status", str(getattr(loan, "status", "-")))
     p("Amount", f"{_fmt_money(amount)} {getattr(loan, 'currency', '')}")
     p("Pool Used", _fmt_money(pool_used))
     p("Guarantee Gap", _fmt_money(guarantee_gap))
@@ -386,7 +386,7 @@ def build_loan_trust_report_pdf(
     else:
         for row in clan_exposure_rows:
             ensure_space()
-            email = str(row.get("email", "—"))[:45]
+            email = str(row.get("email", "-"))[:45]
             pool_v = row.get("pool_balance", 0)
             exposure_v = row.get("exposure", 0)
             available_v = row.get("available", 0)
@@ -505,7 +505,7 @@ def build_clan_exposure_report_pdf(
     c.setFont("Helvetica", 10)
     c.drawString(left, y, f"Clan ID: {clan_id}")
     y -= 5 * mm
-    c.drawString(left, y, f"Clan Name: {clan_name or '—'}")
+    c.drawString(left, y, f"Clan Name: {clan_name or '-'}")
     y -= 7 * mm
     line()
 
@@ -527,7 +527,7 @@ def build_clan_exposure_report_pdf(
     else:
         for row in clan_exposure_rows:
             ensure_space()
-            email = str(row.get("email", "—"))[:45]
+            email = str(row.get("email", "-"))[:45]
             pool_v = _d(row.get("pool_balance", 0))
             exposure_v = _d(row.get("exposure", 0))
             available_v = _d(row.get("available", 0))

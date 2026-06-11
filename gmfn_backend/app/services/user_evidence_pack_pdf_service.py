@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 from datetime import datetime, timezone, timedelta
@@ -136,14 +136,14 @@ def build_user_evidence_pack_pdf(
     line("Official evidence summary", size=14, gap=20, bold=True)
     line(f"Generated: {ts}", size=10, gap=14)
     line(f"User ID: {user_id}", size=10, gap=14)
-    line(f"Email: {email or '—'}", size=10, gap=14)
+    line(f"Email: {email or '-'}", size=10, gap=14)
     line(f"Redaction: {'ON' if redact else 'OFF'}", size=10, gap=14)
     line("")
 
     line("Trust Snapshot (Explainable)", bold=True)
     line(f"Score: {score} / 100", size=10, gap=14)
     line(f"Band: {band}", size=10, gap=14)
-    line(f"Updated at: {updated_at or '—'}", size=10, gap=14)
+    line(f"Updated at: {updated_at or '-'}", size=10, gap=14)
     line("")
 
     line("Breakdown (summary)", bold=True)
@@ -159,8 +159,8 @@ def build_user_evidence_pack_pdf(
     else:
         for r in rows:
             meta = _loads_meta(getattr(r, "meta_json", None))
-            when = str(getattr(r, "created_at", "—"))
-            et = getattr(r, "event_type", "—")
+            when = str(getattr(r, "created_at", "-"))
+            et = getattr(r, "event_type", "-")
             loan_id = getattr(r, "loan_id", None)
             src = meta.get("source")
             extra = []

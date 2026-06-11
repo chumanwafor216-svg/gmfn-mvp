@@ -1,5 +1,5 @@
 import React from "react";
-import { GsnLegacyIcon } from "./GsnLegacyIcon";
+import { GsnRealisticIcon } from "./GsnRealisticIcon";
 import { SecondaryButton } from "./StableButton";
 
 type Props = {
@@ -11,8 +11,8 @@ type Props = {
 };
 
 export default function EvidencePackPanel({
-  title = "Evidence Bundle (PDF)",
-  subtitle = "Portable trust and support records for review.",
+  title = "GSN Evidence Pack (PDF)",
+  subtitle = "Official trust and support records for careful review.",
   onDownloadFull,
   onDownloadRedacted,
   disabled = false,
@@ -33,7 +33,7 @@ export default function EvidencePackPanel({
             style={{ borderRadius: 10, border: "1px solid #ddd", background: "white" }}
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <GsnLegacyIcon name="certificate" size={24} />
+              <GsnRealisticIcon name="certificate-seal" size={28} decorative />
               Complete record
             </span>
           </SecondaryButton>
@@ -45,7 +45,7 @@ export default function EvidencePackPanel({
             style={{ borderRadius: 10, border: "1px solid #ddd", background: "white" }}
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <GsnLegacyIcon name="lock" size={24} />
+              <GsnRealisticIcon name="records-folder" size={28} decorative />
               Share copy
             </span>
           </SecondaryButton>
@@ -64,6 +64,9 @@ export default function EvidencePackPanel({
         <div style={{ marginTop: 8 }}>
           <b>Share copy</b> removes sensitive identifiers for outside review.{" "}
           <span style={{ color: "#6b7280" }}>Use the complete record only when the reviewer is allowed to see the private details.</span>
+        </div>
+        <div style={{ marginTop: 8, color: "#6b7280" }}>
+          GSN evidence papers support a trust decision. They are not a bank guarantee and do not start automatic debit.
         </div>
       </div>
     </div>

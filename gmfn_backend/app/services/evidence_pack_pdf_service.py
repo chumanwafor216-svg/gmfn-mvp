@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Optional
@@ -98,7 +98,7 @@ def build_clan_evidence_pack_pdf(
 
     line("Official evidence summary", size=14, gap=20, bold=True)
     line(f"Clan ID: {clan_id}", bold=True)
-    line(f"Clan Name: {clan_name or '—'}", bold=True)
+    line(f"Clan Name: {clan_name or '-'}", bold=True)
     line(f"Generated: {ts}")
     line("")
 
@@ -120,7 +120,7 @@ def build_clan_evidence_pack_pdf(
             email = r.get("invited_by_email")
             if redact:
                 email = _mask_email(email)
-            line(f"- {r['invited_by_user_id']}  |  {email or '—'}  |  joins: {r['joins']}", size=10, gap=14)
+            line(f"- {r['invited_by_user_id']}  |  {email or '-'}  |  joins: {r['joins']}", size=10, gap=14)
     line("")
 
     line("Recent joins via invite", bold=True)
@@ -153,7 +153,7 @@ def build_clan_evidence_pack_pdf(
         gap=13,
     )
     line(
-        "This creates auditable, privacy-aware accountability in community finance—supporting safer inclusion and scalable governance.",
+        "This creates auditable, privacy-aware accountability in community finance-supporting safer inclusion and scalable governance.",
         size=9,
         gap=13,
     )

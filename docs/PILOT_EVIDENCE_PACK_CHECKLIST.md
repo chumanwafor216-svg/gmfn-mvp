@@ -40,7 +40,7 @@ captured from the working system.
 | Guarantor flow | Invite, decision, exposure release, earnings | Not captured | Proof shows who can invite, what a guarantor is accepting, when exposure releases, and that earnings are not automatic payout. |
 | Trust Passport | Identity, trust summary, evidence/document lane | Not captured | Looks like a dignified GSN proof surface with watermark/mark, limitation statement, and clear next action. |
 | TrustSlip Verify | Public proof and private evidence view | Not captured | Public paper is shareable without private overload; private evidence stays clearly separate. |
-| Evidence PDFs | Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Clan Exposure | Not captured | Generated PDF opens visually with GSN title, watermark/header/footer, generated time, and limitation statement. |
+| Evidence PDFs | Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Clan Exposure | Not captured | Generated PDF opens visually with GSN title, watermark/header/footer, generated time, and a clear "not a bank guarantee" limitation statement. |
 | Admin readiness | Protocol status and pilot readiness partials | Not captured | Partial labels explain what is complete, what remains, why it matters, and the next route. |
 
 ## Folder Shape
@@ -83,7 +83,8 @@ Each accepted item should record:
 ## Current Truth
 
 - The GSN institutional PDF shell exists in source for the known evidence and
-  report generators.
+  report generators, including generated time, reference, watermark/header/footer,
+  and the "not a bank guarantee" limitation.
 - Several web routes have received route-local polish, icon, button, and
   language passes.
 - The evidence pack is still partial until accepted screenshots/PDFs are
