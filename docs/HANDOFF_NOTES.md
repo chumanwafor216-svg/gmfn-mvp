@@ -47071,3 +47071,43 @@ GSN-branded invite composer and invite-entry continuity.
   - the connector is now visually linked as one SVG motif, but it is still a
     code-drawn graphic, not a premium generated/imported 3D chain or hand asset;
   - this is build/audit verified, not a live phone screenshot comparison.
+
+### Dashboard passport reference detail correction (2026-06-11)
+
+- Trigger:
+  - product owner supplied the fuller reference image and asked for the GSN
+    connector to touch the central GSN pill, not stop short;
+  - product owner wanted the Global ID to look executive by separating the
+    `GSN`/prefix area without scattering the whole number;
+  - product owner said the Visible / Portable / Usable and Trust / CCI /
+    TrustSlip area was more cohesive but still missing the reference-like proof
+    line/indication.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changed the dashboard passport ID display to prefix-separated format,
+      for example `G S N - U - 9867079C`, preserving the number as a compact
+      unit;
+    - adjusted the left and right SVG connector chains so their gold line
+      reaches the central `GSN` pill edge;
+    - added the fine gold proof line and two gold node dots behind the Visible /
+      Portable / Usable icons, closer to the supplied reference;
+    - added a stronger coin-like treatment to the Global ID GSN seal with
+      deeper gold/navy material and inset rim;
+    - slightly refined the Trust / CCI / TrustSlip evidence row so it remains
+      blended while reading as a deliberate embedded strip.
+- Verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+  - Passed `git diff --check`.
+- Deployment protocol:
+  - no push or Render deploy was triggered; keep batching local work until the
+    product owner says the batch is ready to publish.
+- Unabated truth:
+  - this is closer to the supplied reference structure, especially the proof
+    line and connected chain;
+  - the coin/chain are still code-rendered SVG/CSS treatments, not imported
+    photorealistic 3D assets;
+  - this is build/audit verified, not a live phone screenshot comparison.
