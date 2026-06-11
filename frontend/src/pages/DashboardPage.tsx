@@ -5829,11 +5829,11 @@ export default function DashboardPage() {
   const dashboardSpotlightBottomInset = isCompact ? 6 : 8;
   const dashboardSpotlightScreenHeight = isPhone
     ? spotlightGuideOpen
-      ? 302
-      : 278
+      ? 294
+      : 318
     : isCompact
-    ? 260
-    : 320;
+    ? 286
+    : 340;
   const dashboardSpotlightTitleSize = isPhone ? 16 : isCompact ? 18 : 22;
   const dashboardSpotlightBodyFontSize = isPhone
     ? 12.25
@@ -8734,15 +8734,15 @@ export default function DashboardPage() {
       <section
         style={{
           ...pageCard(
-            "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0) 38%), linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)"
+            "radial-gradient(circle at 12% 0%, rgba(214,170,69,0.10) 0%, rgba(214,170,69,0) 30%), linear-gradient(180deg, #FFFFFF 0%, #FFFEFA 58%, #F8FBFF 100%)"
           ),
           order: 30,
           position: "relative",
-          border: "1px solid rgba(15,59,116,0.16)",
-          padding: isPhone ? 10 : isCompact ? 16 : 18,
+          border: "1px solid rgba(184,137,45,0.28)",
+          padding: isPhone ? 12 : isCompact ? 18 : 20,
           borderRadius: isPhone ? 24 : 28,
           boxShadow:
-            "0 22px 46px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.82)",
+            "0 22px 46px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
           overflow: "hidden",
         }}
       >
@@ -8766,22 +8766,104 @@ export default function DashboardPage() {
             flexWrap: "wrap",
           }}
           >
-            <div>
-              <DashboardSectionLabel label="Your Spotlight" />
-              <div
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0, 1fr)",
+                gap: isPhone ? 12 : 14,
+                alignItems: "center",
+                minWidth: 0,
+              }}
+            >
+              <span
+                aria-hidden="true"
                 style={{
-                  marginTop: 8,
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 8,
+                  width: isPhone ? 52 : 58,
+                  height: isPhone ? 52 : 58,
+                  borderRadius: 999,
+                  display: "grid",
+                  placeItems: "center",
+                  border: "1px solid rgba(214,170,69,0.24)",
+                  background:
+                    "linear-gradient(180deg, #FFFFFF 0%, #FFF8E8 100%)",
+                  boxShadow:
+                    "0 14px 26px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
                 }}
               >
-                <span style={badge(true)}>
+                <GsnLegacyIcon name="megaphone" size={isPhone ? 34 : 38} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    color: "#07172C",
+                    fontSize: isPhone ? 22 : 28,
+                    fontWeight: 1000,
+                    letterSpacing: 0,
+                    lineHeight: 1.05,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Your Spotlight
+                </div>
+              <div
+                style={{
+                  marginTop: isPhone ? 12 : 14,
+                  display: "grid",
+                  gridTemplateColumns: isPhone
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "repeat(2, minmax(180px, 1fr))",
+                  gap: isPhone ? 8 : 10,
+                  maxWidth: isPhone ? undefined : 580,
+                }}
+              >
+                <span
+                  style={{
+                    ...badge(false),
+                    minHeight: isPhone ? 42 : 46,
+                    justifyContent: "center",
+                    padding: isPhone ? "8px 10px" : "9px 14px",
+                    border: "1px solid rgba(214,170,69,0.34)",
+                    background:
+                      "linear-gradient(180deg, #FFFFFF 0%, #FFF8E8 100%)",
+                    color: "#8A651E",
+                    boxShadow:
+                      "0 10px 20px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    fontSize: isPhone ? 12.5 : 14,
+                    fontWeight: 950,
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: 999,
+                      background: "#D6AA45",
+                      boxShadow: "0 0 0 4px rgba(214,170,69,0.16)",
+                    }}
+                  />
                   {spotlightQueueTotal || spotlights.length} live / queued
                 </span>
-                <span style={badge(false)}>
+                <span
+                  style={{
+                    ...badge(false),
+                    minHeight: isPhone ? 42 : 46,
+                    justifyContent: "center",
+                    padding: isPhone ? "8px 10px" : "9px 14px",
+                    border: "1px solid rgba(15,59,116,0.12)",
+                    background:
+                      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+                    color: "#07172C",
+                    boxShadow:
+                      "0 10px 20px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    fontSize: isPhone ? 12.5 : 14,
+                    fontWeight: 950,
+                  }}
+                >
+                  <DashboardSignalIcon name="compass" size={isPhone ? 18 : 20} />
                   Rotates every {SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL} seconds
                 </span>
+              </div>
               </div>
             </div>
 
@@ -8947,13 +9029,13 @@ export default function DashboardPage() {
               style={{
                 marginTop: isPhone ? 10 : 16,
                 ...innerCard(
-                  "linear-gradient(180deg, #09233C 0%, #0D355B 48%, #0B63D1 100%)"
+                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,252,245,0.98) 56%, rgba(248,251,255,0.98) 100%)"
                 ),
-                border: "1px solid rgba(243,208,106,0.30)",
+                border: "1px solid rgba(184,137,45,0.30)",
                 padding: isPhone ? 8 : 12,
                 borderRadius: isPhone ? 20 : 22,
                 boxShadow:
-                  "0 24px 48px rgba(9,35,60,0.20), inset 0 1px 0 rgba(255,255,255,0.14)",
+                  "0 18px 34px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.92)",
               }}
             >
               <div
@@ -8963,13 +9045,13 @@ export default function DashboardPage() {
                   padding: isPhone ? 8 : 10,
                   borderRadius: isPhone ? 18 : 22,
                   overflow: "hidden",
-                  border: "1px solid rgba(243,208,106,0.38)",
-                  outline: "1px solid rgba(255,255,255,0.12)",
-                  outlineOffset: "-6px",
+                  border: "1px solid rgba(184,137,45,0.48)",
+                  outline: "1px solid rgba(255,255,255,0.72)",
+                  outlineOffset: "-5px",
                   background:
-                    "linear-gradient(180deg, #061525 0%, #0A2744 45%, #0F3B74 100%)",
+                    "linear-gradient(180deg, #FDFBF6 0%, #F5FAFF 100%)",
                   boxShadow:
-                    "0 18px 34px rgba(2,12,27,0.24), inset 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.16)",
+                    "0 16px 30px rgba(10,24,49,0.14), inset 0 0 0 1px rgba(214,170,69,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
                 }}
               >
                 <SpotlightMediaFrame
@@ -8985,10 +9067,10 @@ export default function DashboardPage() {
                     width: "100%",
                     height: dashboardSpotlightScreenHeight,
                     minHeight: dashboardSpotlightScreenHeight,
-                    borderRadius: isPhone ? 12 : 14,
+                    borderRadius: isPhone ? 14 : 16,
                     background: "transparent",
                     boxShadow:
-                      "inset 0 0 0 1px rgba(255,255,255,0.10), 0 0 0 1px rgba(2,12,27,0.46)",
+                      "inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 0 1px rgba(2,12,27,0.22)",
                   }}
                   mediaStyle={{
                     width: "100%",
@@ -9003,15 +9085,19 @@ export default function DashboardPage() {
                   showAudioUnlock={Boolean(spotlightVideoCandidate)}
                   audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
-                    top: isPhone ? 14 : 16,
-                    right: isPhone ? 14 : 16,
-                    minWidth: isPhone ? 40 : 44,
-                    width: isPhone ? 40 : 44,
-                    minHeight: isPhone ? 40 : 44,
+                    top: isPhone ? 20 : 22,
+                    right: isPhone ? 20 : 22,
+                    minWidth: isPhone ? 52 : 56,
+                    width: isPhone ? 52 : 56,
+                    minHeight: isPhone ? 52 : 56,
                     padding: 0,
                     borderRadius: 999,
                     fontSize: isPhone ? 18 : 20,
-                    boxShadow: "0 12px 22px rgba(2,12,27,0.30)",
+                    border: "1px solid rgba(214,170,69,0.66)",
+                    background:
+                      "linear-gradient(180deg, rgba(7,23,44,0.96) 0%, rgba(8,35,58,0.94) 100%)",
+                    boxShadow:
+                      "0 12px 22px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.16)",
                   }}
                   maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   fallback={
@@ -9036,12 +9122,35 @@ export default function DashboardPage() {
                   style={{
                     position: "absolute",
                     inset: isPhone ? 8 : 10,
-                    borderRadius: isPhone ? 12 : 14,
+                    borderRadius: isPhone ? 14 : 16,
                     pointerEvents: "none",
                     background:
-                      "linear-gradient(180deg, rgba(6,19,34,0.16) 0%, rgba(6,19,34,0.08) 38%, rgba(6,19,34,0.72) 100%)",
+                      "linear-gradient(180deg, rgba(6,19,34,0.08) 0%, rgba(6,19,34,0.04) 38%, rgba(6,19,34,0.76) 100%)",
                   }}
                 />
+                {!spotlightVideoCandidate ? (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      top: isPhone ? 20 : 22,
+                      right: isPhone ? 20 : 22,
+                      zIndex: 5,
+                      width: isPhone ? 58 : 64,
+                      height: isPhone ? 58 : 64,
+                      borderRadius: 999,
+                      display: "grid",
+                      placeItems: "center",
+                      border: "1px solid rgba(214,170,69,0.68)",
+                      background:
+                        "linear-gradient(180deg, rgba(7,23,44,0.96) 0%, rgba(8,35,58,0.94) 100%)",
+                      boxShadow:
+                        "0 16px 28px rgba(2,12,27,0.32), inset 0 1px 0 rgba(255,255,255,0.18)",
+                    }}
+                  >
+                    <GsnLegacyIcon name="megaphone" size={isPhone ? 38 : 42} />
+                  </span>
+                ) : null}
                 <StableButton
                   debugId="dashboard.spotlight.whatsapp"
                   type="button"
@@ -9053,59 +9162,95 @@ export default function DashboardPage() {
                     right: isPhone ? 16 : 18,
                     bottom: isPhone ? 16 : 18,
                     zIndex: 5,
-                    minWidth: isPhone ? 94 : 108,
+                    minWidth: isPhone ? 138 : 164,
                     width: "auto",
                     minHeight: 52,
-                    padding: isPhone ? "8px 12px" : "9px 14px",
+                    padding: isPhone ? "8px 14px" : "9px 18px",
                     borderRadius: 999,
                     background:
-                      "linear-gradient(180deg, #28D267 0%, #16A34A 100%)",
-                    border: "1px solid rgba(22,163,74,0.42)",
+                      "linear-gradient(180deg, #09233C 0%, #061827 100%)",
+                    border: "1px solid rgba(214,170,69,0.60)",
                     color: "#FFFFFF",
                     boxShadow:
-                      "0 12px 24px rgba(2,12,27,0.26), inset 0 1px 0 rgba(255,255,255,0.34)",
-                    fontSize: isPhone ? 12.2 : 13,
+                      "0 14px 26px rgba(2,12,27,0.32), inset 0 1px 0 rgba(255,255,255,0.18)",
+                    fontSize: isPhone ? 15 : 16,
                     fontWeight: 950,
                     whiteSpace: "nowrap",
                     pointerEvents: "auto",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
                   }}
                 >
-                  WhatsApp
+                  <GsnLegacyIcon name="phone" size={isPhone ? 28 : 30} />
+                  <span>WhatsApp</span>
+                  <span aria-hidden="true" style={{ fontSize: isPhone ? 24 : 26 }}>
+                    &gt;
+                  </span>
                 </StableButton>
                 <div
                   style={{
                     position: "absolute",
-                    top: isPhone ? 16 : 18,
-                    left: isPhone ? 16 : 18,
-                    right: isPhone ? 16 : 18,
+                    left: isPhone ? 18 : 22,
+                    right: isPhone ? 168 : 198,
+                    bottom: isPhone ? 22 : 24,
                     display: "flex",
-                    gap: isPhone ? 5 : 7,
+                    gap: isPhone ? 7 : 9,
                     flexWrap: "wrap",
                     alignItems: "center",
                     pointerEvents: "none",
+                    zIndex: 4,
                   }}
                 >
                   <span
                     style={{
-                      ...badge(true),
-                      minHeight: isPhone ? 26 : 30,
-                      padding: isPhone ? "5px 8px" : "6px 10px",
-                      background: "rgba(255,255,255,0.9)",
-                      boxShadow: "0 10px 22px rgba(2,12,27,0.12)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: isPhone ? 7 : 9,
+                      minHeight: isPhone ? 42 : 46,
+                      borderRadius: 999,
+                      padding: isPhone ? "9px 12px" : "10px 16px",
+                      background: "rgba(7,23,44,0.88)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      color: "#FFFFFF",
+                      boxShadow: "0 14px 26px rgba(2,12,27,0.30)",
+                      backdropFilter: "blur(12px)",
+                      fontSize: isPhone ? 12.5 : 14,
+                      fontWeight: 900,
+                      lineHeight: 1,
                     }}
                   >
-                    {safeStr(activeSpotlight.trust_band || "Trusted member")}
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 999,
+                        background: "#D6AA45",
+                        boxShadow: "0 0 0 4px rgba(214,170,69,0.16)",
+                      }}
+                    />
+                    <span style={{ textTransform: "uppercase" }}>Live</span>
+                    <span
+                      style={{
+                        width: 1,
+                        alignSelf: "stretch",
+                        background: "rgba(255,255,255,0.16)",
+                      }}
+                    />
+                    <span>Spotlight is active</span>
                   </span>
                   <span
                     style={{
                       ...badge(false),
-                      minHeight: isPhone ? 26 : 30,
-                      padding: isPhone ? "5px 8px" : "6px 10px",
-                      background: spotlightExpiryStatus.urgent
-                        ? "rgba(255,247,237,0.92)"
-                        : "rgba(239,246,255,0.92)",
-                      color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
-                      boxShadow: "0 10px 22px rgba(2,12,27,0.12)",
+                      minHeight: isPhone ? 32 : 36,
+                      padding: isPhone ? "6px 9px" : "7px 11px",
+                      background: "rgba(255,255,255,0.88)",
+                      color: spotlightExpiryStatus.urgent ? "#9A3412" : "#0F3B74",
+                      boxShadow: "0 10px 22px rgba(2,12,27,0.14)",
+                      fontSize: isPhone ? 11 : 12,
+                      fontWeight: 900,
                     }}
                   >
                     {spotlightExpiryStatus.chip}
@@ -9117,7 +9262,7 @@ export default function DashboardPage() {
                     left: isPhone ? 18 : 22,
                     right: isPhone ? 122 : 146,
                     bottom: isPhone ? 17 : 20,
-                    display: "grid",
+                    display: "none",
                     gap: 4,
                     color: "#FFFFFF",
                     pointerEvents: "none",
@@ -9269,43 +9414,113 @@ export default function DashboardPage() {
               <div
                 onPointerDown={consumeDashboardPointerEvent}
                 style={{
-                  marginTop: isPhone ? 14 : 10,
-                  borderRadius: isPhone ? 16 : 17,
-                  border: "1px solid rgba(243,208,106,0.24)",
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,246,255,0.97) 100%)",
-                  padding: isPhone ? 10 : 9,
+                  marginTop: isPhone ? 10 : 12,
+                  borderRadius: isPhone ? 17 : 18,
+                  border: "1px solid rgba(214,170,69,0.24)",
+                  background: "linear-gradient(180deg, #FFFFFF 0%, #FFFDF8 100%)",
+                  padding: isPhone ? 10 : 12,
                   color: "#35516B",
                   fontSize: isPhone ? 11.8 : 13,
                   lineHeight: isPhone ? 1.38 : 1.55,
                 }}
               >
-                <StableButton
-                  debugId="dashboard.spotlight.guide.toggle"
-                  type="button"
-                  onClick={toggleSpotlightGuide}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardStableActionFrame({
-                    width: "100%",
-                    minHeight: isPhone ? 54 : 42,
-                    padding: isPhone ? "10px 14px" : "8px 14px",
-                    border: "1px solid rgba(15,59,116,0.16)",
-                    borderRadius: isPhone ? 16 : 14,
-                    background:
-                      "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
-                    boxShadow:
-                      "0 12px 24px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-                    cursor: "pointer",
-                    color: "#123055",
-                    fontWeight: 900,
-                    fontSize: isPhone ? 13.4 : 13,
-                    letterSpacing: 0.12,
-                    touchAction: "manipulation",
-                    userSelect: "none",
-                  })}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isPhone
+                      ? "auto minmax(0, 1fr) auto"
+                      : "auto minmax(0, 1fr) 1px auto",
+                    gap: isPhone ? 10 : 14,
+                    alignItems: "center",
+                    minWidth: 0,
+                  }}
                 >
-                  {spotlightGuideOpen ? "Close Spotlight" : "About Spotlight"}
-                </StableButton>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: isPhone ? 48 : 52,
+                      height: isPhone ? 48 : 52,
+                      borderRadius: 999,
+                      display: "grid",
+                      placeItems: "center",
+                      border: "1px solid rgba(214,170,69,0.26)",
+                      background:
+                        "linear-gradient(180deg, #FFFFFF 0%, #FFF6DD 100%)",
+                      boxShadow:
+                        "0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    }}
+                  >
+                    <GsnLegacyIcon name="video" size={isPhone ? 31 : 34} />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        color: "#8A651E",
+                        fontSize: isPhone ? 14.5 : 16,
+                        fontWeight: 1000,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      Sharing what matters.
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#475569",
+                        fontSize: isPhone ? 12.2 : 13,
+                        fontWeight: 750,
+                        lineHeight: 1.28,
+                      }}
+                    >
+                      Your spotlight keeps others informed.
+                    </div>
+                  </div>
+                  {!isPhone ? (
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        width: 1,
+                        minHeight: 46,
+                        background: "rgba(214,170,69,0.22)",
+                      }}
+                    />
+                  ) : null}
+                  <StableButton
+                    debugId="dashboard.spotlight.guide.toggle"
+                    type="button"
+                    onClick={toggleSpotlightGuide}
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={dashboardStableActionFrame({
+                      width: "auto",
+                      minWidth: isPhone ? 94 : 118,
+                      minHeight: isPhone ? 48 : 50,
+                      padding: isPhone ? "8px 10px" : "9px 14px",
+                      border: "1px solid rgba(15,59,116,0.12)",
+                      borderRadius: 999,
+                      background:
+                        "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+                      boxShadow:
+                        "0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.88)",
+                      cursor: "pointer",
+                      color: "#07172C",
+                      fontWeight: 1000,
+                      fontSize: isPhone ? 13.2 : 14,
+                      letterSpacing: 0,
+                      touchAction: "manipulation",
+                      userSelect: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      whiteSpace: "nowrap",
+                    })}
+                  >
+                    <span>{spotlightGuideOpen ? "Close" : "Learn more"}</span>
+                    <span aria-hidden="true" style={{ fontSize: isPhone ? 22 : 24 }}>
+                      &gt;
+                    </span>
+                  </StableButton>
+                </div>
                 {spotlightGuideOpen ? (
                   <div
                     style={{

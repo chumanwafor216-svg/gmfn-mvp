@@ -1,3 +1,42 @@
+### Dashboard Spotlight reference polish (2026-06-11)
+
+- Product owner supplied a phone screenshot reference for the dashboard live
+  Spotlight surface.
+- Frontend change:
+  - `frontend/src/pages/DashboardPage.tsx` now presents the active Spotlight as
+    a lighter institutional white/gold card instead of the heavier blue panel.
+  - Added a premium 3D megaphone identity tile beside `Your Spotlight`.
+  - Reworked the status chips to match the reference rhythm:
+    `live / queued` and `Rotates every 30 seconds`.
+  - Enlarged the phone media frame slightly and gave it a restrained gold
+    official border.
+  - Moved the live state into a dark overlay pill:
+    `Live | Spotlight is active`.
+  - Restyled the WhatsApp action as a dark navy/gold pill over the media,
+    keeping the existing `dashboard.spotlight.whatsapp` behavior.
+  - Restyled the lower explainer as a compact footer row:
+    `Sharing what matters. Your spotlight keeps others informed.`
+  - Preserved the existing `Learn more` / guide toggle, media loading,
+    WhatsApp fallback, previous/next rotation controls, and minimized restore
+    behavior.
+- Verification passed locally:
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:dashboard-actions`
+  - `npm run audit:protected-button-freeze`
+  - `npm exec -- eslint src\pages\DashboardPage.tsx`
+  - `npm run build`
+  - `git diff --check`
+- Unabated truth:
+  - the code/build/audits pass and the structure now follows the screenshot
+    direction;
+  - this is not yet accepted phone-photo proof because no live phone screenshot
+    was captured in this pass;
+  - the real photo/video remains data-driven from the active Spotlight, not
+    hardcoded to the reference image.
+- Publishing posture:
+  - no push and no Render deploy; keep batching locally until the owner says
+    the current batch is ready to publish.
+
 ### Dashboard passport action wiring (2026-06-11)
 
 - Continued the dashboard proof-surface button pass without changing the frozen
