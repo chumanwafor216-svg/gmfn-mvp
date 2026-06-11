@@ -910,6 +910,15 @@ export default function TrustCommandCentrePage() {
     executiveReading.protocolStatus?.truth_statement,
     "Readiness details are not loaded yet."
   );
+  const evidencePackChecklist = executiveReading.pilotReadiness?.evidence_pack_checklist || null;
+  const evidencePackChecklistLabel = firstTruthy(
+    evidencePackChecklist?.status_label,
+    "Evidence checklist not loaded"
+  );
+  const evidencePackChecklistTruth = firstTruthy(
+    evidencePackChecklist?.truth_statement,
+    "Evidence proof still needs accepted screenshots and PDFs."
+  );
   const exposureTotals = executiveReading.exposure?.totals || null;
   const liquidity = executiveReading.liquidity || null;
   const trustEventRows = executiveReading.trustEvents;
@@ -1883,6 +1892,14 @@ export default function TrustCommandCentrePage() {
                 </div>
                 <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                   {pilotTruthStatement}
+                </div>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13, fontWeight: 850 }}>
+                  Evidence pack: {evidencePackChecklistLabel}. Accepted{" "}
+                  {Number(evidencePackChecklist?.accepted_count || 0)} of{" "}
+                  {Number(evidencePackChecklist?.item_count || 0)}.
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                  {evidencePackChecklistTruth}
                 </div>
               </div>
 

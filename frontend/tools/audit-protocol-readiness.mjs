@@ -46,6 +46,12 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/pilot_readiness.py",
+  /def evidence_pack_checklist\(\)[\s\S]*?"status": "needs_capture"[\s\S]*?"accepted_count"[\s\S]*?"folder_shape"[\s\S]*?@router\.get\("\/evidence-pack-checklist"\)/,
+  "Pilot readiness must expose the evidence-pack checklist and keep accepted proof separate from checklist readiness."
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/protocol_status.py",
   /"surface_brand": "GSN"[\s\S]*?"truth_statement"[\s\S]*?"summary_details"[\s\S]*?"status_counts"/,
   "Protocol status must keep GSN surface branding, a truth statement, structured summary details, and counts."
@@ -67,6 +73,12 @@ assertContains(
   "frontend/src/pages/TrustCommandCentrePage.tsx",
   /Needs proof: \{Number\(executiveReading\.pilotReadiness\?\.partial_count[\s\S]*?Needs proof\{" "\}\s*\{Number\(executiveReading\.pilotReadiness\?\.partial_count/,
   "Trust Command Centre must translate protocol partial counts into user-facing Needs proof language."
+);
+
+assertContains(
+  "frontend/src/pages/TrustCommandCentrePage.tsx",
+  /evidencePackChecklist = executiveReading\.pilotReadiness\?\.evidence_pack_checklist[\s\S]*?Evidence pack: \{evidencePackChecklistLabel\}\. Accepted[\s\S]*?evidencePackChecklistTruth/,
+  "Trust Command Centre must show the evidence-pack checklist status and accepted proof count without implying evidence has already been accepted."
 );
 
 assertNotContains(

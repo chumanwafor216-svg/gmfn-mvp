@@ -46377,3 +46377,45 @@ GSN-branded invite composer and invite-entry continuity.
   - it does not visually test the Trust Command Centre on a phone;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Evidence checklist readiness surface checkpoint (2026-06-11)
+
+- Trigger:
+  - after adding the evidence-pack checklist document, the checklist still
+    lived only in docs and was not visible to the readiness/status surfaces.
+- Changed locally, not pushed:
+  - `gmfn_backend/app/api/routes/pilot_readiness.py`
+    - added a structured evidence-pack checklist model with required proof
+      areas, acceptance rules, local folder shape, and status counts;
+    - added `/pilot-readiness/evidence-pack-checklist`;
+    - included `evidence_pack_checklist` in the main `/pilot-readiness`
+      response.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - shows the checklist status in Current Readiness as
+      `Checklist ready, proof not captured`;
+    - shows accepted proof count as `0 of 12` until reviewed evidence exists;
+    - repeats the truth statement that accepted screenshots/PDFs are still
+      zero.
+  - `frontend/tools/audit-protocol-readiness.mjs`
+    - added backend and frontend guards so checklist readiness cannot be
+      mistaken for accepted evidence.
+  - `gmfn_backend/tests/test_protocol_readiness_status.py`
+    - added checks that the endpoint and main readiness payload match, and
+      that accepted evidence remains zero.
+- Verification:
+  - Passed Python compilation for the touched readiness route and test.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`.
+  - Passed `npm run audit:protocol-readiness` from `frontend`.
+  - Passed ESLint for `TrustCommandCentrePage.tsx` and
+    `tools/audit-protocol-readiness.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - the readiness surface can now show the evidence checklist state;
+  - this still does not capture, open, review, or accept any screenshot or PDF;
+  - the checklist content now exists in docs and backend constants, so future
+    checklist wording changes should update both unless a later refactor
+    introduces one shared source;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

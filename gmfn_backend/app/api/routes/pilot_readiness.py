@@ -4,6 +4,133 @@ from fastapi import APIRouter
 
 router = APIRouter(prefix="/pilot-readiness", tags=["pilot-readiness"])
 
+EVIDENCE_PACK_CHECKLIST_DOC = "docs/PILOT_EVIDENCE_PACK_CHECKLIST.md"
+
+EVIDENCE_PACK_CHECKLIST_ITEMS: list[dict[str, str]] = [
+    {
+        "key": "entry_flow",
+        "area": "Entry flow",
+        "required_proof": "Cover, Welcome, Sign In, Create Community, Join Request path",
+        "status": "not_captured",
+        "acceptance_rule": "First viewport shows one clear action, no pre-auth bottom nav, and no route confusion.",
+    },
+    {
+        "key": "community_home",
+        "area": "Community Home",
+        "required_proof": "Community identity, next action chooser, compact owner rows",
+        "status": "not_captured",
+        "acceptance_rule": "3D icons are readable, no oversized blocks, and owner tools are grouped rather than dumped.",
+    },
+    {
+        "key": "marketplace",
+        "area": "Marketplace",
+        "required_proof": "Main marketplace lanes, shop/opportunity route, trust/finance lane clarity",
+        "status": "not_captured",
+        "acceptance_rule": "Marketplace does not overload the first screen and every visible action has a real destination or clear explanation.",
+    },
+    {
+        "key": "shop_control",
+        "area": "Shop Control",
+        "required_proof": "Status summary, public shop, vault/assets/spotlight controls",
+        "status": "not_captured",
+        "acceptance_rule": "Owner controls are guided, icons are meaningful, and media/audio controls use the speaker/video meaning system.",
+    },
+    {
+        "key": "finance",
+        "area": "Finance",
+        "required_proof": "Money-in, money-out, repayment, revenue and evidence routes",
+        "status": "not_captured",
+        "acceptance_rule": "Finance uses institutional money meaning and states what GSN can and cannot do.",
+    },
+    {
+        "key": "loan_request",
+        "area": "Loan request",
+        "required_proof": "Borrower draft, readiness, guarantor fit, decision path",
+        "status": "not_captured",
+        "acceptance_rule": "Borrowing state, needed support, and next action are visible without decoding backend terms.",
+    },
+    {
+        "key": "repayment",
+        "area": "Repayment",
+        "required_proof": "Full-balance choice, part-payment choice, payment instruction",
+        "status": "not_captured",
+        "acceptance_rule": "Screenshot shows selected amount, outstanding amount, and that part payment is not a scheduled instalment calendar.",
+    },
+    {
+        "key": "guarantor_flow",
+        "area": "Guarantor flow",
+        "required_proof": "Invite, decision, exposure release, earnings",
+        "status": "not_captured",
+        "acceptance_rule": "Proof shows who can invite, what a guarantor accepts, when exposure releases, and that earnings are not automatic payout.",
+    },
+    {
+        "key": "trust_passport",
+        "area": "Trust Passport",
+        "required_proof": "Identity, trust summary, evidence/document lane",
+        "status": "not_captured",
+        "acceptance_rule": "Looks like a dignified GSN proof surface with watermark/mark, limitation statement, and clear next action.",
+    },
+    {
+        "key": "trustslip_verify",
+        "area": "TrustSlip Verify",
+        "required_proof": "Public proof and private evidence view",
+        "status": "not_captured",
+        "acceptance_rule": "Public paper is shareable without private overload; private evidence stays clearly separate.",
+    },
+    {
+        "key": "evidence_pdfs",
+        "area": "Evidence PDFs",
+        "required_proof": "Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Clan Exposure",
+        "status": "not_captured",
+        "acceptance_rule": "Generated PDF opens visually with GSN title, watermark/header/footer, generated time, and limitation statement.",
+    },
+    {
+        "key": "admin_readiness",
+        "area": "Admin readiness",
+        "required_proof": "Protocol status and pilot readiness partials",
+        "status": "not_captured",
+        "acceptance_rule": "Partial labels explain what is complete, what remains, why it matters, and the next route.",
+    },
+]
+
+EVIDENCE_PACK_FOLDER_SHAPE = [
+    "pilot_evidence_pack/00_index.md",
+    "pilot_evidence_pack/01_entry/",
+    "pilot_evidence_pack/02_community/",
+    "pilot_evidence_pack/03_marketplace/",
+    "pilot_evidence_pack/04_shop_control/",
+    "pilot_evidence_pack/05_finance/",
+    "pilot_evidence_pack/06_loans_repayment/",
+    "pilot_evidence_pack/07_guarantor_flow/",
+    "pilot_evidence_pack/08_trust_passport/",
+    "pilot_evidence_pack/09_trustslip_verify/",
+    "pilot_evidence_pack/10_generated_pdfs/",
+    "pilot_evidence_pack/11_admin_readiness/",
+    "pilot_evidence_pack/limitations.md",
+]
+
+
+def evidence_pack_checklist() -> dict[str, object]:
+    items = [dict(item) for item in EVIDENCE_PACK_CHECKLIST_ITEMS]
+    status_counts = {
+        "not_captured": sum(1 for item in items if item["status"] == "not_captured"),
+        "captured": sum(1 for item in items if item["status"] == "captured"),
+        "accepted": sum(1 for item in items if item["status"] == "accepted"),
+        "rejected": sum(1 for item in items if item["status"] == "rejected"),
+    }
+
+    return {
+        "status": "needs_capture",
+        "status_label": "Checklist ready, proof not captured",
+        "doc": EVIDENCE_PACK_CHECKLIST_DOC,
+        "truth_statement": "The checklist exists, but accepted screenshots and PDFs are still zero until the team captures and reviews them.",
+        "items": items,
+        "item_count": len(items),
+        "accepted_count": status_counts["accepted"],
+        "status_counts": status_counts,
+        "folder_shape": list(EVIDENCE_PACK_FOLDER_SHAPE),
+    }
+
 
 def _ready_check(
     key: str,
@@ -251,4 +378,10 @@ def pilot_readiness():
         "partial_count": partial,
         "blocked_count": blocked,
         "checks": checks,
+        "evidence_pack_checklist": evidence_pack_checklist(),
     }
+
+
+@router.get("/evidence-pack-checklist")
+def pilot_evidence_pack_checklist():
+    return evidence_pack_checklist()

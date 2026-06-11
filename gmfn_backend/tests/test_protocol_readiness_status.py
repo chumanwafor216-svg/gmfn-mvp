@@ -1,4 +1,4 @@
-from app.api.routes.pilot_readiness import pilot_readiness
+from app.api.routes.pilot_readiness import pilot_evidence_pack_checklist, pilot_readiness
 from app.api.routes.protocol_status import protocol_status
 
 
@@ -83,3 +83,20 @@ def test_readiness_partial_text_reflects_latest_completed_work_without_overclaim
     assert any("source-level PDF shell pass" in item for item in evidence["complete"])
     assert any("pilot evidence-pack checklist" in item for item in evidence["complete"])
     assert any("Visually open generated PDFs" in item for item in evidence["remaining"])
+
+
+def test_pilot_readiness_exposes_evidence_pack_checklist_without_fake_acceptance():
+    payload = pilot_readiness()
+    checklist = payload["evidence_pack_checklist"]
+    endpoint_payload = pilot_evidence_pack_checklist()
+
+    assert checklist == endpoint_payload
+    assert checklist["status"] == "needs_capture"
+    assert checklist["status_label"] == "Checklist ready, proof not captured"
+    assert checklist["doc"] == "docs/PILOT_EVIDENCE_PACK_CHECKLIST.md"
+    assert checklist["accepted_count"] == 0
+    assert checklist["status_counts"]["not_captured"] == checklist["item_count"]
+    assert checklist["item_count"] >= 10
+    assert checklist["items"][0]["status"] == "not_captured"
+    assert "accepted screenshots and PDFs are still zero" in checklist["truth_statement"]
+    assert "pilot_evidence_pack/10_generated_pdfs/" in checklist["folder_shape"]
