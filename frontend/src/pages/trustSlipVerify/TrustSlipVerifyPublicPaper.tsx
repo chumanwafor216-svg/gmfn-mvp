@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import GSNBrandMark from "../../components/GSNBrandMark";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../../components/GsnRealisticIcon";
 import { PrimaryButton, StableCtaLink } from "../../components/StableButton";
 import {
@@ -121,7 +122,7 @@ function fieldLabel(): React.CSSProperties {
     color: "#475569",
     fontSize: 11,
     fontWeight: 1000,
-    letterSpacing: 0.08,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -267,6 +268,26 @@ function publicVerifyHero(compact: boolean): React.CSSProperties {
   };
 }
 
+function officialPaperWatermark(compact: boolean): React.ReactNode {
+  return (
+    <div
+      className="print-watermark"
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        top: compact ? -34 : -42,
+        right: compact ? -54 : -26,
+        opacity: 0.055,
+        pointerEvents: "none",
+        transform: "rotate(-7deg)",
+        zIndex: 0,
+      }}
+    >
+      <GSNBrandMark width={compact ? 132 : 190} height={compact ? 166 : 238} />
+    </div>
+  );
+}
+
 function publicVerifyPanel(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 14,
@@ -409,6 +430,7 @@ export default function TrustSlipVerifyPublicPaper({
       className="print-trust-document"
       style={publicVerifyPaperShell(compact)}
     >
+      {officialPaperWatermark(compact)}
       <header style={publicVerifyHero(compact)}>
         <TrustPaperWatermark
           name="globe"

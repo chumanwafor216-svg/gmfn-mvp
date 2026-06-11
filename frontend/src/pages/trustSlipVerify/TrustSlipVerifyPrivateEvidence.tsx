@@ -134,7 +134,7 @@ function statTile(
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
     fontWeight: 1000,
     textTransform: "uppercase",
     color: "#526579",
@@ -263,7 +263,7 @@ function documentFooterGrid(compact: boolean): React.CSSProperties {
 function documentFooterLabel(): React.CSSProperties {
   return {
     fontSize: 11,
-    letterSpacing: 0.28,
+    letterSpacing: 0,
     fontWeight: 900,
     textTransform: "uppercase",
     color: "#64748B",
@@ -548,7 +548,7 @@ export default function TrustSlipVerifyPrivateEvidence({
             </div>
 
             <div style={innerCard("#F8FBFF")}>
-              {documentCardTitle("wallet", "Contribution payment record")}
+              {documentCardTitle("financeInstitution", "Contribution payment record")}
               <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                 <div style={helperText()}>
                   Expected: {countText(contributionDiscipline?.expected_count)}

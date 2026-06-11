@@ -178,6 +178,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /import GSNBrandMark from "\.\.\/\.\.\/components\/GSNBrandMark";[\s\S]*?function officialPaperWatermark\(compact: boolean\): React\.ReactNode[\s\S]*?<GSNBrandMark width=\{compact \? 132 : 190\} height=\{compact \? 166 : 238\} \/>[\s\S]*?\{officialPaperWatermark\(compact\)\}/,
+  "TrustSlip Verify public paper must use the official GSN mark as an institutional watermark."
+);
+
+assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
   /setConfirmationOutcome\(result\);[\s\S]*?result\?\.public_token[\s\S]*?navigateWithOrigin\([\s\S]*?`\/community-confirmations\/public\/\$\{encodeURIComponent\(String\(result\.public_token\)\)\}`/,
   "TrustSlip Verify must move a live community confirmation request into the focused public outcome lane instead of leaving the result buried in the TrustSlip page."
@@ -188,6 +194,25 @@ assertContains(
   /<div style=\{\{ \.\.\.sectionLabel\(\), color: "#64748B" \}\}>Holder<\/div>[\s\S]*?\{holderName\}[\s\S]*?GSN ID: \{gsnId\}/,
   "TrustSlip Verify public paper must show the holder name in the Holder field and keep the GSN ID as a separate identifier."
 );
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
+  /documentCardTitle\("financeInstitution", "Contribution payment record"\)/,
+  "TrustSlip Verify contribution payment evidence must use an institutional finance icon, not a weak wallet signal."
+);
+
+[
+  "src/pages/TrustSlipVerifyPage.tsx",
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
+  "src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
+].forEach((file) => {
+  assertNotContains(
+    file,
+    /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
+    "TrustSlip Verify proof surfaces must not use spaced-out micro-label typography."
+  );
+});
 
 assertContains(
   "src/pages/trustSlipVerify/trustSlipVerifyData.ts",

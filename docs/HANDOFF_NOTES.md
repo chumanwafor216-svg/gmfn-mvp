@@ -45698,3 +45698,48 @@ GSN-branded invite composer and invite-entry continuity.
     borrowing repayment logic, and stale protocol `partial` statuses remain
     separate unfinished workstreams;
   - no push or Render deploy was triggered.
+
+### TrustSlip Verify proof-paper polish checkpoint (2026-06-11)
+
+- Trigger:
+  - after Trust Passport, the production polish order moved to TrustSlip
+    Verify because the public and private proof papers are user-facing evidence
+    surfaces and must feel official, readable, and institutionally GSN-branded.
+- Changed locally, not pushed:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - removed the remaining spaced-out section-label typography so the page
+      reads calmer on phone.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - added the official `GSNBrandMark` as a light watermark behind the public
+      TrustSlip paper shell;
+    - removed spaced-out field-label typography from public-paper form fields.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - removed spaced-out document labels and footer labels;
+    - changed the contribution payment evidence icon from `wallet` to
+      `financeInstitution` so payment discipline reads as an institutional
+      finance record, not a personal purse/wallet signal.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx`
+    - removed remaining spaced-out result-card section-label typography.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added guards for the official GSN public-paper watermark, institutional
+      contribution-payment icon, and no spaced-out TrustSlip Verify proof
+      labels.
+- Verification:
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed ESLint for the touched TrustSlip Verify files and
+    `tools/audit-trust-actions.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - this completes the web TrustSlip Verify proof-paper polish slice locally,
+    including public paper watermarking and private evidence icon meaning;
+  - this is still not the backend PDF service polish, and it is not a real
+    phone screenshot review;
+  - borrowing repayment logic, PDF evidence packs, and stale protocol
+    `partial` statuses remain unfinished workstreams;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves a single publish.
