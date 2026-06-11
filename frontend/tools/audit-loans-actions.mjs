@@ -137,6 +137,12 @@ assertAsciiOnly(
 );
 
 assertContains(
+  "src/pages/GuarantorEarningsPage.tsx",
+  /const GUARANTOR_EARNINGS_PAYOUT_TRUTH =[\s\S]*?not an automatic payout[\s\S]*?guided Money Out process[\s\S]*?copySummary\(\)[\s\S]*?GUARANTOR_EARNINGS_PAYOUT_TRUTH[\s\S]*?debugId="guarantor-earnings\.route\.money-out"[\s\S]*?does not pay it out by itself/,
+  "Guarantor Earnings must tell users that earned guarantor value is a visible record, not an automatic payout, and must keep the Money Out route honest."
+);
+
+assertContains(
   "src/pages/RepaymentPage.tsx",
   /type RepaymentMode = "full" \| "part";[\s\S]*?paid_amount\?: string \| number \| null;[\s\S]*?remaining_amount\?: string \| number \| null;[\s\S]*?bank_event_id\?: number \| string \| null;[\s\S]*?const \[repaymentMode, setRepaymentMode\] = useState<RepaymentMode>\("full"\);[\s\S]*?const \[partAmount, setPartAmount\] = useState\(""\);[\s\S]*?const requestedRepaymentAmount = useMemo[\s\S]*?repaymentMode === "full"[\s\S]*?Math\.min\(requested, outstandingAmount\)[\s\S]*?repaymentPlanTruth[\s\S]*?separate dated installment calendar[\s\S]*?currentExpectedPaymentBankEventId[\s\S]*?matched_bank_event_id[\s\S]*?bank_event_id[\s\S]*?amount: String\(requestedRepaymentAmount\.toFixed\(2\)\)[\s\S]*?debugId="repayment\.mode\.full"[\s\S]*?debugId="repayment\.mode\.part"[\s\S]*?Part-payment amount[\s\S]*?Paid so far:[\s\S]*?Still left:/,
   "Repayment page must expose full-balance and part-payment choices, truthfully distinguish part payment from a dated installment calendar, show paid/left reconciliation amounts, and generate instructions for the selected amount."

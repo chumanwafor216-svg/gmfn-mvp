@@ -76,6 +76,8 @@ type CollapseState = {
 };
 
 const GUARANTOR_EARNINGS_UI_STORAGE_KEY = "gmfn.guarantorEarnings.sections.v1";
+const GUARANTOR_EARNINGS_PAYOUT_TRUTH =
+  "Earned guarantor value is recorded here for visibility. It is not an automatic payout, and withdrawal still needs the guided Money Out process when that route is approved.";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -744,6 +746,7 @@ export default function GuarantorEarningsPage() {
       `This year: ${fmtMoney(totals.thisYear)} ${currency}`,
       `Settled items: ${totals.settledCount}`,
       `Pending items: ${totals.pendingCount}`,
+      GUARANTOR_EARNINGS_PAYOUT_TRUTH,
     ]
       .filter(Boolean)
       .join("\n");
@@ -819,6 +822,22 @@ export default function GuarantorEarningsPage() {
               This earnings record keeps guarantor participation
               readable in your current community
               instead of leaving it buried under the wider support flow.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                borderRadius: 18,
+                border: "1px solid rgba(242,199,102,0.34)",
+                background: "rgba(255,255,255,0.08)",
+                padding: "12px 14px",
+                color: "#F8FBFF",
+                fontSize: 13,
+                fontWeight: 850,
+                lineHeight: 1.55,
+              }}
+            >
+              {GUARANTOR_EARNINGS_PAYOUT_TRUTH}
             </div>
 
             <div
@@ -1523,7 +1542,8 @@ export default function GuarantorEarningsPage() {
                     {guarantorEarningsRouteHeading("wallet", "Money Out")}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Open this when the money question becomes a guided withdrawal question again.
+                    Use this only when GSN opens a guided withdrawal path. This page records
+                    earned value; it does not pay it out by itself.
                   </div>
                 </StableCtaLink>
               </div>

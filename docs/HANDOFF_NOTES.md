@@ -46242,3 +46242,39 @@ GSN-branded invite composer and invite-entry continuity.
   - stale protocol `partial` statuses still need a separate truth pass;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Guarantor earnings payout truth checkpoint (2026-06-11)
+
+- Trigger:
+  - after the repayment route made full and part-payment choices visible, the
+    next money-truth gap was Guarantor Earnings: the page could show earned
+    guarantor value while the pilot payout route is still not proven end to
+    end.
+- Changed locally, not pushed:
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+    - added a first-screen payout truth note explaining that earned guarantor
+      value is a visible record, not an automatic payout;
+    - added the same payout limitation to the copied summary so shared records
+      do not imply immediate withdrawal;
+    - tightened the Money Out route helper so it says the page records earned
+      value but does not pay it out by itself.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - added a guard requiring Guarantor Earnings to keep the payout limitation
+      and honest Money Out wording.
+- Verification:
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed ESLint for `GuarantorEarningsPage.tsx` and
+    `tools/audit-loans-actions.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - this reduces the risk of over-promising guarantor payout on the web route;
+  - this does not create or prove an approved payout workflow, external money
+    movement, or a phone-tested withdrawal lifecycle;
+  - stale protocol `partial` statuses still need a separate truth pass;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.
