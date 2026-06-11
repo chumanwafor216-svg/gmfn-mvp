@@ -919,6 +919,7 @@ export default function TrustCommandCentrePage() {
     evidencePackChecklist?.truth_statement,
     "Evidence proof still needs accepted screenshots and PDFs."
   );
+  const evidencePackChecklistItems = rowsOf<any>(evidencePackChecklist?.items).slice(0, 4);
   const exposureTotals = executiveReading.exposure?.totals || null;
   const liquidity = executiveReading.liquidity || null;
   const trustEventRows = executiveReading.trustEvents;
@@ -1969,6 +1970,35 @@ export default function TrustCommandCentrePage() {
                       <div style={{ marginTop: 6, ...helperText() }}>{card.detail}</div>
                     </div>
                   ))}
+                  {evidencePackChecklistItems.length > 0 ? (
+                    <div
+                      style={{
+                        borderTop: "1px solid rgba(20,52,83,0.12)",
+                        paddingTop: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 900,
+                          fontSize: 15,
+                        }}
+                      >
+                        Evidence proof to capture first
+                      </div>
+                      <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                        {evidencePackChecklistItems.map((item) => (
+                          <div key={firstTruthy(item?.key, item?.area)} style={{ ...helperText(), fontSize: 13 }}>
+                            <b>{firstTruthy(item?.area, "Evidence area")}</b>:{" "}
+                            {firstTruthy(item?.required_proof, "Required proof not named.")}{" "}
+                            <span style={{ fontWeight: 850 }}>
+                              ({safeStr(item?.status).replace(/_/g, " ") || "not captured"})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

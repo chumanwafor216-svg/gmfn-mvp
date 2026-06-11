@@ -46419,3 +46419,33 @@ GSN-branded invite composer and invite-entry continuity.
     introduces one shared source;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Evidence checklist preview checkpoint (2026-06-11)
+
+- Trigger:
+  - the Trust Command Centre could show checklist readiness and accepted proof
+    count, but still did not show which evidence areas should be captured
+    first.
+- Changed locally, not pushed:
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - added a compact `Evidence proof to capture first` preview inside the
+      existing Validation Data Checklist card;
+    - shows the first four evidence areas, required proof, and current
+      `not captured` status from the backend checklist.
+  - `frontend/tools/audit-protocol-readiness.mjs`
+    - extended the protocol readiness audit so the Trust Command Centre must
+      keep checklist status, accepted proof count, and first proof areas
+      visible without implying acceptance.
+- Verification:
+  - Passed `npm run audit:protocol-readiness` from `frontend`.
+  - Passed ESLint for `TrustCommandCentrePage.tsx` and
+    `tools/audit-protocol-readiness.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+- Unabated truth:
+  - admins can now see the first proof areas to capture;
+  - this is still not captured evidence and still has not been phone-screenshot
+    reviewed;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

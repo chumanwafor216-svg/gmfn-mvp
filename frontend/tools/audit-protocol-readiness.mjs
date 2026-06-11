@@ -77,8 +77,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/TrustCommandCentrePage.tsx",
-  /evidencePackChecklist = executiveReading\.pilotReadiness\?\.evidence_pack_checklist[\s\S]*?Evidence pack: \{evidencePackChecklistLabel\}\. Accepted[\s\S]*?evidencePackChecklistTruth/,
-  "Trust Command Centre must show the evidence-pack checklist status and accepted proof count without implying evidence has already been accepted."
+  /evidencePackChecklist = executiveReading\.pilotReadiness\?\.evidence_pack_checklist[\s\S]*?evidencePackChecklistItems = rowsOf<any>\(evidencePackChecklist\?\.items\)\.slice\(0, 4\)[\s\S]*?Evidence pack: \{evidencePackChecklistLabel\}\. Accepted[\s\S]*?evidencePackChecklistTruth[\s\S]*?Evidence proof to capture first[\s\S]*?required_proof[\s\S]*?replace\(\/_\/g, " "\)/,
+  "Trust Command Centre must show the evidence-pack checklist status, accepted proof count, and first proof areas without implying evidence has already been accepted."
 );
 
 assertNotContains(
