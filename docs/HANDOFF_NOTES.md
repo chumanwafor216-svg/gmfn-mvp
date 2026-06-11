@@ -45607,3 +45607,49 @@ GSN-branded invite composer and invite-entry continuity.
   - Render auto-deploy remains intentionally off to protect pipeline minutes,
     so these local fixes are not live until the product owner chooses the exact
     deployment batch.
+
+### Shop Control icon and gallery polish checkpoint (2026-06-11)
+
+- Trigger:
+  - the product owner asked to continue the 3D icon rollout and phone polish
+    until it is complete everywhere, while keeping the batch local until the
+    final push to conserve Render / pipeline minutes.
+- Changed locally, not pushed:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - enlarged Shop Control shortcut icons into white embossed 3D tiles so
+      the first phone viewport is easier to understand without reading;
+    - replaced weak generic `card` / `refresh` meanings in subscription,
+      paid spotlight, paid repost, payment, and Vault-slot contexts with
+      `financeInstitution` and `megaphone` where the meaning is clearer;
+    - made the `Picture + video` choice show both 3D media signals;
+    - removed spaced-out section-label letter spacing;
+    - removed broken mojibake bullets from spotlight media-ready text.
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - removed remaining section-label letter spacing in the embedded/public
+      gallery workbench so Shop Control and Shop Assets share the calmer
+      phone rhythm.
+  - `frontend/tools/audit-shop-control-button-inventory.mjs`
+    - added guards for the larger white Shop Control shortcut tiles, paid
+      spotlight finance imagery, dual Picture + video icons, no spaced labels,
+      and no broken encoding characters.
+  - `frontend/tools/audit-shop-assets-slots.mjs`
+    - updated the 3D chip helper guard to protect the larger readable icon
+      size and added a no-spaced-label guard.
+- Verification:
+  - Passed `npm run audit:shop-control-button-inventory` from `frontend`.
+  - Passed `npm run audit:shop-gallery-button-inventory` from `frontend`.
+  - Passed `npm run audit:shop-assets-slots` from `frontend`.
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed ESLint for `ShopControlPage.tsx`, `ShopAssetsPage.tsx`, and the
+    two touched audit files.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this completes the Shop Control / embedded Shop Assets icon-meaning slice
+    locally, but it is still not a real phone screenshot review;
+  - this does not solve Trust Passport / TrustSlip PDF institutional document
+    shelling, borrowing repayment logic, or stale protocol `partial` statuses;
+  - no push or Render deploy was triggered. The branch remains local-only
+    until the product owner approves the final batch push.

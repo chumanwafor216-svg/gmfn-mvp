@@ -315,9 +315,42 @@ if (allActionRootMarkers !== expectedFileInputActionRoots * 2) {
 }
 
 assertShopContains(
-  /const shopHeroShortcuts:[\s\S]*?icon: GsnIconName[\s\S]*?label: "Dashboard"[\s\S]*?icon: "chart"[\s\S]*?label: "Marketplace"[\s\S]*?icon: "shop"[\s\S]*?label: "Shop gallery"[\s\S]*?icon: "image"[\s\S]*?label: "Free spotlight"[\s\S]*?icon: "megaphone"[\s\S]*?label: "Subscription spotlight"[\s\S]*?icon: "card"[\s\S]*?label: "Paid Repost"[\s\S]*?icon: "refresh"[\s\S]*?label: "Vault"[\s\S]*?icon: "vault"[\s\S]*?\];/,
+  /const shopHeroShortcuts:[\s\S]*?icon: GsnIconName[\s\S]*?label: "Dashboard"[\s\S]*?icon: "chart"[\s\S]*?label: "Marketplace"[\s\S]*?icon: "marketplace"[\s\S]*?label: "Shop gallery"[\s\S]*?icon: "shop"[\s\S]*?label: "Free spotlight"[\s\S]*?icon: "megaphone"[\s\S]*?label: "Subscription spotlight"[\s\S]*?icon: "financeInstitution"[\s\S]*?label: "Paid Repost"[\s\S]*?icon: "megaphone"[\s\S]*?label: "Vault"[\s\S]*?icon: "vault"[\s\S]*?\];/,
   "Shop Control hero shortcuts must keep Dashboard, Marketplace, Shop gallery, Free spotlight, Subscription spotlight, Paid Repost, and Vault in the audited order with 3D GSN icon names."
 );
+
+assertShopContains(
+  /function heroShortcutIconTile\([\s\S]*?width: 38,[\s\S]*?height: 38,[\s\S]*?background: "rgba\(255,255,255,0\.98\)"[\s\S]*?<GsnLegacyIcon name=\{name\} size=\{32\} \/>/,
+  "Shop Control hero shortcuts must use larger white 3D icon tiles instead of tiny unframed glyphs."
+);
+
+assertShopContains(
+  /const spotlightLaneIcon: GsnIconName = spotlightModeIsPaid[\s\S]*?\? "financeInstitution"[\s\S]*?: "megaphone";[\s\S]*?controlIconTile\("financeInstitution", spotlightPriorityMode === "paid"\)[\s\S]*?labelWithIcon\("financeInstitution", "Spotlight Subscription"\)/,
+  "Shop Control paid spotlight and subscription surfaces must use institutional finance imagery instead of generic card imagery."
+);
+
+assertShopContains(
+  /debugId="shop-control\.spotlight\.media\.both"[\s\S]*?inlineIcon\("image"\)[\s\S]*?inlineIcon\("video"\)[\s\S]*?<span>Picture \+ video<\/span>/,
+  "Shop Control Picture + video choice must show both picture and video 3D meaning icons."
+);
+
+if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
+  findings.push({
+    file: shopControlFile,
+    line: lineAt(shopControlSource, shopControlSource.search(/letterSpacing:\s*[1-9]/)),
+    message: "Shop Control must not use spaced-out uppercase section labels on phone-polished surfaces.",
+    text: shopControlSource.match(/letterSpacing:\s*[1-9][^,\n]*/)?.[0] || "",
+  });
+}
+
+if (/â|�/.test(shopControlSource)) {
+  findings.push({
+    file: shopControlFile,
+    line: lineAt(shopControlSource, shopControlSource.search(/â|�/)),
+    message: "Shop Control must not show mojibake/broken encoding characters in user-facing copy.",
+    text: shopControlSource.match(/.*(?:â|�).*/)?.[0]?.trim() || "",
+  });
+}
 
 assertShopContains(
   /activeOwnerLayer === "products" \? \(\s*<section\s*id="shop-control-gallery-tools"/,

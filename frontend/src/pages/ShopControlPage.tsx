@@ -412,7 +412,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: "#4E6680",
     fontWeight: 900,
-    letterSpacing: 2,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -469,15 +469,15 @@ function labelWithIcon(
 function controlIconTile(
   name: GsnIconName,
   active = true,
-  size = 26
+  size = 32
 ): React.ReactNode {
   return (
     <div
       aria-hidden="true"
       style={{
-        width: 46,
-        height: 46,
-        borderRadius: 16,
+        width: 54,
+        height: 54,
+        borderRadius: 18,
         display: "grid",
         placeItems: "center",
         color: active ? "#7A4A00" : "#0B63D1",
@@ -491,6 +491,29 @@ function controlIconTile(
     >
       <GsnLegacyIcon name={name} size={size} />
     </div>
+  );
+}
+
+function heroShortcutIconTile(name: GsnIconName): React.ReactNode {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: 14,
+        display: "inline-grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        background: "rgba(255,255,255,0.98)",
+        border: "1px solid rgba(246,215,122,0.30)",
+        boxShadow:
+          "0 12px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
+        color: "#7A4A00",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={32} />
+    </span>
   );
 }
 
@@ -853,11 +876,11 @@ export default function ShopControlPage() {
     to: string;
   }> = [
     { label: "Dashboard", icon: "chart", to: routes.dashboard },
-    { label: "Marketplace", icon: "shop", to: routes.marketplace },
-    { label: "Shop gallery", icon: "image", to: routes.shopGallery },
+    { label: "Marketplace", icon: "marketplace", to: routes.marketplace },
+    { label: "Shop gallery", icon: "shop", to: routes.shopGallery },
     { label: "Free spotlight", icon: "megaphone", to: routes.freeSpotlight },
-    { label: "Subscription spotlight", icon: "card", to: routes.subscriptionSpotlight },
-    { label: "Paid Repost", icon: "refresh", to: routes.paidRepost },
+    { label: "Subscription spotlight", icon: "financeInstitution", to: routes.subscriptionSpotlight },
+    { label: "Paid Repost", icon: "megaphone", to: routes.paidRepost },
     { label: "Vault", icon: "vault", to: routes.vaultControl },
   ];
 
@@ -2476,7 +2499,9 @@ export default function ShopControlPage() {
   const spotlightPortalSubtitle = spotlightModeIsPaid
     ? "Use the paid lane only after the subscription payment is confirmed."
     : "Show one clear shop update to people inside your community.";
-  const spotlightLaneIcon: GsnIconName = spotlightModeIsPaid ? "card" : "megaphone";
+  const spotlightLaneIcon: GsnIconName = spotlightModeIsPaid
+    ? "financeInstitution"
+    : "megaphone";
   const spotlightStepBadges = [
     { key: "upload", label: "1. Product update" },
     { key: "preview", label: "2. Publish" },
@@ -2726,7 +2751,7 @@ export default function ShopControlPage() {
                       : "1px solid rgba(13,95,168,0.12)",
                 }}
               >
-                {controlIconTile("card", spotlightPriorityMode === "paid")}
+                {controlIconTile("financeInstitution", spotlightPriorityMode === "paid")}
                 <div
                   style={{
                     marginTop: 10,
@@ -2788,7 +2813,11 @@ export default function ShopControlPage() {
                   fullWidth
                   debugId="shop-control.spotlight.media.both"
                 >
-                  {labelWithIcon("image", <>Picture + video</>)}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                    {inlineIcon("image")}
+                    {inlineIcon("video")}
+                    <span>Picture + video</span>
+                  </span>
                 </StableButton>
               </div>
             </div>
@@ -2869,7 +2898,7 @@ export default function ShopControlPage() {
                   {spotlightImageFile ? (
                     <div style={{ marginTop: 10 }}>
                       <span style={badge(true)}>
-                        {labelWithIcon("check", <>Picture ready • {formatFileSize(spotlightImageFile.size)}</>)}
+                        {labelWithIcon("check", <>Picture ready - {formatFileSize(spotlightImageFile.size)}</>)}
                       </span>
                     </div>
                   ) : null}
@@ -2910,9 +2939,9 @@ export default function ShopControlPage() {
                   {spotlightVideoFile ? (
                     <div style={{ marginTop: 10 }}>
                       <span style={badge(true)}>
-                        {labelWithIcon("check", <>Video ready • {formatFileSize(spotlightVideoFile.size)}</>)}
+                        {labelWithIcon("check", <>Video ready - {formatFileSize(spotlightVideoFile.size)}</>)}
                         {spotlightVideoDurationSeconds != null
-                          ? ` • ${spotlightVideoDurationSeconds.toFixed(1)}s`
+                          ? ` - ${spotlightVideoDurationSeconds.toFixed(1)}s`
                           : ""}
                       </span>
                     </div>
@@ -3016,7 +3045,7 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <span style={badge(true)}>
                   {labelWithIcon(
-                    spotlightPriorityMode === "paid" ? "card" : "megaphone",
+                    spotlightPriorityMode === "paid" ? "financeInstitution" : "megaphone",
                     spotlightPriorityMode === "paid" ? "Paid lane" : "Free lane"
                   )}
                 </span>
@@ -3200,29 +3229,18 @@ export default function ShopControlPage() {
                   fullWidth
                   debugId={`shop-control.hero-shortcut.${item.label.toLowerCase().replace(/\s+/g, "-")}`}
                   style={{
-                    minHeight: 44,
-                    padding: "8px 9px",
+                    minHeight: 58,
+                    padding: "9px 10px",
                     border: "1px solid rgba(246,215,122,0.28)",
                     background:
                       "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.05) 100%)",
                     color: "#F8FBFF",
                     boxShadow:
                       "0 8px 18px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
-                    gap: 6,
+                    gap: 8,
                   }}
                 >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 24,
-                      height: 24,
-                      display: "inline-grid",
-                      placeItems: "center",
-                      flex: "0 0 auto",
-                    }}
-                  >
-                    <GsnLegacyIcon name={item.icon} size={22} />
-                  </span>
+                  {heroShortcutIconTile(item.icon)}
                   <span>{item.label}</span>
                 </StableCtaLink>
               ))}
@@ -3293,7 +3311,7 @@ export default function ShopControlPage() {
               </span>
               <span style={badge(false)}>{labelWithIcon("check", vaultStateLabel)}</span>
               <span style={badge(false)}>
-                {labelWithIcon("card", <>Payment: {firstTruthy(latestVaultPayment?.status, "Not started")}</>)}
+                {labelWithIcon("financeInstitution", <>Payment: {firstTruthy(latestVaultPayment?.status, "Not started")}</>)}
               </span>
             </div>
             {latestVaultPayment ? (
@@ -3489,7 +3507,7 @@ export default function ShopControlPage() {
             id="shop-control-paid-spotlight"
             style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF8DE 56%, #F7FAFF 100%)")}
           >
-            <div style={sectionLabel()}>{labelWithIcon("card", "Spotlight Subscription")}</div>
+            <div style={sectionLabel()}>{labelWithIcon("financeInstitution", "Spotlight Subscription")}</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
               Paid priority, kept separate.
             </div>
@@ -3504,7 +3522,7 @@ export default function ShopControlPage() {
                 {labelWithIcon("check", <>Subscription: {canStartPaidSpotlight ? "Ready" : "Not ready"}</>)}
               </span>
               <span style={badge(false)}>
-                {labelWithIcon("card", <>Payment: {firstTruthy(latestSpotlightPayment?.status, "Not started")}</>)}
+                {labelWithIcon("financeInstitution", <>Payment: {firstTruthy(latestSpotlightPayment?.status, "Not started")}</>)}
               </span>
             </div>
             {latestSpotlightPayment ? (
@@ -4269,7 +4287,7 @@ export default function ShopControlPage() {
           }}
         >
           {[
-            ["card", "1. Activate slots", "Pay for one slot or six private slots."],
+            ["financeInstitution", "1. Activate slots", "Pay for one slot or six private slots."],
             ["vault", "2. Add private offers", "Put only private products inside Vault."],
             ["lock", "3. Share access", "Create a link only for the person who should see it."],
           ].map(([icon, title, text]) => (

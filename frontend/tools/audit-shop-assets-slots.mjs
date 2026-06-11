@@ -57,9 +57,18 @@ assertContains(
 
 assertContains(
   shopAssetsFile,
-  /function iconBadge\([\s\S]*?icon: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{icon\} size=\{13\} \/>/,
-  "Shop Assets must keep a compact 3D icon-backed chip helper for shop picture, public products, Vault, hidden, and block status."
+  /function iconBadge\([\s\S]*?icon: GsnIconName[\s\S]*?width: 20,[\s\S]*?height: 20,[\s\S]*?<GsnLegacyIcon name=\{icon\} size=\{18\} \/>/,
+  "Shop Assets must keep a readable 3D icon-backed chip helper for shop picture, public products, Vault, hidden, and block status."
 );
+
+if (/letterSpacing:\s*[1-9]/.test(shopAssetsSource)) {
+  findings.push({
+    file: shopAssetsFile,
+    line: lineAt(shopAssetsSource, shopAssetsSource.search(/letterSpacing:\s*[1-9]/)),
+    message: "Shop Assets must not use spaced-out uppercase section labels on phone-polished surfaces.",
+    text: shopAssetsSource.match(/letterSpacing:\s*[1-9][^,\n]*/)?.[0] || "",
+  });
+}
 
 assertContains(
   shopAssetsFile,
