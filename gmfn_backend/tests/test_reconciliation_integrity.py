@@ -14,7 +14,10 @@ from app.db.database import Base as BankBase
 from app.db.bank_models import BankEvent, ExpectedPayment
 from app.db.models import Clan, ClanMembership, Loan, LoanGuarantor, PoolEvent, TrustEvent, User
 from app.services.expected_payments_service import ensure_loan_repayment_expected_payment
-from app.services.payment_instruction_service import create_pool_deposit_instruction
+from app.services.payment_instruction_service import (
+    create_loan_repayment_instruction,
+    create_pool_deposit_instruction,
+)
 from app.services.reconciliation_service import (
     create_bank_event,
     normalize_reference,
@@ -354,6 +357,42 @@ def test_pool_instruction_links_pool_event_for_auto_reconciliation(db):
     assert pool_after.event_type == "deposit.confirmed"
     assert pool_after.confirmed_at is not None
     assert "auto-confirmed by bank reconciliation" in (pool_after.note or "")
+
+
+def test_loan_repayment_part_instruction_keeps_expected_total_outstanding(db):
+    clan, borrower, loan, _guarantor_row = _seed_supported_loan_for_reconciliation(db)
+
+    instruction = create_loan_repayment_instruction(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(borrower.id),
+        loan_id=int(loan.id),
+        amount=Decimal("40.00"),
+        currency="NGN",
+    )
+
+    expected = db.get(ExpectedPayment, int(instruction["expected_payment_id"]))
+    assert expected is not None
+
+    assert instruction["amount"] == "40.00"
+    assert instruction["expected_total_amount"] == "100.00"
+    assert instruction["expected_remaining_amount"] == "100.00"
+    assert expected.amount == Decimal("100.00")
+    assert expected.paid_amount == Decimal("0.00")
+    assert expected.remaining_amount == Decimal("100.00")
+
+    repeat_instruction = create_loan_repayment_instruction(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(borrower.id),
+        loan_id=int(loan.id),
+        amount=Decimal("25.00"),
+        currency="NGN",
+    )
+
+    assert repeat_instruction["expected_payment_id"] == instruction["expected_payment_id"]
+    assert repeat_instruction["amount"] == "25.00"
+    assert repeat_instruction["expected_total_amount"] == "100.00"
 
 
 def test_loan_repayment_reconciliation_applies_part_payment_then_full_closure(db):

@@ -500,22 +500,18 @@ def create_expected_loan_repayment(
 
     remaining_amount = Decimal(str(getattr(loan, "remaining_amount", 0) or 0))
     if remaining_amount <= Decimal("0"):
-        amount = Decimal(str(getattr(loan, "amount", 0) or 0)) - Decimal(str(getattr(loan, "paid_total", 0) or 0))
-        if amount < Decimal("0"):
-            amount = Decimal("0")
-    else:
-        amount = remaining_amount
+        remaining_amount = Decimal(str(getattr(loan, "amount", 0) or 0)) - Decimal(str(getattr(loan, "paid_total", 0) or 0))
+        if remaining_amount < Decimal("0"):
+            remaining_amount = Decimal("0")
 
+    requested_amount = remaining_amount
     if payload.amount is not None:
         requested = Decimal(str(payload.amount))
         if requested <= Decimal("0"):
             raise HTTPException(status_code=400, detail="amount must be > 0")
-        if amount > Decimal("0") and requested > amount:
-            amount = amount
-        else:
-            amount = requested
+        requested_amount = min(requested, remaining_amount) if remaining_amount > Decimal("0") else requested
 
-    if amount <= Decimal("0"):
+    if remaining_amount <= Decimal("0"):
         raise HTTPException(status_code=400, detail="No outstanding repayment amount")
 
     currency = payload.currency or getattr(loan, "currency", None) or "NGN"
@@ -525,11 +521,13 @@ def create_expected_loan_repayment(
         clan_id=int(clan.id),
         loan_id=int(loan.id),
         borrower_user_id=int(getattr(loan, "borrower_user_id", 0) or 0),
-        amount=amount,
+        amount=remaining_amount,
         currency=str(currency),
         due_at=payload.due_at,
         meta={
             "source": "bank.expected.loan-repayment",
+            "requested_instruction_amount": str(requested_amount),
+            "outstanding_amount_at_instruction": str(remaining_amount),
             "reference_preview": build_loan_repayment_reference(
                 loan_id=int(loan.id),
                 borrower_user_id=int(getattr(loan, "borrower_user_id", 0) or 0),

@@ -46791,3 +46791,47 @@ GSN-branded invite composer and invite-entry continuity.
   - the deterministic expected-payment reference is still one reference per
     loan/borrower, so a dated multi-installment calendar is not implemented;
   - no push or Render deploy was triggered.
+
+### Repayment expected-payment reference amount fix (2026-06-11)
+
+- Trigger:
+  - continued the repayment logic audit after wiring borrower declarations;
+  - devil's-advocate finding: the single deterministic loan repayment
+    reference could create an expected-payment row for only the first selected
+    part amount. That would let reconciliation mark the expected payment
+    confirmed after the first part and risk treating later payments on the same
+    reference as duplicates.
+- Changed locally, not pushed:
+  - `gmfn_backend/app/services/payment_instruction_service.py`
+    - `create_loan_repayment_instruction()` now loads the loan, verifies the
+      borrower/community boundary, computes the outstanding balance, and uses
+      that outstanding balance for the expected-payment ledger row;
+    - the returned instruction `amount` remains the selected payment amount,
+      capped to the outstanding balance;
+    - response now also includes `expected_total_amount` and
+      `expected_remaining_amount` for clarity.
+  - `gmfn_backend/app/api/routes/bank.py`
+    - aligned the bank/admin loan-repayment expected-payment route so the
+      expected-payment row also represents the full outstanding balance, while
+      requested part amount is preserved in metadata.
+  - `gmfn_backend/tests/test_reconciliation_integrity.py`
+    - added
+      `test_loan_repayment_part_instruction_keeps_expected_total_outstanding`
+      to prove a first part-payment instruction returns the part amount but
+      keeps the expected-payment total at the full outstanding balance.
+- Verification:
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_reconciliation_integrity.py gmfn_backend\tests\test_repayment_completion_service.py`.
+  - Passed `npm run audit:loans-actions`.
+  - Passed focused ESLint for repayment frontend files and audit files.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this makes the current single-reference full/part repayment model much
+    safer;
+  - it still does not implement a dated multi-installment schedule with separate
+    due dates and separate references;
+  - admin/bank reconciliation is still the final proof path for loan closure,
+    guarantor release, and trust impact;
+  - no push or Render deploy was triggered.

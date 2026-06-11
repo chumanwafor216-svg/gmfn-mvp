@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import PoolEvent
+from app.db.models import Loan, PoolEvent
 from app.services.expected_payments_service import (
     create_expected_payment as create_expected_payment_row,
     ensure_loan_repayment_expected_payment,
@@ -337,17 +337,41 @@ def create_loan_repayment_instruction(
     amount: Decimal,
     currency: str = "NGN",
 ) -> Dict[str, Any]:
-    amount = _d(amount)
+    requested_amount = _d(amount)
+    if requested_amount <= Decimal("0"):
+        raise ValueError("amount must be > 0")
+
+    loan = db.get(Loan, int(loan_id))
+    if not loan:
+        raise ValueError("loan not found")
+    if int(getattr(loan, "clan_id", 0) or 0) != int(clan_id):
+        raise ValueError("loan does not belong to this community")
+    if int(getattr(loan, "borrower_user_id", 0) or 0) != int(user_id):
+        raise ValueError("only the borrower can create this repayment instruction")
+
+    loan_amount = _d(getattr(loan, "amount", 0) or 0)
+    paid_total = _d(getattr(loan, "paid_total", 0) or 0)
+    outstanding_amount = _d(getattr(loan, "remaining_amount", 0) or 0)
+    if outstanding_amount <= Decimal("0"):
+        outstanding_amount = loan_amount - paid_total
+    if outstanding_amount <= Decimal("0"):
+        raise ValueError("No outstanding repayment amount")
+
+    instruction_amount = min(requested_amount, outstanding_amount)
 
     exp = ensure_loan_repayment_expected_payment(
         db,
         clan_id=int(clan_id),
         loan_id=int(loan_id),
         borrower_user_id=int(user_id),
-        amount=amount,
-        currency=currency,
+        amount=outstanding_amount,
+        currency=currency or getattr(loan, "currency", None) or "NGN",
         due_at=None,
-        meta=None,
+        meta={
+            "source": "payment_instruction.loan",
+            "requested_instruction_amount": str(instruction_amount),
+            "outstanding_amount_at_instruction": str(outstanding_amount),
+        },
         commit=True,
         refresh=True,
     )
@@ -358,8 +382,10 @@ def create_loan_repayment_instruction(
         "reference_display": exp.reference_display,
         "reference_normalized": exp.reference_normalized,
         "loan_id": int(loan_id),
-        "amount": str(amount),
-        "currency": currency,
+        "amount": str(instruction_amount),
+        "expected_total_amount": str(exp.amount),
+        "expected_remaining_amount": str(exp.remaining_amount),
+        "currency": exp.currency,
         "due_at": exp.due_at.isoformat() if exp.due_at else None,
     }
 
