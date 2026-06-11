@@ -63,14 +63,20 @@ def list_recent_admin(
     db: Session,
     *,
     limit: int = 50,
+    clan_id: Optional[int] = None,
+    subject_user_id: Optional[int] = None,
+    loan_id: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     lim = max(1, min(int(limit or 50), 200))
 
-    rows: List[TrustEvent] = (
-        db.query(TrustEvent)
-        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
-        .limit(lim)
-        .all()
-    )
+    q = db.query(TrustEvent)
+    if clan_id is not None:
+        q = q.filter(TrustEvent.clan_id == int(clan_id))
+    if subject_user_id is not None:
+        q = q.filter(TrustEvent.subject_user_id == int(subject_user_id))
+    if loan_id is not None:
+        q = q.filter(TrustEvent.loan_id == int(loan_id))
+
+    rows: List[TrustEvent] = q.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc()).limit(lim).all()
 
     return [_row_out(e) for e in rows]

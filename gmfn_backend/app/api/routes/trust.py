@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
-from app.core.constants import PROTOCOL_VERSION
 from app.core.trust_policy import (
     infer_delta_str,
     policy_version,
@@ -60,63 +58,6 @@ def trust_latest_source(
     return {
         "event_type": "REPAYMENT_ONLY_POLICY",
         "note": "Trust increases only when a loan is fully repaid.",
-    }
-
-
-@router.get("/why/{user_id}")
-def trust_why_user(
-    user_id: int,
-    limit: int = 10,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Dict[str, Any]:
-    """
-    Explainable trust change feed for a user.
-    Access control can be tightened later if needed.
-    """
-    lim = max(1, min(int(limit or 10), 50))
-
-    target = db.get(User, int(user_id))
-    if not target:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    apply_trust_score(db, user_id=int(user_id))
-    breakdown = compute_trust_breakdown(db, user_id=int(user_id))
-
-    rows: list[TrustEvent] = (
-        db.query(TrustEvent)
-        .filter(TrustEvent.subject_user_id == int(user_id))
-        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
-        .limit(lim)
-        .all()
-    )
-
-    events_out: list[dict[str, Any]] = []
-    for e in rows:
-        meta = _safe_meta(getattr(e, "meta", None) or getattr(e, "meta_json", None))
-        events_out.append(
-            {
-                "id": int(e.id),
-                "event_type": e.event_type,
-                "delta": infer_delta_str(e.event_type),
-                "delta_rule": rule_label(e.event_type) or None,
-                "clan_id": e.clan_id,
-                "loan_id": e.loan_id,
-                "guarantor_id": e.guarantor_id,
-                "actor_user_id": int(e.actor_user_id),
-                "subject_user_id": int(e.subject_user_id),
-                "reason": meta.get("reason"),
-                "note": meta.get("note"),
-                "created_at": getattr(e, "created_at", None),
-            }
-        )
-
-    return {
-        "user_id": int(user_id),
-        "protocol_version": PROTOCOL_VERSION,
-        "trust_policy_version": policy_version(),
-        "computed": breakdown,
-        "events": events_out,
     }
 
 

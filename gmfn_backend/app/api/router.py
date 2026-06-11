@@ -69,7 +69,6 @@ from app.api.routes.vault_access import router as vault_access_router
 # =========================
 from app.api.routes.admin import router as admin_router
 from app.api.routes.admin_loans import router as admin_loans_router
-from app.api.routes.admin_trust_events import router as admin_trust_events_router
 from app.api.routes.admin_trust_why import router as admin_trust_why_router
 from app.api.routes.admin_reconcile import router as admin_reconcile_router
 from app.api.routes.admin_bank_debug import router as admin_bank_debug_router
@@ -167,7 +166,6 @@ api_router.include_router(vault_access_router)
 # ADMIN
 api_router.include_router(admin_router)
 api_router.include_router(admin_loans_router)
-api_router.include_router(admin_trust_events_router)
 api_router.include_router(admin_trust_why_router)
 api_router.include_router(admin_reconcile_router)
 api_router.include_router(admin_bank_debug_router)

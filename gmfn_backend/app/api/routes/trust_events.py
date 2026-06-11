@@ -121,10 +121,19 @@ def record_focus_commitment_trust_event(
 @router.get("/admin/trust-events/recent", response_model=TrustEventsListOut)
 def admin_recent_trust_events(
     limit: int = 50,
+    clan_id: Optional[int] = None,
+    user_id: Optional[int] = None,
+    loan_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     if (getattr(current_user, "role", "") or "").lower() != "admin":
         raise HTTPException(status_code=403, detail="Admin only")
-    items = list_recent_admin(db, limit=limit)
+    items = list_recent_admin(
+        db,
+        limit=limit,
+        clan_id=clan_id,
+        subject_user_id=user_id,
+        loan_id=loan_id,
+    )
     return {"items": items, "total": len(items)}

@@ -1,3 +1,40 @@
+### Trust route ownership consistency repair (2026-06-11)
+
+- Continued the backend route-consistency audit after the evidence-pack route
+  conflict.
+- Confirmed the FastAPI route table still had duplicate GET owners for:
+  - `/trust/why/{user_id}`;
+  - `/admin/trust/why/{user_id}`;
+  - `/admin/trust-events/recent`.
+- Backend changes:
+  - removed the older `/trust/why/{user_id}` route from
+    `gmfn_backend/app/api/routes/trust.py`, allowing the richer
+    `trust_why.py` route to serve the frontend contract with `pack_id`,
+    `checksum`, links, and policy timeline data;
+  - stopped mounting the stale `admin_trust_events.py` router so
+    `/admin/trust/why/{user_id}` is owned by the dedicated
+    `admin_trust_why.py` module;
+  - removed the duplicate `/admin/trust-events/recent` function from
+    `admin.py`;
+  - extended the active `trust_events.py` `/admin/trust-events/recent` route
+    and `trust_events_query_service.list_recent_admin(...)` to honor the
+    `clan_id`, `user_id`, and `loan_id` filters already sent by the frontend.
+- Test coverage:
+  - Added `gmfn_backend/tests/test_trust_route_ownership.py`.
+  - It proves single active owners for evidence-pack meta, evidence-pack zip,
+    trust-why, admin trust-why, and admin recent trust events.
+  - It proves `/trust/why/1` serves the richer pack/checksum contract.
+  - It proves `/admin/trust-events/recent?clan_id=...&user_id=...` filters to
+    the expected subject user.
+- Verification passed locally:
+  - `python -m py_compile gmfn_backend\app\api\routes\trust.py gmfn_backend\app\api\router.py gmfn_backend\app\api\routes\admin.py gmfn_backend\app\api\routes\trust_events.py gmfn_backend\app\api\routes\pilot_readiness.py gmfn_backend\app\services\trust_events_query_service.py gmfn_backend\tests\test_trust_route_ownership.py gmfn_backend\tests\test_protocol_readiness_status.py`
+  - `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py gmfn_backend\tests\test\test_admin_trust_why.py gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_protocol_readiness_status.py`
+  - duplicate-route scan now prints no duplicate method/path pairs.
+- Unabated truth:
+  - this fixes route ownership conflicts;
+  - it does not prove every frontend screen presents the returned trust data
+    perfectly on a phone.
+
 ### Evidence-pack route consistency repair (2026-06-11)
 
 - Continued the route-consistency audit around trust/evidence surfaces.
