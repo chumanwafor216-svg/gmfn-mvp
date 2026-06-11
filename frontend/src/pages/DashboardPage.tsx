@@ -3527,6 +3527,17 @@ export default function DashboardPage() {
   const visibleGsnId =
     gmfnId === "Pending" ? gmfnId : gmfnId.replace(/^GMF[MN]/i, "GSN");
   const globalIdParts = /^([A-Za-z]+-[A-Za-z]+-)(.+)$/.exec(visibleGsnId);
+  const passportGlobalIdDisplay = useMemo(() => {
+    if (visibleGsnId === "Pending") return visibleGsnId;
+
+    const cleaned = visibleGsnId.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const suffix = cleaned.startsWith("GSN") ? cleaned.slice(3) : cleaned;
+    const groups = suffix.match(/.{1,4}/g) || [];
+
+    return ["G S N", ...groups.map((group) => group.split("").join(" "))].join(
+      " - "
+    );
+  }, [visibleGsnId]);
   const trustSlipCode = safeStr(trustSlip?.code || "");
   const avatarInputId = "dashboard-avatar-upload-input";
 
@@ -7022,7 +7033,7 @@ export default function DashboardPage() {
                 display: "grid",
                 gridTemplateColumns: "auto auto 1fr auto",
                 alignItems: "center",
-                gap: isPhone ? 4 : 6,
+                gap: isPhone ? 1 : 2,
                 minWidth: 0,
               }}
             >
@@ -7050,8 +7061,8 @@ export default function DashboardPage() {
                   width: isPhone ? 24 : 30,
                   height: isPhone ? 15 : 18,
                   borderRadius: 999,
-                  border: "1.5px solid rgba(201,154,39,0.52)",
-                  marginLeft: isPhone ? -8 : -10,
+                  border: "2px solid rgba(201,154,39,0.58)",
+                  marginLeft: isPhone ? -13 : -16,
                   transform: "rotate(-6deg)",
                   background: "rgba(255,255,255,0.58)",
                   boxShadow:
@@ -7063,8 +7074,8 @@ export default function DashboardPage() {
                   width: isPhone ? 24 : 30,
                   height: isPhone ? 15 : 18,
                   borderRadius: 999,
-                  border: "1.5px solid rgba(201,154,39,0.52)",
-                  marginLeft: isPhone ? -12 : -14,
+                  border: "2px solid rgba(201,154,39,0.58)",
+                  marginLeft: isPhone ? -17 : -20,
                   transform: "rotate(7deg)",
                   background: "rgba(255,255,255,0.58)",
                   boxShadow:
@@ -7120,7 +7131,7 @@ export default function DashboardPage() {
                 display: "grid",
                 gridTemplateColumns: "auto 1fr auto auto",
                 alignItems: "center",
-                gap: isPhone ? 4 : 6,
+                gap: isPhone ? 1 : 2,
                 minWidth: 0,
               }}
             >
@@ -7129,7 +7140,7 @@ export default function DashboardPage() {
                   width: isPhone ? 24 : 30,
                   height: isPhone ? 15 : 18,
                   borderRadius: 999,
-                  border: "1.5px solid rgba(201,154,39,0.52)",
+                  border: "2px solid rgba(201,154,39,0.58)",
                   transform: "rotate(6deg)",
                   background: "rgba(255,255,255,0.58)",
                   boxShadow:
@@ -7141,8 +7152,8 @@ export default function DashboardPage() {
                   width: isPhone ? 24 : 30,
                   height: isPhone ? 15 : 18,
                   borderRadius: 999,
-                  border: "1.5px solid rgba(201,154,39,0.52)",
-                  marginLeft: isPhone ? -12 : -14,
+                  border: "2px solid rgba(201,154,39,0.58)",
+                  marginLeft: isPhone ? -17 : -20,
                   transform: "rotate(-7deg)",
                   background: "rgba(255,255,255,0.58)",
                   boxShadow:
@@ -7273,16 +7284,17 @@ export default function DashboardPage() {
           <div
             style={{
               marginTop: isPhone ? 10 : 12,
-              order: 40,
-              display: "none",
+              order: 30,
+              display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               background:
-                "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(242,247,253,0.92) 100%)",
-              border: "1px solid rgba(16,37,59,0.08)",
-              borderRadius: isPhone ? 15 : 18,
+                "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.28) 0%, rgba(11,99,209,0) 38%), repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 10px), linear-gradient(180deg, #113A62 0%, #071E33 100%)",
+              border: "1px solid rgba(16,37,59,0.14)",
+              borderTop: "0",
+              borderRadius: 0,
               overflow: "hidden",
               boxShadow:
-                "0 14px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.9)",
+                "0 14px 24px rgba(10,24,49,0.13), inset 0 1px 0 rgba(255,255,255,0.08)",
             }}
           >
             {[
@@ -7325,9 +7337,9 @@ export default function DashboardPage() {
                   padding: isPhone ? "13px 4px 10px" : "16px 12px 13px",
                   border: 0,
                   borderLeft:
-                    index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
+                    index === 0 ? "0" : "1px solid rgba(255,255,255,0.18)",
                   background: "transparent",
-                  color: DASHBOARD_BRAND.ink,
+                  color: "#F8FBFF",
                   cursor: "pointer",
                   textAlign: "center",
                 })}
@@ -7339,7 +7351,7 @@ export default function DashboardPage() {
                 />
                 <span
                   style={{
-                    color: DASHBOARD_BRAND.ink,
+                    color: "#F8FBFF",
                     fontSize: isPhone ? 13.8 : 17,
                     fontWeight: 1000,
                     lineHeight: 1.05,
@@ -7350,7 +7362,7 @@ export default function DashboardPage() {
                 </span>
                 <span
                   style={{
-                    color: DASHBOARD_BRAND.goldText,
+                    color: "#F3D06A",
                     fontSize:
                       item.label === "TrustSlip"
                         ? isPhone
@@ -7371,7 +7383,7 @@ export default function DashboardPage() {
                 {item.detail ? (
                   <span
                     style={{
-                      color: DASHBOARD_BRAND.helper,
+                      color: "rgba(248,251,255,0.72)",
                       fontSize: isPhone ? 8.8 : 11,
                       fontWeight: 800,
                       lineHeight: 1.12,
@@ -7410,8 +7422,8 @@ export default function DashboardPage() {
                           borderRadius: 999,
                           background:
                             barIndex < item.strength
-                              ? "#C99A27"
-                              : "rgba(16,37,59,0.12)",
+                              ? "#F3D06A"
+                              : "rgba(226,232,240,0.25)",
                         }}
                       />
                     ))}
@@ -7426,7 +7438,7 @@ export default function DashboardPage() {
           <div
             style={{
               marginTop: 0,
-              order: 30,
+              order: 40,
               width: "100%",
               minHeight: isPhone ? 142 : 156,
               display: "grid",
@@ -7483,10 +7495,10 @@ export default function DashboardPage() {
                 justifyContent: "center",
                 justifySelf: "center",
                 background:
-                  "radial-gradient(circle at 34% 28%, rgba(255,247,218,0.94) 0%, rgba(201,154,39,0.62) 28%, rgba(16,37,59,0.96) 70%, rgba(7,21,38,0.98) 100%)",
-                border: "1px solid rgba(201,154,39,0.36)",
+                  "radial-gradient(circle at 26% 22%, rgba(255,255,255,0.94) 0%, rgba(255,237,170,0.88) 18%, rgba(202,154,43,0.92) 43%, rgba(26,58,87,0.96) 72%, rgba(7,21,38,0.98) 100%)",
+                border: "1px solid rgba(245,215,123,0.62)",
                 boxShadow:
-                  "0 12px 22px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.48)",
+                  "0 14px 24px rgba(10,24,49,0.18), inset 0 2px 0 rgba(255,255,255,0.62), inset 0 -3px 8px rgba(56,33,0,0.22)",
                 color: "#F6D77A",
                 zIndex: 1,
               }}
@@ -7497,7 +7509,7 @@ export default function DashboardPage() {
                   justifyItems: "center",
                   gap: 1,
                   color: "#F8E7A3",
-                  fontSize: isPhone ? 11 : 13,
+                  fontSize: isPhone ? 12 : 14,
                   fontWeight: 1000,
                   lineHeight: 1,
                 }}
@@ -7577,9 +7589,9 @@ export default function DashboardPage() {
                 }}
               >
                 {globalIdParts ? (
-                  <span>{visibleGsnId}</span>
+                  <span>{passportGlobalIdDisplay}</span>
                 ) : (
-                  <span>{visibleGsnId}</span>
+                  <span>{passportGlobalIdDisplay}</span>
                 )}
               </span>
               <span

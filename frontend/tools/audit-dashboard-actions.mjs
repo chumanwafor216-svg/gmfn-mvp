@@ -181,6 +181,11 @@ assertContains(
 );
 
 assertContains(
+  /order: 30,[\s\S]*?display: "grid"[\s\S]*?label: "Trust"[\s\S]*?label: "CCI"[\s\S]*?label: "TrustSlip"/,
+  "Dashboard passport Trust / CCI / TrustSlip strip must remain visibly restored inside the passport pack."
+);
+
+assertContains(
   /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?triggerHeight=\{isPhone \? 40 : 42\}[\s\S]*?label: "Upload"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Change"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
   "Dashboard passport must keep one Frame tools button hiding active file-backed Upload, Change, and Remove actions plus the Visible/Portable/Usable strip."
 );
@@ -191,8 +196,8 @@ assertContains(
 );
 
 assertContains(
-  /GSN Global ID[\s\S]*?Your verified identity across the network[\s\S]*?globalIdParts[\s\S]*?\{visibleGsnId\}/,
-  "Dashboard passport Global ID block must keep the simplified verified identity card."
+  /passportGlobalIdDisplay[\s\S]*?GSN Global ID[\s\S]*?Your verified identity across the network[\s\S]*?globalIdParts[\s\S]*?\{passportGlobalIdDisplay\}/,
+  "Dashboard passport Global ID block must keep the simplified verified identity card with the formal passport-style ID display."
 );
 
 assertNotContains(

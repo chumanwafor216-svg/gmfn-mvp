@@ -46995,3 +46995,45 @@ GSN-branded invite composer and invite-entry continuity.
   - this is a focused Dashboard passport-card visual correction only;
   - the connector is still CSS-built, not a real hand/chain image asset;
   - no push or Render deploy was triggered.
+
+### Dashboard passport signals restored (2026-06-11)
+
+- Trigger:
+  - product owner reviewed the phone result and noted that the Trust / CCI /
+    TrustSlip strip was missing, the GSN connector rings were not clearly
+    linked, the Global ID seal still needed to feel more like a coin, and the
+    GSN number/issued/status area needed to read more like a formal passport
+    document.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - restored the Trust / CCI / TrustSlip strip inside the Identity Passport
+      pack as a visible navy evidence band;
+    - kept that strip connected to the surrounding card structure instead of
+      floating as a separate unrelated block;
+    - tightened the GSN connector rings so the left and right ring pairs overlap
+      more clearly and communicate partnership/networking;
+    - changed the Global ID medallion toward a stronger gold/blue coin look;
+    - reformatted the Global ID number into a formal passport-style display,
+      for example `G S N - U 9 8 6 - 7 0 7 9 - C`, instead of a plain compact
+      machine string.
+  - `frontend/tools/audit-dashboard-actions.mjs`
+    - added a guard that fails if the Trust / CCI / TrustSlip strip is hidden
+      again;
+    - updated the Global ID guard to require the formal passport-style ID
+      display.
+- Verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx tools\audit-dashboard-actions.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+- Deployment protocol:
+  - no push or Render deploy was triggered because pipeline minutes are tight;
+  - continue working locally, verify locally, commit locally, and push once when
+    the product owner says the batch is ready for one deployment run.
+- Unabated truth:
+  - the restored strip now follows the latest instruction, but this supersedes
+    the immediately previous note that hid the strip;
+  - the coin and chain/ring treatment is still built with CSS, not a dedicated
+    realistic 3D asset;
+  - this is build/audit verified, not a rendered phone screenshot comparison.
