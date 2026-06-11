@@ -59,13 +59,15 @@ def protocol_status():
             "key": "guarantor_flow",
             "label": "Guarantor flow",
             "status": summary["guarantor_flow"],
-            "next_step": "Audit guarantor invite, decision, exposure, and earnings routes after the current proof pass.",
+            "next_step": str(readiness_by_key["guarantor_flow"]["next_step"]),
+            "remaining": readiness_by_key["guarantor_flow"]["remaining"],
+            "next_route": readiness_by_key["guarantor_flow"]["next_route"],
         },
         {
             "key": "repayments",
             "label": "Repayment service path",
             "status": summary["repayments"],
-            "next_step": "Keep partial-payment support protected while end-to-end proof is collected.",
+            "next_step": "Keep the partial-payment backend proof protected; capture the matching phone UI evidence before marking pilot repayment complete.",
         },
         {
             "key": "loan_repayment_e2e",
@@ -128,7 +130,8 @@ def protocol_status():
         "status_counts": status_counts,
         "next_priority": [
             "phone screenshot proof for polished routes",
-            "loan repayment full and part-payment end-to-end proof",
+            "guarantor invite permission decision and phone proof",
+            "loan repayment full and part-payment phone proof",
             "evidence capture pack assembly",
             "trust event dedupe and route-consistency audit",
         ],

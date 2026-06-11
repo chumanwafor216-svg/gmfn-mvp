@@ -15,6 +15,7 @@ def test_pilot_readiness_partial_items_explain_remaining_work():
 
     partial_keys = {check["key"] for check in partial_checks}
     assert {
+        "guarantor_flow",
         "loan_repayment_e2e",
         "trustslip",
         "frontend",
@@ -48,6 +49,7 @@ def test_protocol_status_keeps_summary_and_structured_truth_details():
 
     for key in [
         "loan_repayment_e2e",
+        "guarantor_flow",
         "trustslip",
         "frontend_wiring",
         "evidence_pack",
@@ -58,3 +60,6 @@ def test_protocol_status_keeps_summary_and_structured_truth_details():
 
     assert details_by_key["loan_repayment_e2e"]["remaining"]
     assert details_by_key["loan_repayment_e2e"]["next_route"] == "/app/loans"
+    assert details_by_key["guarantor_flow"]["remaining"]
+    assert details_by_key["guarantor_flow"]["next_route"] == "/app/loans"
+    assert "guarantor invite permission" in " ".join(payload["next_priority"])

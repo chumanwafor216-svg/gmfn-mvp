@@ -12,10 +12,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.db.models import Base, User, Clan, ClanMembership, Loan, LoanGuarantor
-from app.services.guarantor_service import (
-    approve_guarantor_and_maybe_approve_loan,
-    release_guarantee_locks_for_loan,
-)
+from app.services.guarantor_service import update_loan_guarantor_status
+from app.services.repayments_service import create_repayment
 
 TEST_DB_URL = "sqlite:///./test_guarantor_flow.db"
 
@@ -66,12 +64,13 @@ def seed_basic(db):
         currency="NGN",
         status="pending",
         guarantors_required=2,
+        guarantee_gap=Decimal("100000"),
         guarantor_pool=Decimal("0"),
         service_fee=Decimal("0"),
         net_disbursed_amount=Decimal("0"),
         platform_revenue=Decimal("0"),
         paid_total=Decimal("0"),
-        remaining_amount=Decimal("0"),
+        remaining_amount=Decimal("100000"),
     )
     db.add(loan)
     db.commit()
@@ -108,46 +107,92 @@ def seed_basic(db):
 def test_approve_locks_funds(db):
     clan, borrower, g1, g2, admin, loan, lg1, lg2 = seed_basic(db)
 
-    result = approve_guarantor_and_maybe_approve_loan(
+    result = update_loan_guarantor_status(
         db,
         loan_id=loan.id,
         clan_id=clan.id,
-        guarantor_id=lg1.id,
+        loan_guarantor_id=lg1.id,
+        new_status="approved",
         decided_by_user_id=admin.id,
     )
-    assert result["guarantor_status"] == "approved"
+    assert result.status == "approved"
     db.refresh(g1)
+    db.refresh(lg1)
     db.refresh(loan)
-    assert g1.personal_pool_balance == Decimal("25000")
-    assert loan.guarantor_pool == Decimal("25000")
-    assert loan.status == "pending"
+    assert g1.personal_pool_balance == Decimal("50000")
+    assert lg1.is_locked is True
+    assert lg1.locked_amount == Decimal("25000")
+    assert loan.status == "incomplete"
 
 
 def test_auto_approves_when_enough(db):
     clan, borrower, g1, g2, admin, loan, lg1, lg2 = seed_basic(db)
 
-    approve_guarantor_and_maybe_approve_loan(db, loan_id=loan.id, clan_id=clan.id, guarantor_id=lg1.id, decided_by_user_id=admin.id)
-    result = approve_guarantor_and_maybe_approve_loan(db, loan_id=loan.id, clan_id=clan.id, guarantor_id=lg2.id, decided_by_user_id=admin.id)
+    update_loan_guarantor_status(
+        db,
+        loan_id=loan.id,
+        clan_id=clan.id,
+        loan_guarantor_id=lg1.id,
+        new_status="approved",
+        decided_by_user_id=admin.id,
+    )
+    result = update_loan_guarantor_status(
+        db,
+        loan_id=loan.id,
+        clan_id=clan.id,
+        loan_guarantor_id=lg2.id,
+        new_status="approved",
+        decided_by_user_id=admin.id,
+    )
 
+    assert result.status == "approved"
     db.refresh(loan)
-    assert result["loan_status"] == "approved"
     assert loan.status == "approved"
-    assert loan.guarantor_pool == Decimal("100000")
+    db.refresh(lg1)
+    db.refresh(lg2)
+    assert lg1.locked_amount == Decimal("25000")
+    assert lg2.locked_amount == Decimal("75000")
 
 
 def test_release_returns_funds(db):
     clan, borrower, g1, g2, admin, loan, lg1, lg2 = seed_basic(db)
 
-    approve_guarantor_and_maybe_approve_loan(db, loan_id=loan.id, clan_id=clan.id, guarantor_id=lg1.id, decided_by_user_id=admin.id)
-    approve_guarantor_and_maybe_approve_loan(db, loan_id=loan.id, clan_id=clan.id, guarantor_id=lg2.id, decided_by_user_id=admin.id)
+    update_loan_guarantor_status(
+        db,
+        loan_id=loan.id,
+        clan_id=clan.id,
+        loan_guarantor_id=lg1.id,
+        new_status="approved",
+        decided_by_user_id=admin.id,
+    )
+    update_loan_guarantor_status(
+        db,
+        loan_id=loan.id,
+        clan_id=clan.id,
+        loan_guarantor_id=lg2.id,
+        new_status="approved",
+        decided_by_user_id=admin.id,
+    )
 
-    res = release_guarantee_locks_for_loan(db, loan_id=loan.id, clan_id=clan.id, decided_by_user_id=admin.id)
+    create_repayment(
+        db=db,
+        loan_id=int(loan.id),
+        payer=borrower,
+        amount=Decimal("100000"),
+        payment_reference="TEST-FULL-REPAYMENT",
+        confirmed_by_user_id=int(admin.id),
+    )
 
     db.refresh(g1)
     db.refresh(g2)
+    db.refresh(lg1)
+    db.refresh(lg2)
     db.refresh(loan)
 
-    assert Decimal(res["released_total"]) == Decimal("100000")
     assert g1.personal_pool_balance == Decimal("50000")
     assert g2.personal_pool_balance == Decimal("100000")
-    assert loan.guarantor_pool == Decimal("0")
+    assert lg1.is_locked is False
+    assert lg2.is_locked is False
+    assert lg1.released_amount == Decimal("25000")
+    assert lg2.released_amount == Decimal("75000")
+    assert loan.status == "repaid"

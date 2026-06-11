@@ -1,3 +1,46 @@
+### Guarantor readiness truth pass (2026-06-11)
+
+- Continued the protocol/readiness work on the next stale `partial` item:
+  guarantor flow.
+- Confirmed from code/tests:
+  - backend tests cover guarantor list/invite shape, duplicate blocking,
+    non-member rejection, and decision updates;
+  - service tests cover guarantor approval, auto-approval when enough pledged
+    support exists, and release of locked exposure;
+  - repayment proof now covers guarantor exposure release after full repayment;
+  - guarantor earnings tests show reward shares stay pending until the loan is
+    repaid and become earned only after full repayment;
+  - frontend loan/marketplace surfaces expose guarantor suggestions, chosen
+    guarantors, line-by-line decisions, and earnings routes.
+- Backend readiness changes:
+  - `gmfn_backend/app/api/routes/pilot_readiness.py` now includes a structured
+    `guarantor_flow` partial check with completed proof, remaining gaps, next
+    step, and next route.
+  - `gmfn_backend/app/api/routes/protocol_status.py` now pulls the guarantor
+    detail from readiness instead of showing a vague one-line audit reminder.
+  - Repayment protocol copy now says the backend proof exists and the remaining
+    gap is phone/UI proof, not generic end-to-end proof.
+- Test coverage:
+  - `gmfn_backend/tests/test_protocol_readiness_status.py` now requires
+    `guarantor_flow` to stay structured while it is partial.
+  - Repaired stale `gmfn_backend/tests/test/guarantor_flow.py` coverage that
+    still imported removed helper names. It now tests the current canonical
+    guarantor service behavior:
+    - approval locks the guarantor row rather than subtracting the user's
+      personal balance;
+    - the loan remains incomplete until enough locked coverage exists;
+    - full repayment releases locked guarantor exposure.
+- Verification passed locally:
+  - `python -m py_compile gmfn_backend\app\api\routes\pilot_readiness.py gmfn_backend\app\api\routes\protocol_status.py gmfn_backend\tests\test_protocol_readiness_status.py gmfn_backend\tests\test\guarantor_flow.py`
+  - `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`
+  - `python -m pytest -q gmfn_backend\tests\test_guarantor_invite_list.py gmfn_backend\tests\test_guarantor_decision.py gmfn_backend\tests\test\guarantor_flow.py gmfn_backend\tests\test_guarantor_earnings_service.py`
+- Unabated truth:
+  - guarantor flow is still not complete;
+  - the current non-admin guarantor invite contract test still accepts both
+    `403` and `200/201`, so the product policy is not locked tightly enough;
+  - phone proof for borrower, guarantor, admin, exposure release, and earnings
+    screens is still missing.
+
 ### GSN evidence pack package polish (2026-06-11)
 
 - Continued the institutional proof/evidence-pack pass.
