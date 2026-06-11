@@ -1993,10 +1993,12 @@ function marketplaceLinkHeroIconStyle(isCompact: boolean): React.CSSProperties {
     minHeight: "100%",
     display: "grid",
     placeItems: "center",
-    color: "#F2C766",
+    color: "#0B2D4A",
     background:
-      "linear-gradient(145deg, #123F6B 0%, #08233A 60%, #061827 100%)",
-    boxShadow: "inset -1px 0 0 rgba(255,255,255,0.16)",
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.96) 100%)",
+    borderRight: "1px solid rgba(13,95,168,0.10)",
+    boxShadow:
+      "inset 5px 0 0 rgba(214,170,69,0.24), inset 0 1px 0 rgba(255,255,255,0.96)",
     fontSize: isCompact ? 36 : 46,
   };
 }
@@ -2097,12 +2099,12 @@ function marketplaceLinkRowIconStyle(
   tone: "blue" | "gold" | "green" | "purple" | "navy",
   isCompact: boolean
 ): React.CSSProperties {
-  const backgrounds = {
-    blue: "linear-gradient(180deg, #1D74D8 0%, #074E93 100%)",
-    gold: "linear-gradient(180deg, #D9A51F 0%, #8C6509 100%)",
-    green: "linear-gradient(180deg, #35A971 0%, #08704A 100%)",
-    purple: "linear-gradient(180deg, #6A44D8 0%, #23106B 100%)",
-    navy: "linear-gradient(180deg, #244969 0%, #061827 100%)",
+  const accents = {
+    blue: "rgba(27,102,210,0.22)",
+    gold: "rgba(214,170,69,0.24)",
+    green: "rgba(37,166,90,0.18)",
+    purple: "rgba(106,68,216,0.17)",
+    navy: "rgba(11,45,74,0.16)",
   };
 
   return {
@@ -2112,10 +2114,12 @@ function marketplaceLinkRowIconStyle(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#FFFFFF",
-    background: backgrounds[tone],
+    color: "#0B2D4A",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.96) 100%)",
+    border: "1px solid rgba(13,95,168,0.12)",
     boxShadow:
-      "0 12px 22px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.22)",
+      `0 12px 22px rgba(10,24,49,0.10), inset 4px 0 0 ${accents[tone]}, inset 0 1px 0 rgba(255,255,255,0.96)`,
     flexShrink: 0,
   };
 }

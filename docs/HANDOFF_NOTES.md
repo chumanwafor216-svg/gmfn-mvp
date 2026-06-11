@@ -46570,3 +46570,31 @@ GSN-branded invite composer and invite-entry continuity.
     shared control;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Marketplace light icon-tile checkpoint (2026-06-11)
+
+- Trigger:
+  - the product owner called out 3D icons sitting on heavy colored backgrounds
+    and asked for white/transparent-feeling icon presentation on phone.
+- Changed locally, not pushed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - changed Marketplace link hero icon area from a dark navy slab to a light
+      white/off-white tile with a restrained gold accent rail;
+    - changed Marketplace link row icon tiles from bright/dark gradients to
+      light tiles with subtle tone accents, keeping the 3D object icon visible
+      instead of competing with the background.
+  - `frontend/tools/audit-icon-protocol.mjs`
+    - added a guard so the Marketplace link icon helpers keep light 3D icon
+      tiles instead of reverting to heavy gradient slabs.
+- Verification:
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for `MarketplacePage.tsx` and
+    `tools/audit-icon-protocol.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this improves Marketplace helper styles for the link surfaces only;
+  - it is not yet a full Marketplace real-phone screenshot pass;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.
