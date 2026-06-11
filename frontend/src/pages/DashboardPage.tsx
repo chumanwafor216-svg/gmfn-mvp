@@ -6720,102 +6720,128 @@ export default function DashboardPage() {
         }}
       >
         <section
+          data-dashboard-passport-reference="gsn-trust-card"
           style={{
             ...pageCard(
-              "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.10) 0%, rgba(11,99,209,0) 36%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"
+              "radial-gradient(circle at 18% 0%, rgba(11,99,209,0.12) 0%, rgba(11,99,209,0) 34%), linear-gradient(180deg, #F4FAFF 0%, #EAF3FF 100%)"
             ),
             order: 10,
-            padding: isPhone ? 14 : 20,
-            borderRadius: isPhone ? 22 : 28,
-            border: "1px solid rgba(15,59,116,0.14)",
+            width: "100%",
+            maxWidth: isPhone ? "100%" : 660,
+            margin: "0 auto",
+            padding: isPhone ? 13 : 18,
+            borderRadius: isPhone ? 26 : 32,
+            border: "1px solid rgba(255,255,255,0.82)",
+            display: "grid",
             boxShadow:
-              "0 18px 36px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+              "0 24px 54px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
           }}
         >
           <div
             style={{
+              position: "relative",
+              order: 10,
               display: "grid",
               gridTemplateColumns: isPhone
-                ? "minmax(0, 1fr) minmax(104px, 118px)"
-                : "minmax(0, 1fr) 180px",
-              gap: isPhone ? 10 : 18,
-              alignItems: "center",
+                ? "minmax(0, 1fr) minmax(112px, 132px)"
+                : "minmax(0, 1fr) 178px",
+              gap: isPhone ? 12 : 18,
+              alignItems: "start",
+              padding: isPhone ? "16px 14px 14px" : "22px 22px 18px",
+              borderRadius: isPhone ? 20 : 24,
+              border: "1px solid rgba(16,37,59,0.08)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
+              boxShadow:
+                "0 18px 36px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.96)",
+              overflow: "visible",
             }}
           >
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
                   display: "flex",
-                  gap: 10,
+                  gap: 8,
                   alignItems: "center",
                   color: DASHBOARD_BRAND.label,
-                  fontSize: isPhone ? 11 : 13,
+                  fontSize: isPhone ? 9.5 : 11,
                   fontWeight: 1000,
-                  letterSpacing: 1.2,
+                  letterSpacing: 0,
                   textTransform: "uppercase",
                 }}
               >
-                <GSNBrandMark width={isPhone ? 22 : 28} height={isPhone ? 28 : 36} />
+                <GSNBrandMark width={isPhone ? 18 : 23} height={isPhone ? 23 : 29} />
                 <span>Identity Passport</span>
               </div>
               <div
                 style={{
-                  marginTop: isPhone ? 8 : 10,
+                  marginTop: isPhone ? 10 : 12,
                   color: DASHBOARD_BRAND.ink,
-                  fontSize: isPhone ? 24 : 38,
+                  fontSize: isPhone ? 27 : 42,
                   fontWeight: 1000,
-                  lineHeight: 1.05,
+                  lineHeight: 1.02,
                   textWrap: "balance",
+                  maxWidth: isPhone ? 188 : 360,
                 }}
               >
-                Your trust is{" "}
-                <span style={{ color: DASHBOARD_BRAND.goldText }}>
-                  the first currency
+                <span style={{ display: "block" }}>Your trust</span>
+                <span style={{ display: "block" }}>is the</span>
+                <span
+                  style={{
+                    display: "block",
+                    color: DASHBOARD_BRAND.goldText,
+                  }}
+                >
+                  first currency
                 </span>
               </div>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "minmax(38px, 1fr) auto minmax(38px, 1fr)",
-                  gap: isPhone ? 10 : 14,
-                  marginTop: isPhone ? 12 : 16,
+                  gridTemplateColumns: "minmax(34px, 1fr) auto minmax(34px, 1fr)",
+                  gap: isPhone ? 8 : 12,
+                  marginTop: isPhone ? 18 : 24,
                   alignItems: "center",
-                  maxWidth: isPhone ? 240 : 310,
+                  maxWidth: isPhone ? 246 : 330,
                 }}
               >
                 <span
                   aria-hidden="true"
                   style={{
                     height: 1,
-                    background: "rgba(201,154,39,0.34)",
+                    background:
+                      "linear-gradient(90deg, rgba(201,154,39,0), rgba(201,154,39,0.48))",
                   }}
                 />
                 <span
                   style={{
                     display: "inline-flex",
-                    minHeight: isPhone ? 30 : 34,
+                    minHeight: isPhone ? 34 : 38,
                     alignItems: "center",
                     justifyContent: "center",
-                    padding: isPhone ? "4px 15px" : "5px 18px",
+                    gap: isPhone ? 6 : 8,
+                    padding: isPhone ? "5px 14px" : "6px 18px",
                     borderRadius: 999,
                     background:
                       "linear-gradient(180deg, rgba(255,249,225,0.98) 0%, rgba(239,207,113,0.94) 100%)",
                     border: "1px solid rgba(145,103,19,0.22)",
                     color: "#6B4300",
-                    fontSize: isPhone ? 12 : 13,
+                    fontSize: isPhone ? 13 : 15,
                     fontWeight: 1000,
-                    letterSpacing: 0.9,
+                    letterSpacing: 0,
                     boxShadow:
                       "0 10px 18px rgba(145,103,19,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
                   }}
                 >
+                  <GsnLegacyIcon name="proof" size={isPhone ? 20 : 23} />
                   GSN
                 </span>
                 <span
                   aria-hidden="true"
                   style={{
                     height: 1,
-                    background: "rgba(201,154,39,0.34)",
+                    background:
+                      "linear-gradient(90deg, rgba(201,154,39,0.48), rgba(201,154,39,0))",
                   }}
                 />
               </div>
@@ -6829,18 +6855,19 @@ export default function DashboardPage() {
                 position: "relative",
                 width: "100%",
                 minWidth: 0,
+                zIndex: 2,
               }}
             >
               <div
                 style={{
                   width: "100%",
-                  aspectRatio: "1 / 1",
-                  borderRadius: isPhone ? 18 : 24,
-                  border: "5px solid rgba(255,255,255,0.82)",
+                  aspectRatio: isPhone ? "1.12 / 1" : "1.15 / 1",
+                  borderRadius: isPhone ? 18 : 22,
+                  border: "5px solid rgba(255,255,255,0.94)",
                   background:
                     "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(218,232,248,0.96) 100%)",
                   boxShadow:
-                    "0 18px 34px rgba(10,24,49,0.13), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    "0 18px 34px rgba(10,24,49,0.15), inset 0 1px 0 rgba(255,255,255,0.92)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -6899,11 +6926,12 @@ export default function DashboardPage() {
                   })
                 }
                 slotStyle={{
-                  marginTop: isPhone ? 7 : 8,
+                  marginTop: isPhone ? -12 : -14,
+                  marginLeft: isPhone ? -18 : -22,
                   height: isPhone ? 40 : 42,
                   minHeight: isPhone ? 40 : 42,
                   maxHeight: isPhone ? 40 : 42,
-                  width: "100%",
+                  width: isPhone ? "calc(100% + 8px)" : "calc(100% + 14px)",
                   minWidth: 0,
                   maxWidth: "100%",
                   display: "block",
@@ -6927,6 +6955,9 @@ export default function DashboardPage() {
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   transition: "none",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(245,249,255,0.98) 100%)",
+                  border: "1px solid rgba(16,37,59,0.08)",
                   boxShadow:
                     "0 12px 22px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.92)",
                 }}
@@ -7017,16 +7048,18 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: isPhone ? 18 : 22,
+              marginTop: isPhone ? 12 : 14,
+              order: 20,
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              minHeight: isPhone ? 44 : 50,
-              alignItems: "center",
-              borderRadius: isPhone ? 14 : 18,
+              minHeight: isPhone ? 104 : 116,
+              alignItems: "stretch",
+              borderRadius: isPhone ? 16 : 20,
               border: "1px solid rgba(15,59,116,0.10)",
-              background: "rgba(255,255,255,0.76)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.94) 100%)",
               boxShadow:
-                "0 10px 20px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.88)",
+                "0 14px 26px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
               overflow: "hidden",
             }}
           >
@@ -7034,52 +7067,96 @@ export default function DashboardPage() {
               ["eye", "Visible"],
               ["briefcase", "Portable"],
               ["check", "Usable"],
-            ].map(([icon, label], index) => (
-              <div
-                key={label}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: isPhone ? 5 : 8,
-                  minWidth: 0,
-                  padding: isPhone ? "8px 4px" : "10px 8px",
-                  borderLeft:
-                    index === 0 ? "0" : "1px solid rgba(15,59,116,0.10)",
-                  color: "#173654",
-                  fontSize: isPhone ? 10.8 : 13,
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                <span
-                  aria-hidden="true"
+            ].map(([icon, label], index) => {
+              const helper =
+                label === "Visible"
+                  ? "Verifiable identity"
+                  : label === "Portable"
+                  ? "Works anywhere"
+                  : "Trusted where it matters";
+
+              return (
+                <div
+                  key={label}
                   style={{
-                    color: "#0D3A63",
+                    display: "grid",
+                    gridTemplateRows: "auto auto 1fr",
+                    alignItems: "start",
+                    justifyItems: "center",
+                    gap: isPhone ? 4 : 6,
+                    minWidth: 0,
+                    padding: isPhone ? "13px 6px 11px" : "15px 10px 13px",
+                    borderLeft:
+                      index === 0 ? "0" : "1px solid rgba(15,59,116,0.10)",
+                    color: "#173654",
+                    textAlign: "center",
                     lineHeight: 1,
                   }}
                 >
-                  <DashboardPassportFeatureIcon
-                    name={icon as "eye" | "briefcase" | "check"}
-                    size={isPhone ? 18 : 21}
-                  />
-                </span>
-                <span>{label}</span>
-              </div>
-            ))}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: isPhone ? 34 : 40,
+                      height: isPhone ? 34 : 40,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 14,
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(240,247,255,0.95) 100%)",
+                      border: "1px solid rgba(16,37,59,0.08)",
+                      boxShadow:
+                        "0 10px 18px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
+                      color: "#0D3A63",
+                      lineHeight: 1,
+                    }}
+                  >
+                    <DashboardPassportFeatureIcon
+                      name={icon as "eye" | "briefcase" | "check"}
+                      size={isPhone ? 24 : 28}
+                    />
+                  </span>
+                  <span
+                    style={{
+                      color: DASHBOARD_BRAND.ink,
+                      fontSize: isPhone ? 12 : 14,
+                      fontWeight: 1000,
+                      lineHeight: 1.05,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </span>
+                  <span
+                    style={{
+                      color: DASHBOARD_BRAND.helper,
+                      fontSize: isPhone ? 9.4 : 11,
+                      fontWeight: 750,
+                      lineHeight: 1.22,
+                      maxWidth: 92,
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {helper}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           <div
             style={{
-              marginTop: isPhone ? 10 : 18,
+              marginTop: isPhone ? 10 : 12,
+              order: 40,
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               background:
-                "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.28) 0%, rgba(11,99,209,0) 38%), repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 10px), linear-gradient(180deg, #113A62 0%, #071E33 100%)",
-              borderRadius: isPhone ? 14 : 18,
+                "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(242,247,253,0.92) 100%)",
+              border: "1px solid rgba(16,37,59,0.08)",
+              borderRadius: isPhone ? 15 : 18,
               overflow: "hidden",
-              boxShadow: "0 16px 28px rgba(10,24,49,0.16)",
+              boxShadow:
+                "0 14px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.9)",
             }}
           >
             {[
@@ -7122,9 +7199,9 @@ export default function DashboardPage() {
                   padding: isPhone ? "13px 4px 10px" : "16px 12px 13px",
                   border: 0,
                   borderLeft:
-                    index === 0 ? "0" : "1px solid rgba(255,255,255,0.22)",
+                    index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
                   background: "transparent",
-                  color: "#F8FBFF",
+                  color: DASHBOARD_BRAND.ink,
                   cursor: "pointer",
                   textAlign: "center",
                 })}
@@ -7136,7 +7213,7 @@ export default function DashboardPage() {
                 />
                 <span
                   style={{
-                    color: "#F8FBFF",
+                    color: DASHBOARD_BRAND.ink,
                     fontSize: isPhone ? 13.8 : 17,
                     fontWeight: 1000,
                     lineHeight: 1.05,
@@ -7147,7 +7224,7 @@ export default function DashboardPage() {
                 </span>
                 <span
                   style={{
-                    color: "#F3D06A",
+                    color: DASHBOARD_BRAND.goldText,
                     fontSize:
                       item.label === "TrustSlip"
                         ? isPhone
@@ -7168,7 +7245,7 @@ export default function DashboardPage() {
                 {item.detail ? (
                   <span
                     style={{
-                      color: "rgba(248,251,255,0.72)",
+                      color: DASHBOARD_BRAND.helper,
                       fontSize: isPhone ? 8.8 : 11,
                       fontWeight: 800,
                       lineHeight: 1.12,
@@ -7207,8 +7284,8 @@ export default function DashboardPage() {
                           borderRadius: 999,
                           background:
                             barIndex < item.strength
-                              ? "#F3D06A"
-                              : "rgba(226,232,240,0.25)",
+                              ? "#C99A27"
+                              : "rgba(16,37,59,0.12)",
                         }}
                       />
                     ))}
@@ -7222,35 +7299,57 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: 12,
+              marginTop: isPhone ? 10 : 12,
+              order: 30,
               width: "100%",
-              minHeight: isPhone ? 96 : 112,
+              minHeight: isPhone ? 142 : 156,
               display: "grid",
               gridTemplateColumns: isPhone
-                ? "48px minmax(0, 1fr) minmax(94px, 0.72fr)"
-                : "66px minmax(0, 1fr) minmax(148px, 0.76fr)",
-              gap: 0,
+                ? "52px minmax(0, 1fr)"
+                : "66px minmax(0, 1fr)",
+              gridTemplateRows: "auto auto",
+              gap: isPhone ? "8px 10px" : "10px 14px",
               alignItems: "center",
-              padding: isPhone ? "10px 8px" : "14px 16px",
-              borderRadius: isPhone ? 16 : 20,
+              padding: isPhone ? "13px 12px" : "16px 18px",
+              borderRadius: isPhone ? 18 : 22,
               background:
-                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
-              border: "1px solid rgba(16,37,59,0.08)",
+                "radial-gradient(circle at 94% 18%, rgba(201,154,39,0.08) 0%, rgba(201,154,39,0) 30%), linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
+              border: "1px solid rgba(16,37,59,0.14)",
               boxShadow:
-                "0 18px 26px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
+                "0 18px 30px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.96)",
               color: DASHBOARD_BRAND.ink,
               textAlign: "left",
               overflow: "hidden",
               boxSizing: "border-box",
               overflowAnchor: "none",
               transition: "none",
+              position: "relative",
             }}
           >
             <span
               aria-hidden="true"
               style={{
-                width: isPhone ? 44 : 54,
-                height: isPhone ? 44 : 54,
+                position: "absolute",
+                right: isPhone ? -10 : 8,
+                top: isPhone ? 28 : 24,
+                width: isPhone ? 96 : 122,
+                height: isPhone ? 96 : 122,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: 0.07,
+                transform: "rotate(-8deg)",
+                pointerEvents: "none",
+              }}
+            >
+              <GSNBrandMark width={isPhone ? 70 : 90} height={isPhone ? 86 : 110} />
+            </span>
+
+            <span
+              aria-hidden="true"
+              style={{
+                width: isPhone ? 46 : 58,
+                height: isPhone ? 46 : 58,
                 borderRadius: 999,
                 display: "inline-flex",
                 alignItems: "center",
@@ -7262,30 +7361,27 @@ export default function DashboardPage() {
                 boxShadow:
                   "0 10px 18px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
                 color: "#0D3A63",
+                zIndex: 1,
               }}
             >
-              <DashboardSignalIcon name="trust" size={isPhone ? 25 : 30} />
+              <DashboardSignalIcon name="trust" size={isPhone ? 31 : 36} />
             </span>
 
             <span
               style={{
                 display: "grid",
-                gap: isPhone ? 5 : 7,
+                gap: isPhone ? 4 : 5,
                 alignContent: "center",
                 minWidth: 0,
-                height: "100%",
-                justifyItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                padding: isPhone ? "0 10px" : "0 18px",
-                borderLeft: "1px solid rgba(16,37,59,0.10)",
-                borderRight: "1px solid rgba(16,37,59,0.10)",
+                justifyItems: "start",
+                textAlign: "left",
+                zIndex: 1,
               }}
             >
               <span
                 style={{
                   color: DASHBOARD_BRAND.ink,
-                  fontSize: isPhone ? 17 : 23,
+                  fontSize: isPhone ? 18 : 24,
                   fontWeight: 1000,
                   lineHeight: 1.05,
                   overflowWrap: "break-word",
@@ -7296,10 +7392,10 @@ export default function DashboardPage() {
               <span
                 style={{
                   color: DASHBOARD_BRAND.label,
-                  fontSize: isPhone ? 11.5 : 14,
+                  fontSize: isPhone ? 11 : 13,
                   fontWeight: 800,
                   lineHeight: 1.24,
-                  maxWidth: isPhone ? 120 : 180,
+                  maxWidth: isPhone ? 210 : 360,
                 }}
               >
                 Your permanent network identity
@@ -7308,35 +7404,65 @@ export default function DashboardPage() {
 
             <span
               style={{
+                gridColumn: "1 / -1",
                 display: "grid",
-                gap: isPhone ? 5 : 7,
+                gap: isPhone ? 7 : 8,
                 alignContent: "center",
-                justifyItems: "center",
+                justifyItems: "stretch",
                 minWidth: 0,
                 textAlign: "center",
-                paddingLeft: isPhone ? 10 : 18,
+                zIndex: 1,
               }}
             >
               <span
                 style={{
                   color: DASHBOARD_BRAND.ink,
-                  display: "grid",
-                  gap: 0,
-                  fontSize: isPhone ? 21 : 27,
+                  display: "block",
+                  width: "100%",
+                  padding: isPhone ? "9px 8px" : "10px 12px",
+                  borderRadius: 11,
+                  border: "1px solid rgba(201,154,39,0.46)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,252,242,0.98) 0%, rgba(255,255,255,0.96) 100%)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.96), 0 8px 14px rgba(10,24,49,0.05)",
+                  fontFamily:
+                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  fontSize: isPhone ? 15 : 18,
                   fontWeight: 1000,
-                  lineHeight: 1.08,
+                  lineHeight: 1.22,
                   overflowWrap: "anywhere",
                   wordBreak: "break-word",
+                  boxSizing: "border-box",
                 }}
               >
                 {globalIdParts ? (
-                  <>
-                    <span>{globalIdParts[1]}</span>
-                    <span>{globalIdParts[2]}</span>
-                  </>
+                  <span>{visibleGsnId}</span>
                 ) : (
                   <span>{visibleGsnId}</span>
                 )}
+              </span>
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  color: DASHBOARD_BRAND.helper,
+                  fontSize: isPhone ? 10 : 11.5,
+                  fontWeight: 850,
+                  lineHeight: 1.2,
+                  textAlign: "left",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span>Issued by GSN</span>
+                <span>
+                  Status:{" "}
+                  <span style={{ color: visibleGsnId === "Pending" ? "#8A651E" : "#047857" }}>
+                    {visibleGsnId === "Pending" ? "Pending" : "Active"}
+                  </span>
+                </span>
               </span>
             </span>
           </div>

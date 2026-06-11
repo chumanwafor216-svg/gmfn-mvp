@@ -46868,3 +46868,34 @@ GSN-branded invite composer and invite-entry continuity.
   - it still does not create a dated instalment calendar or multiple scheduled
     repayment references;
   - no push or Render deploy was triggered.
+
+### Dashboard trust-card reference pass (2026-06-11)
+
+- Trigger:
+  - product owner supplied a phone screenshot reference for the small `Your
+    trust is the first currency` GSN card and asked whether that exact portion
+    could be executed.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - reshaped the live `/app/dashboard` Identity Passport card toward the
+      reference: pale outer passport frame, white certificate surface, bigger
+      headline/photo treatment, overlapping white `Frame tools` pill, larger
+      light-surface 3D proof icons, GSN watermark, bordered Global ID strip,
+      and truthful `Issued by GSN` / `Status` metadata;
+    - kept the required Trust / CCI / TrustSlip action buttons alive and moved
+      them visually under the Global ID document so the main card reads closer
+      to the supplied reference;
+    - did not touch the frozen Market Wisdom presentation or route behavior.
+- Verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:icon-protocol`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - the GSN card portion now follows the supplied reference much more closely;
+  - the app does not and should not copy the surrounding ChatGPT/phone chrome
+    shown in the screenshot;
+  - no push or Render deploy was triggered.
