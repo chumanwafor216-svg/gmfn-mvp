@@ -1,3 +1,31 @@
+### Dashboard Spotlight copy/button tightening (2026-06-11)
+
+- Product owner reviewed the phone view and called out that the Spotlight
+  surface was still too wordy and the overlay/buttons were too large.
+- Frontend change:
+  - `frontend/src/pages/DashboardPage.tsx` removes the visible `Live` word from
+    the media overlay and leaves a compact `Active` status pill.
+  - Shrinks the WhatsApp overlay CTA on phone: smaller width, height, padding,
+    icon, and type.
+  - Shortens the footer copy to `Sharing matters.` and `Spotlight is active.`
+  - Replaces the expanded guide paragraphs with two compact fact tiles:
+    `Community display` and the current status chip.
+  - Tightens the expanded guide buttons (`Upload`, `Market`, optional `Shop`,
+    `Hide`) to shorter fixed heights and smaller padding.
+- Verification passed locally:
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:dashboard-actions`
+  - `npm exec -- eslint src\pages\DashboardPage.tsx`
+  - `npm run audit:protected-button-freeze`
+  - `npm run build`
+- Unabated truth:
+  - the code/build/audits pass and the visible copy is much shorter;
+  - accepted visual proof still requires manual phone screenshot review because
+    this frontend has no local screenshot harness.
+- Publishing posture:
+  - no push and no Render deploy; keep batching locally until the owner says
+    the current batch is ready to publish.
+
 ### Dashboard Spotlight overlay anti-overlap pass (2026-06-11)
 
 - Continued the dashboard Spotlight reference polish with a phone-width geometry

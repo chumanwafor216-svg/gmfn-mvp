@@ -9175,10 +9175,10 @@ export default function DashboardPage() {
                     gridColumn: 2,
                     gridRow: 1,
                     justifySelf: "end",
-                    minWidth: isPhone ? 138 : 164,
+                    minWidth: isPhone ? 112 : 136,
                     width: "auto",
-                    minHeight: 52,
-                    padding: isPhone ? "8px 14px" : "9px 18px",
+                    minHeight: isPhone ? 44 : 48,
+                    padding: isPhone ? "7px 10px" : "8px 14px",
                     borderRadius: 999,
                     background:
                       "linear-gradient(180deg, #09233C 0%, #061827 100%)",
@@ -9186,19 +9186,19 @@ export default function DashboardPage() {
                     color: "#FFFFFF",
                     boxShadow:
                       "0 14px 26px rgba(2,12,27,0.32), inset 0 1px 0 rgba(255,255,255,0.18)",
-                    fontSize: isPhone ? 15 : 16,
+                    fontSize: isPhone ? 13.2 : 14.5,
                     fontWeight: 950,
                     whiteSpace: "nowrap",
                     pointerEvents: "auto",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 8,
+                    gap: isPhone ? 5 : 7,
                   }}
                 >
-                  <GsnLegacyIcon name="phone" size={isPhone ? 28 : 30} />
+                  <GsnLegacyIcon name="phone" size={isPhone ? 22 : 26} />
                   <span>WhatsApp</span>
-                  <span aria-hidden="true" style={{ fontSize: isPhone ? 24 : 26 }}>
+                  <span aria-hidden="true" style={{ fontSize: isPhone ? 20 : 23 }}>
                     &gt;
                   </span>
                 </StableButton>
@@ -9219,15 +9219,15 @@ export default function DashboardPage() {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: isPhone ? 7 : 9,
-                      minHeight: isPhone ? 42 : 46,
+                      minHeight: isPhone ? 36 : 42,
                       borderRadius: 999,
-                      padding: isPhone ? "9px 12px" : "10px 16px",
+                      padding: isPhone ? "8px 10px" : "10px 14px",
                       background: "rgba(7,23,44,0.88)",
                       border: "1px solid rgba(255,255,255,0.14)",
                       color: "#FFFFFF",
                       boxShadow: "0 14px 26px rgba(2,12,27,0.30)",
                       backdropFilter: "blur(12px)",
-                      fontSize: isPhone ? 12.5 : 14,
+                      fontSize: isPhone ? 12 : 13.5,
                       fontWeight: 900,
                       lineHeight: 1,
                       maxWidth: "100%",
@@ -9246,14 +9246,6 @@ export default function DashboardPage() {
                         boxShadow: "0 0 0 4px rgba(214,170,69,0.16)",
                       }}
                     />
-                    <span style={{ textTransform: "uppercase" }}>Live</span>
-                    <span
-                      style={{
-                        width: 1,
-                        alignSelf: "stretch",
-                        background: "rgba(255,255,255,0.16)",
-                      }}
-                    />
                     <span
                       style={{
                         minWidth: 0,
@@ -9261,7 +9253,7 @@ export default function DashboardPage() {
                         textOverflow: "ellipsis",
                       }}
                     >
-                      {isPhone ? "Active" : "Spotlight is active"}
+                      Active
                     </span>
                   </span>
                   <span
@@ -9481,23 +9473,23 @@ export default function DashboardPage() {
                     <div
                       style={{
                         color: "#8A651E",
-                        fontSize: isPhone ? 14.5 : 16,
+                        fontSize: isPhone ? 14 : 16,
                         fontWeight: 1000,
                         lineHeight: 1.15,
                       }}
                     >
-                      Sharing what matters.
+                      Sharing matters.
                     </div>
                     <div
                       style={{
                         marginTop: 2,
                         color: "#475569",
-                        fontSize: isPhone ? 12.2 : 13,
+                        fontSize: isPhone ? 11.8 : 13,
                         fontWeight: 750,
                         lineHeight: 1.28,
                       }}
                     >
-                      Your spotlight keeps others informed.
+                      Spotlight is active.
                     </div>
                   </div>
                   {!isPhone ? (
@@ -9517,9 +9509,9 @@ export default function DashboardPage() {
                     onPointerDown={consumeDashboardPointerEvent}
                     style={dashboardStableActionFrame({
                       width: "auto",
-                      minWidth: isPhone ? 94 : 118,
-                      minHeight: isPhone ? 48 : 50,
-                      padding: isPhone ? "8px 10px" : "9px 14px",
+                      minWidth: isPhone ? 82 : 112,
+                      minHeight: isPhone ? 42 : 48,
+                      padding: isPhone ? "7px 10px" : "9px 14px",
                       border: "1px solid rgba(15,59,116,0.12)",
                       borderRadius: 999,
                       background:
@@ -9529,7 +9521,7 @@ export default function DashboardPage() {
                       cursor: "pointer",
                       color: "#07172C",
                       fontWeight: 1000,
-                      fontSize: isPhone ? 13.2 : 14,
+                      fontSize: isPhone ? 12.5 : 14,
                       letterSpacing: 0,
                       touchAction: "manipulation",
                       userSelect: "none",
@@ -9541,7 +9533,7 @@ export default function DashboardPage() {
                     })}
                   >
                     <span>{spotlightGuideOpen ? "Close" : "Learn more"}</span>
-                    <span aria-hidden="true" style={{ fontSize: isPhone ? 22 : 24 }}>
+                    <span aria-hidden="true" style={{ fontSize: isPhone ? 20 : 23 }}>
                       &gt;
                     </span>
                   </StableButton>
@@ -9549,45 +9541,47 @@ export default function DashboardPage() {
                 {spotlightGuideOpen ? (
                   <div
                     style={{
-                      marginTop: isPhone ? 12 : 7,
+                      marginTop: isPhone ? 10 : 8,
                       display: "grid",
-                      gap: isPhone ? 6 : 8,
-                      maxHeight: isPhone ? 216 : undefined,
-                      overflowY: isPhone ? "auto" : undefined,
+                      gap: isPhone ? 8 : 10,
                       paddingRight: isPhone ? 2 : 0,
                     }}
                   >
                   <div
                     style={{
-                      ...helperText(),
-                      ...dashboardPhoneHelper,
-                      fontSize: isPhone ? 11.4 : 13,
-                      lineHeight: isPhone ? 1.3 : 1.58,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 8,
                     }}
                   >
-                    Spotlight is your community display window. Show goods,
-                    services, or an update your community should notice.
-                  </div>
-                  <div
-                    style={{
-                      color: "#475569",
-                      fontSize: isPhone ? 11.3 : dashboardSpotlightBodyFontSize,
-                      lineHeight: isPhone ? 1.3 : 1.58,
-                      fontWeight: 800,
-                    }}
-                  >
-                    Open your Community Home to upload a picture or video. GSN will
-                    show it here as a quick live preview, then people can open
-                    your marketplace or shop for the full details.
-                  </div>
-                  <div
-                    style={{
-                      color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
-                      fontSize: isPhone ? 10.9 : 12.5,
-                      fontWeight: 800,
-                    }}
-                  >
-                    Current slot: {spotlightExpiryStatus.detail}
+                    <div
+                      style={{
+                        borderRadius: 14,
+                        border: "1px solid rgba(214,170,69,0.20)",
+                        background: "rgba(255,248,232,0.72)",
+                        padding: isPhone ? "9px 10px" : "10px 12px",
+                        color: "#8A651E",
+                        fontSize: isPhone ? 11.3 : 12.5,
+                        fontWeight: 950,
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      Community display
+                    </div>
+                    <div
+                      style={{
+                        borderRadius: 14,
+                        border: "1px solid rgba(15,59,116,0.12)",
+                        background: "rgba(248,251,255,0.92)",
+                        padding: isPhone ? "9px 10px" : "10px 12px",
+                        color: spotlightExpiryStatus.urgent ? "#9A3412" : "#0F3B74",
+                        fontSize: isPhone ? 11.3 : 12.5,
+                        fontWeight: 950,
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      {spotlightExpiryStatus.chip}
+                    </div>
                   </div>
                   <div
                     style={
@@ -9595,7 +9589,7 @@ export default function DashboardPage() {
                         ? {
                             display: "grid",
                             gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                            gap: 8,
+                            gap: 7,
                             alignItems: "stretch",
                           }
                         : { ...dashboardActionGrid(isCompact ? 118 : 152) }
@@ -9606,7 +9600,12 @@ export default function DashboardPage() {
                       type="button"
                       onClick={openDashboardSpotlightGuide}
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={spotlightActionButton()}
+                      style={spotlightActionButton({
+                        minHeight: isPhone ? 42 : 40,
+                        padding: isPhone ? "8px 10px" : "8px 12px",
+                        borderRadius: isPhone ? 14 : 14,
+                        fontSize: isPhone ? 13 : 13,
+                      })}
                     >
                       Upload
                     </StableButton>
@@ -9615,7 +9614,12 @@ export default function DashboardPage() {
                       type="button"
                       onClick={openSpotlightMarketplace}
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={spotlightActionButton()}
+                      style={spotlightActionButton({
+                        minHeight: isPhone ? 42 : 40,
+                        padding: isPhone ? "8px 10px" : "8px 12px",
+                        borderRadius: isPhone ? 14 : 14,
+                        fontSize: isPhone ? 13 : 13,
+                      })}
                     >
                       Market
                     </StableButton>
@@ -9625,7 +9629,12 @@ export default function DashboardPage() {
                         type="button"
                         onClick={openSpotlightShop}
                         onPointerDown={consumeDashboardPointerEvent}
-                        style={spotlightActionButton()}
+                        style={spotlightActionButton({
+                          minHeight: isPhone ? 42 : 40,
+                          padding: isPhone ? "8px 10px" : "8px 12px",
+                          borderRadius: isPhone ? 14 : 14,
+                          fontSize: isPhone ? 13 : 13,
+                        })}
                       >
                         Shop
                       </StableButton>
@@ -9635,7 +9644,12 @@ export default function DashboardPage() {
                       type="button"
                       onClick={minimizeSpotlight}
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={spotlightWhiteButton()}
+                      style={spotlightWhiteButton({
+                        minHeight: isPhone ? 42 : 40,
+                        padding: isPhone ? "8px 10px" : "8px 12px",
+                        borderRadius: isPhone ? 14 : 14,
+                        fontSize: isPhone ? 13 : 13,
+                      })}
                     >
                       Hide
                     </StableButton>
