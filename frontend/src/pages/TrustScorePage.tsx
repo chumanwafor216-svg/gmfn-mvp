@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
+import GSNBrandMark from "../components/GSNBrandMark";
 import {
   DangerButton,
   PrimaryButton,
@@ -701,13 +702,41 @@ function overviewIconBox(isCompact = false): React.CSSProperties {
     borderRadius: isCompact ? 12 : 15,
     display: "grid",
     placeItems: "center",
-    background: "linear-gradient(180deg, #0B3E78 0%, #061827 100%)",
-    color: "#FFFFFF",
-    border: "1px solid rgba(255,255,255,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%)",
+    color: "#0B63D1",
+    border: "1px solid rgba(11,99,209,0.14)",
     boxShadow:
-      "0 10px 22px rgba(3,30,66,0.18), inset 0 1px 0 rgba(255,255,255,0.18)",
+      "0 10px 22px rgba(3,30,66,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
     flex: "0 0 auto",
   };
+}
+
+function OfficialGsnWatermark({
+  isCompact,
+  opacity = 0.05,
+  style,
+}: {
+  isCompact: boolean;
+  opacity?: number;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        right: isCompact ? -54 : -28,
+        top: isCompact ? -42 : -56,
+        opacity,
+        pointerEvents: "none",
+        transform: "rotate(-7deg)",
+        zIndex: 0,
+        ...style,
+      }}
+    >
+      <GSNBrandMark width={isCompact ? 148 : 210} height={isCompact ? 186 : 264} />
+    </div>
+  );
 }
 
 function trustIconBadge(
@@ -2459,7 +2488,7 @@ export default function TrustScorePage() {
                 style={{
                   color: "#617085",
                   fontSize: 12,
-                  letterSpacing: 1.8,
+                  letterSpacing: 0,
                   textTransform: "uppercase",
                   fontWeight: 1000,
                 }}
@@ -2680,6 +2709,11 @@ export default function TrustScorePage() {
             scrollMarginTop: isCompact ? 112 : 24,
           }}
         >
+          <OfficialGsnWatermark
+            isCompact={isCompact}
+            opacity={0.045}
+            style={{ right: isCompact ? -64 : -34, top: isCompact ? -34 : -60 }}
+          />
           <section
             style={{
               display: "grid",
@@ -3388,6 +3422,11 @@ export default function TrustScorePage() {
               overflow: "hidden",
             }}
           >
+            <OfficialGsnWatermark
+              isCompact={isCompact}
+              opacity={0.04}
+              style={{ right: isCompact ? -74 : -42, top: -52 }}
+            />
             <TrustPaperWatermark
               name="chart"
               color="#0B63D1"
@@ -3404,7 +3443,7 @@ export default function TrustScorePage() {
                 fontWeight: 1000,
                 fontSize: 14,
                 textTransform: "uppercase",
-                letterSpacing: 1.6,
+                letterSpacing: 0,
               }}
             >
               <GsnLegacyIcon name="chart" size={32} decorative />
@@ -3483,6 +3522,11 @@ export default function TrustScorePage() {
               overflow: "hidden",
             }}
           >
+            <OfficialGsnWatermark
+              isCompact={isCompact}
+              opacity={0.04}
+              style={{ right: isCompact ? -78 : -46, top: -54 }}
+            />
             <TrustPaperWatermark
               name="alert"
               color="#991B1B"
@@ -3498,7 +3542,7 @@ export default function TrustScorePage() {
                 color: "#991B1B",
                 fontSize: 14,
                 fontWeight: 1000,
-                letterSpacing: 1.6,
+                letterSpacing: 0,
                 textTransform: "uppercase",
               }}
             >
@@ -3647,6 +3691,11 @@ export default function TrustScorePage() {
                 marginBottom: 14,
               }}
             >
+              <OfficialGsnWatermark
+                isCompact={isCompact}
+                opacity={0.04}
+                style={{ right: isCompact ? -76 : -42, top: -50 }}
+              />
               <TrustPaperWatermark
                 name="community"
                 color="#0B63D1"
@@ -3662,7 +3711,7 @@ export default function TrustScorePage() {
                   color: "#0B63D1",
                   fontSize: 14,
                   fontWeight: 1000,
-                  letterSpacing: 1.6,
+                  letterSpacing: 0,
                   textTransform: "uppercase",
                 }}
               >
@@ -4006,12 +4055,10 @@ export default function TrustScorePage() {
               overflow: "hidden",
             }}
           >
-            <TrustPaperWatermark
-              name="wallet"
-              color="#0B63D1"
-              size={isCompact ? 168 : 224}
-              opacity={0.045}
-              style={{ right: isCompact ? -74 : -42, top: -52, bottom: "auto" }}
+            <OfficialGsnWatermark
+              isCompact={isCompact}
+              opacity={0.04}
+              style={{ right: isCompact ? -76 : -42, top: -52 }}
             />
             <div
               style={{
@@ -4021,7 +4068,7 @@ export default function TrustScorePage() {
                 color: "#0B63D1",
                 fontSize: 14,
                 fontWeight: 1000,
-                letterSpacing: 1.6,
+                letterSpacing: 0,
                 textTransform: "uppercase",
               }}
             >

@@ -84,6 +84,38 @@ assertContains(
 
 assertContains(
   "trust",
+  /import GSNBrandMark from "\.\.\/components\/GSNBrandMark";[\s\S]*?function OfficialGsnWatermark\([\s\S]*?<GSNBrandMark width=\{isCompact \? 148 : 210\} height=\{isCompact \? 186 : 264\} \/>[\s\S]*?OfficialGsnWatermark[\s\S]*?activeTrustPassportLane === "finance"/,
+  "Trust Passport must use the official GSN brand mark as a watermark on the document shell and proof lanes."
+);
+
+assertContains(
+  "trust",
+  /function overviewIconBox\(isCompact = false\)[\s\S]*?background: "linear-gradient\(180deg, #FFFFFF 0%, #F4F8FF 100%\)"[\s\S]*?color: "#0B63D1"[\s\S]*?border: "1px solid rgba\(11,99,209,0\.14\)"/,
+  "Trust Passport identity fact icons must use light embossed 3D tiles, not dark shielded icon blocks."
+);
+
+if (/letterSpacing:\s*[1-9]/.test(sourceByFile.trust)) {
+  addFinding(
+    files.trust,
+    sourceByFile.trust,
+    sourceByFile.trust.search(/letterSpacing:\s*[1-9]/),
+    "Trust Passport must not use spaced-out uppercase lane headers on phone-polished proof surfaces.",
+    sourceByFile.trust.match(/letterSpacing:\s*[1-9][^,\n]*/)?.[0] || ""
+  );
+}
+
+if (/TrustPaperWatermark[\s\S]*?name="wallet"/.test(sourceByFile.trust)) {
+  addFinding(
+    files.trust,
+    sourceByFile.trust,
+    sourceByFile.trust.search(/TrustPaperWatermark[\s\S]*?name="wallet"/),
+    "Trust Passport finance proof surfaces must not use wallet watermark imagery.",
+    "Use the official GSN watermark and financeInstitution 3D icon for Finance Discipline."
+  );
+}
+
+assertContains(
+  "trust",
   /const routes = useMemo\([\s\S]*?dashboard: routeTarget\("dashboard", selectedClanId, "trust-score\.route\.dashboard"\)[\s\S]*?notifications: routeTarget\("notifications", selectedClanId, "trust-score\.route\.notifications"\)[\s\S]*?identity: routeTarget\("cci", selectedClanId, "trust-score\.route\.identity"\)[\s\S]*?openTrust: routeTarget\("openTrust", selectedClanId, "trust-score\.route\.open-trust"\)[\s\S]*?cciReading: routeTarget\("cciReading", selectedClanId, "trust-score\.route\.cci-reading"\)[\s\S]*?trustSlip: routeTarget\("trustSlip", selectedClanId, "trust-score\.route\.trust-slip"\)/,
   "Trust Passport must keep traceable shared CTA intents for dashboard, notifications, CCI, local trust, CCI reading, and TrustSlip."
 );

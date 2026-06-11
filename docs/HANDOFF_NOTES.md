@@ -45653,3 +45653,48 @@ GSN-branded invite composer and invite-entry continuity.
     shelling, borrowing repayment logic, or stale protocol `partial` statuses;
   - no push or Render deploy was triggered. The branch remains local-only
     until the product owner approves the final batch push.
+
+### Trust Passport official proof polish checkpoint (2026-06-11)
+
+- Trigger:
+  - after Shop Control, the production polish order moved to Trust Passport,
+    with special emphasis from the product owner that proof surfaces must feel
+    like respectable institutional documents and use the official GSN mark.
+- Changed locally, not pushed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - added an official `GSNBrandMark` watermark helper and placed it behind
+      the Trust Passport document shell plus Evidence Story, Repair / Next
+      Step, Community Confirmation, and Finance Discipline lanes;
+    - removed the wallet watermark from Finance Discipline so the lane no
+      longer implies personal-wallet money; it now uses the official GSN
+      watermark and the `financeInstitution` 3D icon;
+    - changed identity fact icon tiles from dark shielded blocks to lighter
+      white embossed 3D tiles;
+    - removed remaining spaced-out lane-header letter spacing.
+  - `frontend/tools/audit-trust-passport-front-package.mjs`
+    - added guards for the official GSN watermark, light identity icon tiles,
+      no wallet watermark on Finance Discipline, and no spaced-out lane
+      headers.
+- Verification:
+  - Passed `npm run audit:trust-passport-front-package` from `frontend`.
+  - Passed `npm run audit:trust-passport-button-inventory` from `frontend`.
+  - Passed `npm run audit:trust-passport-evidence-story-lane` from `frontend`.
+  - Passed `npm run audit:trust-passport-finance-discipline-lane` from
+    `frontend`.
+  - Passed `npm run audit:trust-passport-community-confirmation-lane` from
+    `frontend`.
+  - Passed `npm run audit:trust-passport-repair-lane` from `frontend`.
+  - Passed `npm run audit:trust-passport-lane-map` from `frontend`.
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed ESLint for `TrustScorePage.tsx` and the touched Trust Passport
+    audit.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this is the web Trust Passport surface, not the backend PDF services yet;
+  - it raises the institutional proof presentation, but real phone screenshots
+    still need review before calling the surface fully screenshot-ready;
+  - TrustSlip Verify, TrustSlip / Trust Timeline / Evidence Pack PDFs,
+    borrowing repayment logic, and stale protocol `partial` statuses remain
+    separate unfinished workstreams;
+  - no push or Render deploy was triggered.
