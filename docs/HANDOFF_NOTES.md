@@ -46748,3 +46748,46 @@ GSN-branded invite composer and invite-entry continuity.
     pay-in-parts, partial payment reconciliation, overdue/missed, or reversal
     behavior;
   - no push or Render deploy was triggered.
+
+### Repayment borrower declaration wiring checkpoint (2026-06-11)
+
+- Trigger:
+  - continuing from the Loan Summary polish into the actual repayment path;
+  - devil's-advocate finding: `RepaymentPage` showed a `Confirm paid` action,
+    but it only set local UI state and did not send a backend repayment claim;
+  - backend already had the safer borrower-claim route
+    `/loans/{loan_id}/repayment-claim`, while final repayment proof still
+    belongs to admin/bank reconciliation.
+- Changed locally, not pushed:
+  - `frontend/src/lib/api.ts`
+    - added `createRepaymentClaim(loanId, { payment_reference, note })`.
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - imported `createRepaymentClaim`;
+    - added `declaringPayment` busy state;
+    - changed the payment action to call the borrower repayment-claim backend
+      with the visible repayment reference and selected amount/mode note;
+    - changed the button label from `Confirm paid` to `Declare paid`;
+    - clarified the user-facing result language so the borrower declaration
+      does not pretend to be final admin/finance confirmation.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - added guards requiring `RepaymentPage` to call `createRepaymentClaim`
+      and keep `Admin confirmation is still needed` language.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the repayment button guard for the `Declare paid` label.
+- Verification:
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for `RepaymentPage.tsx`, `api.ts`,
+    `audit-loans-actions.mjs`, and `audit-button-stability.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed backend repayment tests:
+    `python -m pytest -q gmfn_backend\tests\test_repayment_completion_service.py gmfn_backend\tests\test_reconciliation_integrity.py::test_loan_repayment_reconciliation_applies_part_payment_then_full_closure`.
+  - Passed `npm run build`.
+- Unabated truth:
+  - borrower declaration is now real frontend-to-backend behavior;
+  - it still does not self-close a loan, release guarantor exposure, or create
+    final trust proof. That remains admin/bank confirmation through the
+    existing repayment service/reconciliation path;
+  - the deterministic expected-payment reference is still one reference per
+    loan/borrower, so a dated multi-installment calendar is not implemented;
+  - no push or Render deploy was triggered.

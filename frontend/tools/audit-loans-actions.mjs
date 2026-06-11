@@ -144,8 +144,14 @@ assertContains(
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /type RepaymentMode = "full" \| "part";[\s\S]*?paid_amount\?: string \| number \| null;[\s\S]*?remaining_amount\?: string \| number \| null;[\s\S]*?bank_event_id\?: number \| string \| null;[\s\S]*?const \[repaymentMode, setRepaymentMode\] = useState<RepaymentMode>\("full"\);[\s\S]*?const \[partAmount, setPartAmount\] = useState\(""\);[\s\S]*?const requestedRepaymentAmount = useMemo[\s\S]*?repaymentMode === "full"[\s\S]*?Math\.min\(requested, outstandingAmount\)[\s\S]*?repaymentPlanTruth[\s\S]*?separate dated installment calendar[\s\S]*?currentExpectedPaymentBankEventId[\s\S]*?matched_bank_event_id[\s\S]*?bank_event_id[\s\S]*?amount: String\(requestedRepaymentAmount\.toFixed\(2\)\)[\s\S]*?debugId="repayment\.mode\.full"[\s\S]*?debugId="repayment\.mode\.part"[\s\S]*?Part-payment amount[\s\S]*?Paid so far:[\s\S]*?Still left:/,
-  "Repayment page must expose full-balance and part-payment choices, truthfully distinguish part payment from a dated installment calendar, show paid/left reconciliation amounts, and generate instructions for the selected amount."
+  /createRepaymentClaim[\s\S]*?type RepaymentMode = "full" \| "part";[\s\S]*?paid_amount\?: string \| number \| null;[\s\S]*?remaining_amount\?: string \| number \| null;[\s\S]*?bank_event_id\?: number \| string \| null;[\s\S]*?const \[repaymentMode, setRepaymentMode\] = useState<RepaymentMode>\("full"\);[\s\S]*?const \[partAmount, setPartAmount\] = useState\(""\);[\s\S]*?const requestedRepaymentAmount = useMemo[\s\S]*?repaymentMode === "full"[\s\S]*?Math\.min\(requested, outstandingAmount\)[\s\S]*?repaymentPlanTruth[\s\S]*?separate dated installment calendar[\s\S]*?currentExpectedPaymentBankEventId[\s\S]*?matched_bank_event_id[\s\S]*?bank_event_id[\s\S]*?amount: String\(requestedRepaymentAmount\.toFixed\(2\)\)[\s\S]*?createRepaymentClaim\(numericLoanId[\s\S]*?Admin confirmation is still needed[\s\S]*?debugId="repayment\.mode\.full"[\s\S]*?debugId="repayment\.mode\.part"[\s\S]*?Part-payment amount[\s\S]*?Paid so far:[\s\S]*?Still left:[\s\S]*?Declare paid/,
+  "Repayment page must expose full-balance and part-payment choices, truthfully distinguish part payment from a dated installment calendar, show paid/left reconciliation amounts, generate instructions for the selected amount, and send borrower declarations to the repayment-claim backend instead of only setting local state."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /export async function createRepaymentClaim[\s\S]*?\/loans\/\$\{encodeURIComponent\(String\(loanId\)\)\}\/repayment-claim[\s\S]*?payment_reference: String\(payload\.payment_reference \|\| ""\)\.trim\(\)/,
+  "Frontend API must expose the borrower repayment-claim endpoint used by RepaymentPage."
 );
 
 assertNotContains(

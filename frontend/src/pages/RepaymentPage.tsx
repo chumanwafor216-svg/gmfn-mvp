@@ -11,6 +11,7 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import {
+  createRepaymentClaim,
   createLoanInstruction,
   getCurrentClan,
   getLoanSummary,
@@ -355,6 +356,7 @@ export default function RepaymentPage() {
   const [collapsed, setCollapsed] = useState<CollapseState>(defaultCollapseState());
   const [loading, setLoading] = useState(true);
   const [generatingInstruction, setGeneratingInstruction] = useState(false);
+  const [declaringPayment, setDeclaringPayment] = useState(false);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(null);
 
   const [me, setMe] = useState<any>(null);
@@ -663,17 +665,50 @@ export default function RepaymentPage() {
     }
   }
 
-  function handleConfirmPaymentMade() {
+  async function handleConfirmPaymentMade() {
     if (!instruction) {
       setNotice({ tone: "error", text: "Generate the repayment instruction first." });
       return;
     }
 
-    setPaymentConfirmedAt(new Date().toISOString());
-    setNotice({
-      tone: "success",
-      text: "Repayment marked as made. Waiting for reconciliation.",
-    });
+    const reference = firstTruthy(
+      instruction.reference_display,
+      instruction.reference,
+      instruction.reference_normalized
+    );
+    if (!reference) {
+      setNotice({ tone: "error", text: "No repayment reference is visible yet." });
+      return;
+    }
+
+    setDeclaringPayment(true);
+    try {
+      const amountText = fmtMoney(instruction.amount || requestedRepaymentAmount, currency);
+      const claim = await createRepaymentClaim(numericLoanId, {
+        payment_reference: reference,
+        note: [
+          `Repayment choice: ${repaymentMode === "full" ? "Full balance" : "Part payment"}`,
+          `Amount declared: ${amountText}`,
+        ].join(" | "),
+      });
+
+      setPaymentConfirmedAt(new Date().toISOString());
+      setNotice({
+        tone: "success",
+        text: claim?.already_claimed
+          ? "Repayment declaration was already recorded. Admin confirmation is still needed."
+          : "Repayment declaration sent. Admin confirmation is still needed.",
+      });
+    } catch (error: any) {
+      setNotice({
+        tone: "error",
+        text:
+          safeStr(error?.message) ||
+          "Repayment declaration could not be sent.",
+      });
+    } finally {
+      setDeclaringPayment(false);
+    }
   }
 
   function handleCopyReference() {
@@ -1243,28 +1278,30 @@ export default function RepaymentPage() {
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <PrimaryButton
                   type="button"
-                  onClick={handleConfirmPaymentMade}
-                  disabled={!instruction || Boolean(paymentConfirmedAt)}
+                  onClick={() => void handleConfirmPaymentMade()}
+                  disabled={!instruction || Boolean(paymentConfirmedAt) || declaringPayment}
+                  busy={declaringPayment}
+                  busyLabel="Sending..."
                   minWidth={isCompact ? undefined : 170}
                   stableHeight={54}
                   debugId="repayment.confirm-paid"
                 >
-                  {actionText("check", paymentConfirmedAt ? "Declared" : "Confirm paid")}
+                  {actionText("check", paymentConfirmedAt ? "Declared" : "Declare paid")}
                 </PrimaryButton>
 
                 {repaymentTaskActive ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Keep the route focused</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Confirm payment only after using the exact reference.
+                      Declare payment only after using the exact reference.
                     </div>
                   </div>
                 ) : (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Move on from here</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      This repayment has reached a visible conclusion. Use the
-                      route buttons below.
+                      This repayment declaration has been sent. Admin or finance
+                      still needs to confirm the money trail.
                     </div>
                   </div>
                 )}

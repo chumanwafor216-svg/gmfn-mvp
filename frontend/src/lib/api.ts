@@ -1313,6 +1313,20 @@ export async function repayLoan(
   );
 }
 
+export async function createRepaymentClaim(
+  loanId: number,
+  payload: { payment_reference: string; note?: string | null }
+): Promise<any> {
+  return httpJson(
+    `/loans/${encodeURIComponent(String(loanId))}/repayment-claim`,
+    "POST",
+    {
+      payment_reference: String(payload.payment_reference || "").trim(),
+      note: String(payload.note || "").trim() || undefined,
+    }
+  );
+}
+
 export async function createLoanRequest(payload: {
   clan_id?: number | null;
   amount: string | number;
