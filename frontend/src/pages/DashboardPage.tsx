@@ -6747,9 +6747,10 @@ export default function DashboardPage() {
                 : "minmax(0, 1fr) 170px",
               gap: isPhone ? 12 : 18,
               alignItems: "start",
-              padding: isPhone ? "16px 14px 8px" : "22px 22px 10px",
-              borderRadius: isPhone ? 20 : 24,
+              padding: isPhone ? "16px 14px 7px" : "22px 22px 9px",
+              borderRadius: isPhone ? "20px 20px 0 0" : "24px 24px 0 0",
               border: "1px solid rgba(16,37,59,0.08)",
+              borderBottom: "0",
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
               boxShadow:
@@ -6876,16 +6877,17 @@ export default function DashboardPage() {
                   })
                 }
                 slotStyle={{
-                  marginTop: isPhone ? -12 : -14,
-                  marginLeft: isPhone ? -18 : -22,
+                  marginTop: isPhone ? -9 : -11,
+                  marginLeft: 0,
                   height: isPhone ? 40 : 42,
                   minHeight: isPhone ? 40 : 42,
                   maxHeight: isPhone ? 40 : 42,
-                  width: isPhone ? "calc(100% + 8px)" : "calc(100% + 14px)",
+                  width: isPhone ? "88%" : "84%",
                   minWidth: 0,
                   maxWidth: "100%",
                   display: "block",
                   flex: "0 0 auto",
+                  justifySelf: "center",
                   zIndex: 240,
                 }}
                 buttonStyle={{
@@ -7004,11 +7006,12 @@ export default function DashboardPage() {
               gridTemplateColumns: "minmax(42px, 1fr) auto minmax(42px, 1fr)",
               alignItems: "center",
               gap: isPhone ? 6 : 10,
-              padding: isPhone ? "4px 12px 8px" : "5px 18px 10px",
+              padding: isPhone ? "6px 12px 9px" : "7px 18px 11px",
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
               borderLeft: "1px solid rgba(16,37,59,0.08)",
               borderRight: "1px solid rgba(16,37,59,0.08)",
+              borderBottom: "1px solid rgba(16,37,59,0.06)",
               position: "relative",
               overflow: "hidden",
             }}
@@ -7017,9 +7020,9 @@ export default function DashboardPage() {
               aria-hidden="true"
               style={{
                 display: "grid",
-                gridTemplateColumns: "auto 1fr auto",
+                gridTemplateColumns: "auto auto 1fr auto",
                 alignItems: "center",
-                gap: isPhone ? 5 : 7,
+                gap: isPhone ? 4 : 6,
                 minWidth: 0,
               }}
             >
@@ -7044,12 +7047,28 @@ export default function DashboardPage() {
               />
               <span
                 style={{
-                  width: isPhone ? 28 : 34,
-                  height: isPhone ? 14 : 17,
+                  width: isPhone ? 24 : 30,
+                  height: isPhone ? 15 : 18,
                   borderRadius: 999,
                   border: "1.5px solid rgba(201,154,39,0.52)",
+                  marginLeft: isPhone ? -8 : -10,
+                  transform: "rotate(-6deg)",
+                  background: "rgba(255,255,255,0.58)",
                   boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.62), 0 6px 10px rgba(145,103,19,0.08)",
+                    "inset 0 1px 0 rgba(255,255,255,0.72), 0 6px 10px rgba(145,103,19,0.08)",
+                }}
+              />
+              <span
+                style={{
+                  width: isPhone ? 24 : 30,
+                  height: isPhone ? 15 : 18,
+                  borderRadius: 999,
+                  border: "1.5px solid rgba(201,154,39,0.52)",
+                  marginLeft: isPhone ? -12 : -14,
+                  transform: "rotate(7deg)",
+                  background: "rgba(255,255,255,0.58)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.72), 0 6px 10px rgba(145,103,19,0.08)",
                 }}
               />
             </span>
@@ -7099,20 +7118,35 @@ export default function DashboardPage() {
               aria-hidden="true"
               style={{
                 display: "grid",
-                gridTemplateColumns: "auto 1fr auto",
+                gridTemplateColumns: "auto 1fr auto auto",
                 alignItems: "center",
-                gap: isPhone ? 5 : 7,
+                gap: isPhone ? 4 : 6,
                 minWidth: 0,
               }}
             >
               <span
                 style={{
-                  width: isPhone ? 28 : 34,
-                  height: isPhone ? 14 : 17,
+                  width: isPhone ? 24 : 30,
+                  height: isPhone ? 15 : 18,
                   borderRadius: 999,
                   border: "1.5px solid rgba(201,154,39,0.52)",
+                  transform: "rotate(6deg)",
+                  background: "rgba(255,255,255,0.58)",
                   boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.62), 0 6px 10px rgba(145,103,19,0.08)",
+                    "inset 0 1px 0 rgba(255,255,255,0.72), 0 6px 10px rgba(145,103,19,0.08)",
+                }}
+              />
+              <span
+                style={{
+                  width: isPhone ? 24 : 30,
+                  height: isPhone ? 15 : 18,
+                  borderRadius: 999,
+                  border: "1.5px solid rgba(201,154,39,0.52)",
+                  marginLeft: isPhone ? -12 : -14,
+                  transform: "rotate(-7deg)",
+                  background: "rgba(255,255,255,0.58)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.72), 0 6px 10px rgba(145,103,19,0.08)",
                 }}
               />
               <span
@@ -7139,14 +7173,15 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: isPhone ? 12 : 14,
+              marginTop: 0,
               order: 20,
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               minHeight: isPhone ? 104 : 116,
               alignItems: "stretch",
-              borderRadius: isPhone ? 16 : 20,
+              borderRadius: 0,
               border: "1px solid rgba(15,59,116,0.10)",
+              borderTop: "0",
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.94) 100%)",
               boxShadow:
@@ -7390,7 +7425,7 @@ export default function DashboardPage() {
 
           <div
             style={{
-              marginTop: isPhone ? 10 : 12,
+              marginTop: 0,
               order: 30,
               width: "100%",
               minHeight: isPhone ? 142 : 156,
@@ -7402,10 +7437,11 @@ export default function DashboardPage() {
               gap: isPhone ? "8px 10px" : "10px 14px",
               alignItems: "center",
               padding: isPhone ? "13px 12px" : "16px 18px",
-              borderRadius: isPhone ? 18 : 22,
+              borderRadius: isPhone ? "0 0 18px 18px" : "0 0 22px 22px",
               background:
                 "radial-gradient(circle at 94% 18%, rgba(201,154,39,0.08) 0%, rgba(201,154,39,0) 30%), linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
               border: "1px solid rgba(16,37,59,0.14)",
+              borderTop: "0",
               boxShadow:
                 "0 18px 30px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.96)",
               color: DASHBOARD_BRAND.ink,

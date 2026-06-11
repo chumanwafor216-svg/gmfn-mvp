@@ -46964,3 +46964,34 @@ GSN-branded invite composer and invite-entry continuity.
   - this is still build/audit verified, not a rendered browser screenshot
     comparison;
   - no push or Render deploy was triggered.
+
+### Dashboard passport pack cohesion correction (2026-06-11)
+
+- Trigger:
+  - product owner supplied a phone screenshot of the current result and noted
+    that the `Frame tools` button was not well aligned, the GSN connector did
+    not feel alive/connected enough, and the Identity Passport / GSN / Visible
+    Portable Usable / Global ID areas still needed to read as one cohesive
+    screenshot package.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - centered the `Frame tools` control under the passport photo column and
+      reduced its width so it sits as a controlled pill instead of drifting
+      across the card;
+    - changed the Identity Passport header, GSN connector, proof row, and
+      Global ID card into one continuous bordered pack by removing the visible
+      blue gaps and connecting the border/radius treatment;
+    - strengthened the central GSN motif with overlapping gold chain-link rings
+      beside the GSN seal, so the meaning reads more like connection/holding
+      together rather than disconnected decorative shapes.
+- Verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - this is a focused Dashboard passport-card visual correction only;
+  - the connector is still CSS-built, not a real hand/chain image asset;
+  - no push or Render deploy was triggered.
