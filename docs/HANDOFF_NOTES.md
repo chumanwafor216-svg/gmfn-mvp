@@ -1,3 +1,72 @@
+### Protocol/readiness truth pass (2026-06-11)
+
+- Product owner asked to continue from polish into the remaining logic/readiness
+  truth items, especially the repeated `partial` labels in admin/status views.
+- Current publishing posture remains unchanged:
+  - work locally;
+  - verify locally;
+  - commit clean checkpoints;
+  - do not push or trigger Render until the owner explicitly approves one
+    batch publish.
+- Backend changes:
+  - `gmfn_backend/app/api/routes/pilot_readiness.py` now returns structured
+    readiness checks instead of bare `label` + `status` rows.
+  - Each check now carries `status_label`, `why_it_matters`, `complete`,
+    `remaining`, `next_step`, and `next_route`.
+  - The readiness endpoint now exposes:
+    - `overall_label`;
+    - `truth_statement`;
+    - count fields derived from the structured check list.
+  - Added a separate `loan_repayment_e2e` partial check. This is deliberate:
+    the repayment service path and UI now support full-balance and part-payment
+    instructions, but the full loan repayment lifecycle has not yet been proven
+    from instruction creation through bank event, reconciliation, loan balance,
+    and trust evidence.
+  - `gmfn_backend/app/api/routes/protocol_status.py` now keeps the old
+    `summary` map for compatibility, but also returns:
+    - `surface_brand: "GSN"`;
+    - `truth_statement`;
+    - `summary_details`;
+    - `status_counts`;
+    - updated next priorities for phone proof, repayment E2E proof, evidence
+      pack assembly, and route/trust-event audit.
+- Frontend changes:
+  - `frontend/src/pages/TrustCommandCentrePage.tsx` now uses the backend
+    `overall_label` / `truth_statement`.
+  - The service readiness card now renders compact gap cards for priority
+    partial/blocked checks:
+    - what is done;
+    - what is still needed;
+    - why it matters;
+    - the first next step;
+    - a route action when the backend supplies one.
+- Test/audit coverage:
+  - Added `gmfn_backend/tests/test_protocol_readiness_status.py` to lock that
+    partial readiness items must explain remaining work and next steps.
+  - Added `frontend/tools/audit-protocol-readiness.mjs` plus
+    `npm run audit:protocol-readiness` to prevent a regression back to vague
+    partial-only readiness rows.
+- Verification passed locally:
+  - `python -m py_compile gmfn_backend\app\api\routes\pilot_readiness.py gmfn_backend\app\api\routes\protocol_status.py gmfn_backend\tests\test_protocol_readiness_status.py`
+  - `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`
+  - `npm run audit:protocol-readiness`
+  - `npm exec -- eslint src/pages/TrustCommandCentrePage.tsx tools/audit-protocol-readiness.mjs`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:button-stability`
+  - `npm run build`
+- Unabated truth:
+  - this does not make the partial items complete;
+  - it makes the partial items honest, visible, and actionable;
+  - real phone screenshot proof and repayment end-to-end proof are still
+    outstanding before those readiness items should be marked complete.
+- Recommended next work:
+  1. Start the loan repayment E2E proof run locally: create/identify a test
+     loan, generate full and part-payment instructions, simulate/match bank
+     events, confirm loan balance/trust events.
+  2. Then capture the phone screenshot/evidence pack for the polished routes.
+  3. Only after proof is recorded should any corresponding `partial` label move
+     toward `ready` / `complete`.
+
 ### GSN production polish standard started (2026-06-11)
 
 - Product owner asked to begin the remaining workstreams in the right order.

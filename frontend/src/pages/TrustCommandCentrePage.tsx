@@ -523,6 +523,34 @@ function readinessStatusLabel(value: any): string {
   return status.replace(/_/g, " ");
 }
 
+function stringList(input: any): string[] {
+  if (!Array.isArray(input)) return [];
+  return input.map((item) => safeStr(item)).filter(Boolean);
+}
+
+function readinessStatusBadge(status: string): React.CSSProperties {
+  const normalized = safeStr(status).toLowerCase();
+  if (normalized === "ready" || normalized === "complete") {
+    return badge(true);
+  }
+  if (normalized === "blocked") {
+    return {
+      ...badge(false),
+      color: "#8B1E1E",
+      border: "1px solid rgba(200,58,58,0.28)",
+      background:
+        "linear-gradient(180deg, rgba(255,248,248,0.98), rgba(255,229,229,0.78))",
+    };
+  }
+  return {
+    ...badge(false),
+    color: "#7A5A13",
+    border: "1px solid rgba(214,170,69,0.34)",
+    background:
+      "linear-gradient(180deg, rgba(255,253,244,0.98), rgba(246,232,190,0.72))",
+  };
+}
+
 function defaultPilotWorksheet(): PilotWorksheet {
   return {
     pilotName: "",
@@ -873,6 +901,15 @@ export default function TrustCommandCentrePage() {
     ? executiveReading.protocolStatus.next_priority
     : [];
   const pilotOverall = firstTruthy(executiveReading.pilotReadiness?.overall_status, "unknown");
+  const pilotOverallLabel = firstTruthy(
+    executiveReading.pilotReadiness?.overall_label,
+    readinessStatusLabel(pilotOverall)
+  );
+  const pilotTruthStatement = firstTruthy(
+    executiveReading.pilotReadiness?.truth_statement,
+    executiveReading.protocolStatus?.truth_statement,
+    "Readiness details are not loaded yet."
+  );
   const exposureTotals = executiveReading.exposure?.totals || null;
   const liquidity = executiveReading.liquidity || null;
   const trustEventRows = executiveReading.trustEvents;
@@ -1572,7 +1609,7 @@ export default function TrustCommandCentrePage() {
                       lineHeight: 1.25,
                     }}
                   >
-                    {readinessStatusLabel(pilotOverall)}
+                    {pilotOverallLabel}
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Partial: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
@@ -1837,12 +1874,15 @@ export default function TrustCommandCentrePage() {
                     lineHeight: 1.28,
                   }}
                 >
-                  {readinessStatusLabel(pilotOverall)}
+                  {pilotOverallLabel}
                 </div>
                 <div style={{ marginTop: 10, ...helperText() }}>
                   Ready {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Partial{" "}
                   {Number(executiveReading.pilotReadiness?.partial_count || 0)} | Blocked{" "}
                   {Number(executiveReading.pilotReadiness?.blocked_count || 0)}
+                </div>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  {pilotTruthStatement}
                 </div>
               </div>
 
@@ -1917,28 +1957,86 @@ export default function TrustCommandCentrePage() {
 
               <div style={innerCard("#F8FBFF")}>
                 <div>{sectionLabelWithIcon("shield", "Readiness checks from service")}</div>
-                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   {pilotPriorityChecks.slice(0, 6).map((check) => {
                     const status = safeStr(check?.status).toLowerCase();
+                    const statusLabel = firstTruthy(check?.status_label, status, "unknown");
+                    const completeItems = stringList(check?.complete).slice(0, 2);
+                    const remainingItems = stringList(check?.remaining).slice(0, 3);
+                    const nextStep = firstTruthy(check?.next_step, "Keep reviewing this readiness item.");
+                    const nextRoute = safeStr(check?.next_route);
+
                     return (
                       <div
-                        key={firstTruthy(check?.key, check?.label, Math.random())}
+                        key={firstTruthy(check?.key, check?.label, "readiness-check")}
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 10,
-                          alignItems: "center",
-                          flexWrap: "wrap",
+                          display: "grid",
+                          gap: 8,
+                          padding: 12,
+                          borderRadius: 16,
+                          border: "1px solid rgba(20,52,83,0.14)",
+                          background:
+                            "linear-gradient(180deg, rgba(255,255,255,0.99), rgba(243,248,253,0.95))",
+                          boxShadow:
+                            "0 10px 20px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.9)",
                         }}
                       >
-                        <div style={{ color: "#0B1F33", fontWeight: 800 }}>
-                          {firstTruthy(check?.label, check?.key, "Readiness check")}
-                        </div>
-                        <span
-                          style={badge(status === "ready")}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 10,
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
                         >
-                          {status || "unknown"}
-                        </span>
+                          <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                            {firstTruthy(check?.label, check?.key, "Readiness check")}
+                          </div>
+                          <span style={readinessStatusBadge(status)}>
+                            {statusLabel}
+                          </span>
+                        </div>
+
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          {firstTruthy(check?.why_it_matters, "This item affects pilot trust and route confidence.")}
+                        </div>
+
+                        {completeItems.length > 0 ? (
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Done: {completeItems.join(" ")}
+                          </div>
+                        ) : null}
+
+                        {remainingItems.length > 0 ? (
+                          <div style={{ ...helperText(), fontSize: 13, color: "#5C4A18" }}>
+                            Still needed: {remainingItems.join(" ")}
+                          </div>
+                        ) : null}
+
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 10,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div style={{ ...helperText(), fontSize: 13, fontWeight: 800 }}>
+                            Next: {nextStep}
+                          </div>
+                          {nextRoute ? (
+                            <StableCtaLink
+                              to={nextRoute}
+                              kind="secondary"
+                              stableHeight={44}
+                              debugId={`trust-command.readiness.${firstTruthy(check?.key, "gap")}`}
+                            >
+                              {labelWithIcon("navigation", "Open route")}
+                            </StableCtaLink>
+                          ) : null}
+                        </div>
                       </div>
                     );
                   })}
@@ -2059,7 +2157,7 @@ export default function TrustCommandCentrePage() {
               </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                 Protocol: {protocolStage.replace(/_/g, " ")} | Readiness:{" "}
-                {readinessStatusLabel(pilotOverall)}
+                {pilotOverallLabel}
               </div>
             </div>
 

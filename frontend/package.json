@@ -68,6 +68,7 @@
     "audit:global-action-debugids": "node tools/audit-global-action-debugids.mjs",
     "audit:global-raw-action-elements": "node tools/audit-global-raw-action-elements.mjs",
     "audit:icon-protocol": "node tools/audit-icon-protocol.mjs",
+    "audit:protocol-readiness": "node tools/audit-protocol-readiness.mjs",
     "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
     "lint": "eslint .",
