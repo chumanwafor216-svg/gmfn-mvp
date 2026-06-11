@@ -223,6 +223,18 @@ assertContains(
   "Legacy icon adapter must route domain finance, marketplace, proof, repayment, sound, and video meanings to the stronger 3D assets."
 );
 
+assertContains(
+  "frontend/src/components/SpotlightMediaFrame.tsx",
+  /<GsnLegacyIcon name="speaker" size=\{audioIconSize\} decorative \/>[\s\S]*?data-spotlight-audio-muted-slash="true"/,
+  "Shared Spotlight media controls must use a real speaker icon and a muted slash instead of page-local On/Off wording."
+);
+
+assertNotContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /audioUnlock(?:Off)?Label="(?:On|Off)"/,
+  "Dashboard Spotlight media controls must not restore On/Off labels; use the shared speaker control."
+);
+
 for (const asset of requiredBasePackAssets) {
   assertFileExists(
     `frontend/src/assets/gsn-icons/${asset.fileName}`,

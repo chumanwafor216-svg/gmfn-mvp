@@ -46535,3 +46535,38 @@ GSN-branded invite composer and invite-entry continuity.
     review;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Shared Spotlight sound-control checkpoint (2026-06-11)
+
+- Trigger:
+  - the product owner called out Spotlight and shop diary/video audio controls
+    still feeling like `On` / `Off` text instead of a clear loudspeaker
+    meaning system.
+- Changed locally, not pushed:
+  - `frontend/src/components/SpotlightMediaFrame.tsx`
+    - changed the shared audio unlock control to always render the 3D speaker
+      icon;
+    - added a visual muted slash over the speaker when sound is off, so the
+      state is communicated by the icon instead of relying on short words.
+  - `frontend/src/pages/DashboardPage.tsx`
+    - removed Dashboard's page-local `On` / `Off` audio label overrides from
+      Spotlight media frames.
+  - `frontend/tools/audit-icon-protocol.mjs`
+    - added guards requiring the shared speaker/muted-slash treatment and
+      preventing Dashboard from restoring `On` / `Off` audio labels.
+- Verification:
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for `SpotlightMediaFrame.tsx`, `DashboardPage.tsx`, and
+    `tools/audit-icon-protocol.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this is a shared component fix, so it affects every page using
+    `SpotlightMediaFrame`;
+  - it does not prove the exact pixel appearance on a real phone yet;
+  - Dashboard Market Wisdom copy/model was not intentionally redesigned, but
+    Dashboard Spotlight media rendering was touched because it consumed the
+    shared control;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

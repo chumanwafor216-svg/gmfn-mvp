@@ -227,6 +227,7 @@ export default function SpotlightMediaFrame(
     props.audioUnlockStyle?.width,
     props.audioUnlockStyle?.minWidth,
   ].some((value) => typeof value === "number" && value <= 52);
+  const audioIconSize = audioUnlockIconOnly ? 30 : 28;
 
   const audioUnlockButton = shouldShowAudioUnlock ? (
     <SecondaryButton
@@ -266,11 +267,36 @@ export default function SpotlightMediaFrame(
           : "Turn video sound on"
       }
     >
-      <GsnLegacyIcon
-        name={audioUnlocked ? "soundOff" : "soundOn"}
-        size={audioUnlockIconOnly ? 30 : 28}
-        decorative
-      />
+      <span
+        aria-hidden="true"
+        style={{
+          position: "relative",
+          width: audioIconSize,
+          height: audioIconSize,
+          minWidth: audioIconSize,
+          display: "inline-grid",
+          placeItems: "center",
+        }}
+      >
+        <GsnLegacyIcon name="speaker" size={audioIconSize} decorative />
+        {!audioUnlocked ? (
+          <span
+            data-spotlight-audio-muted-slash="true"
+            style={{
+              position: "absolute",
+              left: Math.max(4, Math.round(audioIconSize * 0.16)),
+              right: Math.max(4, Math.round(audioIconSize * 0.16)),
+              top: "50%",
+              height: Math.max(3, Math.round(audioIconSize * 0.12)),
+              borderRadius: 999,
+              background: "#0B2D4A",
+              boxShadow: "0 1px 0 rgba(255,255,255,0.68)",
+              transform: "translateY(-50%) rotate(-38deg)",
+              pointerEvents: "none",
+            }}
+          />
+        ) : null}
+      </span>
       {audioUnlockIconOnly ? null : <span>{audioVisibleLabel}</span>}
     </SecondaryButton>
   ) : null;

@@ -8693,8 +8693,6 @@ export default function DashboardPage() {
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
                   showAudioUnlock={Boolean(spotlightVideoCandidate)}
-                  audioUnlockLabel="On"
-                  audioUnlockOffLabel="Off"
                   audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
                     top: isPhone ? 14 : 16,
@@ -9160,8 +9158,6 @@ export default function DashboardPage() {
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
                   showAudioUnlock={Boolean(spotlightVideoCandidate)}
-                  audioUnlockLabel="On"
-                  audioUnlockOffLabel="Off"
                   audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
                     top: isPhone ? 14 : 16,
