@@ -16,6 +16,10 @@ together.
 For mobile UI density, screenshot readiness, lane collapse, and action-surface
 work, also read `docs/GSN_MOBILE_UI_PROTOCOL.md`.
 
+For production polish, icon meaning, screenshot-quality, proof-document
+presentation, and route completion gates, also read
+`docs/GSN_PRODUCTION_POLISH_STANDARD.md`.
+
 For innovation-case, investor, policy, TrustSlip, merchant-verification, or
 development-finance explanation work, also read
 `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`.

@@ -1,3 +1,40 @@
+### GSN production polish standard started (2026-06-11)
+
+- Product owner asked to begin the remaining workstreams in the right order.
+- Started with item 1: the production polish standard, because it defines the
+  acceptance gate before route-by-route polishing, institutional proof/PDF
+  treatment, borrowing repayment E2E verification, and protocol-status truth.
+- Added `docs/GSN_PRODUCTION_POLISH_STANDARD.md` with the explicit GSN quality
+  bar:
+  - first phone viewport must show location, state, next action, and warning;
+  - one primary action per task surface;
+  - guided lane discipline for large pages;
+  - stable touch-safe buttons;
+  - simple user-facing language;
+  - 3D icon meaning system with light/near-white tiles by default;
+  - official treatment for TrustSlip, Trust Passport, evidence, and loan proof
+    documents;
+  - protocol-status labels must tell the truth before moving from `partial` to
+    `complete`.
+- Wired this standard into:
+  - `README.md`;
+  - `docs/PROJECT_PROTOCOL.md`;
+  - `docs/DESIGN_SYSTEM.md`;
+  - `docs/UX_ACCEPTANCE_CHECKLIST.md`.
+- Batch-first / push-last protocol still applies:
+  - keep working locally;
+  - verify locally;
+  - local commits/checkpoints are acceptable;
+  - do not push or trigger Render until the product owner explicitly says the
+    current batch is ready to publish.
+- Next recommended work after this doc checkpoint:
+  1. apply the standard to the next visible route polish target, starting with
+     Community Home and Marketplace;
+  2. move to institutional proof/PDF shells;
+  3. verify borrowing repayment pay-in-full and pay-in-parts logic end to end;
+  4. replace stale protocol `partial` labels only after code, UI, evidence, and
+     tests agree.
+
 ### GSN icon meaning and borrowing repayment queue (2026-06-11)
 
 - Operational update - pipeline shortage / batch publishing:

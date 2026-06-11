@@ -13,6 +13,10 @@ A screen is acceptable only if:
 - On mobile, it follows `docs/GSN_MOBILE_UI_PROTOCOL.md`: one screen shows one
   decision, the current state, and the next action without scrolling whenever
   possible.
+- For production polish, it follows
+  `docs/GSN_PRODUCTION_POLISH_STANDARD.md`: the first viewport, icon meaning,
+  button stability, user-facing language, screenshot readiness, and proof
+  surface treatment must pass before the route is called complete.
 - It uses the approved color system.
 - Meaningful icons follow the GSN Icon Protocol: premium realistic 3D object
   icons, not flat, outline, faded, cartoon, or emoji-style primary icons.
@@ -42,6 +46,24 @@ seconds:
 
 The first mobile screen must not spend half the viewport on decoration, raw
 links, policy text, logs, admin controls, or repeated explanation.
+
+## Production Polish Gate
+
+A route fails production polish if it is merely clear but still feels oversized,
+heavy, improvised, unstable, or unfinished beside high-trust mobile products.
+
+- The first phone viewport must show location, state, next action, and any
+  important warning.
+- The main action must be visually obvious, with secondary actions quieter.
+- 3D icons must use the approved meaning system and light/near-white tiles by
+  default.
+- Buttons and action rows must keep stable dimensions across loading, disabled,
+  hover, and active states.
+- Text must be short, direct, and user-facing; backend or protocol words must
+  not leak into ordinary user surfaces.
+- Shared/exportable proof screens must look like official GSN documents with
+  watermark or brand mark, title, identity block, generated time, verification
+  reference, limitation statement, and footer.
 
 ## Mobile Density Test
 

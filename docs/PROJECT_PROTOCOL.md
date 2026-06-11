@@ -22,6 +22,7 @@ ownership changes, or page-responsibility changes, also read:
 - `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
 - `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`
 - `docs/GSN_MOBILE_UI_PROTOCOL.md`
+- `docs/GSN_PRODUCTION_POLISH_STANDARD.md`
 
 For Marketplace page-composition work specifically, also read:
 
@@ -52,6 +53,11 @@ screenshot-readiness rule for phone layouts. Mobile task pages must show the
 current state and next action without scrolling, keep one lane open at a time,
 hide long explanation and raw data by default, and use compact chips or
 two-column facts for short information.
+
+The GSN Production Polish Standard is the current authoritative quality gate for
+phone-ready route polish, 3D icon meaning, button stability, institutional proof
+surfaces, user-facing language, and the conditions that must pass before a
+screen or protocol-status item can be called complete.
 
 If that document conflicts with older provisional architecture notes, the
 canonical system skeleton wins until those notes are updated.

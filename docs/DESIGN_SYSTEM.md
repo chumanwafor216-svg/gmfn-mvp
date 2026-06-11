@@ -129,6 +129,11 @@ For phone layouts, `docs/GSN_MOBILE_UI_PROTOCOL.md` is the density and
 screenshot-readiness source of truth. Mobile task pages must show one decision,
 one current state, and one next action before exposing deeper details.
 
+For production polish, `docs/GSN_PRODUCTION_POLISH_STANDARD.md` is the quality
+gate. Use it before calling a route screenshot-ready, before widening the 3D
+icon sweep to another page, before treating a proof/PDF surface as official, and
+before changing protocol-status items from `partial` to `complete`.
+
 ## Mobile Density Protocol
 
 - Mobile hero blocks should normally stay between `96px` and `140px`, or about
