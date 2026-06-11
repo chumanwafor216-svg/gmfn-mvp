@@ -46319,3 +46319,34 @@ GSN-branded invite composer and invite-entry continuity.
     not assemble the final evidence folder;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Pilot evidence pack checklist checkpoint (2026-06-11)
+
+- Trigger:
+  - after tightening the protocol `partial` labels, the evidence-pack gap still
+    needed a concrete acceptance map so screenshots and PDFs are not collected
+    randomly.
+- Changed locally, not pushed:
+  - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - added the required pilot evidence index for entry, community,
+      marketplace, shop control, finance, loans/repayment, guarantor flow,
+      Trust Passport, TrustSlip Verify, generated PDFs, and admin readiness;
+    - defined capture statuses, privacy rules, local folder shape, acceptance
+      notes, and the current truth that the checklist is not evidence by
+      itself.
+  - `gmfn_backend/app/api/routes/pilot_readiness.py`
+    - records the checklist as completed organizing work under Evidence
+      Capture Pack while keeping actual screenshots/PDF acceptance as
+      remaining work.
+  - `gmfn_backend/tests/test_protocol_readiness_status.py`
+    - protects the readiness copy so the checklist stays recognized without
+      overclaiming that evidence capture is complete.
+- Verification:
+  - Passed Python compilation for the touched readiness route and test.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`.
+- Unabated truth:
+  - this gives the team a real evidence-pack map;
+  - it does not capture or accept any screenshot or PDF yet;
+  - do not commit private captured evidence unless it is redacted and approved;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

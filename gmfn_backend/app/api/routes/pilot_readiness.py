@@ -210,6 +210,7 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
                 "Trust Timeline, Loan Trust Report, Clan Exposure Report, Trust Passport, and TrustSlip proof surfaces have official GSN treatment.",
                 "Evidence-pack meta and zip routes now share the same GSN package contract and are owned by the active evidence-pack route module.",
                 "The current source-level PDF shell pass covers the known evidence/report generators.",
+                "A pilot evidence-pack checklist now defines required screenshots, PDFs, acceptance rules, and local folder shape.",
             ],
             remaining=[
                 "Assemble accepted screenshots/PDFs for entry, community, marketplace, repayment, TrustSlip, Trust Passport, and admin readiness.",

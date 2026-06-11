@@ -81,4 +81,5 @@ def test_readiness_partial_text_reflects_latest_completed_work_without_overclaim
 
     evidence = checks_by_key["evidence"]
     assert any("source-level PDF shell pass" in item for item in evidence["complete"])
+    assert any("pilot evidence-pack checklist" in item for item in evidence["complete"])
     assert any("Visually open generated PDFs" in item for item in evidence["remaining"])
