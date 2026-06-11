@@ -46649,3 +46649,39 @@ GSN-branded invite composer and invite-entry continuity.
     while private phone numbers remain hidden unless the user chooses to share;
   - this belongs after the current visual polish pass and before broad social
     sharing/tagging is advertised in user-facing copy.
+
+### Shared TrustSlip / CCI document-card icon checkpoint (2026-06-11)
+
+- Trigger:
+  - continuing the icon sweep after Dashboard and Trust Passport omissions;
+  - TrustSlip and CCI pages already used many 3D icons, but their shared
+    trust-document map, chooser, and action-guide cards still read visually
+    plain and did not carry their own strong document-object icon language.
+- Changed locally, not pushed:
+  - `frontend/src/components/TrustDocumentFamilyMap.tsx`
+    - added light 3D icon tiles to each trust-document family card;
+    - removed spaced-out micro-label typography.
+  - `frontend/src/components/TrustDocumentUseCases.tsx`
+    - added light 3D icon tiles to each trust-surface chooser card;
+    - removed spaced-out micro-label typography.
+  - `frontend/src/components/TrustDocumentActionGuide.tsx`
+    - added light 3D icon tiles to the action-guide cards based on action
+      meaning such as GSN ID, code, snapshot, verify, and passport.
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - removed the remaining positive letter spacing from `sectionLabel`.
+  - `frontend/tools/audit-icon-protocol.mjs`
+    - added guards so shared trust-document cards keep light 3D icon tiles and
+      CCI/shared document labels do not restore spaced-out typography.
+- Verification:
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for the touched shared trust-document components,
+    `CCIReadingPage.tsx`, and `tools/audit-icon-protocol.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this improves the shared TrustSlip / CCI / Trust Passport / Identity
+    supporting cards because those pages reuse these components;
+  - it does not prove the exact phone screenshot appearance yet;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.

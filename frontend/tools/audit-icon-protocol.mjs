@@ -317,6 +317,29 @@ assertContains(
   "Trust Passport finance plain-rule block must keep the 3D finance institution icon."
 );
 
+for (const file of [
+  "frontend/src/components/TrustDocumentFamilyMap.tsx",
+  "frontend/src/components/TrustDocumentUseCases.tsx",
+  "frontend/src/components/TrustDocumentActionGuide.tsx",
+]) {
+  assertContains(
+    file,
+    /GsnLegacyIcon[\s\S]*?function iconTile[\s\S]*?rgba\(255,255,255,0\.98\)/,
+    "Shared trust-document guide cards must keep light 3D icon tiles."
+  );
+  assertNotContains(
+    file,
+    /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
+    "Shared trust-document guide cards must not restore spaced-out micro-label typography."
+  );
+}
+
+assertNotContains(
+  "frontend/src/pages/CCIReadingPage.tsx",
+  /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
+  "CCI Reading must not restore spaced-out micro-label typography."
+);
+
 if (findings.length) {
   console.error("GSN icon protocol audit failed:");
   for (const finding of findings) {

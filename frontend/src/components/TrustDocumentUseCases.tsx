@@ -1,4 +1,5 @@
 import React from "react";
+import { GsnLegacyIcon, type GsnIconName } from "./GsnLegacyIcon";
 import { StableCtaLink } from "./StableButton";
 import type { TrustDocumentUseCaseItem } from "../lib/trustDocumentUseCases";
 
@@ -25,7 +26,7 @@ function eyebrowStyle(): React.CSSProperties {
     color: "#355674",
     fontSize: 12,
     fontWeight: 950,
-    letterSpacing: 1.1,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -74,6 +75,44 @@ function linkStyle(): React.CSSProperties {
   };
 }
 
+function trustUseCaseIcon(id: string): GsnIconName {
+  switch (id) {
+    case "identity":
+      return "id";
+    case "cci":
+      return "community";
+    case "passport":
+      return "certificate";
+    case "trust-slip":
+      return "proof";
+    case "verify":
+      return "qr";
+    default:
+      return "document";
+  }
+}
+
+function iconTile(active = false, disabled = false): React.CSSProperties {
+  return {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    display: "inline-grid",
+    placeItems: "center",
+    flex: "0 0 auto",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.96) 100%)",
+    border: active
+      ? "1px solid rgba(11,99,209,0.22)"
+      : disabled
+      ? "1px solid rgba(100,116,139,0.14)"
+      : "1px solid rgba(13,95,168,0.14)",
+    boxShadow:
+      "0 12px 22px rgba(10,24,49,0.09), inset 4px 0 0 rgba(214,170,69,0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
+    opacity: disabled ? 0.78 : 1,
+  };
+}
+
 export default function TrustDocumentUseCases({
   title = "Which trust surface answers which question?",
   intro = "Use this guide when you know the question in normal language but are not yet sure which trust surface is the right one.",
@@ -106,17 +145,24 @@ export default function TrustDocumentUseCases({
       >
         {items.map((item) => (
           <div key={item.id} style={cardStyle(Boolean(item.active), Boolean(item.disabled))}>
-            <div style={eyebrowStyle()}>{item.question}</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontSize: 18,
-                fontWeight: 900,
-                lineHeight: 1.25,
-              }}
-            >
-              {item.title}
+            <div style={{ display: "grid", gridTemplateColumns: "46px minmax(0, 1fr)", gap: 10, alignItems: "center" }}>
+              <span aria-hidden="true" style={iconTile(Boolean(item.active), Boolean(item.disabled))}>
+                <GsnLegacyIcon name={trustUseCaseIcon(item.id)} size={34} decorative />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={eyebrowStyle()}>{item.question}</div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    color: "#0B1F33",
+                    fontSize: 18,
+                    fontWeight: 900,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {item.title}
+                </div>
+              </div>
             </div>
             <div style={{ marginTop: 8, ...helperStyle() }}>{item.detail}</div>
 

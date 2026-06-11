@@ -55,7 +55,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: "#39526C",
     fontWeight: 1000,
-    letterSpacing: 0.45,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
