@@ -514,8 +514,9 @@ Rules:
   proof unless the backend provides a live TrustSlip code for that shop.
 - Public Shop may show a compact signed-in member navigation strip while a
   member is authenticated, even when the member is viewing another member's
-  shop. It may link to Dashboard, Community Home, Marketplace, and My Shop.
-  It must not render for ordinary public visitors.
+  shop. It should link to the main member domains: Dashboard, Community Home,
+  Marketplace, Public Shop, Finance, Loans, and Trust. It must not render for
+  ordinary public visitors.
 - Public Shop signboard identity must not expose phone-number or internal
   `.local` identity fallbacks as the shop/owner name. If the member has not
   saved a public shop name or display name yet, use a neutral public fallback

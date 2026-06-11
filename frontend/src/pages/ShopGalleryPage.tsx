@@ -2224,20 +2224,27 @@ export default function ShopGalleryPage() {
         debugId: "shop-gallery.member-nav.marketplace",
       },
       {
-        label: "Paid Repost",
-        to: routeWithCommunity(
-          `${APP_ROUTES.MARKETPLACE}#marketplace-paid-network-placement`,
-          ownerSurfaceCommunityId
-        ),
-        debugId: "shop-gallery.member-nav.paid-placement",
+        label: "Public Shop",
+        to: shopRootPath || publicShopReturnPath,
+        debugId: "shop-gallery.member-nav.public-shop",
       },
       {
-        label: "My Shop",
-        to: routeWithCommunity(APP_ROUTES.SHOP_ME, ownerSurfaceCommunityId),
-        debugId: "shop-gallery.member-nav.my-shop",
+        label: "Finance",
+        to: routeWithCommunity(APP_ROUTES.FINANCE, ownerSurfaceCommunityId),
+        debugId: "shop-gallery.member-nav.finance",
+      },
+      {
+        label: "Loans",
+        to: routeWithCommunity(APP_ROUTES.LOANS, ownerSurfaceCommunityId),
+        debugId: "shop-gallery.member-nav.loans",
+      },
+      {
+        label: "Trust",
+        to: routeWithCommunity(APP_ROUTES.TRUST, ownerSurfaceCommunityId),
+        debugId: "shop-gallery.member-nav.trust",
       },
     ],
-    [ownerSurfaceCommunityId]
+    [ownerSurfaceCommunityId, publicShopReturnPath, shopRootPath]
   );
   const loginReconnectPath = `/login?next=${encodeURIComponent(
     publicShopReturnPath

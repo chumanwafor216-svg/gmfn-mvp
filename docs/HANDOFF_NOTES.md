@@ -47399,3 +47399,56 @@ GSN-branded invite composer and invite-entry continuity.
   - it still needs a live phone tap check against the running local app to prove
     the user's exact device session opens the verifier and loads the expected
     TrustSlip record.
+
+### Public Shop signed-in main-domain navigation (2026-06-11)
+
+- Trigger:
+  - product owner asked for the main domains to appear on the Public Shop page:
+    Dashboard, Community Home, Marketplace, Public Shop, Finance, Loans, and
+    Trust;
+  - product owner explicitly required this to be user-facing only, not visitor
+    facing.
+- Confirmed from code:
+  - `frontend/src/pages/ShopGalleryPage.tsx` already used
+    `OwnerOnlySurfaceNav` for a signed-in-only Public Shop shortcut strip;
+  - `OwnerOnlySurfaceNav` hides itself when there is no signed-in session;
+  - Public Shop was previously protecting a five-link shortcut strip:
+    Dashboard, Community Home, Marketplace, Paid Repost, and My Shop.
+- Changed locally, not pushed:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - replaced the old five-link signed-in shortcut set with the seven main
+      domains:
+      Dashboard, Community Home, Marketplace, Public Shop, Finance, Loans, and
+      Trust;
+    - kept the strip inside `OwnerOnlySurfaceNav` with `requireOwnerMatch={false}`,
+      so any signed-in member can use it while ordinary public visitors do not
+      see it;
+    - Public Shop points back to the current/canonical public shop route, not
+      Shop Control.
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated the signed-in shortcut inventory from 5 to 7 and locked the new
+      audited order.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated the hidden-from-visitors link contract to the seven-domain set.
+  - `docs/SCREEN_SPECS.md`
+    - updated the Public Shop spec so the signed-in strip is documented as the
+      main member domain rail.
+- Verification:
+  - Passed `npm run audit:shop-gallery-button-inventory`.
+  - Passed `npm run audit:link-contracts`.
+  - Passed `npm run audit:community-shop-actions`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-shop-gallery-button-inventory.mjs tools\audit-link-contracts.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+  - Passed `git diff --check` with only existing CRLF normalization warnings.
+- Deployment protocol:
+  - no push or Render deploy was triggered; keep batching local work until the
+    product owner says the batch is ready to publish.
+- Unabated truth:
+  - this is a code/audit-verified signed-in navigation fix;
+  - it still needs a live anonymous-browser check and a live signed-in phone
+    check to visually prove the strip is hidden for visitors and visible for
+    members.

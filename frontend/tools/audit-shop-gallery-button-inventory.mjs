@@ -31,7 +31,7 @@ const expectedPageSourceActions = {
   total: 23,
 };
 const expectedNativeFieldCount = 0;
-const expectedSignedInShortcutCount = 5;
+const expectedSignedInShortcutCount = 7;
 const expectedInstallPromptActions = 1;
 const expectedMediaFrameInvocations = 2;
 const expectedSharedMediaAudioActionTemplates = 1;
@@ -227,8 +227,8 @@ if (memberSurfaceLinkCount !== expectedSignedInShortcutCount) {
 }
 
 assertContains(
-  /const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?debugId: "shop-gallery\.member-nav\.dashboard"[\s\S]*?label: "Community Home"[\s\S]*?debugId: "shop-gallery\.member-nav\.community"[\s\S]*?label: "Marketplace"[\s\S]*?debugId: "shop-gallery\.member-nav\.marketplace"[\s\S]*?label: "Paid Repost"[\s\S]*?debugId: "shop-gallery\.member-nav\.paid-placement"[\s\S]*?label: "My Shop"[\s\S]*?debugId: "shop-gallery\.member-nav\.my-shop"/,
-  "Public Shop signed-in shortcut strip must keep Dashboard, Community Home, Marketplace, Paid Repost, and My Shop in the audited order."
+  /const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?debugId: "shop-gallery\.member-nav\.dashboard"[\s\S]*?label: "Community Home"[\s\S]*?debugId: "shop-gallery\.member-nav\.community"[\s\S]*?label: "Marketplace"[\s\S]*?debugId: "shop-gallery\.member-nav\.marketplace"[\s\S]*?label: "Public Shop"[\s\S]*?debugId: "shop-gallery\.member-nav\.public-shop"[\s\S]*?label: "Finance"[\s\S]*?debugId: "shop-gallery\.member-nav\.finance"[\s\S]*?label: "Loans"[\s\S]*?debugId: "shop-gallery\.member-nav\.loans"[\s\S]*?label: "Trust"[\s\S]*?debugId: "shop-gallery\.member-nav\.trust"/,
+  "Public Shop signed-in shortcut strip must keep Dashboard, Community Home, Marketplace, Public Shop, Finance, Loans, and Trust in the audited order."
 );
 
 assertContains(
