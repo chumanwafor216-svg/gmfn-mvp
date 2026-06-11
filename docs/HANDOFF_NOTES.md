@@ -35,6 +35,43 @@
   4. replace stale protocol `partial` labels only after code, UI, evidence, and
      tests agree.
 
+### Community Home production polish slice (2026-06-11)
+
+- Applied the new production polish gate to the first route target:
+  `frontend/src/pages/CommunityHomePage.tsx`.
+- Changes made:
+  - visible-community summary now uses the community-building 3D icon instead
+    of the ID-card icon, so the meaning reads as community, not paperwork;
+  - Join Community and Grow Circle now use the join-person-plus 3D icon;
+  - Owner Shop Control now uses the shop-storefront 3D icon;
+  - Free Spotlight and Paid Repost now use the spotlight-megaphone 3D icon;
+  - Spotlight Subscription now uses the finance-institution icon instead of a
+    weak card symbol;
+  - ROSCA now uses the repayment-schedule 3D icon instead of the old refresh /
+    records-folder alias;
+  - the Private Vault row no longer uses a heavy dark row and dark icon tile;
+    it now stays on a light official tile with a restrained gold side signal;
+  - removed remaining non-ASCII arrow glyphs from the page and replaced them
+    with stable ASCII arrows;
+  - removed negative hero letter spacing.
+- Updated `frontend/tools/audit-community-home-phone-buttons.mjs` so the audit
+  now protects the stronger ROSCA/payment-plan icon and larger embossed icon
+  sizing.
+- Verification passed locally from `frontend`:
+  - `npm run audit:community-home-phone-buttons`;
+  - `npm run audit:community-home-button-inventory`;
+  - `npm run audit:icon-protocol`;
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx
+    tools/audit-community-home-phone-buttons.mjs`;
+  - `npm exec -- tsc -b --pretty false`;
+  - `npm run build`.
+- Current truth:
+  - this completes a targeted Community Home icon/polish correction under the
+    new standard;
+  - it still does not prove full phone screenshot perfection. A real phone
+    screenshot pass remains required before declaring Community Home fully
+    production-perfect.
+
 ### GSN icon meaning and borrowing repayment queue (2026-06-11)
 
 - Operational update - pipeline shortage / batch publishing:

@@ -93,8 +93,8 @@ assertContains(
 );
 
 assertContains(
-  /icon: "vault"[\s\S]*?id: "vault-control"[\s\S]*?icon: "refresh"[\s\S]*?id: "rosca"[\s\S]*?\{communityIconGlyph\(item\.icon as CommunityIconMark, 22\)\}/,
-  "Community Home Vault and ROSCA rows must use app-native 3D icon marks instead of text placeholders."
+  /icon: "vault"[\s\S]*?id: "vault-control"[\s\S]*?icon: "repaymentSchedule"[\s\S]*?id: "rosca"[\s\S]*?\{communityIconGlyph\(item\.icon as CommunityIconMark, 24\)\}/,
+  "Community Home Vault and ROSCA rows must use app-native 3D icon marks with larger embossed sizing instead of text placeholders."
 );
 
 assertContains(

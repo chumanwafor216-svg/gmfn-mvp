@@ -2492,7 +2492,7 @@ export default function CommunityHomePage() {
                     fontSize: 30,
                     fontWeight: 900,
                     lineHeight: 1.08,
-                    letterSpacing: -0.4,
+                    letterSpacing: 0,
                   }}
                 >
                   {communityHomeOwnerName}
@@ -2579,7 +2579,7 @@ export default function CommunityHomePage() {
                   style={communityToolRowStyle()}
                 >
                   <span style={communityActionIcon(true)}>
-                    {communityIconGlyph("id", 34)}
+                    {communityIconGlyph("community", 34)}
                   </span>
                   <span style={{ minWidth: 0 }}>
                     <span
@@ -2699,7 +2699,7 @@ export default function CommunityHomePage() {
                   </span>
                 </span>
                 <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
-                  ›
+                  {">"}
                 </span>
               </StableButton>
             </div>
@@ -2760,12 +2760,12 @@ export default function CommunityHomePage() {
                 },
                 {
                   id: "join-community",
-                  icon: "user",
+                  icon: "join-person-plus",
                   title: "Join community",
                 },
                 {
                   id: "circle",
-                  icon: "spark",
+                  icon: "join-person-plus",
                   title: "Grow circle",
                 },
               ].map((item, index) => (
@@ -2979,7 +2979,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "shop",
+              icon: "shop-storefront",
               id: "shop-control",
               title: "Owner Shop Control",
               detail:
@@ -3001,7 +3001,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "spark",
+              icon: "spotlight-megaphone",
               id: "free-spotlight",
               title: "Free Spotlight",
               detail:
@@ -3014,7 +3014,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "card",
+              icon: "financeInstitution",
               id: "spotlight-subscription",
               title: "Spotlight Subscription",
               detail:
@@ -3027,7 +3027,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "refresh",
+              icon: "spotlight-megaphone",
               id: "paid-repost",
               title: "Paid Repost",
               detail:
@@ -3040,7 +3040,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "refresh",
+              icon: "repaymentSchedule",
               id: "rosca",
               title: "ROSCA",
               detail:
@@ -3053,7 +3053,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "user",
+              icon: "join-person-plus",
               id: "trusted-circle",
               title: "Grow Your Trusted Circle",
               detail:
@@ -3093,11 +3093,11 @@ export default function CommunityHomePage() {
                 borderTop: index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
                 background:
                   item.id === "vault-control"
-                    ? "linear-gradient(135deg, #06111F 0%, #0A223C 52%, #123F66 100%)"
+                    ? "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)"
                     : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
                 boxShadow:
                   item.id === "vault-control"
-                    ? "inset 0 1px 0 rgba(255,255,255,0.08), inset 4px 0 0 rgba(201,154,39,0.86), 0 12px 28px rgba(5,18,32,0.14)"
+                    ? "inset 4px 0 0 rgba(201,154,39,0.70), 0 12px 24px rgba(120,84,18,0.08)"
                     : "none",
               }}
             >
@@ -3106,34 +3106,22 @@ export default function CommunityHomePage() {
                   ...communityActionIcon(item.id === "vault-control"),
                   background:
                     item.id === "vault-control"
-                      ? "linear-gradient(180deg, rgba(243,208,106,0.20) 0%, rgba(255,255,255,0.06) 100%)"
+                      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,251,236,0.96) 100%)"
                       : undefined,
                   border:
                     item.id === "vault-control"
-                      ? "1px solid rgba(243,208,106,0.30)"
+                      ? "1px solid rgba(214,170,69,0.24)"
                       : undefined,
-                  color: item.id === "vault-control" ? "#F3D06A" : "#135A94",
-                  fontSize:
-                    item.id === "vault-control"
-                      ? 9
-                      : item.id === "rosca"
-                        ? 8.5
-                        : 22,
-                  fontWeight:
-                    item.id === "vault-control" || item.id === "rosca"
-                      ? 950
-                      : 800,
-                  letterSpacing: item.id === "vault-control" ? 0.7 : 0,
+                  color: item.id === "vault-control" ? "#0B2D4A" : "#135A94",
                 }}
               >
-                {communityIconGlyph(item.icon as CommunityIconMark, 22)}
+                {communityIconGlyph(item.icon as CommunityIconMark, 24)}
               </span>
               <span style={{ minWidth: 0 }}>
                 <span
                   style={{
                     ...brandClampLines(2),
-                    color:
-                      item.id === "vault-control" ? "#F8FBFF" : "#07172C",
+                    color: "#07172C",
                     fontSize: isCompact ? 15 : 16,
                     fontWeight: 940,
                     lineHeight: 1.18,
@@ -3145,10 +3133,7 @@ export default function CommunityHomePage() {
                   style={{
                     ...brandClampLines(2),
                     marginTop: 4,
-                    color:
-                      item.id === "vault-control"
-                        ? "rgba(226,236,247,0.82)"
-                        : "#617085",
+                    color: "#617085",
                     fontSize: isCompact ? 12.2 : 13,
                     fontWeight: 720,
                     lineHeight: 1.35,
@@ -3160,14 +3145,11 @@ export default function CommunityHomePage() {
               <span
                 aria-hidden="true"
                 style={{
-                  color:
-                    item.id === "vault-control"
-                      ? "rgba(243,208,106,0.90)"
-                      : "#1E5D91",
+                  color: item.id === "vault-control" ? "#8A6518" : "#1E5D91",
                   fontSize: 24,
                 }}
               >
-                ›
+                {">"}
               </span>
             </StableButton>
           ))}
@@ -3475,7 +3457,7 @@ export default function CommunityHomePage() {
             </span>
           </span>
           <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
-            {collapsed.communities ? "›" : "⌄"}
+            {collapsed.communities ? ">" : "v"}
           </span>
         </StableButton>
 
