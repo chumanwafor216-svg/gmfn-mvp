@@ -1,3 +1,28 @@
+### Guarantor invite permission lock (2026-06-11)
+
+- Continued the guarantor readiness pass by closing the soft policy gap.
+- Confirmed the live loan route already enforces:
+  - the borrower who owns the loan may add guarantors;
+  - a clan admin may add guarantors;
+  - an ordinary non-borrower member may not add guarantors.
+- Backend/test changes:
+  - `gmfn_backend/tests/test_guarantor_invite_list.py` no longer accepts both
+    allowed and forbidden behavior for non-admin users.
+  - The former soft test is now explicit borrower-member success coverage.
+  - Added a non-borrower member forbidden test that expects the route's exact
+    `Only the borrower or clan admin can add guarantors` message.
+  - Updated `pilot_readiness.py`, `protocol_status.py`, and
+    `test_protocol_readiness_status.py` so guarantor invite permission is no
+    longer listed as an undecided gap.
+- Verification passed locally:
+  - `python -m py_compile gmfn_backend\tests\test_guarantor_invite_list.py gmfn_backend\app\api\routes\pilot_readiness.py gmfn_backend\app\api\routes\protocol_status.py gmfn_backend\tests\test_protocol_readiness_status.py`
+  - `python -m pytest -q gmfn_backend\tests\test_guarantor_invite_list.py gmfn_backend\tests\test_protocol_readiness_status.py`
+  - `python -m pytest -q gmfn_backend\tests\test_guarantor_invite_list.py gmfn_backend\tests\test_guarantor_decision.py gmfn_backend\tests\test\guarantor_flow.py gmfn_backend\tests\test_guarantor_earnings_service.py gmfn_backend\tests\test_protocol_readiness_status.py`
+- Unabated truth:
+  - this locks the backend permission policy;
+  - guarantor flow remains partial because borrower/guarantor/admin phone proof
+    and reward-payout pilot decision are still not captured.
+
 ### Trust route ownership consistency repair (2026-06-11)
 
 - Continued the backend route-consistency audit after the evidence-pack route

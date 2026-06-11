@@ -96,13 +96,13 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
                 "Service tests cover guarantor approval, auto-approval when enough pledged support is present, and release of locked exposure.",
                 "Repayment proof now covers guarantor exposure release after full repayment, and earnings tests show rewards stay pending until the loan is repaid.",
                 "Frontend support surfaces show fit suggestions, selected guarantors, line-by-line decisions, and guarantor earnings routes.",
+                "Guarantor invite permission is locked to the borrower who owns the loan or a clan admin; ordinary non-borrower members are forbidden.",
             ],
             remaining=[
-                "Make the product policy explicit for who may invite guarantors; the current contract test still tolerates both admin-only and borrower/member-created guarantor requests.",
                 "Run the borrower, guarantor, and admin views on a phone and capture proof that invite, decision, exposure, release, and earnings language is clear.",
                 "Confirm whether guarantor reward payout is only visibility for pilot or needs a payable withdrawal flow before pilot sign-off.",
             ],
-            next_step="Decide the guarantor-invite permission rule, then run a phone proof pass across support draft, guarantor decision, loan summary, repayment closure, and guarantor earnings.",
+            next_step="Run a phone proof pass across support draft, guarantor decision, loan summary, repayment closure, and guarantor earnings.",
             next_route="/app/loans",
         ),
         _partial_check(

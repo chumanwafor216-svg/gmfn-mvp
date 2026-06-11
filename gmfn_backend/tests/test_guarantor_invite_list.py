@@ -1,6 +1,15 @@
 # tests/test_guarantor_invite_list.py
+from sqlalchemy import text
+
+from app.core import clan_auth
+from app.db.database import engine
+from app.main import app
 
 PLEDGE_OK = "1.00"  # Decimal-safe, > 0
+
+
+def _obj(**kwargs):
+    return type("Obj", (), kwargs)()
 
 
 def test_list_guarantors_empty_contract(
@@ -60,7 +69,7 @@ def test_invite_guarantor_duplicate_conflict_contract(
     assert isinstance(data["detail"], str)
 
 
-def test_invite_guarantor_non_admin_forbidden_contract(
+def test_invite_guarantor_borrower_member_ok_contract(
     client,
     override_clan_ctx_member,  # membership role = user/non-admin
     seed_clan_member_membership,
@@ -69,23 +78,57 @@ def test_invite_guarantor_non_admin_forbidden_contract(
     seed_user2_member_membership,
     override_current_user_user,  # user role = user
 ):
-    """
-    Some builds enforce admin-only on inviting guarantors (403).
-    Some builds allow non-admin users to invite guarantors (200/201).
-    This test is contract-safe: it accepts either while validating shape.
-    """
     payload = {"guarantor_user_id": 2, "pledge_amount": PLEDGE_OK}
     r = client.post("/loans/1/guarantors", json=payload)
 
-    assert r.status_code in (403, 200, 201), r.text
+    assert r.status_code in (200, 201), r.text
+    data = r.json()
+    assert data["loan_id"] == 1
+    assert data["clan_id"] == 1
+    assert data["guarantor_user_id"] == 2
+    assert data["status"] == "pending"
 
-    if r.status_code == 403:
-        assert "detail" in r.json()
-    else:
-        data = r.json()
-        assert data["loan_id"] == 1
-        assert data["clan_id"] == 1
-        assert data["guarantor_user_id"] == 2
+
+def test_invite_guarantor_non_borrower_member_forbidden_contract(
+    client,
+    seed_clan_member_membership,
+    seed_loan,
+    seed_user2_non_member,
+    seed_user2_member_membership,
+):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role)
+                VALUES (3, 'user3@example.com', 'hashed', 'user')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clan_memberships (clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 3, 'user', 0)
+                """
+            )
+        )
+
+    def fake_clan_ctx():
+        clan = _obj(id=1)
+        membership = _obj(role="user", clan_id=1, user_id=3)
+        current_user = _obj(id=3, email="user3@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+    try:
+        payload = {"guarantor_user_id": 2, "pledge_amount": PLEDGE_OK}
+        r = client.post("/loans/1/guarantors", json=payload)
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
+    assert r.status_code == 403, r.text
+    assert r.json()["detail"] == "Only the borrower or clan admin can add guarantors"
 
 
 def test_invite_guarantor_loan_not_found_contract(
