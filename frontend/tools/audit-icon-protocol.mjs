@@ -285,11 +285,12 @@ for (const file of [
 for (const file of [
   "frontend/src/pages/FinancePage.tsx",
   "frontend/src/pages/MarketplacePage.tsx",
+  "frontend/src/pages/LoanSummaryPage.tsx",
 ]) {
   assertNotContains(
     file,
     /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
-    "Core finance and marketplace polish must not reintroduce spaced-out micro-label typography."
+    "Core finance, marketplace, and loan-summary polish must not reintroduce spaced-out micro-label typography."
   );
 }
 
@@ -297,6 +298,12 @@ assertContains(
   "frontend/src/pages/MarketplacePage.tsx",
   /function marketplaceLinkHeroIconStyle[\s\S]*?background:\s*"linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?borderRight:\s*"1px solid rgba\(13,95,168,0\.10\)"[\s\S]*?function marketplaceLinkRowIconStyle[\s\S]*?const accents = \{[\s\S]*?background:\s*"linear-gradient\(180deg, rgba\(255,255,255,0\.98\)/,
   "Marketplace link icons must stay on light 3D icon tiles instead of heavy dark gradient slabs."
+);
+
+assertContains(
+  "frontend/src/pages/LoanSummaryPage.tsx",
+  /function actionText[\s\S]*?color:\s*"#0B4EA2"[\s\S]*?background:\s*"linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?rgba\(246,250,255,0\.86\)[\s\S]*?<GsnLegacyIcon name=\{name\} size=\{26\} \/>/,
+  "Loan Summary action icons must stay on light 3D icon tiles instead of dark navy slabs."
 );
 
 assertContains(

@@ -297,7 +297,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: "#4A627A",
     fontWeight: 1000,
-    letterSpacing: 0.45,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -351,12 +351,12 @@ function actionText(name: GsnIconName, label: string) {
           display: "grid",
           placeItems: "center",
           flex: "0 0 auto",
-          color: "#EAF3FF",
+          color: "#0B4EA2",
           background:
-            "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
-          border: "1px solid rgba(196,216,238,0.22)",
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.86) 100%)",
+          border: "1px solid rgba(12,41,71,0.08)",
           boxShadow:
-            "0 9px 18px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
+            "0 9px 18px rgba(2,6,23,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
         }}
       >
         <GsnLegacyIcon name={name} size={26} />

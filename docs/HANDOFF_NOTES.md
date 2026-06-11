@@ -46715,3 +46715,36 @@ GSN-branded invite composer and invite-entry continuity.
 - Unabated truth:
   - this improves icon meaning only; it is not a full phone screenshot proof;
   - no push or Render deploy was triggered.
+
+### Loan Summary light-icon and label polish checkpoint (2026-06-11)
+
+- Trigger:
+  - continuing the production-polish order into the borrowing/repayment-facing
+    pages after the TrustSlip and CCI icon meaning pass;
+  - `LoanSummaryPage` still used dark navy icon tiles inside action labels,
+    while the current GSN icon protocol prefers light/near-white tiles so the
+    3D object carries the meaning on phone;
+  - the page also still had a positive section-label letter spacing value.
+- Changed locally, not pushed:
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - changed action-label icon tiles from dark navy slabs to light/near-white
+      tiles with softer border and shadow;
+    - set the route-local section label `letterSpacing` to `0`.
+  - `frontend/tools/audit-icon-protocol.mjs`
+    - added `LoanSummaryPage.tsx` to the no-spaced-micro-label guard;
+    - added a guard requiring Loan Summary action icons to stay on light 3D
+      icon tiles.
+- Verification:
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for `LoanSummaryPage.tsx` and
+    `tools/audit-icon-protocol.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this is a precise visual polish step for the borrowing/repayment-facing
+    Loan Summary route;
+  - it does not yet complete the deeper repayment logic audit for pay-in-full,
+    pay-in-parts, partial payment reconciliation, overdue/missed, or reversal
+    behavior;
+  - no push or Render deploy was triggered.
