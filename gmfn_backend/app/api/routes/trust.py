@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
@@ -21,46 +20,6 @@ from app.db.models import TrustEvent, User
 from app.services.trust_score_service import apply_trust_score, compute_trust_breakdown
 
 router = APIRouter(prefix="/trust", tags=["trust"])
-
-
-def _to_aware(dt: Optional[datetime]) -> Optional[datetime]:
-    if dt is None:
-        return None
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
-
-
-def _latest_event_time(db: Session, user_id: int) -> Optional[datetime]:
-    row: Optional[TrustEvent] = (
-        db.query(TrustEvent)
-        .filter(TrustEvent.subject_user_id == int(user_id))
-        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
-        .first()
-    )
-    return _to_aware(getattr(row, "created_at", None)) if row else None
-
-
-def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> str:
-    """
-    Deterministic Pack ID:
-    - Stable for a given latest TrustEvent timestamp
-    - Changes when the timeline changes
-    """
-    if based_on_event_at is None:
-        based_on_event_at = datetime.now(timezone.utc).replace(
-            hour=0,
-            minute=0,
-            second=0,
-            microsecond=0,
-        )
-
-    ts = based_on_event_at.astimezone(timezone.utc)
-    day = ts.strftime("%Y%m%d")
-
-    seed = f"{user_id}|{ts.isoformat()}|{PROTOCOL_VERSION}"
-    digest = hashlib.sha256(seed.encode("utf-8")).hexdigest().upper()[:10]
-    return f"TP-U{user_id}-{day}-{digest}"
 
 
 def _safe_meta(raw: Any) -> dict[str, Any]:
@@ -101,36 +60,6 @@ def trust_latest_source(
     return {
         "event_type": "REPAYMENT_ONLY_POLICY",
         "note": "Trust increases only when a loan is fully repaid.",
-    }
-
-
-@router.get("/me/evidence-pack/meta")
-def get_my_evidence_pack_meta(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> Dict[str, Any]:
-    """
-    Evidence Pack metadata:
-    - pack_id (deterministic)
-    - timestamps
-    - standard evidence endpoints
-    """
-    uid = int(current_user.id)
-    based_on_event_at = _latest_event_time(db, uid)
-    pack_id = _build_pack_id(user_id=uid, based_on_event_at=based_on_event_at)
-    generated_at = datetime.now(timezone.utc).isoformat()
-
-    return {
-        "pack_id": pack_id,
-        "user_id": uid,
-        "protocol_version": PROTOCOL_VERSION,
-        "generated_at": generated_at,
-        "based_on_event_at": based_on_event_at.isoformat() if based_on_event_at else None,
-        "endpoints": {
-            "trust_evidence_pack_zip": "/trust/me/evidence-pack.zip",
-            "trust_timeline": "/trust/me/timeline?limit=50",
-        },
-        "note": "Quote this Pack ID when speaking to a merchant or admin.",
     }
 
 

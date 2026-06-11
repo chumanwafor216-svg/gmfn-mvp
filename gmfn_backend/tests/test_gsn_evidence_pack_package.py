@@ -4,6 +4,7 @@ import json
 from io import BytesIO
 from zipfile import ZipFile
 
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -53,6 +54,24 @@ def test_evidence_pack_meta_faces_users_as_gsn():
     finally:
         db.close()
         engine.dispose()
+
+
+def test_evidence_pack_meta_route_uses_gsn_package_contract(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    response = client.get("/trust/me/evidence-pack/meta")
+
+    assert response.status_code == 200, response.text
+    meta = response.json()
+    assert meta["pack_id"].startswith("GSN-PACK-U1-STANDARD-")
+    assert not meta["pack_id"].startswith("TP-U")
+    assert meta["title"] == "GSN Evidence Pack"
+    assert meta["surface_brand"] == "GSN"
+    assert meta["protocol_version"] == PROTOCOL_VERSION
+    assert meta["merchant_visibility_level"] == "standard"
+    assert meta["evidence_alignment"] == "trustslip_visibility_bound"
 
 
 def test_evidence_pack_zip_contains_gsn_manifest_readme_and_checksums():

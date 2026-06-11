@@ -1,3 +1,38 @@
+### Evidence-pack route consistency repair (2026-06-11)
+
+- Continued the route-consistency audit around trust/evidence surfaces.
+- Confirmed a real conflict:
+  - both `gmfn_backend/app/api/routes/trust.py` and
+    `gmfn_backend/app/api/routes/evidence_pack.py` registered
+    `/trust/me/evidence-pack/meta`;
+  - FastAPI served the `trust.py` route first;
+  - that old route returned `TP-U...` metadata while the zip route returned the
+    newer `GSN-PACK...` package.
+- Backend change:
+  - removed the duplicate old evidence-pack meta route from `trust.py`;
+  - `/trust/me/evidence-pack/meta` and `/trust/me/evidence-pack.zip` are now
+    both owned by `app.api.routes.evidence_pack`;
+  - readiness copy records that meta/zip now share the same GSN package
+    contract.
+- Test coverage:
+  - `gmfn_backend/tests/test_gsn_evidence_pack_package.py` now calls
+    `/trust/me/evidence-pack/meta` through the API and requires:
+    - `GSN-PACK...` pack id;
+    - no old `TP-U...` pack id;
+    - `GSN Evidence Pack` title;
+    - GSN surface brand;
+    - merchant visibility and evidence alignment fields.
+- Verification passed locally:
+  - route table check confirmed:
+    - `/trust/me/evidence-pack/meta -> app.api.routes.evidence_pack.get_evidence_pack_meta`
+    - `/trust/me/evidence-pack.zip -> app.api.routes.evidence_pack.download_evidence_pack_zip`
+  - `python -m py_compile gmfn_backend\app\api\routes\trust.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`
+  - `python -m pytest -q gmfn_backend\tests\test_gsn_evidence_pack_package.py`
+- Unabated truth:
+  - this fixes the backend route inconsistency;
+  - evidence-pack readiness is still partial until accepted screenshots/PDFs
+    and pilot proof files are captured.
+
 ### TrustEvent dedupe-check route repair (2026-06-11)
 
 - Continued into the next local readiness priority: TrustEvent dedupe and route

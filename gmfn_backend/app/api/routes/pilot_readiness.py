@@ -204,6 +204,7 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             complete=[
                 "Institutional PDF header, watermark, footer, and limitation shells are in place for key generated reports.",
                 "Trust Timeline, Loan Trust Report, Clan Exposure Report, Trust Passport, and TrustSlip proof surfaces have official GSN treatment.",
+                "Evidence-pack meta and zip routes now share the same GSN package contract and are owned by the active evidence-pack route module.",
             ],
             remaining=[
                 "Assemble accepted screenshots/PDFs for entry, community, marketplace, repayment, TrustSlip, Trust Passport, and admin readiness.",
