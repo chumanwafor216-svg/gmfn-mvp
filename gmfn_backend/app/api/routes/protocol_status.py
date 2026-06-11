@@ -81,7 +81,7 @@ def protocol_status():
             "key": "trust_events",
             "label": "Trust events",
             "status": summary["trust_events"],
-            "next_step": "Keep dedupe and evidence audit checks in the later logic pass.",
+            "next_step": "Keep the subject-based dedupe-check route protected while the remaining route-consistency proof is collected.",
         },
         {
             "key": "trustslip",
@@ -133,6 +133,6 @@ def protocol_status():
             "guarantor invite permission decision and phone proof",
             "loan repayment full and part-payment phone proof",
             "evidence capture pack assembly",
-            "trust event dedupe and route-consistency audit",
+            "trust-event route consistency and phone evidence audit",
         ],
     }

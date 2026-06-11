@@ -163,6 +163,7 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             complete=[
                 "Trust event, timeline, recompute, and explainability routes are mounted.",
                 "Recent trust events are read by the Trust Command Centre.",
+                "The admin dedupe-check route now checks real TrustEvent subject, loan, guarantor, and reason context.",
             ],
             why_it_matters="GSN trust must be visible as evidence, not only as a score.",
         ),

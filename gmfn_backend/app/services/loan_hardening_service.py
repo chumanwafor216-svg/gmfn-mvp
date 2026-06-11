@@ -203,7 +203,7 @@ def trust_event_duplicate_exists(
     rows = (
         db.query(TrustEvent)
         .filter(
-            TrustEvent.user_id == int(user_id),
+            TrustEvent.subject_user_id == int(user_id),
             TrustEvent.event_type == str(event_type),
         )
         .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
@@ -218,8 +218,8 @@ def trust_event_duplicate_exists(
         if not isinstance(meta, dict):
             continue
 
-        row_loan_id = meta.get("loan_id")
-        row_guarantor_id = meta.get("guarantor_id")
+        row_loan_id = getattr(row, "loan_id", None) or meta.get("loan_id")
+        row_guarantor_id = getattr(row, "guarantor_id", None) or meta.get("guarantor_id")
         row_reason = _normalize_reason(meta.get("reason"))
 
         if loan_id is not None and str(row_loan_id) != str(loan_id):

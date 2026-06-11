@@ -1,3 +1,34 @@
+### TrustEvent dedupe-check route repair (2026-06-11)
+
+- Continued into the next local readiness priority: TrustEvent dedupe and route
+  consistency.
+- Confirmed a real backend bug:
+  - `gmfn_backend/app/services/loan_hardening_service.py`
+    `trust_event_duplicate_exists(...)` filtered on `TrustEvent.user_id`;
+  - the model does not have that field;
+  - the real user field for trust evidence is `subject_user_id`.
+- Backend change:
+  - duplicate checks now filter by `TrustEvent.subject_user_id`;
+  - checks now prefer real `loan_id` and `guarantor_id` columns before falling
+    back to older meta values;
+  - protocol/readiness copy now records that the admin dedupe-check route is
+    covered, while route-consistency and phone evidence remain open.
+- Test coverage:
+  - `gmfn_backend/tests/test_loan_hardening_service.py` now proves:
+    - duplicate detection uses `subject_user_id`, not actor/admin id;
+    - real `loan_id` / `guarantor_id` columns win over stale/wrong meta;
+    - `/admin/trust-events/dedup-check` reports duplicates for admins;
+    - non-admin callers get the existing safe non-duplicate/admin-required
+      response.
+- Verification passed locally:
+  - `python -m py_compile gmfn_backend\app\services\loan_hardening_service.py gmfn_backend\tests\test_loan_hardening_service.py`
+  - `python -m pytest -q gmfn_backend\tests\test_loan_hardening_service.py`
+  - `python -m pytest -q gmfn_backend\tests\test_loan_hardening_service.py gmfn_backend\tests\test_protocol_readiness_status.py`
+- Unabated truth:
+  - this fixes and proves the dedupe-check route;
+  - it does not prove every trust-event-producing route is deduped;
+  - broad route-consistency and phone evidence review still remain.
+
 ### Guarantor readiness truth pass (2026-06-11)
 
 - Continued the protocol/readiness work on the next stale `partial` item:
