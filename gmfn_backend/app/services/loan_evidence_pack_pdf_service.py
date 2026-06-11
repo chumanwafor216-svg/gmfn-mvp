@@ -10,6 +10,12 @@ from reportlab.pdfgen import canvas
 from sqlalchemy.orm import Session
 
 from app.db.models import Loan, Clan, User, LoanGuarantor, Repayment, TrustEvent
+from app.services.institutional_pdf import (
+    draw_institutional_footer,
+    draw_institutional_header,
+    safe_pdf_text,
+    utc_generated_label,
+)
 from app.services.trust_score_service import trust_band_for_score, compute_trust_score_explained
 
 
@@ -188,23 +194,39 @@ def build_loan_evidence_pack_pdf(
     bio = BytesIO()
     c = canvas.Canvas(bio, pagesize=A4)
     width, height = A4
-    y = height - 50
+    ts = utc_generated_label()
+    y = draw_institutional_header(
+        c,
+        width,
+        height,
+        title="GSN Loan Evidence Pack",
+        subtitle="Loan, trust snapshot, guarantor, repayment, and timeline evidence.",
+        generated_at=ts,
+        reference=f"Loan {loan_id}",
+    )
 
     def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
         nonlocal y
         if y < 60:
+            draw_institutional_footer(c, width, "GSN loan evidence paper")
             c.showPage()
-            y = height - 50
+            y = draw_institutional_header(
+                c,
+                width,
+                height,
+                title="GSN Loan Evidence Pack",
+                subtitle="Loan, trust snapshot, guarantor, repayment, and timeline evidence.",
+                generated_at=ts,
+                reference=f"Loan {loan_id}",
+            )
         c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
-        c.drawString(50, y, text)
+        c.drawString(56, y, safe_pdf_text(text))
         y -= gap
 
     def kv(label: str, value: str):
         line(f"{label}: {value}", size=10, gap=14)
 
-    ts = _utcnow().strftime("%Y-%m-%d %H:%M UTC")
-
-    line("GMFN Loan Evidence Pack (Loan + Trust Snapshot + Guarantors + Repayments + Timeline)", size=14, gap=22, bold=True)
+    line("Official evidence summary", size=14, gap=20, bold=True)
     kv("Generated", ts)
     kv("Loan ID", str(loan_id))
     kv("Clan", clan_name or "—")
@@ -309,11 +331,12 @@ def build_loan_evidence_pack_pdf(
     line("")
     line("Visa/partner framing (one-liner)", bold=True, gap=18)
     line(
-        "This report demonstrates GMFN’s trust infrastructure: explainable trust scores derived from auditable TrustEvents, linked to guarantor and repayment behaviour.",
+        "This report demonstrates GSN trust infrastructure: explainable trust scores derived from auditable TrustEvents, linked to guarantor and repayment behaviour.",
         size=9,
         gap=13,
     )
 
+    draw_institutional_footer(c, width, "GSN loan evidence paper - controlled community trust record.")
     c.showPage()
     c.save()
 

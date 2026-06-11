@@ -9,6 +9,12 @@ from reportlab.pdfgen import canvas
 from sqlalchemy.orm import Session
 
 from app.db.models import Clan
+from app.services.institutional_pdf import (
+    draw_institutional_footer,
+    draw_institutional_header,
+    safe_pdf_text,
+    utc_generated_label,
+)
 from app.services.invite_analytics_service import (
     get_invite_analytics,
     get_recent_invite_joins,
@@ -61,17 +67,36 @@ def build_clan_evidence_pack_pdf(
     c = canvas.Canvas(bio, pagesize=A4)
     width, height = A4
 
-    y = height - 50
+    ts = utc_generated_label()
+    y = draw_institutional_header(
+        c,
+        width,
+        height,
+        title="GSN Community Evidence Pack",
+        subtitle="Invite growth, community entry, and trust audit evidence.",
+        generated_at=ts,
+        reference=f"Clan {clan_id}",
+    )
 
     def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
         nonlocal y
+        if y < 70:
+            draw_institutional_footer(c, width, "GSN community evidence paper")
+            c.showPage()
+            y = draw_institutional_header(
+                c,
+                width,
+                height,
+                title="GSN Community Evidence Pack",
+                subtitle="Invite growth, community entry, and trust audit evidence.",
+                generated_at=ts,
+                reference=f"Clan {clan_id}",
+            )
         c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
-        c.drawString(50, y, text)
+        c.drawString(56, y, safe_pdf_text(text))
         y -= gap
 
-    ts = _utcnow().strftime("%Y-%m-%d %H:%M UTC")
-
-    line("GMFN Evidence Pack (Invite Growth + Trust Audit)", size=16, gap=22, bold=True)
+    line("Official evidence summary", size=14, gap=20, bold=True)
     line(f"Clan ID: {clan_id}", bold=True)
     line(f"Clan Name: {clan_name or '—'}", bold=True)
     line(f"Generated: {ts}")
@@ -123,7 +148,7 @@ def build_clan_evidence_pack_pdf(
     line("")
     line("Why this matters (visa / partner framing)", bold=True, gap=18)
     line(
-        "GMFN is a trust infrastructure: invite creation, invite use, join actions and revocations are logged as TrustEvents.",
+        "GSN is a trust infrastructure: invite creation, invite use, join actions and revocations are logged as TrustEvents.",
         size=9,
         gap=13,
     )
@@ -133,6 +158,7 @@ def build_clan_evidence_pack_pdf(
         gap=13,
     )
 
+    draw_institutional_footer(c, width, "GSN community evidence paper - controlled community trust record.")
     c.showPage()
     c.save()
 

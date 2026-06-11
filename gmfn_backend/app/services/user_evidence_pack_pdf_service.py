@@ -10,6 +10,12 @@ from reportlab.pdfgen import canvas
 from sqlalchemy.orm import Session
 
 from app.db.models import User, TrustEvent
+from app.services.institutional_pdf import (
+    draw_institutional_footer,
+    draw_institutional_header,
+    safe_pdf_text,
+    utc_generated_label,
+)
 from app.services.trust_score_service import compute_trust_score_explained, trust_band_for_score
 
 
@@ -98,20 +104,36 @@ def build_user_evidence_pack_pdf(
     bio = BytesIO()
     c = canvas.Canvas(bio, pagesize=A4)
     width, height = A4
-    y = height - 50
+    ts = utc_generated_label()
+    y = draw_institutional_header(
+        c,
+        width,
+        height,
+        title="GSN Member Evidence Pack",
+        subtitle="Trust snapshot and recent evidence from the member record.",
+        generated_at=ts,
+        reference=f"User {user_id}",
+    )
 
     def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
         nonlocal y
         if y < 60:
+            draw_institutional_footer(c, width, "GSN member evidence paper")
             c.showPage()
-            y = height - 50
+            y = draw_institutional_header(
+                c,
+                width,
+                height,
+                title="GSN Member Evidence Pack",
+                subtitle="Trust snapshot and recent evidence from the member record.",
+                generated_at=ts,
+                reference=f"User {user_id}",
+            )
         c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
-        c.drawString(50, y, text)
+        c.drawString(56, y, safe_pdf_text(text))
         y -= gap
 
-    ts = _utcnow().strftime("%Y-%m-%d %H:%M UTC")
-
-    line("GMFN User Evidence Pack (Trust Snapshot + Recent Trust Events)", size=15, gap=22, bold=True)
+    line("Official evidence summary", size=14, gap=20, bold=True)
     line(f"Generated: {ts}", size=10, gap=14)
     line(f"User ID: {user_id}", size=10, gap=14)
     line(f"Email: {email or '—'}", size=10, gap=14)
@@ -152,11 +174,12 @@ def build_user_evidence_pack_pdf(
     line("")
     line("Visa/partner framing", bold=True, gap=18)
     line(
-        "GMFN produces explainable trust evidence derived from auditable TrustEvents (repayments, guarantor behaviour, invites).",
+        "GSN produces explainable trust evidence derived from auditable TrustEvents (repayments, guarantor behaviour, invites).",
         size=9,
         gap=13,
     )
 
+    draw_institutional_footer(c, width, "GSN member evidence paper - controlled community trust record.")
     c.showPage()
     c.save()
 

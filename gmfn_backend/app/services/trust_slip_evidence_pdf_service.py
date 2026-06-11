@@ -7,12 +7,14 @@ from typing import Optional, Dict, Any
 
 from reportlab.graphics.barcode import qr
 from reportlab.graphics.shapes import Drawing
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import ListFlowable, ListItem, Paragraph, SimpleDocTemplate, Spacer
 from sqlalchemy.orm import Session
 
 from app.db.models import TrustEvent
+from app.services.institutional_pdf import draw_gsn_watermark, draw_institutional_footer
 
 
 CANONICAL_REPAYMENT_EVENTS = {"loan_repaid"}
@@ -60,8 +62,8 @@ def _find_latest_full_repayment_event(db: Session, user_id: int) -> Optional[Tru
 
 def _footer(canvas, doc, footer_text: str):
     canvas.saveState()
-    canvas.setFont("Helvetica", 9)
-    canvas.drawString(48, 24, footer_text)
+    draw_gsn_watermark(canvas, A4[0], A4[1])
+    draw_institutional_footer(canvas, A4[0], footer_text)
     canvas.restoreState()
 
 
@@ -83,7 +85,8 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
-        title="GMFN TrustSlip Evidence Snapshot",
+        title="GSN TrustSlip Evidence Snapshot",
+        pagesize=A4,
         leftMargin=48,
         rightMargin=48,
         topMargin=48,
@@ -93,7 +96,8 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
 
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("GMFN TrustSlip Evidence Snapshot", styles["Heading1"]))
+    elements.append(Paragraph("GSN TrustSlip Evidence Snapshot", styles["Heading1"]))
+    elements.append(Paragraph("Global Support Network official evidence paper", styles["Normal"]))
     elements.append(Paragraph(f"Evidence Pack ID: <b>{pack_id}</b>", styles["Normal"]))
     elements.append(Spacer(1, 0.25 * inch))
 

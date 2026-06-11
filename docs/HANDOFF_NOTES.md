@@ -45743,3 +45743,48 @@ GSN-branded invite composer and invite-entry continuity.
     `partial` statuses remain unfinished workstreams;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves a single publish.
+
+### Institutional PDF shell checkpoint (2026-06-11)
+
+- Trigger:
+  - after the web Trust Passport and TrustSlip Verify proof surfaces were
+    polished, the next unfinished proof-surface slice was the backend PDF layer
+    so exported evidence papers do not feel like plain reports.
+- Changed locally, not pushed:
+  - `gmfn_backend/app/services/institutional_pdf.py`
+    - added a shared GSN PDF helper for official watermarking, document header,
+      footer, GSN colors, generated-time labels, and safe text normalization.
+  - `gmfn_backend/app/services/evidence_pack_pdf_service.py`
+    - changed the community evidence pack from a plain `GMFN Evidence Pack`
+      heading into a `GSN Community Evidence Pack` document shell with
+      watermark, official header, footer, and safer text drawing.
+  - `gmfn_backend/app/services/user_evidence_pack_pdf_service.py`
+    - changed the user evidence pack into a `GSN Member Evidence Pack` with
+      the same institutional shell and safe text drawing.
+  - `gmfn_backend/app/services/loan_evidence_pack_pdf_service.py`
+    - changed the loan evidence pack into a `GSN Loan Evidence Pack` with
+      watermark/header/footer while preserving the existing loan, guarantor,
+      repayment, and trust-event data logic.
+  - `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+    - renamed the TrustSlip PDF title to `GSN TrustSlip Evidence Snapshot`;
+    - added the GSN watermark/footer to TrustSlip PDF pages;
+    - fixed the document to explicit A4 sizing for the new paper shell.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added a focused source-level guard so the institutional PDF shell,
+      GSN titles, watermark/footer hooks, and A4 TrustSlip paper size do not
+      quietly regress.
+- Verification:
+  - Passed Python compilation for the touched PDF services and new test.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed source scan for old touched-service PDF titles and direct old
+    `drawString(50, y, text)` / `drawString(48, 24, ...)` footer patterns.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - this improves the simple backend evidence PDFs and TrustSlip evidence
+    snapshot shell, but it is not a full visual PDF rendering review;
+  - `trust_timeline_pdf_service.py` and `reports_service.py` still have their
+    own older report layouts and remain a separate PDF-polish slice;
+  - this does not solve borrowing repayment logic or stale protocol `partial`
+    statuses;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.
