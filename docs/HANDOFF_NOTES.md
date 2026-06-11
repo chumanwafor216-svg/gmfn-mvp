@@ -46598,3 +46598,54 @@ GSN-branded invite composer and invite-entry continuity.
   - it is not yet a full Marketplace real-phone screenshot pass;
   - no push or Render deploy was triggered. Keep batching locally until the
     product owner approves one publish.
+
+### Dashboard and Trust Passport icon omission checkpoint (2026-06-11)
+
+- Trigger:
+  - product owner noticed remaining old-icon pockets after the 3D icon sweep:
+    Dashboard `Visible / Portable / Usable`, Dashboard Trust/CCI/TrustSlip
+    status areas, and the lower Trust Passport finance-discipline rule block.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - replaced the old Dashboard emoji/status helper with the shared
+      `GsnLegacyIcon` 3D adapter;
+    - replaced the Dashboard passport feature-strip inline SVG icons with the
+      shared 3D adapter;
+    - preserved the existing Dashboard action labels, routes, counts, and
+      button geometry.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - added the 3D finance-institution icon treatment to the lower
+      Finance Discipline `Plain rule` block.
+  - `frontend/tools/audit-icon-protocol.mjs`
+    - added guards so these Dashboard and Trust Passport icon omissions do not
+      regress to emoji/SVG primary icons or an unmarked finance rule block.
+- Verification:
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed ESLint for `DashboardPage.tsx`, `TrustScorePage.tsx`, and
+    `tools/audit-icon-protocol.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this is a route-local visual polish checkpoint;
+  - it does not prove exact real-phone screenshots yet;
+  - Dashboard Market Wisdom was not intentionally changed;
+  - no push or Render deploy was triggered. Keep batching locally until the
+    product owner approves one publish.
+
+### Future social handle / tagging backlog note (2026-06-11)
+
+- Product owner raised a valid product need:
+  - WhatsApp share links work when a phone number is known;
+  - GSN also needs a way to tag or address a person/community when the sender
+    does not know the WhatsApp number or the person is not in contacts;
+  - possible channels mentioned: WhatsApp text, Telegram, Instagram, X/Twitter,
+    Facebook, and community/member handles.
+- Unabated truth:
+  - this should not be patched as simple frontend copy;
+  - it needs a proper identity/contact design so handles are unique, safe,
+    consent-aware, and not confused with verified phone or GSN Global ID;
+  - likely model: `@gsnHandle` for member/community public discovery by link,
+    while private phone numbers remain hidden unless the user chooses to share;
+  - this belongs after the current visual polish pass and before broad social
+    sharing/tagging is advertised in user-facing copy.

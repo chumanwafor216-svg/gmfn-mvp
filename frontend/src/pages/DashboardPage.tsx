@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import GSNBrandMark from "../components/GSNBrandMark";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
@@ -814,81 +815,33 @@ function DashboardSignalIcon({
 }) {
   void _strokeWidth;
 
-  let glyph = "\u25CF";
-  switch (name) {
-    case "marketplace":
-      glyph = "\uD83D\uDED2";
-      break;
-    case "demand":
-      glyph = "\u2795";
-      break;
-    case "spotlight":
-      glyph = "\u2B50";
-      break;
-    case "trust":
-      glyph = "\uD83D\uDEE1\uFE0F";
-      break;
-    case "community":
-      glyph = "\uD83D\uDC65";
-      break;
-    case "shop":
-      glyph = "\uD83C\uDFEA";
-      break;
-    case "alerts":
-      glyph = "\uD83D\uDD14";
-      break;
-    case "identity":
-      glyph = "\uD83E\uDEAA";
-      break;
-    case "compass":
-      glyph = "\uD83E\uDDED";
-      break;
-    case "package":
-      glyph = "\uD83D\uDCE6";
-      break;
-    case "target":
-      glyph = "\uD83C\uDFAF";
-      break;
-    case "calendar":
-      glyph = "\uD83D\uDCC5";
-      break;
-    case "user":
-      glyph = "\uD83D\uDC64";
-      break;
-    case "check":
-      glyph = "\u2705";
-      break;
-    case "add":
-      glyph = "\u2795";
-      break;
-    case "time":
-      glyph = "\u23F3";
-      break;
-    default:
-      glyph = "\u2022";
-  }
+  const iconMap: Record<DashboardSignalName, GsnIconName> = {
+    marketplace: "marketplace",
+    demand: "document",
+    spotlight: "megaphone",
+    trust: "shield",
+    community: "community",
+    shop: "shop",
+    alerts: "alert",
+    identity: "id",
+    compass: "globe",
+    package: "briefcase",
+    target: "check",
+    calendar: "calendar",
+    user: "user",
+    check: "check",
+    add: "join-person-plus",
+    time: "calendar",
+    dot: "proof",
+  };
 
   return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: size,
-        height: size,
-        flexShrink: 0,
-        fontSize: Math.round(size * 1.05),
-        lineHeight: 1,
-        fontFamily:
-          '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
-        letterSpacing: 0,
-        textTransform: "none",
-        filter: "saturate(0.96) contrast(1.02)",
-      }}
-    >
-      {glyph}
-    </span>
+    <GsnLegacyIcon
+      name={iconMap[name]}
+      size={Math.max(22, Math.round(size * 1.16))}
+      decorative
+      style={{ flex: "0 0 auto" }}
+    />
   );
 }
 
@@ -899,73 +852,19 @@ function DashboardPassportFeatureIcon({
   name: "eye" | "briefcase" | "check";
   size?: number;
 }) {
-  if (name === "eye") {
-    return (
-      <svg
-        aria-hidden="true"
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        style={{ display: "block", flexShrink: 0 }}
-      >
-        <path
-          d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6Z"
-          stroke="currentColor"
-          strokeWidth="2.3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="12" cy="12" r="2.6" stroke="currentColor" strokeWidth="2.3" />
-      </svg>
-    );
-  }
-
-  if (name === "briefcase") {
-    return (
-      <svg
-        aria-hidden="true"
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        style={{ display: "block", flexShrink: 0 }}
-      >
-        <path
-          d="M8 7V5.8C8 4.8 8.8 4 9.8 4h4.4c1 0 1.8.8 1.8 1.8V7"
-          stroke="currentColor"
-          strokeWidth="2.3"
-          strokeLinecap="round"
-        />
-        <path
-          d="M4.5 7.5h15v10.8c0 1-.8 1.7-1.7 1.7H6.2c-.9 0-1.7-.8-1.7-1.7V7.5Z"
-          stroke="currentColor"
-          strokeWidth="2.3"
-          strokeLinejoin="round"
-        />
-        <path d="M9 12h6" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
-      </svg>
-    );
-  }
+  const iconMap: Record<"eye" | "briefcase" | "check", GsnIconName> = {
+    eye: "globe",
+    briefcase: "certificate",
+    check: "shield",
+  };
 
   return (
-    <svg
-      aria-hidden="true"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      style={{ display: "block", flexShrink: 0 }}
-    >
-      <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="2.3" />
-      <path
-        d="m8.4 12.1 2.4 2.4 4.9-5.2"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <GsnLegacyIcon
+      name={iconMap[name]}
+      size={Math.max(22, Math.round(size * 1.16))}
+      decorative
+      style={{ flex: "0 0 auto" }}
+    />
   );
 }
 

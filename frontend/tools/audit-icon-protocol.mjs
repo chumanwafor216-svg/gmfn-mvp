@@ -299,6 +299,24 @@ assertContains(
   "Marketplace link icons must stay on light 3D icon tiles instead of heavy dark gradient slabs."
 );
 
+assertContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /function DashboardSignalIcon[\s\S]*?const iconMap: Record<DashboardSignalName, GsnIconName>[\s\S]*?<GsnLegacyIcon[\s\S]*?function DashboardPassportFeatureIcon[\s\S]*?const iconMap: Record<"eye" \| "briefcase" \| "check", GsnIconName>[\s\S]*?<GsnLegacyIcon/,
+  "Dashboard passport/status helper icons must stay on the shared 3D icon adapter."
+);
+
+assertNotContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /Apple Color Emoji|Segoe UI Emoji|<svg[\s\S]*?function DashboardPassportFeatureIcon/,
+  "Dashboard passport/status helper icons must not restore emoji or inline SVG primary icons."
+);
+
+assertContains(
+  "frontend/src/pages/TrustScorePage.tsx",
+  /trustIconBadge\("financeInstitution", isCompact \? 46 : 54, "blue"\)[\s\S]*?Plain rule/,
+  "Trust Passport finance plain-rule block must keep the 3D finance institution icon."
+);
+
 if (findings.length) {
   console.error("GSN icon protocol audit failed:");
   for (const finding of findings) {

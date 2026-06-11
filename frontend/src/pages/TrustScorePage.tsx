@@ -4156,16 +4156,23 @@ export default function TrustScorePage() {
                 ...innerCard("#FFFFFF"),
                 border: "1px solid rgba(216,227,238,0.9)",
                 marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "48px minmax(0, 1fr)" : "56px minmax(0, 1fr)",
+                gap: isCompact ? 10 : 14,
+                alignItems: "start",
               }}
             >
-              <div style={{ color: "#07172C", fontWeight: 1000 }}>
-                Plain rule
+              {trustIconBadge("financeInstitution", isCompact ? 46 : 54, "blue")}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: "#07172C", fontWeight: 1000 }}>
+                  Plain rule
+                </div>
+                <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                  GSN is showing whether the record looks disciplined enough for
+                  trust decisions. It is not promising repayment, collecting
+                  money, or replacing the Finance page.
+                </p>
               </div>
-              <p style={{ ...helperText(), margin: "8px 0 0" }}>
-                GSN is showing whether the record looks disciplined enough for
-                trust decisions. It is not promising repayment, collecting
-                money, or replacing the Finance page.
-              </p>
             </div>
           </section>
 
