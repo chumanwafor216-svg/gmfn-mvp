@@ -1,3 +1,50 @@
+### Loan repayment E2E backend proof (2026-06-11)
+
+- Continued from the readiness truth pass into the biggest remaining logic
+  proof item: loan repayment full/part-payment end-to-end behavior.
+- Confirmed implementation path from code:
+  - `reconciliation_service.reconcile_batch(...)` matches bank credits to
+    `ExpectedPayment` by clan, normalized reference, and currency;
+  - `ExpectedPayment` supports `paid_amount` and `remaining_amount`;
+  - `bank_application_service.apply_expected_payment_match(...)` dispatches
+    `expected_type == "repayment"` into `_apply_repayment(...)`;
+  - `_apply_repayment(...)` applies only the unapplied delta into
+    `create_repayment(...)`, so a partial bank event should not double-apply;
+  - `create_repayment(...)` closes the loan only when the remaining balance is
+    zero, then releases locked guarantor exposure and records TrustEvents.
+- Added focused backend proof in
+  `gmfn_backend/tests/test_reconciliation_integrity.py`:
+  - seed one supported approved loan with a locked guarantor exposure;
+  - create one loan-repayment `ExpectedPayment`;
+  - reconcile a `40.00` bank credit:
+    - expected payment becomes `partial`;
+    - loan remains `approved`;
+    - loan paid total becomes `40.00`;
+    - remaining amount becomes `60.00`;
+    - `repayment.created` and `repayment.auto_applied` are recorded;
+    - `loan.repaid` is not recorded yet;
+  - reconcile a second `60.00` bank credit:
+    - expected payment becomes `confirmed`;
+    - loan becomes `repaid`;
+    - loan remaining amount becomes `0.00`;
+    - guarantor lock is released;
+    - `guarantee.released` and `loan.repaid` TrustEvents are recorded.
+- Updated `gmfn_backend/app/api/routes/pilot_readiness.py` so the
+  `loan_repayment_e2e` partial check now says backend proof exists, while the
+  remaining work is phone/local UI screenshots, evidence-pack capture, and a
+  product decision on planned instalment schedules with due dates.
+- Verification passed locally:
+  - `python -m py_compile gmfn_backend\tests\test_reconciliation_integrity.py`
+  - `python -m pytest -q gmfn_backend\tests\test_reconciliation_integrity.py::test_loan_repayment_reconciliation_applies_part_payment_then_full_closure`
+- Unabated truth:
+  - this proves the backend reconciliation/application path in an automated
+    local test;
+  - it does not prove a real user can complete the same route from the phone UI
+    without friction;
+  - it does not add a multi-instalment schedule model with multiple planned due
+    dates. The current supported model is one expected repayment reference that
+    can receive partial bank credits until confirmed.
+
 ### Protocol/readiness truth pass (2026-06-11)
 
 - Product owner asked to continue from polish into the remaining logic/readiness

@@ -90,17 +90,18 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
         _partial_check(
             "loan_repayment_e2e",
             "Loan repayment end-to-end proof",
-            why_it_matters="The code path is stronger, but pilot trust needs proof that full and part payments work from button tap through bank event, reconciliation, loan balance, and trust evidence.",
+            why_it_matters="The backend path is now protected by a local reconciliation proof test, but pilot trust still needs visible phone/manual evidence and a decision on planned instalment schedules.",
             complete=[
                 "Full-balance and part-payment instruction choices are visible on the repayment screen.",
                 "Backend repayment logic supports partial repayment without falsely closing the loan.",
+                "Automated backend proof covers one expected repayment receiving a part payment, then a final payment, through bank reconciliation, loan balance update, guarantee release, and trust events.",
             ],
             remaining=[
-                "Run one full repayment and one part repayment through local bank-event reconciliation.",
-                "Capture the before/after loan balance, expected payment, bank match, and Trust event evidence.",
+                "Run the same full and part-payment route from the phone/local UI and capture screenshots.",
+                "Capture the before/after loan balance, expected payment, bank match, and Trust event evidence as the pilot evidence pack.",
                 "Decide whether planned instalment schedules with due dates are required now or after pilot.",
             ],
-            next_step="Use a local test loan to prove full repayment and part repayment from instruction creation to trust evidence.",
+            next_step="Run the phone/local UI proof and capture the repayment evidence pack; keep planned instalment scheduling as a separate product decision.",
             next_route="/app/loans",
         ),
         _ready_check(

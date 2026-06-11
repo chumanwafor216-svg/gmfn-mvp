@@ -12,7 +12,8 @@ from sqlalchemy.pool import StaticPool
 from app.db.base import Base as CoreBase
 from app.db.database import Base as BankBase
 from app.db.bank_models import BankEvent, ExpectedPayment
-from app.db.models import PoolEvent
+from app.db.models import Clan, ClanMembership, Loan, LoanGuarantor, PoolEvent, TrustEvent, User
+from app.services.expected_payments_service import ensure_loan_repayment_expected_payment
 from app.services.payment_instruction_service import create_pool_deposit_instruction
 from app.services.reconciliation_service import (
     create_bank_event,
@@ -78,6 +79,68 @@ def _insert_expected(
     db.commit()
     db.refresh(ep)
     return ep
+
+
+def _seed_supported_loan_for_reconciliation(db):
+    clan = Clan(name="Repayment Proof Clan")
+    borrower = User(
+        email="repayment-borrower@example.com",
+        hashed_password="x",
+        role="user",
+        personal_pool_balance=Decimal("0.00"),
+    )
+    guarantor = User(
+        email="repayment-guarantor@example.com",
+        hashed_password="x",
+        role="user",
+        personal_pool_balance=Decimal("500.00"),
+    )
+    db.add_all([clan, borrower, guarantor])
+    db.commit()
+    db.refresh(clan)
+    db.refresh(borrower)
+    db.refresh(guarantor)
+
+    db.add_all(
+        [
+            ClanMembership(clan_id=clan.id, user_id=borrower.id, role="user"),
+            ClanMembership(clan_id=clan.id, user_id=guarantor.id, role="user"),
+        ]
+    )
+    db.commit()
+
+    loan = Loan(
+        clan_id=clan.id,
+        borrower_user_id=borrower.id,
+        amount=Decimal("100.00"),
+        currency="NGN",
+        status="approved",
+        personal_pool_at_request=Decimal("0.00"),
+        pool_used=Decimal("0.00"),
+        guarantee_gap=Decimal("100.00"),
+        guarantors_required=1,
+        paid_total=Decimal("0.00"),
+        remaining_amount=Decimal("100.00"),
+    )
+    db.add(loan)
+    db.commit()
+    db.refresh(loan)
+
+    guarantor_row = LoanGuarantor(
+        loan_id=loan.id,
+        clan_id=clan.id,
+        guarantor_user_id=guarantor.id,
+        pledge_amount=Decimal("100.00"),
+        status="approved",
+        is_locked=True,
+        locked_amount=Decimal("100.00"),
+        released_amount=Decimal("0.00"),
+    )
+    db.add(guarantor_row)
+    db.commit()
+    db.refresh(guarantor_row)
+
+    return clan, borrower, loan, guarantor_row
 
 
 def test_reconciliation_determinism_idempotency_and_clan_isolation(db):
@@ -291,3 +354,121 @@ def test_pool_instruction_links_pool_event_for_auto_reconciliation(db):
     assert pool_after.event_type == "deposit.confirmed"
     assert pool_after.confirmed_at is not None
     assert "auto-confirmed by bank reconciliation" in (pool_after.note or "")
+
+
+def test_loan_repayment_reconciliation_applies_part_payment_then_full_closure(db):
+    clan, borrower, loan, guarantor_row = _seed_supported_loan_for_reconciliation(db)
+
+    expected = ensure_loan_repayment_expected_payment(
+        db,
+        clan_id=int(clan.id),
+        loan_id=int(loan.id),
+        borrower_user_id=int(borrower.id),
+        amount=Decimal("100.00"),
+        currency="NGN",
+        meta={"source": "test.loan-repayment.reconciliation"},
+        commit=True,
+        refresh=True,
+    )
+
+    part_event = create_bank_event(
+        db,
+        clan_id=int(clan.id),
+        source_type="statement_csv",
+        source_id="loan-repayment-part",
+        direction="credit",
+        amount=Decimal("40.00"),
+        currency="NGN",
+        reference_raw=expected.reference_display,
+        description_raw="loan repayment part payment",
+        bank_txn_id="TXN-LOAN-PART-1",
+        posted_at=None,
+        value_at=None,
+        meta={"test": "loan-repayment-part"},
+    )
+
+    part_stats = reconcile_batch(db, clan_id=int(clan.id), limit=50)
+    assert part_stats["partial"] == 1
+
+    db.refresh(expected)
+    db.refresh(loan)
+    db.refresh(part_event)
+
+    assert expected.status == "partial"
+    assert expected.paid_amount == Decimal("40.00")
+    assert expected.remaining_amount == Decimal("60.00")
+    assert part_event.status == "partial"
+    assert part_event.expected_payment_id == expected.id
+    assert loan.status == "approved"
+    assert loan.paid_total == Decimal("40.00")
+    assert loan.remaining_amount == Decimal("60.00")
+
+    event_types_after_part = [
+        row.event_type
+        for row in db.query(TrustEvent)
+        .filter(TrustEvent.loan_id == int(loan.id))
+        .order_by(TrustEvent.id.asc())
+        .all()
+    ]
+    assert "repayment.created" in event_types_after_part
+    assert "repayment.auto_applied" in event_types_after_part
+    assert "loan.repaid" not in event_types_after_part
+
+    part_meta = json.loads(expected.meta_json or "{}")
+    assert part_meta["application_kind"] == "loan_repayment"
+    assert part_meta["applied_to_loan_amount"] == "40.00"
+    assert part_meta["loan_status_after_application"] == "approved"
+    assert part_meta["loan_remaining_after_application"] == "60.00"
+
+    final_event = create_bank_event(
+        db,
+        clan_id=int(clan.id),
+        source_type="statement_csv",
+        source_id="loan-repayment-final",
+        direction="credit",
+        amount=Decimal("60.00"),
+        currency="NGN",
+        reference_raw=expected.reference_display,
+        description_raw="loan repayment final payment",
+        bank_txn_id="TXN-LOAN-FINAL-1",
+        posted_at=None,
+        value_at=None,
+        meta={"test": "loan-repayment-final"},
+    )
+
+    final_stats = reconcile_batch(db, clan_id=int(clan.id), limit=50)
+    assert final_stats["confirmed"] == 1
+
+    db.refresh(expected)
+    db.refresh(loan)
+    db.refresh(guarantor_row)
+    db.refresh(final_event)
+
+    assert expected.status == "confirmed"
+    assert expected.paid_amount == Decimal("100.00")
+    assert expected.remaining_amount == Decimal("0.00")
+    assert final_event.status == "confirmed"
+    assert final_event.expected_payment_id == expected.id
+    assert loan.status == "repaid"
+    assert loan.paid_total == Decimal("100.00")
+    assert loan.remaining_amount == Decimal("0.00")
+    assert guarantor_row.is_locked is False
+    assert guarantor_row.locked_amount == Decimal("0.00")
+    assert guarantor_row.released_amount == Decimal("100.00")
+
+    event_types_after_final = [
+        row.event_type
+        for row in db.query(TrustEvent)
+        .filter(TrustEvent.loan_id == int(loan.id))
+        .order_by(TrustEvent.id.asc())
+        .all()
+    ]
+    assert event_types_after_final.count("repayment.created") == 2
+    assert event_types_after_final.count("repayment.auto_applied") == 2
+    assert "guarantee.released" in event_types_after_final
+    assert "loan.repaid" in event_types_after_final
+
+    final_meta = json.loads(expected.meta_json or "{}")
+    assert final_meta["applied_to_loan_amount"] == "100.00"
+    assert final_meta["loan_status_after_application"] == "repaid"
+    assert final_meta["loan_remaining_after_application"] == "0.00"
