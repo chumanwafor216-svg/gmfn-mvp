@@ -252,7 +252,7 @@ assertContains(
 );
 
 assertContains(
-  /isPhone \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{routes\.dashboard\}[\s\S]*?kind="secondary"[\s\S]*?stableHeight=\{46\}[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?width: "fit-content"[\s\S]*?minWidth: 164/,
+  /isPhone \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{routes\.dashboard\}[\s\S]*?kind="secondary"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?width: "fit-content"[\s\S]*?minWidth: 164/,
   "Notifications phone Dashboard escape must stay a compact secondary action under the urgent primary button."
 );
 

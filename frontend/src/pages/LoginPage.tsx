@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import { getAccessToken, getMe, getMeWithToken, loginAndStore } from "../lib/api";
@@ -170,6 +171,43 @@ function inputIconBadge(): React.CSSProperties {
     fontWeight: 1000,
     letterSpacing: 0.6,
   };
+}
+
+function loginIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 24
+): React.ReactElement {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      <GsnLegacyIcon
+        name={name}
+        size={size}
+        decorative
+        style={{ display: "inline-grid", flex: "0 0 auto" }}
+      />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function loginIconOnly(name: GsnIconName, size = 24): React.ReactElement {
+  return (
+    <GsnLegacyIcon
+      name={name}
+      size={size}
+      decorative
+      style={{ display: "inline-grid", margin: "0 auto" }}
+    />
+  );
 }
 
 function noticeStyle(
@@ -566,7 +604,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setGuideOpen((current) => !current)}
                   minWidth={132}
-                  stableHeight={38}
+                  stableHeight={52}
                   debugId="login.open-help"
                   style={{
                     ...secondaryBtn(),
@@ -583,7 +621,7 @@ export default function LoginPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  About Sign In
+                  {loginIconText("document", "About Sign In", 22)}
                 </SubtleButton>
               </div>
             )}
@@ -695,7 +733,7 @@ export default function LoginPage() {
                 <SecondaryButton
                   onClick={() => setGuideOpen(false)}
                   minWidth="auto"
-                  stableHeight={42}
+                  stableHeight={52}
                   debugId="login.guide.collapse"
                   style={{
                     ...secondaryBtn(),
@@ -711,7 +749,7 @@ export default function LoginPage() {
                     boxShadow: "0 10px 24px rgba(10,24,49,0.14)",
                   }}
                 >
-                  Collapse
+                  {loginIconText("lock", "Collapse", 22)}
                 </SecondaryButton>
               </div>
 
@@ -906,11 +944,11 @@ export default function LoginPage() {
                 <SecondaryButton
                   onClick={openActivationRoute}
                   minWidth={220}
-                  stableHeight={44}
+                  stableHeight={52}
                   debugId="login.error.activate-membership"
                   style={supportBtn()}
                 >
-                  Activate membership
+                  {loginIconText("join-person-plus", "Activate membership", 24)}
                 </SecondaryButton>
               ) : null}
             </div>
@@ -969,7 +1007,7 @@ export default function LoginPage() {
                     style={inputIconBadge()}
                     aria-hidden="true"
                   >
-                    ID
+                    {loginIconOnly("id", 24)}
                   </span>
                   <input
                     value={email}
@@ -1017,7 +1055,7 @@ export default function LoginPage() {
                     style={inputIconBadge()}
                     aria-hidden="true"
                   >
-                    PW
+                    {loginIconOnly("lock", 24)}
                   </span>
                   <input
                     type="password"
@@ -1054,7 +1092,7 @@ export default function LoginPage() {
                 debugId="login.submit"
                 style={primaryBtn(busy)}
               >
-                Sign in to GSN
+                {loginIconText("lock", "Sign in to GSN", 24)}
               </PrimaryButton>
             </div>
 
@@ -1062,11 +1100,11 @@ export default function LoginPage() {
               <SecondaryButton
                 onClick={openActivationRoute}
                 disabled={busy}
-                stableHeight={44}
+                stableHeight={52}
                 debugId="login.activate-approved"
                 style={supportBtn()}
               >
-                Already approved? Activate membership
+                {loginIconText("join-person-plus", "Already approved? Activate membership", 24)}
               </SecondaryButton>
             </div>
             </div>
@@ -1145,7 +1183,7 @@ export default function LoginPage() {
           <SecondaryButton
             onClick={openCreateRoute}
             disabled={busy}
-            stableHeight={44}
+            stableHeight={52}
             debugId="login.start-community"
             style={{
               ...supportBtn(),
@@ -1156,7 +1194,7 @@ export default function LoginPage() {
               justifySelf: "center",
             }}
           >
-            Start a new community
+            {loginIconText("community", "Start a new community", 24)}
           </SecondaryButton>
           </div>
         </div>

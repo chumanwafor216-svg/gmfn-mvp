@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
 import { CardActionRow, StableCtaLink } from "../components/StableButton";
 import {
@@ -117,6 +118,43 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 900,
     whiteSpace: "normal",
   };
+}
+
+function openTrustIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 24
+) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={name} size={size} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function openTrustIconTile(name: GsnIconName, size = 54) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 18,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: `0 0 ${size}px`,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(232,240,249,0.86) 100%)",
+        border: "1px solid rgba(37,78,119,0.14)",
+        boxShadow:
+          "0 14px 28px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(30, size - 14)} />
+    </span>
+  );
 }
 
 function normalizeTrustSlipRecord(raw: any): TrustSlipRecord | null {
@@ -433,16 +471,33 @@ export default function OpenTrustPage() {
       />
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Local trust reading</div>
-        <div style={{ marginTop: 10, color: "#0B1F33", fontSize: isCompact ? 28 : 34, fontWeight: 900, lineHeight: 1.1 }}>
-          Current community reading
+        <div style={sectionLabel()}>
+          {openTrustIconText("shield", "Local trust reading", 22)}
+        </div>
+        <div
+          style={{
+            marginTop: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          {openTrustIconTile("shield", 58)}
+          <div style={{ color: "#0B1F33", fontSize: isCompact ? 28 : 34, fontWeight: 900, lineHeight: 1.1 }}>
+            Current community reading
+          </div>
         </div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
           Use this page when you want the immediate community trust reading only.
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span style={badge(true)}>{communityLabel}</span>
-          <span style={badge(false)}>{openTrustBandLabel}</span>
+          <span style={badge(true)}>
+            {openTrustIconText("community", communityLabel, 20)}
+          </span>
+          <span style={badge(false)}>
+            {openTrustIconText("shield", openTrustBandLabel, 20)}
+          </span>
         </div>
 
         <div
@@ -455,12 +510,14 @@ export default function OpenTrustPage() {
           }}
         >
           <div style={{ ...innerCard(tone.bg), border: tone.border }}>
-            <div style={sectionLabel()}>Reading</div>
+            <div style={sectionLabel()}>
+              {openTrustIconText("chart", "Reading", 22)}
+            </div>
             <div style={{ marginTop: 12, color: tone.text, fontWeight: 900, fontSize: 34, lineHeight: 1 }}>
               {openTrustBandLabel}
             </div>
             <div style={{ marginTop: 10, color: "#475569", fontSize: 14, fontWeight: 800 }}>
-              Current score: {openTrust.scoreText}
+              {openTrustIconText("wallet", `Current score: ${openTrust.scoreText}`, 22)}
             </div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 14, fontWeight: 800, lineHeight: 1.45 }}>
               {openTrust.statusText}
@@ -471,16 +528,18 @@ export default function OpenTrustPage() {
           </div>
 
           <div style={innerCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Why this reading</div>
+            <div style={sectionLabel()}>
+              {openTrustIconText("document", "Why this reading", 22)}
+            </div>
             <div style={{ marginTop: 10, ...helperText() }}>
               {loading ? "Loading the current community trust reading..." : openTrust.whyText}
             </div>
             <CardActionRow style={{ marginTop: 16 }}>
               <StableCtaLink to={routes.trust} kind="primary" debugId="open-trust.trust">
-                Open Trust Passport
+                {openTrustIconText("shield", "Open Trust Passport")}
               </StableCtaLink>
               <StableCtaLink to={routes.community} debugId="open-trust.community">
-                Open Community
+                {openTrustIconText("community", "Open Community")}
               </StableCtaLink>
             </CardActionRow>
           </div>
@@ -488,7 +547,9 @@ export default function OpenTrustPage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>What to do next</div>
+        <div style={sectionLabel()}>
+          {openTrustIconText("navigation", "What to do next", 22)}
+        </div>
         <div
           style={{
             marginTop: 10,
@@ -515,7 +576,9 @@ export default function OpenTrustPage() {
         >
           {routeGuide.map((item) => (
             <div key={item.title} style={innerCard("#F8FBFF")}>
-              <div style={sectionLabel()}>{item.label}</div>
+              <div style={sectionLabel()}>
+                {openTrustIconText("check", item.label, 22)}
+              </div>
               <div
                 style={{
                   marginTop: 10,

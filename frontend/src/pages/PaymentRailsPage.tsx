@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
-import { TrustPaperIcon } from "../components/TrustPaperMarks";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -162,12 +162,12 @@ function helperText(): React.CSSProperties {
   return {
     color: "#405A72",
     fontSize: 14.5,
-    lineHeight: 1.75,
+    lineHeight: 1.45,
   };
 }
 
 function routeTileHeading(
-  icon: React.ComponentProps<typeof TrustPaperIcon>["name"],
+  icon: GsnIconName,
   label: string
 ): React.ReactElement {
   return (
@@ -183,7 +183,23 @@ function routeTileHeading(
         lineHeight: 1.25,
       }}
     >
-      <TrustPaperIcon name={icon} size={18} color="#164AAE" strokeWidth={2.4} />
+      <span
+        aria-hidden="true"
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 12,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#0A3765",
+          background: "linear-gradient(180deg, #F8FBFF 0%, #DCEBFA 100%)",
+          border: "1px solid rgba(11,31,51,0.12)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.78)",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={30} />
+      </span>
       <span
         style={{
           minWidth: 0,
@@ -752,9 +768,9 @@ export default function PaymentRailsPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen gives you a read-only picture of which inbound and outbound rails look active, how they are labelled, and which providers and currencies are visible."
-        why="It helps you understand the current payment environment without asking you to act directly inside this page."
-        next="Read the current rail picture here, then return to the guided Money In or Money Out route that matches the direction you need."
+        what="This screen gives you a read-only picture of which inbound and outbound rails are visible."
+        why="It helps you choose Money In or Money Out with less guesswork."
+        next="Read the current rail picture here, then return to the guided Money In or Money Out route."
         tone="light"
         style={{ marginTop: 18 }}
       />
@@ -795,18 +811,17 @@ export default function PaymentRailsPage() {
                 lineHeight: 1.15,
               }}
             >
-              Payment rails should remain readable, not buried in raw JSON
+              Payment rails, made readable
             </div>
 
             <div
               style={{
                 marginTop: 10,
                 color: "#D7E3F1",
-                lineHeight: 1.8,
+                lineHeight: 1.45,
               }}
             >
-              Review which rail families are visible before you go
-              back to Money In or Money Out.
+              Check which rail families are visible before you continue.
             </div>
 
             <div
@@ -827,13 +842,12 @@ export default function PaymentRailsPage() {
               style={{
                 marginTop: 16,
                 color: "#D7E3F1",
-                lineHeight: 1.75,
+                lineHeight: 1.45,
                 fontWeight: 800,
               }}
             >
-              Keep the route reading here. When you are ready to act again, use the
-              single <span style={{ fontWeight: 1000 }}>Next routes</span> section
-              below so the money direction is chosen in one clear place.
+              Use <span style={{ fontWeight: 1000 }}>Next routes</span> when
+              you are ready to continue.
             </div>
           </div>
 
@@ -870,9 +884,9 @@ export default function PaymentRailsPage() {
 
         <ExplainToggle
           label="What this does"
-          what="This current reading turns the raw rail statuses into one practical interpretation so you can judge whether the rail picture looks strong, partial, or uncertain."
-          why="Without that interpretation, it is easy to overreact to one status label or miss the safer next route."
-          next="Read this summary before you decide whether to continue with Money In, Money Out, or a deeper rail check."
+          what="This summary turns rail statuses into one clear reading."
+          why="It keeps one confusing status from misleading you."
+          next="Use the reading, then choose Money In, Money Out, or Readiness."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -970,19 +984,17 @@ export default function PaymentRailsPage() {
               style={{
                 marginTop: 8,
                 color: "#6B7A88",
-                lineHeight: 1.8,
+                lineHeight: 1.45,
               }}
             >
-              Review the structured rail view here. If you need the full response,
-              you can still open it below.
+              Review the grouped rail view. Source details stay hidden unless needed.
             </div>
           </div>
 
           <div style={softCard("#F8FBFF")}>
             <div style={sectionLabel()}>How to use this page</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Use it to see whether deposit or withdrawal looks more available.
-              When you are ready to act, return to the guided Money In or Money Out route.
+              Use this to see whether deposit or withdrawal looks clearer.
             </div>
             <div
               style={{
@@ -995,7 +1007,7 @@ export default function PaymentRailsPage() {
               <SubtleButton
                 onClick={() => setShowRaw((prev) => !prev)}
                 minWidth={112}
-                stableHeight={42}
+                stableHeight={52}
                 debugId="payment-rails.toggle-raw"
                 style={paymentRailsSoftButtonStyle()}
               >
@@ -1007,9 +1019,9 @@ export default function PaymentRailsPage() {
 
         <ExplainToggle
           label="What this does"
-          what="This structured rail listing groups the visible inbound, outbound, and general rails into a clearer operational view."
-          why="It helps you see which directions look active or limited before you return to the guided money route."
-          next="Use the grouped statuses here to judge whether Money In or Money Out looks clearer, then continue on the matching guided page."
+          what="This groups inbound, outbound, and general rails."
+          why="It shows which direction looks active or limited."
+          next="Continue on the matching guided money page."
           tone="light"
           style={{ marginTop: 16 }}
         />
@@ -1019,9 +1031,8 @@ export default function PaymentRailsPage() {
             Loading rail visibility...
           </div>
         ) : rails.length === 0 ? (
-          <div style={{ marginTop: 16, color: "#64748B", lineHeight: 1.8 }}>
-            No structured rail listing is shown yet. You can still open the full
-            response below.
+          <div style={{ marginTop: 16, color: "#64748B", lineHeight: 1.45 }}>
+            No rail listing is shown yet. Source details are still available below.
           </div>
         ) : (
           <div style={{ marginTop: 16, display: "grid", gap: 18 }}>
@@ -1083,7 +1094,7 @@ export default function PaymentRailsPage() {
                                   marginTop: 8,
                                   color: "#64748B",
                                   fontSize: 14,
-                                  lineHeight: 1.7,
+                                  lineHeight: 1.45,
                                 }}
                               >
                                 Provider: {rail.provider}
@@ -1138,7 +1149,7 @@ export default function PaymentRailsPage() {
                             style={{
                               marginTop: 10,
                               color: "#64748B",
-                              lineHeight: 1.75,
+                              lineHeight: 1.45,
                               fontSize: 14,
                             }}
                           >
@@ -1155,7 +1166,7 @@ export default function PaymentRailsPage() {
 
         {showRaw ? (
           <div style={{ marginTop: 18 }}>
-            <div style={sectionLabel()}>Raw response</div>
+            <div style={sectionLabel()}>Source details</div>
             <pre
               style={{
                 marginTop: 12,
@@ -1183,7 +1194,7 @@ export default function PaymentRailsPage() {
             style={{
               marginTop: 8,
               color: "#6B7A88",
-              lineHeight: 1.8,
+              lineHeight: 1.45,
             }}
           >
             Move back into the page you need after reading the rail picture.

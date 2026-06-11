@@ -11,12 +11,11 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
-  TrustPaperIcon,
   TrustPaperSeal,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
-  type TrustPaperIconName,
 } from "../components/TrustPaperMarks";
 import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
@@ -728,6 +727,60 @@ function trustSlipTinyIconCircle(ok = true): React.CSSProperties {
     border: `1px solid ${ok ? "rgba(46,155,98,0.20)" : "rgba(214,170,69,0.28)"}`,
     flex: "0 0 auto",
   };
+}
+
+function trustSlipIconBadge(
+  name: GsnIconName,
+  size = 28,
+  tone: "navy" | "blue" | "green" | "amber" | "red" = "navy"
+): React.ReactElement {
+  const palette = {
+    navy: {
+      color: "#EAF3FF",
+      background:
+        "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+      border: "1px solid rgba(196,216,238,0.22)",
+    },
+    blue: {
+      color: "#EAF3FF",
+      background: "linear-gradient(180deg, #2367D1 0%, #0B3E78 100%)",
+      border: "1px solid rgba(123,161,204,0.28)",
+    },
+    green: {
+      color: "#ECFDF5",
+      background: "linear-gradient(180deg, #2E9B62 0%, #12653C 100%)",
+      border: "1px solid rgba(167,243,208,0.28)",
+    },
+    amber: {
+      color: "#FFF7E6",
+      background: "linear-gradient(180deg, #D6AA45 0%, #9A6817 100%)",
+      border: "1px solid rgba(252,211,77,0.30)",
+    },
+    red: {
+      color: "#FEF2F2",
+      background: "linear-gradient(180deg, #C83A3A 0%, #7F1D1D 100%)",
+      border: "1px solid rgba(254,202,202,0.30)",
+    },
+  }[tone];
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size >= 34 ? 13 : 11,
+        display: "grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        boxShadow:
+          "0 9px 18px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
+        ...palette,
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(24, Math.round(size * 0.9))} />
+    </span>
+  );
 }
 
 function TrustSlipQrCode({
@@ -1609,7 +1662,7 @@ export default function TrustSlipPage() {
       : "Usable for low-risk checking, with normal judgement and verification.";
   const trustSlipReadingRows = [
     {
-      icon: "shield" as TrustPaperIconName,
+      icon: "shield" as GsnIconName,
       label: "Identity verified",
       status:
         merchantViewPhoneVerified && (bankVerified || communityIdentityConfirmed)
@@ -1619,12 +1672,12 @@ export default function TrustSlipPage() {
           : "Limited",
     },
     {
-      icon: "community" as TrustPaperIconName,
+      icon: "community" as GsnIconName,
       label: "Support trust",
       status: hasBlockingTrustSlipState ? "Needs caution" : "Mixed",
     },
     {
-      icon: "chart" as TrustPaperIconName,
+      icon: "chart" as GsnIconName,
       label: "Contribution discipline",
       status:
         commitmentPlainLanguage || personalCommitmentPlainLanguage
@@ -1632,35 +1685,35 @@ export default function TrustSlipPage() {
           : "Limited",
     },
     {
-      icon: "wallet" as TrustPaperIconName,
+      icon: "wallet" as GsnIconName,
       label: "Finance discipline",
       status: safeStr(summary?.last_full_repayment_at) ? "Strong" : "Caution",
     },
     {
-      icon: "shop" as TrustPaperIconName,
+      icon: "shop" as GsnIconName,
       label: "Trade trust",
       status:
         Number(summary?.unique_counterparties ?? 0) > 0 ? "Mixed" : "Limited",
     },
     {
-      icon: "check" as TrustPaperIconName,
+      icon: "check" as GsnIconName,
       label: "Follow-through",
       status: safeStr(summary?.last_full_repayment_at) ? "Strong" : "Pending",
     },
     {
-      icon: "home" as TrustPaperIconName,
+      icon: "home" as GsnIconName,
       label: "Community standing",
       status: ["D", "E"].includes(trustSlipBandLetter)
         ? "Under pressure"
         : "Stable",
     },
     {
-      icon: "document" as TrustPaperIconName,
+      icon: "document" as GsnIconName,
       label: "Verified history",
       status: trustSlipCode ? "Limited" : "Not ready",
     },
   ];
-  const trustSlipUseCases: Array<[TrustPaperIconName, string]> = [
+  const trustSlipUseCases: Array<[GsnIconName, string]> = [
     ["community", "Community-backed support conversations"],
     ["briefcase", "Small trade or low-risk trust checks"],
     ["shop", "Merchant review before release"],
@@ -1961,7 +2014,7 @@ export default function TrustSlipPage() {
                     background: "rgba(246,215,122,0.08)",
                   }}
                 >
-                  <TrustPaperIcon name="globe" size={31} />
+                  <GsnLegacyIcon name="globe" size={40} />
                 </span>
                 <span>GSN</span>
               </div>
@@ -2063,11 +2116,7 @@ export default function TrustSlipPage() {
                     minHeight: isCompact ? 36 : "auto",
                   }}
                 >
-                  <TrustPaperIcon
-                    name={icon as TrustPaperIconName}
-                    size={isCompact ? 21 : 16}
-                    color="#0B63D1"
-                  />
+                  <GsnLegacyIcon name={icon as GsnIconName} size={isCompact ? 30 : 24} />
                   <span
                     style={{
                       color: "#0B63D1",
@@ -2124,7 +2173,7 @@ export default function TrustSlipPage() {
                   }}
                 >
                   <span style={trustSlipTinyIconCircle(Boolean(ok))}>
-                    <TrustPaperIcon name={ok ? "check" : "document"} size={15} strokeWidth={2.6} />
+                    <GsnLegacyIcon name={ok ? "check" : "document"} size={24} />
                   </span>
                   <span>{label}</span>
                 </span>
@@ -2203,11 +2252,11 @@ export default function TrustSlipPage() {
                   busy={confirmationBusy}
                   busyLabel="Requesting..."
                   fullWidth
-                  stableHeight={isCompact ? 50 : 52}
+                  stableHeight={isCompact ? 52 : 52}
                   debugId="trust-slip.community-confirmation.request"
                   style={trustSlipPrimaryActionStyle(isCompact)}
                 >
-                  <TrustPaperIcon name="community" size={isCompact ? 18 : 19} />
+                  {trustSlipIconBadge("community", isCompact ? 26 : 28, "blue")}
                   Request instant confirmation
                 </PrimaryButton>
                 {communityVerifyPath ? (
@@ -2218,7 +2267,7 @@ export default function TrustSlipPage() {
                     debugId="trust-slip.community-confirmation.open-community-record"
                     style={{ width: "100%" }}
                   >
-                    <TrustPaperIcon name="search" size={18} />
+                    {trustSlipIconBadge("search", 28, "blue")}
                     Open public community record
                   </StableCtaLink>
                 ) : (
@@ -2227,7 +2276,7 @@ export default function TrustSlipPage() {
                     onClick={() => {
                       showNotice(
                         "error",
-                        "Public community record is not ready yet. Refresh TrustSlip or request community confirmation first."
+                        "The public community record is not ready yet. Request confirmation or refresh this TrustSlip, then try again."
                       );
                     }}
                     fullWidth
@@ -2235,7 +2284,7 @@ export default function TrustSlipPage() {
                     debugId="trust-slip.community-confirmation.open-community-record"
                     style={trustSlipActionButtonStyle(isCompact)}
                   >
-                    <TrustPaperIcon name="search" size={18} />
+                    {trustSlipIconBadge("search", 28, "navy")}
                     Open public community record
                   </SecondaryButton>
                 )}
@@ -2262,7 +2311,7 @@ export default function TrustSlipPage() {
                         <StableCtaLink
                           to={confirmationPublicPath}
                           kind="soft"
-                          stableHeight={44}
+                          stableHeight={isCompact ? 52 : 48}
                           debugId="trust-slip.community-confirmation.open-outcome"
                           style={{ marginTop: 2, width: "100%" }}
                         >
@@ -2298,7 +2347,7 @@ export default function TrustSlipPage() {
                   debugId="trust-slip.paper.open-community-record"
                   style={trustSlipPrimaryActionStyle(isCompact)}
                 >
-                  <TrustPaperIcon name="search" size={isCompact ? 18 : 19} />
+                  <GsnLegacyIcon name="search" size={isCompact ? 28 : 30} />
                   Open public community record
                 </StableCtaLink>
               ) : (
@@ -2315,7 +2364,7 @@ export default function TrustSlipPage() {
                   debugId="trust-slip.paper.open-community-record"
                   style={trustSlipPrimaryActionStyle(isCompact)}
                 >
-                  <TrustPaperIcon name="search" size={isCompact ? 18 : 19} />
+                  <GsnLegacyIcon name="search" size={isCompact ? 28 : 30} />
                   Open public community record
                 </SecondaryButton>
               )}
@@ -2344,7 +2393,7 @@ export default function TrustSlipPage() {
                   gap: 12,
                 }}
               >
-                <TrustPaperIcon name="shield" size={isCompact ? 34 : 42} />
+                <GsnLegacyIcon name="shield" size={isCompact ? 42 : 52} />
                 {trustSlipStatusTitle}
               </div>
               <div
@@ -2373,10 +2422,13 @@ export default function TrustSlipPage() {
                     navigateWithOrigin(navigate, verifyPath, location);
                     return;
                   }
-                  showNotice("error", "TrustSlip verify route is not ready yet.");
+                  showNotice(
+                    "error",
+                    "This TrustSlip needs a fresh public code before the verify page can open. Refresh the TrustSlip, then try again."
+                  );
                 }}
                 fullWidth
-                stableHeight={isCompact ? 44 : 46}
+                stableHeight={isCompact ? 52 : 50}
                 debugId="trust-slip.paper.open-verify"
                 style={{ ...trustSlipActionButtonStyle(isCompact), marginTop: 14 }}
               >
@@ -2408,7 +2460,7 @@ export default function TrustSlipPage() {
                   alignItems: "start",
                 }}
               >
-                <TrustPaperIcon name="alert" size={26} color="#B45309" />
+                <GsnLegacyIcon name="alert" size={34} />
                 <span>{decisionSummaryText}</span>
               </div>
               {[
@@ -2505,7 +2557,7 @@ export default function TrustSlipPage() {
                         gap: 8,
                       }}
                     >
-                      <TrustPaperIcon name={item.icon} size={19} color="#0B63D1" />
+                      {trustSlipIconBadge(item.icon, 28, item.status === "Ready" ? "green" : "blue")}
                       {item.label}
                     </span>
                     <span style={statusPillStyle(item.status)}>{item.status}</span>
@@ -2540,7 +2592,7 @@ export default function TrustSlipPage() {
                         fontWeight: 1000,
                       }}
                     >
-                      <TrustPaperIcon name={icon} size={21} />
+                      <GsnLegacyIcon name={icon} size={32} />
                     </span>
                     <span style={{ color: "#334155", fontWeight: 900 }}>{item}</span>
                   </div>
@@ -2569,7 +2621,7 @@ export default function TrustSlipPage() {
                 <TrustPaperWatermark name="alert" color="#991B1B" size={132} opacity={0.065} />
                 {trustSlipLimits.map((item) => (
                   <div key={item} style={{ color: "#991B1B", fontWeight: 900, marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-                    <TrustPaperIcon name="alert" size={17} />
+                    {trustSlipIconBadge("alert", 26, "red")}
                     {item}
                   </div>
                 ))}
@@ -2590,7 +2642,7 @@ export default function TrustSlipPage() {
                 <TrustPaperWatermark name="shield" color="#166534" size={132} opacity={0.075} />
                 {trustSlipTrustReasons.map((item) => (
                   <div key={item} style={{ color: "#166534", fontWeight: 900, marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-                    <TrustPaperIcon name="check" size={17} />
+                    <GsnLegacyIcon name="check" size={24} />
                     {item}
                   </div>
                 ))}
@@ -2620,11 +2672,11 @@ export default function TrustSlipPage() {
               <SecondaryButton
                 onClick={copyTrustSlipSnapshot}
                 fullWidth
-                stableHeight={isCompact ? 48 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 debugId="trust-slip.paper.copy"
                 style={trustSlipActionButtonStyle(isCompact)}
               >
-                <TrustPaperIcon name="copy" size={isCompact ? 18 : 19} />
+                {trustSlipIconBadge("copy", isCompact ? 26 : 28, "navy")}
                 Copy TrustSlip
               </SecondaryButton>
               <PrimaryButton
@@ -2634,11 +2686,11 @@ export default function TrustSlipPage() {
                 busy={refreshing}
                 busyLabel="Refreshing..."
                 fullWidth
-                stableHeight={isCompact ? 48 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 debugId="trust-slip.paper.refresh"
                 style={trustSlipPrimaryActionStyle(isCompact)}
               >
-                <TrustPaperIcon name="refresh" size={isCompact ? 18 : 19} />
+                {trustSlipIconBadge("refresh", isCompact ? 26 : 28, "blue")}
                 Refresh TrustSlip
               </PrimaryButton>
               <SecondaryButton
@@ -2647,14 +2699,17 @@ export default function TrustSlipPage() {
                     navigateWithOrigin(navigate, verifyPath, location);
                     return;
                   }
-                  showNotice("error", "TrustSlip verify route is not ready yet.");
+                  showNotice(
+                    "error",
+                    "This TrustSlip needs a fresh public code before the verify page can open. Refresh the TrustSlip, then try again."
+                  );
                 }}
                 fullWidth
-                stableHeight={isCompact ? 48 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 debugId="trust-slip.paper.verify"
                 style={trustSlipActionButtonStyle(isCompact)}
               >
-                <TrustPaperIcon name="search" size={isCompact ? 18 : 19} />
+                {trustSlipIconBadge("search", isCompact ? 26 : 28, "navy")}
                 Verify public code
               </SecondaryButton>
             </div>
@@ -2807,7 +2862,7 @@ export default function TrustSlipPage() {
                     "TrustSlip code is not ready yet."
                   )
                 }
-                stableHeight={isCompact ? 46 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 minWidth={isCompact ? undefined : 176}
                 debugId="trust-slip.copy-code"
               >
@@ -2822,7 +2877,7 @@ export default function TrustSlipPage() {
                     "Verify link is not ready yet."
                   )
                 }
-                stableHeight={isCompact ? 46 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 minWidth={isCompact ? undefined : 158}
                 debugId="trust-slip.copy-verify-link"
               >
@@ -2837,7 +2892,7 @@ export default function TrustSlipPage() {
                     "GSN ID is not ready yet."
                   )
                 }
-                stableHeight={isCompact ? 46 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 minWidth={isCompact ? undefined : 124}
                 debugId="trust-slip.copy-gmfn-id"
               >
@@ -2855,7 +2910,7 @@ export default function TrustSlipPage() {
                     "Print is not available in this browser. Use Copy snapshot or Copy verify link."
                   );
                 }}
-                stableHeight={isCompact ? 46 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 minWidth={isCompact ? undefined : 136}
                 debugId="trust-slip.print"
               >
@@ -2864,7 +2919,7 @@ export default function TrustSlipPage() {
 
               <SubtleButton
                 onClick={copyTrustSlipSnapshot}
-                stableHeight={isCompact ? 46 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 minWidth={isCompact ? undefined : 190}
                 debugId="trust-slip.copy-snapshot"
               >
@@ -3096,11 +3151,11 @@ export default function TrustSlipPage() {
           </div>
           <SubtleButton
             onClick={() => toggleSection("reader")}
-            stableHeight={42}
+            stableHeight={isCompact ? 48 : 42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-reader"
           >
-            {collapsed.reader ? "Open" : "Close"}
+            {collapsed.reader ? "Open" : "Hide"}
           </SubtleButton>
         </div>
 
@@ -3136,16 +3191,16 @@ export default function TrustSlipPage() {
           <div>
             <div style={sectionLabel()}>Help using this TrustSlip</div>
             <div style={{ marginTop: 6, ...helperText() }}>
-              Product guidance lives here so the TrustSlip paper can stand on its own.
+              Use this when you need to share, explain, or verify the TrustSlip without opening the fuller Trust Passport.
             </div>
           </div>
           <SubtleButton
             onClick={() => toggleSection("nextActions")}
-            stableHeight={42}
+            stableHeight={isCompact ? 48 : 42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-help"
           >
-            {collapsed.nextActions ? "Open" : "Close"}
+            {collapsed.nextActions ? "Open" : "Hide"}
           </SubtleButton>
         </div>
         {!collapsed.nextActions ? (
@@ -3198,17 +3253,17 @@ export default function TrustSlipPage() {
           <div>
             <div style={sectionLabel()}>Merchant verification</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep this separate from TrustSlip Verify. It controls whether outside merchants can use the public verification page.
+              Use this when someone outside GSN needs to check whether this TrustSlip is current and safe to rely on.
             </div>
           </div>
 
           <SubtleButton
             onClick={() => toggleSection("merchantVerify")}
-            stableHeight={42}
+            stableHeight={isCompact ? 48 : 42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-merchant-verify"
           >
-            {collapsed.merchantVerify ? "Open" : "Collapse"}
+            {collapsed.merchantVerify ? "Open" : "Hide"}
           </SubtleButton>
         </div>
 
@@ -3342,7 +3397,7 @@ export default function TrustSlipPage() {
                   <StableCtaLink
                     to={verifyPath}
                     kind="primary"
-                    stableHeight={isCompact ? 46 : 50}
+                    stableHeight={isCompact ? 52 : 50}
                     fullWidth={isCompact}
                     minWidth={isCompact ? undefined : 190}
                     debugId="trust-slip.open-verify"
@@ -3355,15 +3410,15 @@ export default function TrustSlipPage() {
                     onClick={() => {
                       showNotice(
                         "error",
-                        "TrustSlip verify is not ready yet. Refresh TrustSlip first so a public code is available."
+                        "This TrustSlip needs a fresh public code before outside verification can open. Refresh the TrustSlip, then try again."
                       );
                     }}
-                    stableHeight={isCompact ? 46 : 50}
+                    stableHeight={isCompact ? 52 : 50}
                     fullWidth={isCompact}
                     minWidth={isCompact ? undefined : 160}
                     debugId="trust-slip.open-verify"
                   >
-                    Verify not ready
+                    Prepare verify link
                   </SecondaryButton>
                 )}
 
@@ -3375,7 +3430,7 @@ export default function TrustSlipPage() {
                       "Verify link is not ready yet."
                     )
                   }
-                  stableHeight={isCompact ? 46 : 50}
+                  stableHeight={isCompact ? 52 : 50}
                   fullWidth={isCompact}
                   minWidth={isCompact ? undefined : 168}
                   debugId="trust-slip.copy-verify-link-merchant"
@@ -3389,7 +3444,7 @@ export default function TrustSlipPage() {
                     target="_blank"
                     rel="noreferrer"
                     kind="soft"
-                    stableHeight={isCompact ? 46 : 50}
+                    stableHeight={isCompact ? 52 : 50}
                     fullWidth={isCompact}
                     minWidth={isCompact ? undefined : 176}
                     debugId="trust-slip.open-merchant-verify"
@@ -3422,11 +3477,11 @@ export default function TrustSlipPage() {
 
           <SubtleButton
             onClick={() => toggleSection("evidence")}
-            stableHeight={42}
+            stableHeight={isCompact ? 48 : 42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-evidence"
           >
-            {collapsed.evidence ? "Open" : "Collapse"}
+            {collapsed.evidence ? "Open" : "Hide"}
           </SubtleButton>
         </div>
 
@@ -3691,11 +3746,11 @@ export default function TrustSlipPage() {
 
           <SubtleButton
             onClick={() => toggleSection("notes")}
-            stableHeight={42}
+            stableHeight={isCompact ? 48 : 42}
             style={collapseToggle()}
             debugId="trust-slip.toggle-notes"
           >
-            {collapsed.notes ? "Open" : "Collapse"}
+            {collapsed.notes ? "Open" : "Hide"}
           </SubtleButton>
         </div>
 
@@ -3746,7 +3801,7 @@ export default function TrustSlipPage() {
               <div style={{ marginTop: 12 }}>
                 <StableCtaLink
                   to={routes.trust}
-                  stableHeight={isCompact ? 44 : 48}
+                  stableHeight={isCompact ? 52 : 48}
                   fullWidth={isCompact}
                   minWidth={isCompact ? undefined : 172}
                   debugId="trust-slip.open-trust"
@@ -3782,7 +3837,7 @@ export default function TrustSlipPage() {
                   to={GMFN_EXEC_SUMMARY_URL}
                   target="_blank"
                   rel="noreferrer"
-                  stableHeight={isCompact ? 44 : 48}
+                  stableHeight={isCompact ? 52 : 48}
                   fullWidth={isCompact}
                   minWidth={isCompact ? undefined : 214}
                   debugId="trust-slip.open-executive-summary"
@@ -3793,7 +3848,7 @@ export default function TrustSlipPage() {
                 <StableCtaLink
                   to={routes.guide}
                   kind="soft"
-                  stableHeight={isCompact ? 44 : 48}
+                  stableHeight={isCompact ? 52 : 48}
                   fullWidth={isCompact}
                   minWidth={isCompact ? undefined : 126}
                   debugId="trust-slip.open-guide"

@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableCtaLink } from "../components/StableButton";
 import { getSelectedClanId } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -94,6 +95,46 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function labelWithIcon(icon: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={icon} size={24} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function iconTile(
+  icon: GsnIconName,
+  tone: "ready" | "warning" | "neutral" = "neutral"
+): React.ReactNode {
+  const palette =
+    tone === "ready"
+      ? { bg: "#DCFCE7", color: "#166534", border: "rgba(22,101,52,0.14)" }
+      : tone === "warning"
+        ? { bg: "#FEF3C7", color: "#92400E", border: "rgba(146,64,14,0.14)" }
+        : { bg: "#EAF3FF", color: "#0B63D1", border: "rgba(11,99,209,0.14)" };
+
+  return (
+    <span
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: 15,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: palette.bg,
+        color: palette.color,
+        border: `1px solid ${palette.border}`,
+        flex: "0 0 auto",
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={32} />
+    </span>
+  );
+}
+
 function routeTarget(
   intent: CtaIntent,
   communityId: number,
@@ -126,21 +167,25 @@ export default function BorrowerPreflightPage() {
   const checks = [
     {
       ok: true,
+      icon: "community" as const,
       title: "Community visibility is ready",
       note: "Your community membership is visible enough to support a first trust review.",
     },
     {
       ok: true,
+      icon: "shield" as const,
       title: "Trust position is showing",
       note: "Your visible standing is already strong enough to support an early conversation.",
     },
     {
       ok: false,
+      icon: "wallet" as const,
       title: "Pool participation could be stronger",
       note: "A little more visible contribution activity can make support confidence clearer.",
     },
     {
       ok: false,
+      icon: "chart" as const,
       title: "Readiness still needs strengthening",
       note: "Check your Loan Readiness page before making a request if you want a cleaner path.",
     },
@@ -170,14 +215,13 @@ export default function BorrowerPreflightPage() {
       />
 
       <section style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={sectionLabel()}>Preflight Signal</div>
+        <div style={sectionLabel()}>Support Check</div>
         <div style={{ marginTop: 8, fontSize: 30, fontWeight: 1000, color: "#0B1F33" }}>
           Check your position before you ask
         </div>
         <div style={{ ...helperText(), marginTop: 8, maxWidth: 760 }}>
           This does not approve or reject you. It helps you see whether your
-          visible signals are strong enough before you move into the live support
-          workflow.
+          visible signals are strong enough before you make a support request.
         </div>
 
         <div
@@ -189,19 +233,19 @@ export default function BorrowerPreflightPage() {
           }}
         >
           <div style={statTile("#F0FDF4")}>
-            <div style={sectionLabel()}>Ready Signals</div>
+            <div style={sectionLabel()}>{labelWithIcon("check", "Ready Signals")}</div>
             <div style={{ marginTop: 8, fontSize: 28, fontWeight: 1000, color: "#065F46" }}>
               {readyCount}
             </div>
           </div>
           <div style={statTile("#FFFBEB")}>
-            <div style={sectionLabel()}>Strengthen First</div>
+            <div style={sectionLabel()}>{labelWithIcon("alert", "Strengthen First")}</div>
             <div style={{ marginTop: 8, fontSize: 28, fontWeight: 1000, color: "#92400E" }}>
               {improveCount}
             </div>
           </div>
           <div style={statTile()}>
-            <div style={sectionLabel()}>Best Next Door</div>
+            <div style={sectionLabel()}>{labelWithIcon("navigation", "Best Next Step")}</div>
             <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>
               Loan Readiness
             </div>
@@ -210,7 +254,7 @@ export default function BorrowerPreflightPage() {
       </section>
 
       <section style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={sectionLabel()}>Preflight Checklist</div>
+        <div style={sectionLabel()}>What To Check</div>
         <div style={{ ...helperText(), marginTop: 8 }}>
           Read the green items as strengths already visible. Read the amber items
           as the first places to strengthen before you ask for support.
@@ -219,10 +263,15 @@ export default function BorrowerPreflightPage() {
         <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
           {checks.map((item, idx) => (
             <div key={idx} style={statusItem(item.ok)}>
-              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                {item.ok ? "Ready now" : "Strengthen first"}: {item.title}
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                {iconTile(item.icon, item.ok ? "ready" : "warning")}
+                <div>
+                  <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                    {item.ok ? "Ready now" : "Strengthen first"}: {item.title}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>{item.note}</div>
+                </div>
               </div>
-              <div style={{ marginTop: 8, ...helperText() }}>{item.note}</div>
             </div>
           ))}
         </div>
@@ -239,19 +288,25 @@ export default function BorrowerPreflightPage() {
           }}
         >
           <div style={innerCard()}>
-            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Open Loans & Support</div>
+            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+              {labelWithIcon("wallet", "Open Loans & Support")}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Return to the main support doors after this quick preflight check.
+              Return to the main support doors after this quick support check.
             </div>
           </div>
           <div style={innerCard("#F8FBFF")}>
-            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Check Loan Readiness</div>
+            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+              {labelWithIcon("chart", "Check Loan Readiness")}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Read deeper signals, blockers, and what can improve confidence.
             </div>
           </div>
           <div style={innerCard()}>
-            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>Open Commitment Builder</div>
+            <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+              {labelWithIcon("pen", "Open Commitment Builder")}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Strengthen the visible discipline that later helps support trust.
             </div>
@@ -262,29 +317,29 @@ export default function BorrowerPreflightPage() {
           <StableCtaLink
             to={routes.loans}
             minWidth={158}
-            stableHeight={48}
+            stableHeight={52}
             debugId="borrower-preflight.open-loans"
             style={actionLink(false)}
           >
-            Open Loans & Support
+            {labelWithIcon("wallet", "Open Loans & Support")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.readiness}
             minWidth={158}
-            stableHeight={48}
+            stableHeight={52}
             debugId="borrower-preflight.open-readiness"
             style={actionLink(true)}
           >
-            Check Loan Readiness
+            {labelWithIcon("chart", "Check Loan Readiness")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.commitments}
             minWidth={158}
-            stableHeight={48}
+            stableHeight={52}
             debugId="borrower-preflight.open-commitments"
             style={actionLink(false)}
           >
-            Open Commitment Builder
+            {labelWithIcon("pen", "Open Commitment Builder")}
           </StableCtaLink>
         </div>
       </section>

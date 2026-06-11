@@ -56,10 +56,24 @@ while ((emojiMatch = emojiPattern.exec(marketplaceSource))) {
   assertContains(
     marketplaceFile,
     marketplaceSource,
-    new RegExp(`case "${name}":[\\s\\S]*?glyph = \\(`),
-    `MarketplaceGlyph must define a deterministic SVG pictogram for ${name}.`
+    new RegExp(`${name}: "[^"]+"`),
+    `MarketplaceGlyph must map ${name} to a deterministic 3D GSN icon.`
   );
 });
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?MARKETPLACE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<MarketplaceGlyphName, GsnIconName>[\s\S]*?function MarketplaceGlyph[\s\S]*?<GsnLegacyIcon/,
+  "MarketplaceGlyph must render through the shared 3D GSN icon adapter."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /const MARKETPLACE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "proof"[\s\S]*?payment: "repaymentSchedule"[\s\S]*?pool: "financeInstitution"[\s\S]*?rosca: "repaymentSchedule"[\s\S]*?shop: "marketplace"[\s\S]*?trade: "marketplace"[\s\S]*?verify: "proof"/,
+  "Marketplace semantic icons must use the market stall, finance institution, repayment schedule, and proof meanings for front-page lanes."
+);
 
 [
   {

@@ -11,9 +11,9 @@ import {
   StableCtaLink,
 } from "../components/StableButton";
 import {
-  TrustPaperIcon,
-  type TrustPaperIconName,
-} from "../components/TrustPaperMarks";
+  GsnLegacyIcon,
+  type GsnIconName,
+} from "../components/GsnLegacyIcon";
 import { getCurrentClan, getMe, getMySettings, getSelectedClanId } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
@@ -133,18 +133,17 @@ function capabilityVisualRail(): React.CSSProperties {
 
 function appGuideMiniIconBubble(): React.CSSProperties {
   return {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "#08233A",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(239,246,255,0.92) 100%)",
-    border: "1px solid rgba(15,23,42,0.08)",
+    color: "#7A4A00",
+    background: "rgba(255,255,255,0.97)",
+    border: "1px solid rgba(226,192,106,0.34)",
     boxShadow:
-      "0 6px 12px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.98)",
+      "0 8px 16px rgba(8,24,42,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
   };
 }
 
@@ -419,12 +418,11 @@ function publicCapabilityIcon(): React.CSSProperties {
     width: 58,
     height: 58,
     borderRadius: 18,
-    background:
-      "linear-gradient(180deg, rgba(247,251,255,0.96) 0%, rgba(223,234,245,0.96) 100%)",
-    border: "1px solid rgba(18,49,77,0.12)",
+    background: "rgba(255,255,255,0.97)",
+    border: "1px solid rgba(226,192,106,0.34)",
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -2px 0 rgba(8,24,42,0.05), 0 12px 22px rgba(8,24,42,0.10)",
-    color: "#12314D",
+      "0 12px 22px rgba(8,24,42,0.09), inset 0 1px 0 rgba(255,255,255,0.96)",
+    color: "#7A4A00",
     fontSize: 27,
     lineHeight: 1,
   };
@@ -464,7 +462,7 @@ const PUBLIC_CAPABILITY_LINES: Record<number, string> = {
   22: "Builds disciplined follow-through for savings, repayment, and goals.",
 };
 
-const CAPABILITY_ICON_NAMES: Record<number, TrustPaperIconName> = {
+const CAPABILITY_ICON_NAMES: Record<number, GsnIconName> = {
   1: "shield",
   2: "shop",
   3: "globe",
@@ -493,7 +491,7 @@ function publicCapabilityLine(item: (typeof GMFN_CAPABILITIES)[number]) {
   return PUBLIC_CAPABILITY_LINES[item.id] || item.gmfn || item.proverb;
 }
 
-function capabilityIconName(item: (typeof GMFN_CAPABILITIES)[number]): TrustPaperIconName {
+function capabilityIconName(item: (typeof GMFN_CAPABILITIES)[number]): GsnIconName {
   return CAPABILITY_ICON_NAMES[item.id] || "spark";
 }
 
@@ -708,10 +706,10 @@ function PublicCapabilitiesGuidePage({
                     }
                     aria-hidden="true"
                   >
-                    <TrustPaperIcon
+                    <GsnLegacyIcon
                       name={capabilityIconName(item)}
-                      size={useIosSingleColumn ? 23 : 27}
-                      strokeWidth={2.35}
+                      size={useIosSingleColumn ? 36 : 42}
+                      decorative
                     />
                   </span>
 
@@ -1044,49 +1042,49 @@ export default function MyGMFNAndIPage() {
       {
         label: "Dashboard",
         detail: "Start here for your next step.",
-        icon: "chart" as TrustPaperIconName,
+        icon: "chart" as GsnIconName,
         to: routes.dashboard,
         debugId: "my-gmfn.route.dashboard",
       },
       {
         label: "Community Home",
         detail: "Community power and private control.",
-        icon: "home" as TrustPaperIconName,
+        icon: "home" as GsnIconName,
         to: routes.community,
         debugId: "my-gmfn.route.community",
       },
       {
         label: "Marketplace",
         detail: "Buying, selling, and visibility.",
-        icon: "shop" as TrustPaperIconName,
+        icon: "shop" as GsnIconName,
         to: routes.marketplace,
         debugId: "my-gmfn.route.marketplace",
       },
       {
         label: "Loans & Support",
         detail: "Support actions and community-backed loans.",
-        icon: "wallet" as TrustPaperIconName,
+        icon: "wallet" as GsnIconName,
         to: routes.loans,
         debugId: "my-gmfn.route.loans",
       },
       {
         label: "Trust Passport",
         detail: "Deeper trust identity and proof.",
-        icon: "shield" as TrustPaperIconName,
+        icon: "shield" as GsnIconName,
         to: routes.trust,
         debugId: "my-gmfn.route.trust",
       },
       {
         label: "Demand Box",
         detail: "Needs and opportunities.",
-        icon: "document" as TrustPaperIconName,
+        icon: "document" as GsnIconName,
         to: routes.demandBox,
         debugId: "my-gmfn.route.demand-box",
       },
       {
         label: "My GSN and I",
         detail: "Guidance, settings, and capability overview.",
-        icon: "user" as TrustPaperIconName,
+        icon: "user" as GsnIconName,
         to: routes.guide,
         debugId: "my-gmfn.route.my-gmfn",
         active: true,
@@ -1236,10 +1234,10 @@ export default function MyGMFNAndIPage() {
               }}
             >
               <span style={appGuideIconBox(true, isCompact)}>
-                <TrustPaperIcon
+                <GsnLegacyIcon
                   name="shield"
-                  size={isCompact ? 23 : 28}
-                  strokeWidth={2.3}
+                  size={isCompact ? 38 : 44}
+                  decorative
                 />
               </span>
               <div
@@ -1296,10 +1294,10 @@ export default function MyGMFNAndIPage() {
               }}
             >
               <span style={appGuideIconBox(false, isCompact)}>
-                <TrustPaperIcon
+                <GsnLegacyIcon
                   name="user"
-                  size={isCompact ? 23 : 28}
-                  strokeWidth={2.3}
+                  size={isCompact ? 38 : 44}
+                  decorative
                 />
               </span>
               <div>
@@ -1361,7 +1359,7 @@ export default function MyGMFNAndIPage() {
               gap: 7,
             }}
           >
-            <TrustPaperIcon name="spark" size={15} strokeWidth={2.5} />
+            <GsnLegacyIcon name="spark" size={24} decorative />
             {capabilityCount} Capabilities
           </StableCtaLink>
 
@@ -1395,7 +1393,7 @@ export default function MyGMFNAndIPage() {
             }}
           >
             <span style={appGuideMiniIconBubble()}>
-              <TrustPaperIcon name="spark" size={16} strokeWidth={2.5} />
+              <GsnLegacyIcon name="spark" size={24} decorative />
             </span>
             <span>
               <strong>Quick Guide</strong>
@@ -1455,10 +1453,10 @@ export default function MyGMFNAndIPage() {
                     <div style={capabilityCardTop()}>
                       <span style={appGuideNumber()}>{item.id}</span>
                       <span style={appGuideMiniIconBubble()}>
-                        <TrustPaperIcon
+                        <GsnLegacyIcon
                           name={capabilityIconName(item)}
-                          size={15}
-                          strokeWidth={2.4}
+                          size={24}
+                          decorative
                         />
                       </span>
                     </div>
@@ -1466,10 +1464,10 @@ export default function MyGMFNAndIPage() {
                     <span style={capabilityVisualRail()}>
                       <span style={appGuideNumber()}>{item.id}</span>
                       <span style={appGuideMiniIconBubble()}>
-                        <TrustPaperIcon
+                        <GsnLegacyIcon
                           name={capabilityIconName(item)}
-                          size={18}
-                          strokeWidth={2.4}
+                          size={28}
+                          decorative
                         />
                       </span>
                     </span>
@@ -1547,10 +1545,10 @@ export default function MyGMFNAndIPage() {
                     }}
                   >
                     <span style={appGuideIconBox(Boolean(item.active), isCompact)}>
-                      <TrustPaperIcon
+                      <GsnLegacyIcon
                         name={item.icon}
-                        size={isCompact ? 23 : 28}
-                        strokeWidth={2.35}
+                        size={isCompact ? 38 : 44}
+                        decorative
                       />
                     </span>
                     <span
@@ -1636,7 +1634,7 @@ export default function MyGMFNAndIPage() {
                 }}
               >
                 <span style={appGuideMiniIconBubble()}>
-                  <TrustPaperIcon name="document" size={19} strokeWidth={2.5} />
+                  <GsnLegacyIcon name="document" size={28} decorative />
                 </span>
                 How to use this page
               </div>

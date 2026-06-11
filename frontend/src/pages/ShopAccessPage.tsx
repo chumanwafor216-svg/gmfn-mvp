@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { StableCtaLink } from "../components/StableButton";
 import {
@@ -92,6 +93,59 @@ function badge(primary = false): React.CSSProperties {
     whiteSpace: "normal",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
   };
+}
+
+function shopAccessIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 24
+) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={name} size={size} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function shopAccessIconTile(name: GsnIconName, size = 54) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 18,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: `0 0 ${size}px`,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)",
+        border: "1px solid rgba(255,255,255,0.16)",
+        boxShadow:
+          "0 18px 34px rgba(2,8,23,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(30, size - 14)} />
+    </span>
+  );
+}
+
+function shopAccessStatusIcon(status: string): GsnIconName {
+  if (status === "active") return "check";
+  if (status === "expired" || status === "revoked" || status === "exhausted") {
+    return "alert";
+  }
+  if (status === "product_inactive" || status === "block_inactive") return "lock";
+  return "shield";
+}
+
+function restrictionIcon(label: string): GsnIconName {
+  if (label.startsWith("Download")) return "document";
+  if (label.startsWith("Print")) return "briefcase";
+  if (label.startsWith("Reshare")) return "globe";
+  return "shield";
 }
 
 function noticeCard(tone: NoticeTone): React.CSSProperties {
@@ -273,9 +327,11 @@ export default function ShopAccessPage() {
       <div style={pageShell()}>
         <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gap: 18 }}>
           <section style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}>
-            <div style={sectionLabel()}>Vault access</div>
+            <div style={sectionLabel()}>
+              {shopAccessIconText("vault", "Vault access", 22)}
+            </div>
             <div style={{ marginTop: 10, color: "#F8FBFF", fontSize: 30, fontWeight: 1000 }}>
-              Opening private access
+              {shopAccessIconText("refresh", "Opening private access", 34)}
             </div>
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1" }}>
               Verifying this private access link and loading the restricted shop view.
@@ -291,9 +347,22 @@ export default function ShopAccessPage() {
       <div style={pageShell()}>
         <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gap: 18 }}>
           <section style={noticeCard("error")}>
-            <div style={sectionLabel()}>Vault access</div>
-            <div style={{ marginTop: 10, fontSize: 30, fontWeight: 1000 }}>
-              {statusLabel(status)}
+            <div style={sectionLabel()}>
+              {shopAccessIconText("vault", "Vault access", 22)}
+            </div>
+            <div
+              style={{
+                marginTop: 10,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              {shopAccessIconTile(shopAccessStatusIcon(status), 50)}
+              <div style={{ fontSize: 30, fontWeight: 1000 }}>
+                {statusLabel(status)}
+              </div>
             </div>
             <div style={{ marginTop: 12, lineHeight: 1.75 }}>
               {errorText || "This private access link is not available anymore."}
@@ -308,13 +377,28 @@ export default function ShopAccessPage() {
               />
             </div>
             <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(false)}>Status: {status || "invalid"}</span>
               <span style={badge(false)}>
-                Expiry: {safeDateTime(view?.policy?.expires_at)}
+                {shopAccessIconText(
+                  shopAccessStatusIcon(status),
+                  `Status: ${status || "invalid"}`,
+                  20
+                )}
               </span>
               <span style={badge(false)}>
-                Views: {safeStr(view?.policy?.views_used || 0)} /{" "}
-                {safeStr(view?.policy?.max_views || "Unlimited")}
+                {shopAccessIconText(
+                  "calendar",
+                  `Expiry: ${safeDateTime(view?.policy?.expires_at)}`,
+                  20
+                )}
+              </span>
+              <span style={badge(false)}>
+                {shopAccessIconText(
+                  "eye",
+                  `Views: ${safeStr(view?.policy?.views_used || 0)} / ${safeStr(
+                    view?.policy?.max_views || "Unlimited"
+                  )}`,
+                  20
+                )}
               </span>
             </div>
             <div style={{ marginTop: 16 }}>
@@ -322,19 +406,19 @@ export default function ShopAccessPage() {
                 <StableCtaLink
                   to="/welcome"
                   kind="secondary"
-                  stableHeight={44}
+                  stableHeight={52}
                   debugId="shop-access.invalid.back-welcome"
                 >
-                  Back to Welcome
+                  {shopAccessIconText("home", "Back to Welcome")}
                 </StableCtaLink>
                 {publicShopRoute ? (
                   <StableCtaLink
                     to={publicShopRoute}
                     kind="primary"
-                    stableHeight={44}
+                    stableHeight={52}
                     debugId="shop-access.invalid.open-public-shop"
                   >
-                    Open public shop face
+                    {shopAccessIconText("shop", "Open public shop face")}
                   </StableCtaLink>
                 ) : null}
               </div>
@@ -361,9 +445,22 @@ export default function ShopAccessPage() {
             "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
           )}
         >
-          <div style={sectionLabel()}>Vault access</div>
-          <div style={{ marginTop: 10, color: "#F8FBFF", fontSize: 34, fontWeight: 1000 }}>
-            {firstTruthy(view?.shop_name, "Private vault shop")}
+          <div style={sectionLabel()}>
+            {shopAccessIconText("vault", "Vault access", 22)}
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            {shopAccessIconTile("vault", 56)}
+            <div style={{ color: "#F8FBFF", fontSize: 34, fontWeight: 1000 }}>
+              {firstTruthy(view?.shop_name, "Private vault shop")}
+            </div>
           </div>
           <div style={{ marginTop: 12, ...helperText(), maxWidth: 860, color: "#D7E3F1" }}>
             {firstTruthy(
@@ -373,15 +470,29 @@ export default function ShopAccessPage() {
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Status: {statusLabel(status)}</span>
-            <span style={badge(false)}>
-              Community: {firstTruthy(view?.community_name, "Private community")}
+            <span style={badge(true)}>
+              {shopAccessIconText("check", `Status: ${statusLabel(status)}`, 20)}
             </span>
             <span style={badge(false)}>
-              Merchant: {firstTruthy(view?.owner_name, view?.gmfn_id, "GSN merchant")}
+              {shopAccessIconText(
+                "community",
+                `Community: ${firstTruthy(view?.community_name, "Private community")}`,
+                20
+              )}
             </span>
-            <span style={badge(false)}>Current page: Vault access</span>
-            <span style={badge(false)}>Current step: Private access</span>
+            <span style={badge(false)}>
+              {shopAccessIconText(
+                "id",
+                `Merchant: ${firstTruthy(view?.owner_name, view?.gmfn_id, "GSN merchant")}`,
+                20
+              )}
+            </span>
+            <span style={badge(false)}>
+              {shopAccessIconText("shop", "Current page: Vault access", 20)}
+            </span>
+            <span style={badge(false)}>
+              {shopAccessIconText("navigation", "Current step: Private access", 20)}
+            </span>
           </div>
 
           <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -389,25 +500,27 @@ export default function ShopAccessPage() {
               <StableCtaLink
                 to={publicShopRoute}
                 kind="secondary"
-                stableHeight={44}
+                stableHeight={52}
                 debugId="shop-access.hero.open-public-shop"
               >
-                Open public shop face
+                {shopAccessIconText("shop", "Open public shop face")}
               </StableCtaLink>
             ) : null}
             <StableCtaLink
               to="/welcome"
               kind="primary"
-              stableHeight={44}
+              stableHeight={52}
               debugId="shop-access.hero.return-entry"
             >
-              Return to entry
+              {shopAccessIconText("home", "Return to entry")}
             </StableCtaLink>
           </div>
         </section>
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Access explanation</div>
+          <div style={sectionLabel()}>
+            {shopAccessIconText("shield", "Access explanation", 22)}
+          </div>
           <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
             You are viewing a private part of this shop. Access was shared by the owner and it can
             end when the time, view limit, or access rules are reached.
@@ -429,7 +542,9 @@ export default function ShopAccessPage() {
                 border: "1px solid rgba(212,175,55,0.12)",
               }}
             >
-              <div style={sectionLabel()}>Why you can see this</div>
+              <div style={sectionLabel()}>
+                {shopAccessIconText("eye", "Why you can see this", 22)}
+              </div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 The owner shared a live Vault access link with you.
               </div>
@@ -441,7 +556,9 @@ export default function ShopAccessPage() {
                 border: "1px solid rgba(212,175,55,0.14)",
               }}
             >
-              <div style={sectionLabel()}>What can end access</div>
+              <div style={sectionLabel()}>
+                {shopAccessIconText("lock", "What can end access", 22)}
+              </div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 Access can end when the link expires, is turned off, or reaches its view limit.
               </div>
@@ -453,7 +570,9 @@ export default function ShopAccessPage() {
                 border: "1px solid rgba(11,99,209,0.10)",
               }}
             >
-              <div style={sectionLabel()}>Current route state</div>
+              <div style={sectionLabel()}>
+                {shopAccessIconText("navigation", "Current route state", 22)}
+              </div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 This Vault route is now active and recorded as a private-access open. Stay on this
                 path until you finish reviewing the approved private offers or the owner gives you a
@@ -505,7 +624,9 @@ export default function ShopAccessPage() {
         ) : null}
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Access details</div>
+          <div style={sectionLabel()}>
+            {shopAccessIconText("document", "Access details", 22)}
+          </div>
           <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
             These details show how this private access works. They explain what is allowed here,
             but they do not promise impossible device-wide blocking.
@@ -524,7 +645,9 @@ export default function ShopAccessPage() {
                 border: "1px solid rgba(212,175,55,0.12)",
               }}
             >
-              <div style={sectionLabel()}>Expiry</div>
+              <div style={sectionLabel()}>
+                {shopAccessIconText("calendar", "Expiry", 22)}
+              </div>
               <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, lineHeight: 1.4 }}>
                 {safeDateTime(view?.policy?.expires_at)}
               </div>
@@ -536,7 +659,9 @@ export default function ShopAccessPage() {
                 border: "1px solid rgba(212,175,55,0.12)",
               }}
             >
-              <div style={sectionLabel()}>Views used</div>
+              <div style={sectionLabel()}>
+                {shopAccessIconText("eye", "Views used", 22)}
+              </div>
               <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, lineHeight: 1.4 }}>
                 {safeStr(view?.policy?.views_used || 0)} /{" "}
                 {safeStr(view?.policy?.max_views || "Unlimited")}
@@ -549,11 +674,13 @@ export default function ShopAccessPage() {
                 border: "1px solid rgba(212,175,55,0.12)",
               }}
             >
-              <div style={sectionLabel()}>What is allowed here</div>
+              <div style={sectionLabel()}>
+                {shopAccessIconText("shield", "What is allowed here", 22)}
+              </div>
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {restrictionBadges.map((item) => (
                   <span key={item} style={badge(false)}>
-                    {item}
+                    {shopAccessIconText(restrictionIcon(item), item, 20)}
                   </span>
                 ))}
               </div>
@@ -562,7 +689,9 @@ export default function ShopAccessPage() {
         </section>
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>What to do next</div>
+          <div style={sectionLabel()}>
+            {shopAccessIconText("navigation", "What to do next", 22)}
+          </div>
           <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
             Use this route only for the private offers that were intentionally shared with you.
             If you need the wider storefront, return to the public shop face. If this link no
@@ -571,14 +700,18 @@ export default function ShopAccessPage() {
           </div>
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             <div style={innerCard("rgba(248,251,255,0.98)")}>
-              <div style={sectionLabel()}>Stay here when</div>
+              <div style={sectionLabel()}>
+                {shopAccessIconText("check", "Stay here when", 22)}
+              </div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 You are reviewing the selected private offers that were shared through this Vault
                 link.
               </div>
             </div>
             <div style={innerCard("rgba(248,251,255,0.98)")}>
-              <div style={sectionLabel()}>Leave this route when</div>
+              <div style={sectionLabel()}>
+                {shopAccessIconText("globe", "Leave this route when", 22)}
+              </div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 You want the normal public shop view, you need a different access path, or the
                 sender told you to continue somewhere else.
@@ -590,25 +723,27 @@ export default function ShopAccessPage() {
               <StableCtaLink
                 to={publicShopRoute}
                 kind="secondary"
-                stableHeight={44}
+                stableHeight={52}
                 debugId="shop-access.next.open-public-shop"
               >
-                Open public shop face
+                {shopAccessIconText("shop", "Open public shop face")}
               </StableCtaLink>
             ) : null}
             <StableCtaLink
               to="/welcome"
               kind="primary"
-              stableHeight={44}
+              stableHeight={52}
               debugId="shop-access.next.back-welcome"
             >
-              Back to Welcome
+              {shopAccessIconText("home", "Back to Welcome")}
             </StableCtaLink>
           </div>
         </section>
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Private products</div>
+          <div style={sectionLabel()}>
+            {shopAccessIconText("shop", "Private products", 22)}
+          </div>
           <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
             Only the private offers shared through this access link are shown here.
           </div>
@@ -629,7 +764,11 @@ export default function ShopAccessPage() {
           >
             {products.length === 0 ? (
               <div style={{ ...helperText(), gridColumn: "1 / -1" }}>
-                This access link is active, but no private offers are being shown right now.
+                {shopAccessIconText(
+                  "document",
+                  "This access link is active, but no private offers are being shown right now.",
+                  24
+                )}
               </div>
             ) : (
               products.map((product, index) => {
@@ -695,10 +834,18 @@ export default function ShopAccessPage() {
                     </div>
 
                     <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <span style={badge(true)}>Private block</span>
-                      {productVideoUrl ? <span style={badge(false)}>Video</span> : null}
+                      <span style={badge(true)}>
+                        {shopAccessIconText("lock", "Private block", 20)}
+                      </span>
+                      {productVideoUrl ? (
+                        <span style={badge(false)}>
+                          {shopAccessIconText("video", "Video", 20)}
+                        </span>
+                      ) : null}
                       {safeStr(view?.watermark_text) ? (
-                        <span style={badge(false)}>{safeStr(view?.watermark_text)}</span>
+                        <span style={badge(false)}>
+                          {shopAccessIconText("shield", safeStr(view?.watermark_text), 20)}
+                        </span>
                       ) : null}
                     </div>
 
@@ -733,7 +880,7 @@ export default function ShopAccessPage() {
                         fontSize: 15,
                       }}
                     >
-                      {productPriceText(product)}
+                      {shopAccessIconText("wallet", productPriceText(product), 22)}
                     </div>
                   </div>
                 );

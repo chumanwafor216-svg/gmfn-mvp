@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -264,15 +265,67 @@ function demandActionStyle(height = 54): React.CSSProperties {
     fontWeight: 900,
     lineHeight: 1.16,
     textAlign: "center",
-    whiteSpace: "normal",
+    whiteSpace: "nowrap",
     overflow: "hidden",
     overflowWrap: "normal",
     wordBreak: "normal",
     hyphens: "none",
+    textOverflow: "ellipsis",
     flexShrink: 0,
     overflowAnchor: "none",
     transition: "none",
   };
+}
+
+function demandIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 22
+): React.ReactElement {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      }}
+    >
+      <GsnLegacyIcon
+        name={name}
+        size={size}
+        style={{ flex: "0 0 auto" }}
+      />
+      <span
+        style={{
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function demandEmptyStateIcon(name: GsnIconName): React.ReactElement {
+  return (
+    <GsnLegacyIcon
+      name={name}
+      size={42}
+      style={{
+        flex: "0 0 auto",
+        filter: "drop-shadow(0 12px 18px rgba(8,32,54,0.12))",
+      }}
+    />
+  );
 }
 
 function demandHeroActionRowStyle(isCompact: boolean): React.CSSProperties {
@@ -781,8 +834,18 @@ export default function DemandBoxPage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading Demand Box...
+          <div
+            style={{
+              color: "#64748B",
+              lineHeight: 1.8,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              fontWeight: 900,
+            }}
+          >
+            <GsnLegacyIcon name="refresh" size={30} />
+            <span>Loading Demand Box...</span>
           </div>
         </section>
       </div>
@@ -892,7 +955,7 @@ export default function DemandBoxPage() {
                 stableHeight={54}
                 style={demandActionStyle(54)}
               >
-                Open Community Home
+                {demandIconText("community", "Community", 20)}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.dashboard}
@@ -900,7 +963,7 @@ export default function DemandBoxPage() {
                 stableHeight={54}
                 style={demandActionStyle(54)}
               >
-                Dashboard
+                {demandIconText("home", "Dashboard", 20)}
               </StableCtaLink>
             </div>
           </div>
@@ -1125,7 +1188,7 @@ export default function DemandBoxPage() {
                 stableHeight={isCompact ? 52 : 54}
                 style={demandHeroPrimaryActionStyle(isCompact)}
               >
-                Create demand
+                {demandIconText("document", "Create demand", 20)}
               </SecondaryButton>
               <StableCtaLink
                 to={demandReturnTo}
@@ -1133,7 +1196,7 @@ export default function DemandBoxPage() {
                 stableHeight={isCompact ? 52 : 54}
                 style={demandActionStyle(isCompact ? 52 : 54)}
               >
-                {demandReturnLabel}
+                {demandIconText("shop", demandReturnLabel, 20)}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.dashboard}
@@ -1141,7 +1204,7 @@ export default function DemandBoxPage() {
                 stableHeight={isCompact ? 52 : 54}
                 style={demandActionStyle(isCompact ? 52 : 54)}
               >
-                Dashboard
+                {demandIconText("home", "Dashboard", 20)}
               </StableCtaLink>
             </div>
           </div>
@@ -1503,7 +1566,7 @@ export default function DemandBoxPage() {
                 debugId="demand-box.post"
                 style={demandActionStyle(54)}
               >
-                Post demand
+                {demandIconText("document", "Post demand", 20)}
               </PrimaryButton>
 
               <StableCtaLink
@@ -1513,7 +1576,7 @@ export default function DemandBoxPage() {
                 debugId="demand-box.open-notifications"
                 style={demandActionStyle(54)}
               >
-                Open notifications
+                {demandIconText("alert", "Notifications", 20)}
               </StableCtaLink>
             </div>
           </div>
@@ -1522,7 +1585,7 @@ export default function DemandBoxPage() {
             <details>
               <StableDisclosureSummary
                 style={detailsSummary()}
-                stableHeight={44}
+                stableHeight={52}
                 debugId="demand-box.more-detail"
               >
                 <span>More detail</span>
@@ -1602,13 +1665,23 @@ export default function DemandBoxPage() {
 
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {myOpenRows.length === 0 ? (
-              <div style={recordCard()}>
-                <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                  No open demand right now.
-                </div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  When you need goods, service, support, or help, create one
-                  clear demand from the right community.
+              <div
+                style={{
+                  ...recordCard(),
+                  display: "flex",
+                  gap: 12,
+                  alignItems: "flex-start",
+                }}
+              >
+                {demandEmptyStateIcon("document")}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                    No open demand right now.
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    When you need goods, service, support, or help, create one
+                    clear demand from the right community.
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1685,7 +1758,7 @@ export default function DemandBoxPage() {
                         debugId={`demand-box.request.${row?.id || index}.fulfilled`}
                         style={demandActionStyle(54)}
                       >
-                        Mark fulfilled
+                        {demandIconText("check", "Fulfilled", 20)}
                       </SecondaryButton>
 
                       <SubtleButton
@@ -1696,7 +1769,7 @@ export default function DemandBoxPage() {
                         debugId={`demand-box.request.${row?.id || index}.cancelled`}
                         style={demandActionStyle(54)}
                       >
-                        Cancel demand
+                        {demandIconText("lock", "Cancel", 20)}
                       </SubtleButton>
                     </div>
                   </div>
@@ -1707,7 +1780,7 @@ export default function DemandBoxPage() {
                 <details style={detailsShell()}>
                   <StableDisclosureSummary
                     style={detailsSummary()}
-                    stableHeight={46}
+                    stableHeight={52}
                     debugId="demand-box.more-my-demand.summary"
                   >
                     <span>More of my demand</span>
@@ -1800,7 +1873,7 @@ export default function DemandBoxPage() {
                               debugId={`demand-box.request.${row?.id || debugIndex}.fulfilled`}
                               style={demandActionStyle(54)}
                             >
-                              Mark fulfilled
+                              {demandIconText("check", "Fulfilled", 20)}
                             </SecondaryButton>
 
                             <SubtleButton
@@ -1813,7 +1886,7 @@ export default function DemandBoxPage() {
                               debugId={`demand-box.request.${row?.id || debugIndex}.cancelled`}
                               style={demandActionStyle(54)}
                             >
-                              Cancel demand
+                              {demandIconText("lock", "Cancel", 20)}
                             </SubtleButton>
                           </div>
                         </div>
@@ -1843,13 +1916,23 @@ export default function DemandBoxPage() {
 
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {visiblePreview.length === 0 ? (
-              <div style={recordCard()}>
-                <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                  No visible demand is waiting right now.
-                </div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  When someone in this community asks for help, their request
-                  will appear here with the identity and trust signs available.
+              <div
+                style={{
+                  ...recordCard(),
+                  display: "flex",
+                  gap: 12,
+                  alignItems: "flex-start",
+                }}
+              >
+                {demandEmptyStateIcon("community")}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                    No visible demand is waiting right now.
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    When someone in this community asks for help, their request
+                    will appear here with the identity and trust signs available.
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1927,7 +2010,7 @@ export default function DemandBoxPage() {
                 <details style={detailsShell()}>
                   <StableDisclosureSummary
                     style={detailsSummary()}
-                    stableHeight={46}
+                    stableHeight={52}
                     debugId="demand-box.more-visible-demand.summary"
                   >
                     <span>More community demand</span>
@@ -2029,7 +2112,7 @@ export default function DemandBoxPage() {
               stableHeight={54}
               style={demandActionStyle(54)}
             >
-              {demandReturnLabel}
+              {demandIconText("shop", demandReturnLabel, 20)}
             </StableCtaLink>
             <StableCtaLink
               to={routes.dashboard}
@@ -2037,7 +2120,7 @@ export default function DemandBoxPage() {
               stableHeight={54}
               style={demandActionStyle(54)}
             >
-              Dashboard
+              {demandIconText("home", "Dashboard", 20)}
             </StableCtaLink>
           </div>
         </section>

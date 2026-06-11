@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
+import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
-  TrustPaperIcon,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
@@ -48,6 +48,63 @@ function labelize(value: any): string {
   const text = safeStr(value).replace(/[_-]+/g, " ");
   if (!text) return "Not shown";
   return text.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function communityVerifyIconBadge(
+  name: Gsn3DIconKey,
+  size = 42,
+  tone: "navy" | "blue" | "green" | "amber" = "navy"
+): React.ReactElement {
+  const palette = {
+    navy: {
+      color: "#EAF3FF",
+      background:
+        "radial-gradient(circle at 35% 24%, rgba(244,208,106,0.20) 0%, rgba(244,208,106,0.00) 34%), linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+      border: "1px solid rgba(196,216,238,0.22)",
+    },
+    blue: {
+      color: "#EAF3FF",
+      background:
+        "radial-gradient(circle at 35% 24%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.00) 34%), linear-gradient(180deg, #2367D1 0%, #0B3E78 100%)",
+      border: "1px solid rgba(123,161,204,0.28)",
+    },
+    green: {
+      color: "#ECFDF5",
+      background:
+        "radial-gradient(circle at 35% 24%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.00) 34%), linear-gradient(180deg, #2E9B62 0%, #12653C 100%)",
+      border: "1px solid rgba(167,243,208,0.28)",
+    },
+    amber: {
+      color: "#FFF7E6",
+      background:
+        "radial-gradient(circle at 35% 24%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.00) 34%), linear-gradient(180deg, #D6AA45 0%, #9A6817 100%)",
+      border: "1px solid rgba(252,211,77,0.30)",
+    },
+  }[tone];
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size >= 34 ? 13 : 11,
+        display: "grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        boxShadow:
+          "0 9px 18px rgba(2,6,23,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
+        ...palette,
+      }}
+    >
+      <GsnRealisticIcon
+        name={name}
+        size={Math.max(30, Math.round(size * 0.9))}
+        decorative
+        imageStyle={{ width: "96%", height: "96%" }}
+      />
+    </span>
+  );
 }
 
 function normalizeRecord(raw: any): CommunityVerifyRecord {
@@ -387,11 +444,11 @@ export default function CommunityVerifyPage() {
                     }}
                   >
                     <span style={badgeStyle(active ? "good" : "warn")}>
-                      <TrustPaperIcon name={active ? "check" : "alert"} size={18} />
+                      {communityVerifyIconBadge("trust-shield", 40, active ? "green" : "amber")}
                       {active ? "Active" : labelize(status)}
                     </span>
                     <span style={badgeStyle(relayAvailable ? "good" : "warn")}>
-                      <TrustPaperIcon name="shield" size={18} />
+                      {communityVerifyIconBadge("public-globe", 40, relayAvailable ? "green" : "amber")}
                       {relayAvailability}
                     </span>
                   </div>
@@ -399,8 +456,8 @@ export default function CommunityVerifyPage() {
                     Verify this community before you rely on it.
                   </h2>
                   <p style={{ ...helperText(), color: "#1F3145", maxWidth: 720 }}>
-                    This page confirms the community exists in GSN. The private member list, phone
-                    numbers, sponsor details, and internal trust history are kept off this public page.
+                    This page confirms the community exists in GSN. Member lists, phone numbers,
+                    sponsor details, and private trust history stay protected.
                   </p>
                 </section>
 
@@ -411,21 +468,21 @@ export default function CommunityVerifyPage() {
                   }}
                 >
                   <div style={{ display: "grid", gap: 0 }}>
-                    <InfoRow icon="community" label="Community name" value={communityName} />
+                    <InfoRow icon="community-building" label="Community name" value={communityName} />
                     <InfoRow
-                      icon="document"
+                      icon="records-folder"
                       label="Community ID"
                       value={firstTruthy(record.community_code, record.community_id)}
                     />
-                    <InfoRow icon="check" label="Status" value={labelize(record.status)} />
-                    <InfoRow icon="shield" label="Public record" value={publicRecord} />
-                    <InfoRow icon="community" label="Member confirmation" value={memberConfirmation} />
-                    <InfoRow icon="refresh" label="Relay availability" value={relayAvailability} />
+                    <InfoRow icon="trust-shield" label="Status" value={labelize(record.status)} />
+                    <InfoRow icon="public-globe" label="Public record" value={publicRecord} />
+                    <InfoRow icon="join-person-plus" label="Member confirmation" value={memberConfirmation} />
+                    <InfoRow icon="phone-contact" label="Relay availability" value={relayAvailability} />
                   </div>
                 </section>
 
                 <section style={sectionCard("#FFFFFF")}>
-                  <h2 style={sectionTitle()}>Public actions</h2>
+                  <h2 style={sectionTitle()}>Use this record</h2>
                   <div
                     style={{
                       display: "grid",
@@ -435,11 +492,11 @@ export default function CommunityVerifyPage() {
                     }}
                   >
                     <SecondaryButton debugId="community-verify.copy-link" stableHeight={64} onClick={() => void copyLink()}>
-                      <TrustPaperIcon name="copy" size={20} />
+                      {communityVerifyIconBadge("public-globe", 42, "navy")}
                       Copy verification link
                     </SecondaryButton>
                     <SecondaryButton debugId="community-verify.print" stableHeight={64} onClick={printPage}>
-                      <TrustPaperIcon name="document" size={20} />
+                      {communityVerifyIconBadge("records-folder", 42, "navy")}
                       Save PDF
                     </SecondaryButton>
                     <PrimaryButton
@@ -450,7 +507,7 @@ export default function CommunityVerifyPage() {
                       disabled={!requestConfirmationAvailable || requestingConfirmation}
                       onClick={() => void requestConfirmation()}
                     >
-                      <TrustPaperIcon name="shield" size={20} />
+                      {communityVerifyIconBadge("trust-shield", 42, "blue")}
                       Request confirmation
                     </PrimaryButton>
                   </div>
@@ -482,11 +539,11 @@ export default function CommunityVerifyPage() {
                         ? record.hidden_by_design.map(labelize)
                         : [
                             "Full member list",
-                            "Raw phone numbers",
+                            "Member phone numbers",
                             "Sponsor details",
-                            "Internal disputes",
+                            "Private disputes",
                             "Private relay contacts",
-                            "Internal trust history",
+                            "Private trust history",
                           ]
                     }
                   />
@@ -494,10 +551,10 @@ export default function CommunityVerifyPage() {
 
                 <section style={sectionCard("#061827")}>
                   <TrustPaperWatermark name="shield" color="#D6AA45" size={150} opacity={0.09} />
-                  <h2 style={{ ...sectionTitle(), color: "#F2C766" }}>Program logic</h2>
+                  <h2 style={{ ...sectionTitle(), color: "#F2C766" }}>Privacy protection</h2>
                   <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                    <ProgramRule text="The public verification route returns whitelisted fields only." />
-                    <ProgramRule text="Protected fields stay server-side unless the viewer is authorized." />
+                    <ProgramRule text="Public viewers see only the fields needed to verify the community." />
+                    <ProgramRule text="Protected member details stay private unless the viewer is authorized." />
                     <ProgramRule text="Confirmation requests use controlled relay, not direct contact exposure." />
                   </div>
                   <SecondaryButton
@@ -506,7 +563,7 @@ export default function CommunityVerifyPage() {
                     onClick={() => void loadRecord()}
                     style={{ marginTop: 16, color: "#FFFFFF", borderColor: "rgba(242,199,102,0.45)" }}
                   >
-                    <TrustPaperIcon name="refresh" size={19} />
+                    {communityVerifyIconBadge("records-folder", 40, "amber")}
                     Refresh public record
                   </SecondaryButton>
                 </section>
@@ -525,7 +582,7 @@ function InfoRow({
   label,
   value,
 }: {
-  icon: React.ComponentProps<typeof TrustPaperIcon>["name"];
+  icon: Gsn3DIconKey;
   label: React.ReactNode;
   value: React.ReactNode;
 }) {
@@ -533,26 +590,14 @@ function InfoRow({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "34px minmax(110px, 0.75fr) minmax(0, 1fr)",
+        gridTemplateColumns: "46px minmax(110px, 0.75fr) minmax(0, 1fr)",
         gap: 12,
         alignItems: "start",
         borderBottom: "1px solid rgba(8,35,58,0.1)",
         padding: "13px 16px",
       }}
     >
-      <span
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 999,
-          display: "grid",
-          placeItems: "center",
-          color: "#073E83",
-          background: "#EAF3FF",
-        }}
-      >
-        <TrustPaperIcon name={icon} size={17} />
-      </span>
+      {communityVerifyIconBadge(icon, 40)}
       <span style={{ color: "#617085", fontWeight: 900, lineHeight: 1.28 }}>{label}</span>
       <strong style={{ color: "#07172C", fontWeight: 1000, lineHeight: 1.28 }}>{value}</strong>
     </div>
@@ -584,7 +629,7 @@ function VisibilityCard({
           letterSpacing: 0.8,
         }}
       >
-        <TrustPaperIcon name={show ? "check" : "lock"} size={20} />
+        {communityVerifyIconBadge(show ? "public-globe" : "vault-safe", 40, show ? "green" : "amber")}
         {title}
       </h2>
       <div style={{ display: "grid", gap: 9, marginTop: 14 }}>
@@ -600,7 +645,7 @@ function VisibilityCard({
               lineHeight: 1.25,
             }}
           >
-            <TrustPaperIcon name={show ? "check" : "lock"} size={16} />
+            {communityVerifyIconBadge(show ? "trust-shield" : "vault-safe", 36, show ? "green" : "amber")}
             {item}
           </span>
         ))}
@@ -622,9 +667,7 @@ function ProgramRule({ text }: { text: string }) {
         lineHeight: 1.35,
       }}
     >
-      <span style={{ color: "#F2C766", flex: "0 0 auto" }}>
-        <TrustPaperIcon name="check" size={17} />
-      </span>
+      {communityVerifyIconBadge("trust-shield", 36, "amber")}
       {text}
     </span>
   );

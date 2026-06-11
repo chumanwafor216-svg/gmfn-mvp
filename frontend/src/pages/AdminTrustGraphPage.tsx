@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -171,6 +172,95 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 900,
     whiteSpace: "normal",
   };
+}
+
+function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={18} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function graphIconBadge(
+  icon: GsnIconName,
+  children: React.ReactNode,
+  primary = false
+) {
+  return (
+    <span style={badge(primary)}>
+      <GsnLegacyIcon
+        name={icon}
+        size={15}
+      />
+      <span>{children}</span>
+    </span>
+  );
+}
+
+function sectionLabelWithIcon(
+  icon: GsnIconName,
+  label: React.ReactNode,
+  dark = false
+) {
+  return (
+    <span
+      style={{
+        ...sectionLabel(),
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        color: dark ? "#D8E7F6" : "#4E6680",
+      }}
+    >
+      <span
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 11,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: dark ? "#F2C766" : "#FFFFFF",
+          background: dark
+            ? "linear-gradient(180deg, rgba(242,199,102,0.22) 0%, rgba(242,199,102,0.10) 100%)"
+            : "linear-gradient(180deg, #08233A 0%, #061827 100%)",
+          border: dark
+            ? "1px solid rgba(242,199,102,0.34)"
+            : "1px solid rgba(8,35,58,0.16)",
+          boxShadow: "0 10px 20px rgba(7,20,36,0.10)",
+          flex: "0 0 auto",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={16} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function graphSignalIcon(level: GraphSignal["level"]): GsnIconName {
+  if (level === "flag") return "alert";
+  if (level === "watch") return "eye";
+  return "check";
+}
+
+function routeIcon(label: string): GsnIconName {
+  const key = label.toLowerCase();
+  if (key.includes("analytics")) return "chart";
+  if (key.includes("operations")) return "shield";
+  if (key.includes("exposure")) return "alert";
+  if (key.includes("command")) return "navigation";
+  return "community";
 }
 
 function adminTrustGraphCollapseStyle(): React.CSSProperties {
@@ -713,7 +803,7 @@ export default function AdminTrustGraphPage() {
       <PageTopNav
         sectionLabel="Trust Graph"
         title="Trust Graph"
-        subtitle="Read connectedness, structural concentration, and relationship-based trust shape from the admin workspace."
+        subtitle="Read connectedness, concentration, and relationship trust shape."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
@@ -722,9 +812,9 @@ export default function AdminTrustGraphPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen reads the shape of the trust network: connectedness, clusters, centrality, flagged signals, and structural concentration."
-        why="It helps you understand relationship structure before you treat a trust issue as only an event or only an exposure problem."
-        next="Start with the current graph reading, then use the overview, structure reading, and graph signals sections to understand the network shape."
+        what="This screen reads connectedness, clusters, centrality, and flagged relationship signals."
+        why="It helps you see when a trust issue is structural, not only an event or exposure issue."
+        next="Start with the current graph reading, then check overview, structure, and signals."
         tone="light"
       />
 
@@ -740,7 +830,7 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Structural overview</div>
+            <div>{sectionLabelWithIcon("community", "Structural overview", true)}</div>
 
             <div
               style={{
@@ -755,7 +845,7 @@ export default function AdminTrustGraphPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Read connectedness and relationship structure here when the work is about network shape, centrality, clusters, and structural risk signals.
+              Read network shape, centrality, clusters, and structural risk signals.
             </div>
 
             <div
@@ -766,16 +856,17 @@ export default function AdminTrustGraphPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Role: {roleLabel}</span>
-              <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>
-                Source: {graphSnapshot?.sourceLabel || "Fallback trust-event read"}
-              </span>
+              {graphIconBadge("user", <>Role: {roleLabel}</>, true)}
+              {graphIconBadge("community", <>Community: {communityLabel}</>)}
+              {graphIconBadge(
+                "document",
+                <>Source: {graphSnapshot?.sourceLabel || "Fallback trust-event read"}</>
+              )}
             </div>
           </div>
 
           <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Current graph reading</div>
+            <div>{sectionLabelWithIcon("shield", "Current graph reading")}</div>
 
             <div
               style={{
@@ -797,9 +888,9 @@ export default function AdminTrustGraphPage() {
 
         <ExplainToggle
           label="What this does"
-          what="This current graph reading turns the network snapshot into one short structural interpretation so you can see whether the trust graph looks balanced, concentrated, or risky."
-          why="It gives you a practical reading before you dig into nodes, edges, clusters, and signal lists."
-          next="Read this summary first, then use the graph overview and structure sections to confirm the reasons behind it."
+          what="This turns the network snapshot into one structural reading."
+          why="It gives you the direction before you dig into nodes, edges, and clusters."
+          next="Use the overview and structure sections to confirm the reason."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -816,19 +907,19 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Graph overview</div>
+            <div>{sectionLabelWithIcon("chart", "Graph overview")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              A quick reading of visible structure size and flagged signal count.
+              Visible structure size and flagged signal count.
             </div>
           </div>
 
           <SubtleButton
             onClick={() => toggleSection("overview")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="admin-trust-graph.toggle-overview"
             style={adminTrustGraphCollapseStyle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {labelWithIcon(collapsed.overview ? "chevronDown" : "chevronUp", collapsed.overview ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
@@ -844,7 +935,7 @@ export default function AdminTrustGraphPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Nodes</div>
+              <div>{sectionLabelWithIcon("user", "Nodes")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -858,7 +949,7 @@ export default function AdminTrustGraphPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Edges</div>
+              <div>{sectionLabelWithIcon("navigation", "Edges")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -872,7 +963,7 @@ export default function AdminTrustGraphPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Clusters</div>
+              <div>{sectionLabelWithIcon("community", "Clusters")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -886,7 +977,7 @@ export default function AdminTrustGraphPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Watch signals</div>
+              <div>{sectionLabelWithIcon("eye", "Watch signals")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -900,7 +991,7 @@ export default function AdminTrustGraphPage() {
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Flagged signals</div>
+              <div>{sectionLabelWithIcon("alert", "Flagged signals")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -927,7 +1018,7 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Structure reading</div>
+            <div>{sectionLabelWithIcon("community", "Structure reading")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Which nodes look most central, and which relationships are worth watching.
             </div>
@@ -935,11 +1026,11 @@ export default function AdminTrustGraphPage() {
 
           <SubtleButton
             onClick={() => toggleSection("structure")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="admin-trust-graph.toggle-structure"
             style={adminTrustGraphCollapseStyle()}
           >
-            {collapsed.structure ? "Open" : "Collapse"}
+            {labelWithIcon(collapsed.structure ? "chevronDown" : "chevronUp", collapsed.structure ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
@@ -960,13 +1051,13 @@ export default function AdminTrustGraphPage() {
                   fontSize: 15,
                 }}
               >
-                Most central visible nodes
+                {labelWithIcon("user", "Most central visible nodes")}
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {topNodes.length === 0 ? (
                   <div style={helperText()}>
-                    No graph node data is currently shown.
+                    {labelWithIcon("check", "No graph node data is currently shown.")}
                   </div>
                 ) : (
                   topNodes.map((node) => (
@@ -987,15 +1078,13 @@ export default function AdminTrustGraphPage() {
                             lineHeight: 1.35,
                           }}
                         >
-                          {node.label}
+                          {labelWithIcon("user", node.label)}
                         </div>
 
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <span style={badge(true)}>
-                            Degree: {positiveNumber(node.degree)}
-                          </span>
+                          {graphIconBadge("chart", <>Degree: {positiveNumber(node.degree)}</>, true)}
                           {safeStr(node.cluster) ? (
-                            <span style={badge(false)}>{safeStr(node.cluster)}</span>
+                            graphIconBadge("community", safeStr(node.cluster))
                           ) : null}
                         </div>
                       </div>
@@ -1008,7 +1097,7 @@ export default function AdminTrustGraphPage() {
                             safeStr(node.risk),
                           ]
                             .filter(Boolean)
-                            .join(" • ")}
+                            .join(" | ")}
                         </div>
                       ) : null}
                     </div>
@@ -1025,13 +1114,13 @@ export default function AdminTrustGraphPage() {
                   fontSize: 15,
                 }}
               >
-                Relationships worth watching
+                {labelWithIcon("eye", "Relationships worth watching")}
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {riskEdges.length === 0 ? (
                   <div style={helperText()}>
-                    No flagged relationship data is currently shown.
+                    {labelWithIcon("check", "No flagged relationship data is currently shown.")}
                   </div>
                 ) : (
                   riskEdges.map((edge) => (
@@ -1043,7 +1132,7 @@ export default function AdminTrustGraphPage() {
                           lineHeight: 1.35,
                         }}
                       >
-                        {edge.from} → {edge.to}
+                        {labelWithIcon("navigation", `${edge.from} -> ${edge.to}`)}
                       </div>
 
                       <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
@@ -1054,7 +1143,7 @@ export default function AdminTrustGraphPage() {
                           edge.weight ? `Weight: ${edge.weight}` : "",
                         ]
                           .filter(Boolean)
-                          .join(" • ")}
+                          .join(" | ")}
                       </div>
                     </div>
                   ))
@@ -1076,19 +1165,19 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Graph signals</div>
+            <div>{sectionLabelWithIcon("alert", "Graph signals")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The visible structural signals returned by the graph or the fallback trust-event feed.
+              Structural signals from the graph or fallback trust-event feed.
             </div>
           </div>
 
           <SubtleButton
             onClick={() => toggleSection("signals")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="admin-trust-graph.toggle-signals"
             style={adminTrustGraphCollapseStyle()}
           >
-            {collapsed.signals ? "Open" : "Collapse"}
+            {labelWithIcon(collapsed.signals ? "chevronDown" : "chevronUp", collapsed.signals ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
@@ -1096,7 +1185,7 @@ export default function AdminTrustGraphPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {graphSignals.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No visible graph signal is available right now.
+                {labelWithIcon("check", "No visible graph signal is available right now.")}
               </div>
             ) : (
               graphSignals.slice(0, 10).map((signal) => {
@@ -1131,15 +1220,13 @@ export default function AdminTrustGraphPage() {
                           lineHeight: 1.35,
                         }}
                       >
-                        {signal.title}
+                        {labelWithIcon(graphSignalIcon(signal.level), signal.title)}
                       </div>
 
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span style={badge(true)}>{label}</span>
+                        {graphIconBadge(graphSignalIcon(signal.level), label, true)}
                         {signal.createdAt ? (
-                          <span style={badge(false)}>
-                            {safeDateTime(signal.createdAt)}
-                          </span>
+                          graphIconBadge("calendar", safeDateTime(signal.createdAt))
                         ) : null}
                       </div>
                     </div>
@@ -1164,7 +1251,7 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Next routes</div>
+            <div>{sectionLabelWithIcon("navigation", "Next routes")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from structural reading into the next admin page you need.
             </div>
@@ -1172,11 +1259,11 @@ export default function AdminTrustGraphPage() {
 
           <SubtleButton
             onClick={() => toggleSection("routes")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="admin-trust-graph.toggle-routes"
             style={adminTrustGraphCollapseStyle()}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {labelWithIcon(collapsed.routes ? "chevronDown" : "chevronUp", collapsed.routes ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
@@ -1206,10 +1293,10 @@ export default function AdminTrustGraphPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Trust Analytics
+                {labelWithIcon(routeIcon("Trust Analytics"), "Trust Analytics")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the next step is broader pattern reading rather than structure-only interpretation.
+                Open when the next step is broader pattern reading.
               </div>
             </StableCtaLink>
 
@@ -1228,10 +1315,10 @@ export default function AdminTrustGraphPage() {
                   lineHeight: 1.3,
                 }}
               >
-                System Operations
+                {labelWithIcon(routeIcon("System Operations"), "System Operations")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the structural signal now needs live handling.
+                Open when the structural signal needs live handling.
               </div>
             </StableCtaLink>
 
@@ -1250,10 +1337,10 @@ export default function AdminTrustGraphPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Exposure
+                {labelWithIcon(routeIcon("Exposure"), "Exposure")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when relationship shape is contributing to concentration or pressure.
+                Open when relationship shape is contributing to concentration or pressure.
               </div>
             </StableCtaLink>
 
@@ -1272,7 +1359,7 @@ export default function AdminTrustGraphPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Command Center
+                {labelWithIcon(routeIcon("Command Center"), "Command Center")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to Command Center when you need to choose another admin path.
@@ -1284,4 +1371,3 @@ export default function AdminTrustGraphPage() {
     </div>
   );
 }
-

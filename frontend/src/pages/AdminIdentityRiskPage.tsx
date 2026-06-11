@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { StableDisclosureSummary } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -40,6 +41,131 @@ function summaryToggle(): React.CSSProperties {
       "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     boxShadow: "0 14px 30px rgba(15,23,42,0.09)",
   };
+}
+
+function sectionLabel(): React.CSSProperties {
+  return {
+    fontSize: 12,
+    color: "#4E6680",
+    fontWeight: 1000,
+    letterSpacing: 0.35,
+    textTransform: "uppercase",
+  };
+}
+
+function helperText(): React.CSSProperties {
+  return {
+    color: "#475569",
+    fontSize: 14,
+    lineHeight: 1.65,
+  };
+}
+
+function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={18} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function sectionLabelWithIcon(icon: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        ...sectionLabel(),
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <span
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 11,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#FFFFFF",
+          background: "linear-gradient(180deg, #08233A 0%, #061827 100%)",
+          border: "1px solid rgba(8,35,58,0.16)",
+          boxShadow: "0 10px 20px rgba(7,20,36,0.10)",
+          flex: "0 0 auto",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={16} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function statusGuideRow(
+  icon: GsnIconName,
+  title: string,
+  detail: string,
+  bg: string,
+  color: string
+) {
+  return (
+    <div
+      style={{
+        ...institutionalInnerCard(bg),
+        border: "1px solid rgba(20,52,83,0.14)",
+        display: "grid",
+        gridTemplateColumns: "42px minmax(0, 1fr)",
+        gap: 12,
+        alignItems: "center",
+      }}
+    >
+      <span
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 14,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color,
+          background: "#FFFFFF",
+          boxShadow: "0 10px 22px rgba(7,20,36,0.08)",
+          flex: "0 0 auto",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={22} />
+      </span>
+      <span>
+        <span
+          style={{
+            display: "block",
+            color: "#0B1F33",
+            fontWeight: 1000,
+            fontSize: 14,
+          }}
+        >
+          {title}
+        </span>
+        <span style={{ display: "block", marginTop: 4, ...helperText() }}>
+          {detail}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function riskIcon(level: "green" | "yellow" | "red"): GsnIconName {
+  if (level === "red") return "alert";
+  if (level === "yellow") return "eye";
+  return "check";
 }
 
 function riskStyle(level: "green" | "yellow" | "red"): React.CSSProperties {
@@ -132,14 +258,14 @@ export default function AdminIdentityRiskPage() {
       <PageTopNav
         sectionLabel="Identity Risk"
         title="Identity Risk"
-        subtitle="Monitor suspicious device overlap, identity clusters, and signals that may suggest multi-account misuse."
+        subtitle="Review device overlap, account clusters, and identity pressure that may need manual review."
       />
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen shows identity-risk signals such as suspicious overlap, unusual clusters, and patterns that may suggest account misuse."
-        why="It helps you see when identity behaviour still looks normal and when a stronger manual review may be justified."
-        next="Read the guide to the risk colours first, then scan the grouped users and open the detailed signals only when you need deeper evidence."
+        what="This screen shows identity signals that may need monitoring or review."
+        why="It helps you separate normal identity behaviour from stronger overlap pressure."
+        next="Read the risk guide, then open detailed signals only when evidence is needed."
         tone="light"
         style={{ marginTop: 18 }}
       />
@@ -160,18 +286,45 @@ export default function AdminIdentityRiskPage() {
       ) : null}
 
       <div style={{ ...card(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>How to use this page</div>
-        <div style={{ marginTop: 12, color: "#475569", lineHeight: 1.8 }}>
-          Green means normal identity behaviour.
-          Yellow means a staff member should monitor the account more closely.
-          Red means unusual overlap or signal concentration is strong enough to justify intervention or manual review.
+        <div>{sectionLabelWithIcon("shield", "How to read identity risk")}</div>
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+          }}
+        >
+          {statusGuideRow(
+            "check",
+            "Normal",
+            "No strong identity pressure is visible.",
+            "#F0FDF4",
+            "#166534"
+          )}
+          {statusGuideRow(
+            "eye",
+            "Monitor",
+            "Watch the account more closely.",
+            "#FFF7ED",
+            "#9A3412"
+          )}
+          {statusGuideRow(
+            "alert",
+            "Intervene",
+            "Review overlap or signal concentration.",
+            "#FEF2F2",
+            "#991B1B"
+          )}
         </div>
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
         {grouped.length === 0 ? (
           <div style={card()}>
-            <div style={{ color: "#6B7A88" }}>No identity-risk signals are currently shown.</div>
+            <div style={{ color: "#6B7A88" }}>
+              {labelWithIcon("check", "No identity-risk signals are currently shown.")}
+            </div>
           </div>
         ) : null}
 
@@ -180,17 +333,18 @@ export default function AdminIdentityRiskPage() {
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
-                  User #{g.userId}
+                  {labelWithIcon("user", <>User #{g.userId}</>)}
                 </div>
                 <div style={{ marginTop: 6, color: "#64748b" }}>
-                  Signals detected: {g.rows.length}
+                  {labelWithIcon("document", <>Signals detected: {g.rows.length}</>)}
                 </div>
               </div>
 
               <div style={riskStyle(g.risk.level)}>
-                <span>
-                  {g.risk.level === "green" ? "🟢" : g.risk.level === "yellow" ? "🟡" : "🔴"}
-                </span>
+                <GsnLegacyIcon
+                  name={riskIcon(g.risk.level)}
+                  size={18}
+                />
                 <span>{g.risk.label}</span>
               </div>
             </div>
@@ -205,9 +359,9 @@ export default function AdminIdentityRiskPage() {
                   }}
                 >
                   <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                    {safeStr(row?.signal_type || "signal")}
+                    {labelWithIcon("shield", safeStr(row?.signal_type || "signal"))}
                   </div>
-                  <div style={{ marginTop: 6, color: "#475569", lineHeight: 1.7 }}>
+                  <div style={{ marginTop: 6, ...helperText() }}>
                     {safeStr(row?.description || "No description")}
                   </div>
                   <div style={{ marginTop: 8, fontSize: 13, color: "#64748b" }}>
@@ -223,7 +377,7 @@ export default function AdminIdentityRiskPage() {
                 style={summaryToggle()}
                 debugId={`admin-identity-risk.${g.userId}.details`}
               >
-                Detailed identity signals
+                {labelWithIcon("document", "Full signal record")}
               </StableDisclosureSummary>
               <pre
                 style={{

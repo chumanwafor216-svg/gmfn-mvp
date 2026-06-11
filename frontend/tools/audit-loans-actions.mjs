@@ -110,8 +110,14 @@ assertContains(
 
 assertContains(
   "src/pages/LoansPage.tsx",
-  /import \{[\s\S]*TrustPaperIcon[\s\S]*TrustPaperIconName[\s\S]*\} from "\.\.\/components\/TrustPaperMarks";[\s\S]*function routeIcon\([\s\S]*<TrustPaperIcon[\s\S]*debugId="loans\.route\.money-out"/,
-  "Loans & Support must use app-native SVG pictograms for visible lane/action icons, including Money Out."
+  /import \{[\s\S]*GsnLegacyIcon[\s\S]*GsnIconName[\s\S]*\} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*function routeIcon\([\s\S]*<GsnLegacyIcon[\s\S]*debugId="loans\.route\.money-out"/,
+  "Loans & Support must use 3D GSN icons for visible lane/action icons, including Money Out."
+);
+
+assertContains(
+  "src/pages/LoansPage.tsx",
+  /routeIconCircle\(primary = false[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name="financeInstitution" size=\{64\}[\s\S]*?iconLabel\("repaymentSchedule", "Active loans"\)[\s\S]*?iconLabel\("financeInstitution", "Pool"\)[\s\S]*?routeIcon\("proof"\)/,
+  "Loans & Support must use light icon tiles plus repayment, proof, and finance-institution 3D meanings for the visible support summary."
 );
 
 assertAsciiOnly(
@@ -121,8 +127,8 @@ assertAsciiOnly(
 
 assertContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
-  /TrustPaperIcon[\s\S]*UK sort code[\s\S]*value=\{destination\.sortCode\}[\s\S]*debugId="money-out\.save-destination"[\s\S]*destinationNotice/,
-  "Loans & Support Money Out must expose UK sort code beside the payout save action and show the save response locally."
+  /GsnLegacyIcon[\s\S]*UK sort code[\s\S]*value=\{destination\.sortCode\}[\s\S]*debugId="money-out\.save-destination"[\s\S]*destinationNotice/,
+  "Loans & Support Money Out must keep 3D GSN icons, expose UK sort code beside the payout save action, and show the save response locally."
 );
 
 assertAsciiOnly(

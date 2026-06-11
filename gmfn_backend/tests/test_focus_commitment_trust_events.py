@@ -394,7 +394,7 @@ def test_signed_in_identity_completion_records_photo_and_id_image(
 
     with SessionLocal() as db:
         user = db.get(User, 1)
-        assert user.profile_image_url == selfie_body["evidence_url"]
+        assert user.profile_image_url is None
         checks = (
             db.query(IdentityVerificationCheck)
             .filter(

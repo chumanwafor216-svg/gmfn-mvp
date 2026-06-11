@@ -27,10 +27,16 @@ function assertContains(pattern, message) {
   addFinding(-1, message);
 }
 
+const trustDebugId = 'debugId="marketplace.tile.trust"';
+const trustDebugIndex = source.indexOf(trustDebugId);
+const trustTileStart =
+  trustDebugIndex >= 0 ? source.lastIndexOf("<StableButton", trustDebugIndex) : -1;
+const trustTileEnd =
+  trustDebugIndex >= 0 ? source.indexOf("</StableButton>", trustDebugIndex) : -1;
 const trustTile =
-  source.match(
-    /<StableButton[\s\S]*?debugId="marketplace\.tile\.trust"[\s\S]*?<\/StableButton>/
-  )?.[0] || "";
+  trustTileStart >= 0 && trustTileEnd >= 0
+    ? source.slice(trustTileStart, trustTileEnd + "</StableButton>".length)
+    : "";
 
 if (!trustTile) {
   addFinding(-1, "Marketplace compact Trust pill must remain a stable button.");

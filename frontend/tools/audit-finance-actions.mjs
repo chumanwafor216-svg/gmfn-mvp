@@ -89,8 +89,8 @@ assertContains(
 
 assertContains(
   "src/pages/FinancePage.tsx",
-  /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?type FinanceGlyphName[\s\S]*?function FinanceGlyph\([\s\S]*?function financeToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 124;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden",[\s\S]*?function financeMiniToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 88;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden",[\s\S]*?brandClampLines\(2\)[\s\S]*?brandSingleLine\(\)/,
-  "Finance tool and mini-tool cards must keep fixed phone-safe heights and clamped text so labels cannot stretch or overlap action surfaces."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?type FinanceGlyphName[\s\S]*?FINANCE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<FinanceGlyphName, GsnIconName>[\s\S]*?function FinanceGlyph\([\s\S]*?<GsnLegacyIcon[\s\S]*?function financeToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 124;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden",[\s\S]*?function financeMiniToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 88;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden",[\s\S]*?brandClampLines\(2\)[\s\S]*?brandSingleLine\(\)/,
+  "Finance tool and mini-tool cards must keep fixed phone-safe heights, clamped text, and 3D GSN icon marks so labels cannot stretch or overlap action surfaces."
 );
 
 assertNotContains(

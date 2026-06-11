@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 12;
-const expectedRenderedActions = 21;
+const expectedSourceActions = 13;
+const expectedRenderedActions = 22;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -161,17 +161,22 @@ assertContains(
 );
 
 assertContains(
-  /function overviewIconBox\(isCompact = false\)[\s\S]*?width: isCompact \? 36 : 46[\s\S]*?height: isCompact \? 36 : 46[\s\S]*?TrustPaperIcon[\s\S]*?size=\{isCompact \? 21 : 26\}[\s\S]*?strokeWidth=\{2\.85\}/,
-  "Trust Passport identity fact icons must stay as strong SVG tiles, not weak inline marks."
+  /import \{[\s\S]*?GsnLegacyIcon[\s\S]*?type GsnIconName[\s\S]*?\} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function overviewIconBox\(isCompact = false\)[\s\S]*?width: isCompact \? 36 : 46[\s\S]*?height: isCompact \? 36 : 46[\s\S]*?GsnLegacyIcon name=\{icon\} size=\{isCompact \? 31 : 40\} decorative/,
+  "Trust Passport identity fact icons must stay as strong 3D object tiles, not weak inline marks."
 );
 
 assertContains(
-  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 36[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "24px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok, item\.muted\)[\s\S]*?<TrustPaperIcon name=\{item\.icon\} size=\{15\} strokeWidth=\{2\.65\}[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\}/,
+  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?identityEvidenceOpen \?/,
+  "Trust Passport identity evidence meter must stay collapsed behind a stable Open/Hide toggle so the snapshot remains portable."
+);
+
+assertContains(
+  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 36[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "24px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok, item\.muted\)[\s\S]*?<GsnLegacyIcon name=\{item\.icon\} size=\{22\} decorative[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\}/,
   "Trust Passport verification badges must stay as compact one-line snapshot status chips."
 );
 
 assertContains(
-  /debugId="trust-score\.complete-identification"[\s\S]*?TrustPaperIcon name="id"[\s\S]*?Complete ID checks[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?OpenRecordGlyph/,
+  /debugId="trust-score\.complete-identification"[\s\S]*?GsnLegacyIcon name="id"[\s\S]*?Complete ID checks[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?OpenRecordGlyph/,
   "Trust Passport identity snapshot must include a fixed completion action before the public community record action."
 );
 
@@ -201,7 +206,7 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?alignItems: isCompact \? "start" : "center"[\s\S]*?TrustPaperIcon[\s\S]*?statusPillStyle\(item\.status\)/,
+  /gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?alignItems: isCompact \? "start" : "center"[\s\S]*?GsnLegacyIcon[\s\S]*?statusPillStyle\(item\.status\)/,
   "Trust Passport question rows must stack status pills under long labels on phone."
 );
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import { getSelectedClanId } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -37,6 +38,15 @@ function themeButtonStyle(active: boolean): React.CSSProperties {
     padding: 16,
     cursor: "pointer",
   };
+}
+
+function labelWithIcon(icon: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={icon} size={24} />
+      <span>{label}</span>
+    </span>
+  );
 }
 
 const THEMES = [
@@ -89,7 +99,8 @@ export default function AppearancePage() {
   function applyTheme(next: string) {
     localStorage.setItem("gmfn_theme", next);
     setTheme(next);
-    setMsg(`Theme saved: ${next}. Navigate to another page or reopen the sidebar to see the updated shell styling.`);
+    const selected = THEMES.find((item) => item.key === next);
+    setMsg(`${selected?.label || "Display choice"} saved. Open another page or reopen the menu to see the updated view.`);
   }
 
   return (
@@ -97,48 +108,48 @@ export default function AppearancePage() {
       <PageTopNav
         sectionLabel="Settings"
         title="Settings"
-        subtitle="Manage your visual preferences and the financial identity details used across your workspace."
+        subtitle="Choose the display style, payment details, notices, and identity checks that help you use GSN clearly."
       />
 
       <div style={{ ...card(), marginTop: 18 }}>
         <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-          Settings shortcuts
+          Important settings
         </div>
 
         <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
           <StableCtaLink
             to={routes.payoutDetails}
-            stableHeight={42}
+            stableHeight={52}
             debugId="appearance.route.payout-details"
             style={linkBtn(true)}
           >
-            Bank / Wallet Details
+            {labelWithIcon("wallet", "Bank / Wallet")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.notifications}
-            stableHeight={42}
+            stableHeight={52}
             debugId="appearance.route.notifications"
             style={linkBtn(false)}
           >
-            Notifications
+            {labelWithIcon("megaphone", "Notifications")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.identity}
-            stableHeight={42}
+            stableHeight={52}
             debugId="appearance.route.identity"
             style={linkBtn(false)}
           >
-            Identity Integrity
+            {labelWithIcon("shield", "Identity Checks")}
           </StableCtaLink>
         </div>
       </div>
 
       <div style={{ ...card(), marginTop: 18 }}>
         <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-          Choose your colour
+          Choose your display style
         </div>
         <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-          Different users prefer different contrast levels. This setting changes the shell feel of the workspace and helps the platform feel clearer and more comfortable.
+          Pick the contrast and colour balance that makes GSN easiest for you to read.
         </div>
 
         {msg ? (
@@ -161,7 +172,7 @@ export default function AppearancePage() {
           style={{
             marginTop: 18,
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: 14,
           }}
         >
@@ -177,13 +188,21 @@ export default function AppearancePage() {
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div
                   style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 999,
+                    width: 42,
+                    height: 42,
+                    borderRadius: 14,
                     background: t.preview,
-                    border: "1px solid rgba(11,31,51,0.10)",
+                    border: "1px solid rgba(11,31,51,0.12)",
+                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.32)",
+                    flex: "0 0 auto",
                   }}
-                />
+                >
+                  <GsnLegacyIcon
+                    name={theme === t.key ? "check" : "spark"}
+                    size={28}
+                    style={{ margin: 7 }}
+                  />
+                </div>
                 <div>
                   <div style={{ fontWeight: 1000, color: "#0B1F33" }}>{t.label}</div>
                   <div style={{ marginTop: 4, fontSize: 13, color: "#64748b" }}>{t.note}</div>

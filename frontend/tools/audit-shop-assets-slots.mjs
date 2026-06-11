@@ -44,33 +44,27 @@ while ((forbiddenEmojiMatch = forbiddenEmojiIconPattern.exec(shopAssetsSource)))
     file: shopAssetsFile,
     line: lineAt(shopAssetsSource, forbiddenEmojiMatch.index),
     message:
-      "Shop Assets must use app-native SVG pictograms for owner-facing status labels, not emoji or mojibake icon text.",
+      "Shop Assets must use 3D GSN icons for owner-facing status labels, not emoji or mojibake icon text.",
     text: forbiddenEmojiMatch[0],
   });
 }
 
 assertContains(
   shopAssetsFile,
-  /import \{[\s\S]*?TrustPaperIcon[\s\S]*?type TrustPaperIconName[\s\S]*?\} from "\.\.\/components\/TrustPaperMarks";/,
-  "Shop Assets must use the shared TrustPaperIcon SVG pictogram set for owner-facing icon chips."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";/,
+  "Shop Assets must use the shared 3D GSN icon adapter for owner-facing icon chips."
 );
 
 assertContains(
   shopAssetsFile,
-  /function iconBadge\([\s\S]*?icon: TrustPaperIconName[\s\S]*?<TrustPaperIcon name=\{icon\} size=\{14\} strokeWidth=\{2\.7\}/,
-  "Shop Assets must keep a compact SVG-backed chip helper for shop picture, public products, Vault, hidden, and block status."
+  /function iconBadge\([\s\S]*?icon: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{icon\} size=\{13\} \/>/,
+  "Shop Assets must keep a compact 3D icon-backed chip helper for shop picture, public products, Vault, hidden, and block status."
 );
 
 assertContains(
   shopAssetsFile,
   /iconBadge\("image"[\s\S]*?Shop picture:[\s\S]*?iconBadge\("shop"[\s\S]*?Public products:[\s\S]*?iconBadge\("lock"[\s\S]*?Vault offers:[\s\S]*?iconBadge\("document"[\s\S]*?Hidden:/,
-  "Shop Assets workbench counters must use image/shop/lock/document SVG chips instead of emoji labels."
-);
-
-assertContains(
-  "src/components/TrustPaperMarks.tsx",
-  /\| "image"[\s\S]*?\| "tag"[\s\S]*?\| "video"/,
-  "TrustPaperIcon must expose image, tag, and video pictograms for shop media surfaces."
+  "Shop Assets workbench counters must use image/shop/lock/document 3D GSN chips instead of emoji labels."
 );
 
 assertContains(

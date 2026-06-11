@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useParams } from "react-router-dom";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import GSNBrandMark from "../components/GSNBrandMark";
+import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
@@ -87,6 +88,44 @@ type ShopBroadcast = {
   createdAt?: string;
   expiresAt?: string;
 };
+
+type LegacyShopIconName =
+  | "alert"
+  | "bank"
+  | "briefcase"
+  | "calendar"
+  | "card"
+  | "chart"
+  | "chevronDown"
+  | "chevronUp"
+  | "check"
+  | "community"
+  | "copy"
+  | "document"
+  | "eye"
+  | "globe"
+  | "hash"
+  | "home"
+  | "id"
+  | "image"
+  | "lock"
+  | "megaphone"
+  | "navigation"
+  | "pen"
+  | "phone"
+  | "qr"
+  | "refresh"
+  | "search"
+  | "shield"
+  | "shop"
+  | "spark"
+  | "tag"
+  | "user"
+  | "vault"
+  | "video"
+  | "wallet";
+
+type ShopIconName = LegacyShopIconName | Gsn3DIconKey;
 
 type NoticeTone = "success" | "error";
 
@@ -489,23 +528,21 @@ function _ShopSignboardVisual({ compact = false }: { compact?: boolean }) {
           position: "absolute",
           right: compact ? 12 : 20,
           bottom: compact ? 16 : 24,
-          fontSize: compact ? 44 : 72,
           filter: "drop-shadow(0 14px 20px rgba(0,0,0,0.28))",
           transform: "rotate(-4deg)",
         }}
       >
-        🛒
+        <GsnRealisticIcon name="shop-storefront" size={compact ? 54 : 84} decorative />
       </span>
       <span
         style={{
           position: "absolute",
           left: compact ? 32 : 50,
           bottom: compact ? 23 : 36,
-          fontSize: compact ? 34 : 58,
           filter: "drop-shadow(0 12px 18px rgba(0,0,0,0.24))",
         }}
       >
-        🎁
+        <GsnRealisticIcon name="shop-storefront" size={compact ? 44 : 68} decorative />
       </span>
       <GSNBrandMark width={compact ? 44 : 62} height={compact ? 58 : 82} />
     </div>
@@ -1094,6 +1131,95 @@ function glossyIconBadge(size: number, fontSize: number): React.CSSProperties {
     border: "1px solid rgba(13,95,168,0.10)",
     lineHeight: 1,
   };
+}
+
+function shop3DIconName(name: ShopIconName): Gsn3DIconKey {
+  const mapped = {
+    alert: "trust-shield",
+    bank: "finance-wallet-card",
+    briefcase: "records-folder",
+    calendar: "records-folder",
+    card: "finance-wallet-card",
+    chart: "finance-wallet-card",
+    chevronDown: "public-globe",
+    check: "trust-shield",
+    chevronUp: "public-globe",
+    community: "community-building",
+    copy: "qr-record",
+    document: "records-folder",
+    eye: "public-globe",
+    globe: "public-globe",
+    hash: "qr-record",
+    home: "community-building",
+    id: "identity-card",
+    image: "records-folder",
+    lock: "vault-safe",
+    megaphone: "spotlight-megaphone",
+    navigation: "public-globe",
+    pen: "records-folder",
+    phone: "phone-contact",
+    qr: "qr-record",
+    refresh: "records-folder",
+    search: "qr-record",
+    shield: "trust-shield",
+    shop: "shop-storefront",
+    spark: "spotlight-megaphone",
+    tag: "shop-storefront",
+    user: "identity-card",
+    vault: "vault-safe",
+    video: "media-video",
+    wallet: "finance-wallet-card",
+  } satisfies Record<LegacyShopIconName, Gsn3DIconKey>;
+
+  return mapped[name as LegacyShopIconName] || (name as Gsn3DIconKey);
+}
+
+function inlineShopIcon(
+  name: ShopIconName,
+  color = "currentColor",
+  size = 15
+): React.ReactNode {
+  const iconSize = Math.max(24, size + 14);
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        flex: "0 0 auto",
+        width: iconSize,
+        height: iconSize,
+        borderRadius: 8,
+        display: "inline-grid",
+        placeItems: "center",
+        color,
+        background: "rgba(255,255,255,0.94)",
+        border: "1px solid rgba(13,95,168,0.12)",
+        boxShadow:
+          "0 8px 16px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        verticalAlign: "-5px",
+      }}
+    >
+      <GsnRealisticIcon
+        name={shop3DIconName(name)}
+        size={Math.max(22, size + 10)}
+        decorative
+        imageStyle={{ width: "96%", height: "96%" }}
+      />
+    </span>
+  );
+}
+
+function labelWithShopIcon(
+  name: ShopIconName,
+  label: React.ReactNode,
+  color = "currentColor"
+): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+      {inlineShopIcon(name, color)}
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function primaryBtn(disabled = false): React.CSSProperties {
@@ -2206,17 +2332,17 @@ export default function ShopGalleryPage() {
       : "Show shop scan"
     : "Scan not ready";
   const shopVerificationRows = [
-    { icon: "🏪", label: "Shop name", value: shopNameText },
-    { icon: "🪪", label: "Shop owner ID", value: shopGmfnText || "Not ready" },
-    { icon: "🌍", label: "Marketplace", value: shopLocationText },
-    { icon: "👥", label: "Community", value: shopCommunityText || "Not exposed yet" },
-    { icon: "🔐", label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
-  ];
+    { icon: "shop", label: "Shop name", value: shopNameText },
+    { icon: "id", label: "Shop owner ID", value: shopGmfnText || "Not ready" },
+    { icon: "globe", label: "Marketplace", value: shopLocationText },
+    { icon: "community", label: "Community", value: shopCommunityText || "Not exposed yet" },
+    { icon: "lock", label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
+  ] satisfies Array<{ icon: ShopIconName; label: string; value: string }>;
   const shopTrustCheckOptions = [
-    { icon: "📄", text: "Request TrustSlip for live proof" },
-    { icon: "👥", text: "Ask community for extra confirmation" },
-    { icon: "🔎", text: "Use IDs to avoid name confusion" },
-  ];
+    { icon: "document", text: "Request TrustSlip for live proof" },
+    { icon: "community", text: "Ask community for extra confirmation" },
+    { icon: "search", text: "Use IDs to avoid name confusion" },
+  ] satisfies Array<{ icon: ShopIconName; text: string }>;
   async function shareOrCopy(params: {
     title: string;
     text: string;
@@ -2761,7 +2887,7 @@ export default function ShopGalleryPage() {
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18)",
                 }}
               >
-                <span aria-hidden="true">🏷️</span>
+                {inlineShopIcon("tag", "rgba(255,255,255,0.88)", isCompact ? 13 : 15)}
                 <span
                   style={{
                     overflow: "hidden",
@@ -2785,8 +2911,8 @@ export default function ShopGalleryPage() {
                 }}
               >
                 {[
-                  { icon: "🪪", label: "GMFN ID", value: shopGmfnText || "Not ready" },
-                  { icon: "👥", label: "Homeland", value: shopLocationText },
+                  { icon: "id" as ShopIconName, label: "GMFN ID", value: shopGmfnText || "Not ready" },
+                  { icon: "community" as ShopIconName, label: "Homeland", value: shopLocationText },
                 ].map((row, rowIndex) => (
                   <div
                     key={row.label}
@@ -2813,12 +2939,15 @@ export default function ShopGalleryPage() {
                         borderRadius: 8,
                         background: "rgba(246,215,122,0.15)",
                         color: "#F6D77A",
-                        fontSize: isCompact ? 13 : 16,
                         boxShadow:
                           "0 8px 18px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
                       }}
                     >
-                      {row.icon}
+                      <GsnRealisticIcon
+                        name={shop3DIconName(row.icon)}
+                        size={isCompact ? 22 : 28}
+                        decorative
+                      />
                     </span>
                     <div
                       style={{
@@ -2892,31 +3021,31 @@ export default function ShopGalleryPage() {
               onClick={shareShop}
               minWidth={0}
               fullWidth
-              stableHeight={isCompact ? 46 : 54}
+              stableHeight={isCompact ? 52 : 54}
               debugId="shop-gallery.share-shop"
               style={{
                 ...primaryBtn(shopLoadFailed),
-                minHeight: isCompact ? 46 : 54,
+                minHeight: isCompact ? 52 : 54,
                 borderRadius: isCompact ? 13 : 15,
                 fontSize: isCompact ? 12 : 14,
                 padding: isCompact ? "8px 6px" : "10px 12px",
                 gap: 7,
               }}
             >
-              <span aria-hidden="true">🔗</span>
+              {inlineShopIcon("copy", "#FFFFFF", isCompact ? 14 : 16)}
               <span>Share</span>
             </PrimaryButton>
             <SecondaryButton
               onClick={toggleShopVerificationPanel}
               minWidth={0}
               fullWidth
-              stableHeight={isCompact ? 46 : 54}
+              stableHeight={isCompact ? 52 : 54}
               debugId="shop-gallery.verify-shop.toggle"
               aria-expanded={shopVerificationOpen}
               aria-controls="public-shop-verify-panel"
               style={{
                 ...secondaryBtn(false),
-                minHeight: isCompact ? 46 : 54,
+                minHeight: isCompact ? 52 : 54,
                 borderRadius: isCompact ? 13 : 15,
                 fontSize: isCompact ? 12 : 14,
                 padding: isCompact ? "8px 6px" : "10px 12px",
@@ -2928,20 +3057,20 @@ export default function ShopGalleryPage() {
                 gap: 7,
               }}
             >
-              <span aria-hidden="true">🛡️</span>
+              {inlineShopIcon("shield", "#FFFFFF", isCompact ? 14 : 16)}
               <span>Verify</span>
             </SecondaryButton>
             <PrimaryButton
               onClick={toggleOwnerContactPanel}
               minWidth={0}
               fullWidth
-              stableHeight={isCompact ? 46 : 54}
+              stableHeight={isCompact ? 52 : 54}
               debugId="shop-gallery.owner-contact.choose"
               aria-expanded={ownerContactPanelOpen}
               aria-controls="public-shop-owner-contact-panel"
               style={{
                 ...primaryBtn(false),
-                minHeight: isCompact ? 46 : 54,
+                minHeight: isCompact ? 52 : 54,
                 borderRadius: isCompact ? 13 : 15,
                 fontSize: isCompact ? 12 : 14,
                 padding: isCompact ? "8px 6px" : "10px 12px",
@@ -2951,7 +3080,7 @@ export default function ShopGalleryPage() {
                 gap: 7,
               }}
             >
-              <span aria-hidden="true">💬</span>
+              {inlineShopIcon("phone", "#FFFFFF", isCompact ? 14 : 16)}
               <span>WhatsApp</span>
             </PrimaryButton>
           </div>
@@ -2976,13 +3105,13 @@ export default function ShopGalleryPage() {
         >
           {[
             {
-              mark: "🛡️",
+              icon: "shield" as ShopIconName,
               title: "Community Checked",
               detail: shopCommunityIdText ? "Member review" : "Record pending",
             },
-            { mark: "🌐", title: "Public Shelf", detail: publicBlockText },
-            { mark: "🔒", title: "Private Vault", detail: "By trust link" },
-            { mark: "🏅", title: "Trust Identity", detail: "GSN ID visible" },
+            { icon: "globe" as ShopIconName, title: "Public Shelf", detail: publicBlockText },
+            { icon: "vault" as ShopIconName, title: "Private Vault", detail: "By trust link" },
+            { icon: "id" as ShopIconName, title: "Trust Identity", detail: "GSN ID visible" },
           ].map((item, itemIndex) => {
             const statusItemStyle: React.CSSProperties = {
                 minHeight: isCompact ? 58 : 76,
@@ -3007,7 +3136,11 @@ export default function ShopGalleryPage() {
                     ),
                   }}
                 >
-                  {item.mark}
+                  <GsnRealisticIcon
+                    name={shop3DIconName(item.icon)}
+                    size={isCompact ? 24 : 42}
+                    decorative
+                  />
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div
@@ -3047,7 +3180,7 @@ export default function ShopGalleryPage() {
 
             return (
               <div
-                key={`${item.mark}-${item.title}`}
+                key={`${item.icon}-${item.title}`}
                 className="public-shop-status-item"
                 style={statusItemStyle}
               >
@@ -3119,11 +3252,14 @@ export default function ShopGalleryPage() {
                   background:
                     "linear-gradient(145deg, rgba(255,236,173,0.18), rgba(47,128,237,0.16))",
                   border: "1px solid rgba(246,215,122,0.34)",
-                  fontSize: isCompact ? 24 : 32,
-                  boxShadow: "0 14px 28px rgba(0,0,0,0.24)",
-                }}
-              >
-                🛡️
+                        boxShadow: "0 14px 28px rgba(0,0,0,0.24)",
+                      }}
+                    >
+                <GsnRealisticIcon
+                  name="trust-shield"
+                  size={isCompact ? 34 : 48}
+                  decorative
+                />
               </div>
               <div style={{ minWidth: 0 }}>
                 <div style={{ ...sectionLabel(), color: "#F6D77A" }}>
@@ -3157,13 +3293,13 @@ export default function ShopGalleryPage() {
               <SecondaryButton
                 onClick={toggleShopVerificationPanel}
                 minWidth={0}
-                stableHeight={isCompact ? 40 : 46}
+                stableHeight={isCompact ? 52 : 46}
                 debugId="shop-gallery.verify-shop.close"
                 aria-expanded={shopVerificationOpen}
                 aria-controls="public-shop-verify-panel"
                 style={{
                   ...secondaryBtn(false),
-                  minHeight: isCompact ? 40 : 46,
+                  minHeight: isCompact ? 52 : 46,
                   borderRadius: isCompact ? 13 : 14,
                   fontSize: isCompact ? 11.2 : 13.5,
                   color: "#FFFFFF",
@@ -3202,7 +3338,11 @@ export default function ShopGalleryPage() {
                 fontWeight: 950,
               }}
             >
-              <span aria-hidden="true">{shopVerificationQrTarget ? "✅" : "🟡"}</span>
+              {inlineShopIcon(
+                shopVerificationQrTarget ? "check" : "alert",
+                shopVerificationQrTarget ? "#86EFAC" : "#FDE68A",
+                isCompact ? 15 : 17
+              )}
               <span>{shopVerificationStatusText}</span>
             </div>
 
@@ -3308,11 +3448,14 @@ export default function ShopGalleryPage() {
                         color: "#F6D77A",
                         background: "rgba(255,255,255,0.10)",
                         border: "1px solid rgba(246,196,83,0.16)",
-                        fontSize: isCompact ? 18 : 22,
                         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
                       }}
                     >
-                      {row.icon}
+                      <GsnRealisticIcon
+                        name={shop3DIconName(row.icon)}
+                        size={isCompact ? 30 : 38}
+                        decorative
+                      />
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div
@@ -3326,9 +3469,7 @@ export default function ShopGalleryPage() {
                           lineHeight: 1.15,
                         }}
                       >
-                        <span aria-hidden="true" style={{ fontSize: isCompact ? 10 : 12 }}>
-                          {row.icon}
-                        </span>
+                        {inlineShopIcon(row.icon, "rgba(255,236,173,0.82)", isCompact ? 11 : 13)}
                         <span>{row.label}</span>
                       </div>
                       <div
@@ -3360,7 +3501,7 @@ export default function ShopGalleryPage() {
                     padding: isCompact ? "2px 2px 0" : "3px 4px 0",
                   }}
                 >
-                  <span aria-hidden="true">ⓘ</span>
+                  {inlineShopIcon("shield", "rgba(246,215,122,0.86)", isCompact ? 12 : 14)}
                   <span>Community ID confirms the exact community.</span>
                 </div>
               </div>
@@ -3377,11 +3518,11 @@ export default function ShopGalleryPage() {
                 onClick={() => void requestShopTrustSlip()}
                 minWidth={0}
                 fullWidth
-                stableHeight={isCompact ? 44 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 debugId="shop-gallery.verify-shop.request-trustslip"
                 style={{
                   ...primaryBtn(false),
-                  minHeight: isCompact ? 44 : 50,
+                  minHeight: isCompact ? 52 : 50,
                   borderRadius: isCompact ? 13 : 14,
                   fontSize: isCompact ? 12 : 14,
                   background:
@@ -3396,11 +3537,11 @@ export default function ShopGalleryPage() {
                 disabled={!shopVerificationQrTarget}
                 fullWidth
                 minWidth={0}
-                stableHeight={isCompact ? 44 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 debugId="shop-gallery.verify-shop.toggle-scan"
                 style={{
                   ...secondaryBtn(!shopVerificationQrTarget),
-                  minHeight: isCompact ? 44 : 50,
+                  minHeight: isCompact ? 52 : 50,
                   borderRadius: isCompact ? 13 : 14,
                   fontSize: isCompact ? 12 : 14,
                   color: "#FFFFFF",
@@ -3414,11 +3555,11 @@ export default function ShopGalleryPage() {
                 onClick={() => void requestCommunityConfirmationFromOwner()}
                 fullWidth
                 minWidth={0}
-                stableHeight={isCompact ? 44 : 50}
+                stableHeight={isCompact ? 52 : 50}
                 debugId="shop-gallery.verify-shop.open-community-record"
                 style={{
                   ...secondaryBtn(false),
-                  minHeight: isCompact ? 44 : 50,
+                  minHeight: isCompact ? 52 : 50,
                   borderRadius: isCompact ? 13 : 14,
                   fontSize: isCompact ? 12 : 14,
                   color: "#F6D77A",
@@ -3450,12 +3591,16 @@ export default function ShopGalleryPage() {
                   position: "absolute",
                   right: isCompact ? 12 : 20,
                   bottom: isCompact ? 10 : 14,
-                  fontSize: isCompact ? 72 : 96,
                   lineHeight: 1,
                   color: "rgba(246,215,122,0.08)",
                 }}
               >
-                🛡️
+                <GsnRealisticIcon
+                  name="trust-shield"
+                  size={isCompact ? 74 : 96}
+                  decorative
+                  style={{ opacity: 0.72 }}
+                />
               </span>
               <div
                 style={{
@@ -3503,7 +3648,11 @@ export default function ShopGalleryPage() {
                         background: "rgba(255,255,255,0.08)",
                       }}
                     >
-                      {item.icon}
+                      <GsnRealisticIcon
+                        name={shop3DIconName(item.icon)}
+                        size={isCompact ? 24 : 28}
+                        decorative
+                      />
                     </span>
                     <span>{item.text}</span>
                   </div>
@@ -3573,10 +3722,9 @@ export default function ShopGalleryPage() {
                   boxShadow:
                     "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
                   color: "#1F5FB7",
-                  fontSize: isCompact ? 21 : 24,
                 }}
               >
-                <span aria-hidden="true">🛡️</span>
+                <GsnRealisticIcon name="trust-shield" size={isCompact ? 32 : 38} decorative />
               </div>
               <div style={{ ...sectionLabel(), color: "#B68421" }}>Owner contact</div>
               <div
@@ -3630,10 +3778,9 @@ export default function ShopGalleryPage() {
                   color: "#1F5FB7",
                   background: "#FFFFFF",
                   border: "1px solid rgba(13,95,168,0.14)",
-                  fontSize: 16,
                 }}
               >
-                🛡️
+                <GsnRealisticIcon name="trust-shield" size={30} decorative />
               </span>
               <div
                 style={{
@@ -3668,10 +3815,9 @@ export default function ShopGalleryPage() {
                     color: "#1F5FB7",
                     background: "#FFFFFF",
                     border: "1px solid rgba(13,95,168,0.14)",
-                    fontSize: 14,
                   }}
                 >
-                  📞
+                  <GsnRealisticIcon name="phone-contact" size={24} decorative />
                 </span>
                 <span>
                   A <strong style={{ color: "#1F5FB7" }}>phone call</strong> opens the
@@ -3709,9 +3855,7 @@ export default function ShopGalleryPage() {
                 }}
               >
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
-                  <span aria-hidden="true" style={{ fontSize: isCompact ? 24 : 28 }}>
-                    💬
-                  </span>
+                  <GsnRealisticIcon name="phone-contact" size={isCompact ? 34 : 42} decorative />
                   <span>WhatsApp chat</span>
                 </span>
                 <span aria-hidden="true" style={{ color: "#FFFFFF", fontSize: isCompact ? 25 : 29 }}>
@@ -3739,9 +3883,7 @@ export default function ShopGalleryPage() {
                 }}
               >
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
-                  <span aria-hidden="true" style={{ fontSize: isCompact ? 24 : 28 }}>
-                    📞
-                  </span>
+                  <GsnRealisticIcon name="phone-contact" size={isCompact ? 34 : 42} decorative />
                   <span>Call phone</span>
                 </span>
                 <span aria-hidden="true" style={{ color: "#1F5FB7", fontSize: isCompact ? 25 : 29 }}>
@@ -3761,7 +3903,7 @@ export default function ShopGalleryPage() {
                 fontWeight: 760,
               }}
             >
-              <span aria-hidden="true">🔒</span>
+              {inlineShopIcon("lock", "#5F7287", isCompact ? 13 : 15)}
               <span>Your contact details stay private and secure.</span>
             </div>
           </section>
@@ -3842,13 +3984,13 @@ export default function ShopGalleryPage() {
                 <PrimaryButton
                   onClick={openSpotlightPreview}
                   minWidth="auto"
-                  stableHeight={isCompact ? 34 : 44}
+                  stableHeight={52}
                   debugId="shop-gallery.open-spotlight-preview"
                   style={{
                     ...primaryBtn(false),
                     marginTop: isCompact ? 10 : 16,
                     borderRadius: 999,
-                    minHeight: isCompact ? 34 : 44,
+                    minHeight: 52,
                     width: "fit-content",
                     maxWidth: "100%",
                     padding: isCompact ? "7px 10px" : "10px 16px",
@@ -3856,18 +3998,21 @@ export default function ShopGalleryPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Explore Spotlight →
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    {inlineShopIcon("spotlight-megaphone", "#0B63D1", isCompact ? 13 : 15)}
+                    Explore Spotlight
+                  </span>
                 </PrimaryButton>
                 {publicShopSpotlightActive ? (
                   <SecondaryButton
                     onClick={contactSpotlightOwnerByWhatsApp}
                     minWidth="auto"
-                    stableHeight={isCompact ? 34 : 44}
+                    stableHeight={52}
                     debugId="shop-gallery.spotlight.whatsapp"
                     style={{
                       marginTop: isCompact ? 8 : 10,
                       borderRadius: 999,
-                      minHeight: isCompact ? 34 : 44,
+                      minHeight: 52,
                       width: "fit-content",
                       maxWidth: "100%",
                       padding: isCompact ? "7px 10px" : "10px 16px",
@@ -3911,9 +4056,9 @@ export default function ShopGalleryPage() {
                     mutedVideo={Boolean(miniSpotlightView.videoUrl)}
                     loopVideo={Boolean(miniSpotlightView.videoUrl)}
                     showAudioUnlock={Boolean(miniSpotlightView.videoUrl)}
-                    audioUnlockLabel="🔊"
-                    audioUnlockOffLabel="🔇"
-                    audioUnlockErrorLabel="▶️"
+                    audioUnlockLabel="Sound on"
+                    audioUnlockOffLabel="Muted"
+                    audioUnlockErrorLabel="Play"
                     audioUnlockStyle={{
                       top: "auto",
                       right: isCompact ? 7 : 10,
@@ -3963,7 +4108,7 @@ export default function ShopGalleryPage() {
                       padding: isCompact ? 10 : 16,
                     }}
                   >
-                    🛍️
+                    <GsnRealisticIcon name="shop-storefront" size={isCompact ? 42 : 52} decorative />
                   </div>
                 )}
               </div>
@@ -4002,7 +4147,7 @@ export default function ShopGalleryPage() {
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ ...sectionLabel(), color: "#F6D77A" }}>
-                🔒 Private Vault
+                {labelWithShopIcon("vault", "Private Vault", "#F6D77A")}
               </div>
               <div
                 style={{
@@ -4037,11 +4182,11 @@ export default function ShopGalleryPage() {
                 <PrimaryButton
                   onClick={askForVaultAccess}
                   minWidth={0}
-                  stableHeight={isCompact ? 34 : 48}
+                  stableHeight={isCompact ? 52 : 48}
                   debugId="shop-gallery.ask-vault-access"
                   style={{
                     ...primaryBtn(false),
-                    minHeight: isCompact ? 34 : 48,
+                    minHeight: isCompact ? 52 : 48,
                     padding: isCompact ? "6px 9px" : "10px 14px",
                     borderRadius: 999,
                     fontSize: isCompact ? 9.6 : 14,
@@ -4055,11 +4200,11 @@ export default function ShopGalleryPage() {
                 <SecondaryButton
                   onClick={copyShopLink}
                   minWidth={0}
-                  stableHeight={isCompact ? 34 : 48}
+                  stableHeight={isCompact ? 52 : 48}
                   debugId="shop-gallery.copy-vault-shop-link"
                   style={{
                     ...secondaryBtn(false),
-                    minHeight: isCompact ? 34 : 48,
+                    minHeight: isCompact ? 52 : 48,
                     padding: isCompact ? "6px 9px" : "9px 12px",
                     borderRadius: 999,
                     fontSize: isCompact ? 9.6 : 14,
@@ -4162,7 +4307,7 @@ export default function ShopGalleryPage() {
                   <PrimaryButton
                     onClick={forceOwnerReconnect}
                     fullWidth
-                    stableHeight={isCompact ? 42 : 48}
+                    stableHeight={isCompact ? 52 : 48}
                     debugId="shop-gallery.reconnect-owner-shop"
                   >
                     Reconnect my shop
@@ -4171,7 +4316,7 @@ export default function ShopGalleryPage() {
                   <StableCtaLink
                     to={loginReconnectPath}
                     fullWidth
-                    stableHeight={isCompact ? 42 : 48}
+                    stableHeight={isCompact ? 52 : 48}
                     debugId="shop-gallery.sign-in-reconnect-shop"
                   >
                     Sign in to reconnect
@@ -4180,7 +4325,7 @@ export default function ShopGalleryPage() {
                 <StableCtaLink
                   to="/app/marketplace"
                   fullWidth
-                  stableHeight={isCompact ? 42 : 48}
+                  stableHeight={isCompact ? 52 : 48}
                   debugId="shop-gallery.open-marketplace-refresh"
                 >
                   Open Marketplace
@@ -4209,11 +4354,11 @@ export default function ShopGalleryPage() {
                 <PrimaryButton
                   onClick={askForVaultAccess}
                   fullWidth
-                  stableHeight={isCompact ? 42 : 48}
+                  stableHeight={isCompact ? 52 : 48}
                   debugId="shop-gallery.empty-ask-vault-access"
                   style={{
                     ...primaryBtn(false),
-                    minHeight: isCompact ? 42 : 48,
+                    minHeight: isCompact ? 52 : 48,
                   }}
                 >
                   Ask for Vault access
@@ -4221,11 +4366,11 @@ export default function ShopGalleryPage() {
                 <SecondaryButton
                   onClick={copyShopLink}
                   fullWidth
-                  stableHeight={isCompact ? 42 : 48}
+                  stableHeight={isCompact ? 52 : 48}
                   debugId="shop-gallery.empty-copy-shop-link"
                   style={{
                     ...secondaryBtn(shopLoadFailed),
-                    minHeight: isCompact ? 42 : 48,
+                    minHeight: isCompact ? 52 : 48,
                   }}
                 >
                   Copy public shop link
@@ -4359,9 +4504,9 @@ export default function ShopGalleryPage() {
                           mutedVideo={true}
                           loopVideo={!isProductOpen}
                           showAudioUnlock={hasVideoStory}
-                          audioUnlockLabel="🔊"
-                          audioUnlockOffLabel="🔇"
-                          audioUnlockErrorLabel="▶️"
+                          audioUnlockLabel="Sound on"
+                          audioUnlockOffLabel="Muted"
+                          audioUnlockErrorLabel="Play"
                           audioUnlockStyle={{
                             top: isCompact ? 9 : 12,
                             right: isCompact ? 9 : 12,
@@ -4595,7 +4740,11 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
                         >
-                          {isProductOpen ? "🔼" : "👁️"}
+                          <GsnRealisticIcon
+                            name="public-globe"
+                            size={isCompact ? 28 : 32}
+                            decorative
+                          />
                         </SecondaryButton>
                         <SecondaryButton
                           onClick={() => {
@@ -4626,7 +4775,7 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
                         >
-                          🔗
+                          <GsnRealisticIcon name="qr-record" size={isCompact ? 28 : 32} decorative />
                         </SecondaryButton>
                         {showBlockPlacementAction ? (
                           <StableCtaLink
@@ -4693,7 +4842,7 @@ export default function ShopGalleryPage() {
                             borderColor: "rgba(18,140,76,0.52)",
                           }}
                         >
-                          💬
+                          <GsnRealisticIcon name="phone-contact" size={isCompact ? 28 : 32} decorative />
                         </SecondaryButton>
                       </div>
                     </div>
@@ -4724,7 +4873,3 @@ export default function ShopGalleryPage() {
     </main>
   );
 }
-
-
-
-

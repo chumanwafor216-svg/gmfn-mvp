@@ -1,3 +1,3283 @@
+### GSN icon meaning and borrowing repayment queue (2026-06-11)
+
+- Continuation update - broad light-tile icon wrapper sweep:
+  - Removed the exact old dark navy/black 3D icon wrapper pattern from the
+    remaining `frontend/src` matches found by:
+    `rg "linear-gradient\\(180deg, #102D4C 0%, #061827 100%\\)" frontend/src`.
+  - Retuned these surfaces to white/near-white icon tiles with larger 3D
+    objects, softer shadows, and meaning preserved through icon choice,
+    border, and color rather than heavy background blocks:
+    - `frontend/src/pages/ShopControlPage.tsx`:
+      - Spotlight publisher hero tile;
+      - Vault Control hero tile;
+    - `frontend/src/pages/VaultControlPage.tsx`:
+      - inline label icon helper enlarged from `22x22` / `14px` glyph to
+        `28x28` / `22px` glyph;
+    - `frontend/src/pages/MyGMFNAndIPage.tsx`:
+      - app guide mini icon bubbles;
+      - public capability icon tiles;
+    - `frontend/src/pages/SubscriptionSpotlightPage.tsx`:
+      - shared label icon helper enlarged and moved off dark tiles;
+    - `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+      - verification label icon helper moved to a light embossed tile;
+    - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`:
+      - certificate/public-paper icon badges moved away from dark or heavy
+        warning fills; trust/warning/neutral meaning now comes from border and
+        icon color over light paper-like tiles.
+  - Follow-up searches now return no matches for the exact old dark icon
+    wrapper pattern in `frontend/src`.
+  - Verification passed from `frontend`:
+    - `npm exec -- eslint src/pages/ShopControlPage.tsx
+      src/pages/VaultControlPage.tsx src/pages/MyGMFNAndIPage.tsx
+      src/pages/SubscriptionSpotlightPage.tsx
+      src/pages/TrustSlipVerifyPage.tsx
+      src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`;
+    - `npm run audit:icon-protocol`;
+    - `npm run audit:shop-control-button-inventory`;
+    - `npm run audit:vault-control-button-inventory`;
+    - `npm run audit:button-stability`;
+    - `npm run audit:protected-button-freeze`;
+    - `npm exec -- tsc -b --pretty false`;
+    - `npm run build`.
+  - Current truth:
+    - the specific heavy icon-tile regression has been rooted out at the exact
+      string-pattern level across `frontend/src`;
+    - this still does not prove visual perfection on physical phone screens.
+      Phone screenshots remain required to catch proportional, wrapping, and
+      crowded-block issues that static audits cannot see.
+
+- Continuation update - icon asset compression + light-tile route helpers:
+  - Converted the six heavy generated PNG icon assets to app-loaded WebP and
+    removed the unused PNG copies from `frontend/src/assets/gsn-icons/`.
+  - The current app-loaded icon asset folder is now all WebP; largest files:
+    - `icon-finance-wallet-card-3d.webp` - about `130 KB`;
+    - `icon-market-stall-3d.webp` - about `107 KB`;
+    - `icon-repayment-schedule-3d.webp` - about `105 KB`;
+    - `icon-finance-bank-building-3d.webp` - about `100 KB`;
+    - `icon-certificate-seal-3d.webp` - about `95 KB`;
+    - `icon-audio-speaker-3d.webp` - about `46 KB`;
+    - `icon-media-video-3d.webp` - about `43 KB`.
+  - Updated `frontend/src/lib/gsnIconAssets.ts`,
+    `frontend/tools/audit-icon-protocol.mjs`, and
+    `docs/GSN_ICON_MIGRATION.md` so the registry/audit/docs now protect the
+    WebP asset names.
+  - Retuned additional repeated local icon helpers to lighter white/near-white
+    tiles:
+    - `CommunityJoinRequestsPage.tsx`;
+    - `CommunityConfirmationPolicyPage.tsx`;
+    - `CCIReadingPage.tsx`.
+  - Verification passed from `frontend`:
+    - `npm run audit:icon-protocol`;
+    - `npm exec -- tsc -b --pretty false`;
+    - `npm run audit:community-join-requests-layout`;
+    - `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx
+      src/pages/CommunityConfirmationPolicyPage.tsx
+      src/pages/CCIReadingPage.tsx src/lib/gsnIconAssets.ts
+      tools/audit-icon-protocol.mjs
+      tools/audit-community-join-requests-layout.mjs`;
+    - `npm run audit:community-home-phone-buttons`;
+    - `npm run audit:community-home-button-inventory`;
+    - `npm run audit:button-stability`;
+    - `npm run build`.
+  - Current truth:
+    - asset-weight risk for the generated icon pack is substantially reduced;
+    - this still does not replace phone screenshot review. Some lower-priority
+      admin/support pages may still have route-local icon wrappers that need a
+      later pass, but the central registry, Community Home, Shop media, Join
+      Requests, Policy, and CCI helpers are now aligned with the light-tile
+      direction.
+
+- Continuation update - Community Home + media sound/video split:
+  - Generated and chroma-cleaned two new transparent 3D assets:
+    - `frontend/src/assets/gsn-icons/icon-audio-speaker-3d.png`
+    - `frontend/src/assets/gsn-icons/icon-media-video-3d.png`
+    - optimized app-loaded WebP siblings now live at
+      `frontend/src/assets/gsn-icons/icon-audio-speaker-3d.webp` and
+      `frontend/src/assets/gsn-icons/icon-media-video-3d.webp`.
+  - Wired both through `frontend/src/lib/gsnIconAssets.ts` and
+    `GsnLegacyIcon` so:
+    - `audio`, `speaker`, `sound`, `soundOn`, and `soundOff` resolve to
+      `audio-speaker`;
+    - `video` resolves to `media-video` instead of the spotlight megaphone.
+  - Updated `SpotlightMediaFrame` so sound unlock controls render the 3D
+    speaker icon at the shared component level. Compact fixed-size media
+    controls now stay icon-only; wider controls can show speaker plus text.
+  - Retuned Community Home Trust Passport summary rows:
+    - removed literal `ID` and `F` letter badges;
+    - replaced them with larger `id` and `financeInstitution` 3D icons;
+    - enlarged the shared compact icon tile from `40x40` to `46x46`;
+    - removed the dark local trust-row tile override so Trust also uses a light
+      embossed icon tile.
+  - Retuned Shop Gallery and Shop Assets icon helpers:
+    - Public Shop `video` icon mapping now uses `media-video`;
+    - repeated Shop Assets badge/label tiles now use light white icon surfaces
+      with larger 3D objects instead of heavy navy tiles.
+  - Updated docs/audits so the system meaning is explicit:
+    - spotlight = announcement / publicity megaphone;
+    - sound controls = speaker / loudspeaker for audio on/off;
+    - video/media = video camera or playable media object, not a megaphone.
+  - Verification passed from `frontend`:
+    - `npm run audit:icon-protocol`
+    - `npm run audit:community-home-button-inventory`
+    - `npm run audit:community-home-phone-buttons`
+    - `npm run audit:shop-gallery-button-inventory`
+    - `npm run audit:button-stability`
+    - `npm exec -- tsc -b --pretty false`
+    - `npm run build`
+  - Current truth / remaining risk:
+    - this pass fixes the specific Community Home `ID`/`F` leak and the
+      system-level video-vs-sound icon confusion;
+    - it does not prove every page in the product is now visually complete;
+    - follow-up optimization converted the app-loaded audio/video assets to
+      WebP, reducing them from roughly `824 KB` / `776 KB` to about `46 KB` /
+      `43 KB`; the unused PNG copies were later removed from
+      `frontend/src/assets/gsn-icons/`.
+
+- Trigger:
+  - product owner clarified that 3D icon coverage is not enough; icons must be
+    bigger, more embossed, lighter in their containers, and chosen for the
+    hope/authority they communicate to users who may not want to read much.
+- Product direction recorded:
+  - prefer transparent, white, or near-colorless icon tiles over heavy colored
+    shields;
+  - keep 3D objects visually larger and more embossed inside stable tiles;
+  - use institutional finance objects such as a bank building or cash drawer
+    for main Finance and borrowing contexts; use wallet/card icons only for
+    personal payout/payment-detail contexts;
+  - use shopfront/stall/trading-place icons for Marketplace rather than generic
+    cart imagery when the domain meaning is opportunity;
+  - proof surfaces such as TrustSlip, Trust Passport, certificates, evidence
+    packs, and public verification should look like dignified paper/certificate
+    packages with seals, watermarks, and clear object icons.
+- Docs updated in this pass:
+  - `docs/DESIGN_SYSTEM.md`
+  - `docs/GSN_MOBILE_UI_PROTOCOL.md`
+  - `docs/GSN_ICON_MIGRATION.md`
+- TrustSlip Verify helper visual correction completed:
+  - `TrustSlipVerifyBoundary` now uses larger light/white embossed
+    document/lock object tiles instead of tinted status tiles;
+  - `TrustSlipVerifyResultCard` now uses a larger light/white embossed
+    shield/alert object tile and no longer uses the heavy navy result shield;
+  - `TrustSlipVerifyPrivateEvidence` now scales the section icons larger
+    inside lighter paper/glass tiles with drop-shadow embossing;
+  - `audit-button-stability` now cages these light/embossed icon details and
+    blocks the old heavy navy result tile from returning.
+- Logic queue explicitly recorded for the next major phase:
+  - audit Borrowing / Loans / Repayment end to end after icon polish;
+  - confirm whether the product supports pay-in-full, pay-in-parts /
+    instalment repayment, repayment schedules, expected payment creation,
+    payment confirmation, partial payment, overdue/default state, and trust
+    evidence updates;
+  - map frontend routes such as `/app/loans`, `/app/loan-summary/:loanId`,
+    `/app/payment/loans/:loanId`, `/app/finance`, and backend repayment /
+    expected-payment routes before changing any payment or ledger logic;
+  - do not alter payment, ledger, or irreversible transaction logic during icon
+    polish.
+- Current truth:
+  - this records the standard and queue; it does not yet complete the visual
+    migration everywhere and does not yet prove the borrowing repayment logic.
+- Continuation update:
+  - generated and cleaned transparent 3D assets for `finance-bank-building`,
+    `market-stall`, `certificate-seal`, and `repayment-schedule`;
+  - wired those assets into `frontend/src/lib/gsnIconAssets.ts`;
+  - updated `GsnLegacyIcon` so `bank` / `chart` now resolve to the bank
+    building, `shop` / `tag` now resolve to the market stall, and new semantic
+    names `financeInstitution`, `marketplace`, `certificate`, `proof`, and
+    `repaymentSchedule` are available for route-level cleanup;
+  - updated the evidence pack panel to use the certificate icon for proof
+    packaging instead of a generic document icon;
+  - retuned `/app/finance` so FinanceGlyph maps institutional finance marks to
+    `financeInstitution`, proof/records marks to `proof`, and personal money
+    movement remains `wallet`;
+  - retuned the main Finance tool and snapshot icon tiles to use larger 3D
+    objects on light embossed surfaces instead of heavy colored disks;
+  - retuned `/app/payment/loans/:loanId` repayment actions so Generate and Copy
+    instruction use `repaymentSchedule`, Loan Summary uses `proof`, Finance
+    uses `financeInstitution`, and the action icon tile is light/embossed;
+  - retuned `/app/loans` so the pool hero and Pool stat use
+    `financeInstitution`, Active loans uses `repaymentSchedule`, and the
+    bottom explanatory note uses `proof`;
+  - retuned `/app/marketplace` local glyph mapping so Finance & Pool uses
+    `financeInstitution`, ROSCA/payment uses `repaymentSchedule`, trade/shop
+    uses `marketplace`, and verification/ledger uses `proof`;
+  - retuned `/app/trust` / Trust Passport lane mapping so Evidence and
+    Documents use `proof`, Finance Discipline uses `financeInstitution`, and
+    the shared trust icon badge uses a lighter embossed tile instead of heavy
+    colored fills;
+  - updated `audit:icon-protocol`, `audit:finance-button-inventory`,
+    `audit:loans-actions`,
+    `audit:marketplace-front-package`,
+    `audit:trust-passport-finance-discipline-lane`,
+    `audit:trust-passport-lane-map`, and `audit:button-stability`
+    expectations to guard the new meaning and light-tile treatment.
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx
+    src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx
+    src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - focused scan found no old heavy navy result tile, local `<svg`,
+    `strokeWidth`, `viewBox`, `GSN Verify`, or `documentWatermarkStyle` matches
+    in the three TrustSlip Verify helper files;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:finance-button-inventory` passed from `frontend`;
+  - `npm run audit:finance-actions` passed from `frontend`;
+  - `npm run audit:finance-front-package` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`;
+  - production build emitted `assets/TrustSlipVerifyPage-7VFFRCCe.js`,
+    confirming the lighter helper treatment is in the bundled TrustSlip Verify
+    route surface.
+- Semantic asset continuation verification:
+  - `npm exec -- eslint src/lib/gsnIconAssets.ts
+    src/components/GsnLegacyIcon.tsx src/components/EvidencePackPanel.tsx
+    src/pages/FinancePage.tsx src/pages/RepaymentPage.tsx
+    src/pages/LoansPage.tsx tools/audit-icon-protocol.mjs
+    tools/audit-finance-button-inventory.mjs tools/audit-loans-actions.mjs
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:finance-button-inventory` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:finance-actions` passed from `frontend`;
+  - `npm run audit:finance-front-package` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:marketplace-front-package` passed from `frontend`;
+  - `npm run audit:trust-passport-finance-discipline-lane` passed from
+    `frontend`;
+  - `npm run audit:trust-passport-lane-map` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`, emitting updated
+    `FinancePage-BCs9Ih9f.js`, `LoansPage-BmtGVsiX.js`,
+    `RepaymentPage-CenrS_vY.js`, `MarketplacePage-CmUg5ClX.js`, and
+    `TrustScorePage-dxtedtxp.js` chunks.
+- Remaining truth after the semantic asset continuation:
+  - no phone screenshots or browser visual proof were captured in this pass;
+  - follow-up optimization converted the six largest generated PNG icon assets
+    to app-loaded WebP files:
+    - `certificate-seal`: `1,510 KB` -> `95 KB`;
+    - `finance-bank-building`: `1,382 KB` -> `100 KB`;
+    - `repayment-schedule`: `1,300 KB` -> `105 KB`;
+    - `market-stall`: `1,158 KB` -> `107 KB`;
+    - `audio-speaker`: `824 KB` -> `46 KB`;
+    - `media-video`: `776 KB` -> `43 KB`;
+  - product-wide 3D icon coverage and visual certification remain incomplete;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN TrustSlip Verify helper proof polish continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue deeper and broadly on the product-wide
+    3D icon, screenshot-readiness, institutional proof, and polish pass.
+- Scope completed in this pass:
+  - migrated `TrustSlipVerifyBoundary` to shared `GsnLegacyIcon` document/lock
+    markers so the public paper/private review split is visibly institutional
+    instead of text-only;
+  - migrated `TrustSlipVerifyResultCard` to a fixed shared 3D shield/alert
+    result tile and compact two-column heading geometry;
+  - migrated `TrustSlipVerifyPrivateEvidence` to official `GSNBrandMark`
+    watermarking and shared 3D icon-led document sections for verification
+    summary, holder identity, visible trust reading, commitment/contribution
+    records, document reference, validity window, follow-through evidence, and
+    evidence controls;
+  - removed the old text-only rotated `GSN Verify` watermark from the private
+    evidence paper;
+  - extended `audit-button-stability` so these TrustSlip Verify helper
+    components now require the official watermark and shared 3D icon helpers;
+  - recorded the helper components in `docs/GSN_ICON_MIGRATION.md`.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx`
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx`
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - focused eslint passed for the three TrustSlip Verify helper files;
+  - focused scan confirmed the helper files now contain `GsnLegacyIcon`,
+    `GSNBrandMark`, `documentSectionHeading`, `documentIconBadge`,
+    `resultIconBadge`, and `boundaryIcon`, with no local `<svg`, `strokeWidth`,
+    `viewBox`, old `GSN Verify`, or `documentWatermarkStyle` matches in those
+    helper files.
+  - `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx
+    src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx
+    src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`;
+  - production build emitted `assets/TrustSlipVerifyPage-Ch-uY3NT.js`,
+    confirming the helper changes remain in the bundled TrustSlip Verify route
+    surface.
+- Current truth / remaining debt:
+  - no phone screenshots or browser visual proof have been captured yet;
+  - this improves the TrustSlip Verify helper proof package, but it still does
+    not prove product-wide 3D icon coverage;
+  - the repository worktree remains very dirty with many unrelated existing
+    changes, so only the files listed above should be attributed to this pass;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN Build First Circle 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue widely and broadly on the product-wide
+    3D icon/polish/audit pass.
+- Scope completed in this pass:
+  - migrated the live `BuildFirstCirclePage` route surface to shared
+    `GsnLegacyIcon` / `GsnIconName` helpers across loading, hero route CTAs,
+    the hero visual, step icons, quick role chips, contact include/remove
+    actions, invite copy/share actions, focused invite actions, manual-add
+    actions, phone-contact action, section toggles, copy-message, and reset;
+  - replaced the old bare numeric/letter-like visual markers and long text-only
+    action labels with compact premium 3D icon-led labels while preserving the
+    existing `build-first-circle.*` debug ids and invite action response logic;
+  - tightened `collapseToggle` and `compactButtonStyle` to fixed no-wrap /
+    ellipsis geometry so phone buttons are less likely to split, stretch, or
+    jump;
+  - extended `audit-button-stability` so Build First Circle now requires shared
+    3D icon helpers, shared CTA resolution, compact icon-led action labels, and
+    fixed no-wrap control geometry;
+  - recorded `BuildFirstCirclePage` in `docs/GSN_ICON_MIGRATION.md`.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:action-response-protocol` passed from `frontend`;
+  - focused scan found no local `<svg`, `strokeWidth`, `viewBox`, or old direct
+    text-only `Add Person`, `Clear Form`, `Choose from Phone Contacts`,
+    `Reset First Circle`, / `Share WhatsApp` button labels in
+    `BuildFirstCirclePage`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`;
+  - production build emitted `assets/BuildFirstCirclePage-BXsLqesc.js`,
+    confirming the page remains part of the live bundled route surface.
+- Current truth / remaining debt:
+  - no phone screenshots or browser visual proof were captured in this pass;
+  - this improves one live route and its source-caged legacy/focused panels,
+    but it does not complete product-wide 3D icon coverage;
+  - `showLegacyFirstCirclePanels` remains `false`; legacy/focused source paths
+    were migrated because audits still cage those actions, not because they are
+    currently visible;
+  - the repository worktree remains very dirty with many unrelated existing
+    changes, so only the files listed above should be attributed to this pass;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN Demand Box 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue the broad 3D icon/polish/audit pass.
+- Scope completed in this pass:
+  - migrated the live `DemandBoxPage` action surface to shared
+    `GsnLegacyIcon` / `GsnIconName` helpers across loading, missing-community
+    CTAs, hero CTAs, post/notification CTAs, personal-demand status actions,
+    empty states, and bottom route CTAs;
+  - tightened route-local Demand Box action geometry to no-wrap / ellipsis
+    labels so icon-led buttons keep fixed 52px/54px rows and do not split into
+    jumpy stacked words on phones;
+  - shortened old text-only action labels such as `Open notifications`,
+    `Mark fulfilled`, and `Cancel demand` to compact icon-led labels while
+    preserving the existing route targets and stable `demand-box.*` debug ids;
+  - extended `audit-button-stability` so Demand Box now requires the shared 3D
+    icon helper, no-wrap action geometry, compact icon-led labels, shared CTA
+    resolution, and stable action/debug-id coverage;
+  - recorded `DemandBoxPage` in `docs/GSN_ICON_MIGRATION.md`.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/DemandBoxPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/DemandBoxPage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm run audit:demand-box-front-package` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`;
+  - focused scan found no local `<svg`, `strokeWidth`, `viewBox`, or old
+    text-only `Open notifications`, `Mark fulfilled`, / `Cancel demand` action
+    labels in `DemandBoxPage`;
+  - production build emitted `assets/DemandBoxPage-Bk8rYsm8.js`, confirming
+    the page is still part of the live bundled route surface.
+- Current truth / remaining debt:
+  - no phone screenshots or browser visual proof were captured in this pass;
+  - this pass does not make product-wide 3D icon coverage complete;
+  - `DemandBoxPage` still keeps the audited Demand Box front-package structure
+    and copy, including the explanatory `Open Community Home first...` text;
+  - the repository worktree remains very dirty with many unrelated existing
+    changes, so only the files listed above should be attributed to this pass;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN loan decision 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue deeper and wider on the broad
+    3D icon/polish/audit pass.
+- Scope completed in this pass:
+  - migrated `LoanDecisionPage` to shared `GsnLegacyIcon` / `GsnIconName`
+    helpers across decision summary facts, empty state, borrower/guarantor/
+    purpose fact headings, row drilldown CTAs, and next-door CTAs;
+  - shortened row and next-door action labels from old text-only labels such
+    as `Open Loan Summary`, `Open Workbench`, `Return to Loans & Support`, and
+    `Open Finance` to compact icon-led labels;
+  - tightened the route-local action style to no-wrap / no-overflow geometry
+    so these labels are less likely to jump or split on phones;
+  - extended `audit-button-stability` so `LoanDecisionPage` now requires shared
+    3D icon helpers, shared CTA resolution, stable CTA links, and compact
+    no-wrap action geometry.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/LoanDecisionPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/LoanDecisionPage.tsx` passed from
+    `frontend`;
+  - focused scan found no local `<svg`, `strokeWidth`, `viewBox`, or old long
+    row/next-door labels in `LoanDecisionPage`;
+  - `npm exec -- eslint src/pages/LoanDecisionPage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - `rg` found `LoanDecisionPage` only in `AppLayout` route-awareness logic
+    and audits, not as a direct lazy route/import in `frontend/src/App.tsx`;
+  - the Vite build output did not emit a visible `LoanDecisionPage` chunk, so
+    this pass improves source and audit coverage rather than proving a mounted
+    live route;
+  - no phone screenshots or browser visual proof were captured in this pass;
+  - product-wide 3D icon coverage is still incomplete;
+  - refreshed missing-page scan still lists `ActivatePage`,
+    `BuildFirstCirclePage`, `DemandBoxPage`, several invite/join legacy pages,
+    `TrustGraphAdminPage`, and trust-slip verify helper files;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN leaderboard pages 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue the broad 3D icon/polish/audit pass.
+- Scope completed in this pass:
+  - migrated `GuarantorLeaderboardPage` from a raw debug-style JSON surface to
+    a compact GSN-styled leaderboard package with official `GSNBrandMark`
+    watermarking, shared `GsnLegacyIcon` / `GsnIconName` helpers, stable route
+    CTAs, selected-community context, typed `getGuarantorLeaderboard` loading,
+    summary tiles, and compact record rows;
+  - migrated `TrustLeaderboardPage` disabled-state recovery to use official
+    `GSNBrandMark` watermarking, shared 3D icon helpers, and compact fixed
+    stable CTA labels for Trust Passport, TrustSlip, and local trust reading;
+  - extended `audit-button-stability` so both leaderboard pages now require
+    shared 3D GSN icon helpers, stable CTA links, shared CTA resolution, and
+    watermark treatment, and so `GuarantorLeaderboardPage` cannot regress to
+    raw `<pre>` / `JSON.stringify` output or direct hard-coded fetch usage.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/GuarantorLeaderboardPage.tsx`
+  - `frontend/src/pages/TrustLeaderboardPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/GuarantorLeaderboardPage.tsx
+    src/pages/TrustLeaderboardPage.tsx` passed from `frontend`;
+  - focused scan found no local `<svg`, `strokeWidth`, `viewBox`, emoji trophy,
+    star glyph, mojibake dash, or em dash remnants in the two leaderboard pages;
+  - `npm exec -- eslint src/pages/GuarantorLeaderboardPage.tsx
+    src/pages/TrustLeaderboardPage.tsx tools/audit-button-stability.mjs` passed
+    from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - `rg` found no `TrustLeaderboardPage` or `GuarantorLeaderboardPage` lazy
+    route/import in `frontend/src/App.tsx`; this pass improves dormant source
+    pages and audit coverage, not a currently mounted route;
+  - no phone screenshots or browser visual proof were captured in this pass;
+  - product-wide 3D icon coverage is still incomplete;
+  - the refreshed missing-page scan still lists pages such as `ActivatePage`,
+    `BuildFirstCirclePage`, `DemandBoxPage`, `LoanDecisionPage`,
+    `TrustGraphAdminPage`, and several invite/join or trust-slip helper files;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN guarantor pages 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue working deeper and wider on the
+    product-wide icon/polish/audit pass.
+- Scope completed in this pass:
+  - migrated `GuarantorEarningsPage` to shared `GsnLegacyIcon` /
+    `GsnIconName` helpers across the earnings copy action, collapse controls,
+    and next-route tiles;
+  - migrated `GuarantorInboxPage` to shared 3D icon helpers across the queue
+    copy action, status filters, approval/decline row actions, workbench/loans
+    row links, collapse controls, and next-route tiles;
+  - preserved both pages' CTA target resolution, PageTopNav routes, fixed
+    action geometry, filter behavior, decision submission logic, and existing
+    `guarantor-earnings.*` / `guarantor-inbox.*` debug ids;
+  - extended `audit-button-stability` so both guarantor pages now require
+    shared 3D GSN icon helpers on their audited copy, filter, decision,
+    collapse, and route surfaces.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/GuarantorEarningsPage.tsx
+    src/pages/GuarantorInboxPage.tsx tools/audit-button-stability.mjs` passed
+    from `frontend`;
+  - focused scan found no `<svg`, `strokeWidth`, or `viewBox` local icon
+    remnants in `GuarantorEarningsPage` or `GuarantorInboxPage`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - no phone screenshots or browser visual proof were captured in this pass;
+  - product-wide 3D icon coverage is still incomplete;
+  - remaining non-migrated pages still need staged passes, especially legacy
+    invite/join surfaces, some trust/admin helper pages, and high-risk frozen
+    or wrapper routes;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN loan readiness/suggestions 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue working deeper and wider on the
+    product-wide icon/polish/audit pass.
+- Scope completed in this pass:
+  - migrated `LoanReadinessPage` to shared `GsnLegacyIcon` / `GsnIconName`
+    helpers across the fallback community visual, collapse controls, and
+    next-route tiles;
+  - migrated `LoanSuggestionsPage` to shared 3D icon helpers across the
+    fallback community visual, refresh action, collapse controls, supporter
+    rows, and next-route tiles;
+  - preserved both pages' CTA target resolution, PageTopNav routes, fixed
+    collapse-control geometry, route tile heights, and existing
+    `loan-readiness.*` / `loan-suggestions.*` debug ids;
+  - extended `audit-button-stability` so both pages now require shared 3D GSN
+    icon helpers on their audited refresh/collapse/route surfaces.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/LoanReadinessPage.tsx
+    src/pages/LoanSuggestionsPage.tsx` passed from `frontend`;
+  - focused scan found no `<svg`, `strokeWidth`, or `viewBox` local icon
+    remnants in `LoanReadinessPage` or `LoanSuggestionsPage`;
+  - `npm exec -- eslint src/pages/LoanReadinessPage.tsx
+    src/pages/LoanSuggestionsPage.tsx tools/audit-button-stability.mjs`
+    passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`.
+- Current truth / remaining debt:
+  - no phone screenshots or browser visual proof were captured in this pass;
+  - product-wide 3D icon coverage is still incomplete;
+  - refreshed missing-page scan still shows pages without `GsnLegacyIcon` /
+    `GsnRealisticIcon`, including `BuildFirstCirclePage`, `DemandBoxPage`,
+    `GuarantorEarningsPage`, `GuarantorInboxPage`, `DashboardPage`, several
+    invite/join legacy surfaces, and some trust/admin or smoke-test pages;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN profile/open-trust/notifications 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue deeper, wider, and more direct on the
+    product-wide icon/polish/audit pass.
+- Scope completed in this pass:
+  - migrated `ProfilePage` to shared `GsnLegacyIcon` / `GsnIconName` helpers
+    across its title, avatar marker, signed-in identity facts, editable field
+    labels, save/refresh actions, note, and later-upgrade guidance;
+  - migrated `OpenTrustPage` to shared 3D icon helpers across local trust
+    status, community/trust badges, reading/score rows, explanation copy, and
+    Trust Passport / Community CTAs;
+  - migrated `NotificationsPage` to shared 3D icon helpers across the desktop
+    hero, inbox summary, urgent action, phone Dashboard escape, focus card,
+    bucket rows, selected notice actions, selected-bucket actions, trust nudge,
+    raw-feed/reading toggles, and label explanation cards;
+  - preserved `NotificationsPage` fixed bucket row heights, action inventory,
+    mobile shell controls, route targets, shared CTA resolution, and all
+    existing `notifications.*` debug ids;
+  - extended `audit-button-stability` so `ProfilePage`, `OpenTrustPage`, and
+    `NotificationsPage` now require the shared 3D icon helpers on their audited
+    action surfaces.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/ProfilePage.tsx`
+  - `frontend/src/pages/OpenTrustPage.tsx`
+  - `frontend/src/pages/NotificationsPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/ProfilePage.tsx src/pages/OpenTrustPage.tsx`
+    passed from `frontend`;
+  - focused scan found no `<svg`, `strokeWidth`, or `viewBox: "0 0 24 24"`
+    local icon remnants in `ProfilePage` or `OpenTrustPage`;
+  - `npm exec -- eslint src/pages/ProfilePage.tsx src/pages/OpenTrustPage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:member-entry-actions` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm exec -- eslint src/pages/NotificationsPage.tsx` passed from
+    `frontend`;
+  - focused scan found no local `<svg`, `strokeWidth`, or `viewBox` icon
+    remnants in `NotificationsPage`;
+  - `npm exec -- eslint src/pages/NotificationsPage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm run audit:notifications-button-inventory` passed from `frontend`;
+  - `npm run audit:admin-ops-actions` passed from `frontend`;
+  - `npm run audit:action-response-protocol` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - no phone screenshots or browser visual proof were captured in this pass;
+  - this is still not product-wide visual certification;
+  - one prior corrupted focus glyph area in `NotificationsPage` was removed
+    outright and replaced with the shared 3D icon tile;
+  - `TrustPaperMarks.tsx` remains a transitional legacy icon compatibility
+    layer and is not the final GSN icon system;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN public entry / join-entry direct 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue deeper, wider, and more direct.
+- Scope completed in this pass:
+  - migrated `CoverPage` public entry actions to shared `GsnLegacyIcon` /
+    `GsnIconName` helpers while preserving entry-mode persistence, invite/create
+    code preservation, Continue routing, Guide routing, and `cover.*` debug ids;
+  - migrated `RegisterPage` to shared 3D icon helpers and removed its inline
+    SVG `topPattern()` data-image background generator, replacing it with CSS
+    gradients and icon-backed title/fact/action language while preserving
+    login/activation/create/welcome route targets and `register.*` debug ids;
+  - migrated `JoinEntryPage` to shared 3D icon helpers across invite message,
+    saved request, identity reuse, existing/new-member branch, manual-code
+    check, success/pending routes, submit action, and Welcome fallback while
+    preserving invite preview, draft recovery, existing-identity handling,
+    join request submission, and all caged `join-entry.*` debug ids;
+  - extended `audit-button-stability` so Cover, Register, and Join Entry now
+    require the shared 3D icon helpers;
+  - fixed an audit-exposed raw `<summary>` issue in both Trust Graph Admin
+    implementations by replacing it with `StableDisclosureSummary` and a
+    traceable `trust-graph-admin.source-details` debug id.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/CoverPage.tsx`
+  - `frontend/src/pages/RegisterPage.tsx`
+  - `frontend/src/pages/JoinEntryPage.tsx`
+  - `frontend/src/pages/TrustGraphAdminPage.tsx`
+  - `frontend/src/components/TrustGraphAdminPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/CoverPage.tsx src/pages/RegisterPage.tsx`
+    passed from `frontend`;
+  - `npm exec -- eslint src/pages/JoinEntryPage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - focused scan found no `topPattern`, `data:image/svg`, inline SVG header,
+    or `strokeWidth` remnants in `RegisterPage`;
+  - focused scan found no `<svg`, `strokeWidth`, or `viewBox: "0 0 24 24"`
+    local icon remnants in `JoinEntryPage`;
+  - `npm exec -- eslint src/pages/CoverPage.tsx src/pages/RegisterPage.tsx
+    src/pages/JoinEntryPage.tsx tools/audit-button-stability.mjs` passed from
+    `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:member-entry-actions` passed from `frontend`;
+  - `npm run audit:entry-auth` passed from `frontend`;
+  - `npm run audit:action-response-protocol` passed from `frontend`;
+  - attempted `npm run audit:action-surface-contracts`, but that script does
+    not exist; the correct `npm run audit:action-surfaces` initially exposed
+    raw `<summary>` in both Trust Graph Admin implementations, then passed
+    after the `StableDisclosureSummary` fix;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - this pass still has not captured phone screenshots;
+  - `CoverPage` still contains its existing large SVG splash artwork, so this
+    pass added shared 3D icons to the visible action/identity layer rather than
+    replacing the whole splash illustration;
+  - `TrustGraphAdminPage` still appears in the missing 3D-icon scan because the
+    direct fix there was action-surface hygiene, not a full icon migration;
+  - refreshed missing-page scan still found pages without `GsnLegacyIcon` /
+    `GsnRealisticIcon`: `ActivatePage`, `BuildFirstCirclePage`, `ClansPage`,
+    `DashboardPage`, `DemandBoxPage`, `GuarantorEarningsPage`,
+    `GuarantorInboxPage`, `GuarantorLeaderboardPage`,
+    `InstitutionPreviewPage`, `IntroductionPage`,
+    `InviteComposerPreviewPage`, `InviteInterestPage`, `InviteLandingPage`,
+    `JoinByInvitePage`, `JoinClanPage`, `LiquidityConsolePage`,
+    `LoanDecisionPage`, `LoanReadinessPage`, `LoanSuggestionsPage`,
+    `MarketplaceWorkspacePage`, `NotificationsPage`, `OpenTrustPage`,
+    `PilotShowcasePage`, `ProfilePage`, `RouteSmokeCheckPage`, `ShopPage`,
+    `ThemeSettingsPage`, `TrustGraphAdminPage`, and `TrustLeaderboardPage`;
+  - no commit, push, screenshots, or Render deploy has been triggered.
+
+### GSN Shop Access 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner asked to keep continuing the 3D icon/polish/auditing work
+    deeply across every page.
+- Scope completed in this pass:
+  - migrated `ShopAccessPage` to the shared `GsnLegacyIcon` / `GsnIconName`
+    adapter across private vault status, loading/error states, hero badges,
+    access explanations, permission chips, next-step CTAs, empty state, product
+    privacy chips, watermark chip, and price cue;
+  - preserved the private access token load, active-link open tracking, public
+    shop routing, Welcome fallback routing, product media rendering, and all
+    `shop-access.*` stable debug ids;
+  - extended `audit-button-stability` so `ShopAccessPage` now requires the
+    shared 3D icon helpers on its protected CTA surface;
+  - confirmed `ShopPage` is only a wrapper that renders `ShopGalleryPage`,
+    which is already migrated, so no fake icon import was added there.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/ShopAccessPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed so far in this pass:
+  - `npm exec -- eslint src/pages/ShopAccessPage.tsx` passed from `frontend`;
+  - focused `Select-String` scan found no `<svg`, `strokeWidth`, or
+    `viewBox: "0 0 24 24"` local icon remnants in `ShopAccessPage`;
+  - `npm exec -- eslint src/pages/ShopAccessPage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:community-shop-actions` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - this pass has not captured phone screenshots yet;
+  - product-wide 3D icon coverage is still incomplete;
+  - no commit, push, or Render deploy has been triggered.
+
+### GSN Login / Join Approval 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner said to continue the broad 3D icon/polish/auditing work
+    deeply.
+- Scope completed in this pass:
+  - migrated `JoinApprovalPage` to the shared `GsnLegacyIcon` /
+    `GsnIconName` adapter across the hero, approval status, request details,
+    next-action CTAs, and support guidance while preserving approval polling,
+    CTA target resolution, activation/pending routes, and stable debug ids;
+  - migrated `LoginPage` to the shared 3D icon adapter for the about/collapse
+    controls, activation fallback CTA, input badges, submit action, and entry
+    path actions while preserving login/session recovery behavior and existing
+    entry route contracts;
+  - extended `audit-button-stability` so both pages now require the shared 3D
+    icon helpers for their protected entry actions.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/JoinApprovalPage.tsx`
+  - `frontend/src/pages/LoginPage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed so far in this pass:
+  - `npm exec -- eslint src/pages/JoinApprovalPage.tsx
+    src/pages/LoginPage.tsx tools/audit-button-stability.mjs` passed from
+    `frontend`;
+  - focused `Select-String` scan found no `<svg`, `strokeWidth`, or
+    `viewBox: "0 0 24 24"` local icon remnants in `JoinApprovalPage` or
+    `LoginPage`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:member-entry-actions` passed from `frontend`;
+  - `npm run audit:entry-auth` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - this pass has not captured phone screenshots yet;
+  - product-wide 3D icon coverage is still incomplete;
+  - refreshed missing-page scan still found pages without `GsnLegacyIcon` /
+    `GsnRealisticIcon`: `ActivatePage`, `BuildFirstCirclePage`, `ClansPage`,
+    `CoverPage`, `DashboardPage`, `DemandBoxPage`,
+    `GuarantorEarningsPage`, `GuarantorInboxPage`,
+    `GuarantorLeaderboardPage`, `InstitutionPreviewPage`,
+    `IntroductionPage`, `InviteComposerPreviewPage`, `InviteInterestPage`,
+    `InviteLandingPage`, `JoinByInvitePage`, `JoinClanPage`,
+    `JoinEntryPage`, `LiquidityConsolePage`, `LoanDecisionPage`,
+    `LoanReadinessPage`, `LoanSuggestionsPage`, `MarketplaceWorkspacePage`,
+    `NotificationsPage`, `OpenTrustPage`, `PilotShowcasePage`,
+    `ProfilePage`, `RegisterPage`, `RouteSmokeCheckPage`, `ShopPage`,
+    `ThemeSettingsPage`, `TrustGraphAdminPage`, and
+    `TrustLeaderboardPage`;
+  - no commit, push, or Render deploy has been triggered.
+
+### GSN entry/join request 3D icon continuation (2026-06-11)
+
+- Trigger:
+  - product owner said to continue the broad 3D icon/polish/auditing work.
+- Scope completed in this pass:
+  - migrated `CommunityJoinRequestsPage` from local SVG `JoinRequestIcon`
+    paths to the shared `GsnLegacyIcon` / `GsnIconName` adapter while keeping
+    the same semantic helper name, debug ids, button heights, protected phone
+    layout, and review-collapse behavior;
+  - migrated `JoinRequestPendingPage` from local SVG `IconGlyph` paths to the
+    shared 3D adapter while preserving approval polling, CTA targets, review
+    details toggle, and entry-route logic;
+  - migrated `ActivateMembershipPage` from local SVG activation marks to the
+    shared 3D adapter without touching activation, token, password, or route
+    behavior;
+  - migrated `MemberActivationPage` from local SVG activation marks to the
+    shared 3D adapter without touching retry/session logic, password handling,
+    activation API calls, or post-activation routes;
+  - updated `audit-community-join-requests-layout` and
+    `audit-button-stability` so these pages now require the shared 3D icon
+    baseline and reject local SVG pictograms.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+  - `frontend/src/pages/ActivateMembershipPage.tsx`
+  - `frontend/src/pages/MemberActivationPage.tsx`
+  - `frontend/tools/audit-community-join-requests-layout.mjs`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx
+    tools/audit-community-join-requests-layout.mjs` passed from `frontend`;
+  - `npm exec -- eslint src/pages/JoinRequestPendingPage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm exec -- eslint src/pages/ActivateMembershipPage.tsx
+    tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx
+    src/pages/ActivateMembershipPage.tsx src/pages/JoinRequestPendingPage.tsx
+    src/pages/CommunityJoinRequestsPage.tsx tools/audit-button-stability.mjs
+    tools/audit-community-join-requests-layout.mjs` passed from `frontend`;
+  - `npm run audit:community-join-requests-layout` passed from `frontend`;
+  - `npm run audit:admin-ops-actions` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:member-entry-actions` passed from `frontend`;
+  - `npm run audit:entry-auth` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - focused `Select-String` scan found no `<svg`, `strokeWidth`, or
+    `viewBox: "0 0 24 24"` local icon remnants in the four migrated pages;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - this pass still has not captured phone screenshots;
+  - product-wide 3D icon coverage is still incomplete;
+  - pages still missing `GsnLegacyIcon` / `GsnRealisticIcon` imports include
+    `BuildFirstCirclePage`, `CoverPage`, `DashboardPage`,
+    `JoinApprovalPage`, `JoinEntryPage`, `LoginPage`, `NotificationsPage`,
+    `OpenTrustPage`, `ProfilePage`, `ShopAccessPage`, `ShopPage`, and several
+    guarantor/loan/trust admin or legacy pages;
+  - no commit, push, or Render deploy was triggered.
+
+### GSN Finance / Marketplace / Trust icon and density continuation (2026-06-11)
+
+- Trigger:
+  - product owner challenged that the 3D icons had not truly gone around every
+    page yet, specifically naming Community Home, Marketplace, Trust, and
+    Finance, and asked to continue the polishing, auditing, logic review, and
+    page publishing readiness deeper and wider.
+- Scope completed in this pass:
+  - converted `FinancePage`'s page-local flat `FinanceGlyph` SVG helper to the
+    shared `GsnLegacyIcon` / `GsnIconName` adapter;
+  - converted `MarketplacePage`'s visible `MarketplaceGlyph` output to the
+    shared 3D icon adapter while keeping the existing semantic glyph names;
+  - tightened Marketplace Money Pool phone geometry into a fixed two-column
+    compact layout with clamped route-card values and no transition/transform
+    jumpiness;
+  - fixed the Marketplace Trust pill back to the audited compact 46px stable
+    frame;
+  - migrated `TrustPage` from text/card-only presentation to shared 3D icon
+    language across the hero, section labels, action buttons, starter proof
+    tiles, evidence copy action, filters, and record rows;
+  - corrected `docs/GSN_ICON_MIGRATION.md` so it no longer falsely says
+    `TrustPaperIcon` is still used across many live pages.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/FinancePage.tsx`
+  - `frontend/src/pages/MarketplacePage.tsx`
+  - `frontend/src/pages/TrustPage.tsx`
+  - `frontend/tools/audit-finance-actions.mjs`
+  - `frontend/tools/audit-finance-button-inventory.mjs`
+  - `frontend/tools/audit-finance-front-package.mjs`
+  - `frontend/tools/audit-marketplace-actions.mjs`
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+  - `frontend/tools/audit-marketplace-front-package.mjs`
+  - `frontend/tools/audit-marketplace-trust-pill.mjs`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed in this pass:
+  - `npm exec -- eslint src/pages/FinancePage.tsx src/pages/MarketplacePage.tsx`
+    passed from `frontend`;
+  - `npm exec -- eslint src/pages/TrustPage.tsx` passed from `frontend`;
+  - `npm exec -- eslint tools/audit-button-stability.mjs
+    tools/audit-marketplace-trust-pill.mjs` passed from `frontend`;
+  - `npm run audit:finance-actions` passed from `frontend`;
+  - `npm run audit:finance-button-inventory` passed from `frontend`;
+  - `npm run audit:finance-front-package` passed from `frontend`;
+  - `npm run audit:finance-secondary-route-tools` passed from `frontend`;
+  - `npm run audit:finance-money-summary-lane` passed from `frontend`;
+  - `npm run audit:finance-money-movement-lanes` passed from `frontend`;
+  - `npm run audit:finance-records-events-lane` passed from `frontend`;
+  - `npm run audit:finance-signals-readiness-lane` passed from `frontend`;
+  - `npm run audit:finance-banking-rails-lane` passed from `frontend`;
+  - `npm run audit:marketplace-actions` passed from `frontend`;
+  - `npm run audit:marketplace-button-inventory` passed from `frontend`;
+  - `npm run audit:marketplace-front-package` passed from `frontend`;
+  - `npm run audit:marketplace-money-pool-lane` passed from `frontend`;
+  - `npm run audit:marketplace-rosca-lane` passed from `frontend`;
+  - `npm run audit:marketplace-records-links-lane` passed from `frontend`;
+  - `npm run audit:marketplace-support-lane` passed from `frontend`;
+  - `npm run audit:marketplace-trusted-trade-lane` passed from `frontend`;
+  - `npm run audit:marketplace-demand-box-lane` passed from `frontend`;
+  - `npm run audit:marketplace-trust-pill` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `rg -n "TrustPaperIcon|TrustPaperIconName" frontend/src` reports only
+    `frontend/src/components/TrustPaperMarks.tsx`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - this is still not whole-product visual certification;
+  - `MarketplaceGlyph` now renders visible output through `GsnLegacyIcon`, but
+    its old SVG switch body is still present as inert compatibility code and
+    should be cleaned in a later focused pass;
+  - direct `TrustPaperIcon` usage remains limited to
+    `frontend/src/components/TrustPaperMarks.tsx`, but page-local icon helpers
+    and no-icon pages still need continued staged review;
+  - no browser/phone screenshots were captured in this pass yet, so screenshot
+    readiness is still audit/build readiness, not final visual proof;
+  - Render/page publishing was not triggered in this pass because the active
+    protocol says to deploy only when the product owner says the current batch
+    should go live.
+
+### GSN caged Community Home/Create Entry icon pass (2026-06-11)
+
+- Trigger:
+  - product owner said to continue after the broad non-caged icon migration.
+- Scope completed in this pass:
+  - migrated the last two direct page consumers of `TrustPaperIcon`:
+    `CommunityHomePage` and `CreateEntryPage`;
+  - kept Community Home's existing `CommunityIconMark` alias and
+    `communityIconGlyph(...)` call shape so the caged phone-button audits still
+    recognize the protected compact row geometry;
+  - replaced Create Entry's mini progress-chip icons with `GsnLegacyIcon`
+    inside the existing fixed chips;
+  - updated the Community Home phone audit wording from SVG icon marks to 3D
+    icon marks;
+  - kept route targets, debug ids, button counts, page structure, backend/API
+    behavior, auth, schemas, permissions, Dashboard Market Wisdom, commits,
+    pushes, and deploy behavior unchanged.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+  - `frontend/src/pages/CreateEntryPage.tsx`
+  - `frontend/tools/audit-community-home-phone-buttons.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed:
+  - `rg -n "TrustPaperIcon|TrustPaperIconName" frontend/src` now reports only
+    `frontend/src/components/TrustPaperMarks.tsx`;
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx
+    src/pages/CreateEntryPage.tsx` passed from `frontend`;
+  - `npm run audit:community-home-phone-buttons` passed from `frontend`;
+  - `npm run audit:community-home-button-inventory` passed from `frontend`;
+  - `npm run audit:member-entry-actions` passed from `frontend`;
+  - attempted `npm run audit:entry-auth-contracts`, but that script does not
+    exist; the correct `npm run audit:entry-auth` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - no page or shared component outside `TrustPaperMarks.tsx` directly imports
+    or renders `TrustPaperIcon`;
+  - `TrustPaperMarks.tsx` still exists and still self-references
+    `TrustPaperIcon` for its own legacy marks/components;
+  - product-wide final visual certification is still not complete because no
+    browser/phone screenshots were captured in this pass;
+  - next real polish step is visual screenshot review on phone for the caged
+    pages and the pages migrated in the prior passes, not more blind code churn.
+
+### GSN non-caged utility/admin icon sweep (2026-06-11)
+
+- Trigger:
+  - continued the same product-owner request to move the better 3D icon
+    language wider and broader across the app while avoiding caged surfaces.
+- Scope completed in this pass:
+  - migrated remaining non-caged utility/admin route surfaces away from direct
+    `TrustPaperIcon` / `TrustPaperIconName` usage and onto `GsnLegacyIcon` /
+    `GsnIconName`;
+  - migrated `EvidencePackPanel` and `GMFNConfirmModal` to the same 3D icon
+    adapter while keeping their existing shared stable button primitives;
+  - kept Community Home and Create Entry untouched because they are explicitly
+    caged/protected surfaces that need a separate protected pass;
+  - kept route targets, debug ids, button counts, backend/API behavior,
+    schemas, permissions, Dashboard Market Wisdom, commits, pushes, and deploy
+    behavior unchanged.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/AppearancePage.tsx`
+  - `frontend/src/pages/BorrowerPreflightPage.tsx`
+  - `frontend/src/pages/ApiPage.tsx`
+  - `frontend/src/pages/ExposurePage.tsx`
+  - `frontend/src/pages/ExposureAdminPage.tsx`
+  - `frontend/src/pages/LockManagementPage.tsx`
+  - `frontend/src/pages/SeedDemoPage.tsx`
+  - `frontend/src/pages/SystemOperationsPage.tsx`
+  - `frontend/src/components/EvidencePackPanel.tsx`
+  - `frontend/src/components/GMFNConfirmModal.tsx`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed:
+  - source scan found no remaining `TrustPaperIcon`, `TrustPaperIconName`, or
+    `strokeWidth={...}` icon props in the eight migrated pages;
+  - after the shared component migration, `rg -l
+    "TrustPaperIcon|TrustPaperIconName" frontend/src` reports 3 source files:
+    `CommunityHomePage`, `CreateEntryPage`, and `TrustPaperMarks`;
+  - `npm exec -- eslint src/pages/AppearancePage.tsx
+    src/pages/BorrowerPreflightPage.tsx src/pages/ApiPage.tsx
+    src/pages/LockManagementPage.tsx src/pages/ExposurePage.tsx
+    src/pages/ExposureAdminPage.tsx src/pages/SeedDemoPage.tsx
+    src/pages/SystemOperationsPage.tsx src/components/EvidencePackPanel.tsx
+    src/components/GMFNConfirmModal.tsx` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:admin-ops-actions` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:finance-actions` passed from `frontend`;
+  - `npm run build` passed from `frontend`.
+- Current truth / remaining debt:
+  - this still is not final whole-app icon compliance;
+  - remaining direct legacy consumers are the two caged pages
+    `CommunityHomePage` and `CreateEntryPage`;
+  - `TrustPaperMarks.tsx` remains as the transitional compatibility component;
+  - no browser or phone screenshots were captured in this pass, so screenshot
+    readiness is audit/build readiness, not final visual certification.
+
+### GSN loans/admin finance icon polish pass (2026-06-11)
+
+- Trigger:
+  - product owner asked to continue the wider 3D icon and screenshot-readiness
+    polish after the owner shop/control pass.
+- Scope completed in this pass:
+  - continued the staged icon migration on loan and admin-finance surfaces;
+  - converted `LoansPage`, `LoanWorkbenchPage`, `LoanSummaryPage`,
+    `AdminIncompleteLoansPage`, and `BankConsolePage` from direct
+    `TrustPaperIcon` / `TrustPaperIconName` usage to `GsnLegacyIcon` /
+    `GsnIconName`;
+  - enlarged the rendered 3D icon sizes inside existing stable icon badges so
+    the new object icons remain legible without changing button heights,
+    debug ids, route targets, or backend/API behavior;
+  - updated loan/button audits so the five migrated pages are guarded against
+    falling back to the old SVG-led baseline;
+  - kept Dashboard Market Wisdom, caged Community Home geometry, caged
+    entry/auth screens, schemas, permissions, Render settings, commits, pushes,
+    and deploy behavior unchanged.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/LoansPage.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+  - `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+  - `frontend/src/pages/BankConsolePage.tsx`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-loans-actions.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed:
+  - source scan found no remaining `TrustPaperIcon`, `TrustPaperIconName`, or
+    `strokeWidth={...}` icon props in the five migrated pages;
+  - `npm exec -- eslint src/pages/LoansPage.tsx
+    src/pages/LoanWorkbenchPage.tsx src/pages/LoanSummaryPage.tsx
+    src/pages/AdminIncompleteLoansPage.tsx src/pages/BankConsolePage.tsx
+    tools/audit-button-stability.mjs tools/audit-loans-actions.mjs` passed
+    from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:finance-actions` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - first `npm run build` hit sandbox-side `esbuild spawn EPERM`; rerunning
+    the same command with approved escalation passed from `frontend`.
+- Current truth / remaining debt:
+  - this pass is still not a whole-app polish completion;
+  - `rg -l "TrustPaperIcon|TrustPaperIconName" frontend/src` now reports 13
+    source files with legacy icon references;
+  - remaining page files include API, Appearance, Borrower Preflight,
+    Community Home, Create Entry, Exposure, Exposure Admin, Lock Management,
+    Seed Demo, and System Operations;
+  - remaining component files include `EvidencePackPanel.tsx`,
+    `GMFNConfirmModal.tsx`, and `TrustPaperMarks.tsx` itself;
+  - no browser or phone screenshots were captured in this pass, so screenshot
+    readiness is audit/build readiness, not final visual certification.
+
+### GSN owner shop/control icon and watermark polish pass (2026-06-11)
+
+- Trigger:
+  - product owner requested a full polish pass: tighter spacing, fewer
+    oversized blocks, unified icons, better text wrapping, standardized
+    shadows/radius/buttons, screenshot readiness, and official GSN logo
+    watermarking to infer authority.
+- Scope completed in this pass:
+  - continued the staged icon migration on owner shop/control surfaces;
+  - converted `ShopAssetsPage`, `ShopControlPage`, `VaultControlPage`, and
+    `SubscriptionSpotlightPage` from direct `TrustPaperIcon` /
+    `TrustPaperIconName` usage to `GsnLegacyIcon` / `GsnIconName`;
+  - replaced the remaining Shop Control hero shortcut emoji metadata with
+    semantic 3D icon names and fixed-size `GsnLegacyIcon` rendering;
+  - added low-opacity official `GSNBrandMark` watermark treatment to the dark
+    Shop Control and Shop Assets owner hero cards, behind content and with
+    pointer events disabled;
+  - updated owner-shop audits so they enforce the new 3D icon baseline instead
+    of the old SVG baseline;
+  - kept route targets, stable debug ids, action counts, backend APIs,
+    permissions, schemas, Dashboard Market Wisdom, Render settings, commits,
+    pushes, and deploy behavior unchanged.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+  - `frontend/src/pages/ShopControlPage.tsx`
+  - `frontend/src/pages/VaultControlPage.tsx`
+  - `frontend/src/pages/SubscriptionSpotlightPage.tsx`
+  - `frontend/tools/audit-shop-assets-slots.mjs`
+  - `frontend/tools/audit-shop-control-button-inventory.mjs`
+  - `frontend/tools/audit-vault-control-button-inventory.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed:
+  - source scan found no remaining `TrustPaperIcon`, `TrustPaperIconName`,
+    `strokeWidth=`, SVG-only `color={...}` icon props, or emoji icon symbols
+    in the four migrated owner/shop pages;
+  - `npm exec -- eslint src/pages/ShopAssetsPage.tsx
+    src/pages/ShopControlPage.tsx src/pages/VaultControlPage.tsx
+    src/pages/SubscriptionSpotlightPage.tsx tools/audit-shop-assets-slots.mjs`
+    passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run audit:shop-assets-slots` passed from `frontend`;
+  - `npm run audit:community-shop-actions` passed from `frontend`;
+  - `npm run audit:shop-control-button-inventory` passed from `frontend`;
+  - `npm run audit:vault-control-button-inventory` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:spotlight-controls` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`.
+- Current truth / remaining debt:
+  - this pass is not a whole-app polish completion;
+  - `rg -l "TrustPaperIcon|TrustPaperIconName" frontend/src` still reports 18
+    source files with legacy icon references;
+  - remaining page files include Admin Incomplete Loans, API, Appearance, Bank
+    Console, Borrower Preflight, Community Home, Create Entry, Exposure, Loans,
+    Loan Summary, Loan Workbench, Lock Management, Seed Demo, and System
+    Operations;
+  - remaining component files include `EvidencePackPanel.tsx`,
+    `GMFNConfirmModal.tsx`, and `TrustPaperMarks.tsx` itself;
+  - no browser or phone screenshots were captured in this pass, so screenshot
+    readiness is audit/build readiness, not final visual certification.
+
+### GSN money/proof 3D icon and read-only rails polish pass (2026-06-11)
+
+- Trigger:
+  - product owner said the phone is ready and asked to continue the 3D icon
+    work across every page, with extra attention to WhatsApp-level polish,
+    user-facing language, end-to-end button stability, phone sizing, spacing,
+    shadow restraint, screenshot readiness, and institutional treatment for
+    TrustSlip / Trust Passport / verification / evidence-style responses.
+- Scope completed in this pass:
+  - migrated the next finance/proof cluster away from direct
+    `TrustPaperIcon` / `TrustPaperIconName` usage and onto the shared
+    `GsnLegacyIcon` / `GsnIconName` adapter;
+  - migrated the next admin/proof trust cluster onto the same 3D icon adapter
+    so trust events, graph, analytics, command centre, timeline, and identity
+    risk pages no longer render primary UI icons through the legacy SVG set;
+  - restored Payment Rails copy to clearly say it is a read-only intelligence
+    page and that money actions belong on guided Money In / Money Out routes;
+  - updated audits so this cluster now enforces 3D GSN icon usage instead of
+    pulling the pages back toward legacy SVG marks;
+  - updated the icon migration document to state the exact transitional status
+    of `frontend/src/components/TrustPaperMarks.tsx`.
+- Files intentionally changed in this pass:
+  - `frontend/src/pages/PayoutDetailsPage.tsx`
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - `frontend/src/pages/RepaymentPage.tsx`
+  - `frontend/src/pages/PaymentRailsPage.tsx`
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+  - `frontend/src/pages/AdminTrustEventsPage.tsx`
+  - `frontend/src/pages/AdminTrustGraphPage.tsx`
+  - `frontend/src/pages/TrustAnalyticsPage.tsx`
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+  - `frontend/src/pages/TrustTimelinePage.tsx`
+  - `frontend/src/pages/AdminIdentityRiskPage.tsx`
+  - `frontend/tools/audit-payout-details-protocol.mjs`
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-loans-actions.mjs`
+  - `docs/GSN_ICON_MIGRATION.md`
+  - `docs/HANDOFF_NOTES.md`
+- Verification completed:
+  - source scan found no remaining `TrustPaperIcon` or `TrustPaperIconName`
+    usage in the twelve migrated pages listed above;
+  - `npm exec -- eslint src/pages/PayoutDetailsPage.tsx
+    src/pages/PaymentInstructionsPage.tsx
+    src/pages/WithdrawalInstructionsPage.tsx src/pages/RepaymentPage.tsx
+    src/pages/PaymentRailsPage.tsx src/pages/RevenueAllocationPage.tsx
+    tools/audit-payout-details-protocol.mjs tools/audit-button-stability.mjs
+    tools/audit-loans-actions.mjs` passed from `frontend`;
+  - `npm exec -- eslint src/pages/AdminTrustEventsPage.tsx
+    src/pages/AdminTrustGraphPage.tsx src/pages/TrustAnalyticsPage.tsx
+    src/pages/TrustCommandCentrePage.tsx src/pages/TrustTimelinePage.tsx
+    src/pages/AdminIdentityRiskPage.tsx` passed from `frontend`;
+  - `npm run audit:payout-details-protocol` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:loans-actions` passed from `frontend`;
+  - `npm run audit:finance-actions` passed from `frontend`;
+  - `npm run audit:finance-money-movement-lanes` passed from `frontend`;
+  - `npm run audit:finance-banking-rails-lane` passed from `frontend`;
+  - `npm run audit:finance-secondary-route-tools` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` initially failed inside the sandbox with `esbuild` spawn
+    `EPERM`, then passed when rerun with approved escalation.
+- Current truth / remaining debt:
+  - this pass did not make the whole product icon-compliant;
+  - `rg -l "TrustPaperIcon|TrustPaperIconName" frontend/src` still reports 22
+    source files with legacy icon references;
+  - remaining page files include Admin Incomplete Loans, API, Appearance, Bank
+    Console, Borrower Preflight, Community Home, Create Entry, Exposure, Loans,
+    Loan Summary, Loan Workbench, Lock Management, Shop Assets, Shop Control,
+    Subscription Spotlight, System Operations, and Vault Control;
+  - next best continuation is another staged migration cluster, preferably
+    owner shop/control pages or loans/admin finance pages, followed by mobile
+    screenshot checks for sizing, button stability, and evidence-package dignity.
+
+### GSN deeper/broader trust, confirmation, and identity icon migration (2026-06-11)
+
+- Trigger:
+  - product owner said "continue deeper and deeper even broader" during the
+    staged GSN 3D icon migration.
+- Scope:
+  - frontend-only replacement of meaningful legacy `TrustPaperIcon` usage on
+    TrustSlip, CCI, Community Confirmation, and Identity Integrity route
+    surfaces;
+  - kept document-watermark/seal/security-footer treatment where it remains
+    decorative paper texture rather than a primary UI icon;
+  - no backend API, route target, auth, permission, schema, Dashboard Market
+    Wisdom, Render setting, commit, push, or deploy behavior changed.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`:
+    - removed direct `TrustPaperIcon` / `TrustPaperIconName` usage;
+    - replaced TrustSlip paper brand mark, identity rows, status chips,
+      action icons, reading rows, use-case rows, caution/trust reason icons,
+      and quick-action icons with `GsnLegacyIcon`;
+    - retained `TrustPaperSeal`, `TrustPaperWatermark`, and
+      `TrustPaperSecurityFooter` as document texture.
+  - `frontend/src/pages/CCIReadingPage.tsx`:
+    - replaced cross-community consistency badge/header/action icons with
+      `GsnLegacyIcon`.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`:
+    - replaced public paper status, section, stat, footer, and signed-in action
+      icons with `GsnLegacyIcon`;
+    - retained `TrustPaperWatermark` for paper background treatment.
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+    - replaced helper/header icons and member avatar fallback with
+      `GsnLegacyIcon`.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`:
+    - replaced policy helper/header/status icons and relay-contact avatar
+      fallback with `GsnLegacyIcon`.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`:
+    - replaced front-package status, fact-card, section-header, task-switcher,
+      and active-task icons with `GsnLegacyIcon`.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`:
+    - updated the guardrails from the old SVG icon import/render expectations
+      to the new `GsnLegacyIcon` / `GsnIconName` path.
+  - `docs/GSN_ICON_MIGRATION.md`:
+    - updated current-state truth now that the base 3D asset pack exists;
+    - added `TrustSlipPage`, `CCIReadingPage`,
+      `CommunityConfirmationOutcomePage`, `CommunityConfirmationInboxPage`,
+      `CommunityConfirmationPolicyPage`, and `IdentityIntegrityPage` to the
+      migrated route-surface list.
+- Verification completed in this pass:
+  - source scans found no remaining `TrustPaperIcon` or `TrustPaperIconName`
+    usage in:
+    - `TrustSlipPage.tsx`
+    - `CCIReadingPage.tsx`
+    - `CommunityConfirmationOutcomePage.tsx`
+    - `CommunityConfirmationInboxPage.tsx`
+    - `CommunityConfirmationPolicyPage.tsx`
+    - `IdentityIntegrityPage.tsx`
+    - `frontend/tools/audit-identity-integrity-front-package.mjs`
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx
+    src/pages/CCIReadingPage.tsx
+    src/pages/CommunityConfirmationOutcomePage.tsx
+    src/pages/CommunityConfirmationInboxPage.tsx
+    src/pages/CommunityConfirmationPolicyPage.tsx
+    src/pages/IdentityIntegrityPage.tsx
+    tools/audit-identity-integrity-front-package.mjs
+    src/components/GsnLegacyIcon.tsx src/components/GsnRealisticIcon.tsx
+    src/lib/gsnIconAssets.ts` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:identity-integrity-front-package` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:tap-stability` passed from `frontend`;
+  - `npm run audit:entry-auth` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:member-entry-actions` passed from `frontend`;
+  - `git diff --check -- frontend/src/pages/TrustSlipPage.tsx
+    frontend/src/pages/CCIReadingPage.tsx
+    frontend/src/pages/CommunityConfirmationOutcomePage.tsx
+    frontend/src/pages/CommunityConfirmationInboxPage.tsx
+    frontend/src/pages/CommunityConfirmationPolicyPage.tsx
+    frontend/src/pages/IdentityIntegrityPage.tsx
+    frontend/tools/audit-identity-integrity-front-package.mjs
+    docs/GSN_ICON_MIGRATION.md docs/HANDOFF_NOTES.md` passed with normal
+    Windows LF-to-CRLF warnings only;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is meaningfully broader, but still not product-wide icon compliance.
+  - remaining live legacy-icon users include finance, payout, payment,
+    shop-control/assets, loans, admin trust, operations, vault, exposure,
+    timeline, appearance/API, shared evidence/modal components, and
+    `TrustPaperMarks.tsx` itself.
+  - several remaining pages have audits that still explicitly expect
+    `TrustPaperIcon`; each of those audits must be migrated intentionally with
+    the page, not bypassed.
+  - no browser or phone screenshots were captured in this pass. Visual approval
+    still needs real mobile inspection.
+  - the worktree already contains many unrelated modified files; do not stage
+    broad changes blindly.
+
+### GSN deeper/wider Trust Passport and My GSN icon migration (2026-06-11)
+
+- Trigger:
+  - product owner said "continue deeper and wider" after the public proof/shop
+    3D icon migration pass.
+- Scope:
+  - frontend-only icon migration for the signed-in Trust Passport route and
+    the My GSN and I guide/settings surface;
+  - added a shared legacy-name-to-3D icon adapter so further pages can migrate
+    without copying route-local mapping tables;
+  - no backend API, route target, action count, stable debug id, auth,
+    permission, schema, Dashboard Market Wisdom, Render setting, commit, push,
+    or deploy behavior changed.
+- Changed:
+  - `frontend/src/components/GsnLegacyIcon.tsx`:
+    - added `GsnLegacyIcon`, `GsnIconName`, and `resolveGsnIconName`;
+    - maps old semantic icon names such as `wallet`, `document`, `community`,
+      `shop`, `phone`, `copy`, and `shield` onto the required 3D asset keys.
+  - `frontend/src/pages/TrustScorePage.tsx`:
+    - removed the route's `TrustPaperIcon` / `TrustPaperIconName` dependency;
+    - replaced Trust Passport primary identity overview, status chips,
+      lane buttons, completion rows, trust question rows, community cards,
+      evidence/repair headers, and finance cards with `GsnLegacyIcon`;
+    - kept `TrustPaperWatermark`, `TrustPaperSecurityFooter`, and
+      `OpenRecordGlyph` where they are decorative document texture or a
+      non-icon action glyph outside the 3D base-pack coverage.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`:
+    - updated Trust Passport identity/status/question guards to expect
+      `GsnLegacyIcon` while preserving the same snapshot geometry and action
+      order.
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`:
+    - removed the page's `TrustPaperIcon` / `TrustPaperIconName` dependency;
+    - replaced public capability icons, signed-in hero icons, guide tabs,
+      quick-guide icon, capability grid icons, route tile icons, and guide
+      section icon with `GsnLegacyIcon`.
+  - `docs/GSN_ICON_MIGRATION.md`:
+    - corrected current status so it no longer says no priority screens have
+      been migrated.
+- Verification:
+  - source scan found no remaining `TrustPaperIcon`, `TrustPaperIconName`, or
+    `TrustPaperBadgeIcon` usage in `TrustScorePage.tsx` or
+    `MyGMFNAndIPage.tsx`;
+  - `npm exec -- eslint src/pages/MyGMFNAndIPage.tsx
+    src/pages/TrustScorePage.tsx src/components/GsnLegacyIcon.tsx
+    src/components/GsnRealisticIcon.tsx src/lib/gsnIconAssets.ts
+    tools/audit-trust-passport-button-inventory.mjs` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run audit:trust-passport-button-inventory` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:member-entry-actions` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:tap-stability` passed from `frontend`;
+  - `npm run audit:entry-auth` passed from `frontend`;
+  - `git diff --check -- frontend/src/components/GsnLegacyIcon.tsx
+    frontend/src/pages/TrustScorePage.tsx
+    frontend/src/pages/MyGMFNAndIPage.tsx
+    frontend/tools/audit-trust-passport-button-inventory.mjs
+    docs/GSN_ICON_MIGRATION.md docs/HANDOFF_NOTES.md` passed with normal
+    Windows LF-to-CRLF warnings only;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is deeper and wider, but still not product-wide icon compliance.
+  - `TrustPaperMarks.tsx` still has many live users outside the migrated routes.
+  - `chevronUp` / `chevronDown` currently resolve to `public-globe` through the
+    adapter because the base pack does not include a true 3D disclosure arrow.
+    That is acceptable as a transitional renderer swap, not a perfect semantic
+    icon.
+  - no browser or phone screenshots were captured in this pass. Visual approval
+    still needs real mobile inspection.
+
+### GSN wider 3D icon migration pass (2026-06-11)
+
+- Trigger:
+  - product owner said "continue wider and broader" after the first priority
+    entry and community-verify screens started using the required 3D icon pack.
+- Scope:
+  - frontend-only icon migration for the public TrustSlip verify and Public
+    Shop / Shop Gallery surfaces;
+  - no backend API, route target, action count, stable debug id, auth,
+    permission, schema, Dashboard Market Wisdom, Render setting, commit, push,
+    or deploy behavior changed.
+- Changed:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+    - replaced public verify wrapper action-label paper icons with
+      `GsnRealisticIcon`;
+    - mapped print/save PDF to `records-folder`, lite/public view to
+      `public-globe`, request TrustSlip to `trust-shield`, copy/share verify
+      link to `public-globe`, and private review details to `vault-safe`.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`:
+    - replaced visible primary proof, QR, quick-answer, status, footer, and
+      result-card icons with `GsnRealisticIcon`;
+    - kept decorative `TrustPaperSeal` and `TrustPaperWatermark` because they
+      are document texture, not primary action/fact icons.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`:
+    - changed quick-answer icon keys from legacy paper names to 3D keys.
+  - `frontend/src/pages/ShopGalleryPage.tsx`:
+    - removed the remaining `TrustPaperMarks` dependency from the route;
+    - added a route-local legacy-to-3D icon alias map so shop badges, verify
+      rows, owner contact, spotlight, vault, and product action rail render the
+      required 3D object assets;
+    - mapped share/copy actions to `qr-record`, open/view/public actions to
+      `public-globe`, owner contact to `phone-contact`, vault/private to
+      `vault-safe`, shop/category/empty states to `shop-storefront`, and trust
+      checks to `trust-shield`.
+  - `frontend/tools/audit-button-stability.mjs`:
+    - updated the Shop Gallery product-card guard to expect the new
+      `GsnRealisticIcon` product action signs while preserving the same
+      action-label and debug-id contract.
+- Verification:
+  - source scan found no remaining `TrustPaperIcon`, `TrustPaperIconName`, or
+    `TrustPaperBadgeIcon` usage in `ShopGalleryPage.tsx`,
+    `TrustSlipVerifyPage.tsx`, or `src/pages/trustSlipVerify/*`;
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
+    src/pages/TrustSlipVerifyPage.tsx
+    src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+    src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+    src/components/GsnRealisticIcon.tsx src/lib/gsnIconAssets.ts` passed from
+    `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm run audit:shop-gallery-button-inventory` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:tap-stability` passed from `frontend`;
+  - `npm run audit:entry-auth` passed from `frontend`;
+  - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx
+    frontend/src/pages/TrustSlipVerifyPage.tsx
+    frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+    frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+    frontend/tools/audit-button-stability.mjs docs/HANDOFF_NOTES.md` passed
+    with normal Windows LF-to-CRLF warnings only;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is broader, but still not a whole-app icon migration.
+  - `TrustPaperMarks.tsx` still exists and other pages/components still import
+    it. The build output still includes a `TrustPaperMarks` chunk, proving there
+    are live users elsewhere.
+  - `CoverPage` still uses its custom inline splash/brand SVG. Replacing that
+    hero mark is a larger brand/UX choice than this route-local icon swap.
+  - no browser or phone screenshots were captured in this pass. The code and
+    audits are green, but visual approval still needs manual inspection of the
+    real routes on mobile.
+
+### GSN first priority screens started 3D icon migration (2026-06-11)
+
+- Trigger:
+  - product owner said to continue after the required 3D icon base pack was
+    generated and wired.
+- Scope:
+  - frontend-only icon migration on `WelcomePage` and `CommunityVerifyPage`;
+  - no backend API, route target, action count, stable debug id, Dashboard,
+    Community Home, Marketplace contract, Render setting, commit, push, or
+    deploy behavior changed.
+- Changed:
+  - `frontend/src/pages/WelcomePage.tsx`:
+    - replaced primary entry-route badge symbols with `GsnRealisticIcon`;
+    - mapped signed-in status to `trust-shield`;
+    - mapped existing-member sign-in to `identity-card`;
+    - mapped new-member / join-community to `join-person-plus`;
+    - mapped create-community to `community-building`;
+    - preserved the existing entry actions and routes.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`:
+    - replaced visible primary proof/fact/action icons with `GsnRealisticIcon`
+      through the route-local `communityVerifyIconBadge` helper;
+    - mapped community identity to `community-building`, public record to
+      `public-globe`, records/PDF/refresh to `records-folder`, relay/contact to
+      `phone-contact`, protected details to `vault-safe`, and trust status /
+      confirmation to `trust-shield`;
+    - kept decorative `TrustPaperWatermark` / `TrustPaperSecurityFooter`
+      surfaces in place because they are not primary action/fact icons.
+- Verification:
+  - source scan found no remaining `TrustPaperIcon` usage in `WelcomePage.tsx`
+    or `CommunityVerifyPage.tsx`;
+  - source scan found no remaining old emoji badge symbols in those two files;
+  - `npm exec -- eslint src/pages/WelcomePage.tsx
+    src/pages/CommunityVerifyPage.tsx src/components/GsnRealisticIcon.tsx
+    src/lib/gsnIconAssets.ts` passed from `frontend`;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:tap-stability` passed from `frontend`;
+  - `npm run audit:entry-auth` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check -- frontend/src/pages/WelcomePage.tsx
+    frontend/src/pages/CommunityVerifyPage.tsx` passed with normal Windows
+    LF-to-CRLF warnings only;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this starts the priority screen migration but does not complete it.
+  - `CoverPage` still uses its custom inline splash/brand SVG and was not
+    changed in this pass because replacing that hero mark is a larger visual
+    decision than swapping route-local primary icons.
+  - `TrustSlipVerifyPage` and `ShopGalleryPage` still have substantial
+    `TrustPaperIcon` usage and need their own staged passes with screenshot
+    checks and route/button audits.
+  - no browser/phone screenshot was captured in this pass because the frontend
+    package has no Playwright/screenshot tooling installed. Manual browser or
+    phone inspection is still needed before calling either screen visually
+    final.
+
+### GSN required 3D icon base pack generated and wired (2026-06-11)
+
+- Trigger:
+  - product owner said to continue after the first generated 3D icon asset was
+    wired.
+- Scope:
+  - completed the required base-pack asset layer and registry/audit/docs wiring;
+  - no route screen imports `GsnRealisticIcon` yet;
+  - no visible UI rendering, route target, action count, stable debug id,
+    backend API, Dashboard, Community Home, Marketplace contract, Render
+    setting, commit, push, or deploy behavior changed.
+- Existing assets preserved and wired:
+  - `frontend/src/assets/gsn-icons/icon-community-building-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-shop-storefront-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-vault-safe-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-finance-wallet-card-3d.webp`
+- New generated assets:
+  - `frontend/src/assets/gsn-icons/icon-records-folder-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-join-person-plus-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-spotlight-megaphone-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-identity-card-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-phone-contact-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-qr-record-3d.webp`
+  - `frontend/src/assets/gsn-icons/icon-public-globe-3d.webp`
+- Changed:
+  - `frontend/src/lib/gsnIconAssets.ts`:
+    - imported all required base-pack WebP assets;
+    - marked every required key as `status: "available"` with a real
+      `assetUrl`.
+  - `docs/GSN_ICON_MIGRATION.md`:
+    - updated current asset status from first-asset-only to full required base
+      pack available;
+    - kept the truth boundary that priority screens still have not been
+      migrated.
+  - `frontend/tools/audit-icon-protocol.mjs`:
+    - now fails if any required base-pack file is missing;
+    - now fails if any required base-pack registry entry is unwired or regresses
+      to `assetUrl: null` / `status: "planned"`.
+- Verification:
+  - built-in `image_gen` was used for the seven missing assets with flat
+    magenta chroma-key backgrounds;
+  - source PNGs were generated under
+    `C:\Users\chukwuma pc\.codex\generated_images\019eb503-0dd0-7b70-8daa-6ecb791e6eb9`;
+  - local chroma-key removal wrote final transparent WebPs into
+    `frontend/src/assets/gsn-icons/`;
+  - visual inspection confirmed the seven new icons are premium navy/gold/white
+    3D objects with no visible text;
+  - alpha validation for all twelve required icons reported `1254x1254`,
+    transparent corner alpha `[0, 0, 0, 0]`, and plausible transparent/partial
+    alpha coverage;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm exec -- eslint src/lib/gsnIconAssets.ts
+    src/components/GsnRealisticIcon.tsx src/types/assets.d.ts
+    tools/audit-icon-protocol.mjs` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - the required base-pack assets now exist and are wired, but the visible app
+    has not been migrated to them yet.
+  - `TrustPaperMarks.tsx` and other transitional flat/outline/emoji-like
+    surfaces still remain across live screens.
+  - the new icons should be screenshot-checked in actual 40px-48px UI tiles
+    before declaring any priority screen compliant.
+  - the next honest step is route-specific migration, starting with public proof
+    and entry surfaces from `docs/GSN_ICON_MIGRATION.md`, while running the
+    protected button/tap audits for caged pages.
+
+### GSN first generated 3D icon asset wired (2026-06-11)
+
+- Trigger:
+  - product owner said to continue from the last point after the 3D icon
+    registry and renderer scaffold.
+- Scope:
+  - first project-bound raster icon asset plus registry/docs/audit wiring only;
+  - no route screen imports `GsnRealisticIcon` yet;
+  - no visible UI rendering, route target, action count, stable debug id,
+    backend API, Dashboard, Community Home, Marketplace contract, Render
+    setting, commit, push, or deploy behavior changed.
+- Changed:
+  - `frontend/src/assets/gsn-icons/icon-trust-shield-3d.webp`:
+    - generated the first premium realistic 3D shield/seal icon with navy and
+      gold materials;
+    - removed the chroma-key background locally and saved a transparent WebP;
+    - validated transparent corners and alpha channel coverage.
+  - `frontend/src/lib/gsnIconAssets.ts`:
+    - imported the generated trust-shield WebP;
+    - changed only the `trust-shield` registry entry from planned/null to
+      `assetUrl: trustShieldIconUrl` and `status: "available"`;
+    - left the remaining required base-pack keys planned.
+  - `frontend/src/types/assets.d.ts`:
+    - added a WebP module declaration so TypeScript can compile the registry
+      asset import.
+  - `docs/GSN_ICON_MIGRATION.md`:
+    - clarified that only entries without real asset files must remain
+      `assetUrl: null` / `status: "planned"`;
+    - recorded current asset status: `trust-shield` available, all other
+      required base-pack keys still planned.
+  - `frontend/tools/audit-icon-protocol.mjs`:
+    - now checks that the generated `icon-trust-shield-3d.webp` exists and that
+      the registry keeps it wired as available.
+- Verification:
+  - generated source was saved by the built-in image tool under
+    `C:\Users\chukwuma pc\.codex\generated_images\019eb4df-2698-7f90-955d-5712613733eb`;
+  - local chroma-key removal wrote
+    `frontend/src/assets/gsn-icons/icon-trust-shield-3d.webp`;
+  - alpha validation reported size `1254x1254`, transparent corner alpha
+    `[0, 0, 0, 0]`, `901702` transparent pixels, and `2741` partially
+    transparent pixels;
+  - visual inspection confirmed a navy/gold realistic 3D shield with no text;
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm exec -- eslint src/lib/gsnIconAssets.ts
+    src/components/GsnRealisticIcon.tsx src/types/assets.d.ts
+    tools/audit-icon-protocol.mjs` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is the first real asset, not product-wide icon compliance.
+  - no live screen displays the new icon yet. The visible app still depends on
+    existing transitional icon/rendering surfaces until route-specific icon
+    migration happens.
+  - the shield asset is good enough to wire as the first base-pack icon, but it
+    should still be screenshot-checked in real 40px-48px UI tiles before being
+    declared final on public proof or entry screens.
+  - the next honest step is to generate the remaining base-pack assets, then
+    migrate one priority screen at a time with button/tap audits and
+    screenshots.
+
+### GSN 3D icon registry and renderer scaffold (2026-06-10)
+
+- Trigger:
+  - product owner said to continue after the icon migration map and asset home
+    were created.
+- Scope:
+  - frontend scaffold and docs/audit guardrail only;
+  - no route screen imports the new renderer yet, because no real 3D assets
+    exist to render;
+  - no visible UI icon, screen route, action count, stable debug id, backend
+    API, Dashboard, Community Home, Marketplace contract, Render setting,
+    commit, push, or deploy behavior changed.
+- Changed:
+  - `frontend/src/lib/gsnIconAssets.ts`:
+    - added typed base-pack registry for the required GSN realistic 3D icon
+      keys;
+    - recorded the future filenames, object meanings, and prompt seeds;
+    - kept every asset as `assetUrl: null` and `status: "planned"` until real
+      image files exist.
+  - `frontend/src/components/GsnRealisticIcon.tsx`:
+    - added a shared renderer for future 3D icon assets;
+    - defaults `renderPending` to `false` and returns `null` when an asset is
+      missing, so the app does not display fake placeholder icons as if they
+      were compliant;
+    - includes an explicit pending placeholder path only for deliberate
+      internal development use.
+  - `docs/GSN_ICON_MIGRATION.md`:
+    - documented the typed registry, shared renderer, and no-fake-placeholder
+      behavior.
+  - `frontend/tools/audit-icon-protocol.mjs`:
+    - now requires the base-pack registry, required filenames, planned asset
+      state, shared renderer, and migration doc wording.
+- Verification:
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm exec -- eslint src/lib/gsnIconAssets.ts
+    src/components/GsnRealisticIcon.tsx tools/audit-icon-protocol.mjs` passed
+    from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check -- docs/GSN_ICON_MIGRATION.md
+    frontend/src/lib/gsnIconAssets.ts
+    frontend/src/components/GsnRealisticIcon.tsx
+    frontend/tools/audit-icon-protocol.mjs` passed;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this still does not make the visible app icon system compliant. It creates
+    the safe place to wire compliant assets once they exist.
+  - using `GsnRealisticIcon` before `assetUrl` values are wired will render
+    nothing by default. That is intentional: a blank missing asset is easier to
+    catch honestly than a fake placeholder being mistaken for finished design.
+
+### GSN icon migration map and asset home (2026-06-10)
+
+- Trigger:
+  - product owner said to continue after the new premium realistic 3D icon
+    protocol was added.
+- Scope:
+  - documentation and guardrail update only;
+  - no icon asset image, screen rendering, component behavior, route target,
+    backend API, Dashboard, Community Home, Marketplace contract, Render
+    setting, commit, push, or deploy behavior changed.
+- Confirmed facts:
+  - `TrustPaperMarks.tsx` is an outline SVG icon family and is used across many
+    live pages/components;
+  - `ShopGalleryPage.tsx` and `TrustScorePage.tsx` are high-density visible
+    users, but the usage is broader across entry, trust, finance, marketplace,
+    shop, loans, admin, and proof surfaces;
+  - only a tiny asset set currently exists under `frontend/src/assets`, so
+    there is still no real 3D icon pack to render.
+- Changed:
+  - `docs/GSN_ICON_MIGRATION.md`:
+    - added the implementation plan for migrating from transitional outline
+      icons to premium realistic 3D icons;
+    - recorded that `TrustPaperMarks.tsx` is transitional and must not be
+      expanded as the final primary icon solution;
+    - defined the future asset home, required base pack, preferred filenames,
+      prompt seeds, priority screen order, implementation rules, per-screen
+      done criteria, and `Do Not Claim Yet` warning.
+  - `frontend/src/assets/gsn-icons/README.md`:
+    - reserved the asset directory for the future realistic 3D icon family.
+  - `frontend/tools/audit-icon-protocol.mjs`:
+    - strengthened the docs-level audit so it also requires the migration plan
+      and asset-home README.
+- Verification:
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm exec -- eslint tools/audit-icon-protocol.mjs` passed from `frontend`;
+  - `git diff --check -- docs/GSN_ICON_MIGRATION.md
+    frontend/src/assets/gsn-icons/README.md
+    frontend/tools/audit-icon-protocol.mjs` passed.
+- Unabated truth:
+  - no user-visible icon has become realistic 3D in this pass. This pass
+    prevents direction drift and gives the next implementation pass an actual
+    asset contract.
+  - a real UI migration should start with generating or sourcing the base pack,
+    then replacing icons on `ShopGalleryPage`, `TrustSlipVerifyPage`,
+    `CommunityVerifyPage`, and entry surfaces first, with screenshot checks and
+    protected button/tap audits.
+
+### GSN premium realistic 3D icon protocol (2026-06-10)
+
+- Trigger:
+  - product owner defined the icon style as `Skeuomorphic / realistic 3D
+    icons` and asked to continue along the broad UI polish line with that
+    standard.
+- Scope:
+  - documentation and audit-guardrail update only;
+  - no screen route, UI component rendering, image asset, business logic,
+    backend API, Dashboard, Community Home, Marketplace contract, Render
+    setting, commit, push, or deploy behavior changed.
+- Changed:
+  - `docs/DESIGN_SYSTEM.md`:
+    - replaced the older app-native SVG pictogram rule with the new `GSN Icon
+      Protocol`;
+    - named the style as premium skeuomorphic / realistic 3D icons;
+    - added approved naming, forbidden styles, object-meaning mapping, prompt
+      words, hero/button rules, and the final rule that UI icons are realistic
+      3D object icons, not literal photos and not flat symbols.
+  - `docs/UX_ACCEPTANCE_CHECKLIST.md`:
+    - changed icon acceptance from SVG pictograms to premium realistic 3D
+      object icons.
+  - `docs/GSN_MOBILE_UI_PROTOCOL.md`:
+    - changed mobile visual rules to require premium realistic 3D object icons
+      inside stable rounded containers, not flat/outline/faded/cartoon/emoji
+      primary icons.
+  - `frontend/tools/audit-icon-protocol.mjs`:
+    - added a docs-level audit to keep the new icon protocol present and stop
+      the old SVG-pictogram standard from returning to core UX docs.
+  - `frontend/package.json`:
+    - added `npm run audit:icon-protocol`.
+- Verification:
+  - `npm run audit:icon-protocol` passed from `frontend`;
+  - `npm exec -- eslint tools/audit-icon-protocol.mjs` passed from `frontend`;
+  - `git diff --check -- docs/DESIGN_SYSTEM.md
+    docs/UX_ACCEPTANCE_CHECKLIST.md docs/GSN_MOBILE_UI_PROTOCOL.md
+    frontend/tools/audit-icon-protocol.mjs frontend/package.json` passed with
+    only the normal Windows LF-to-CRLF warning for `frontend/package.json`.
+- Unabated truth:
+  - this pass changes the product standard, not the visual asset library. The
+    current frontend still contains many flat/outline SVG-style marks and some
+    emoji-like UI symbols from earlier work.
+  - source asset inventory found only a small existing asset set under
+    `frontend/src/assets` (`gmfn-mark.svg`, `gmfn-wordmark.svg`, and
+    `react.svg`), not a ready realistic 3D icon family.
+  - a real migration needs a consistent 3D icon asset set or generated icon
+    pack, then staged replacement on live screens with screenshot checks. A
+    whole-repo failing audit against existing icons would be noisy and would
+    block unrelated pilot fixes, so the first guardrail intentionally protects
+    the core docs/protocol instead.
+
+### Public Shop icon-surface cleanup (2026-06-10)
+
+- Trigger:
+  - product owner asked to continue broadly after the escalated
+    link-contract/Marketplace pass.
+- Scope:
+  - frontend-only public-shop polish on `ShopGalleryPage.tsx`;
+  - source hygiene for the unused duplicate
+    `components/TrustGraphAdminPage.tsx`;
+  - no public shop route, shop identity lookup, owner reconnect logic, public
+    link builder, TrustSlip request action, contact action, Marketplace action,
+    routed Trust Graph page, Dashboard, Community Home, backend API, Render
+    setting, commit, push, or deploy behavior changed.
+- Changed:
+  - `ShopGalleryPage.tsx`:
+    - replaced the inline circled-info glyph in the public shop verification
+      block with the existing app-native `TrustPaperIcon` shield mark;
+    - kept the same text: `Community ID confirms the exact community.`;
+    - kept the same verification rows, button labels, stable debug IDs, action
+      layout, and public shop contract.
+  - `components/TrustGraphAdminPage.tsx`:
+    - confirmed by source search that this duplicate component is not imported
+      by current TSX routes;
+    - changed stale `TrustGraph Command Centre`, `Explainability`, and
+      internal CCI/metric wording to the same plain Trust Graph language used
+      by the routed page;
+    - replaced mojibake-prone separator/fallback glyphs with ASCII `-`;
+    - collapsed source JSON behind `Open source reading details`.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
+    src/components/TrustGraphAdminPage.tsx` passed from `frontend`;
+  - focused scan found no remaining `TrustGraph Command`, `CCI remains`,
+    `internal metric name`, `Explainability`, `Â`, `â`, em-dash fallback, or
+    circled-info glyph matches in the touched public shop / duplicate Trust
+    Graph files;
+  - `npm run audit:shop-gallery-button-inventory` passed from `frontend`;
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:tap-stability` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check -- frontend/src/pages/ShopGalleryPage.tsx
+    frontend/src/components/TrustGraphAdminPage.tsx docs/HANDOFF_NOTES.md`
+    passed with only the normal Windows LF-to-CRLF warnings for the touched
+    TSX files;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - the glyph displayed as mojibake in one PowerShell read, but the file bytes
+    were the circled-info symbol. Replacing it still matters because the design
+    system says meaningful public/proof icons should be app-native SVG
+    pictograms, not loose inline symbols.
+  - this is a small polish pass, not a full browser or phone visual QA pass.
+    It does not certify physical mobile layout, backend data correctness, or
+    live Render deployment.
+  - the Trust Graph component cleanup is source hygiene only unless a future
+    route imports `components/TrustGraphAdminPage.tsx`; the currently routed
+    Trust Graph admin page is `pages/TrustGraphAdminPage.tsx`, already handled
+    in the earlier broad flow/exposure pass.
+  - the repo remains heavily dirty from earlier work, including unrelated
+    frontend, backend, docs, and untracked test-upload paths. No commit, push,
+    or deploy was attempted.
+
+### Escalated link-contract / Marketplace Records & Links pass (2026-06-10)
+
+- Trigger:
+  - product owner said to `excalate` and continue more widely after the broad
+    flow/exposure scan found failing link contracts.
+- Scope:
+  - frontend-only contract repair across `GsnInstallPrompt.tsx`,
+    `CommunityHomePage.tsx`, `MarketplacePage.tsx`, `ShopGalleryPage.tsx`, and
+    `tools/audit-link-contracts.mjs`;
+  - deliberately touched high-risk/frozen-adjacent surfaces only where the
+    failing audits gave exact source expectations;
+  - no backend API, route target, public-shop path builder, community
+    selection logic, owner identity matching, Dashboard Market Wisdom,
+    Community Home action count, Marketplace action count, Render setting,
+    commit, push, or deploy behavior changed.
+- Changed:
+  - `GsnInstallPrompt.tsx`:
+    - restored the audited one-action install wording from `Show phone steps`
+      to `Show 3 phone steps`.
+  - `CommunityHomePage.tsx`:
+    - made the Owner Spotlight Status explanation explicitly owner-scoped:
+      `Your spotlight in this community`;
+    - clarified that other members' live spotlights belong on public Dashboard
+      and Public Shop surfaces, not the user's personal Community Home.
+  - `MarketplacePage.tsx`:
+    - restored fixed-height public shop link reserve behavior for the full
+      public shop URL;
+    - restored explicit public-shop link labels: `Copy Shop Link`, `Email
+      Link`, and `Open Shop Face`;
+    - restored explicit Join lane action labels: `Copy Join Link`, `Refresh
+      Join Link`, `Copy Invite Message`, and `Email Join Link`;
+    - kept the Join lane on the newer compact masked summary instead of
+      reintroducing the old tall/raw join-link reserve.
+  - `ShopGalleryPage.tsx`:
+    - changed the public shop verification row/option arrays to inferred
+      constants with `satisfies` typing so the audit can see the protected
+      sequence while TypeScript still checks `TrustPaperIconName` values.
+  - `tools/audit-link-contracts.mjs`:
+    - updated the stale Marketplace Join lane expectation so it agrees with
+      `audit:marketplace-records-links-lane`: masked compact join summary,
+      stable button order, no old tall/raw join-link reserve.
+- Verification:
+  - `npm run audit:link-contracts` passed from `frontend`;
+  - `npm run audit:marketplace-records-links-lane` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:marketplace-button-inventory` passed from `frontend`;
+  - `npm run audit:marketplace-button-lines` passed from `frontend`;
+  - `npm run audit:marketplace-actions` passed from `frontend`;
+  - `npm run audit:shop-gallery-button-inventory` passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:tap-stability` passed from `frontend`;
+  - `npm run audit:action-response-protocol` passed from `frontend`;
+  - `npm exec -- eslint src/components/GsnInstallPrompt.tsx src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx tools/audit-link-contracts.mjs`
+    passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched docs/frontend files passed with only
+    Windows LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - the previous failing `audit:link-contracts` is now green, and the newer
+    Records & Links lane audit is also green. The important devil's-advocate
+    point: one stale audit expectation had to be corrected because it conflicted
+    with the newer lane-specific audit. This was an audit-source update, not a
+    product route change.
+  - this still does not prove phone physical testing, backend data correctness,
+    or live Render deployment. It proves the source-level contracts and build
+    for the escalated link/Marketplace/Public Shop slice.
+  - the repo remains heavily dirty from prior sessions, so no commit/push/deploy
+    was attempted in this pass.
+
+### Broad flow/exposure/button scan and live-route polish (2026-06-10)
+
+- Trigger:
+  - product owner asked to continue more broadly, including button tightening,
+    page polishing, real icon usage, end-to-end flow logic, basic app-flow map
+    and responses, frontend exposures, app intelligence quotients, page sizing,
+    and gap discovery.
+- Scope:
+  - frontend-only live-route polish and audit discovery for `/app/trust`,
+    `/app/trust-command-centre/admin/trust-graph` aliases that render
+    `TrustGraphAdminPage.tsx`, `/activate-membership`, and public TrustSlip
+    private evidence surfaces;
+  - no route target, backend API, trust calculation, CCI/consistency score
+    calculation, activation payload, auth/session behavior, dashboard Market
+    Wisdom area, Community Home route contract, Marketplace route contract,
+    Render setting, commit, push, or deploy behavior changed.
+- Basic app-flow map confirmed from `App.tsx`:
+  - public entry: `/cover` -> `/welcome` -> `/login`, `/create`, or `/join`;
+  - activation/join continuation: `/join-approval/:requestId`,
+    `/pending-approval`, and join routes can lead to `/activate-membership`;
+  - authenticated shell: `/app/dashboard`, `/app/community`, `/app/loans`,
+    `/app/finance`, `/app/marketplace`, `/app/shop-control`, `/app/trust`,
+    `/app/identity`, `/app/notifications`, and admin command-centre routes;
+  - public proof/share surfaces: `/t/:code`, `/verify/trust-slip`,
+    `/verify/community/:communityKey`, `/shop/:gmfnId`, and `/vault/:token`.
+- Changed:
+  - `TrustScorePage.tsx`:
+    - removed visible `CCI is the internal label` wording from the
+      cross-community consistency card and kept the same `/app/cci-reading`
+      route target.
+  - `TrustSlipVerifyPrivateEvidence.tsx`:
+    - changed visible `CCI is the internal label` wording to plain
+      cross-community trust-signal language.
+  - `TrustGraphAdminPage.tsx`:
+    - changed visible `TrustGraph` wording to `Trust Graph`;
+    - changed `Explainability` / internal-metric language to `Reading reasons`;
+    - collapsed the source reading details JSON behind an explicit details
+      drawer instead of exposing it by default.
+  - `MemberActivationPage.tsx`:
+    - raised the visible password and confirm-password eye toggle targets from
+      a capped `36px` shape to `44px`, while preserving the same stable button
+      wrappers, debug IDs, form fields, and activation route behavior.
+- Verification:
+  - focused scan found no remaining live-route visible `CCI is the internal
+    label`, `internal metric name`, `TrustGraph Command`, `Open my TrustGraph`,
+    or `explainability, and consistency` wording in the touched live surfaces;
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx src/pages/TrustGraphAdminPage.tsx src/pages/MemberActivationPage.tsx`
+    passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:tap-stability` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:entry-auth` passed from `frontend`;
+  - `npm run audit:member-entry-actions` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm run audit:action-response-protocol` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched docs/pages passed with only Windows
+    LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+  - attempted `npm run audit:entry-auth-contracts`, but that script does not
+    exist; reran the correct `npm run audit:entry-auth`, which passed.
+- Gap discoveries / unabated truth:
+  - `npm run audit:link-contracts` currently fails in the dirty worktree for
+    existing link-contract expectations in `GsnInstallPrompt.tsx`,
+    `CommunityHomePage.tsx`, `MarketplacePage.tsx`, and `ShopGalleryPage.tsx`.
+    These are higher-risk/frozen or near-frozen surfaces, so they were recorded
+    instead of patched blindly inside this broad pass.
+  - `GMFNConfirmModal.tsx` still contains visible `Internal note` wording, but
+    current TSX usage scan found no live callers.
+  - legacy `ActivateMembershipPage.tsx` still contains visible `raw GSN ID`
+    wording, but `/activate-membership` currently renders
+    `MemberActivationPage.tsx`, not that legacy page.
+  - source JSON remains available in the Trust Graph admin view only after the
+    operator opens `Open source reading details`.
+  - this pass cannot honestly certify end-to-end phone flow, data correctness,
+    marketplace public-link behavior, or Render deployment. It tightens a live
+    slice and records the broader flow/link gaps that need a deliberate next
+    pass.
+
+### Loans / public community verify wording pass (2026-06-10)
+
+- Trigger:
+  - product owner asked to `continue` after the broad inner-page polish pass.
+- Scope:
+  - frontend-only wording and small icon-surface cleanup for
+    `LoansPage.tsx` and `CommunityVerifyPage.tsx`;
+  - no loan API call, community verification API call, public/private sharing
+    rule, relay behavior, route target, storage key, debug id, backend logic,
+    Dashboard, Community Home, entry/auth contract, Render setting, commit,
+    push, or deploy behavior changed.
+- Changed:
+  - `LoansPage.tsx`:
+    - changed the visible `live workflow and decisions` phrase to `live steps
+      and decisions`.
+  - `CommunityVerifyPage.tsx`:
+    - kept the `/verify/community/:communityKey` public verification route and
+      actions intact while making the screen more app-native with existing
+      trust-paper icon badges;
+    - changed the action section label from `Public actions` to `Use this
+      record`;
+    - changed `Program logic` / whitelisted/server-side explanation copy to
+      public privacy-protection language;
+    - changed fallback protected-field labels from raw/internal wording to
+      member/private wording (`Member phone numbers`, `Private disputes`,
+      `Private trust history`).
+- Verification:
+  - focused scan found no remaining visible `Raw phone numbers`, `Internal
+    disputes`, `Internal trust history`, `internal trust history`, or `live
+    workflow` wording in the touched pages; remaining `raw` hits are local
+    parser variable names;
+  - `npm exec -- eslint src/pages/LoansPage.tsx src/pages/CommunityVerifyPage.tsx`
+    passed from `frontend`;
+  - `npm run audit:button-stability` passed from `frontend`;
+  - `npm run audit:tap-stability` passed from `frontend`;
+  - `npm run audit:protected-button-freeze` passed from `frontend`;
+  - `npm run audit:action-response-protocol` passed from `frontend`;
+  - `npm run audit:trust-actions` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check -- frontend\src\pages\LoansPage.tsx frontend\src\pages\CommunityVerifyPage.tsx`
+    passed with only Windows LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this pass improves visible language and icon treatment only. It does not
+    change the actual privacy boundary, verification payload, loan lifecycle,
+    or any deployment state. `RegisterPage.tsx` and `PilotShowcasePage.tsx`
+    still contain visible workflow/config-style wording in source, but current
+    route inspection showed `RegisterPage` is redirected away from `/register`
+    and `PilotShowcasePage` is not imported into `App.tsx`, so they were left
+    out of this live-route pass. The worktree remains heavily dirty from
+    earlier sessions, so no commit/push/deploy was attempted.
+
+### Broad admin/support wording and source-detail pass (2026-06-10)
+
+- Trigger:
+  - product owner asked to `continue broadly`.
+- Scope:
+  - frontend-only wording/source-detail cleanup for
+    `AdminIdentityRiskPage.tsx`, `PaymentRailsPage.tsx`,
+    `RevenueAllocationPage.tsx`, and `TrustCommandCentrePage.tsx`;
+  - no admin identity-risk API call, payment-rails API call, revenue-allocation
+    API call, command-centre data fetch, route target, storage key, debug id,
+    backend logic, Dashboard, Community Home, entry/auth contract, Render
+    setting, commit, push, or deploy behavior changed.
+- Changed:
+  - `AdminIdentityRiskPage.tsx`:
+    - renamed the expanded identity-risk drawer from `Detailed identity
+      signals` to `Full signal record`.
+  - `PaymentRailsPage.tsx`:
+    - changed visible explanation copy from raw/full-response language to
+      source-detail language around the grouped rail listing;
+    - kept the audited `Show raw` / `Hide raw` toggle label because
+      `audit:button-stability` explicitly cages that compact control.
+  - `RevenueAllocationPage.tsx`:
+    - changed `raw finance data` wording to `source finance records`.
+  - `TrustCommandCentrePage.tsx`:
+    - changed visible `backend` / `frontend, backend` readiness language to
+      service/app wording;
+    - changed `Operator workflows` to `Operator work paths`;
+    - changed `Readiness checks from backend` to `Readiness checks from
+      service`.
+- Verification:
+  - focused scan found no remaining visible `raw data`, `Raw response`,
+    `Show raw response`, `Hide raw response`, `backend health`, `Readiness
+    checks from backend`, `Frontend, backend`, `backend readiness`, `Operator
+    workflows`, `OpenAPI`, `Swagger`, `MVP`, `backend endpoint`, `feature
+    branch`, `Run seed action`, `Seed Demo`, `Manual Ingest`, `Reconciling`,
+    `Evidence Pack`, `Pack ID`, common emoji marks, or mojibake scars in the
+    touched files;
+  - `npm exec -- eslint src/pages/AdminIdentityRiskPage.tsx src/pages/PaymentRailsPage.tsx src/pages/RevenueAllocationPage.tsx src/pages/TrustCommandCentrePage.tsx`
+    passed from `frontend`;
+  - `npm --prefix frontend run audit:button-stability` initially failed
+    because the Payment Rails raw-response toggle label is intentionally
+    audited as `Show raw` / `Hide raw`; restored that exact label and the audit
+    passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:admin-ops-actions` passed;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched page files passed with only Windows
+    LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is visible wording/source-detail polish only. It does not make any
+    admin reading more accurate, change source JSON payloads, change payment
+    rail readiness, change allocation math, change identity-risk classification,
+    or deploy anything. Several touched files were already heavily dirty before
+    this pass, so this entry records only the latest broad cleanup items above.
+
+### Service Routes / legacy Trust page wording pass (2026-06-10)
+
+- Trigger:
+  - product owner said to continue the inner-page cleanup pass after the
+    evidence bundle / public shop micro-polish.
+- Scope:
+  - frontend-only wording cleanup for `ApiPage.tsx` and `TrustPage.tsx`;
+  - no OpenAPI fetch route, docs link target, trust score API call, trust event
+    query/filter/export behavior, copy payload, debug id, backend logic,
+    Dashboard, Community Home, Render setting, commit, push, or deploy behavior
+    changed.
+- Changed:
+  - `ApiPage.tsx`:
+    - changed visible `API`, `backend routes`, `OpenAPI`, `Swagger`, and
+      `Token` labels to calmer service-route language;
+    - kept the same `/docs` and `/api/openapi.json` targets.
+  - `TrustPage.tsx`:
+    - replaced visible `explainability pack`, `TrustEvent ledger`, `Copy
+      explainability JSON`, `Trust events`, `Actor`, and `Subject` wording with
+      plainer trust-record language;
+    - replaced symbol fallbacks and record separators with ASCII `-`;
+    - kept the same trust APIs, filters, CSV export implementation, copy
+      payload, and route targets.
+- Verification:
+  - focused scan found no remaining visible `OpenAPI`, `Swagger`, `backend
+    routes`, `explainability pack`, `Copy explainability JSON`, `TrustEvent
+    ledger`, `Trust events`, `Actor user ID`, `Subject user ID`, `Apply
+    filters`, `Clear filters`, `low-end devices`, bullet separators, em-dash
+    fallbacks, `Pack ID`, `Evidence Pack`, `MVP`, or `Reconciling` labels in
+    the touched files, excluding internal type/debug names;
+  - `npm exec -- eslint src/pages/ApiPage.tsx src/pages/TrustPage.tsx` passed
+    from `frontend`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched files passed with only Windows
+    LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is wording polish only. It does not change live service discovery,
+    trust scoring, event filtering, CSV export contents, evidence copy payload,
+    or deployment. `ApiPage.tsx` and `TrustPage.tsx` were already dirty before
+    this mini-pass, so only the wording items above belong to this entry.
+
+### Evidence bundle / pilot disclosure / money-in / public shop micro-polish (2026-06-10)
+
+- Trigger:
+  - product owner said to continue the inner-page cleanup pass.
+- Scope:
+  - frontend-only surface polish for `EvidencePackPanel.tsx`,
+    `PilotRiskDisclosureGate.tsx`, `PaymentInstructionsPage.tsx`,
+    `TrustPage.tsx`, and `ShopGalleryPage.tsx`;
+  - no evidence download API, TrustSlip risk acknowledgement storage key,
+    payment instruction/reconciliation call, trust event query, shop gallery
+    route target, debug id, backend logic, Dashboard, Community Home, Render
+    setting, commit, push, or deploy behavior changed.
+- Changed:
+  - `EvidencePackPanel.tsx`:
+    - changed visible `Evidence Pack` wording to `Evidence Bundle`;
+    - changed `Download Full` / `Download Redacted` to icon-led
+      `Complete record` / `Share copy`;
+    - tightened the included-record and outside-review copy.
+  - `PilotRiskDisclosureGate.tsx`:
+    - removed visible `MVP` wording from the guarantor-charge warning.
+  - `PaymentInstructionsPage.tsx`:
+    - changed the visible confirmed-payment status from `Reconciling` to
+      `Matching records`.
+  - `TrustPage.tsx`:
+    - changed visible `Pack ID` to `Evidence reference`;
+    - replaced symbol-heavy trust event labels with plain ASCII wording.
+  - `ShopGalleryPage.tsx`:
+    - changed the public shop `Explore Spotlight` button from a text-arrow
+      label to an icon-led label;
+    - raised the mini spotlight / WhatsApp action targets to steady `52px`.
+- Verification:
+  - focused scan found no remaining visible `Evidence Pack`, `Pack ID`, `MVP`,
+    `Reconciling`, `Download Full`, `Download Redacted`, `Redacted`, or
+    `Explore Spotlight ->` / arrow labels in the touched files, excluding
+    internal prop/debug names;
+  - `npm exec -- eslint src/components/EvidencePackPanel.tsx src/components/PilotRiskDisclosureGate.tsx src/pages/PaymentInstructionsPage.tsx src/pages/TrustPage.tsx src/pages/ShopGalleryPage.tsx` passed from `frontend`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:shop-gallery-button-inventory` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched files passed with only Windows
+    LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is a small surface-polish continuation only. It does not change
+    evidence generation, guarantor charging behavior, payment matching,
+    TrustEvent data, shop spotlight logic, or live deployment. The worktree was
+    already heavily dirty before this pass, including broader existing changes
+    in `PaymentInstructionsPage.tsx` and `ShopGalleryPage.tsx`; this entry
+    records only the latest micro-pass.
+
+### Appearance / controlled setup / TrustSlip verify wording pass (2026-06-10)
+
+- Trigger:
+  - product owner asked to continue deeper through inner pages, tightening
+    icon quality, button stability, user-facing language, and navigator labels.
+- Scope:
+  - frontend-only route-local pass for `AppearancePage.tsx`,
+    `SeedDemoPage.tsx`, `TrustSlipVerifyPage.tsx`, and
+    `trustSlipVerify/TrustSlipVerifyBoundary.tsx`;
+  - no theme storage key, settings route target, seed/setup API call,
+    TrustSlip verification API call, public/private data rule, debug id,
+    backend logic, Dashboard, Community Home, Render setting, commit, push, or
+    deploy behavior changed.
+- Changed:
+  - `AppearancePage.tsx`:
+    - added existing `TrustPaperIcon` pictograms to settings shortcut actions
+      and display-style choices;
+    - raised shortcut actions to steady `52px` targets;
+    - changed raw theme-key success copy to the selected display label;
+    - made the display-style grid responsive instead of fixed two-column.
+  - `SeedDemoPage.tsx`:
+    - reframed visible `Seed Demo Data`, `DEV / PILOT TOOL`,
+      `Run seed action`, and `Run demo seed` language as a guarded
+      `Prepare Test Records` flow;
+    - added icon-led controlled-setup and prepare-records labels;
+    - raised the prepare action to a steady `52px` target.
+  - `TrustSlipVerifyPage.tsx` and `TrustSlipVerifyBoundary.tsx`:
+    - changed visible `Private/internal detail` and `Private internal mockup`
+      wording to user-facing private-review language;
+    - kept the public/private sharing boundary intact.
+- Verification:
+  - focused scans found no remaining visible `demo seed`, `Run seed action`,
+    `Seed Demo`, `Theme saved:`, `Private/internal`, `Private internal`,
+    `internal mockup`, or sub-48px `stableHeight` controls in the touched
+    files;
+  - `npm exec -- eslint src/pages/AppearancePage.tsx src/pages/SeedDemoPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx` passed from `frontend`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched page files passed with only Windows
+    LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is surface polish only. It does not change the seed/setup operation,
+    theme persistence, TrustSlip verification data, public/private evidence
+    exposure, or deploy anything. `TrustSlipVerifyPage.tsx` already had
+    uncommitted icon/button polish in the worktree before this mini-pass; this
+    entry records the latest visible wording/boundary cleanup.
+
+### Support Readiness / Lock Management / Trust Timeline polish (2026-06-10)
+
+- Trigger:
+  - product owner asked to continue inner-page straightening: concise
+    user-facing language, app-native icons, stronger button placement, and
+    professional navigation labels.
+- Scope:
+  - frontend-only route-local pass for `BorrowerPreflightPage.tsx`,
+    `LockManagementPage.tsx`, and `TrustTimelinePage.tsx`;
+  - no support-readiness route target, loan route target, Trust Timeline API
+    call, evidence export API, guarantee-release logic, debug id, backend
+    logic, Dashboard, Community Home, Render setting, commit, push, or deploy
+    behavior changed.
+- Changed:
+  - `BorrowerPreflightPage.tsx`:
+    - added existing `TrustPaperIcon` pictograms to readiness counts,
+      checklist rows, next-step cards, and action buttons;
+    - changed visible `Preflight` / `workflow` wording to plain support-check
+      language;
+    - raised the visible support actions to steady `52px` targets.
+  - `LockManagementPage.tsx`:
+    - removed maker-facing `MVP`, `backend endpoint`, `frontend`, and
+      `feature branch` language from the visible page;
+    - reframed the page around the user truth: guarantee release is paused
+      until GSN can verify the release safely;
+    - added icon-led status badges, reason cards, readiness requirements, and
+      navigation actions.
+  - `TrustTimelinePage.tsx`:
+    - added icon-led section labels and action labels for TrustSlip,
+      refresh, timeline download, reference copy, and evidence download;
+    - changed `Evidence Pack` / `Pack ID` language to `Evidence Bundle` /
+      `Evidence reference`;
+    - tightened the timeline warning so it speaks plainly about what the record
+      does and does not do.
+- Verification:
+  - `npm exec -- eslint src/pages/BorrowerPreflightPage.tsx src/pages/LockManagementPage.tsx src/pages/TrustTimelinePage.tsx` passed from `frontend`;
+  - focused scans found no remaining visible `MVP`, `backend endpoint`,
+    `frontend`, `feature branch`, `workflow`, `Preflight`, `Evidence Pack`,
+    `Pack ID`, or `Disclaimer` labels in the touched pages, excluding internal
+    component names/debug ids;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched page files passed with only Windows
+    LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this is a surface polish pass only. It does not implement guarantee-lock
+    release, change trust-event evidence generation, change support-readiness
+    scoring, or deploy anything. The worktree was already heavily dirty before
+    this pass, so only the files named in this entry belong to this mini-batch.
+
+### Bank Console / Trust Events wording pass (2026-06-10)
+
+- Trigger:
+  - product owner asked to keep cleaning inner pages so buttons are stable,
+    icons feel app-native, and visible language addresses the user rather than
+    the builder.
+- Scope:
+  - frontend-only wording/button-surface pass for `BankConsolePage.tsx` and
+    `AdminTrustEventsPage.tsx`;
+  - no bank ingest API call, reconciliation API call, trust-event query,
+    route target, debug id, backend logic, Dashboard, Community Home, Render
+    setting, commit, push, or deploy behavior changed.
+- Changed:
+  - changed visible Bank Console labels from builder language to user-facing
+    operations:
+    - `Manual Ingest` -> `Record Missing Bank Event`;
+    - `Ingest` / `Ingesting` -> `Record event` / `Recording`;
+    - `Reconcile` / `Reconciling` -> `Match records` / `Matching`;
+    - `Expected Payments / Config` -> `Expected Payments / Setup`;
+    - `Copy config` -> `Copy settings`;
+  - changed Trust Events detail drawer language from `raw event/details` to
+    `source details` / `Source event details`.
+- Verification:
+  - focused scan found no remaining visible `Manual Ingest`, `Ingest event`,
+    `Ingesting`, `Run reconciliation`, `Reconciling`, `Copy config`,
+    `Config`, `raw event`, or `raw details` labels in the touched pages;
+  - `npm exec -- eslint src/pages/BankConsolePage.tsx src/pages/AdminTrustEventsPage.tsx` passed from `frontend`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched pages passed with only Windows
+    LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - `BankConsolePage.tsx` already had other uncommitted UI improvements in the
+    worktree before this mini-pass. This entry records the latest wording sweep
+    only. The live backend/payment route availability is unchanged.
+
+### API / guarantor / payment text cleanup (2026-06-10)
+
+- Trigger:
+  - product owner asked to keep deep-cleaning inner pages for real icons,
+    stable buttons, user-facing wording, and removal of fake emoji/status
+    marks.
+- Scope:
+  - frontend-only route/component cleanup for `ApiPage.tsx`,
+    `GuarantorLeaderboardPage.tsx`, `GuarantorLeaderboard.tsx`, and
+    `PaymentInstructionsPanel.tsx`;
+  - no backend API route, payment instruction data source, guarantor scoring,
+    Dashboard, Community Home, Render setting, commit, push, or deploy behavior
+    changed.
+- Changed:
+  - replaced API page token check/cross text with plain `present` / `missing`;
+  - converted API Swagger/OpenAPI text-arrow links into 52px stable
+    icon-led `StableCtaLink` controls using `TrustPaperIcon`;
+  - changed guarantor leaderboard loading/success states to plain user-facing
+    sentences;
+  - removed stale check-mark comments in the guarantor/payment helper files;
+  - changed the visible payment note from smart-apostrophe text to ASCII so it
+    stays readable in every terminal/build surface.
+- Verification:
+  - `npm exec -- eslint src/components/GuarantorLeaderboard.tsx src/components/PaymentInstructionsPanel.tsx src/pages/ApiPage.tsx src/pages/GuarantorLeaderboardPage.tsx` passed from `frontend`;
+  - focused scan found no visible emoji/mojibake scars in the touched files;
+  - broad `rg` scan found no remaining visible emoji marks in
+    `frontend/src/pages` or `frontend/src/components`;
+  - broad `rg` scan found no remaining `â`, `Ã`, or `Â` broken-character scars
+    in `frontend/src/pages` or `frontend/src/components`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched files passed with only Windows
+    LF-to-CRLF warnings;
+  - `npm run build` first hit the known local Vite/esbuild `spawn EPERM`; the
+    same command rerun elevated passed.
+- Unabated truth:
+  - this pass improves surface polish and tap stability for small API/guarantor
+    support pages only. It does not fix live backend identity-evidence route
+    deployment, payment-webhook availability, or guarantor scoring data.
+
+### Exposure admin page tap/icon cleanup (2026-06-10)
+
+- Trigger:
+  - product owner asked to keep deep-cleaning inner pages for stable buttons,
+    real icons, concise user-facing language, and removal of emoji-style scars.
+- Scope:
+  - frontend-only route-local pass for `ExposurePage.tsx`;
+  - no exposure calculation, overdue-detector API, CCI API, trust event query,
+    admin permission, route target, Dashboard, Community Home, Render setting,
+    commit, push, or deploy behavior changed.
+- Changed:
+  - added route-local `TrustPaperIcon` labels for exposure admin actions;
+  - removed success-check emoji from the exposure and overdue-scan status
+    messages;
+  - raised tiny loan/user timeline table links from 24px to 48px stable tap
+    targets;
+  - replaced arrow text links with icon-led labels for Trust Analytics and Back
+    to Dashboard.
+- Verification:
+  - `npm exec -- eslint src/pages/ExposurePage.tsx` passed from `frontend`;
+  - quick scan found no remaining visible check/arrow emoji scars or 24px
+    `stableHeight` controls in `ExposurePage.tsx`;
+  - `npm --prefix frontend run audit:admin-ops-actions` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for `ExposurePage.tsx` passed with only Windows
+    LF-to-CRLF warning.
+  - `npm run build` initially hit the known local Vite/esbuild `spawn EPERM`;
+    rerunning the same command elevated passed.
+- Unabated truth:
+  - this stabilizes the Exposure page UI controls only. It does not change the
+    overdue detector, exposure math, or backend trust-event records.
+
+### Subscription Spotlight icon cleanup (2026-06-10)
+
+- Trigger:
+  - product owner asked to keep moving through inner pages, replacing inferior
+    emoji-style marks with real app-native icons and keeping user-facing labels
+    concise.
+- Scope:
+  - frontend-only route-local pass for `SubscriptionSpotlightPage.tsx`;
+  - no marketplace publish API, payment instruction API, shop ownership,
+    credit accounting, action debug ids, Dashboard, Community Home, Render
+    setting, commit, push, or deploy behavior changed.
+- Changed:
+  - replaced visible star/check/hourglass/gear-style emoji labels and mojibake
+    scars with existing `TrustPaperIcon` pictogram labels;
+  - kept the Subscription Spotlight sequence intact: select credits, confirm
+    quote, generate payment code, check payment, then publish;
+  - cleaned the main hero/status/action labels so the page reads as one GSN
+    product surface instead of mixed emoji text.
+- Verification:
+  - `npm exec -- eslint src/pages/SubscriptionSpotlightPage.tsx` passed from
+    `frontend`;
+  - quick scan found no remaining visible `⭐`, `✅`, `⚙️`, `⏳`, or mojibake
+    `â` scars in `SubscriptionSpotlightPage.tsx`;
+  - `npm --prefix frontend run audit:marketplace-actions` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+  - `npm run build` initially hit the known local Vite/esbuild `spawn EPERM`;
+    rerunning the same command elevated passed.
+- Unabated truth:
+  - this is visual/copy cleanup only. It does not change payment-credit
+    calculation, paid spotlight publishing logic, or live Render behavior.
+
+### Community confirmation inbox icon/copy pass (2026-06-10)
+
+- Trigger:
+  - product owner asked to continue the deeper inner-page tightening pass:
+    real app-native icons, user-facing language, fewer textbook passages, and
+    steadier mobile buttons.
+- Scope:
+  - frontend-only route-local pass for `CommunityConfirmationInboxPage.tsx`
+    and `CommunityConfirmationOutcomePage.tsx`;
+  - no backend confirmation logic, relay rules, action debug ids, auth,
+    Dashboard, Community Home, Render setting, workflow, commit, push, or deploy
+    behavior changed.
+- Changed:
+  - added route-local SVG label helpers using `TrustPaperIcon`;
+  - shortened inbox guidance so responders see what to do without long internal
+    explanations;
+  - changed hero/stat/review/relay/action labels to icon-led app-native
+    pictograms instead of plain text or decorative initials;
+  - tightened review-case, evidence, assignment, relay, TrustSlip, and response
+    button labels while preserving existing backend calls and debug ids;
+  - replaced fallback subject initials with the shared user pictogram so this
+    page no longer introduces another fake icon style.
+  - tightened the public outcome paper's signed-in provider/review actions with
+    compact SVG button labels and shorter guidance for decisions, lifecycle
+    updates, internal evidence, and review resolution.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/pages/CommunityConfirmationOutcomePage.tsx`
+    passed from `frontend`;
+  - `npm --prefix frontend run audit:admin-ops-actions` passed;
+  - `npm --prefix frontend run audit:action-response-protocol` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` for the touched confirmation pages and this handoff
+    note passed with only Windows LF-to-CRLF warnings.
+  - `npm run build` initially hit the known local Vite/esbuild `spawn EPERM`;
+    rerunning the same command elevated passed.
+- Unabated truth:
+  - this improves the confirmation inbox surface and buttons, but it does not
+    fix the live backend identity-evidence lag or deploy anything to Render;
+  - the broad inner-page polish is still ongoing across Marketplace, Finance,
+    Trust Passport inner routes, and admin/support pages.
+
+### Community confirmation policy / public verify icon pass (2026-06-10)
+
+- Trigger:
+  - product owner asked to continue deeper through inner pages with real
+    app-native icons, concise user-facing wording, stronger button placement,
+    and less internal/textbook language.
+- Scope:
+  - frontend-only route-local pass for `CommunityConfirmationPolicyPage.tsx`
+    and `CommunityVerifyPage.tsx`;
+  - no backend confirmation policy behavior, relay-contact rules, public
+    verification API contract, route targets, action debug ids, auth, schema,
+    Dashboard, Community Home, Render setting, workflow, commit, push, or
+    deploy behavior changed.
+- Changed:
+  - `CommunityConfirmationPolicyPage.tsx`:
+    - added route-local `TrustPaperIcon` helpers for section labels, status
+      chips, policy switch cards, contact actions, and the privacy CTA;
+    - shortened policy guidance so admins see who can answer, what is on/off,
+      and what to do next without reading a manual;
+    - made refresh/copy controls steadier 52px targets and replaced plain
+      member initials with an app-native user pictogram when no profile image
+      exists.
+  - `CommunityVerifyPage.tsx`:
+    - strengthened public-record badges, info rows, visibility cards, and
+      public actions with high-contrast SVG pictogram tiles;
+    - renamed builder-facing `Program logic` copy to user-facing privacy
+      protection language.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx src/pages/CommunityVerifyPage.tsx`
+    passed from `frontend`;
+  - quick scan found no emoji/bullet-arrow scars or builder-facing
+    `Program logic` / `Open this when...` wording in the touched files;
+  - `npm --prefix frontend run audit:admin-ops-actions` passed;
+  - `npm --prefix frontend run audit:action-response-protocol` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only existing Windows line-ending warnings.
+  - `npm run build` initially hit the known local Vite/esbuild `spawn EPERM`;
+    rerunning the same build elevated passed.
+- Unabated truth:
+  - this improves confirmation-policy and public-community-verification
+    presentation only. It does not change who may answer confirmations, does
+    not alter public/private data exposure rules, does not fix live backend
+    identity evidence reflection, and does not deploy anything.
+
+### System Operations / Exposure icon and pressure-reading pass (2026-06-10)
+
+- Trigger:
+  - product owner asked to continue deeper through inner pages: stronger
+    app-native pictograms, user-facing wording, reduced textbook passages, and
+    tighter inner buttons before broader mass testing.
+- Scope:
+  - frontend-only route-local pass for `SystemOperationsPage.tsx` and
+    `ExposureAdminPage.tsx`;
+  - no backend evidence logic, exposure calculation, admin API calls, route
+    targets, action debug ids, auth, schema, Dashboard, Community Home, Render
+    setting, workflow, commit, push, or deploy behavior changed.
+- Changed:
+  - both pages now import `TrustPaperIcon` and use route-local SVG badge
+    helpers for section labels, status chips, route cards, queue facts, and
+    action labels;
+  - collapse controls were tightened to steady `52px` touch targets with
+    consistent `Open` / `Hide` language;
+  - exposed helper copy was shortened so the pages guide the operator to the
+    next action instead of reading like internal documentation;
+  - `SystemOperationsPage.tsx` photo-review actions now use concise
+    icon-led labels (`Open photo`, `Accept`, `Clearer proof`, `Reject`,
+    `Reopen`) while preserving review behavior and debug ids;
+  - `ExposureAdminPage.tsx` pressure and route surfaces now use compact
+    icon-led facts and shorter route explanations.
+- Verification:
+  - `npm exec -- eslint src/pages/SystemOperationsPage.tsx src/pages/ExposureAdminPage.tsx`
+    passed from `frontend`;
+  - quick scan found no emoji/bullet-arrow scars or old `Open this when...`
+    route wording in the two touched files;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only existing Windows line-ending warnings.
+  - `npm run build` initially hit the known local Vite/esbuild `spawn EPERM`;
+    rerunning the same build elevated passed.
+- Unabated truth:
+  - this improves visual seriousness, phone tap stability, and operator
+    language on two admin pages. It does not fix the live backend identity
+    evidence mismatch, does not deploy anything, and does not prove Render is
+    serving the latest backend evidence routes.
+
+### Trust admin evidence pages icon/readability pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue deeper across all pages: real app-native
+    SVG pictograms, user-facing language, less textbook copy, and tighter
+    inner buttons.
+- Scope:
+  - frontend-only route-local pass for `AdminIdentityRiskPage.tsx`,
+    `AdminTrustEventsPage.tsx`, and `AdminTrustGraphPage.tsx`;
+  - no backend evidence logic, graph normalization, trust-event payload,
+    identity-risk scoring, admin route targets, debug ids, auth, schema,
+    Dashboard, Community Home, Render setting, workflow, or deploy behavior
+    changed.
+- Changed:
+  - `AdminIdentityRiskPage.tsx`:
+    - imported `TrustPaperIcon` and added route-local icon helpers;
+    - replaced colored emoji-style risk markers with app-native SVG
+      pictograms;
+    - changed the long Green/Yellow/Red guide paragraph into compact
+      SVG-led status rows.
+  - `AdminTrustEventsPage.tsx`:
+    - added SVG badge helpers for overview chips, route actions, row facts,
+      event deltas, copy action, and raw-event toggle;
+    - shortened event-screen guidance so it reads as admin task direction
+      rather than documentation.
+  - `AdminTrustGraphPage.tsx`:
+    - added SVG badge helpers for graph overview, structure rows, signals,
+      collapse toggles, and next-route tiles;
+    - replaced visible bullet/arrow separators with ASCII-safe separators in
+      compact graph facts.
+- Verification:
+  - `npm exec -- eslint src/pages/AdminIdentityRiskPage.tsx src/pages/AdminTrustEventsPage.tsx src/pages/AdminTrustGraphPage.tsx`
+    passed from `frontend`;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+- Unabated truth:
+  - this is a surface-quality and tap/readability pass. It does not make live
+    backend evidence more truthful, does not deploy anything, and does not
+    resolve the phone-vs-local data mismatch.
+
+### Trust Command Centre icon and guidance pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to keep going deeper across non-Dashboard pages:
+    stronger real-looking SVG pictograms, tighter inner buttons, shorter
+    user-facing language, and less textbook-style guidance.
+- Scope:
+  - frontend-only route-local pass for `TrustCommandCentrePage.tsx`;
+  - no backend calls, executive-reading logic, admin route targets, action
+    debug ids, auth, schema, Dashboard, Community Home, Render setting,
+    workflow, or deploy behavior changed.
+- Changed:
+  - imported `TrustPaperIcon` and added route-local icon badge helpers;
+  - made the operator overview, executive reading, readiness, command summary,
+    command routes, workflows, layer-separation notes, and bottom actions
+    SVG-led;
+  - shortened exposed route/workflow/readiness copy so it directs admins to
+    the next task instead of reading like internal documentation;
+  - raised command-centre collapse controls to a steadier `52px` touch height;
+  - replaced visible bullet separators in compact facts with ASCII `|`
+    separators to avoid phone rendering scars.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustCommandCentrePage.tsx src/pages/TrustAnalyticsPage.tsx`
+    passed from `frontend`;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+- Unabated truth:
+  - this improves the admin command surface, but it does not change the
+    backend truth feeding the page. Live backend evidence reflection and
+    Render/local divergence remain separate issues.
+
+### Trust Analytics icon and readability pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue page-by-page cleanup: real app-native SVG
+    pictograms, less textbook wording, user-facing language, and steadier inner
+    buttons across non-Dashboard surfaces.
+- Scope:
+  - frontend-only route-local pass for `TrustAnalyticsPage.tsx`;
+  - no backend, trust-event classification logic, route target, debug id, auth,
+    schema, Dashboard, Community Home, Render setting, workflow, or deploy
+    behavior changed.
+- Changed:
+  - imported `TrustPaperIcon` and added route-local SVG badge helpers for
+    Trust Analytics labels, chips, timeline rows, and route actions;
+  - replaced dot-only timeline markers with compact navy SVG pictogram tiles;
+  - shortened exposed helper copy so it speaks to the user and the record
+    rather than reading like admin documentation;
+  - kept existing Trust Analytics routes and action debug ids intact;
+  - raised route-local collapse controls to a steadier `52px` touch height.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustAnalyticsPage.tsx` passed from
+    `frontend`;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+- Unabated truth:
+  - this makes Trust Analytics more serious, icon-led, and less wordy, but it
+    does not prove live backend evidence reflection or fix Render/local data
+    divergence. Those remain separate backend/deploy truth issues.
+
+### TrustSlip Verify public-paper icon pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue deeper across all pages with stronger
+    real-looking SVG icons, user-facing language, less textbook copy, and tight
+    inner buttons.
+- Scope:
+  - frontend-only treatment pass for `TrustSlipVerifyPage.tsx` and
+    `trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`;
+  - no verification logic, backend route, trust score, public-code contract,
+    auth, Dashboard, Community Home, Render setting, workflow, or deploy
+    behavior changed.
+- Changed:
+  - `TrustSlipVerifyPage.tsx`:
+    - added route-local SVG label treatment for public proof actions:
+      print/save PDF, lite view, request current TrustSlip, and copy verify
+      link, while preserving debug ids.
+  - `trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`:
+    - added compact paper icon badges for public quick-answer rows and instant
+      community confirmation result;
+    - shortened return-channel and consent helper copy so it speaks to the user
+      directly.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    passed from `frontend`;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+- Unabated truth:
+  - this improves the public proof surface visually and linguistically, but it
+    does not change what TrustSlip verification proves. Live backend evidence
+    reflection and deployment/API truth remain separate issues.
+
+### Welcome / My GSN icon seriousness pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue across all pages with stronger real-looking
+    app-native icons, user-facing language, and tighter protected inner
+    buttons.
+- Scope:
+  - frontend-only icon treatment pass for `WelcomePage.tsx` and
+    `MyGMFNAndIPage.tsx`;
+  - no route targets, entry/auth contracts, Dashboard, Community Home, backend,
+    auth, schema, Render setting, workflow, or deploy behavior changed.
+- Changed:
+  - `WelcomePage.tsx`:
+    - replaced remaining entry-card emoji/glyph icons with native
+      `TrustPaperIcon` SVG pictograms;
+    - removed the visible signed-in check glyph and used the app-native check
+      pictogram in the existing icon badge.
+  - `MyGMFNAndIPage.tsx`:
+    - strengthened public capability icons and mini action bubbles from pale
+      light marks to navy/gold SVG pictogram containers closer to the Dashboard
+      seriousness.
+- Verification:
+  - no listed emoji marks remained in `WelcomePage.tsx` or
+    `MyGMFNAndIPage.tsx` after scan;
+  - `npm exec -- eslint src/pages/WelcomePage.tsx src/pages/MyGMFNAndIPage.tsx`
+    passed from `frontend`;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+- Unabated truth:
+  - My GSN and Welcome are protected by entry/auth audits, so this pass stayed
+    visual only. It did not change where any entry action goes or solve live
+    backend evidence reflection.
+
+### CCI trust-reading icon and language pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue deeper across all non-Dashboard pages:
+    stronger real-life SVG pictograms, less textbook wording, user-facing
+    language, and steady inner buttons.
+- Scope:
+  - frontend-only cleanup of `CCIReadingPage.tsx`;
+  - no backend, CCI scoring logic, auth, trust event, route target, schema,
+    Dashboard, Community Home, Render setting, workflow, or deploy behavior
+    changed.
+- Changed:
+  - imported the app-native `TrustPaperIcon` SVG set;
+  - added compact route-local icon-badge helpers for CCI chips, headings, and
+    action labels;
+  - shortened exposed copy so it speaks to the user rather than explaining the
+    internal document model;
+  - kept existing action debug ids and destinations intact:
+    `cci-reading.identity`, `cci-reading.trust`, and
+    `cci-reading.copy-snapshot`.
+- Verification:
+  - `npm exec -- eslint src/pages/CCIReadingPage.tsx` passed from `frontend`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+- Unabated truth:
+  - this makes the CCI surface cleaner and more icon-led, but it does not
+    resolve backend evidence reflection or live data disagreement between local
+    and Render. Those remain deployment/API truth issues, not page polish.
+
+### Shop/public-shop SVG badge alignment pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to keep continuing the Dashboard-strength icon polish
+    across non-Dashboard pages, with real app-native SVG pictograms, user-facing
+    language, less wordy surfaces, and steadier inner buttons.
+- Scope:
+  - frontend-only visual/icon treatment pass for shop/public-shop inner pages;
+  - Dashboard and protected Community Home button/mobile geometry were not
+    edited in this slice;
+  - no backend, auth, payment, identity evidence reflection, route target,
+    schema, Render setting, workflow, or deploy behavior changed.
+- Changed:
+  - `SubscriptionSpotlightPage.tsx`:
+    - upgraded route-local label icons into compact high-contrast SVG pictogram
+      badges for section headings, chips, and action labels.
+  - `VaultControlPage.tsx`:
+    - upgraded Vault label/action icons into the same compact SVG badge
+      treatment while preserving existing action debug ids.
+  - `ShopAssetsPage.tsx`:
+    - strengthened shop asset chips and section-label icons with stable compact
+      icon tiles instead of bare faint SVG marks.
+  - `ShopControlPage.tsx`:
+    - strengthened route-local inline label icons used across shop control,
+      vault control, and spotlight subscription rows.
+  - `ShopGalleryPage.tsx`:
+    - strengthened public shop inline icon treatment without changing product
+      action inventory contracts.
+- Verification:
+  - `npm exec -- eslint src/pages/SubscriptionSpotlightPage.tsx src/pages/VaultControlPage.tsx src/pages/ShopAssetsPage.tsx src/pages/ShopControlPage.tsx src/pages/ShopGalleryPage.tsx` passed from `frontend`;
+  - `npm --prefix frontend run audit:shop-gallery-button-inventory` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings.
+- Unabated truth:
+  - this improves the shop/public-shop icon seriousness, but it is not a
+    completed whole-app polish. Remaining non-Dashboard groups still include
+    Identity & Integrity, My GSN and I, Welcome/entry surfaces, TrustSlip Verify
+    public paper, and selected shared components. The current worktree contains
+    many pre-existing unrelated changes, so future commits must stage only the
+    intended slice.
+
+### Wider inner-page SVG badge alignment pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue the dashboard-like icon seriousness across
+    all non-Dashboard pages, including Marketplace/Community/inner pages, while
+    keeping buttons tight and language user-facing.
+- Scope:
+  - frontend-only visual treatment pass;
+  - Dashboard was intentionally not edited;
+  - no backend, auth, payment, ledger, evidence reflection, route target,
+    schema, Render setting, workflow, or deploy behavior changed.
+- Changed:
+  - `BankConsolePage.tsx` and `AdminIncompleteLoansPage.tsx`:
+    - upgraded action-label icons from bare SVG marks into compact
+      high-contrast SVG badges inside existing stable buttons.
+  - `PayoutDetailsPage.tsx`, `RepaymentPage.tsx`,
+    `RevenueAllocationPage.tsx`, `PaymentRailsPage.tsx`, and
+    `PaymentInstructionsPage.tsx`:
+    - upgraded repeated finance/support action and route-heading icons into
+      badge-backed SVG treatment while preserving existing debug ids and button
+      geometry.
+  - `TrustScorePage.tsx`:
+    - added route-local Trust Passport SVG badge treatment;
+    - applied it to the active lane chip, status cards, trust surface cards,
+      and Trust Passport document/share actions.
+  - `TrustSlipPage.tsx`:
+    - added route-local TrustSlip SVG badge treatment;
+    - applied it to confirmation actions, public community-record actions,
+      readiness rows, warning rows, and TrustSlip paper actions.
+  - `CommunityVerifyPage.tsx`:
+    - added route-local public community verification SVG badge treatment;
+    - applied it to status badges, public actions, info rows, visibility rows,
+      and program rules.
+  - `CommunityConfirmationOutcomePage.tsx`:
+    - added route-local outcome SVG badge treatment;
+    - applied it to public proof headings, public actions, and stat tiles.
+- Verification:
+  - targeted ESLint passed for all files touched in this pass;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:trust-actions` passed;
+  - `npm --prefix frontend run audit:trust-passport-button-inventory` passed;
+  - `npm --prefix frontend run audit:trust-passport-front-package` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings;
+  - `npm run build` passed from `frontend` after rerunning elevated because the
+    sandboxed Vite/esbuild build hit the known `spawn EPERM`.
+- Unabated truth:
+  - this is a major non-Dashboard icon alignment slice, but it is not a literal
+    whole-app completion yet. The next remaining groups from the scan include
+    shop/public-shop pages, Identity & Integrity, My GSN and I, Welcome/entry
+    surfaces, TrustSlip Verify public paper, and a few shared components. The
+    protected Dashboard and Community Home button cages remained intact.
+
+### Inner SVG icon treatment alignment pass (2026-06-09)
+
+- Trigger:
+  - product owner asked why Dashboard icons look more real than icons on inner
+    pages, and asked to continue deeper page cleanup: real-looking icons,
+    user-facing language, less textbook copy, steadier inner buttons, and weak
+    page polish.
+- Unabated truth:
+  - Dashboard currently feels richer partly because several Dashboard marks are
+    still emoji/colored-glyph style inside strong badge treatments. That visual
+    richness is attractive, but the current icon protocol says primary app
+    icons should be app-native SVG pictograms, not emoji. Dashboard is also
+    caged/frozen for button and mobile geometry, so this pass did not casually
+    migrate Dashboard icons.
+- Scope:
+  - frontend-only icon-treatment pass in support/money inner pages;
+  - no backend, identity evidence reflection, auth, payment, ledger, route
+    target, schema, Render setting, deploy workflow, or Dashboard contract
+    changed.
+- Changed:
+  - `LoanWorkbenchPage.tsx`:
+    - upgraded bare inline Workbench action and route icons into compact
+      high-contrast SVG icon badges so they read closer to Dashboard strength
+      without using emoji.
+  - `LoanSummaryPage.tsx`:
+    - upgraded action-label icons into compact high-contrast SVG badges while
+      preserving existing route/action debug ids and 52px button geometry.
+  - `WithdrawalInstructionsPage.tsx`:
+    - upgraded Money Out section-label icons from pale inline marks into
+      compact high-contrast SVG badges.
+- Verification so far:
+  - targeted ESLint passed for:
+    - `LoanWorkbenchPage.tsx`;
+    - `LoanSummaryPage.tsx`;
+    - `WithdrawalInstructionsPage.tsx`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings;
+  - `npm run build` passed from `frontend` after rerunning elevated because the
+    sandboxed Vite/esbuild build hit the known `spawn EPERM`.
+- Remaining risk:
+  - this is not a full app-wide icon migration. It improves a focused weak
+    cluster. Dashboard itself still needs a separate intentional SVG migration
+    if the owner wants emoji-like Dashboard marks removed later.
+
+### Loan Summary and Money Out deeper tightening pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue deeper inner-page cleanup: real app-native
+    icons, user-addressed words, less wordy passages, and steadier inner
+    buttons before wider phone testing.
+- Scope:
+  - frontend-only cleanup in:
+    - `frontend/src/pages/LoanSummaryPage.tsx`;
+    - `frontend/src/pages/WithdrawalInstructionsPage.tsx`;
+  - no backend loan, withdrawal, bank, identity evidence, payment, ledger,
+    route target, auth, schema, Render, or deploy setting changed.
+- Changed:
+  - `LoanSummaryPage.tsx`:
+    - shortened the main page subtitle and explanation toggle copy;
+    - tightened helper text and empty-state line heights;
+    - made summary fact and next-route grids responsive so labels have more
+      room on phone;
+    - shortened guarantor, repayment, evidence, revenue, and route guidance
+      while preserving existing debug ids and route behavior.
+  - `WithdrawalInstructionsPage.tsx`:
+    - renamed the top task header from the confusing Loans & Support/Money Out
+      pairing to `Guided Withdrawal`;
+    - tightened visible guidance around amount, rail, payout account, support
+      handoff, execution result, and route monitor;
+    - changed remaining inner Money Out route/action links from `48px` to
+      `52px` stable height;
+    - fixed the support-gap fact tile so the warning text is readable on the
+      dark institutional surface;
+    - confirmed this page already has a UK sort-code field for payout details.
+  - `FinancePage.tsx`:
+    - shortened the top subtitle and lane guidance so the page points users to
+      money in, money out, rails, and support records without sounding like a
+      policy note;
+    - tightened helper text and loading line height;
+    - shortened the Loans & Support route label while preserving its audited
+      compact geometry.
+- Verification:
+  - targeted ESLint passed for:
+    - `LoanSummaryPage.tsx`;
+    - `WithdrawalInstructionsPage.tsx`;
+    - `FinancePage.tsx`;
+    - `audit-button-stability.mjs`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings;
+  - `npm run build` passed from `frontend` after rerunning elevated because the
+    sandboxed Vite/esbuild build hit `spawn EPERM`.
+- Unabated truth:
+  - this improves local frontend clarity and button stability only. It does
+    not fix live backend identity evidence reflection, payment-provider
+    limitations, or deployed Render behavior. The Money Out page still has a
+    larger multi-section structure; this pass tightened the worst instability
+    and wording pressure without redesigning the full route.
+
+### Finance/support inner-page wording and button polish continuation (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue the same line of work: user-facing words,
+    real app-native icons, less exposed wording, steadier inner buttons, and
+    deeper scrutiny of money/support pages.
+- Scope:
+  - frontend-only polish in finance/support inner pages;
+  - no backend repayment, payment-rail, revenue-allocation, loan, ledger,
+    reconciliation, auth, route, schema, Render, or deployment logic changed.
+- Changed:
+  - `PaymentRailsPage.tsx`:
+    - shortened rail guidance so it says which money routes look ready before
+      the user acts;
+    - reduced repeated explanatory paragraphs and tightened line height;
+    - kept raw rail response hidden behind the existing stable toggle.
+  - `RevenueAllocationPage.tsx`:
+    - shortened copy around fee/pool/revenue/net-disbursement explanation;
+    - changed fixed 4-column and 3-column grids into responsive `auto-fit`
+      grids so facts and next-route tiles do not squeeze on phone;
+    - kept existing load/copy/toggle/route debug ids.
+  - `RepaymentPage.tsx`:
+    - added `TrustPaperIcon` SVG-led labels for Generate, Copy reference,
+      Copy instruction, Confirm paid, section toggles, and route buttons;
+    - shortened repayment explanation so the user sees exact amount/reference
+      and the next action faster;
+    - changed the overview fact grid to responsive mini cards;
+    - updated `audit-button-stability` so the new repayment SVG/no-wrap
+      contract is protected.
+  - `LoanWorkbenchPage.tsx`:
+    - tightened Workbench subtitle and explanation copy;
+    - reduced helper text line height and shortened selection/summary
+      guidance;
+    - kept existing workbench route/action contracts intact.
+- Verification:
+  - targeted ESLint passed for:
+    - `PaymentRailsPage.tsx`;
+    - `RevenueAllocationPage.tsx`;
+    - `RepaymentPage.tsx`;
+    - `LoanWorkbenchPage.tsx`;
+    - `audit-button-stability.mjs`;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings;
+  - `npm run build` passed from `frontend` after rerunning elevated because the
+    sandboxed build hit the known Vite/esbuild `spawn EPERM`.
+- Unabated truth:
+  - this continues local frontend polish and button stability only. It does not
+    solve live backend identity evidence reflection, payment provider limits,
+    or deployed Render behavior. Render auto-deploy remains off under the
+    current pipeline-saving protocol.
+
+### Deeper inner-page polish and Marketplace Link Center tightening (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue the same deeper pass: words must address
+    users, weak/fake icon marks must become app-native SVG pictograms, wordy
+    inner pages should be reduced, and inner buttons must stop jumping or
+    splitting labels.
+- Scope:
+  - frontend-only page polish, icon replacement, copy tightening, and button
+    geometry protection;
+  - no backend, auth, payment, ledger, evidence-reflection, route target,
+    schema, Render setting, or deployment behavior changed in this pass.
+- Changed:
+  - `CommunityHomePage.tsx`:
+    - replaced remaining text/emoji-style tool marks such as `VAULT` / ROSCA
+      display marks with `TrustPaperIcon` SVG pictograms;
+    - shortened empty states, spotlight helper copy, and owner spotlight
+      guidance so the page reads as user guidance rather than internal notes;
+    - kept protected Community Home route/button contracts intact.
+  - `MarketplacePage.tsx`:
+    - tightened the Link Center toggle to a fixed `52px` action;
+    - changed compact phone inline action rows to `52px` while keeping wider
+      rows at `58px`;
+    - hid the extra Join Link admin/desktop actions on compact phone so the
+      phone task presents Copy / Email / WhatsApp instead of a long stacked
+      action block;
+    - kept existing Marketplace debug ids and route contracts.
+  - `BankConsolePage.tsx`:
+    - shortened repeated banking/reconciliation explanations;
+    - changed several actions to icon-led stable `52px` buttons and clearer
+      user-facing labels;
+    - made manual ingest guidance shorter and tied to the action surface.
+  - `AdminIncompleteLoansPage.tsx`:
+    - shortened the queue explanation;
+    - changed queue/loan actions to stable, icon-led `52px` button rows.
+  - Audit scripts:
+    - updated Marketplace action/button/tap audits so they protect the new
+      compact `52px` phone row and `58px` wider row contract.
+- Verification:
+  - `npm --prefix frontend run audit:community-home-button-inventory` passed;
+  - `npm --prefix frontend run audit:community-home-phone-buttons` passed;
+  - `npm --prefix frontend run audit:marketplace-button-inventory` passed;
+  - `npm --prefix frontend run audit:marketplace-actions` passed;
+  - `npm --prefix frontend run audit:marketplace-button-lines` passed;
+  - `npm --prefix frontend run audit:marketplace-front-package` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - targeted ESLint passed for the touched pages/audits;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings;
+  - `npm run build` passed from `frontend` after rerunning elevated because the
+    sandboxed build hit the known Vite/esbuild `spawn EPERM`.
+- Unabated truth:
+  - this makes the local frontend calmer, more icon-led, less wordy, and more
+    stable on button geometry. It still does not fix the live backend identity
+    evidence reflection problem, does not prove phone behavior on Render, and
+    has not been deployed under the current pipeline-saving protocol.
+
+### Inner icon and copy polish pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue inner-page tightening, replace weak
+    emoji-style marks with real app-native icons, reduce wordy passages, and
+    keep language addressed to users rather than builders.
+- Scope:
+  - frontend-only icon/copy/button-surface polish;
+  - no backend, auth, payment, ledger, evidence, route target, membership, or
+    deployment configuration changed in this pass;
+  - Dashboard and Community Home were touched only for icon/audio-label cleanup
+    and then verified through their protected button cages.
+- Changed:
+  - extended `TrustPaperMarks` with additional SVG pictograms used by inner
+    shop, vault, paid spotlight, identity, and admin surfaces;
+  - replaced emoji / mojibake marks with SVG pictograms in:
+    - `ShopControlPage.tsx`;
+    - `ShopGalleryPage.tsx`;
+    - `SubscriptionSpotlightPage.tsx`;
+    - `VaultControlPage.tsx`;
+    - `WelcomePage.tsx`;
+    - `CreateEntryPage.tsx`;
+    - `CommunityHomePage.tsx`;
+    - `GMFNConfirmModal.tsx`;
+    - `AdminIdentityRiskPage.tsx`;
+    - Dashboard Spotlight audio labels only;
+  - shortened `PayoutDetailsPage.tsx` copy so the page says what the user needs
+    to do without repeating custody explanations;
+  - removed a `Working…` mojibake/display issue in the confirm modal;
+  - updated the related audits so they protect the new SVG/audio-label shape.
+- Verification:
+  - frontend source emoji/mojibake scan over `frontend/src/pages`,
+    `frontend/src/components`, and `frontend/src/lib` returned clean;
+  - `npm exec -- eslint ...` passed for the edited files and audit scripts;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:community-home-button-inventory` passed;
+  - `npm --prefix frontend run audit:community-home-phone-buttons` passed;
+  - `npm --prefix frontend run audit:shop-gallery-button-inventory` passed;
+  - `npm --prefix frontend run audit:payout-details-protocol` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only Windows line-ending warnings;
+  - `npm run build` passed from `frontend` after rerunning elevated because the
+    sandboxed build hit the known Vite/esbuild `spawn EPERM`.
+- Unabated truth:
+  - this improves presentation, icon seriousness, and button-surface hygiene.
+    It does not solve the live backend identity evidence reflection issue, and
+    it has not been deployed because the current protocol is local testing
+    first while Render pipeline minutes are conserved.
+
 ### Legacy activation action tightening pass (2026-06-09)
 
 - Trigger:
@@ -41723,3 +45003,442 @@ GSN-branded invite composer and invite-entry continuity.
     `main` no longer guarantee an automatic Render deployment or automatic
     backend test run for frontend-only work. Deployment is now an intentional
     step, not a side effect.
+
+### Local phone-testing finance button pass (2026-06-09)
+
+- Trigger:
+  - after Render auto-deploy was turned off and the laptop/phone local server
+    path was established, the product owner asked to continue tightening inner
+    pages locally before spending pipeline minutes.
+- Local test setup:
+  - backend was started locally on `0.0.0.0:8012` in dev mode;
+  - frontend Vite dev server was started locally on `0.0.0.0:5173`;
+  - phone test URL is `http://192.168.1.13:5173/` while the laptop remains on
+    the same Wi-Fi and the local processes remain alive.
+- Changed locally, not pushed:
+  - `frontend/src/pages/PayoutDetailsPage.tsx`
+    - compacted the action labels to `Save details`, `Copy summary`,
+      `Clear local`, `Money Out`, and `Loans & Support`;
+    - added SVG-led action labels and fixed `52px` heights/no-wrap geometry;
+    - did not change payout persistence, sort-code payloads, or bank logic.
+  - `frontend/src/pages/BankConsolePage.tsx`
+    - added app-native SVG action labels for next-step, refresh, row copy,
+      ingest, reconcile, and copy-config actions;
+    - compacted labels such as `Refresh`, `Ingest`, `Reconcile`, and
+      `Copy config`;
+    - upgraded those action controls to fixed `52px` heights/no-wrap geometry;
+    - shortened the unmatched next-step wording from `Run reconciliation...`
+      to `Reconcile...` language;
+    - did not change bank ingest, reconciliation, matching, or API behavior.
+  - `frontend/tools/audit-payout-details-protocol.mjs`
+    - now protects Payout Details compact SVG-led action labels.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now protects Payout Details and Bank Console compact/no-wrap action
+      geometry and rejects the old long labels.
+- Verification:
+  - Passed `npm --prefix frontend run audit:payout-details-protocol`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed ESLint for `PayoutDetailsPage.tsx`, `BankConsolePage.tsx`, and the
+    touched audits.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only Windows LF-to-CRLF warnings.
+- Unabated truth:
+  - this is a local UI/button stability batch only. It has not been committed,
+    pushed, or deployed, and it does not fix live backend identity evidence,
+    payment-account, or Render pipeline-minute constraints.
+- Next phone checks:
+  - `http://192.168.1.13:5173/app/payout-details`
+  - `http://192.168.1.13:5173/app/bank-console`
+
+### Pipeline conservation protocol freeze (2026-06-09)
+
+- Trigger:
+  - the product owner confirmed the latest GitHub/Render settings should become
+    protocol so no later assistant casually changes them while Render pipeline
+    minutes are exhausted.
+- Changed locally, not pushed:
+  - `docs/PROJECT_PROTOCOL.md`
+    - added a Pilot Pipeline Conservation Protocol:
+      Render frontend Auto-Deploy stays off, GitHub Render deploy stays
+      manual-only, backend tests stay path-filtered, and local phone testing is
+      the default proof path for UI/button work.
+  - `docs/FREEZE_POLICY.md`
+    - froze `.github/workflows/render-deploy.yml` in manual-only mode;
+    - froze `.github/workflows/tests.yml` with backend-relevant path filters;
+    - recorded Render dashboard frontend Auto-Deploy as an external frozen
+      operational setting.
+- Unabated truth:
+  - the repo can freeze workflow files, but it cannot technically enforce the
+    Render dashboard toggle. The dashboard setting is protected by protocol and
+    human discipline, not by source code.
+
+### Local Loans & Support inner-button pass (2026-06-09)
+
+- Trigger:
+  - continuing the local phone-testing work while Render pipeline minutes are
+    being conserved;
+  - the product owner asked to keep tightening inner pages from the back of
+    Trust/Finance/Loans before spending deployment minutes.
+- Changed locally, not pushed:
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+    - replaced text-only load/copy/collapse controls with app-native SVG-led
+      labels;
+    - moved the main actions into fixed `52px` no-wrap grid geometry;
+    - shortened next-route copy and added SVG-led route headings;
+    - replaced fallback em-dash values with ASCII `-`;
+    - did not change revenue-allocation API calls or finance math.
+  - `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+    - compacted queue and loan-row actions to `Copy queue`, `System Ops`,
+      `Bank Console`, `Command Center`, `Copy loan`, and `Loan Summary`;
+    - moved those actions into fixed `52px` SVG-led grid rows;
+    - did not change incomplete-loan fetching, queue state, or loan routing.
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - compacted copy/audit, open/hide, guarantor approve/decline, disabled
+      bulk, revenue/finance, and route actions into SVG-led controls;
+    - moved visible action rows to fixed `52px` grid geometry;
+    - shortened route descriptions and replaced visible corrupted dash
+      fallbacks with ASCII `-`;
+    - did not change guarantor decision logic, repayment evidence, revenue
+      preview fetching, or backend contracts.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages the new Revenue Allocation, Admin Incomplete Loans, and Loan
+      Summary compact/no-wrap SVG-led button geometry.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:admin-ops-actions`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed ESLint for the touched page/audit files checked during the pass.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` hit the known Windows/esbuild `spawn EPERM`;
+    elevated `npm run build` passed.
+- Unabated truth:
+  - this remains local UI/button stability work only. It has not been pushed or
+    deployed, and it does not fix live backend identity evidence, bank-wallet
+    reflection, payment-account constraints, or Render pipeline-minute limits.
+- Next phone checks:
+  - `http://192.168.1.13:5173/app/revenue-allocation`
+  - `http://192.168.1.13:5173/app/admin/incomplete-loans`
+  - open a specific `/app/loan-summary/:loanId` route from the app once a loan
+    item is available.
+
+### Local Loan Workbench inner-button pass (2026-06-09)
+
+- Trigger:
+  - the product owner asked to keep tightening inner pages locally, starting
+    from Trust/Finance/Loans, while Render pipeline minutes are conserved.
+- Changed locally, not pushed:
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+    - replaced text-only `Refresh Workbench`, `Copy Loan ID`, `Collapse`, and
+      `Open Workbench` controls with compact SVG-led labels;
+    - moved top actions and loan-selection actions into fixed `52px` no-wrap
+      grid geometry;
+    - changed collapse controls to `Open` / `Hide` with app-native icons and
+      no transition;
+    - shortened next-route labels and descriptions so route tiles read cleanly
+      on phone;
+    - replaced visible Unicode dash/bullet separators with ASCII fallbacks;
+    - did not change loan fetching, selection logic, route targets, repayment
+      routing, or backend contracts.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages Loan Workbench compact SVG-led action, collapse, selection, and
+      route-tile geometry;
+    - rejects the old long labels and corrupted text artifacts.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed ESLint for `LoanWorkbenchPage.tsx` and
+    `tools/audit-button-stability.mjs`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:admin-ops-actions`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild
+    `spawn EPERM`; elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is still local UI/button stability work only. It has not been pushed
+    or deployed, and it does not fix live backend identity evidence, bank-wallet
+    reflection, payment-account constraints, or Render pipeline-minute limits.
+- Next phone check:
+  - open a specific `/app/loan-workbench/:loanId` or the app's workbench entry
+    route once a loan item is available locally.
+
+### Local Payment Instructions inner-button pass (2026-06-09)
+
+- Trigger:
+  - after Loan Workbench, the local inner-page tightening continued into the
+    Money In payment endpoint because it still had smaller `38px`/`42px`/`46px`
+    controls mixed into the task flow.
+- Changed locally, not pushed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - added a local `moneyInActionText` SVG-led label helper using
+      `TrustPaperIcon`;
+    - tightened overview, instruction, result, routes, reset, copy, confirm,
+      and next-route controls to `52px` stable heights;
+    - tightened the generate and refresh controls to `56px` stable heights;
+    - shortened visible labels such as `Generate`, `Copy ref`, `Copy text`,
+      `Declared`, `Rails`, `Payout`, `Market`, `Community`, and `Inbox`;
+    - replaced `Collapse` with `Open` / `Hide` icon-led controls;
+    - did not change pay-in route loading, instruction generation, copy text,
+      payment confirmation state, reconciliation state, currency submission, or
+      route targets.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages the compact SVG-led Money In controls and rejects the old long
+      labels/tiny controls.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed ESLint for `PaymentInstructionsPage.tsx` and
+    `tools/audit-button-stability.mjs`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:finance-money-movement-lanes`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild
+    `spawn EPERM`; elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is still local UI/button stability work only. It has not been pushed
+    or deployed, and it does not fix live backend identity evidence, bank-wallet
+    reflection, payment-account constraints, or Render pipeline-minute limits.
+- Next phone check:
+  - `http://192.168.1.13:5173/app/payment-instructions` or the Money In route
+    opened from Finance/Loans, with a real community selected.
+
+### Local Trust / Identity source-of-truth pass (2026-06-09)
+
+- Trigger:
+  - the product owner flagged Trust Passport / Identity Integrity as a trust
+    infrastructure risk, not cosmetic polish: recorded backend truth must
+    surface accurately, and identity evidence must not create false profile or
+    dashboard signals.
+- Changed locally, not pushed:
+  - `gmfn_backend/app/api/routes/entry_verification.py`
+    - changed signed-in identity-photo recording so a selfie evidence upload
+      still creates an `IdentityVerificationCheck` and
+      `identity.photo_evidence_recorded` TrustEvent, but no longer overwrites
+      `User.profile_image_url`;
+    - onboarding `/entry/identity-photo/record` behavior was not changed.
+  - `gmfn_backend/tests/test_focus_commitment_trust_events.py`
+    - updated the signed-in identity-photo test to protect the new rule:
+      evidence is recorded, but the profile image remains unchanged.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - removed dashboard-avatar localStorage fallback/write behavior from the
+      signed-in identity evidence flow;
+    - recording selfie/ID photo now marks evidence progress locally without
+      replacing the visible profile/dashboard picture;
+    - normalized `profile_image_url` into the local TrustSlip type only as a
+      display source, not as proof that photo evidence was recorded.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changed Trust Passport identity evidence progress so photo progress uses
+      explicit `photo_recorded` / `identity_context.photo_recorded` evidence
+      fields instead of treating any profile image as proof;
+    - made the Identity Overview evidence meter collapsed by default behind a
+      stable `Open` / `Hide` toggle, while keeping the recorded-vs-verified
+      language visible in the snapshot;
+    - kept Complete ID Checks and Open public community record actions in the
+      snapshot package.
+  - `frontend/src/components/TrustPaperMarks.tsx`
+    - added app-native SVG `chevronUp` / `chevronDown` pictograms for compact
+      open/hide controls.
+  - `frontend/src/lib/trustBandLanguage.ts`
+    - changed A-E trust labels toward evidence/reliance language such as
+      `Strong evidence`, `Limited evidence`, and `Insufficient evidence`,
+      avoiding moral labels like `Strongly trusted`.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+    - now rejects dashboard/profile-avatar mutation from signed-in photo
+      evidence.
+  - `frontend/tools/audit-trust-passport-front-package.mjs`
+    - now protects the collapsible Identity Overview evidence meter.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - accepted the new meter toggle as the 13th stable Trust Passport action
+      and protects the Open/Hide toggle.
+- Verification:
+  - Passed `python -m pytest -q
+    gmfn_backend\tests\test_focus_commitment_trust_events.py::test_signed_in_identity_completion_records_photo_and_id_image`.
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed `npm --prefix frontend run audit:trust-passport-lane-map`.
+  - Passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed ESLint for the touched Trust/Identity frontend files and audits.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild
+    `spawn EPERM`; elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this fixes one real backend/frontend source-of-truth bug locally, but it is
+    not live on Render until the batch is intentionally pushed and deployed;
+  - existing users whose signed-in selfie had already overwritten
+    `profile_image_url` may still need data cleanup or a profile-image reset
+    path after deployment;
+  - local-vs-Render differences in GSN ID, trust verdict, and evidence status
+    can still happen when the phone is pointed at different backend databases
+    or when Render is behind local code.
+- Next phone checks:
+  - `http://192.168.1.13:5173/app/trust-passport`
+    - Identity Overview should show the compact evidence summary by default,
+      with `Open` revealing the meter details.
+  - `http://192.168.1.13:5173/app/identity-integrity?task=photo&mode=complete`
+    - recording signed-in selfie evidence should not replace the dashboard or
+      profile picture.
+
+### Local Identity Integrity phone-button tightening (2026-06-09)
+
+- Trigger:
+  - after the Trust / Identity source-of-truth pass, the product owner reported
+    that the laptop-served phone surface was still too jumpy to test Bank /
+    Wallet and proof-task controls reliably.
+- Changed locally, not pushed:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - added `selectIdentityTask()` so switching between Phone, Community,
+      Bank / Wallet, Passport / ID, and Recovery clears transient photo/message
+      panels from unrelated tasks;
+    - raised the proof-task selector and active-task buttons to steadier phone
+      heights (`54px` selector rows and `52px` task/action controls);
+    - gave the active proof-task surface a fixed phone min-height and overflow
+      guard, without CSS `contain` because the mobile tap-stability audit
+      rejects layout containment as a hit-box drift risk;
+    - lifted phone, official-ID, selfie, ID-photo, record-photo, recovery, and
+      next-step controls to the same `52px` phone rhythm.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - raised the compact Identity Overview evidence-meter toggle from `34px`
+      to `44px` on phone so it is easier to hit.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now protects the Identity Integrity task selector reset behavior and
+      stronger phone geometry.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed ESLint for `IdentityIntegrityPage.tsx`, `TrustScorePage.tsx`, and
+    `tools/audit-button-stability.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild
+    `spawn EPERM`; elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this tightens the local phone geometry and removes a likely task-switch
+    jump source, but the product owner should still phone-test Bank / Wallet
+    entry on `http://192.168.1.13:5173/` before we treat this as fully calm.
+
+### Inner Trust / Confirmation button tightening (2026-06-09)
+
+- Trigger:
+  - the product owner asked to continue from the inner pages and treat button
+    jumpiness, broken action shells, weak wording, and mass-testing readiness
+    before returning to larger marketplace logic.
+- Changed locally, not pushed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - raised compact TrustSlip proof, verify, copy, refresh, merchant verify,
+      support-link, and disclosure controls to the stronger phone rhythm;
+    - replaced implementation-facing readiness wording such as "verify route
+      is not ready yet" with user-facing guidance to refresh the TrustSlip and
+      try again;
+    - changed disclosure labels from `Close` / `Collapse` to `Hide`.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - raised signed-in copy/print/trust-route actions from `44px` to `52px`
+      on compact screens and made them full-width on phone.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - raised remaining compact Identity Overview / Trust Passport evidence,
+      review-care, and export controls so the identity surface no longer keeps
+      36-40px phone actions.
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - raised the Identity, Trust Passport, and copy-snapshot actions from
+      `44px` to `52px` on compact screens.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - raised section toggles on compact screens and changed toggle wording to
+      `Hide`.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - raised policy, timing, responder-pool, and contact controls on compact
+      screens while preserving the same backend actions.
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - raised inbox refresh/copy, review-case scan/filter/page/action,
+      evidence-load, relay settings, TrustSlip open, and response buttons on
+      compact screens.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated/added guards for the TrustSlip, TrustSlip Verify, and CCI phone
+      geometry and TrustSlip readiness wording.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated the TrustSlip community-record readiness guard to match the new
+      user-facing message.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed ESLint for the touched TrustSlip, TrustSlip Verify, Community
+    Confirmation, CCI, Trust Command, Trust Passport pages, and related audits.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit the known Windows/esbuild
+    `spawn EPERM`; elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is a frontend phone-geometry and wording stabilization pass; it does
+    not solve the live backend identity-evidence route lag on Render;
+  - a broad repo scan still shows smaller utility controls in other routes
+    such as marketplace, shop, guarantor, admin graph/events, and entry, so the
+    inner-page cleanup is improved but not globally finished;
+  - phone testing should continue locally before any Render deploy, because
+    auto-deploy is intentionally off to conserve pipeline minutes.
+
+### System-wide inner action floor tightening (2026-06-09)
+
+- Trigger:
+  - the product owner asked to finish the current stabilization pass before
+    deeper marketplace / identity corrections, with special focus on inner
+    pages whose buttons were still jumpy, too small, visually weak, or hard to
+    test on the phone-served local build.
+- Changed locally, not pushed:
+  - completed the remaining shared action-height sweep across
+    `frontend/src/pages` and `frontend/src/components`;
+  - raised remaining sub-48px stable actions to the project phone floor of
+    `52px`, including Marketplace spotlight controls, Public Shop shortcuts,
+    guarantor pages, finance / money movement pages, entry guide controls,
+    install prompts, owner-surface nav links, and the non-Market-Wisdom
+    Dashboard Spotlight WhatsApp pill;
+  - removed the remaining phone emoji prefix from `GsnInstallPrompt` so that
+    the install prompt uses plain institutional text instead of a broken /
+    decorative glyph;
+  - updated the related audits so protected routes, Trust Passport, Payout
+    Details, Shop Gallery, Notifications, and global button stability now
+    guard the stronger phone geometry.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed `npm --prefix frontend run audit:payout-details-protocol`.
+  - Passed repo scan: no `stableHeight` below `48px` remains in
+    `frontend/src/pages` or `frontend/src/components`.
+  - Passed `npm exec -- eslint src tools` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `git diff --check`; Windows LF-to-CRLF warnings remain noise only.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild
+    `spawn EPERM`; elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - the phone tap floor is now system-wide in the scanned frontend pages and
+    components, but this was a broad mechanical pass; it should be phone-tested
+    for visual crowding before any Render deploy;
+  - this pass does not solve live backend identity-evidence lag on Render,
+    payment/billing access, or historical user data cleanup;
+  - Render auto-deploy remains intentionally off to protect pipeline minutes,
+    so these local fixes are not live until the product owner chooses the exact
+    deployment batch.

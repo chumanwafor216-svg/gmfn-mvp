@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import {
@@ -256,6 +257,49 @@ function guarantorEarningsCollapseStyle(): React.CSSProperties {
     fontWeight: 800,
     boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
+}
+
+function guarantorEarningsActionText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 22
+) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={size} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function guarantorEarningsRouteHeading(
+  name: GsnIconName,
+  label: React.ReactNode
+) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={24} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
 }
 
 function sectionLabel(): React.CSSProperties {
@@ -878,7 +922,7 @@ export default function GuarantorEarningsPage() {
                 debugId="guarantor-earnings.copy-summary"
                 style={guarantorEarningsButtonStyle(false)}
               >
-                Copy Earnings Summary
+                {guarantorEarningsActionText("copy", "Copy summary")}
               </SecondaryButton>
             </div>
           </div>
@@ -967,11 +1011,15 @@ export default function GuarantorEarningsPage() {
               <SubtleButton
                 onClick={() => toggleSection("overview")}
                 minWidth={116}
-                stableHeight={44}
+                stableHeight={52}
                 debugId="guarantor-earnings.toggle-overview"
                 style={guarantorEarningsCollapseStyle()}
               >
-                {collapsed.overview ? "Open" : "Collapse"}
+                {guarantorEarningsActionText(
+                  collapsed.overview ? "chevronDown" : "chevronUp",
+                  collapsed.overview ? "Open" : "Hide",
+                  20
+                )}
               </SubtleButton>
             </div>
 
@@ -1072,11 +1120,15 @@ export default function GuarantorEarningsPage() {
               <SubtleButton
                 onClick={() => toggleSection("meaning")}
                 minWidth={116}
-                stableHeight={44}
+                stableHeight={52}
                 debugId="guarantor-earnings.toggle-meaning"
                 style={guarantorEarningsCollapseStyle()}
               >
-                {collapsed.meaning ? "Open" : "Collapse"}
+                {guarantorEarningsActionText(
+                  collapsed.meaning ? "chevronDown" : "chevronUp",
+                  collapsed.meaning ? "Open" : "Hide",
+                  20
+                )}
               </SubtleButton>
             </div>
 
@@ -1167,11 +1219,15 @@ export default function GuarantorEarningsPage() {
                 <SubtleButton
                   onClick={() => toggleSection("recent")}
                   minWidth={116}
-                  stableHeight={44}
+                  stableHeight={52}
                   debugId="guarantor-earnings.toggle-recent"
                   style={guarantorEarningsCollapseStyle()}
                 >
-                  {collapsed.recent ? "Open" : "Collapse"}
+                  {guarantorEarningsActionText(
+                    collapsed.recent ? "chevronDown" : "chevronUp",
+                    collapsed.recent ? "Open" : "Hide",
+                    20
+                  )}
                 </SubtleButton>
               </div>
             </div>
@@ -1318,11 +1374,15 @@ export default function GuarantorEarningsPage() {
               <SubtleButton
                 onClick={() => toggleSection("routes")}
                 minWidth={116}
-                stableHeight={44}
+                stableHeight={52}
                 debugId="guarantor-earnings.toggle-routes"
                 style={guarantorEarningsCollapseStyle()}
               >
-                {collapsed.routes ? "Open" : "Collapse"}
+                {guarantorEarningsActionText(
+                  collapsed.routes ? "chevronDown" : "chevronUp",
+                  collapsed.routes ? "Open" : "Hide",
+                  20
+                )}
               </SubtleButton>
             </div>
 
@@ -1348,9 +1408,9 @@ export default function GuarantorEarningsPage() {
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
-                    }}
-                  >
-                    {nextStep.ctaLabel}
+                  }}
+                >
+                    {guarantorEarningsRouteHeading("navigation", nextStep.ctaLabel)}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     {nextStep.detail}
@@ -1370,9 +1430,9 @@ export default function GuarantorEarningsPage() {
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
-                    }}
-                  >
-                    Loan Workbench
+                  }}
+                >
+                    {guarantorEarningsRouteHeading("briefcase", "Loan Workbench")}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when you need the deeper support work item behind the earnings result.
@@ -1392,9 +1452,9 @@ export default function GuarantorEarningsPage() {
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
-                    }}
-                  >
-                    Loan Suggestions
+                  }}
+                >
+                    {guarantorEarningsRouteHeading("search", "Loan Suggestions")}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when the next question is candidate fit rather than earnings history.
@@ -1414,9 +1474,9 @@ export default function GuarantorEarningsPage() {
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
-                    }}
-                  >
-                    Community Home
+                  }}
+                >
+                    {guarantorEarningsRouteHeading("community", "Community Home")}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Return to the wider community page.
@@ -1436,9 +1496,9 @@ export default function GuarantorEarningsPage() {
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
-                    }}
-                  >
-                    Marketplace
+                  }}
+                >
+                    {guarantorEarningsRouteHeading("shop", "Marketplace")}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Return to Marketplace only after this earnings reading is complete.
@@ -1458,9 +1518,9 @@ export default function GuarantorEarningsPage() {
                       fontWeight: 900,
                       fontSize: 17,
                       lineHeight: 1.3,
-                    }}
-                  >
-                    Money Out
+                  }}
+                >
+                    {guarantorEarningsRouteHeading("wallet", "Money Out")}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when the money question becomes a guided withdrawal question again.

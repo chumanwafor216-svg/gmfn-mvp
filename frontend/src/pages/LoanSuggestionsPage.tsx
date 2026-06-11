@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   SecondaryButton,
   StableCtaLink,
@@ -448,6 +449,66 @@ function routeTileDetailStyle(): React.CSSProperties {
     fontSize: 13,
     lineHeight: 1.35,
   };
+}
+
+function loanSuggestionsActionText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 22
+) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={size} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function loanSuggestionsRouteHeading(name: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={24} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function loanSuggestionsIconTile(name: GsnIconName, size = 64) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 18,
+        display: "grid",
+        placeItems: "center",
+        background: "rgba(255,255,255,0.10)",
+        border: "1px solid rgba(212,175,55,0.18)",
+        overflow: "hidden",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(30, Math.round(size * 0.78))} />
+    </span>
+  );
 }
 
 function sectionLabel(): React.CSSProperties {
@@ -1117,6 +1178,9 @@ export default function LoanSuggestionsPage() {
                     lineHeight: 1.3,
                   }}
                 >
+                  <div style={{ marginBottom: 8 }}>
+                    {loanSuggestionsIconTile("community", 58)}
+                  </div>
                   {communityLabel}
                 </div>
               )}
@@ -1204,7 +1268,11 @@ export default function LoanSuggestionsPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Refresh Fit Check
+                  {loanSuggestionsActionText(
+                    "refresh",
+                    refreshing ? "Refreshing" : "Refresh fit",
+                    20
+                  )}
                 </SecondaryButton>
               </div>
             ) : null}
@@ -1245,7 +1313,11 @@ export default function LoanSuggestionsPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {loanSuggestionsActionText(
+              collapsed.overview ? "chevronDown" : "chevronUp",
+              collapsed.overview ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1448,7 +1520,11 @@ export default function LoanSuggestionsPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.reading ? "Open" : "Collapse"}
+            {loanSuggestionsActionText(
+              collapsed.reading ? "chevronDown" : "chevronUp",
+              collapsed.reading ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1572,7 +1648,11 @@ export default function LoanSuggestionsPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.supporters ? "Open" : "Collapse"}
+            {loanSuggestionsActionText(
+              collapsed.supporters ? "chevronDown" : "chevronUp",
+              collapsed.supporters ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1607,12 +1687,16 @@ export default function LoanSuggestionsPage() {
                     <div>
                       <div
                         style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
                           color: "#F8FBFF",
                           fontWeight: 900,
                           fontSize: 16,
                           lineHeight: 1.35,
                         }}
                       >
+                        <GsnLegacyIcon name="user" size={24} />
                         {item.name}
                       </div>
 
@@ -1703,7 +1787,11 @@ export default function LoanSuggestionsPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {loanSuggestionsActionText(
+              collapsed.routes ? "chevronDown" : "chevronUp",
+              collapsed.routes ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1726,7 +1814,7 @@ export default function LoanSuggestionsPage() {
               style={routeTileStyle(true)}
             >
               <div style={routeTileTitleStyle()}>
-                {nextRoute.ctaLabel}
+                {loanSuggestionsRouteHeading("navigation", nextRoute.ctaLabel)}
               </div>
               <div style={routeTileDetailStyle()}>
                 {nextRoute.title}
@@ -1744,7 +1832,7 @@ export default function LoanSuggestionsPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                Loan Readiness
+                {loanSuggestionsRouteHeading("check", "Loan Readiness")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open this when the question is whether the next support move is clean enough to continue.
@@ -1759,7 +1847,7 @@ export default function LoanSuggestionsPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                Loan Workbench
+                {loanSuggestionsRouteHeading("briefcase", "Loan Workbench")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open this for deeper support handling after the fit picture is clear enough.
@@ -1775,7 +1863,7 @@ export default function LoanSuggestionsPage() {
                 style={routeTileStyle(false)}
               >
                 <div style={routeTileTitleStyle()}>
-                  Loans & Support
+                  {loanSuggestionsRouteHeading("community", "Loans & Support")}
                 </div>
                 <div style={routeTileDetailStyle()}>
                   Return to the broader support overview only after the current fit-reading stage is complete.
@@ -1791,7 +1879,7 @@ export default function LoanSuggestionsPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                Incoming Guarantor Requests
+                {loanSuggestionsRouteHeading("alert", "Incoming Guarantor Requests")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open the dedicated guarantor decision queue when responses are waiting on you.
@@ -1808,7 +1896,7 @@ export default function LoanSuggestionsPage() {
                   style={routeTileStyle(false)}
                 >
                   <div style={routeTileTitleStyle()}>
-                    Money Out
+                    {loanSuggestionsRouteHeading("wallet", "Money Out")}
                   </div>
                   <div style={routeTileDetailStyle()}>
                     Return to the originating withdrawal path only when you need to verify the handoff source.
@@ -1823,7 +1911,7 @@ export default function LoanSuggestionsPage() {
                   style={routeTileStyle(false)}
                 >
                   <div style={routeTileTitleStyle()}>
-                    Action Inbox
+                    {loanSuggestionsRouteHeading("alert", "Action Inbox")}
                   </div>
                   <div style={routeTileDetailStyle()}>
                     Open this when the broader waiting picture matters around support response.

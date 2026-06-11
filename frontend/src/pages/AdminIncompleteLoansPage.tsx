@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   getAdminIncompleteLoans,
   getCurrentClan,
@@ -103,6 +104,9 @@ function adminIncompleteLoanActionStyle(kind: "primary" | "secondary" | "soft" =
     borderRadius: 14,
     fontWeight: 900,
     fontSize: 14,
+    minWidth: 142,
+    whiteSpace: "nowrap",
+    transition: "none",
   };
 
   if (kind === "primary") {
@@ -134,6 +138,42 @@ function adminIncompleteLoanActionStyle(kind: "primary" | "secondary" | "soft" =
   };
 }
 
+function actionText(name: GsnIconName, label: string) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 11,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#EAF3FF",
+          background:
+            "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+          border: "1px solid rgba(196,216,238,0.22)",
+          boxShadow:
+            "0 9px 18px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={26} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
 function formatRemaining(seconds: any): string {
   const total = toNum(seconds);
   if (!total) return "No live countdown";
@@ -152,7 +192,7 @@ function buildLoanSnapshot(loan: any): string {
     `Pending guarantors: ${toNum(loan?.pending_guarantors)}`,
     `Locked coverage: ${fmtMoney(loan?.locked_coverage ?? 0)}`,
     `Coverage gap: ${fmtMoney(loan?.required_gap ?? 0)}`,
-    `Auto-cancel: ${formatRemaining(loan?.auto_cancel_remaining_seconds)}`,
+    `Time remaining: ${formatRemaining(loan?.auto_cancel_remaining_seconds)}`,
     `Status: ${safeStr(loan?.status || "incomplete")}`,
   ].join("`n");
 }
@@ -272,13 +312,13 @@ export default function AdminIncompleteLoansPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav sectionLabel="Incomplete Loans" title="Incomplete Loans" subtitle="Review unresolved loans in the current community before they auto-cancel, stall, or stay under-covered." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
+      <PageTopNav sectionLabel="Incomplete Loans" title="Incomplete Loans" subtitle="Find the support items that need action now." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen shows the real admin queue of incomplete loans for the current community, including approval progress, locked coverage, and any live auto-cancel countdown."
-        why="It helps you see which support items are still unresolved and whether they are missing approvals, missing coverage, or simply running out of time."
-        next="Read the queue overview first, then open the specific loan summary for the item that needs follow-up now."
+        what="See unresolved support items for this community."
+        why="You can spot missing approval, missing coverage, or time pressure before the request fails."
+        next="Open the loan that needs follow-up now."
         tone="light"
         style={{ marginTop: 18 }}
       />
@@ -286,8 +326,8 @@ export default function AdminIncompleteLoansPage() {
       <div style={{ backgroundImage: `url("${pattern}")`, backgroundRepeat: "no-repeat", backgroundSize: "cover", backgroundPosition: "center top", borderRadius: 28, border: "1px solid rgba(11,31,51,0.06)", overflow: "hidden", backgroundColor: "#F8FBFE" }}>
         <div style={{ padding: 24 }}>
           <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Incomplete Loans Queue</div>
-          <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-            Review unresolved support items in {communityLabel} and see which ones are close to auto-cancel, still short on approvals, or still missing coverage.
+          <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.45 }}>
+            Check {communityLabel} for items short on approval, coverage, or time.
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -304,58 +344,69 @@ export default function AdminIncompleteLoansPage() {
             <div style={statTile()}>
               <div style={sectionLabel()}>Coverage gap</div>
               <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>{fmtMoney(queueSummary.totalGap)}</div>
-              <div style={{ marginTop: 6, ...helperText() }}>This is the total remaining support gap still visible in the current queue.</div>
+              <div style={{ marginTop: 6, ...helperText() }}>Remaining support gap.</div>
             </div>
             <div style={statTile()}>
               <div style={sectionLabel()}>Locked coverage</div>
               <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>{fmtMoney(queueSummary.lockedCoverage)}</div>
-              <div style={{ marginTop: 6, ...helperText() }}>Use this with the gap reading to see whether the queue is missing money, approvals, or both.</div>
+              <div style={{ marginTop: 6, ...helperText() }}>Coverage already held.</div>
             </div>
             <div style={statTile()}>
               <div style={sectionLabel()}>What to do next</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Open the loan summary when one item needs evidence, go to System Operations when the queue pattern itself looks operational, and go to Bank Console when the issue looks like money movement or settlement timing.
+                Open the loan first. Use Bank Console only when money movement looks wrong.
               </div>
             </div>
           </div>
 
-          <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
+              gap: 10,
+            }}
+          >
             <SecondaryButton
               onClick={copyQueueSnapshot}
-              stableHeight={42}
+              fullWidth
+              stableHeight={52}
               debugId="admin-incomplete-loans.copy-queue"
               style={adminIncompleteLoanActionStyle("secondary")}
             >
-              Copy queue snapshot
+              {actionText("copy", "Copy queue")}
             </SecondaryButton>
             <StableCtaLink
               to={routes.systemOperations}
               debugId="admin-incomplete-loans.route.system-operations"
-              stableHeight={42}
+              fullWidth
+              stableHeight={52}
               style={adminIncompleteLoanActionStyle("primary")}
             >
-              Open System Operations
+              {actionText("briefcase", "Operations")}
             </StableCtaLink>
             <StableCtaLink
               to={routes.bankConsole}
               debugId="admin-incomplete-loans.route.bank-console"
-              stableHeight={42}
+              fullWidth
+              stableHeight={52}
               style={adminIncompleteLoanActionStyle("secondary")}
             >
-              Open Bank Console
+              {actionText("bank", "Bank Console")}
             </StableCtaLink>
             <StableCtaLink
               to={routes.commandCenter}
               debugId="admin-incomplete-loans.route.command-center"
-              stableHeight={42}
+              fullWidth
+              stableHeight={52}
               style={adminIncompleteLoanActionStyle("soft")}
             >
-              Back to Command Center
+              {actionText("home", "Command Center")}
             </StableCtaLink>
           </div>
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-            {!selectedClanId ? <div style={{ ...card(), color: "#7A8D9F" }}>Choose the community first. This admin queue is clan-specific and becomes useful only once the active community is clear.</div> : null}
+            {!selectedClanId ? <div style={{ ...card(), color: "#7A8D9F" }}>Choose the community first. This review queue belongs to one active community at a time.</div> : null}
             {selectedClanId && rows.length === 0 && !err ? <div style={{ ...card(), color: "#7A8D9F" }}>No incomplete loans are currently shown.</div> : null}
             {rows.map((loan, i) => {
               const loanId = safeStr(loan?.loan_id || loan?.id || i);
@@ -382,24 +433,32 @@ export default function AdminIncompleteLoansPage() {
                       <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Gap: {fmtMoney(loan?.required_gap ?? 0)}</div>
                     </div>
                     <div>
-                      <div style={sectionLabel()}>Auto-cancel</div>
+                      <div style={sectionLabel()}>Time remaining</div>
                       <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>{formatRemaining(loan?.auto_cancel_remaining_seconds)}</div>
-                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Decision marker: {safeStr(loan?.decision_at || "Not started")}</div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Decision started: {safeStr(loan?.decision_at || "Not started")}</div>
                     </div>
                   </div>
 
                   <div style={{ marginTop: 14, color: "#6B7A88", lineHeight: 1.8 }}>Status: {safeStr(loan?.status || "incomplete")}</div>
 
-                  <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      marginTop: 14,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))",
+                      gap: 10,
+                    }}
+                  >
                     <SecondaryButton
                       onClick={() => {
                         void copyText(buildLoanSnapshot(loan), `Loan #${loanId} snapshot copied.`, "Clipboard is not available here.");
                       }}
-                      stableHeight={42}
+                      fullWidth
+                      stableHeight={52}
                       debugId={`admin-incomplete-loans.loan.${loanId}.copy`}
                       style={adminIncompleteLoanActionStyle("secondary")}
                     >
-                      Copy loan snapshot
+                      {actionText("copy", "Copy loan")}
                     </SecondaryButton>
                     <StableCtaLink
                       to={routeTarget(
@@ -409,10 +468,11 @@ export default function AdminIncompleteLoansPage() {
                         { loanId }
                       )}
                       debugId={`admin-incomplete-loans.loan.${loanId}.summary`}
-                      stableHeight={42}
+                      fullWidth
+                      stableHeight={52}
                       style={adminIncompleteLoanActionStyle("primary")}
                     >
-                      Open Loan Summary
+                      {actionText("document", "Loan Summary")}
                     </StableCtaLink>
                   </div>
                 </div>

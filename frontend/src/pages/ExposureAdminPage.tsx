@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
@@ -230,7 +231,7 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
+    minHeight: 52,
     padding: "8px 12px",
     borderRadius: 12,
     border: "1px solid rgba(122,152,195,0.20)",
@@ -242,6 +243,89 @@ function collapseToggle(): React.CSSProperties {
     whiteSpace: "normal",
     textAlign: "center",
   };
+}
+
+function iconBadge(tone: "navy" | "blue" | "gold" | "green" | "red" = "navy"): React.CSSProperties {
+  const palette = {
+    navy: {
+      color: "#EAF3FF",
+      bg: "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+      border: "1px solid rgba(196,216,238,0.22)",
+      shadow: "0 9px 18px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
+    },
+    blue: {
+      color: "#0B63D1",
+      bg: "linear-gradient(180deg, #F8FCFF 0%, #E4F0FF 100%)",
+      border: "1px solid rgba(29,95,212,0.18)",
+      shadow: "0 9px 18px rgba(29,95,212,0.10)",
+    },
+    gold: {
+      color: "#7A4A00",
+      bg: "linear-gradient(180deg, #FFF8D9 0%, #F5D88A 100%)",
+      border: "1px solid rgba(214,170,69,0.32)",
+      shadow: "0 9px 18px rgba(146,96,12,0.12)",
+    },
+    green: {
+      color: "#065F46",
+      bg: "linear-gradient(180deg, #ECFDF5 0%, #D6F4E4 100%)",
+      border: "1px solid rgba(34,197,94,0.18)",
+      shadow: "0 9px 18px rgba(34,197,94,0.10)",
+    },
+    red: {
+      color: "#991B1B",
+      bg: "linear-gradient(180deg, #FFF5F5 0%, #FEE2E2 100%)",
+      border: "1px solid rgba(239,68,68,0.18)",
+      shadow: "0 9px 18px rgba(239,68,68,0.10)",
+    },
+  }[tone];
+
+  return {
+    width: 30,
+    height: 30,
+    borderRadius: 12,
+    display: "inline-grid",
+    placeItems: "center",
+    flex: "0 0 auto",
+    color: palette.color,
+    background: palette.bg,
+    border: palette.border,
+    boxShadow: palette.shadow,
+  };
+}
+
+function iconNode(name: GsnIconName, tone: "navy" | "blue" | "gold" | "green" | "red" = "navy", size = 17) {
+  return (
+    <span aria-hidden="true" style={iconBadge(tone)}>
+      <GsnLegacyIcon name={name} size={Math.max(24, Math.round(size * 1.55))} />
+    </span>
+  );
+}
+
+function sectionLabelWithIcon(name: GsnIconName, label: string, tone: "navy" | "blue" | "gold" | "green" | "red" = "blue") {
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      {iconNode(name, tone, 16)}
+      <span style={sectionLabel()}>{label}</span>
+    </div>
+  );
+}
+
+function badgeWithIcon(name: GsnIconName, label: React.ReactNode, primary = false, tone: "navy" | "blue" | "gold" | "green" | "red" = primary ? "blue" : "navy") {
+  return (
+    <span style={{ ...badge(primary), minHeight: 36, gap: 8 }}>
+      {iconNode(name, tone, 15)}
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function actionLabel(name: GsnIconName, label: string, tone: "navy" | "blue" | "gold" | "green" | "red" = "navy") {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, minWidth: 0 }}>
+      {iconNode(name, tone, 16)}
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function helperText(): React.CSSProperties {
@@ -700,7 +784,7 @@ export default function ExposureAdminPage() {
       <PageTopNav
         sectionLabel="Exposure"
         title="Exposure"
-        subtitle="Read concentration, queue pressure, and visible operational load before choosing a deeper intervention path."
+        subtitle="See concentration and queue pressure before choosing the next intervention."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
@@ -708,10 +792,10 @@ export default function ExposureAdminPage() {
       />
 
       <ExplainToggle
-        label="What this screen does"
-        what="This screen reads concentration, queue pressure, stale demand, and urgent operational signals together."
-        why="It helps you understand exposure as a wider operational pressure picture, not only a money concentration number."
-        next="Start with the current pressure reading, then move through the exposure summary and visible queues to see where the pressure is coming from."
+        label="How to use this"
+        what="This page reads exposure, stale demand, bank pressure, and admin queues together."
+        why="Exposure is a practical risk picture, not only a money number."
+        next="Start with current pressure, then open the route that matches the cause."
         tone="light"
       />
 
@@ -727,7 +811,7 @@ export default function ExposureAdminPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Exposure overview</div>
+            {sectionLabelWithIcon("chart", "Exposure overview", "gold")}
 
             <div
               style={{
@@ -742,7 +826,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Exposure is not only about locked money concentration. It also includes stale demand, incomplete admin queues, pending pool work, and unmatched bank pressure.
+              Read locked money, stale demand, pending pool, and bank pressure in one place.
             </div>
 
             <div
@@ -753,9 +837,9 @@ export default function ExposureAdminPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Role: {roleLabel}</span>
-              <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>Exposure page</span>
+              {badgeWithIcon("user", <>Role: {roleLabel}</>, true, "blue")}
+              {badgeWithIcon("community", <>Community: {communityLabel}</>)}
+              {badgeWithIcon("chart", "Exposure")}
             </div>
           </div>
 
@@ -765,7 +849,11 @@ export default function ExposureAdminPage() {
               border: pressureStyle.border,
             }}
           >
-            <div style={sectionLabel()}>Current pressure</div>
+            {sectionLabelWithIcon(
+              pressureReading.level === "high" ? "alert" : "chart",
+              "Current pressure",
+              pressureReading.level === "high" ? "red" : pressureReading.level === "medium" ? "gold" : "green"
+            )}
 
             <div
               style={{
@@ -786,10 +874,10 @@ export default function ExposureAdminPage() {
         </div>
 
         <ExplainToggle
-          label="What this does"
-          what="This current pressure block turns the exposure signals into one practical reading so you can see whether the system looks calm, stretched, or at risk."
-          why="It gives you a clearer priority signal before you dig into summaries, queues, or intervention routes."
-          next="Read this first, then use the sections below to confirm which queues or loads are creating the pressure."
+          label="Pressure"
+          what="The pressure block turns many signals into one practical reading."
+          why="It shows whether the community is calm, stretched, or at risk."
+          next="Use the sections below to find the cause."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -806,19 +894,19 @@ export default function ExposureAdminPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Exposure summary</div>
+            {sectionLabelWithIcon("chart", "Exposure summary", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              A quick reading of visible concentration and pressure points.
+              Six short facts for the current community.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("overview")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="exposure-admin.toggle.overview"
             style={collapseToggle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {collapsed.overview ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
@@ -834,7 +922,7 @@ export default function ExposureAdminPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Exposed members</div>
+              {sectionLabelWithIcon("user", "Exposed members", "blue")}
               <div
                 style={{
                   marginTop: 8,
@@ -848,7 +936,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>At-risk members</div>
+              {sectionLabelWithIcon("alert", "At-risk members", "gold")}
               <div
                 style={{
                   marginTop: 8,
@@ -862,7 +950,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Total exposure</div>
+              {sectionLabelWithIcon("wallet", "Total exposure", "blue")}
               <div
                 style={{
                   marginTop: 8,
@@ -876,7 +964,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Incomplete loans</div>
+              {sectionLabelWithIcon("document", "Incomplete loans", "red")}
               <div
                 style={{
                   marginTop: 8,
@@ -890,7 +978,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Unmatched bank</div>
+              {sectionLabelWithIcon("bank", "Unmatched bank", "red")}
               <div
                 style={{
                   marginTop: 8,
@@ -904,7 +992,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Pending pool</div>
+              {sectionLabelWithIcon("wallet", "Pending pool", "gold")}
               <div
                 style={{
                   marginTop: 8,
@@ -931,19 +1019,19 @@ export default function ExposureAdminPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Pressure reading</div>
+            {sectionLabelWithIcon("alert", "Pressure reading", "gold")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Read the different pressure layers separately.
+              Separate money concentration from queue pressure.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("pressure")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="exposure-admin.toggle.pressure"
             style={collapseToggle()}
           >
-            {collapsed.pressure ? "Open" : "Collapse"}
+            {collapsed.pressure ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
@@ -967,7 +1055,7 @@ export default function ExposureAdminPage() {
                 Concentration pressure
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This reading shows how much of the current community pool is already locked into exposure and how many members are close to the edge.
+                Shows how much community value is locked and who is close to the edge.
               </div>
 
               <div
@@ -978,15 +1066,9 @@ export default function ExposureAdminPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <span style={badge(true)}>
-                  Exposed members: {exposedMembers.length}
-                </span>
-                <span style={badge(false)}>
-                  At-risk members: {exposedMembersAtRisk.length}
-                </span>
-                <span style={badge(false)}>
-                  Available buffer: {toNum(exposureTotals?.available)}
-                </span>
+                {badgeWithIcon("user", <>Exposed members: {exposedMembers.length}</>, true)}
+                {badgeWithIcon("alert", <>At-risk members: {exposedMembersAtRisk.length}</>, false, "gold")}
+                {badgeWithIcon("wallet", <>Available buffer: {toNum(exposureTotals?.available)}</>)}
               </div>
             </div>
 
@@ -1001,7 +1083,7 @@ export default function ExposureAdminPage() {
                 Queue pressure
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Exposure pressure also rises when stale demand, unmatched bank events, pending pool items, or incomplete loans begin stacking together.
+                Pressure also rises when demand, bank, pool, or loan queues stack up.
               </div>
 
               <div
@@ -1012,16 +1094,10 @@ export default function ExposureAdminPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <span style={badge(true)}>Open demand: {demands.length}</span>
-                <span style={badge(false)}>
-                  Stale demand: {staleDemands.length}
-                </span>
-                <span style={badge(false)}>
-                  Unmatched bank: {bankUnmatched.length}
-                </span>
-                <span style={badge(false)}>
-                  Pending pool: {pendingPool.length}
-                </span>
+                {badgeWithIcon("shop", <>Open demand: {demands.length}</>, true)}
+                {badgeWithIcon("calendar", <>Stale demand: {staleDemands.length}</>, false, "gold")}
+                {badgeWithIcon("bank", <>Unmatched bank: {bankUnmatched.length}</>)}
+                {badgeWithIcon("wallet", <>Pending pool: {pendingPool.length}</>)}
               </div>
             </div>
           </div>
@@ -1039,19 +1115,19 @@ export default function ExposureAdminPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Visible queues</div>
+            {sectionLabelWithIcon("briefcase", "Visible queues", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              The queues most likely to need attention next.
+              The rows most likely to need action next.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("queues")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="exposure-admin.toggle.queues"
             style={collapseToggle()}
           >
-            {collapsed.queues ? "Open" : "Collapse"}
+            {collapsed.queues ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
@@ -1088,7 +1164,7 @@ export default function ExposureAdminPage() {
                       kind="secondary"
                       debugId={`exposure-admin.queue.${row.key}.route`}
                     >
-                      {row.routeLabel}
+                      {actionLabel("navigation", row.routeLabel, "blue")}
                     </StableCtaLink>
                   </div>
 
@@ -1111,19 +1187,19 @@ export default function ExposureAdminPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Next routes</div>
+            {sectionLabelWithIcon("navigation", "Next routes", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from exposure reading into the next page you need.
+              Open the page that matches the pressure source.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("routes")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="exposure-admin.toggle.routes"
             style={collapseToggle()}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {collapsed.routes ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
@@ -1152,10 +1228,10 @@ export default function ExposureAdminPage() {
                   lineHeight: 1.3,
                 }}
               >
-                System Operations
+                {actionLabel("navigation", "System Operations", "blue")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work needs live handling and immediate intervention.
+                Handle live pressure and immediate intervention.
               </div>
             </StableCtaLink>
 
@@ -1172,10 +1248,10 @@ export default function ExposureAdminPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Trust Analytics
+                {actionLabel("chart", "Trust Analytics", "blue")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is pattern reading rather than exposure-heavy handling.
+                Read patterns when urgent pressure is already under control.
               </div>
             </StableCtaLink>
 
@@ -1192,10 +1268,10 @@ export default function ExposureAdminPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Trust Graph
+                {actionLabel("community", "Trust Graph", "gold")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is structural relationship analysis behind concentration or pressure.
+                Check relationships behind concentration or pressure.
               </div>
             </StableCtaLink>
 
@@ -1212,10 +1288,10 @@ export default function ExposureAdminPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Bank Console
+                {actionLabel("bank", "Bank Console", "blue")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is about unmatched bank events, pending pool confirmation, or expected money-path cleanup.
+                Clean bank events, pool confirmation, and money-path records.
               </div>
             </StableCtaLink>
           </div>

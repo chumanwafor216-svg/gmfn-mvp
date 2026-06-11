@@ -393,8 +393,8 @@ assertStableButtonContains(
 );
 
 assertMediaFrameContains(
-  /<SecondaryButton[\s\S]*?data-media-control="true"[\s\S]*?onClick=\{toggleAudio\}[\s\S]*?stableHeight=\{42\}[\s\S]*?debugId="spotlight-media-frame\.toggle-audio"/,
-  "Vault Control media frames rely on the shared fixed-height audio unlock button."
+  /<SecondaryButton[\s\S]*?data-media-control="true"[\s\S]*?onClick=\{toggleAudio\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="spotlight-media-frame\.toggle-audio"/,
+  "Vault Control media frames rely on the shared fixed-height 52px audio unlock button."
 );
 
 if (findings.length > 0) {

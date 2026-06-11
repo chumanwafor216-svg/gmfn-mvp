@@ -73,8 +73,8 @@ assertContains(
 );
 
 assertContains(
-  /function communityActionIcon\(primary = false\): React\.CSSProperties \{[\s\S]*?width: 40,[\s\S]*?height: 40,[\s\S]*?overflow: "hidden"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"/,
-  "Community Home compact row icon slots must clip centered text so labels like ROSCA cannot bleed outside the button."
+  /function communityActionIcon\(primary = false\): React\.CSSProperties \{[\s\S]*?width: 46,[\s\S]*?height: 46,[\s\S]*?background: "rgba\(255,255,255,0\.94\)"[\s\S]*?overflow: "hidden"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"/,
+  "Community Home compact row icon slots must keep stable, light, larger 3D icon geometry."
 );
 
 assertContains(
@@ -93,8 +93,8 @@ assertContains(
 );
 
 assertContains(
-  /item\.id === "vault-control"[\s\S]*?\? 9[\s\S]*?: item\.id === "rosca"[\s\S]*?\? 8\.5[\s\S]*?: 22[\s\S]*?item\.id === "vault-control" \|\| item\.id === "rosca"[\s\S]*?\? 950[\s\S]*?: 800/,
-  "Community Home ROSCA row must keep a compact fixed icon text treatment instead of overflowing the icon slot."
+  /icon: "vault"[\s\S]*?id: "vault-control"[\s\S]*?icon: "refresh"[\s\S]*?id: "rosca"[\s\S]*?\{communityIconGlyph\(item\.icon as CommunityIconMark, 22\)\}/,
+  "Community Home Vault and ROSCA rows must use app-native 3D icon marks instead of text placeholders."
 );
 
 assertContains(

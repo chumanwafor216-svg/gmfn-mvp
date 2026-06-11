@@ -1,4 +1,5 @@
 import React from "react";
+import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import { institutionalPageCard } from "../../lib/institutionalSurface";
 
 type TrustSlipVerifyBoundaryProps = {
@@ -12,12 +13,42 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
+function boundaryIcon(name: "document" | "lock", compact: boolean) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: compact ? 46 : 54,
+        height: compact ? 46 : 54,
+        minWidth: compact ? 46 : 54,
+        borderRadius: 18,
+        display: "inline-grid",
+        placeItems: "center",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,251,255,0.72))",
+        border: "1px solid rgba(255,255,255,0.54)",
+        boxShadow:
+          "0 12px 26px rgba(2,8,23,0.18), inset 0 1px 0 rgba(255,255,255,0.94)",
+      }}
+    >
+      <GsnLegacyIcon
+        name={name}
+        size={compact ? 42 : 50}
+        imageStyle={{
+          filter: "drop-shadow(0 8px 10px rgba(2,8,23,0.22))",
+          transform: "scale(1.08)",
+        }}
+      />
+    </span>
+  );
+}
+
 export default function TrustSlipVerifyBoundary({
   compact,
 }: TrustSlipVerifyBoundaryProps) {
   return (
     <section
-      aria-label="Public private boundary"
+      aria-label="Public sharing boundary"
       style={{
         ...pageCard("#07172C"),
         padding: compact ? 14 : 18,
@@ -33,7 +64,16 @@ export default function TrustSlipVerifyBoundary({
           alignItems: "center",
         }}
       >
-        <div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: compact ? "46px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
+            gap: 10,
+            alignItems: "center",
+          }}
+        >
+          {boundaryIcon("document", compact)}
+          <div>
           <div
             style={{
               color: "#F2C766",
@@ -55,6 +95,7 @@ export default function TrustSlipVerifyBoundary({
           >
             Share or print only the section above.
           </div>
+          </div>
         </div>
 
         <div
@@ -69,7 +110,17 @@ export default function TrustSlipVerifyBoundary({
           }}
         />
 
-        <div style={{ textAlign: compact ? "left" : "right" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: compact ? "46px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
+            gap: 10,
+            alignItems: "center",
+            textAlign: compact ? "left" : "right",
+          }}
+        >
+          {boundaryIcon("lock", compact)}
+          <div>
           <div
             style={{
               color: "#FCA5A5",
@@ -78,7 +129,7 @@ export default function TrustSlipVerifyBoundary({
               textTransform: "uppercase",
             }}
           >
-            Private internal mockup below
+            Private review area below
           </div>
           <div
             style={{
@@ -89,7 +140,8 @@ export default function TrustSlipVerifyBoundary({
               lineHeight: 1.45,
             }}
           >
-            Open the drawer below only for signed-in review and repair.
+            Open the drawer below only when signed-in review or repair is needed.
+          </div>
           </div>
         </div>
       </div>

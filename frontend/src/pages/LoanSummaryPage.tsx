@@ -8,6 +8,7 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -172,7 +173,7 @@ const safeStr = (x: any) => String(x ?? "").trim();
 
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "-";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
   return d.toLocaleString();
@@ -325,8 +326,76 @@ function helperText(): React.CSSProperties {
   return {
     color: "#405A72",
     fontSize: 14.5,
-    lineHeight: 1.75,
+    lineHeight: 1.45,
   };
+}
+
+function actionText(name: GsnIconName, label: string) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 11,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#EAF3FF",
+          background:
+            "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+          border: "1px solid rgba(196,216,238,0.22)",
+          boxShadow:
+            "0 9px 18px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={26} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function routeHeading(name: GsnIconName, label: string) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        ...brandClampLines(2),
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 12,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#0A3765",
+          background: "linear-gradient(180deg, #F8FBFF 0%, #DCEBFA 100%)",
+          border: "1px solid rgba(11,31,51,0.12)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={28} />
+      </span>
+      <span style={routeTileTitleStyle()}>{label}</span>
+    </span>
+  );
 }
 
 function feedbackCard(tone: FeedbackTone): React.CSSProperties {
@@ -1173,7 +1242,7 @@ export default function LoanSummaryPage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+          <div style={{ color: "#64748B", lineHeight: 1.45 }}>
             Loading loan summary...
           </div>
         </section>
@@ -1205,7 +1274,7 @@ export default function LoanSummaryPage() {
         {feedback ? <div style={feedbackCard(feedback.tone)}>{feedback.text}</div> : null}
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+          <div style={{ color: "#64748B", lineHeight: 1.45 }}>
             Loan summary could not be loaded.
           </div>
         </section>
@@ -1226,7 +1295,7 @@ export default function LoanSummaryPage() {
       <PageTopNav
         sectionLabel="Loan Summary"
         title={`Loan #${summary.id}`}
-        subtitle="Review the support item, guarantor progress, repayment state, evidence trail, and finance distribution in one calmer page."
+        subtitle="Review one support item and choose the next action."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loans}
@@ -1235,9 +1304,9 @@ export default function LoanSummaryPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page is one step inside Loans & Support. It gathers the full reading for one support item: its amount, progress, guarantor state, repayment state, evidence, and finance detail."
-        why="Finance keeps the wider cross-community money file. Loan Summary keeps the full reading for this one item so the support story stays clear."
-        next="Start with the summary facts, then move into guarantor decisions or repayment areas depending on what the loan needs now."
+        what="This shows the amount, guarantors, repayment state, evidence, and finance split for one support item."
+        why="It keeps the support story clear before you move money or make decisions."
+        next="Check the facts, then open only the section that needs action."
         tone="blue"
       />
 
@@ -1345,26 +1414,28 @@ export default function LoanSummaryPage() {
             <div
               style={{
                 marginTop: 16,
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
                 gap: 10,
-                flexWrap: "wrap",
               }}
             >
               <SecondaryButton
                 onClick={copyLoanSummary}
                 minWidth={isCompact ? undefined : 164}
-                stableHeight={48}
+                fullWidth
+                stableHeight={52}
                 debugId="loan-summary.copy-summary"
               >
-                Copy loan summary
+                {actionText("copy", "Copy summary")}
               </SecondaryButton>
               <SecondaryButton
                 onClick={copyLoanAuditLink}
                 minWidth={isCompact ? undefined : 148}
-                stableHeight={48}
+                fullWidth
+                stableHeight={52}
                 debugId="loan-summary.copy-audit-link"
               >
-                Copy audit link
+                {actionText("copy", "Copy audit")}
               </SecondaryButton>
             </div>
           </div>
@@ -1400,8 +1471,7 @@ export default function LoanSummaryPage() {
                   lineHeight: 1.65,
                 }}
               >
-                A clearer summary and evidence trail keeps the support flow easier
-                to understand and easier to defend.
+                A clear summary keeps the support flow easier to defend.
               </div>
             </div>
           </div>
@@ -1428,22 +1498,23 @@ export default function LoanSummaryPage() {
           <SubtleButton
             onClick={() => toggleSection("overview")}
             minWidth={124}
-            stableHeight={48}
+            stableHeight={52}
             debugId="loan-summary.toggle-overview"
             style={{
               whiteSpace: "nowrap",
               flex: "0 0 auto",
+              transition: "none",
             }}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {actionText(collapsed.overview ? "document" : "lock", collapsed.overview ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
         <ExplainToggle
           label="What these facts show"
-          what="This section gives the core numbers and counts for the current support item."
-          why="It helps you understand the loan at a glance before you move into evidence, guarantor decisions, or repayment detail."
-          next="Read the amount, remaining position, and guarantor counts first, then open the deeper sections only where action is still needed."
+          what="This shows the amount, balance, and guarantor counts."
+          why="It gives the loan position before deeper action."
+          next="Check these facts, then open only the section you need."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -1453,9 +1524,7 @@ export default function LoanSummaryPage() {
             style={{
               marginTop: 16,
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr 1fr"
-                : "repeat(4, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))",
               gap: 12,
             }}
           >
@@ -1657,29 +1726,30 @@ export default function LoanSummaryPage() {
             <div>
               <div style={sectionLabel()}>Guarantor decisions</div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Review the guarantor rows one by one. Bulk action remains deliberately disabled here.
+                Review each guarantor separately. Bulk action stays off here.
               </div>
             </div>
 
             <SubtleButton
               onClick={() => toggleSection("guarantors")}
               minWidth={124}
-              stableHeight={48}
+              stableHeight={52}
               debugId="loan-summary.toggle-guarantors"
               style={{
                 whiteSpace: "nowrap",
                 flex: "0 0 auto",
+                transition: "none",
               }}
             >
-              {collapsed.guarantors ? "Open" : "Collapse"}
+              {actionText(collapsed.guarantors ? "document" : "lock", collapsed.guarantors ? "Open" : "Hide")}
             </SubtleButton>
           </div>
 
           <ExplainToggle
             label="How to use these decisions"
-            what="This section is where you review guarantor rows one by one and decide whether a pending guarantor should move forward."
-            why="It keeps each guarantor decision explicit instead of hiding it inside bulk actions or loose queue behavior."
-            next="Check the status of each guarantor row, then approve or decline only the ones that are genuinely ready for a decision."
+            what="Review pending guarantors one by one."
+            why="Each decision stays visible and deliberate."
+            next="Approve or decline only the rows that are ready."
             tone="light"
             style={{ marginTop: 12 }}
           />
@@ -1705,7 +1775,7 @@ export default function LoanSummaryPage() {
           {!collapsed.guarantors ? (
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
               {guarantors.length === 0 ? (
-                <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                <div style={{ color: "#64748B", lineHeight: 1.45 }}>
                   No guarantor has been attached yet.
                 </div>
               ) : (
@@ -1785,9 +1855,9 @@ export default function LoanSummaryPage() {
 
                         <div
                           style={{
-                            display: "flex",
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))",
                             gap: 8,
-                            flexWrap: "wrap",
                             justifyContent: isCompact ? "flex-start" : "flex-end",
                           }}
                         >
@@ -1795,24 +1865,26 @@ export default function LoanSummaryPage() {
                             onClick={() => handleGuarantorDecision(g, "approved")}
                             disabled={!canDecide || busyDecline}
                             busy={busyApprove}
-                            busyLabel="Approving..."
+                            busyLabel="Approving"
                             minWidth={isCompact ? undefined : 112}
-                            stableHeight={44}
+                            fullWidth
+                            stableHeight={52}
                             debugId={`loan-summary.guarantor.${g.id || idx}.approve`}
                           >
-                            Approve
+                            {actionText("check", busyApprove ? "Approving" : "Approve")}
                           </PrimaryButton>
 
                           <SecondaryButton
                             onClick={() => handleGuarantorDecision(g, "declined")}
                             disabled={!canDecide || busyApprove}
                             busy={busyDecline}
-                            busyLabel="Declining..."
+                            busyLabel="Declining"
                             minWidth={isCompact ? undefined : 112}
-                            stableHeight={44}
+                            fullWidth
+                            stableHeight={52}
                             debugId={`loan-summary.guarantor.${g.id || idx}.decline`}
                           >
-                            Decline
+                            {actionText("alert", busyDecline ? "Declining" : "Decline")}
                           </SecondaryButton>
                         </div>
                       </div>
@@ -1842,26 +1914,28 @@ export default function LoanSummaryPage() {
             <div
               style={{
                 marginTop: 14,
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                 gap: 10,
-                flexWrap: "wrap",
               }}
             >
               <SecondaryButton
                 disabled
                 minWidth={isCompact ? undefined : 190}
-                stableHeight={48}
+                fullWidth
+                stableHeight={52}
                 debugId="loan-summary.bulk-approve-disabled"
               >
-                Bulk approve disabled
+                {actionText("lock", "Bulk approve off")}
               </SecondaryButton>
               <SecondaryButton
                 disabled
                 minWidth={isCompact ? undefined : 190}
-                stableHeight={48}
+                fullWidth
+                stableHeight={52}
                 debugId="loan-summary.bulk-decline-disabled"
               >
-                Bulk decline disabled
+                {actionText("lock", "Bulk decline off")}
               </SecondaryButton>
             </div>
           </div>
@@ -1880,7 +1954,7 @@ export default function LoanSummaryPage() {
 
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
               {suggestions.length === 0 ? (
-                <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                <div style={{ color: "#64748B", lineHeight: 1.45 }}>
                   No fit suggestion is currently shown.
                 </div>
               ) : (
@@ -1963,21 +2037,22 @@ export default function LoanSummaryPage() {
             <div>
               <div style={sectionLabel()}>Repayment evidence</div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Existing repayment records are shown here. This is where the money stage continues after approval or disbursement.
+                Repayment records and the next money step appear here.
               </div>
             </div>
 
             <SubtleButton
               onClick={() => toggleSection("repayment")}
               minWidth={124}
-              stableHeight={48}
+              stableHeight={52}
               debugId="loan-summary.toggle-repayment"
               style={{
                 whiteSpace: "nowrap",
                 flex: "0 0 auto",
+                transition: "none",
               }}
             >
-              {collapsed.repayment ? "Open" : "Collapse"}
+              {actionText(collapsed.repayment ? "document" : "lock", collapsed.repayment ? "Open" : "Hide")}
             </SubtleButton>
           </div>
 
@@ -2027,7 +2102,7 @@ export default function LoanSummaryPage() {
                 ) : null}
 
                 {repayments.length === 0 ? (
-                  <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                  <div style={{ color: "#64748B", lineHeight: 1.45 }}>
                     No repayment record is shown yet.
                   </div>
                 ) : (
@@ -2079,8 +2154,8 @@ export default function LoanSummaryPage() {
                 }}
               >
                 {canRepay
-                  ? "When you are ready to move from repayment evidence into the money route, use Next routes below."
-                  : "Repayment opens after approval or disbursement. Use Next routes below when the support item is ready to move forward."}
+                  ? "Use Next routes when you are ready for the money route."
+                  : "Repayment opens after approval or disbursement."}
               </div>
             </>
           ) : null}
@@ -2107,14 +2182,15 @@ export default function LoanSummaryPage() {
               <SubtleButton
                 onClick={() => toggleSection("evidence")}
                 minWidth={124}
-                stableHeight={48}
+                stableHeight={52}
                 debugId="loan-summary.toggle-evidence"
                 style={{
                   whiteSpace: "nowrap",
                   flex: "0 0 auto",
+                  transition: "none",
                 }}
               >
-                {collapsed.evidence ? "Open" : "Collapse"}
+                {actionText(collapsed.evidence ? "document" : "lock", collapsed.evidence ? "Open" : "Hide")}
               </SubtleButton>
             </div>
 
@@ -2138,12 +2214,12 @@ export default function LoanSummaryPage() {
                       marginTop: 10,
                       color: "#64748B",
                       fontSize: 13,
-                      lineHeight: 1.75,
+                      lineHeight: 1.45,
                     }}
                   >
                     Event type:{" "}
                     <strong style={{ color: "#0B1F33" }}>
-                      {safeStr(latestEvent.event_type || "—")}
+                      {safeStr(latestEvent.event_type || "-")}
                     </strong>
                     <br />
                     Created:{" "}
@@ -2163,7 +2239,7 @@ export default function LoanSummaryPage() {
                     marginTop: 10,
                     color: "#64748B",
                     fontSize: 14,
-                    lineHeight: 1.8,
+                    lineHeight: 1.45,
                   }}
                 >
                   No trust event evidence is visible here right now.
@@ -2247,10 +2323,10 @@ export default function LoanSummaryPage() {
                   marginTop: 10,
                   color: "#64748B",
                   fontSize: 14,
-                  lineHeight: 1.8,
+                  lineHeight: 1.45,
                 }}
               >
-                Revenue allocation preview is not visible yet for this support item.
+                Revenue preview is not visible yet.
               </div>
             )}
 
@@ -2258,10 +2334,11 @@ export default function LoanSummaryPage() {
               <StableCtaLink
                 to={revenueRoute}
                 minWidth={isCompact ? undefined : 210}
-                stableHeight={48}
+                fullWidth={isCompact}
+                stableHeight={52}
                 debugId="loan-summary.open-revenue-preview"
               >
-                {canOpenCommandRevenue ? "Open Revenue Allocation" : "Open Finance File"}
+                {actionText("wallet", canOpenCommandRevenue ? "Revenue" : "Finance")}
               </StableCtaLink>
             </div>
           </div>
@@ -2284,7 +2361,7 @@ export default function LoanSummaryPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {supportItemActive
-                ? "Stay inside Loans & Support and move only to the next page that matches this current support item."
+                ? "Open the next page for this support item."
                 : "Move from loan summary into the next page you need."}
             </div>
           </div>
@@ -2292,14 +2369,15 @@ export default function LoanSummaryPage() {
           <SubtleButton
             onClick={() => toggleSection("routes")}
             minWidth={124}
-            stableHeight={48}
+            stableHeight={52}
             debugId="loan-summary.toggle-routes"
             style={{
               whiteSpace: "nowrap",
               flex: "0 0 auto",
+              transition: "none",
             }}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {actionText(collapsed.routes ? "document" : "lock", collapsed.routes ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
@@ -2308,7 +2386,7 @@ export default function LoanSummaryPage() {
             style={{
               marginTop: 16,
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
               gap: 12,
             }}
           >
@@ -2319,11 +2397,9 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(true)}
             >
-              <div style={routeTileTitleStyle()}>
-                Loan Workbench
-              </div>
+              {routeHeading("briefcase", "Loan Workbench")}
               <div style={routeTileDetailStyle()}>
-                Continue deeper support handling here.
+                Continue support handling here.
               </div>
             </StableCtaLink>
 
@@ -2334,11 +2410,9 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                Loan Suggestions
-              </div>
+              {routeHeading("search", "Loan Suggestions")}
               <div style={routeTileDetailStyle()}>
-                Open this when the next question is guarantor fit.
+                Check guarantor fit.
               </div>
             </StableCtaLink>
 
@@ -2349,11 +2423,9 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                Loan Readiness
-              </div>
+              {routeHeading("check", "Loan Readiness")}
               <div style={routeTileDetailStyle()}>
-                Open this when the question is whether the path is clean enough to continue.
+                Check whether the path is clean.
               </div>
             </StableCtaLink>
 
@@ -2364,13 +2436,11 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                {canOpenCommandRevenue ? "Revenue Allocation" : "Finance File"}
-              </div>
+              {routeHeading("wallet", canOpenCommandRevenue ? "Revenue Allocation" : "Finance File")}
               <div style={routeTileDetailStyle()}>
                 {canOpenCommandRevenue
-                  ? "Read fee and distribution logic here."
-                  : "Open the money record visible to you for this community."}
+                  ? "Read fee and distribution logic."
+                  : "Open the visible money record."}
               </div>
             </StableCtaLink>
 
@@ -2387,13 +2457,11 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                {canRepay ? "Loan Payment Instructions" : "Finance"}
-              </div>
+              {routeHeading("bank", canRepay ? "Payment Instructions" : "Finance")}
               <div style={routeTileDetailStyle()}>
                 {canRepay
-                  ? "Open this when the support item has moved into repayment."
-                  : "Open this when the next question is the broader money truth."}
+                  ? "Continue repayment."
+                  : "Open the broader money view."}
               </div>
             </StableCtaLink>
 
@@ -2405,9 +2473,7 @@ export default function LoanSummaryPage() {
                 fullWidth
                 style={routeTileStyle(false)}
               >
-                <div style={routeTileTitleStyle()}>
-                  Loans & Support
-                </div>
+                {routeHeading("community", "Loans & Support")}
                 <div style={routeTileDetailStyle()}>
                   Return to the broader support overview.
                 </div>

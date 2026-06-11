@@ -5,6 +5,7 @@ import {
   EntryBackLink,
 } from "../components/EntryControls";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
+import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import { getAccessToken } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
@@ -114,10 +115,24 @@ function iconBadge(): React.CSSProperties {
     boxShadow:
       "0 18px 30px rgba(0,8,18,0.26), inset 0 1px 0 rgba(255,255,255,0.12)",
     color: "#F3D06A",
-    fontSize: 28,
+    fontSize: 0,
     lineHeight: 1,
     textShadow: "0 2px 12px rgba(0,0,0,0.22)",
   };
+}
+
+function WelcomeIcon({ name }: { name: Gsn3DIconKey }) {
+  return (
+    <GsnRealisticIcon
+      name={name}
+      size={48}
+      decorative
+      imageStyle={{
+        width: "92%",
+        height: "92%",
+      }}
+    />
+  );
 }
 
 function routePill(): React.CSSProperties {
@@ -384,7 +399,7 @@ export default function WelcomePage() {
                 }}
               >
                 <div style={iconBadge()} aria-hidden="true">
-                  <span>✅</span>
+                  <WelcomeIcon name="trust-shield" />
                 </div>
                 <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
                   <div
@@ -478,7 +493,7 @@ export default function WelcomePage() {
             >
               <div style={choiceCard()}>
                 <div style={iconBadge()} aria-hidden="true">
-                  <span>👤</span>
+                  <WelcomeIcon name="identity-card" />
                 </div>
 
                 <div style={{ display: "grid", gap: 8 }}>
@@ -510,7 +525,7 @@ export default function WelcomePage() {
 
               <div style={choiceCard()}>
                 <div style={iconBadge()} aria-hidden="true">
-                  <span>👥</span>
+                  <WelcomeIcon name="join-person-plus" />
                 </div>
 
                 <div style={{ display: "grid", gap: 8 }}>
@@ -563,7 +578,7 @@ export default function WelcomePage() {
               >
                 <div style={choiceCard()}>
                   <div style={iconBadge()} aria-hidden="true">
-                    <span>🏛️</span>
+                    <WelcomeIcon name="community-building" />
                   </div>
 
                   <div style={{ display: "grid", gap: 8 }}>
@@ -592,7 +607,7 @@ export default function WelcomePage() {
 
                 <div style={choiceCard()}>
                   <div style={iconBadge()} aria-hidden="true">
-                    <span>🔑</span>
+                    <WelcomeIcon name="join-person-plus" />
                   </div>
 
                   <div style={{ display: "grid", gap: 8 }}>

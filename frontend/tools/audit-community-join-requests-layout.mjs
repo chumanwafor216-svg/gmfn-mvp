@@ -81,8 +81,13 @@ assertContains(
 );
 
 assertContains(
-  /type JoinRequestIconName[\s\S]*?function JoinRequestIcon[\s\S]*?function StatusMark/,
-  "Join Requests must use app-native SVG pictograms instead of emoji/status text symbols."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?const JOIN_REQUEST_ICON_MAP[\s\S]*?satisfies Record<JoinRequestIconName, GsnIconName>[\s\S]*?function JoinRequestIcon[\s\S]*?<GsnLegacyIcon[\s\S]*?function StatusMark/,
+  "Join Requests must use shared 3D GSN icons instead of local SVG, emoji, or status text symbols."
+);
+
+assertNotContains(
+  /<svg\s|\bstrokeWidth\b|viewBox: "0 0 24 24"/g,
+  "Join Requests must not restore local SVG pictograms after 3D icon migration."
 );
 
 assertContains(

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { GsnLegacyIcon } from "../components/GsnLegacyIcon";
 import { StableCtaLink } from "../components/StableButton";
 import { getAccessToken } from "../lib/api";
 
@@ -21,13 +22,29 @@ export default function ApiPage() {
   const [q, setQ] = useState("");
 
   const tokenPresent = useMemo(() => Boolean(getAccessToken()), []);
+  const routeLinkStyle = {
+    minHeight: 48,
+    minWidth: 128,
+    padding: "0 14px",
+    border: "1px solid #BFDBFE",
+    borderRadius: 14,
+    background: "#EFF6FF",
+    boxShadow: "none",
+    color: "#0B3B74",
+    fontWeight: 800,
+    textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  } as const;
 
   useEffect(() => {
     async function run() {
       setLoading(true);
       setErr(null);
       try {
-        // ✅ MUST go through /api proxy so it hits backend correctly
+        // Keep this on the frontend proxy so it reaches the configured backend.
         const res = await fetch("/api/openapi.json");
         if (!res.ok) throw new Error(await res.text());
 
@@ -47,7 +64,7 @@ export default function ApiPage() {
         list.sort((a, b) => a.path.localeCompare(b.path));
         setRows(list);
       } catch (e: any) {
-        setErr(e?.message || "Failed to load OpenAPI");
+        setErr(e?.message || "Could not load the service route list.");
         setRows([]);
       } finally {
         setLoading(false);
@@ -69,20 +86,20 @@ export default function ApiPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2>API</h2>
+      <h2>Service Routes</h2>
       <p style={{ color: "#6b7280" }}>
-        Live backend routes discovered from OpenAPI.
+        Available GSN service routes for support and verification checks.
       </p>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
         <div>
-          <b>Title:</b> {title}
+          <b>Service:</b> {title}
         </div>
         <div>
           <b>Version:</b> {version}
         </div>
         <div>
-          <b>Token:</b> {tokenPresent ? "present ✅" : "missing ❌"}
+          <b>Session:</b> {tokenPresent ? "present" : "missing"}
         </div>
         <div>
           <b>Routes:</b> {rows.length}
@@ -93,54 +110,38 @@ export default function ApiPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search routes (e.g. /loans, /trust, invites)"
+          placeholder="Search routes, for example loans, trust, invites"
           style={{ width: 420, maxWidth: "100%", padding: 8 }}
         />
         <StableCtaLink
           to="/docs"
           target="_blank"
           rel="noreferrer"
-          stableHeight={32}
+          stableHeight={52}
           debugId="api.open-swagger"
           style={{
-            minHeight: 32,
-            minWidth: 0,
-            padding: "4px 0",
-            border: "none",
-            borderRadius: 0,
-            background: "transparent",
-            boxShadow: "none",
-            color: "#2563EB",
-            fontWeight: 700,
-            textDecoration: "underline",
+            ...routeLinkStyle,
           }}
         >
-          Swagger →
+          <GsnLegacyIcon name="document" size={26} />
+          Route guide
         </StableCtaLink>
         <StableCtaLink
           to="/api/openapi.json"
           target="_blank"
           rel="noreferrer"
-          stableHeight={32}
+          stableHeight={52}
           debugId="api.open-openapi-json"
           style={{
-            minHeight: 32,
-            minWidth: 0,
-            padding: "4px 0",
-            border: "none",
-            borderRadius: 0,
-            background: "transparent",
-            boxShadow: "none",
-            color: "#2563EB",
-            fontWeight: 700,
-            textDecoration: "underline",
+            ...routeLinkStyle,
           }}
         >
-          OpenAPI →
+          <GsnLegacyIcon name="navigation" size={26} />
+          Route file
         </StableCtaLink>
       </div>
 
-      {loading && <div>Loading…</div>}
+      {loading && <div>Loading...</div>}
 
       {err && (
         <pre style={{ color: "crimson", whiteSpace: "pre-wrap" }}>{err}</pre>

@@ -8,6 +8,7 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import {
@@ -159,7 +160,7 @@ function rowsOf<T = any>(input: any): T[] {
 
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "-";
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
@@ -417,6 +418,62 @@ function routeTileDetailStyle(): React.CSSProperties {
   };
 }
 
+function iconBadge(name: GsnIconName, size = 30) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size > 30 ? 13 : 11,
+        display: "grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        color: "#EAF3FF",
+        background:
+          "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+        border: "1px solid rgba(196,216,238,0.22)",
+        boxShadow:
+          "0 10px 20px rgba(2,6,23,0.26), inset 0 1px 0 rgba(255,255,255,0.12)",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(24, Math.round(size * 0.82))} />
+    </span>
+  );
+}
+
+function actionText(name: GsnIconName, label: string) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {iconBadge(name, 28)}
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function routeHeading(name: GsnIconName, label: string) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        minWidth: 0,
+      }}
+    >
+      {iconBadge(name, 34)}
+      <span style={routeTileTitleStyle()}>{label}</span>
+    </div>
+  );
+}
+
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -450,7 +507,7 @@ function helperText(): React.CSSProperties {
   return {
     color: "#4F647A",
     fontSize: 14.5,
-    lineHeight: 1.75,
+    lineHeight: 1.45,
   };
 }
 
@@ -1075,38 +1132,38 @@ export default function LoanWorkbenchPage() {
         detail:
           "The workbench is clearer once your current community is in place.",
         ctaTo: routes.community,
-        ctaLabel: "Open Community Home",
+        ctaLabel: "Community Home",
       };
     }
 
     if (cameFromWithdrawalSupport && !selectedLoanId) {
       return {
-        title: "Start or resume the borrower-side support draft from the Money Out handoff.",
+        title: "Resume the support draft.",
         detail:
-          "Money Out has already identified a support-backed need. Resume the support draft, then return to the deeper workbench.",
+          "Money Out already identified this need.",
         ctaTo: routes.supportStart,
-        ctaLabel: "Open Support Start Page",
+        ctaLabel: "Support Start",
       };
     }
 
     if (selectedLoanId) {
       return {
-        title: "Continue the current support item from the deeper workbench.",
+        title: "Continue this support item.",
         detail:
           "Stay here with the active support item until the next step is clear.",
         ctaTo: routeTarget("loanSummary", selectedClanId, "loan-workbench.route.next-summary", {
           loanId: selectedLoanId,
         }),
-        ctaLabel: "Open Loan Summary",
+        ctaLabel: "Loan Summary",
       };
     }
 
     return {
-      title: "Return to the broader support overview.",
+      title: "Return to support overview.",
       detail:
         "No active support item is visible for this workbench right now.",
       ctaTo: routes.loans,
-      ctaLabel: "Open Loans & Support",
+      ctaLabel: "Loans & Support",
     };
   }, [
     selectedClanId,
@@ -1147,7 +1204,7 @@ export default function LoanWorkbenchPage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
+          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.45 }}>
             Loading loan workbench...
           </div>
         </section>
@@ -1168,7 +1225,7 @@ export default function LoanWorkbenchPage() {
       <PageTopNav
         sectionLabel="Loan Workbench"
         title="Support Workbench"
-        subtitle="Use workbench for the deeper support stage when the next move needs closer handling."
+        subtitle="Handle the selected support item in one focused place."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.suggestions}
@@ -1177,9 +1234,9 @@ export default function LoanWorkbenchPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page is one step inside Loans & Support. It is the detailed workbench for the current support item."
-        why="Finance keeps the wider money file. Workbench keeps the selected loan, its gap, and the supporter work in one operational place."
-        next="Confirm the current work item first, then use loan selection or the workbench summary below to continue with the right item."
+        what="This is the detailed workspace for one support item."
+        why="It keeps the loan, gap, and supporter work together."
+        next="Confirm the item, then use the summary or supporter section."
         tone="blue"
       />
 
@@ -1293,21 +1350,28 @@ export default function LoanWorkbenchPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Status: {currentStatus} • Guarantee gap: {guaranteeGap} {currency}
+              Status: {currentStatus}  |  Guarantee gap: {guaranteeGap} {currency}
             </div>
 
             <div style={{ marginTop: 8, ...helperText() }}>
-              Required guarantors: {guarantorsRequired} • Remaining amount: {remainingAmount} {currency}
+              Required guarantors: {guarantorsRequired}  |  Remaining amount: {remainingAmount} {currency}
             </div>
 
-            <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
+                gap: 10,
+              }}
+            >
               <SecondaryButton
                 onClick={() => handleRefresh()}
                 disabled={refreshing}
                 busy={refreshing}
-                busyLabel="Refreshing..."
-                minWidth={isCompact ? undefined : 176}
-                stableHeight={48}
+                busyLabel="Refreshing"
+                fullWidth
+                stableHeight={52}
                 debugId="loan-workbench.refresh"
                 style={{
                   border: "1px solid rgba(121,149,190,0.20)",
@@ -1316,9 +1380,10 @@ export default function LoanWorkbenchPage() {
                   color: refreshing ? "#94A3B8" : "#E6EEF8",
                   fontWeight: 800,
                   whiteSpace: "nowrap",
+                  transition: "none",
                 }}
               >
-                Refresh Workbench
+                {actionText("refresh", refreshing ? "Refreshing" : "Refresh")}
               </SecondaryButton>
 
               <SubtleButton
@@ -1330,8 +1395,8 @@ export default function LoanWorkbenchPage() {
                   )
                 }
                 disabled={!selectedLoanId}
-                minWidth={isCompact ? undefined : 132}
-                stableHeight={48}
+                fullWidth
+                stableHeight={52}
                 debugId="loan-workbench.copy-loan-id"
                 style={{
                   border: "1px solid rgba(121,149,190,0.20)",
@@ -1340,9 +1405,10 @@ export default function LoanWorkbenchPage() {
                   color: !selectedLoanId ? "#94A3B8" : "#E6EEF8",
                   fontWeight: 800,
                   whiteSpace: "nowrap",
+                  transition: "none",
                 }}
               >
-                Copy Loan ID
+                {actionText("copy", "Copy ID")}
               </SubtleButton>
             </div>
           </div>
@@ -1369,7 +1435,7 @@ export default function LoanWorkbenchPage() {
           <SubtleButton
             onClick={() => toggleSection("selection")}
             minWidth={124}
-            stableHeight={48}
+            stableHeight={52}
             debugId="loan-workbench.toggle-selection"
             style={{
               borderRadius: 12,
@@ -1380,17 +1446,21 @@ export default function LoanWorkbenchPage() {
               fontWeight: 800,
               whiteSpace: "nowrap",
               flex: "0 0 auto",
+              transition: "none",
             }}
           >
-            {collapsed.selection ? "Open" : "Collapse"}
+            {actionText(
+              collapsed.selection ? "document" : "lock",
+              collapsed.selection ? "Open" : "Hide"
+            )}
           </SubtleButton>
         </div>
 
         <ExplainToggle
           label="How selection works"
-          what="This section decides which loan item the workbench is focused on."
-          why="It prevents the detailed workbench from drifting onto the wrong support item when more than one loan is visible."
-          next="Select the item you want to work on, then use the summary and supporter sections below for the deeper action."
+          what="Choose the loan this workbench should focus on."
+          why="It keeps actions tied to the right support item."
+          next="Select the item, then continue below."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -1398,7 +1468,7 @@ export default function LoanWorkbenchPage() {
         {!collapsed.selection ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {loans.length === 0 ? (
-              <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
+              <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.45 }}>
                 No support item is visible for your current community.
               </div>
             ) : (
@@ -1456,26 +1526,26 @@ export default function LoanWorkbenchPage() {
 
                       <div
                         style={{
-                          display: "flex",
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))",
                           justifyContent: isCompact ? "flex-start" : "flex-end",
                           gap: 10,
-                          flexWrap: "wrap",
                         }}
                       >
                         {active ? (
                           <PrimaryButton
                             onClick={() => handleSelectLoan(positiveNumber(item.id))}
-                            minWidth={isCompact ? undefined : 116}
-                            stableHeight={44}
+                            fullWidth
+                            stableHeight={52}
                             debugId={`loan-workbench.select.${positiveNumber(item.id) || "none"}`}
                           >
-                            Selected
+                            {actionText("check", "Selected")}
                           </PrimaryButton>
                         ) : (
                           <SecondaryButton
                             onClick={() => handleSelectLoan(positiveNumber(item.id))}
-                            minWidth={isCompact ? undefined : 156}
-                            stableHeight={44}
+                            fullWidth
+                            stableHeight={52}
                             debugId={`loan-workbench.select.${positiveNumber(item.id) || "none"}`}
                             style={{
                               border: "1px solid rgba(121,149,190,0.20)",
@@ -1484,9 +1554,10 @@ export default function LoanWorkbenchPage() {
                               color: "#E6EEF8",
                               fontWeight: 800,
                               whiteSpace: "nowrap",
+                              transition: "none",
                             }}
                           >
-                            Open Workbench
+                            {actionText("briefcase", "Open")}
                           </SecondaryButton>
                         )}
                       </div>
@@ -1519,7 +1590,7 @@ export default function LoanWorkbenchPage() {
           <SubtleButton
             onClick={() => toggleSection("summary")}
             minWidth={124}
-            stableHeight={48}
+            stableHeight={52}
             debugId="loan-workbench.toggle-summary"
             style={{
               borderRadius: 12,
@@ -1530,17 +1601,21 @@ export default function LoanWorkbenchPage() {
               fontWeight: 800,
               whiteSpace: "nowrap",
               flex: "0 0 auto",
+              transition: "none",
             }}
           >
-            {collapsed.summary ? "Open" : "Collapse"}
+            {actionText(
+              collapsed.summary ? "document" : "lock",
+              collapsed.summary ? "Open" : "Hide"
+            )}
           </SubtleButton>
         </div>
 
         <ExplainToggle
           label="What this summary shows"
-          what="This section gathers the main workbench facts for the selected loan: amount, guarantee gap, required guarantors, and status."
-          why="It keeps the core support numbers visible before you move into the more detailed supporter work."
-          next="Use these figures as the main reference point, then continue into the supporter and request sections when you act."
+          what="This shows amount, guarantee gap, guarantors, and status."
+          why="It keeps the core numbers visible before deeper action."
+          next="Use these figures, then continue to supporter work."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -1842,7 +1917,7 @@ export default function LoanWorkbenchPage() {
           <SubtleButton
             onClick={() => toggleSection("supporters")}
             minWidth={124}
-            stableHeight={48}
+            stableHeight={52}
             debugId="loan-workbench.toggle-supporters"
             style={{
               borderRadius: 12,
@@ -1853,9 +1928,13 @@ export default function LoanWorkbenchPage() {
               fontWeight: 800,
               whiteSpace: "nowrap",
               flex: "0 0 auto",
+              transition: "none",
             }}
           >
-            {collapsed.supporters ? "Open" : "Collapse"}
+            {actionText(
+              collapsed.supporters ? "document" : "lock",
+              collapsed.supporters ? "Open" : "Hide"
+            )}
           </SubtleButton>
         </div>
 
@@ -1947,7 +2026,7 @@ export default function LoanWorkbenchPage() {
                             : "",
                         ]
                           .filter(Boolean)
-                          .join(" • ")}
+                          .join("  |  ")}
                       </div>
 
                       {safeStr(item.reason) ? (
@@ -2015,7 +2094,7 @@ export default function LoanWorkbenchPage() {
                           `Locked: ${String(Boolean(item.isLocked))}`,
                           `Locked amount: ${safeStr(item.lockedAmount || "0.00")}`,
                           `Released amount: ${safeStr(item.releasedAmount || "0.00")}`,
-                        ].join(" • ")}
+                        ].join("  |  ")}
                       </div>
 
                       {safeStr(item.respondedAt) ? (
@@ -2084,7 +2163,7 @@ export default function LoanWorkbenchPage() {
           <SubtleButton
             onClick={() => toggleSection("routes")}
             minWidth={124}
-            stableHeight={48}
+            stableHeight={52}
             debugId="loan-workbench.toggle-routes"
             style={{
               borderRadius: 12,
@@ -2095,9 +2174,13 @@ export default function LoanWorkbenchPage() {
               fontWeight: 800,
               whiteSpace: "nowrap",
               flex: "0 0 auto",
+              transition: "none",
             }}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {actionText(
+              collapsed.routes ? "document" : "lock",
+              collapsed.routes ? "Open" : "Hide"
+            )}
           </SubtleButton>
         </div>
 
@@ -2117,9 +2200,7 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(true)}
             >
-              <div style={routeTileTitleStyle()}>
-                {nextRoute.ctaLabel}
-              </div>
+              {routeHeading("briefcase", nextRoute.ctaLabel)}
               <div style={routeTileDetailStyle()}>
                 {nextRoute.title}
               </div>
@@ -2135,11 +2216,9 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                Loan Readiness
-              </div>
+              {routeHeading("check", "Loan Readiness")}
               <div style={routeTileDetailStyle()}>
-                Open this when the question is whether the current support flow is clean enough to continue.
+                Check whether the path is clean.
               </div>
             </StableCtaLink>
 
@@ -2150,11 +2229,9 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                Loan Suggestions
-              </div>
+              {routeHeading("search", "Loan Suggestions")}
               <div style={routeTileDetailStyle()}>
-                Open this when the next question is candidate fit rather than deeper workbench state.
+                Check candidate fit.
               </div>
             </StableCtaLink>
 
@@ -2171,9 +2248,7 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                Loan Summary
-              </div>
+              {routeHeading("document", "Loan Summary")}
               <div style={routeTileDetailStyle()}>
                 Return to the current support item summary.
               </div>
@@ -2186,13 +2261,14 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                {canOpenCommandRevenue ? "Revenue Allocation" : "Finance File"}
-              </div>
+              {routeHeading(
+                "wallet",
+                canOpenCommandRevenue ? "Revenue Allocation" : "Finance File"
+              )}
               <div style={routeTileDetailStyle()}>
                 {canOpenCommandRevenue
-                  ? "Read fee and distribution logic when the finance breakdown matters."
-                  : "Open the money record visible to you for this community."}
+                  ? "Read fee and distribution logic."
+                  : "Open the visible money record."}
               </div>
             </StableCtaLink>
 
@@ -2209,11 +2285,9 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div style={routeTileTitleStyle()}>
-                Loan Payment Instructions
-              </div>
+              {routeHeading("bank", "Payment Instructions")}
               <div style={routeTileDetailStyle()}>
-                Open this when the support item has moved into repayment.
+                Continue repayment.
               </div>
             </StableCtaLink>
 
@@ -2225,11 +2299,9 @@ export default function LoanWorkbenchPage() {
                 fullWidth
                 style={routeTileStyle(false)}
               >
-                <div style={routeTileTitleStyle()}>
-                  Loans & Support
-                </div>
+                {routeHeading("community", "Loans & Support")}
                 <div style={routeTileDetailStyle()}>
-                  Return to the broader support overview only after the current workbench stage is complete.
+                  Return to support overview.
                 </div>
               </StableCtaLink>
             ) : null}

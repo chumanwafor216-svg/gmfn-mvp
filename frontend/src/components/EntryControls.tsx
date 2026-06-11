@@ -144,7 +144,7 @@ export function EntryGuideLauncher({
         type="button"
         onClick={onClick}
         kind="secondary"
-        stableHeight={40}
+        stableHeight={52}
         debugId="entry-controls.guide-compact"
         style={{
           display: "inline-flex",
@@ -195,7 +195,7 @@ export function EntryGuideLauncher({
         type="button"
         onClick={onClick}
         kind="secondary"
-        stableHeight={40}
+        stableHeight={52}
         minWidth={40}
         debugId="entry-controls.guide-label"
         style={{

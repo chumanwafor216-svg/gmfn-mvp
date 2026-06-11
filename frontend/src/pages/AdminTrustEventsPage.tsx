@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { adminRecentTrustEvents, getSelectedClanId, safeCopy } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
@@ -133,6 +134,78 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={18} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function eventIconBadge(
+  icon: GsnIconName,
+  children: React.ReactNode,
+  primary = false
+) {
+  return (
+    <span style={badge(primary)}>
+      <GsnLegacyIcon
+        name={icon}
+        size={15}
+      />
+      <span>{children}</span>
+    </span>
+  );
+}
+
+function sectionLabelWithIcon(icon: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        ...sectionLabel(),
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <span
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 11,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#FFFFFF",
+          background: "linear-gradient(180deg, #08233A 0%, #061827 100%)",
+          border: "1px solid rgba(8,35,58,0.16)",
+          boxShadow: "0 10px 20px rgba(7,20,36,0.10)",
+          flex: "0 0 auto",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={16} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function deltaIcon(tone: "pos" | "neg" | "zero" | "none"): GsnIconName {
+  if (tone === "pos") return "check";
+  if (tone === "neg") return "alert";
+  if (tone === "zero") return "shield";
+  return "document";
+}
+
 function fmtWhen(value: any): string {
   const raw = safeStr(value);
   if (!raw) return "-";
@@ -249,13 +322,13 @@ export default function AdminTrustEventsPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav sectionLabel="Trust Events" title="Trust Events" subtitle="Review recent trust-event records for oversight, evidence, and explainability checks." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
+      <PageTopNav sectionLabel="Trust Events" title="Trust Events" subtitle="Review recent trust evidence before opening deeper admin routes." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen shows recent trust-event records for oversight, evidence checks, and explainability review."
-        why="It helps you inspect the raw event trail behind trust activity before you step into deeper analytics or intervention pages."
-        next="Start with the event overview here, then open the raw event details only when you need the exact evidence for a specific trust change."
+        what="This screen shows recent trust-event records for evidence review."
+        why="It helps you inspect the event trail before deeper analysis or intervention."
+        next="Start with the overview, then open source details only when exact evidence is needed."
         tone="light"
         style={{ marginTop: 18 }}
       />
@@ -264,15 +337,15 @@ export default function AdminTrustEventsPage() {
         <div style={{ padding: 24 }}>
           <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Trust event log</div>
           <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-            Review the raw trust-event trail first, then move into the deeper admin routes only when the current record shows where the pressure really sits.
+            Read the event trail first. Move deeper only when the current record shows pressure.
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Tracked events: {summary.total}</span>
-            <span style={badge(false)}>Last 24 hours: {summary.recent}</span>
-            <span style={badge(false)}>Positive deltas: {summary.positive}</span>
-            <span style={badge(false)}>Negative deltas: {summary.negative}</span>
-            <span style={badge(false)}>Events with notes: {summary.noted}</span>
+            {eventIconBadge("document", <>Tracked events: {summary.total}</>, true)}
+            {eventIconBadge("calendar", <>Last 24 hours: {summary.recent}</>)}
+            {eventIconBadge("check", <>Positive deltas: {summary.positive}</>)}
+            {eventIconBadge("alert", <>Negative deltas: {summary.negative}</>)}
+            {eventIconBadge("pen", <>Events with notes: {summary.noted}</>)}
           </div>
 
           {notice ? <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#ECFDF3", border: "1px solid #A7F3D0", color: "#166534", fontWeight: 900 }}>{notice}</div> : null}
@@ -280,15 +353,15 @@ export default function AdminTrustEventsPage() {
 
           <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
             <div style={statTile()}>
-              <div style={sectionLabel()}>What to read first</div>
+              <div>{sectionLabelWithIcon("search", "What to read first")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Start with the newest negative or heavily noted event before treating the graph or analytics pages as the source of truth.
+                Start with the newest negative or heavily noted event.
               </div>
             </div>
             <div style={statTile()}>
-              <div style={sectionLabel()}>When to leave this page</div>
+              <div>{sectionLabelWithIcon("navigation", "When to leave this page")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Move to Trust Graph when you need structure, Trust Analytics when you need pattern, and Identity Risk when the event points to a person-level integrity issue.
+                Use Graph for structure, Analytics for pattern, and Identity Risk for person-level integrity.
               </div>
             </div>
           </div>
@@ -297,39 +370,39 @@ export default function AdminTrustEventsPage() {
             <StableCtaLink
               to={routes.analytics}
               debugId="admin-trust-events.route.analytics"
-              stableHeight={44}
+              stableHeight={52}
               style={adminTrustEventActionStyle("primary")}
             >
-              Open Trust Analytics
+              {labelWithIcon("chart", "Open Trust Analytics")}
             </StableCtaLink>
             <StableCtaLink
               to={routes.graph}
               debugId="admin-trust-events.route.graph"
-              stableHeight={44}
+              stableHeight={52}
               style={adminTrustEventActionStyle("secondary")}
             >
-              Open Trust Graph
+              {labelWithIcon("community", "Open Trust Graph")}
             </StableCtaLink>
             <StableCtaLink
               to={routes.identityRisk}
               debugId="admin-trust-events.route.identity-risk"
-              stableHeight={44}
+              stableHeight={52}
               style={adminTrustEventActionStyle("secondary")}
             >
-              Open Identity Risk
+              {labelWithIcon("id", "Open Identity Risk")}
             </StableCtaLink>
             <StableCtaLink
               to={routes.commandCenter}
               debugId="admin-trust-events.route.command-center"
-              stableHeight={44}
+              stableHeight={52}
               style={adminTrustEventActionStyle("soft")}
             >
-              Back to Command Center
+              {labelWithIcon("navigation", "Back to Command Center")}
             </StableCtaLink>
           </div>
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-            {rows.length === 0 && !err ? <div style={{ ...softCard(), color: "#7A8D9F" }}>No recent trust events are currently shown.</div> : null}
+            {rows.length === 0 && !err ? <div style={{ ...softCard(), color: "#7A8D9F" }}>{labelWithIcon("check", "No recent trust events are currently shown.")}</div> : null}
             {rows.map((row, index) => {
               const rowKey = safeStr(row?.id || row?.event_id || index);
               const delta = deltaMeta(row?.delta);
@@ -338,20 +411,30 @@ export default function AdminTrustEventsPage() {
                 <div key={rowKey} style={card()}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                     <div>
-                      <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>{safeStr(row?.event_type || "trust.event")}</div>
-                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>{fmtWhen(row?.created_at)}</div>
+                      <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
+                        {labelWithIcon("document", safeStr(row?.event_type || "trust.event"))}
+                      </div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>
+                        {labelWithIcon("calendar", fmtWhen(row?.created_at))}
+                      </div>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
-                      <span style={{ ...badge(false), ...eventToneStyle(delta.tone) }}>{delta.label}</span>
-                      <span style={badge(false)}>Event #{safeStr(row?.id || "-")}</span>
+                      <span style={{ ...badge(false), ...eventToneStyle(delta.tone) }}>
+                        <GsnLegacyIcon
+                          name={deltaIcon(delta.tone)}
+                          size={15}
+                        />
+                        <span>{delta.label}</span>
+                      </span>
+                      {eventIconBadge("hash", <>Event #{safeStr(row?.id || "-")}</>)}
                     </div>
                   </div>
 
                   <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(false)}>Actor: {safeStr(row?.actor_user_id || "-")}</span>
-                    <span style={badge(false)}>Subject: {safeStr(row?.subject_user_id || "-")}</span>
-                    {safeStr(row?.loan_id) ? <span style={badge(false)}>Loan #{safeStr(row?.loan_id)}</span> : null}
-                    {safeStr(row?.payment_reference) ? <span style={badge(false)}>Ref: {safeStr(row?.payment_reference)}</span> : null}
+                    {eventIconBadge("user", <>Actor: {safeStr(row?.actor_user_id || "-")}</>)}
+                    {eventIconBadge("user", <>Subject: {safeStr(row?.subject_user_id || "-")}</>)}
+                    {safeStr(row?.loan_id) ? eventIconBadge("wallet", <>Loan #{safeStr(row?.loan_id)}</>) : null}
+                    {safeStr(row?.payment_reference) ? eventIconBadge("card", <>Ref: {safeStr(row?.payment_reference)}</>) : null}
                   </div>
 
                   <div style={{ marginTop: 14, ...helperText(), color: "#0B1F33" }}>
@@ -363,25 +446,25 @@ export default function AdminTrustEventsPage() {
                       onClick={() => {
                         void copyEvent(row);
                       }}
-                      stableHeight={44}
+                      stableHeight={52}
                       debugId={`admin-trust-events.row.${rowKey}.copy`}
                       style={adminTrustEventActionStyle("secondary")}
                     >
-                      Copy event snapshot
+                      {labelWithIcon("copy", "Copy event snapshot")}
                     </SecondaryButton>
                     <SubtleButton
                       onClick={() => toggleRow(rowKey)}
-                      stableHeight={40}
+                      stableHeight={52}
                       debugId={`admin-trust-events.row.${rowKey}.toggle`}
                       style={adminTrustEventCollapseStyle()}
                     >
-                      {detailOpen ? "Collapse raw event" : "Open raw event"}
+                      {labelWithIcon(detailOpen ? "chevronUp" : "chevronDown", detailOpen ? "Hide source details" : "Open source details")}
                     </SubtleButton>
                   </div>
 
                   {detailOpen ? (
                     <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
-                      <div style={sectionLabel()}>Raw event details</div>
+                      <div>{sectionLabelWithIcon("document", "Source event details")}</div>
                       <pre style={{ margin: "12px 0 0", whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, color: "#334155", lineHeight: 1.7 }}>
                         {JSON.stringify(row, null, 2)}
                       </pre>

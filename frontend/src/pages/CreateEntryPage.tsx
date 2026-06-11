@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
   clearPublicEntryState,
@@ -1900,7 +1901,7 @@ export default function CreateEntryPage() {
         <SecondaryButton
           onClick={() => setExistingMemberOpen((current) => !current)}
           minWidth={122}
-          stableHeight={35}
+          stableHeight={52}
           debugId="create-entry.existing-member.toggle"
           style={{
             ...secondaryBtn(),
@@ -1957,7 +1958,7 @@ export default function CreateEntryPage() {
             <SecondaryButton
               onClick={() => setExistingMemberOpen(false)}
               minWidth={112}
-              stableHeight={44}
+              stableHeight={52}
               debugId="create-entry.existing-member.stay"
               style={{
                 ...secondaryBtn(),
@@ -3252,12 +3253,12 @@ export default function CreateEntryPage() {
               gap: 6,
             }}
           >
-            {[
-              ["👤", "Details"],
-              ["📞", "Phone"],
-              ["🏘️", "Community"],
-              ["🤝", "Invite"],
-            ].map(([mark, label]) => (
+            {([
+              ["user", "Details"],
+              ["phone", "Phone"],
+              ["community", "Community"],
+              ["tag", "Invite"],
+            ] as Array<[GsnIconName, string]>).map(([mark, label]) => (
               <div
                 key={label}
                 style={{
@@ -3276,7 +3277,7 @@ export default function CreateEntryPage() {
                   textAlign: "center",
                 }}
               >
-                <span style={{ color: "#F2C766", fontSize: 12 }}>{mark}</span>
+                <GsnLegacyIcon name={mark} size={22} />
                 <span>{label}</span>
               </div>
             ))}
@@ -3349,7 +3350,7 @@ export default function CreateEntryPage() {
                 <PrimaryButton
                   onClick={() => setProcedureOpen(true)}
                   fullWidth
-                  stableHeight={guideDone ? 32 : 38}
+                  stableHeight={52}
                   debugId="create-entry.guide.primary"
                   style={guideHeroButton(guideDone)}
                 >
@@ -3430,7 +3431,7 @@ export default function CreateEntryPage() {
                   <SecondaryButton
                     onClick={() => setProcedureOpen(false)}
                     minWidth="auto"
-                    stableHeight={44}
+                    stableHeight={52}
                     debugId="create-entry.guide.collapse"
                     style={{
                       ...secondaryBtn(),
@@ -3810,7 +3811,7 @@ export default function CreateEntryPage() {
                       <SecondaryButton
                         type="button"
                         onClick={() => applyPhonePrefix("+44")}
-                        stableHeight={34}
+                        stableHeight={52}
                         debugId="create-entry.details.phone-prefix-uk"
                         style={countryChipStyle(safeStr(phone).startsWith("+44"))}
                       >
@@ -3819,7 +3820,7 @@ export default function CreateEntryPage() {
                       <SecondaryButton
                         type="button"
                         onClick={() => applyPhonePrefix("+234")}
-                        stableHeight={34}
+                        stableHeight={52}
                         debugId="create-entry.details.phone-prefix-ng"
                         style={countryChipStyle(safeStr(phone).startsWith("+234"))}
                       >
@@ -3828,7 +3829,7 @@ export default function CreateEntryPage() {
                       <SecondaryButton
                         type="button"
                         onClick={() => applyPhonePrefix("+1")}
-                        stableHeight={34}
+                        stableHeight={52}
                         debugId="create-entry.details.phone-prefix-us"
                         style={countryChipStyle(safeStr(phone).startsWith("+1"))}
                       >
@@ -3909,7 +3910,7 @@ export default function CreateEntryPage() {
                       <SecondaryButton
                         type="button"
                         onClick={() => setPasswordVisible((visible) => !visible)}
-                        stableHeight={38}
+                        stableHeight={52}
                         minWidth={38}
                         debugId="create-entry.details.password-toggle"
                         aria-label={passwordVisible ? "Hide password" : "Show password"}
@@ -3959,7 +3960,7 @@ export default function CreateEntryPage() {
                       <SecondaryButton
                         type="button"
                         onClick={() => setConfirmPasswordVisible((visible) => !visible)}
-                        stableHeight={38}
+                        stableHeight={52}
                         minWidth={38}
                         debugId="create-entry.details.confirm-password-toggle"
                         aria-label={confirmPasswordVisible ? "Hide repeated password" : "Show repeated password"}
@@ -4001,7 +4002,7 @@ export default function CreateEntryPage() {
                     <SecondaryButton
                       onClick={clearDetailsBlock}
                       minWidth={116}
-                      stableHeight={46}
+                      stableHeight={52}
                       debugId="create-entry.details.clear"
                       style={{
                         ...secondaryBtn(),
@@ -4871,7 +4872,7 @@ export default function CreateEntryPage() {
                             busy={busy && busyTarget === "community"}
                             busyLabel="Registering..."
                             minWidth={0}
-                            stableHeight={46}
+                            stableHeight={52}
                             debugId="create-entry.photo.finish-registration"
                             style={{ ...secondaryBtn(), width: "100%", minWidth: 0 }}
                           >
@@ -5275,7 +5276,7 @@ export default function CreateEntryPage() {
                             busy={busy && busyTarget === "community"}
                             busyLabel="Registering..."
                             minWidth={0}
-                            stableHeight={46}
+                            stableHeight={52}
                             debugId="create-entry.bank.finish-registration"
                             style={{ ...secondaryBtn(), width: "100%", minWidth: 0 }}
                           >
@@ -5445,7 +5446,7 @@ export default function CreateEntryPage() {
                     <SecondaryButton
                       onClick={clearCommunityBlock}
                       minWidth={116}
-                      stableHeight={44}
+                      stableHeight={52}
                       debugId="create-entry.community.clear"
                       style={{ ...secondaryBtn(), minWidth: 116 }}
                     >
@@ -5614,5 +5615,3 @@ export default function CreateEntryPage() {
     </div>
   );
 }
-
-

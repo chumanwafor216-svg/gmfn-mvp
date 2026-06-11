@@ -20,19 +20,19 @@ export type TrustEvidenceLanguage = {
 export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
   {
     band: "A",
-    title: "Strong visible trust evidence",
+    title: "Strong visible evidence",
     plainMeaning:
-      "This person has strong visible evidence from community behaviour, follow-through, and recorded trust signals.",
+      "The record has strong visible evidence from community behaviour, follow-through, and recorded trust signals.",
     implication:
-      "You may consider normal low-to-medium risk support, trade, or referral decisions, but still check the current details and expiry.",
+      "Normal low-to-medium risk support, trade, or referral decisions may be considered, while still checking the current details and expiry.",
     nextStep: "Proceed carefully and match the size of the decision to the evidence shown.",
     tone: "strong",
   },
   {
     band: "B",
-    title: "Good visible trust evidence",
+    title: "Good visible evidence",
     plainMeaning:
-      "This person has a useful trust story, but the reader should still check what kind of evidence created it.",
+      "The record has useful evidence, but the reader should still check what kind of events created it.",
     implication:
       "A small or moderate decision may be reasonable. For bigger money, goods, work, or responsibility, ask for the fuller Trust Passport.",
     nextStep: "Proceed with care; ask for more proof if the risk is meaningful.",
@@ -40,7 +40,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
   },
   {
     band: "C",
-    title: "Moderate or mixed evidence",
+    title: "Mixed evidence; verify before larger decisions",
     plainMeaning:
       "There is some trust evidence, but it may not be deep, recent, or consistent enough for a confident decision.",
     implication:
@@ -50,9 +50,9 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
   },
   {
     band: "D",
-    title: "Weak or pressured trust evidence",
+    title: "Limited or pressured evidence; reduce exposure",
     plainMeaning:
-      "The visible record is showing pressure, limited evidence, or weak follow-through. This does not mean the person is bad; it means the proof is not strong yet.",
+      "The visible record is showing pressure, limited evidence, or weak follow-through. This is not a character judgement; it means the current proof is not strong enough yet.",
     implication:
       "Do not depend heavily on this record for credit, goods, work, or serious support. Reduce the amount, ask for repair evidence, or request community confirmation.",
     nextStep: "Ask what needs care and wait for stronger evidence before a serious decision.",
@@ -60,7 +60,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
   },
   {
     band: "E",
-    title: "Very limited or concerning evidence",
+    title: "Insufficient evidence for serious reliance",
     plainMeaning:
       "There is not enough reliable visible evidence, or the record has warning signs that need attention.",
     implication:
@@ -70,7 +70,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
   },
   {
     band: "F",
-    title: "No usable trust basis yet",
+    title: "No usable evidence basis yet",
     plainMeaning:
       "The record is missing usable evidence or has a negative reading. The reader cannot make a careful trust decision from this alone.",
     implication:
@@ -84,11 +84,11 @@ export const TRUST_BAND_SHORT_LABELS: Array<{
   band: "A" | "B" | "C" | "D" | "E";
   label: string;
 }> = [
-  { band: "A", label: "Strongly trusted" },
-  { band: "B", label: "Generally trusted" },
-  { band: "C", label: "Mixed" },
-  { band: "D", label: "Needs attention" },
-  { band: "E", label: "High pressure" },
+  { band: "A", label: "Strong evidence" },
+  { band: "B", label: "Good evidence" },
+  { band: "C", label: "Mixed evidence" },
+  { band: "D", label: "Limited evidence" },
+  { band: "E", label: "Insufficient evidence" },
 ];
 
 export const TRUST_EVIDENCE_LANGUAGE: Record<

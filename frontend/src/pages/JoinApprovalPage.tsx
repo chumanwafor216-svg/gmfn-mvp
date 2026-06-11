@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
 import {
   CardActionRow,
@@ -189,6 +190,62 @@ function statusTone(status: NormalizedStatus) {
     text: "#475569",
     title: "Unknown",
   };
+}
+
+function statusIconName(status: NormalizedStatus): GsnIconName {
+  if (status === "approved") return "check";
+  if (status === "pending") return "document";
+  if (status === "rejected") return "alert";
+  return "shield";
+}
+
+function approvalIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 24
+): React.ReactElement {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      <GsnLegacyIcon
+        name={name}
+        size={size}
+        decorative
+        style={{ display: "inline-grid", flex: "0 0 auto" }}
+      />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function approvalIconTile(name: GsnIconName, size = 46): React.ReactElement {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 16,
+        display: "inline-grid",
+        placeItems: "center",
+        flex: `0 0 ${size}px`,
+        border: "1px solid rgba(123,181,255,0.24)",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%)",
+        boxShadow:
+          "0 14px 30px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.08)",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(28, Math.round(size * 0.76))} decorative />
+    </span>
+  );
 }
 
 function mergeSearchIntoPath(to: string, currentSearch: string): string {
@@ -420,8 +477,11 @@ export default function JoinApprovalPage() {
             flexWrap: "wrap",
           }}
         >
+          {approvalIconTile(statusIconName(status), isCompact ? 48 : 54)}
           <div>
-            <div style={sectionLabel()}>Approval status</div>
+            <div style={sectionLabel()}>
+              {approvalIconText("shield", "Approval status", 22)}
+            </div>
             <div
               style={{
                 marginTop: 8,
@@ -444,7 +504,7 @@ export default function JoinApprovalPage() {
             onClick={goBack}
             debugId="join-approval.back"
           >
-            Back
+            {approvalIconText("navigation", "Back", 22)}
           </SecondaryButton>
         </div>
 
@@ -460,7 +520,7 @@ export default function JoinApprovalPage() {
 
       {loading ? (
         <div style={{ ...pageCard(), marginTop: 18, color: "#F8FBFF" }}>
-          <strong>Loading approval status...</strong>
+          <strong>{approvalIconText("refresh", "Loading approval status...", 24)}</strong>
         </div>
       ) : null}
 
@@ -493,7 +553,9 @@ export default function JoinApprovalPage() {
                 border: tone.border,
               }}
             >
-              <div style={sectionLabel()}>Status</div>
+              <div style={sectionLabel()}>
+                {approvalIconText(statusIconName(status), "Status", 22)}
+              </div>
               <div
                 style={{
                   marginTop: 8,
@@ -517,37 +579,55 @@ export default function JoinApprovalPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <span style={badge(true)}>Status: {tone.title}</span>
-                <span style={badge(false)}>Request ID: {requestLabel}</span>
+                <span style={badge(true)}>
+                  {approvalIconText(statusIconName(status), <>Status: {tone.title}</>, 22)}
+                </span>
                 <span style={badge(false)}>
-                  Current step:{" "}
-                  {status === "approved"
-                    ? "Activation ready"
-                    : status === "pending"
-                    ? "Awaiting decision"
-                    : status === "rejected"
-                    ? "Request closed"
-                    : "Status review"}
+                  {approvalIconText("document", <>Request ID: {requestLabel}</>, 22)}
+                </span>
+                <span style={badge(false)}>
+                  {approvalIconText(
+                    status === "approved" ? "join-person-plus" : "shield",
+                    <>
+                      Current step:{" "}
+                      {status === "approved"
+                        ? "Activation ready"
+                        : status === "pending"
+                          ? "Awaiting decision"
+                          : status === "rejected"
+                            ? "Request closed"
+                            : "Status review"}
+                    </>,
+                    22
+                  )}
                 </span>
                 {communityLabel !== "Not available yet" ? (
-                  <span style={badge(false)}>Community: {communityLabel}</span>
+                  <span style={badge(false)}>
+                    {approvalIconText("community", <>Community: {communityLabel}</>, 22)}
+                  </span>
                 ) : null}
                 {marketplaceLabel ? (
                   <span style={badge(false)}>
-                    Community / Market: {marketplaceLabel}
+                    {approvalIconText("shop", <>Community / Market: {marketplaceLabel}</>, 22)}
                   </span>
                 ) : null}
                 {safeStr(data?.community_code) ? (
                   <span style={badge(false)}>
-                    Community ID: {safeStr(data?.community_code)}
+                    {approvalIconText("id", <>Community ID: {safeStr(data?.community_code)}</>, 22)}
                   </span>
                 ) : null}
-                {gmfnId ? <span style={badge(false)}>GSN ID: {gmfnId}</span> : null}
+                {gmfnId ? (
+                  <span style={badge(false)}>
+                    {approvalIconText("id", <>GSN ID: {gmfnId}</>, 22)}
+                  </span>
+                ) : null}
               </div>
             </div>
 
             <div style={pageCard()}>
-              <div style={sectionLabel()}>Request details</div>
+              <div style={sectionLabel()}>
+                {approvalIconText("document", "Request details", 22)}
+              </div>
 
               <div
                 style={{
@@ -558,7 +638,9 @@ export default function JoinApprovalPage() {
                 }}
               >
                 <div style={softCard()}>
-                  <div style={sectionLabel()}>Request ID</div>
+                  <div style={sectionLabel()}>
+                    {approvalIconText("document", "Request ID", 22)}
+                  </div>
                   <div
                     style={{
                       marginTop: 8,
@@ -573,7 +655,9 @@ export default function JoinApprovalPage() {
                 </div>
 
                 <div style={softCard()}>
-                  <div style={sectionLabel()}>Community</div>
+                  <div style={sectionLabel()}>
+                    {approvalIconText("community", "Community", 22)}
+                  </div>
                   <div
                     style={{
                       marginTop: 8,
@@ -588,7 +672,9 @@ export default function JoinApprovalPage() {
 
                 {marketplaceLabel ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>Community / Market</div>
+                    <div style={sectionLabel()}>
+                      {approvalIconText("shop", "Community / Market", 22)}
+                    </div>
                     <div
                       style={{
                         marginTop: 8,
@@ -604,7 +690,9 @@ export default function JoinApprovalPage() {
 
                 {safeStr(data?.community_code) ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>Community ID</div>
+                    <div style={sectionLabel()}>
+                      {approvalIconText("id", "Community ID", 22)}
+                    </div>
                     <div
                       style={{
                         marginTop: 8,
@@ -621,7 +709,11 @@ export default function JoinApprovalPage() {
                 {reviewedAt ? (
                   <div style={softCard()}>
                     <div style={sectionLabel()}>
-                      {status === "approved" ? "Approved / reviewed" : "Reviewed"}
+                      {approvalIconText(
+                        status === "approved" ? "check" : "document",
+                        status === "approved" ? "Approved / reviewed" : "Reviewed",
+                        22
+                      )}
                     </div>
                     <div
                       style={{
@@ -638,7 +730,9 @@ export default function JoinApprovalPage() {
 
                 {status === "approved" ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>GSN ID</div>
+                    <div style={sectionLabel()}>
+                      {approvalIconText("id", "GSN ID", 22)}
+                    </div>
                     <div
                       style={{
                         marginTop: 8,
@@ -655,7 +749,9 @@ export default function JoinApprovalPage() {
 
                 {safeStr(data?.next_step) ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>Next step</div>
+                    <div style={sectionLabel()}>
+                      {approvalIconText("navigation", "Next step", 22)}
+                    </div>
                     <div
                       style={{
                         marginTop: 8,
@@ -674,7 +770,9 @@ export default function JoinApprovalPage() {
 
           <div style={{ display: "grid", gap: 18 }}>
             <div style={pageCard()}>
-              <div style={sectionLabel()}>Next action</div>
+              <div style={sectionLabel()}>
+                {approvalIconText("navigation", "Next action", 22)}
+              </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
                 {status === "approved"
@@ -705,7 +803,7 @@ export default function JoinApprovalPage() {
                     }
                     debugId={activationCta.debugId}
                   >
-                    Open activation
+                    {approvalIconText("join-person-plus", "Open activation", 24)}
                   </PrimaryButton>
                 ) : null}
 
@@ -715,7 +813,7 @@ export default function JoinApprovalPage() {
                     kind="secondary"
                     debugId={pendingCta.debugId}
                   >
-                    Open pending status
+                    {approvalIconText("eye", "Open pending status", 24)}
                   </StableCtaLink>
                 ) : null}
 
@@ -724,13 +822,15 @@ export default function JoinApprovalPage() {
                   kind="secondary"
                   debugId={welcomeCta.debugId}
                 >
-                  Return to Welcome
+                  {approvalIconText("home", "Return to Welcome", 24)}
                 </StableCtaLink>
               </CardActionRow>
             </div>
 
             <div style={pageCard()}>
-              <div style={sectionLabel()}>Support</div>
+              <div style={sectionLabel()}>
+                {approvalIconText("document", "Support", 22)}
+              </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
                 If you need to understand the system better before the next step,
@@ -750,7 +850,7 @@ export default function JoinApprovalPage() {
                   preserveSearch
                   debugId={guideCta.debugId}
                 >
-                  Open full GSN guide
+                  {approvalIconText("document", "Open full GSN guide", 24)}
                 </StableCtaLink>
 
                 <StableCtaLink
@@ -759,7 +859,7 @@ export default function JoinApprovalPage() {
                   preserveSearch
                   debugId="join-approval.focus-guide"
                 >
-                  Read about Focus Commitments first
+                  {approvalIconText("shield", "Read about Focus Commitments first", 24)}
                 </StableCtaLink>
               </CardActionRow>
             </div>

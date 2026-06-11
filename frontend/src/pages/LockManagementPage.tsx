@@ -1,4 +1,5 @@
 import React from "react";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink } from "../components/StableButton";
 import { getSelectedClanId } from "../lib/api";
@@ -68,6 +69,39 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function labelWithIcon(icon: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={icon} size={24} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function cardHeading(icon: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+      <span
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 14,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#EAF3FF",
+          color: "#0B63D1",
+          border: "1px solid rgba(11,99,209,0.14)",
+          flex: "0 0 auto",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={32} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
@@ -100,7 +134,7 @@ export default function LockManagementPage() {
       <PageTopNav
         sectionLabel="Lock Management"
         title="Guarantee Lock Management"
-        subtitle="This is intentionally read-only in the MVP because the backend does not expose a guarantee lock-release endpoint yet."
+        subtitle="Guarantee release is paused until GSN can verify the release safely."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -109,7 +143,7 @@ export default function LockManagementPage() {
       <section
         style={pageCard("linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%)")}
       >
-        <div style={sectionLabel()}>MVP status</div>
+        <div style={sectionLabel()}>Current Status</div>
 
         <div
           style={{
@@ -121,14 +155,13 @@ export default function LockManagementPage() {
             maxWidth: 860,
           }}
         >
-          Lock release is not enabled in this build.
+          Guarantee release is not available yet.
         </div>
 
         <div style={{ marginTop: 12, ...helperText(), maxWidth: 900 }}>
-          Do not pretend this action exists when the backend cannot perform it.
-          A simulated release page would waste testing time and create false confidence.
-          Until the backend exposes a real audited release-lock endpoint, this page
-          remains informational only.
+          GSN will not show a release button until the repayment, cancellation,
+          or admin decision can be checked safely. That protects the member,
+          guarantor, and community record from a release that cannot be defended.
         </div>
 
         <div
@@ -139,14 +172,14 @@ export default function LockManagementPage() {
             flexWrap: "wrap",
           }}
         >
-          <span style={badge(true)}>Disabled in MVP</span>
-          <span style={badge(false)}>Backend endpoint missing</span>
-          <span style={badge(false)}>Read-only admin note</span>
+          <span style={badge(true)}>{labelWithIcon("lock", "Release paused")}</span>
+          <span style={badge(false)}>{labelWithIcon("shield", "Verified path needed")}</span>
+          <span style={badge(false)}>{labelWithIcon("document", "Read-only guidance")}</span>
         </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Why this is blocked</div>
+        <div style={sectionLabel()}>Why Release Is Paused</div>
 
         <div
           style={{
@@ -164,7 +197,7 @@ export default function LockManagementPage() {
                 fontSize: 16,
               }}
             >
-              Real money logic
+              {cardHeading("wallet", "Real money is involved")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Releasing guarantee locks is not a cosmetic action. It affects
@@ -180,11 +213,11 @@ export default function LockManagementPage() {
                 fontSize: 16,
               }}
             >
-              Backend authority required
+              {cardHeading("shield", "The release must be verified")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This action must be enforced server-side with proper validation,
-              not simulated from the frontend.
+              GSN must confirm the release rule before the page lets anyone
+              change a guarantee record.
             </div>
           </div>
 
@@ -196,18 +229,18 @@ export default function LockManagementPage() {
                 fontSize: 16,
               }}
             >
-              MVP discipline
+              {cardHeading("check", "No false controls")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              If the endpoint is absent, the UI should say so clearly and stop
-              there. That is cleaner than inactive controls that imply a live release path.
+              If a safe release path is not live, the page should say so clearly
+              instead of offering a button that cannot finish the job.
             </div>
           </div>
         </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>What is needed later</div>
+        <div style={sectionLabel()}>What Must Be True First</div>
 
         <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
           <div style={softCard("#F8FBFF")}>
@@ -218,11 +251,11 @@ export default function LockManagementPage() {
                 fontSize: 16,
               }}
             >
-              1. Backend release endpoint
+              {cardHeading("lock", "1. A verified release action")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              A real server endpoint must exist to release guarantee locks only
-              when repayment or cancellation rules are satisfied.
+              GSN must be able to release a guarantee only after repayment,
+              cancellation, or an approved admin decision is confirmed.
             </div>
           </div>
 
@@ -234,7 +267,7 @@ export default function LockManagementPage() {
                 fontSize: 16,
               }}
             >
-              2. Audit trail
+              {cardHeading("document", "2. A clear audit trail")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Every release action should record who triggered it, why it was
@@ -250,22 +283,22 @@ export default function LockManagementPage() {
                 fontSize: 16,
               }}
             >
-              3. Feature branch only
+              {cardHeading("shield", "3. Guarded rollout")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This should be implemented after MVP freeze on a dedicated branch,
-              not mixed into stable pass-testing.
+              This action should open only when the full release path has been
+              checked, tested, and approved for use.
             </div>
           </div>
         </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Use these pages instead</div>
+        <div style={sectionLabel()}>Use These Pages Now</div>
 
         <div style={{ marginTop: 14, ...helperText(), maxWidth: 860 }}>
-          For this pass, keep people on the real pages that already exist and
-          already work.
+          These pages show the live loan, exposure, and operations records that
+          can still guide the next decision.
         </div>
 
         <div
@@ -279,32 +312,31 @@ export default function LockManagementPage() {
           <StableCtaLink
             to={routes.workbench}
             kind="primary"
-            stableHeight={42}
+            stableHeight={52}
             debugId="lock-management.open-workbench"
           >
-            Open Loan Workbench
+            {labelWithIcon("briefcase", "Open Loan Workbench")}
           </StableCtaLink>
 
           <StableCtaLink
             to={routes.systemOperations}
             kind="secondary"
-            stableHeight={42}
+            stableHeight={52}
             debugId="lock-management.open-system-operations"
           >
-            Open System Operations
+            {labelWithIcon("shield", "Open System Operations")}
           </StableCtaLink>
 
           <StableCtaLink
             to={routes.dashboard}
             kind="soft"
-            stableHeight={38}
+            stableHeight={52}
             debugId="lock-management.back-dashboard"
           >
-            Back to Dashboard
+            {labelWithIcon("home", "Back to Dashboard")}
           </StableCtaLink>
         </div>
       </section>
     </div>
   );
 }
-

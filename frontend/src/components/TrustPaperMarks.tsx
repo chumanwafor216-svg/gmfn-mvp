@@ -5,17 +5,24 @@ export type TrustPaperIconName =
   | "bank"
   | "briefcase"
   | "calendar"
+  | "card"
   | "chart"
+  | "chevronDown"
+  | "chevronUp"
   | "check"
   | "community"
   | "copy"
   | "document"
+  | "eye"
   | "globe"
   | "hash"
   | "home"
   | "id"
   | "image"
   | "lock"
+  | "megaphone"
+  | "navigation"
+  | "pen"
   | "phone"
   | "qr"
   | "refresh"
@@ -25,6 +32,7 @@ export type TrustPaperIconName =
   | "spark"
   | "tag"
   | "user"
+  | "vault"
   | "video"
   | "wallet";
 
@@ -85,12 +93,27 @@ export function TrustPaperIcon({
           <path {...common} d="M8 3v4M16 3v4M4 10h16" />
           <path {...common} d="M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" />
         </>
+      ) : name === "card" ? (
+        <>
+          <rect {...common} x="3.5" y="6" width="17" height="12" rx="2.2" />
+          <path {...common} d="M3.5 10h17" />
+          <path {...common} d="M7 14.5h4.5" />
+          <path {...common} d="M15.5 14.5h1.5" />
+        </>
       ) : name === "chart" ? (
         <>
           <path {...common} d="M4 19V5" />
           <path {...common} d="M4 19h16" />
           <path {...common} d="M7 15l3-4 3 2 4-7" />
           <path {...common} d="M17 6h3v3" />
+        </>
+      ) : name === "chevronDown" ? (
+        <>
+          <path {...common} d="m6 9 6 6 6-6" />
+        </>
+      ) : name === "chevronUp" ? (
+        <>
+          <path {...common} d="m6 15 6-6 6 6" />
         </>
       ) : name === "check" ? (
         <>
@@ -114,6 +137,11 @@ export function TrustPaperIcon({
           <path {...common} d="M7 3h7l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
           <path {...common} d="M14 3v5h5" />
           <path {...common} d="M8.5 13h7M8.5 16h7M8.5 10h3" />
+        </>
+      ) : name === "eye" ? (
+        <>
+          <path {...common} d="M3.5 12s3.2-5.5 8.5-5.5S20.5 12 20.5 12s-3.2 5.5-8.5 5.5S3.5 12 3.5 12Z" />
+          <circle {...common} cx="12" cy="12" r="2.4" />
         </>
       ) : name === "globe" ? (
         <>
@@ -147,6 +175,23 @@ export function TrustPaperIcon({
           <rect {...common} x="5" y="10" width="14" height="10" rx="2" />
           <path {...common} d="M8 10V7a4 4 0 0 1 8 0v3" />
           <path {...common} d="M12 14v2" />
+        </>
+      ) : name === "megaphone" ? (
+        <>
+          <path {...common} d="M4 13h3l8 4V7l-8 4H4v2Z" />
+          <path {...common} d="M7 13l1 5" />
+          <path {...common} d="M18 9.5c.8.7 1.2 1.5 1.2 2.5s-.4 1.8-1.2 2.5" />
+          <path {...common} d="M19.5 7.2c1.4 1.2 2 2.8 2 4.8s-.6 3.6-2 4.8" />
+        </>
+      ) : name === "navigation" ? (
+        <>
+          <path {...common} d="M12 3.5 19.5 20 12 16.5 4.5 20 12 3.5Z" />
+          <path {...common} d="M12 3.5v13" />
+        </>
+      ) : name === "pen" ? (
+        <>
+          <path {...common} d="M4.5 19.5 8 18.8 18.4 8.4a2.2 2.2 0 0 0-3.1-3.1L4.9 15.7 4.5 19.5Z" />
+          <path {...common} d="m14 6.6 3.4 3.4" />
         </>
       ) : name === "phone" ? (
         <>
@@ -195,6 +240,13 @@ export function TrustPaperIcon({
         <>
           <circle {...common} cx="12" cy="8" r="4" />
           <path {...common} d="M4.5 21c.9-4.2 3.4-6.3 7.5-6.3s6.6 2.1 7.5 6.3" />
+        </>
+      ) : name === "vault" ? (
+        <>
+          <rect {...common} x="4" y="6" width="16" height="13" rx="2.4" />
+          <circle {...common} cx="12" cy="12.5" r="2.8" />
+          <path {...common} d="M12 9.7v5.6M9.2 12.5h5.6" />
+          <path {...common} d="M7 6V4h10v2" />
         </>
       ) : name === "video" ? (
         <>

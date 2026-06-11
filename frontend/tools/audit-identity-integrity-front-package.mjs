@@ -36,8 +36,8 @@ function assertNotContains(pattern, message) {
 }
 
 assertContains(
-  /import \{[\s\S]*?TrustPaperIcon[\s\S]*?type TrustPaperIconName[\s\S]*?\} from "\.\.\/components\/TrustPaperMarks";/,
-  "Identity Integrity must use the shared SVG trust pictogram set instead of emoji-style marks."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";/,
+  "Identity Integrity must use the shared GSN 3D icon bridge instead of legacy line or emoji-style marks."
 );
 
 assertContains(
@@ -46,8 +46,8 @@ assertContains(
 );
 
 assertContains(
-  /data-identity-integrity-fact-grid="true"[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?compactFactCard\(\)[\s\S]*?TrustPaperIcon name=\{item\.icon\}/,
-  "Identity Integrity front package must expose short identity facts in compact SVG-led mini cards."
+  /data-identity-integrity-fact-grid="true"[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?compactFactCard\(\)[\s\S]*?GsnLegacyIcon name=\{item\.icon\}/,
+  "Identity Integrity front package must expose short identity facts in compact 3D icon-led mini cards."
 );
 
 assertContains(
@@ -56,8 +56,8 @@ assertContains(
 );
 
 assertContains(
-  /function sectionIconHeader\([\s\S]*?icon: TrustPaperIconName[\s\S]*?TrustPaperIcon name=\{icon\} size=\{23\} strokeWidth=\{2\.85\}/,
-  "Identity Integrity secondary sections must keep strong SVG-led headers instead of text-only explanation blocks."
+  /function sectionIconHeader\([\s\S]*?icon: GsnIconName[\s\S]*?GsnLegacyIcon name=\{icon\} size=\{36\}/,
+  "Identity Integrity secondary sections must keep strong 3D icon-led headers instead of text-only explanation blocks."
 );
 
 assertContains(
@@ -86,7 +86,7 @@ assertContains(
 );
 
 assertContains(
-  /taskIconBadge\(active, item\.tone\)[\s\S]*?TrustPaperIcon[\s\S]*?size=\{active \? 20 : 18\}[\s\S]*?strokeWidth=\{2\.85\}/,
+  /taskIconBadge\(active, item\.tone\)[\s\S]*?GsnLegacyIcon name=\{item\.icon\} size=\{active \? 30 : 26\}/,
   "Identity Integrity task selector icons must stay large, dark, and badge-backed on phone."
 );
 
@@ -150,6 +150,11 @@ assertContains(
   "Identity Integrity must provide signed-in selfie and ID-photo evidence capture instead of an explanation-only ID route."
 );
 
+assertNotContains(
+  /DASHBOARD_AVATAR_STORAGE_KEY|gmfn\.member\.avatar|localStorage\.setItem\([^)]*avatar|profile_image_url:\s*identityPhotoKind/g,
+  "Identity Integrity signed-in photo evidence must not overwrite the dashboard/profile avatar."
+);
+
 assertContains(
   /payoutDetails: routeTarget\([\s\S]*?"payoutDetails"[\s\S]*?communityConfirmations: routeTarget\([\s\S]*?"communityConfirmationInbox"[\s\S]*?to: routes\.communityConfirmations[\s\S]*?to: routes\.payoutDetails/,
   "Identity Integrity must route real bank/wallet and community tasks to real completion surfaces."
@@ -176,5 +181,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Identity Integrity front package audit passed: compact SVG-led identity package and active proof task are caged."
+  "Identity Integrity front package audit passed: compact 3D icon-led identity package and active proof task are caged."
 );

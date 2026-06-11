@@ -111,7 +111,7 @@ export default function IdentityImageBlock({
       <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", minHeight: 38 }}>
         <PrimaryButton
           onClick={() => uploadInputRef.current?.click()}
-          stableHeight={38}
+          stableHeight={52}
           debugId="identity-image.upload"
           style={btn(true)}
         >
@@ -120,7 +120,7 @@ export default function IdentityImageBlock({
 
         <SecondaryButton
           onClick={() => cameraInputRef.current?.click()}
-          stableHeight={38}
+          stableHeight={52}
           debugId="identity-image.camera"
           style={btn(false)}
         >
@@ -129,7 +129,7 @@ export default function IdentityImageBlock({
 
         <SecondaryButton
           onClick={() => uploadInputRef.current?.click()}
-          stableHeight={38}
+          stableHeight={52}
           debugId="identity-image.change"
           style={btn(false)}
         >
@@ -138,7 +138,7 @@ export default function IdentityImageBlock({
 
         <SecondaryButton
           onClick={removeImage}
-          stableHeight={38}
+          stableHeight={52}
           debugId="identity-image.remove"
           style={btn(false)}
         >

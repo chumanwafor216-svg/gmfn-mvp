@@ -115,6 +115,28 @@ The original phone flow should currently be treated as the reference point for p
 
 ## 4. Core system principles
 
+### 4.0 Pilot pipeline conservation protocol
+
+During the active pilot, deployment must be intentional rather than automatic.
+The current pipeline-saving posture is:
+
+- Render frontend Auto-Deploy is turned off in the Render dashboard.
+- `.github/workflows/render-deploy.yml` must stay manual-only
+  (`workflow_dispatch`) and must not regain a `push` trigger unless the product
+  owner explicitly approves it.
+- `.github/workflows/tests.yml` must keep backend tests path-filtered to
+  backend-relevant files and manual dispatch. Frontend/docs-only polish should
+  not automatically burn backend CI minutes.
+- Local laptop/phone testing is the default proof path for UI/button work:
+  run the backend locally on `0.0.0.0:8012`, run Vite locally on
+  `0.0.0.0:5173`, and test from the phone on the same Wi-Fi before spending
+  Render pipeline minutes.
+- Deploy only when the product owner says the current batch should go live.
+
+Unabated truth: this saves pipeline minutes but removes automatic deployment as
+a safety net. A pushed commit is not necessarily live until a manual Render
+deploy is triggered or Render deployment is otherwise confirmed.
+
 ### 4.1 Phone behavior is the functional reference
 The original phone implementation is the benchmark for expected user flow and business intent.
 

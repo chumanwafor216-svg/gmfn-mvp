@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
 import { getMe } from "../lib/api";
 
@@ -10,6 +11,19 @@ function card(): React.CSSProperties {
     background: "rgba(255,255,255,0.92)",
     boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
   };
+}
+
+function profileIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 24
+) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={name} size={size} />
+      <span>{label}</span>
+    </span>
+  );
 }
 
 export default function ProfilePage() {
@@ -48,8 +62,12 @@ export default function ProfilePage() {
 
   return (
     <div style={{ padding: 18, maxWidth: 900 }}>
-      <div style={{ fontSize: 24, fontWeight: 1000 }}>My Profile</div>
-      <div style={{ color: "#64748b", fontSize: 12 }}>Human identity for trust (low-end friendly).</div>
+      <div style={{ fontSize: 24, fontWeight: 1000 }}>
+        {profileIconText("id", "My Profile", 28)}
+      </div>
+      <div style={{ color: "#64748b", fontSize: 12 }}>
+        {profileIconText("shield", "Human identity for trust (low-end friendly).", 20)}
+      </div>
 
       <div style={{ marginTop: 12, ...card() }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -68,20 +86,24 @@ export default function ProfilePage() {
             }}
             title="Profile mark"
           >
-            P
+            <GsnLegacyIcon name="id" size={44} />
           </div>
 
           <div>
-            <div style={{ fontSize: 12, color: "#64748b" }}>Signed in</div>
+            <div style={{ fontSize: 12, color: "#64748b" }}>
+              {profileIconText("check", "Signed in", 20)}
+            </div>
             <div style={{ fontWeight: 1000 }}>{me?.email ?? "Not available"}</div>
             <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-              Role: <b>{me?.role ?? "Not available"}</b>
+              {profileIconText("user", <>Role: <b>{me?.role ?? "Not available"}</b></>, 20)}
             </div>
           </div>
         </div>
 
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "160px 1fr", gap: 10 }}>
-          <div style={{ color: "#64748b", fontSize: 12 }}>Display name</div>
+          <div style={{ color: "#64748b", fontSize: 12 }}>
+            {profileIconText("user", "Display name", 20)}
+          </div>
           <input
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
@@ -89,7 +111,9 @@ export default function ProfilePage() {
             style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
           />
 
-          <div style={{ color: "#64748b", fontSize: 12 }}>Phone</div>
+          <div style={{ color: "#64748b", fontSize: 12 }}>
+            {profileIconText("phone", "Phone", 20)}
+          </div>
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
@@ -97,7 +121,9 @@ export default function ProfilePage() {
             style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
           />
 
-          <div style={{ color: "#64748b", fontSize: 12 }}>Country</div>
+          <div style={{ color: "#64748b", fontSize: 12 }}>
+            {profileIconText("globe", "Country", 20)}
+          </div>
           <input
             value={country}
             onChange={(e) => setCountry(e.target.value)}
@@ -112,7 +138,7 @@ export default function ProfilePage() {
             onClick={saveLocal}
             debugId="profile.save-local"
           >
-            Save
+            {profileIconText("check", "Save")}
           </PrimaryButton>
           <SecondaryButton
             type="button"
@@ -122,14 +148,22 @@ export default function ProfilePage() {
             busyLabel="Refreshing..."
             debugId="profile.refresh"
           >
-            Refresh
+            {profileIconText("refresh", "Refresh")}
           </SecondaryButton>
         </CardActionRow>
 
-        {note && <div style={{ marginTop: 10, color: "#166534", fontWeight: 900 }}>{note}</div>}
+        {note && (
+          <div style={{ marginTop: 10, color: "#166534", fontWeight: 900 }}>
+            {profileIconText("check", note, 22)}
+          </div>
+        )}
 
         <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
-          Later upgrade: store profile fields in backend for cross-device portability.
+          {profileIconText(
+            "records-folder",
+            "Later upgrade: store profile fields in backend for cross-device portability.",
+            20
+          )}
         </div>
       </div>
     </div>

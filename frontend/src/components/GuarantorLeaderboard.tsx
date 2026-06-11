@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../lib/api";
 
-// ✅ Adjust this import if your file is in a different location.
-// From your tabs, you have "leaderboard.ts" in src/lib, so this should be correct:
 import { getGuarantorLeaderboard } from "../lib/leaderboard";
 
 // If your leaderboard types are exported, keep this.

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
 import {
   PrimaryButton,
@@ -139,6 +140,22 @@ type FinanceGlyphName =
   | "shield"
   | "signal"
   | "wallet";
+
+const FINANCE_GLYPH_ICON_MAP = {
+  bank: "financeInstitution",
+  card: "card",
+  chart: "financeInstitution",
+  check: "check",
+  community: "community",
+  down: "wallet",
+  history: "records-folder",
+  ledger: "proof",
+  out: "wallet",
+  receipt: "proof",
+  shield: "shield",
+  signal: "financeInstitution",
+  wallet: "wallet",
+} satisfies Record<FinanceGlyphName, GsnIconName>;
 
 const FINANCE_UI_STORAGE_KEY = "gmfn.finance.sections.v3";
 
@@ -550,120 +567,13 @@ function FinanceGlyph({
   size?: number;
   color?: string;
 }) {
-  const common = {
-    fill: "none",
-    stroke: color,
-    strokeWidth: 2.2,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-
   return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      width={size}
-      height={size}
-      focusable="false"
-      style={{ display: "block", flexShrink: 0 }}
-    >
-      {name === "bank" ? (
-        <>
-          <path {...common} d="M4 10h16" />
-          <path {...common} d="M5 10 12 5l7 5" />
-          <path {...common} d="M6 10v8" />
-          <path {...common} d="M10 10v8" />
-          <path {...common} d="M14 10v8" />
-          <path {...common} d="M18 10v8" />
-          <path {...common} d="M4 19h16" />
-        </>
-      ) : null}
-      {name === "card" ? (
-        <>
-          <rect {...common} x="3.5" y="6" width="17" height="12" rx="2.5" />
-          <path {...common} d="M4 10h16" />
-          <path {...common} d="M7 15h4" />
-        </>
-      ) : null}
-      {name === "chart" ? (
-        <>
-          <path {...common} d="M4 18V7" />
-          <path {...common} d="M4 18h16" />
-          <path {...common} d="m7 15 3-3 3 2 4-6" />
-        </>
-      ) : null}
-      {name === "check" ? (
-        <>
-          <circle {...common} cx="12" cy="12" r="8" />
-          <path {...common} d="m8.5 12.2 2.2 2.2 4.8-5" />
-        </>
-      ) : null}
-      {name === "community" ? (
-        <>
-          <path {...common} d="M4 19V9l8-5 8 5v10" />
-          <path {...common} d="M9 19v-6h6v6" />
-          <path {...common} d="M4 19h16" />
-        </>
-      ) : null}
-      {name === "down" ? (
-        <>
-          <path {...common} d="M12 4v13" />
-          <path {...common} d="m7 12 5 5 5-5" />
-          <path {...common} d="M5 20h14" />
-        </>
-      ) : null}
-      {name === "history" ? (
-        <>
-          <path {...common} d="M4 12a8 8 0 1 0 2.35-5.65" />
-          <path {...common} d="M4 5v5h5" />
-          <path {...common} d="M12 8v5l3 2" />
-        </>
-      ) : null}
-      {name === "ledger" ? (
-        <>
-          <rect {...common} x="5" y="4" width="14" height="16" rx="2" />
-          <path {...common} d="M8 8h8" />
-          <path {...common} d="M8 12h8" />
-          <path {...common} d="M8 16h5" />
-        </>
-      ) : null}
-      {name === "out" ? (
-        <>
-          <path {...common} d="M12 20V7" />
-          <path {...common} d="m7 12 5-5 5 5" />
-          <path {...common} d="M5 20h14" />
-        </>
-      ) : null}
-      {name === "receipt" ? (
-        <>
-          <path {...common} d="M6 4h12v16l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2L6 20V4Z" />
-          <path {...common} d="M9 8h6" />
-          <path {...common} d="M9 12h6" />
-          <path {...common} d="M9 16h3" />
-        </>
-      ) : null}
-      {name === "shield" ? (
-        <>
-          <path {...common} d="M12 4 19 7v5c0 4.2-2.8 6.7-7 8-4.2-1.3-7-3.8-7-8V7l7-3Z" />
-          <path {...common} d="m9 12 2 2 4-4" />
-        </>
-      ) : null}
-      {name === "signal" ? (
-        <>
-          <path {...common} d="M4 18h16" />
-          <path {...common} d="M7 15v3" />
-          <path {...common} d="M12 10v8" />
-          <path {...common} d="M17 6v12" />
-        </>
-      ) : null}
-      {name === "wallet" ? (
-        <>
-          <rect {...common} x="3.5" y="6" width="17" height="12" rx="3" />
-          <path {...common} d="M16 12h4" />
-          <path {...common} d="M7 9h6" />
-        </>
-      ) : null}
-    </svg>
+    <GsnLegacyIcon
+      name={FINANCE_GLYPH_ICON_MAP[name]}
+      size={Math.max(size, Math.round(size * 1.15))}
+      decorative
+      style={{ display: "inline-grid", flex: "0 0 auto", color }}
+    />
   );
 }
 
@@ -769,7 +679,7 @@ function helperText(): React.CSSProperties {
   return {
     color: "#425E78",
     fontSize: 14,
-    lineHeight: 1.75,
+    lineHeight: 1.45,
   };
 }
 
@@ -1746,7 +1656,7 @@ export default function FinancePage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#425E78", fontWeight: 800, lineHeight: 1.8 }}>
+          <div style={{ color: "#425E78", fontWeight: 800, lineHeight: 1.45 }}>
             Loading finance record...
           </div>
         </section>
@@ -1767,7 +1677,7 @@ export default function FinancePage() {
       <PageTopNav
         sectionLabel="Finance"
         title="Finance"
-        subtitle="Finance turns money behaviour into a clear record across communities."
+        subtitle="See money in, money out, rails, and support records."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.marketplace}
@@ -1995,8 +1905,7 @@ export default function FinancePage() {
       <section style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>Choose what you need now</div>
         <div style={{ marginTop: 8, ...helperText() }}>
-          Open one finance lane at a time. Marketplace money stays local there;
-          this page brings your money story together across communities.
+          Open one finance lane at a time. Keep the current money task focused.
         </div>
         <div
           style={{
@@ -2057,19 +1966,22 @@ export default function FinancePage() {
               <span
                 aria-hidden="true"
                 style={{
-                  width: isCompact ? 42 : 54,
-                  height: isCompact ? 42 : 54,
+                  width: isCompact ? 50 : 64,
+                  height: isCompact ? 50 : 64,
                   borderRadius: 999,
-                  background: item.color,
-                  color: "#FFFFFF",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.86) 100%)",
+                  color: "#0B4EA2",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontWeight: 950,
-                  boxShadow: "0 10px 22px rgba(7,23,44,0.12)",
+                  border: "1px solid rgba(12,41,71,0.08)",
+                  boxShadow:
+                    "0 12px 24px rgba(7,23,44,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
                 }}
               >
-                <FinanceGlyph name={item.icon} size={isCompact ? 21 : 26} color="#FFFFFF" />
+                <FinanceGlyph name={item.icon} size={isCompact ? 34 : 44} />
               </span>
               <span
                 style={{
@@ -2194,7 +2106,7 @@ export default function FinancePage() {
           <div>
             <FinanceSectionLabel icon="down">Finance quick snapshot</FinanceSectionLabel>
             <div style={{ marginTop: 7, color: "#52697F", fontSize: 13, fontWeight: 800, lineHeight: 1.45 }}>
-              A short reading only. Open a lane for the full money record.
+              Short reading only. Open a lane for the full record.
             </div>
           </div>
           <span style={badge(false)}>This month</span>
@@ -2249,15 +2161,18 @@ export default function FinancePage() {
                   width: 40,
                   height: 40,
                   borderRadius: 14,
-                  background: item.color,
-                  color: "#FFFFFF",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.86) 100%)",
+                  color: item.color,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 10px 18px rgba(7,23,44,0.10)",
+                  border: "1px solid rgba(12,41,71,0.08)",
+                  boxShadow:
+                    "0 10px 18px rgba(7,23,44,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
                 }}
               >
-                <FinanceGlyph name={item.icon} size={19} color="#FFFFFF" />
+                <FinanceGlyph name={item.icon} size={30} />
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ color: item.color, fontSize: 12, fontWeight: 950 }}>
@@ -2307,7 +2222,7 @@ export default function FinancePage() {
                   openFinanceDetailLane("events", "finance-events");
                 }}
                 minWidth={80}
-                stableHeight={36}
+                stableHeight={52}
                 debugId="finance.events.view-all"
                 style={{
                   border: "none",
@@ -2952,7 +2867,7 @@ export default function FinancePage() {
                 stableHeight={isCompact ? 48 : 52}
                 style={financeDarkButtonStyle()}
               >
-                Open Loans & Support
+                Loans & Support
               </StableCtaLink>
             </div>
           </div>

@@ -96,7 +96,7 @@ export default function TrustBandMeaningGuide({
       <details style={{ marginTop: 12 }}>
         <StableDisclosureSummary
           debugId="trust-band-meaning.toggle"
-          stableHeight={44}
+          stableHeight={52}
           style={{
             borderRadius: 16,
             border: selectedColors.border,

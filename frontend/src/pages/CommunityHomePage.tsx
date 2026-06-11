@@ -7,6 +7,7 @@ import NextActionGuide, {
   type NextActionGuideResolution,
 } from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
@@ -94,6 +95,12 @@ type ActiveCommunitySpotlight = {
   expiresAt: string;
   createdAt: string;
 };
+
+type CommunityIconMark = GsnIconName;
+
+function communityIconGlyph(icon: CommunityIconMark, size = 22): React.ReactNode {
+  return <GsnLegacyIcon name={icon} size={Math.max(26, Math.round(size * 1.28))} />;
+}
 
 const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v5";
 const COMMUNITY_BRAND = {
@@ -727,18 +734,16 @@ function communityQuickActionButton(
 function communityActionIcon(primary = false): React.CSSProperties {
   return {
     flex: "0 0 auto",
-    width: 40,
-    height: 40,
-    borderRadius: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 18,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: primary
-      ? "linear-gradient(180deg, #DDEEFF 0%, #EEF6FF 100%)"
-      : "linear-gradient(180deg, #EAF3FF 0%, #F5FAFF 100%)",
+    background: "rgba(255,255,255,0.94)",
     border: primary
-      ? "1px solid rgba(13,95,168,0.14)"
-      : "1px solid rgba(13,95,168,0.10)",
+      ? "1px solid rgba(226,192,106,0.30)"
+      : "1px solid rgba(13,95,168,0.12)",
     color: "#135A94",
     fontSize: 20,
     lineHeight: 1,
@@ -746,8 +751,8 @@ function communityActionIcon(primary = false): React.CSSProperties {
     whiteSpace: "nowrap",
     textOverflow: "ellipsis",
     boxShadow: primary
-      ? "inset 0 1px 0 rgba(255,255,255,0.08)"
-      : "0 8px 16px rgba(13,95,168,0.08)",
+      ? "0 10px 18px rgba(2,12,27,0.10), inset 0 1px 0 rgba(255,255,255,0.96)"
+      : "0 8px 16px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
   };
 }
 
@@ -2316,7 +2321,7 @@ export default function CommunityHomePage() {
           <PageTopNav
             sectionLabel="Community Home"
             title="Community Home"
-            subtitle="Choose a working community here, confirm where you are, and move into the right community route."
+            subtitle="Choose the community you want to open."
             homeTo={routes.dashboard}
             homeLabel="Dashboard"
             backTo={routes.dashboard}
@@ -2324,13 +2329,13 @@ export default function CommunityHomePage() {
 
           <DomainIntroToggle
             title="About Community Home"
-            body="Community Home is the place where your communities gather in one view. Create or join one first, then come back here to choose the exact group you want to open."
+            body="Create or join first. Then choose the group you want to open."
             bullets={[
               "Create or join a community first.",
-              "Then choose the one group you want to open next.",
-              "Marketplace, links, and local member activity stay inside the selected community after you open it.",
+              "Open one group at a time.",
+              "Marketplace and local activity stay inside that group.",
             ]}
-            note="Simple rule: Community Home gathers your groups first, then Marketplace opens one group at a time."
+            note="Simple rule: choose the group first, then work inside it."
             tone="dark"
           />
 
@@ -2364,13 +2369,11 @@ export default function CommunityHomePage() {
                 marginTop: 12,
                 color: "#5F7287",
                 fontSize: 15,
-                lineHeight: 1.8,
-                maxWidth: 860,
-              }}
-            >
-              Create or join a community first. After that, Community Home will
-              show your groups in one place and let you choose the exact
-              community you want to open next.
+              lineHeight: 1.45,
+              maxWidth: 680,
+            }}
+          >
+              Create or join first. Your communities will appear here.
             </div>
 
             <div
@@ -2575,7 +2578,9 @@ export default function CommunityHomePage() {
                   }
                   style={communityToolRowStyle()}
                 >
-                  <span style={communityActionIcon(true)}>ID</span>
+                  <span style={communityActionIcon(true)}>
+                    {communityIconGlyph("id", 34)}
+                  </span>
                   <span style={{ minWidth: 0 }}>
                     <span
                       style={{
@@ -2612,7 +2617,9 @@ export default function CommunityHomePage() {
                   onClick={(event) => openCommunityRoute(event, routes.finance)}
                   style={communityToolRowStyle()}
                 >
-                  <span style={communityActionIcon(false)}>F</span>
+                  <span style={communityActionIcon(false)}>
+                    {communityIconGlyph("financeInstitution", 34)}
+                  </span>
                   <span style={{ minWidth: 0 }}>
                     <span
                       style={{
@@ -2662,12 +2669,9 @@ export default function CommunityHomePage() {
                 <span
                   style={{
                     ...communityActionIcon(true),
-                    background:
-                      "linear-gradient(180deg, #10243A 0%, #0B2D4A 100%)",
-                    color: "#FFFFFF",
                   }}
                 >
-                  🛡️
+                  {communityIconGlyph("shield", 34)}
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span
@@ -2740,28 +2744,28 @@ export default function CommunityHomePage() {
               {[
                 {
                   id: "choose-community",
-                  icon: "👥",
+                  icon: "community",
                   title: "Choose community",
                   primary: true,
                 },
                 {
                   id: "marketplace",
-                  icon: "🛍️",
+                  icon: "shop",
                   title: "Enter marketplace",
                 },
                 {
                   id: "create-community",
-                  icon: "➕",
+                  icon: "home",
                   title: "Create community",
                 },
                 {
                   id: "join-community",
-                  icon: "🤝",
+                  icon: "user",
                   title: "Join community",
                 },
                 {
                   id: "circle",
-                  icon: "🌟",
+                  icon: "spark",
                   title: "Grow circle",
                 },
               ].map((item, index) => (
@@ -2777,7 +2781,7 @@ export default function CommunityHomePage() {
                   }}
                 >
                   <span style={communityActionIcon(Boolean(item.primary))}>
-                    {item.icon}
+                    {communityIconGlyph(item.icon as CommunityIconMark, 22)}
                   </span>
                   <span style={{ minWidth: 0 }}>
                     <span
@@ -2851,25 +2855,12 @@ export default function CommunityHomePage() {
               marginTop: 10,
               color: "#5F7287",
               fontSize: isCompact ? 14 : 15,
-              lineHeight: 1.8,
-              maxWidth: 860,
+              lineHeight: 1.45,
+              maxWidth: 680,
             }}
           >
-            Community Home is suspended for this moment so unrelated tasks do not
-            compete for attention. Choose the spotlight path you want, and GSN
-            will check what must be done first before it continues.
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              color: "#5F7287",
-              fontSize: isCompact ? 13 : 14,
-              lineHeight: 1.75,
-              maxWidth: 860,
-            }}
-          >
-            If your shop is not ready yet, GSN will tell you to prepare the shop
-            first before spotlight can begin.
+            Choose one spotlight path. GSN will check your shop first and guide
+            the next step.
           </div>
           <div
             style={{
@@ -2975,7 +2966,7 @@ export default function CommunityHomePage() {
         >
           {[
             {
-              icon: "🛡️",
+              icon: "shield",
               id: "owner-actions",
               title: "Owner Actions",
               detail:
@@ -2988,7 +2979,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "🏪",
+              icon: "shop",
               id: "shop-control",
               title: "Owner Shop Control",
               detail:
@@ -2997,7 +2988,7 @@ export default function CommunityHomePage() {
                 openCommunityShopControl(event),
             },
             {
-              icon: "VAULT",
+              icon: "vault",
               id: "vault-control",
               title: "Private Vault",
               detail:
@@ -3010,7 +3001,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "🌟",
+              icon: "spark",
               id: "free-spotlight",
               title: "Free Spotlight",
               detail:
@@ -3023,7 +3014,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "💳",
+              icon: "card",
               id: "spotlight-subscription",
               title: "Spotlight Subscription",
               detail:
@@ -3036,7 +3027,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "🔁",
+              icon: "refresh",
               id: "paid-repost",
               title: "Paid Repost",
               detail:
@@ -3049,7 +3040,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "ROSCA",
+              icon: "refresh",
               id: "rosca",
               title: "ROSCA",
               detail:
@@ -3062,7 +3053,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "🤝",
+              icon: "user",
               id: "trusted-circle",
               title: "Grow Your Trusted Circle",
               detail:
@@ -3075,7 +3066,7 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "📡",
+              icon: "megaphone",
               id: "spotlight-status",
               title: "Owner Spotlight Status",
               detail:
@@ -3116,11 +3107,11 @@ export default function CommunityHomePage() {
                   background:
                     item.id === "vault-control"
                       ? "linear-gradient(180deg, rgba(243,208,106,0.20) 0%, rgba(255,255,255,0.06) 100%)"
-                      : "linear-gradient(180deg, #EAF3FF 0%, #F5FAFF 100%)",
+                      : undefined,
                   border:
                     item.id === "vault-control"
                       ? "1px solid rgba(243,208,106,0.30)"
-                      : "1px solid rgba(13,95,168,0.10)",
+                      : undefined,
                   color: item.id === "vault-control" ? "#F3D06A" : "#135A94",
                   fontSize:
                     item.id === "vault-control"
@@ -3135,7 +3126,7 @@ export default function CommunityHomePage() {
                   letterSpacing: item.id === "vault-control" ? 0.7 : 0,
                 }}
               >
-                {item.icon}
+                {communityIconGlyph(item.icon as CommunityIconMark, 22)}
               </span>
               <span style={{ minWidth: 0 }}>
                 <span
@@ -3199,9 +3190,7 @@ export default function CommunityHomePage() {
                 textAlign: "center",
               }}
             >
-              This shows only the spotlight you published for this selected
-              community. Other members' spotlights stay off your personal
-              Community Home.
+              This shows only Your spotlight in this community. Other members' live spotlights still belong on public Dashboard and Public Shop surfaces, not your personal Community Home.
             </div>
           </div>
 
@@ -3316,7 +3305,7 @@ export default function CommunityHomePage() {
                             lineHeight: 1.7,
                           }}
                         >
-                          The active spotlight is live, but no image or video is attached to it.
+                          Live spotlight has no media yet.
                         </div>
                       }
                     />
@@ -3367,7 +3356,7 @@ export default function CommunityHomePage() {
                     lineHeight: 1.75,
                   }}
                 >
-                  Live spotlight data could not be confirmed just now.
+                  Spotlight status could not be confirmed.
                   <div style={{ marginTop: 8, color: "#8A1C1C" }}>
                     Refresh note: {activeCommunitySpotlightSyncIssue}
                   </div>
@@ -3381,9 +3370,7 @@ export default function CommunityHomePage() {
                     lineHeight: 1.75,
                   }}
                 >
-                  You have no spotlight live in this selected community right
-                  now. Other members' live spotlights still belong on public
-                  reflection surfaces such as Dashboard and Public Shop.
+                  You have no spotlight live in this community right now.
                 </div>
               )}
             </div>
@@ -3412,11 +3399,11 @@ export default function CommunityHomePage() {
                   marginTop: 10,
                   color: "#5F7287",
                   fontSize: 14,
-                  lineHeight: 1.75,
+                  lineHeight: 1.45,
                 }}
               >
-                Community Home stays as an overview. Use the owner spotlight lane
-                when you need message, picture, video, or publish controls.
+                Open the spotlight lane to edit message, picture, video, or
+                publishing.
               </div>
               <div style={{ marginTop: 14 }}>
                 <StableButton
@@ -3461,7 +3448,7 @@ export default function CommunityHomePage() {
             boxShadow: "none",
           }}
         >
-          <span style={communityActionIcon(false)}>🏘️</span>
+          <span style={communityActionIcon(false)}>{communityIconGlyph("community", 22)}</span>
           <span style={{ minWidth: 0 }}>
             <span
               style={{

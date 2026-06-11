@@ -169,13 +169,13 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceFrontLaneCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\),[\s\S]*?minHeight: isCompact \? 126 : 116,[\s\S]*?height: "auto",[\s\S]*?maxHeight: "none",[\s\S]*?"58px minmax\(0, 1fr\) 18px"[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 58 : 64,[\s\S]*?height: isCompact \? 58 : 64,[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?whiteSpace: "nowrap",[\s\S]*?overflow: "hidden",[\s\S]*?textOverflow: "ellipsis",[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
+  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 52 : 58[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceFrontLaneCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\),[\s\S]*?minHeight: isCompact \? 126 : 116,[\s\S]*?height: "auto",[\s\S]*?maxHeight: "none",[\s\S]*?"58px minmax\(0, 1fr\) 18px"[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 58 : 64,[\s\S]*?height: isCompact \? 58 : 64,[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?whiteSpace: "nowrap",[\s\S]*?overflow: "hidden",[\s\S]*?textOverflow: "ellipsis",[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
   "Marketplace grouped-lane cards must keep phone-safe geometry with clamped text so card content cannot stretch, overlap, or create unstable tap targets."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceMoneyRouteCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?minHeight: isCompact \? 92 : 150[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"50px minmax\(0, 1fr\) auto"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?"icon text status"[\s\S]*?overflow: "hidden"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"[\s\S]*?function marketplaceMoneyRouteValueStyle[\s\S]*?WebkitLineClamp: ready \? 2 : 1[\s\S]*?function marketplaceMoneyStatusPillStyle[\s\S]*?stableStatusPillStyle\(ready\)[\s\S]*?function marketplaceMoneyChartBubbleStyle/,
+  /function marketplaceMoneyRouteCardStyle\([\s\S]*?isCompact: boolean,[\s\S]*?wide = false[\s\S]*?\): React\.CSSProperties \{[\s\S]*?minHeight: isCompact \? \(wide \? 84 : 112\) : 150[\s\S]*?gridColumn: isCompact && wide \? "1 \/ -1" : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? wide[\s\S]*?\? "42px minmax\(0, 1fr\) auto"[\s\S]*?: "38px minmax\(0, 1fr\)"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?\? wide[\s\S]*?\? '"icon text status"'[\s\S]*?: '"icon status" "text text"'[\s\S]*?overflow: "hidden"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"[\s\S]*?function marketplaceMoneyRouteValueStyle[\s\S]*?WebkitLineClamp: ready \? 2 : 1[\s\S]*?function marketplaceMoneyStatusPillStyle[\s\S]*?stableStatusPillStyle\(ready\)[\s\S]*?function marketplaceMoneyChartBubbleStyle/,
   "Marketplace money detail cards must keep fixed, clamped, phone-safe geometry so readiness text cannot stretch cards or create jumpy taps."
 );
 
@@ -235,8 +235,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CoverPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="cover\.continue"[\s\S]*?debugId="cover\.about-gsn"/,
-  "Cover page public entry actions must use shared stable button primitives."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?function coverIconText\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function coverIconBadge\(name: GsnIconName\)[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="cover\.continue"[\s\S]*?coverIconText\("navigation", "Continue"\)[\s\S]*?debugId="cover\.about-gsn"[\s\S]*?coverIconText\("id", "About GSN & I"/,
+  "Cover page public entry actions must use shared stable button primitives and shared 3D GSN icon helpers."
 );
 
 assertNotContains(
@@ -249,6 +249,12 @@ assertContains(
   "src/pages/LoginPage.tsx",
   /import \{ PrimaryButton, SecondaryButton, SubtleButton \} from "\.\.\/components\/StableButton";/,
   "Login page must import shared stable button primitives for guide, submit, create, and activation actions."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function loginIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?function loginIconOnly\([\s\S]*?<GsnLegacyIcon[\s\S]*?debugId="login\.submit"[\s\S]*?loginIconText\("lock", "Sign in to GSN"[\s\S]*?debugId="login\.activate-approved"[\s\S]*?loginIconText\("join-person-plus", "Already approved\? Activate membership"[\s\S]*?debugId="login\.start-community"[\s\S]*?loginIconText\("community", "Start a new community"/,
+  "Login page must use shared 3D GSN icons for sign-in, activation, and create-community actions."
 );
 
 [
@@ -316,8 +322,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";/,
-  "Join entry must use shared stable CTA primitives for invite buttons."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?function joinEntryIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function joinEntryIconTile\([\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="join-entry\.resume-saved-request"[\s\S]*?joinEntryIconText\("refresh"[\s\S]*?debugId="join-entry\.existing-identity"[\s\S]*?joinEntryIconText\("id", "Join with existing GSN ID"\)[\s\S]*?debugId="join-entry\.already-have-gmfn"[\s\S]*?joinEntryIconText\("id", "I already have a GSN ID"\)[\s\S]*?debugId="join-entry\.submit-new-request"[\s\S]*?joinEntryIconText\("join-person-plus", "Submit Join Request"\)/,
+  "Join entry must use shared stable CTA primitives and shared 3D GSN icon helpers for invite buttons."
 );
 
 assertNotContains(
@@ -353,19 +359,31 @@ assertNotContains(
 assertNotContains(
   "src/pages/JoinRequestPendingPage.tsx",
   /emojiButtonContent\(|function emojiButtonContent/,
-  "Join pending helpful actions must use app-native SVG pictograms, not emoji button helpers."
+  "Join pending helpful actions must use shared 3D GSN icons, not emoji button helpers."
 );
 
 assertContains(
   "src/pages/JoinRequestPendingPage.tsx",
-  /inlineButtonContent\("book", "Full GSN guide"\)[\s\S]*?inlineButtonContent\("focus", "Focus Commitments"\)[\s\S]*?inlineButtonContent\("welcome", "Welcome"\)[\s\S]*?<IconGlyph name="lock" size=\{18\} \/>/,
-  "Join pending helpful links and review notice must keep SVG pictograms for guide, focus, welcome, and reviewed-entry marks."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?const PENDING_ICON_MAP[\s\S]*?satisfies Record<IconName, GsnIconName>[\s\S]*?function IconGlyph[\s\S]*?<GsnLegacyIcon[\s\S]*?inlineButtonContent\("book", "Full GSN guide"\)[\s\S]*?inlineButtonContent\("focus", "Focus Commitments"\)[\s\S]*?inlineButtonContent\("welcome", "Welcome"\)[\s\S]*?<IconGlyph name="lock" size=\{18\} \/>/,
+  "Join pending helpful links and review notice must keep shared 3D GSN icons for guide, focus, welcome, and reviewed-entry marks."
+);
+
+assertNotContains(
+  "src/pages/JoinRequestPendingPage.tsx",
+  /<svg\s|\bstrokeWidth\b|viewBox: "0 0 24 24"/,
+  "Join pending must not restore local SVG pictograms after 3D icon migration."
 );
 
 assertContains(
   "src/pages/JoinApprovalPage.tsx",
   /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?resolveCtaTarget[\s\S]*?navigateToCta/,
   "Join approval must use shared stable CTA primitives and shared CTA target resolution."
+);
+
+assertContains(
+  "src/pages/JoinApprovalPage.tsx",
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function approvalIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?function approvalIconTile\([\s\S]*?<GsnLegacyIcon[\s\S]*?debugId=\{activationCta\.debugId\}[\s\S]*?approvalIconText\("join-person-plus", "Open activation"[\s\S]*?debugId=\{pendingCta\.debugId\}[\s\S]*?approvalIconText\("eye", "Open pending status"[\s\S]*?debugId=\{welcomeCta\.debugId\}[\s\S]*?approvalIconText\("home", "Return to Welcome"/,
+  "Join approval must use shared 3D GSN icons for status, activation, pending, and welcome actions."
 );
 
 assertNotContains(
@@ -461,19 +479,31 @@ assertNotContains(
 assertNotContains(
   "src/pages/MemberActivationPage.tsx",
   /\p{Extended_Pictographic}|ðŸ|âœ|â„/u,
-  "Member activation must use app-native SVG pictograms instead of emoji or mojibake symbols."
+  "Member activation must use shared 3D GSN icons instead of emoji or mojibake symbols."
 );
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /type ActivationIconName[\s\S]*?\| "eyeOff"[\s\S]*?\| "rocket"[\s\S]*?function ActivationIcon[\s\S]*?ActivationIcon name="id"[\s\S]*?ActivationIcon name=\{showPassword \? "eyeOff" : "eye"\}[\s\S]*?ActivationIcon name="shield"[\s\S]*?ActivationIcon name="rocket"/,
-  "Member activation ID, password, notice, and submit marks must stay on route-local SVG pictograms."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?type ActivationIconName[\s\S]*?\| "eyeOff"[\s\S]*?\| "rocket"[\s\S]*?const ACTIVATION_ICON_MAP[\s\S]*?satisfies Record<ActivationIconName, GsnIconName>[\s\S]*?function ActivationIcon[\s\S]*?<GsnLegacyIcon[\s\S]*?ActivationIcon name="id"[\s\S]*?ActivationIcon name=\{showPassword \? "eyeOff" : "eye"\}[\s\S]*?ActivationIcon name="shield"[\s\S]*?ActivationIcon name="rocket"/,
+  "Member activation ID, password, notice, and submit marks must stay on shared 3D GSN icons."
+);
+
+assertNotContains(
+  "src/pages/MemberActivationPage.tsx",
+  /<svg\s|\bstrokeWidth\b|viewBox: "0 0 24 24"/,
+  "Member activation must not restore local SVG pictograms after 3D icon migration."
 );
 
 assertContains(
   "src/pages/ActivateMembershipPage.tsx",
-  /import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?function LegacyActivationIcon[\s\S]*?function fixedActionRow[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?stableHeight=\{56\}[\s\S]*?fullWidth[\s\S]*?debugId="activate-membership\.activate"[\s\S]*?stableHeight=\{52\}[\s\S]*?fullWidth[\s\S]*?debugId="activate-membership\.clear-password"/,
-  "Legacy activation page must use shared stable button primitives, shared CTA resolution, SVG action marks, and fixed full-width activation actions if it is reintroduced."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?const LEGACY_ACTIVATION_ICON_MAP[\s\S]*?satisfies Record<LegacyActivationIconName, GsnIconName>[\s\S]*?function LegacyActivationIcon[\s\S]*?<GsnLegacyIcon[\s\S]*?function fixedActionRow[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?stableHeight=\{56\}[\s\S]*?fullWidth[\s\S]*?debugId="activate-membership\.activate"[\s\S]*?stableHeight=\{52\}[\s\S]*?fullWidth[\s\S]*?debugId="activate-membership\.clear-password"/,
+  "Legacy activation page must use shared stable button primitives, shared CTA resolution, 3D GSN action marks, and fixed full-width activation actions if it is reintroduced."
+);
+
+assertNotContains(
+  "src/pages/ActivateMembershipPage.tsx",
+  /<svg\s|\bstrokeWidth\b|viewBox: "0 0 24 24"/,
+  "Legacy activation page must not restore local SVG pictograms after 3D icon migration."
 );
 
 assertNotContains(
@@ -508,8 +538,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ProfilePage.tsx",
-  /import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="profile\.save-local"[\s\S]*?debugId="profile\.refresh"/,
-  "Profile page must use shared stable button primitives for save and refresh actions."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?function profileIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="profile\.save-local"[\s\S]*?profileIconText\("check", "Save"\)[\s\S]*?debugId="profile\.refresh"[\s\S]*?profileIconText\("refresh", "Refresh"\)/,
+  "Profile page must use shared stable button primitives and shared 3D GSN icon helpers for save and refresh actions."
 );
 
 assertNotContains(
@@ -532,8 +562,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/OpenTrustPage.tsx",
-  /import \{ CardActionRow, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="open-trust\.trust"[\s\S]*?debugId="open-trust\.community"/,
-  "Open Trust reading must use shared stable CTA link primitives and shared CTA resolution for trust and community routes."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ CardActionRow, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function openTrustIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function openTrustIconTile\([\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="open-trust\.trust"[\s\S]*?openTrustIconText\("shield", "Open Trust Passport"\)[\s\S]*?debugId="open-trust\.community"[\s\S]*?openTrustIconText\("community", "Open Community"\)/,
+  "Open Trust reading must use shared stable CTA link primitives, shared CTA resolution, and shared 3D GSN icon helpers for trust and community routes."
 );
 
 assertNotContains(
@@ -550,7 +580,7 @@ assertContains(
 
 assertContains(
   "src/pages/CCIReadingPage.tsx",
-  /stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?debugId="cci-reading\.identity"[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 178\}[\s\S]*?debugId="cci-reading\.trust"[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 216\}[\s\S]*?debugId="cci-reading\.copy-snapshot"/,
+  /stableHeight=\{isCompact \? 52 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?debugId="cci-reading\.identity"[\s\S]*?stableHeight=\{isCompact \? 52 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 178\}[\s\S]*?debugId="cci-reading\.trust"[\s\S]*?stableHeight=\{isCompact \? 52 : 48\}[\s\S]*?minWidth=\{isCompact \? undefined : 216\}[\s\S]*?debugId="cci-reading\.copy-snapshot"/,
   "CCI reading inner actions must keep fixed height and desktop width so identity/trust/copy buttons do not jump."
 );
 
@@ -562,14 +592,26 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustLeaderboardPage.tsx",
-  /import \{ CardActionRow, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-leaderboard\.trust"[\s\S]*?debugId="trust-leaderboard\.trust-slip"[\s\S]*?debugId="trust-leaderboard\.open-trust"/,
-  "Trust leaderboard must use shared stable CTA link primitives and shared CTA resolution for disabled-state recovery routes."
+  /import GSNBrandMark from "\.\.\/components\/GSNBrandMark";[\s\S]*?import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ CardActionRow, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function trustLeaderboardActionText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function trustLeaderboardStatusIcon\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?<GSNBrandMark width=\{128\} height=\{160\}[\s\S]*?debugId="trust-leaderboard\.trust"[\s\S]*?stableHeight=\{52\}[\s\S]*?trustLeaderboardActionText\("shield", "Trust Passport", 20\)[\s\S]*?debugId="trust-leaderboard\.trust-slip"[\s\S]*?stableHeight=\{52\}[\s\S]*?trustLeaderboardActionText\("document", "TrustSlip", 20\)[\s\S]*?debugId="trust-leaderboard\.open-trust"[\s\S]*?trustLeaderboardActionText\("eye", "Local reading", 20\)/,
+  "Trust leaderboard must use shared stable CTA link primitives, shared CTA resolution, official GSN watermarking, and shared 3D icon helpers for disabled-state recovery routes."
 );
 
 assertNotContains(
   "src/pages/TrustLeaderboardPage.tsx",
-  /(import OriginLink|function (actionBtn|stableTapStyle)\(|actionBtn\(|<button|<a\s|to="\/app)/,
-  "Trust leaderboard must not keep local button/link/tap primitives or hard-coded app route CTAs after migration."
+  /(import OriginLink|function (actionBtn|stableTapStyle)\(|actionBtn\(|<button|<a\s|to="\/app|Open Trust Passport|Open TrustSlip|Open local trust reading)/,
+  "Trust leaderboard must not keep local button/link/tap primitives, hard-coded app route CTAs, or old text-only action labels after migration."
+);
+
+assertContains(
+  "src/pages/GuarantorLeaderboardPage.tsx",
+  /import GSNBrandMark from "\.\.\/components\/GSNBrandMark";[\s\S]*?import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import PageTopNav from "\.\.\/components\/PageTopNav";[\s\S]*?import \{ CardActionRow, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ getAccessToken, getSelectedClanId \} from "\.\.\/lib\/api";[\s\S]*?getGuarantorLeaderboard[\s\S]*?type GuarantorLeaderboardRow[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?function guarantorLeaderboardActionText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function guarantorLeaderboardStatusIcon\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?getGuarantorLeaderboard\(selectedClanId, token\)[\s\S]*?<GSNBrandMark width=\{128\} height=\{160\}[\s\S]*?debugId="guarantor-leaderboard\.route\.inbox"[\s\S]*?stableHeight=\{52\}[\s\S]*?guarantorLeaderboardActionText\("alert", "Inbox", 20\)[\s\S]*?debugId="guarantor-leaderboard\.route\.earnings"[\s\S]*?guarantorLeaderboardActionText\("wallet", "Earnings", 20\)[\s\S]*?debugId="guarantor-leaderboard\.route\.trust"[\s\S]*?guarantorLeaderboardActionText\("shield", "Trust", 20\)/,
+  "Guarantor leaderboard must use shared stable CTA links, selected community context, shared CTA resolution, official GSN watermarking, and shared 3D icon helpers."
+);
+
+assertNotContains(
+  "src/pages/GuarantorLeaderboardPage.tsx",
+  /(<pre|JSON\.stringify|localStorage\.getItem|fetch\("\/api\/trust\/admin\/leaderboard\/guarantors|clan_id=1&limit=20|<button|<a\s|to="\/app|Loading leaderboard\.\.\.|No access token found\. Please log in\.)/,
+  "Guarantor leaderboard must not return to raw JSON/debug output, direct fetch/localStorage access, hard-coded app CTAs, or old unpolished status copy."
 );
 
 assertContains(
@@ -616,8 +658,14 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /function collapseToggle\(\): React\.CSSProperties \{[\s\S]*?minWidth: 96[\s\S]*?whiteSpace: "nowrap"[\s\S]*?stableHeight=\{isCompact \? 46 : 50\}[\s\S]*?minWidth=\{isCompact \? undefined : 176\}[\s\S]*?debugId="trust-slip\.copy-code"[\s\S]*?stableHeight=\{42\}[\s\S]*?debugId="trust-slip\.toggle-reader"[\s\S]*?stableHeight=\{isCompact \? 46 : 50\}[\s\S]*?debugId="trust-slip\.open-verify"[\s\S]*?stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?debugId="trust-slip\.open-guide"/,
+  /function collapseToggle\(\): React\.CSSProperties \{[\s\S]*?minWidth: 96[\s\S]*?whiteSpace: "nowrap"[\s\S]*?stableHeight=\{isCompact \? 52 : 50\}[\s\S]*?minWidth=\{isCompact \? undefined : 176\}[\s\S]*?debugId="trust-slip\.copy-code"[\s\S]*?stableHeight=\{isCompact \? 48 : 42\}[\s\S]*?debugId="trust-slip\.toggle-reader"[\s\S]*?stableHeight=\{isCompact \? 52 : 50\}[\s\S]*?debugId="trust-slip\.open-verify"[\s\S]*?stableHeight=\{isCompact \? 52 : 48\}[\s\S]*?debugId="trust-slip\.open-guide"/,
   "TrustSlip inner proof actions and disclosure toggles must keep fixed geometry on mobile and desktop."
+);
+
+assertNotContains(
+  "src/pages/TrustSlipPage.tsx",
+  /(TrustSlip verify route is not ready yet|TrustSlip verify is not ready yet|Verify not ready|Product guidance lives here|Keep this separate from TrustSlip Verify)/,
+  "TrustSlip must use user-facing readiness language, not route/debug wording, for inner verification actions."
 );
 
 assertNotContains(
@@ -634,8 +682,14 @@ assertContains(
 
 assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
-  /function collapseToggle\(\): React\.CSSProperties \{[\s\S]*?minWidth: 94[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?debugId="identity-integrity\.copy-gmfn-id"[\s\S]*?stableHeight=\{40\}[\s\S]*?debugId="identity-integrity\.toggle-summary"[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="identity-integrity\.recovery-save"[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?debugId="identity-integrity\.next-move"/,
+  /function collapseToggle\(\): React\.CSSProperties \{[\s\S]*?minWidth: 94[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?debugId="identity-integrity\.copy-gmfn-id"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.toggle-summary"[\s\S]*?stableHeight=\{isCompact \? 52 : 48\}[\s\S]*?debugId="identity-integrity\.recovery-save"[\s\S]*?stableHeight=\{isCompact \? 52 : 50\}[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?debugId="identity-integrity\.next-move"/,
   "Identity & Integrity inner copy, collapse, recovery, and next-step buttons must keep fixed geometry."
+);
+
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
+  /function selectIdentityTask\(key: IdentityTaskKey\)[\s\S]*?setActiveIdentityTask\(key\)[\s\S]*?setIdentityPhotoFile\(null\)[\s\S]*?setIdentityPhotoPreview\(""\)[\s\S]*?setPhoneTaskMessage\(""\)[\s\S]*?stableHeight=\{isCompact \? 54 : 58\}[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}[\s\S]*?data-identity-integrity-active-task="true"[\s\S]*?minHeight: isCompact \? 178 : undefined[\s\S]*?overflow: "hidden"/,
+  "Identity & Integrity proof-task selector must clear transient panels and keep the active task surface contained on phone."
 );
 
 assertNotContains(
@@ -646,8 +700,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/NotificationsPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?debugId="notifications\.show-urgent"[\s\S]*?debugId="notifications\.toggle-focus"[\s\S]*?debugId="notifications\.focus\.primary"[\s\S]*?debugId="notifications\.focus\.open-page"[\s\S]*?debugId="notifications\.toggle-buckets"[\s\S]*?debugId=\{`notifications\.bucket\.\$\{bucket\}`\}[\s\S]*?debugId="notifications\.selected\.open"[\s\S]*?debugId="notifications\.selected\.close"/,
-  "Notifications must use shared stable primitives and shared CTA resolution for hero, urgent, focus, bucket, selected, and collapse actions."
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function notificationIconText\([\s\S]*?function notificationIconTile\([\s\S]*?function bucketIconName\(bucket: GuidanceInboxBucketKey\): GsnIconName[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?notificationIconText\("home", "Go to Dashboard"\)[\s\S]*?debugId="notifications\.show-urgent"[\s\S]*?notificationIconText\("alert", "Show urgent items \(Act now\)"\)[\s\S]*?debugId="notifications\.toggle-focus"[\s\S]*?debugId="notifications\.focus\.primary"[\s\S]*?notificationIconText\("navigation", focusNotice\.ctaLabel\)[\s\S]*?debugId="notifications\.focus\.open-page"[\s\S]*?notificationIconText\("navigation", "Open page"\)[\s\S]*?debugId="notifications\.toggle-buckets"[\s\S]*?debugId=\{`notifications\.bucket\.\$\{bucket\}`\}[\s\S]*?<GsnLegacyIcon name=\{icon\} size=\{isPhone \? 30 : 34\} \/>[\s\S]*?debugId="notifications\.selected\.open"[\s\S]*?debugId="notifications\.selected\.close"/,
+  "Notifications must use shared stable primitives, 3D icon helpers, and shared CTA resolution for hero, urgent, focus, bucket, selected, and collapse actions."
 );
 
 assertNotContains(
@@ -658,20 +712,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?debugId="demand-box\.post"[\s\S]*?debugId="demand-box\.more-detail"[\s\S]*?debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.fulfilled`\}[\s\S]*?debugId="demand-box\.bottom-dashboard"/,
-  "Demand Box must use shared stable primitives and shared CTA resolution for community selection, create/post, disclosure, status updates, and route actions."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function demandIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?demandIconText\("document", "Create demand", 20\)[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\("document", "Post demand", 20\)[\s\S]*?debugId="demand-box\.open-notifications"[\s\S]*?demandIconText\("alert", "Notifications", 20\)[\s\S]*?debugId="demand-box\.more-detail"[\s\S]*?debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.fulfilled`\}[\s\S]*?demandIconText\("check", "Fulfilled", 20\)[\s\S]*?debugId="demand-box\.bottom-dashboard"[\s\S]*?demandIconText\("home", "Dashboard", 20\)/,
+  "Demand Box must use shared stable primitives, shared 3D icon helpers, and shared CTA resolution for community selection, create/post, disclosure, status updates, and route actions."
 );
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /function demandActionRowStyle\([\s\S]*?gridAutoRows: `\$\{height\}px`[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?function demandActionStyle\(height = 54\)[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height,[\s\S]*?overflow: "hidden"[\s\S]*?transition: "none"[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="demand-box\.post"[\s\S]*?style=\{demandActionStyle\(54\)\}/,
-  "Demand Box action rows must reserve fixed phone-safe row heights and fixed button heights for create/post/status/route actions."
+  /function demandActionRowStyle\([\s\S]*?gridAutoRows: `\$\{height\}px`[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?function demandActionStyle\(height = 54\)[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height,[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?transition: "none"[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="demand-box\.post"[\s\S]*?style=\{demandActionStyle\(54\)\}/,
+  "Demand Box action rows must reserve fixed phone-safe row heights, no-wrap icon labels, and fixed button heights for create/post/status/route actions."
 );
 
 assertNotContains(
   "src/pages/DemandBoxPage.tsx",
-  /(import OriginLink|function (primaryBtn|secondaryBtn|subtleBtn|whiteActionBtn|communityChoiceBtn|buttonGuardProps)\(|guardButtonPress|buttonGuardProps\(|primaryBtn\(|secondaryBtn\(|subtleBtn\(|whiteActionBtn\(|communityChoiceBtn\(|brandStableTapTarget|<button|<summary|<a\s|to="\/app|homeTo="\/app|backTo="\/app)/,
-  "Demand Box must not keep local/raw button, summary, link, tap-target primitives, or hard-coded app route CTAs after migration."
+  /(import OriginLink|function (primaryBtn|secondaryBtn|subtleBtn|whiteActionBtn|communityChoiceBtn|buttonGuardProps)\(|guardButtonPress|buttonGuardProps\(|primaryBtn\(|secondaryBtn\(|subtleBtn\(|whiteActionBtn\(|communityChoiceBtn\(|brandStableTapTarget|<button|<summary|<a\s|to="\/app|homeTo="\/app|backTo="\/app|>\s*Open notifications\s*<|>\s*Mark fulfilled\s*<|>\s*Cancel demand\s*<)/,
+  "Demand Box must not keep local/raw button, summary, link, tap-target primitives, hard-coded app route CTAs, or old long text-only demand action labels after migration."
 );
 
 assertContains(
@@ -694,8 +748,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoanReadinessPage.tsx",
-  /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="loan-readiness\.toggle-overview"[\s\S]*?debugId="loan-readiness\.toggle-reading"[\s\S]*?debugId="loan-readiness\.route\.recommended"[\s\S]*?debugId="loan-readiness\.route\.suggestions"[\s\S]*?debugId="loan-readiness\.route\.guarantor-inbox"/,
-  "Loan Readiness must use shared stable CTA primitives and shared CTA resolution for collapse controls and next-route tiles."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function loanReadinessActionText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function loanReadinessRouteHeading\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="loan-readiness\.toggle-overview"[\s\S]*?debugId="loan-readiness\.toggle-reading"[\s\S]*?debugId="loan-readiness\.route\.recommended"[\s\S]*?loanReadinessRouteHeading\("navigation", recommendedNext\.ctaLabel\)[\s\S]*?debugId="loan-readiness\.route\.suggestions"[\s\S]*?loanReadinessRouteHeading\("search", "Loan Suggestions"\)[\s\S]*?debugId="loan-readiness\.route\.guarantor-inbox"[\s\S]*?loanReadinessRouteHeading\("alert", "Incoming Guarantor Requests"\)/,
+  "Loan Readiness must use shared stable CTA primitives, shared CTA resolution, and shared 3D GSN icon helpers for collapse controls and next-route tiles."
 );
 
 assertContains(
@@ -712,8 +766,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoanSuggestionsPage.tsx",
-  /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="loan-suggestions\.refresh-fit"[\s\S]*?debugId="loan-suggestions\.toggle-overview"[\s\S]*?debugId="loan-suggestions\.toggle-supporters"[\s\S]*?debugId="loan-suggestions\.route\.next"[\s\S]*?debugId="loan-suggestions\.route\.workbench"[\s\S]*?debugId="loan-suggestions\.route\.guarantor-inbox"/,
-  "Loan Suggestions must use shared stable CTA primitives and shared CTA resolution for refresh, collapse controls, and next-route tiles."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function loanSuggestionsActionText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function loanSuggestionsRouteHeading\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="loan-suggestions\.refresh-fit"[\s\S]*?loanSuggestionsActionText\([\s\S]*?"refresh"[\s\S]*?debugId="loan-suggestions\.toggle-overview"[\s\S]*?debugId="loan-suggestions\.toggle-supporters"[\s\S]*?debugId="loan-suggestions\.route\.next"[\s\S]*?loanSuggestionsRouteHeading\("navigation", nextRoute\.ctaLabel\)[\s\S]*?debugId="loan-suggestions\.route\.workbench"[\s\S]*?loanSuggestionsRouteHeading\("briefcase", "Loan Workbench"\)[\s\S]*?debugId="loan-suggestions\.route\.guarantor-inbox"[\s\S]*?loanSuggestionsRouteHeading\("alert", "Incoming Guarantor Requests"\)/,
+  "Loan Suggestions must use shared stable CTA primitives, shared CTA resolution, and shared 3D GSN icon helpers for refresh, collapse controls, and next-route tiles."
 );
 
 assertContains(
@@ -736,26 +790,26 @@ assertContains(
 
 assertContains(
   "src/pages/LoanWorkbenchPage.tsx",
-  /minWidth=\{isCompact \? undefined : 176\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-workbench\.refresh"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-workbench\.copy-loan-id"[\s\S]*?debugId="loan-workbench\.toggle-selection"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 116\}[\s\S]*?stableHeight=\{44\}[\s\S]*?debugId=\{`loan-workbench\.select\.\$\{positiveNumber\(item\.id\) \|\| "none"\}`\}[\s\S]*?minWidth=\{isCompact \? undefined : 156\}[\s\S]*?stableHeight=\{44\}[\s\S]*?debugId=\{`loan-workbench\.select\.\$\{positiveNumber\(item\.id\) \|\| "none"\}`\}[\s\S]*?debugId="loan-workbench\.toggle-summary"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-workbench\.toggle-supporters"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-workbench\.toggle-routes"[\s\S]*?whiteSpace: "nowrap"/,
-  "Loan Workbench action and collapse controls must keep stable no-wrap geometry."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function routeHeading\(name: GsnIconName, label: string\)[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(148px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-workbench\.refresh"[\s\S]*?actionText\("refresh", refreshing \? "Refreshing" : "Refresh"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-workbench\.copy-loan-id"[\s\S]*?actionText\("copy", "Copy ID"\)[\s\S]*?debugId="loan-workbench\.toggle-selection"[\s\S]*?transition: "none"[\s\S]*?actionText\([\s\S]*?collapsed\.selection \? "document" : "lock"[\s\S]*?collapsed\.selection \? "Open" : "Hide"[\s\S]*?\)[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(128px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`loan-workbench\.select\.\$\{positiveNumber\(item\.id\) \|\| "none"\}`\}[\s\S]*?actionText\("check", "Selected"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`loan-workbench\.select\.\$\{positiveNumber\(item\.id\) \|\| "none"\}`\}[\s\S]*?actionText\("briefcase", "Open"\)[\s\S]*?debugId="loan-workbench\.toggle-summary"[\s\S]*?actionText\([\s\S]*?collapsed\.summary \? "document" : "lock"[\s\S]*?collapsed\.summary \? "Open" : "Hide"[\s\S]*?\)[\s\S]*?debugId="loan-workbench\.toggle-supporters"[\s\S]*?actionText\([\s\S]*?collapsed\.supporters \? "document" : "lock"[\s\S]*?collapsed\.supporters \? "Open" : "Hide"[\s\S]*?\)[\s\S]*?debugId="loan-workbench\.toggle-routes"[\s\S]*?actionText\([\s\S]*?collapsed\.routes \? "document" : "lock"[\s\S]*?collapsed\.routes \? "Open" : "Hide"[\s\S]*?\)[\s\S]*?routeHeading\("briefcase", nextRoute\.ctaLabel\)[\s\S]*?routeHeading\("check", "Loan Readiness"\)[\s\S]*?routeHeading\("search", "Loan Suggestions"\)[\s\S]*?routeHeading\("document", "Loan Summary"\)[\s\S]*?routeHeading\([\s\S]*?"wallet"[\s\S]*?canOpenCommandRevenue \? "Revenue Allocation" : "Finance File"[\s\S]*?\)[\s\S]*?routeHeading\("bank", "Payment Instructions"\)[\s\S]*?routeHeading\("community", "Loans & Support"\)/,
+  "Loan Workbench action, collapse, selection, and route controls must keep compact 3D icon-led no-wrap geometry."
 );
 
 assertNotContains(
   "src/pages/LoanWorkbenchPage.tsx",
-  /(import OriginLink|function (stableTapStyle|buttonGuardProps|actionBtn|collapseToggle)\(|guardButtonPress|routeTile\(|stableTapStyle\(|buttonGuardProps\(|actionBtn\(|collapseToggle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|communityTo\("\/app|withCommunityQuery)/,
-  "Loan Workbench must not keep local button/link/tap primitives or hard-coded app route CTAs after migration."
+  /(import OriginLink|function (stableTapStyle|buttonGuardProps|actionBtn|collapseToggle)\(|guardButtonPress|routeTile\(|stableTapStyle\(|buttonGuardProps\(|actionBtn\(|collapseToggle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|communityTo\("\/app|withCommunityQuery|Refresh Workbench|Copy Loan ID|Open Workbench|Refreshing\.\.\.|>Collapse<|Open Support Start Page|Open Loan Summary|Open Loans & Support|Open this when the question is whether the current support flow is clean enough to continue|candidate fit rather than deeper workbench state|money record visible to you|moved into repayment|broader support overview|â|—|•)/,
+  "Loan Workbench must not keep local/raw button primitives, hard-coded app route CTAs, old long labels, or corrupted text artifacts after migration."
 );
 
 assertContains(
   "src/pages/LoanSummaryPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="loan-summary\.copy-summary"[\s\S]*?debugId="loan-summary\.toggle-overview"[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.approve`\}[\s\S]*?debugId="loan-summary\.toggle-repayment"[\s\S]*?debugId="loan-summary\.open-revenue-preview"[\s\S]*?debugId="loan-summary\.route\.workbench"[\s\S]*?debugId="loan-summary\.route\.payment-or-finance"/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="loan-summary\.copy-summary"[\s\S]*?debugId="loan-summary\.toggle-overview"[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.approve`\}[\s\S]*?debugId="loan-summary\.toggle-repayment"[\s\S]*?debugId="loan-summary\.open-revenue-preview"[\s\S]*?debugId="loan-summary\.route\.workbench"[\s\S]*?debugId="loan-summary\.route\.payment-or-finance"/,
   "Loan Summary must use shared stable primitives and shared CTA resolution for copy, collapse, guarantor decisions, revenue, and route actions."
 );
 
 assertContains(
   "src/pages/LoanSummaryPage.tsx",
-  /minWidth=\{isCompact \? undefined : 164\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-summary\.copy-summary"[\s\S]*?minWidth=\{isCompact \? undefined : 148\}[\s\S]*?stableHeight=\{48\}[\s\S]*?debugId="loan-summary\.copy-audit-link"[\s\S]*?debugId="loan-summary\.toggle-overview"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-summary\.toggle-guarantors"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 112\}[\s\S]*?stableHeight=\{44\}[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.approve`\}[\s\S]*?minWidth=\{isCompact \? undefined : 112\}[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.decline`\}[\s\S]*?minWidth=\{isCompact \? undefined : 190\}[\s\S]*?debugId="loan-summary\.bulk-approve-disabled"[\s\S]*?minWidth=\{isCompact \? undefined : 190\}[\s\S]*?debugId="loan-summary\.bulk-decline-disabled"[\s\S]*?debugId="loan-summary\.toggle-repayment"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?debugId="loan-summary\.toggle-evidence"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?debugId="loan-summary\.open-revenue-preview"[\s\S]*?debugId="loan-summary\.toggle-routes"[\s\S]*?whiteSpace: "nowrap"/,
-  "Loan Summary copy, decision, disabled, revenue, and collapse controls must keep stable no-wrap geometry."
+  /function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function routeHeading\(name: GsnIconName, label: string\)[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(148px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-summary\.copy-summary"[\s\S]*?actionText\("copy", "Copy summary"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-summary\.copy-audit-link"[\s\S]*?actionText\("copy", "Copy audit"\)[\s\S]*?debugId="loan-summary\.toggle-overview"[\s\S]*?transition: "none"[\s\S]*?actionText\(collapsed\.overview \? "document" : "lock", collapsed\.overview \? "Open" : "Hide"\)[\s\S]*?debugId="loan-summary\.toggle-guarantors"[\s\S]*?transition: "none"[\s\S]*?actionText\(collapsed\.guarantors \? "document" : "lock", collapsed\.guarantors \? "Open" : "Hide"\)[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(112px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.approve`\}[\s\S]*?actionText\("check", busyApprove \? "Approving" : "Approve"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`loan-summary\.guarantor\.\$\{g\.id \|\| idx\}\.decline`\}[\s\S]*?actionText\("alert", busyDecline \? "Declining" : "Decline"\)[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(160px, 1fr\)\)"[\s\S]*?debugId="loan-summary\.bulk-approve-disabled"[\s\S]*?actionText\("lock", "Bulk approve off"\)[\s\S]*?debugId="loan-summary\.bulk-decline-disabled"[\s\S]*?actionText\("lock", "Bulk decline off"\)[\s\S]*?debugId="loan-summary\.toggle-repayment"[\s\S]*?actionText\(collapsed\.repayment \? "document" : "lock", collapsed\.repayment \? "Open" : "Hide"\)[\s\S]*?debugId="loan-summary\.toggle-evidence"[\s\S]*?actionText\(collapsed\.evidence \? "document" : "lock", collapsed\.evidence \? "Open" : "Hide"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-summary\.open-revenue-preview"[\s\S]*?actionText\("wallet", canOpenCommandRevenue \? "Revenue" : "Finance"\)[\s\S]*?debugId="loan-summary\.toggle-routes"[\s\S]*?actionText\(collapsed\.routes \? "document" : "lock", collapsed\.routes \? "Open" : "Hide"\)[\s\S]*?routeHeading\("briefcase", "Loan Workbench"\)[\s\S]*?routeHeading\("search", "Loan Suggestions"\)[\s\S]*?routeHeading\("check", "Loan Readiness"\)[\s\S]*?routeHeading\("wallet", canOpenCommandRevenue \? "Revenue Allocation" : "Finance File"\)[\s\S]*?routeHeading\("bank", canRepay \? "Payment Instructions" : "Finance"\)[\s\S]*?routeHeading\("community", "Loans & Support"\)/,
+  "Loan Summary copy, decision, disabled, revenue, collapse, and route controls must keep compact 3D icon-led no-wrap geometry."
 );
 
 assertNotContains(
@@ -772,7 +826,7 @@ assertContains(
 
 assertContains(
   "src/pages/FinancePage.tsx",
-  /minWidth=\{80\}[\s\S]*?stableHeight=\{36\}[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?debugId="finance\.view-signals"[\s\S]*?fullWidth[\s\S]*?stableHeight=\{50\}[\s\S]*?debugId="finance\.open-loans"[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?stableHeight=\{isCompact \? 48 : 52\}/,
+  /minWidth=\{80\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?debugId="finance\.view-signals"[\s\S]*?fullWidth[\s\S]*?stableHeight=\{50\}[\s\S]*?debugId="finance\.open-loans"[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?stableHeight=\{isCompact \? 48 : 52\}/,
   "Finance inner actions must keep explicit stable geometry for view-all, signals, and Loans & Support route actions."
 );
 
@@ -790,20 +844,20 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentRailsPage.tsx",
-  /import \{ TrustPaperIcon \} from "\.\.\/components\/TrustPaperMarks";[\s\S]*?function paymentRailsSoftButtonStyle\(\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?function routeTileHeading\([\s\S]*?<TrustPaperIcon name=\{icon\}[\s\S]*?whiteSpace: "nowrap"/,
-  "Payment Rails must keep no-wrap soft controls and SVG-led route tile headings."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function paymentRailsSoftButtonStyle\(\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?function routeTileHeading\([\s\S]*?icon: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{icon\}[\s\S]*?whiteSpace: "nowrap"/,
+  "Payment Rails must keep no-wrap soft controls and 3D icon-led route tile headings."
 );
 
 assertContains(
   "src/pages/PaymentRailsPage.tsx",
-  /minWidth=\{112\}[\s\S]*?stableHeight=\{42\}[\s\S]*?debugId="payment-rails\.toggle-raw"[\s\S]*?Hide raw[\s\S]*?Show raw/,
+  /minWidth=\{112\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="payment-rails\.toggle-raw"[\s\S]*?Hide raw[\s\S]*?Show raw/,
   "Payment Rails raw-response toggle must keep compact stable geometry and labels."
 );
 
 assertContains(
   "src/pages/PaymentRailsPage.tsx",
   /routeTileHeading\("wallet", "Money In"\)[\s\S]*?routeTileHeading\("bank", "Money Out"\)[\s\S]*?routeTileHeading\("shield", "Readiness"\)[\s\S]*?routeTileHeading\("briefcase", "Workbench"\)[\s\S]*?routeTileHeading\("shop", "Marketplace"\)[\s\S]*?routeTileHeading\("community", "Community"\)/,
-  "Payment Rails next-route tiles must keep compact SVG-led labels."
+  "Payment Rails next-route tiles must keep compact 3D icon-led labels."
 );
 
 assertNotContains(
@@ -820,8 +874,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/GuarantorEarningsPage.tsx",
-  /import \{ SecondaryButton, StableCtaLink, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="guarantor-earnings\.copy-summary"[\s\S]*?debugId="guarantor-earnings\.toggle-overview"[\s\S]*?debugId="guarantor-earnings\.toggle-recent"[\s\S]*?debugId="guarantor-earnings\.route\.next"[\s\S]*?debugId="guarantor-earnings\.route\.money-out"/,
-  "Guarantor Earnings must use shared stable CTA primitives and shared CTA resolution for copy, collapse, and next-route actions."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ SecondaryButton, StableCtaLink, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function guarantorEarningsActionText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function guarantorEarningsRouteHeading\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="guarantor-earnings\.copy-summary"[\s\S]*?guarantorEarningsActionText\("copy", "Copy summary"\)[\s\S]*?debugId="guarantor-earnings\.toggle-overview"[\s\S]*?debugId="guarantor-earnings\.toggle-recent"[\s\S]*?debugId="guarantor-earnings\.route\.next"[\s\S]*?guarantorEarningsRouteHeading\("navigation", nextStep\.ctaLabel\)[\s\S]*?debugId="guarantor-earnings\.route\.money-out"[\s\S]*?guarantorEarningsRouteHeading\("wallet", "Money Out"\)/,
+  "Guarantor Earnings must use shared stable CTA primitives, shared CTA resolution, and shared 3D GSN icon helpers for copy, collapse, and next-route actions."
 );
 
 assertNotContains(
@@ -836,6 +890,18 @@ assertContains(
   "Payout Details must use shared stable CTA primitives and shared CTA resolution for save, copy, clear, and next-route actions."
 );
 
+assertContains(
+  "src/pages/PayoutDetailsPage.tsx",
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?<GsnLegacyIcon name=\{name\} size=\{26\} \/>[\s\S]*?debugId="payout-details\.save"[\s\S]*?stableHeight=\{52\}[\s\S]*?Save details[\s\S]*?debugId="payout-details\.copy-summary"[\s\S]*?stableHeight=\{52\}[\s\S]*?Copy summary[\s\S]*?debugId="payout-details\.clear-local"[\s\S]*?stableHeight=\{52\}[\s\S]*?Clear local[\s\S]*?debugId="payout-details\.open-money-out"[\s\S]*?stableHeight=\{52\}[\s\S]*?Money Out[\s\S]*?debugId="payout-details\.open-loans"[\s\S]*?stableHeight=\{52\}[\s\S]*?Loans & Support/,
+  "Payout Details must keep compact 3D icon-led no-wrap action geometry."
+);
+
+assertNotContains(
+  "src/pages/PayoutDetailsPage.tsx",
+  /(Save Payout Details|Clear Local Details|Open Withdrawal Instructions|Return to Loans & Support)/,
+  "Payout Details must not keep long jumpy labels after phone tightening."
+);
+
 assertNotContains(
   "src/pages/PayoutDetailsPage.tsx",
   /(import OriginLink|function stableTapStyle\(|buttonGuardProps\(|primaryBtn\(|secondaryBtn\(|stableTapStyle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|ctaTo: "\/app)/,
@@ -844,8 +910,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/GuarantorInboxPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="guarantor-inbox\.copy-queue"[\s\S]*?debugId="guarantor-inbox\.toggle-overview"[\s\S]*?debugId=\{`guarantor-inbox\.filter\.\$\{x\}`\}[\s\S]*?debugId=\{`guarantor-inbox\.row\.\$\{row\.id \|\| row\.loanId \|\| i\}\.approve`\}[\s\S]*?debugId="guarantor-inbox\.route\.next"[\s\S]*?debugId="guarantor-inbox\.route\.notifications"/,
-  "Guarantor Inbox must use shared stable CTA primitives and shared CTA resolution for copy, filters, decisions, collapse controls, and next-route actions."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function guarantorInboxActionText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function guarantorInboxRouteHeading\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="guarantor-inbox\.copy-queue"[\s\S]*?guarantorInboxActionText\("copy", "Copy queue"\)[\s\S]*?debugId="guarantor-inbox\.toggle-overview"[\s\S]*?debugId=\{`guarantor-inbox\.filter\.\$\{x\}`\}[\s\S]*?guarantorInboxActionText\([\s\S]*?x === "pending" \? "alert"[\s\S]*?debugId=\{`guarantor-inbox\.row\.\$\{row\.id \|\| row\.loanId \|\| i\}\.approve`\}[\s\S]*?guarantorInboxActionText\("check", "Approve", 20\)[\s\S]*?debugId="guarantor-inbox\.route\.next"[\s\S]*?guarantorInboxRouteHeading\("navigation", nextStep\.ctaLabel\)[\s\S]*?debugId="guarantor-inbox\.route\.notifications"[\s\S]*?guarantorInboxRouteHeading\("alert", "Action Inbox"\)/,
+  "Guarantor Inbox must use shared stable CTA primitives, shared CTA resolution, and shared 3D GSN icon helpers for copy, filters, decisions, collapse controls, and next-route actions."
 );
 
 assertNotContains(
@@ -862,19 +928,19 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /import \{ TrustPaperIcon \} from "\.\.\/components\/TrustPaperMarks";[\s\S]*?function moneyInActionButtonStyle\([\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function moneyInCollapseButtonStyle\(\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?<TrustPaperIcon name="document"[\s\S]*?debugId="money-in\.generate-instruction"[\s\S]*?minWidth=\{isCompact \? undefined : 186\}[\s\S]*?stableHeight=\{62\}[\s\S]*?Generate instruction[\s\S]*?<TrustPaperIcon name="shield"[\s\S]*?<TrustPaperIcon name="alert"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?minWidth=\{isCompact \? undefined : 152\}[\s\S]*?stableHeight=\{52\}[\s\S]*?Copy reference[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?stableHeight=\{52\}[\s\S]*?Copy instruction[\s\S]*?debugId="money-in\.confirm-paid"[\s\S]*?minWidth=\{isCompact \? undefined : 170\}[\s\S]*?stableHeight=\{52\}[\s\S]*?Confirm paid/,
-  "Money In instructions must keep SVG pictograms, no-wrap action geometry, and compact labels for phone stability."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function moneyInActionButtonStyle\([\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function moneyInCollapseButtonStyle\(\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?function moneyInActionText\(name: GsnIconName, label: string\)[\s\S]*?<GsnLegacyIcon name=\{name\} size=\{26\} \/>[\s\S]*?whiteSpace: "nowrap"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="money-in\.toggle-overview"[\s\S]*?moneyInActionText\([\s\S]*?collapsed\.overview \? "document" : "lock"[\s\S]*?collapsed\.overview \? "Open" : "Hide"[\s\S]*?\)[\s\S]*?debugId="money-in\.generate-instruction"[\s\S]*?stableHeight=\{56\}[\s\S]*?moneyInActionText\("document", generatingInstruction \? "Generating" : "Generate"\)[\s\S]*?debugId="money-in\.refresh-route"[\s\S]*?stableHeight=\{56\}[\s\S]*?moneyInActionText\("refresh", refreshingRoute \? "Refreshing" : "Refresh"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="money-in\.reset-task"[\s\S]*?moneyInActionText\("refresh", "Reset"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="money-in\.toggle-instruction"[\s\S]*?moneyInActionText\([\s\S]*?collapsed\.instruction \? "document" : "lock"[\s\S]*?collapsed\.instruction \? "Open" : "Hide"[\s\S]*?\)[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?stableHeight=\{52\}[\s\S]*?moneyInActionText\("copy", "Copy ref"\)[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?stableHeight=\{52\}[\s\S]*?moneyInActionText\("copy", "Copy text"\)[\s\S]*?debugId="money-in\.confirm-paid"[\s\S]*?stableHeight=\{52\}[\s\S]*?moneyInActionText\("check", paymentConfirmed \? "Declared" : "Confirm paid"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="money-in\.toggle-result"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="money-in\.toggle-routes"[\s\S]*?debugId="money-in\.route\.finance"[\s\S]*?stableHeight=\{52\}[\s\S]*?moneyInActionText\("wallet", "Finance"\)[\s\S]*?debugId="money-in\.route\.payment-rails"[\s\S]*?moneyInActionText\("briefcase", "Rails"\)[\s\S]*?debugId="money-in\.route\.notifications"[\s\S]*?moneyInActionText\("alert", "Inbox"\)/,
+  "Money In instructions must keep 3D GSN icons, no-wrap action geometry, and compact labels for phone stability."
 );
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /debugId="money-in\.header\.menu"[\s\S]*?<TrustPaperIcon name="home"[\s\S]*?debugId="money-in\.header\.tools"[\s\S]*?<TrustPaperIcon name="briefcase"[\s\S]*?<TrustPaperIcon name="shop"[\s\S]*?name=\{generatingInstruction \|\| refreshingRoute \? "refresh" : "check"\}/,
-  "Money In header, community badge, and state badge must use SVG pictograms instead of emoji or mojibake glyphs."
+  /debugId="money-in\.header\.menu"[\s\S]*?<GsnLegacyIcon name="home"[\s\S]*?debugId="money-in\.header\.tools"[\s\S]*?<GsnLegacyIcon name="briefcase"[\s\S]*?<GsnLegacyIcon name="shop"[\s\S]*?<GsnLegacyIcon[\s\S]*?name=\{generatingInstruction \|\| refreshingRoute \? "refresh" : "check"\}/,
+  "Money In header, community badge, and state badge must use 3D GSN icons instead of emoji or mojibake glyphs."
 );
 
 assertNotContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /(📋|🛡|ℹ|ð|â„|ï¸|Ÿ|Generate Instruction|Copy Reference|Copy Full Instruction|I Have Paid Using This Reference|Payment Declared)/,
+  /(ðŸ“‹|ðŸ›¡|â„¹|Ã°|Ã¢â€ž|Ã¯Â¸|Å¸|Generate Instruction|Generate instruction|Generating\.\.\.|Refreshing\.\.\.|Copy Reference|Copy reference|Copy Full Instruction|Copy instruction|I Have Paid Using This Reference|Payment Declared|Payment declared|Show Details|Hide Details|Reset Money In|>Collapse<|Payment Rails|Payout Details|Community Home|Action Inbox)/,
   "Money In instructions must not keep emoji/mojibake glyphs or long jumpy action labels."
 );
 
@@ -940,8 +1006,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
-  /import \{ SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="admin-incomplete-loans\.copy-queue"[\s\S]*?debugId="admin-incomplete-loans\.route\.system-operations"[\s\S]*?debugId="admin-incomplete-loans\.route\.bank-console"[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.copy`\}[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.summary`\}/,
+  /import \{ SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="admin-incomplete-loans\.copy-queue"[\s\S]*?debugId="admin-incomplete-loans\.route\.system-operations"[\s\S]*?debugId="admin-incomplete-loans\.route\.bank-console"[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.copy`\}[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.summary`\}/,
   "Admin Incomplete Loans must use shared stable CTA primitives and shared CTA resolution for queue copy, command routes, loan copy, and loan summary links."
+);
+
+assertContains(
+  "src/pages/AdminIncompleteLoansPage.tsx",
+  /function adminIncompleteLoanActionStyle\([\s\S]*?minWidth: 142[\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(148px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="admin-incomplete-loans\.copy-queue"[\s\S]*?actionText\("copy", "Copy queue"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.system-operations"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("briefcase", "Operations"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.bank-console"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("bank", "Bank Console"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.command-center"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("home", "Command Center"\)[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(142px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.copy`\}[\s\S]*?actionText\("copy", "Copy loan"\)[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.summary`\}[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("document", "Loan Summary"\)/,
+  "Admin Incomplete Loans controls must keep compact 3D icon-led labels, fixed 52px heights, full-width grid rows, and no-wrap geometry."
+);
+
+assertNotContains(
+  "src/pages/AdminIncompleteLoansPage.tsx",
+  /Copy queue snapshot|Open System Operations|Open Bank Console|Back to Command Center|Copy loan snapshot|Open Loan Summary/,
+  "Admin Incomplete Loans must not restore old long action labels on phone-critical action rows."
 );
 
 assertNotContains(
@@ -966,6 +1044,18 @@ assertContains(
   "src/pages/BankConsolePage.tsx",
   /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="bank-console\.next-step"[\s\S]*?debugId=\{`bank-console\.row\.\$\{safeStr\(row\.id \|\| displayReference \|\| i\)\}\.copy`\}[\s\S]*?debugId="bank-console\.refresh"[\s\S]*?debugId="bank-console\.ingest"[\s\S]*?debugId="bank-console\.reconcile"[\s\S]*?debugId="bank-console\.copy-config"/,
   "Bank Console must use shared stable CTA primitives and shared CTA resolution for next-step, row copy, refresh, ingest, reconcile, and config-copy actions."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function nextStepActionText\(step: NextStepState\)[\s\S]*?debugId="bank-console\.next-step"[\s\S]*?stableHeight=\{52\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`bank-console\.row\.\$\{safeStr\(row\.id \|\| displayReference \|\| i\)\}\.copy`\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="bank-console\.refresh"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="bank-console\.ingest"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="bank-console\.reconcile"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="bank-console\.copy-config"/,
+  "Bank Console actions must keep compact 3D icon-led no-wrap geometry."
+);
+
+assertNotContains(
+  "src/pages/BankConsolePage.tsx",
+  /(Refresh now|Refreshing\.\.\.|Ingest event|Ingesting\.\.\.|Run reconciliation|Reconciling\.\.\.|Copy config snapshot)/,
+  "Bank Console must not keep old long labels that wrap on phone."
 );
 
 assertNotContains(
@@ -1180,14 +1270,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId=\{`build-first-circle\.role\.\$\{role\}`\}[\s\S]*?debugId="build-first-circle\.add-person"[\s\S]*?debugId="build-first-circle\.choose-phone-contacts"[\s\S]*?debugId="build-first-circle\.toggle-contacts"[\s\S]*?debugId=\{`build-first-circle\.contact\.\$\{item\.id\}\.remove`\}[\s\S]*?debugId="build-first-circle\.copy-invite-bundle"[\s\S]*?debugId="build-first-circle\.reset"/,
-  "Build First Circle page must use shared stable button primitives and shared CTA resolution for role, contact, section, invite, and nav actions."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function firstCircleIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function firstCircleStepIcon\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="build-first-circle\.hero\.dashboard"[\s\S]*?firstCircleIconText\("home", "Dashboard", 20\)[\s\S]*?debugId=\{`build-first-circle\.role\.\$\{role\}`\}[\s\S]*?debugId="build-first-circle\.add-person"[\s\S]*?firstCircleIconText\("join-person-plus", "Add person", 18\)[\s\S]*?debugId="build-first-circle\.choose-phone-contacts"[\s\S]*?firstCircleIconText\("phone", "Phone contacts", 18\)[\s\S]*?debugId="build-first-circle\.toggle-contacts"[\s\S]*?debugId=\{`build-first-circle\.contact\.\$\{item\.id\}\.remove`\}[\s\S]*?firstCircleIconText\("lock", "Remove", 18\)[\s\S]*?debugId="build-first-circle\.copy-invite-bundle"[\s\S]*?firstCircleIconText\("copy", "Copy message", 18\)[\s\S]*?debugId="build-first-circle\.reset"[\s\S]*?firstCircleIconText\("refresh", "Reset", 18\)/,
+  "Build First Circle page must use shared stable button primitives, shared 3D GSN icon helpers, and shared CTA resolution for role, contact, section, invite, and nav actions."
+);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /function collapseToggle\(\): React\.CSSProperties \{[\s\S]*?height: 42[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function compactButtonStyle\(primary = false\): React\.CSSProperties \{[\s\S]*?height: 48[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
+  "Build First Circle collapse and action controls must keep fixed no-wrap geometry."
 );
 
 assertNotContains(
   "src/pages/BuildFirstCirclePage.tsx",
-  /(<button|<\/button>|<a\s|buttonGuardProps|stableTapStyle|guardButtonPress|OriginLink|actionBtn\(|homeTo="\/app|backTo="\/app|to="\/app)/,
-  "Build First Circle page must not keep raw button/link, local tap/action primitives, or hard-coded app route CTAs after migration."
+  /(<button|<\/button>|<a\s|buttonGuardProps|stableTapStyle|guardButtonPress|OriginLink|actionBtn\(|homeTo="\/app|backTo="\/app|to="\/app|>\s*Add Person\s*<|>\s*Clear Form\s*<|>\s*Choose from Phone Contacts\s*<|>\s*Reset First Circle\s*<|>\s*Share WhatsApp\s*<)/,
+  "Build First Circle page must not keep raw button/link, local tap/action primitives, hard-coded app route CTAs, or old long text-only action labels after migration."
 );
 
 assertContains(
@@ -1216,8 +1312,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/RegisterPage.tsx",
-  /import \{ PrimaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="register\.continue-login"[\s\S]*?debugId="register\.activate-membership"[\s\S]*?debugId="register\.create-entry"[\s\S]*?debugId="register\.welcome"/,
-  "Register handoff page must use shared stable CTA primitives for continuation and fallback routes."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ PrimaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?function registerIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function registerIconTile\([\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="register\.continue-login"[\s\S]*?registerIconText\("lock", "Continue to Sign In"\)[\s\S]*?debugId="register\.activate-membership"[\s\S]*?registerIconText\("join-person-plus", "Activate Approved Membership"\)[\s\S]*?debugId="register\.create-entry"[\s\S]*?debugId="register\.welcome"/,
+  "Register handoff page must use shared stable CTA primitives and shared 3D GSN icon helpers for continuation and fallback routes."
 );
 
 assertNotContains(
@@ -1300,14 +1396,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoanDecisionPage.tsx",
-  /import \{ StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId=\{`loan-decision\.\$\{loanId \|\| index\}\.summary`\}[\s\S]*?debugId=\{`loan-decision\.\$\{loanId \|\| index\}\.workbench`\}[\s\S]*?debugId="loan-decision\.route\.workbench"[\s\S]*?debugId="loan-decision\.route\.loans"[\s\S]*?debugId="loan-decision\.route\.finance"/,
-  "Loan Decision page must use shared stable CTA links and shared CTA resolution for row drilldowns and next-door routes."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function actionLink\([\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflowWrap: "normal"[\s\S]*?overflow: "hidden"[\s\S]*?function loanDecisionActionText\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function loanDecisionFactHeading\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?loanDecisionFactHeading\("document", "Visible Items"\)[\s\S]*?loanDecisionFactHeading\("check", "Approved Or Active"\)[\s\S]*?loanDecisionFactHeading\("alert", "Waiting Review"\)[\s\S]*?debugId=\{`loan-decision\.\$\{loanId \|\| index\}\.summary`\}[\s\S]*?loanDecisionActionText\("document", "Summary", 20\)[\s\S]*?debugId=\{`loan-decision\.\$\{loanId \|\| index\}\.workbench`\}[\s\S]*?loanDecisionActionText\("briefcase", "Workbench", 20\)[\s\S]*?debugId="loan-decision\.route\.workbench"[\s\S]*?debugId="loan-decision\.route\.loans"[\s\S]*?loanDecisionActionText\("community", "Loans", 20\)[\s\S]*?debugId="loan-decision\.route\.finance"[\s\S]*?loanDecisionActionText\("wallet", "Finance", 20\)/,
+  "Loan Decision page must use shared stable CTA links, shared CTA resolution, no-wrap action geometry, and shared 3D GSN icon helpers for facts, row drilldowns, and next-door routes."
 );
 
 assertNotContains(
   "src/pages/LoanDecisionPage.tsx",
-  /(<button|<\/button>|<a\s|OriginLink|stableTapStyle|to="\/app|homeTo="\/app|backTo="\/app)/,
-  "Loan Decision page must not keep raw link/button, local tap primitives, or hard-coded app route CTAs."
+  /(<button|<\/button>|<a\s|OriginLink|stableTapStyle|to="\/app|homeTo="\/app|backTo="\/app|Open Loan Summary|Open Workbench|Return to Loans & Support|Open Finance)/,
+  "Loan Decision page must not keep raw link/button, local tap primitives, hard-coded app route CTAs, or old long text-only labels."
 );
 
 assertContains(
@@ -1324,8 +1420,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopAccessPage.tsx",
-  /import \{ StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-access\.invalid\.back-welcome"[\s\S]*?debugId="shop-access\.invalid\.open-public-shop"[\s\S]*?debugId="shop-access\.hero\.open-public-shop"[\s\S]*?debugId="shop-access\.hero\.return-entry"[\s\S]*?debugId="shop-access\.next\.open-public-shop"[\s\S]*?debugId="shop-access\.next\.back-welcome"/,
-  "Shop Access page must use shared stable CTA links for invalid, hero, and next-step routes."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?function shopAccessIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function shopAccessIconTile\([\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="shop-access\.invalid\.back-welcome"[\s\S]*?shopAccessIconText\("home", "Back to Welcome"\)[\s\S]*?debugId="shop-access\.invalid\.open-public-shop"[\s\S]*?shopAccessIconText\("shop", "Open public shop face"\)[\s\S]*?debugId="shop-access\.hero\.open-public-shop"[\s\S]*?debugId="shop-access\.hero\.return-entry"[\s\S]*?debugId="shop-access\.next\.open-public-shop"[\s\S]*?debugId="shop-access\.next\.back-welcome"/,
+  "Shop Access page must use shared stable CTA links and shared 3D GSN icon helpers for invalid, hero, and next-step routes."
 );
 
 assertNotContains(
@@ -1342,13 +1438,13 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /audioUnlockLabel="🔊"[\s\S]*?audioUnlockOffLabel="🔇"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?\{isProductOpen \? "🔼" : "👁️"\}[\s\S]*?aria-label=\{`Share \$\{displayTitle\}`\}[\s\S]*?🔗[\s\S]*?aria-label=\{`Contact owner about \$\{displayTitle\}`\}[\s\S]*?💬/,
-  "Shop Gallery product cards must use compact real-life signs for sound, open/close, block share, and owner contact while keeping accessible action labels."
+  /audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon[\s\S]*?name="public-globe"[\s\S]*?aria-label=\{`Share \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon name="qr-record"[\s\S]*?aria-label=\{`Contact owner about \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon name="phone-contact"/,
+  "Shop Gallery product cards must use compact 3D real-life signs for sound, open/close, block share, and owner contact while keeping accessible action labels."
 );
 
 assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
-  /audioUnlockLabel="Sound on"|>Sound on<|>Sound off<|>Share shop<|>Open<|>Close</,
+  />Sound on<|>Sound off<|>Share shop<|>Open<|>Close</,
   "Shop Gallery product cards must not bring back oversized text-only media/open/share buttons."
 );
 
@@ -1426,8 +1522,8 @@ assertContains(
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /function collapseToggle\(\)[\s\S]*?minWidth: 124[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflowWrap: "normal"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?minWidth=\{isCompact \? undefined : 186\}[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="repayment\.generate-instruction"[\s\S]*?Generate instruction[\s\S]*?minWidth=\{isCompact \? undefined : 150\}[\s\S]*?debugId="repayment\.copy-reference"[\s\S]*?Copy reference[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="repayment\.copy-full-instruction"[\s\S]*?Copy instruction[\s\S]*?minWidth=\{isCompact \? undefined : 170\}[\s\S]*?debugId="repayment\.confirm-paid"[\s\S]*?Confirm paid[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loan-summary"[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.finance"[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loans"/,
-  "Repayment controls must keep compact labels, fixed no-wrap collapse geometry, and full-width route links."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function collapseToggle\(\)[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?minWidth: 124[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflowWrap: "normal"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?function actionText\(name: GsnIconName[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(142px, 1fr\)\)"[\s\S]*?minWidth=\{isCompact \? undefined : 186\}[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="repayment\.generate-instruction"[\s\S]*?actionText\("repaymentSchedule", "Generate"\)[\s\S]*?minWidth=\{isCompact \? undefined : 150\}[\s\S]*?debugId="repayment\.copy-reference"[\s\S]*?actionText\("copy", "Copy reference"\)[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="repayment\.copy-full-instruction"[\s\S]*?actionText\("repaymentSchedule", "Copy instruction"\)[\s\S]*?minWidth=\{isCompact \? undefined : 170\}[\s\S]*?debugId="repayment\.confirm-paid"[\s\S]*?actionText\("check", paymentConfirmedAt \? "Declared" : "Confirm paid"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loan-summary"[\s\S]*?actionText\("proof", "Loan Summary"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.finance"[\s\S]*?actionText\("financeInstitution", "Finance"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loans"[\s\S]*?actionText\("community", "Loans & Support"\)/,
+  "Repayment controls must keep 3D icon labels, fixed no-wrap collapse geometry, responsive fact grids, and full-width route links."
 );
 
 assertNotContains(
@@ -1440,6 +1536,18 @@ assertContains(
   "src/pages/RevenueAllocationPage.tsx",
   /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?debugId="revenue-allocation\.copy-summary"[\s\S]*?debugId="revenue-allocation\.toggle-summary"[\s\S]*?debugId="revenue-allocation\.toggle-details"[\s\S]*?debugId="revenue-allocation\.toggle-context"[\s\S]*?debugId="revenue-allocation\.toggle-routes"[\s\S]*?debugId="revenue-allocation\.route\.loan-summary"[\s\S]*?debugId="revenue-allocation\.route\.workbench"[\s\S]*?debugId="revenue-allocation\.route\.finance"[\s\S]*?debugId="revenue-allocation\.route\.money-out"/,
   "Revenue Allocation page must use shared stable primitives and shared CTA resolution for load, copy, collapse, and next-route actions."
+);
+
+assertContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function primaryBtn\([\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function secondaryBtn\([\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function collapseToggle\([\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function routeHeading\(name: GsnIconName, label: string\)[\s\S]*?GsnLegacyIcon name=\{name\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?actionText\("refresh", busy \? "Loading" : "Load"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.copy-summary"[\s\S]*?actionText\("copy", "Copy summary"\)[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.toggle-summary"[\s\S]*?actionText\(collapsed\.summary \? "document" : "lock", collapsed\.summary \? "Open" : "Hide"\)[\s\S]*?routeHeading\("document", "Loan Summary"\)[\s\S]*?routeHeading\("briefcase", "Loan Workbench"\)[\s\S]*?routeHeading\("wallet", "Finance"\)[\s\S]*?routeHeading\("community", "Loans & Support"\)[\s\S]*?routeHeading\("shop", "Marketplace"\)[\s\S]*?routeHeading\("bank", "Money Out"\)/,
+  "Revenue Allocation controls must keep compact 3D icon-led labels, fixed 52px action heights, no-wrap/no-transition geometry, and 3D icon-led next-route tiles."
+);
+
+assertNotContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /Load Allocation|Copy Summary|"Collapse"|>Collapse<|deeper support work item behind the allocation|broader money truth|guided withdrawal question again|â€”|—/,
+  "Revenue Allocation must not restore old long labels, long route copy, or dash mojibake on phone-critical surfaces."
 );
 
 assertNotContains(
@@ -1456,7 +1564,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 176\}[\s\S]*?debugId="trust-slip-verify\.public\.print"[\s\S]*?minWidth=\{isCompact \? undefined : 190\}[\s\S]*?debugId="trust-slip-verify\.public\.open-community-record"[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?minWidth=\{isCompact \? undefined : 140\}[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
+  /fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 176\}[\s\S]*?debugId="trust-slip-verify\.public\.print"[\s\S]*?minWidth=\{isCompact \? undefined : 190\}[\s\S]*?debugId="trust-slip-verify\.public\.open-community-record"[\s\S]*?stableHeight=\{isCompact \? 52 : 44\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?stableHeight=\{isCompact \? 52 : 44\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?stableHeight=\{isCompact \? 52 : 44\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 140\}[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
   "TrustSlip Verify public and internal proof actions must keep fixed desktop width and full-width phone behavior."
 );
 
@@ -1464,6 +1572,96 @@ assertNotContains(
   "src/pages/TrustSlipVerifyPage.tsx",
   /(<button|<\/button>|<a\s|OriginLink|actionBtn\(|to="\/app|homeTo="\/app|backTo="\/app)/,
   "TrustSlip Verify page must not keep raw button/link, local action primitives, or hard-coded app route CTAs."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
+  /function boundaryIcon/,
+  "TrustSlip Verify boundary must keep the shared boundary icon helper."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
+  /rgba\(255,255,255,0\.96\)/,
+  "TrustSlip Verify boundary icons must use a light/white tile, not a heavy colored shield."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
+  /size=\{compact \? 42 : 50\}/,
+  "TrustSlip Verify boundary icons must keep the larger embossed object size."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
+  /boundaryIcon\("document", compact\)[\s\S]*?boundaryIcon\("lock", compact\)/,
+  "TrustSlip Verify boundary must mark both public paper and private review with shared 3D icons."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
+  /function resultIconBadge/,
+  "TrustSlip Verify result card must keep the shared result icon helper."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
+  /rgba\(255,255,255,0\.98\)/,
+  "TrustSlip Verify result icon must use a light/white tile, not a heavy colored shield."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
+  /size=\{compact \? 56 : 66\}/,
+  "TrustSlip Verify result icon must keep the larger embossed object size."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
+  /gridTemplateColumns: compact \? "60px minmax\(0, 1fr\)" : "72px minmax\(0, 1fr\)"/,
+  "TrustSlip Verify result card must reserve fixed compact geometry for the larger 3D result icon."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
+  /function documentIconBadge\(name: GsnIconName/,
+  "TrustSlip Verify private evidence paper must keep the shared document icon helper."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
+  /const frameSize = size \+ 14/,
+  "TrustSlip Verify private evidence icons must keep larger light tiles."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
+  /size=\{size \+ 8\}/,
+  "TrustSlip Verify private evidence icons must keep the larger embossed object size."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
+  /<GSNBrandMark width=\{132\} height=\{166\}/,
+  "TrustSlip Verify private evidence paper must keep official GSN watermarking."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
+  /documentSectionHeading\("shield", "Verification summary"\)[\s\S]*?documentSectionHeading\("id", "Holder identity"\)[\s\S]*?documentSectionHeading\("shield", "Visible trust reading"\)[\s\S]*?documentSectionHeading\("document", "Commitment and contribution record"\)/,
+  "TrustSlip Verify private evidence paper must keep shared 3D icon-led document sections."
+);
+
+assertNotContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
+  /(GSN Verify|documentWatermarkStyle\()/,
+  "TrustSlip Verify private evidence paper must not fall back to the old text-only watermark."
+);
+
+assertNotContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
+  /linear-gradient\(180deg, #102D4C 0%, #061827 100%\)/,
+  "TrustSlip Verify result card must not restore the heavy navy shield behind the 3D result icon."
 );
 
 assertContains(
@@ -1480,7 +1678,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /debugId="marketplace\.network-repost\.find-targets"[\s\S]*?stableHeight=\{50\}[\s\S]*?height: 50[\s\S]*?minHeight: 50[\s\S]*?maxHeight: 50[\s\S]*?debugId=\{`marketplace\.network-repost\.target\.\$\{code \|\| index\}\.use`\}[\s\S]*?stableHeight=\{46\}[\s\S]*?height: 46[\s\S]*?minHeight: 46[\s\S]*?maxHeight: 46/,
+  /debugId="marketplace\.network-repost\.find-targets"[\s\S]*?stableHeight=\{50\}[\s\S]*?height: 50[\s\S]*?minHeight: 50[\s\S]*?maxHeight: 50[\s\S]*?debugId=\{`marketplace\.network-repost\.target\.\$\{code \|\| index\}\.use`\}[\s\S]*?stableHeight=\{52\}[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52/,
   "Marketplace paid Network Spotlight target suggestion controls must keep stable fixed-height find and Use ID buttons in both StableButton props and runtime style."
 );
 

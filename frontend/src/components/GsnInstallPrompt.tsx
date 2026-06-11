@@ -174,8 +174,8 @@ export default function GsnInstallPrompt({
   const label = isIos
     ? "Show iPhone screen steps"
     : state.promptReady
-    ? "📱 Add GSN to phone screen"
-    : "📱 Show 3 phone steps";
+    ? "Add GSN to phone screen"
+    : "Show 3 phone steps";
   const describedBy = `gsn-install-${surface.replace(/[^a-z0-9-]+/gi, "-")}`;
   const steps = manualSteps(isIos);
 
@@ -215,7 +215,7 @@ export default function GsnInstallPrompt({
               lineHeight: 1.18,
             }}
           >
-            📱 Keep GSN nearby
+            Keep GSN nearby
           </div>
           <p id={describedBy} style={helperTextStyle(tone, compact)}>
             {isIos
@@ -228,7 +228,7 @@ export default function GsnInstallPrompt({
       <PrimaryButton
         type="button"
         onClick={state.promptReady ? handleInstall : () => setManualOpen((current) => !current)}
-        stableHeight={compact ? 42 : 46}
+        stableHeight={52}
         debugId={`gsn-install.${surface}.setup`}
         aria-expanded={manualOpen}
         aria-describedby={describedBy}

@@ -1,37 +1,10 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { PrimaryButton, StableCtaLink } from "../components/StableButton";
 
 import Mark from "../assets/gmfn-mark.svg";
 import Wordmark from "../assets/gmfn-wordmark.svg";
-
-function topPattern(): string {
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="320" viewBox="0 0 1600 320">
-    <rect width="1600" height="320" fill="#F7FAFD"/>
-    <g fill="none" stroke="#C5D7EB" stroke-opacity="0.52" stroke-width="2">
-      <path d="M80 160 C180 90, 280 90, 380 160 S580 230, 690 150" />
-      <path d="M920 160 C1020 90, 1120 90, 1220 160 S1420 230, 1520 150" />
-    </g>
-    <g fill="#D6AF47" fill-opacity="0.95">
-      <path d="M80 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M180 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M280 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M380 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M510 205 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M650 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-
-      <path d="M920 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M1020 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M1120 96 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M1220 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M1350 205 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-      <path d="M1490 150 l4 10 10 1 -8 7 2 10 -8 -5 -8 5 2 -10 -8 -7 10 -1z"/>
-    </g>
-  </svg>`.trim();
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-}
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -80,6 +53,43 @@ function sectionLabel(): React.CSSProperties {
   };
 }
 
+function registerIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 24
+) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={name} size={size} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function registerIconTile(name: GsnIconName, size = 54) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 18,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: `0 0 ${size}px`,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(232,240,249,0.82) 100%)",
+        border: "1px solid rgba(11,31,51,0.10)",
+        boxShadow:
+          "0 16px 34px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(30, size - 14)} />
+    </span>
+  );
+}
+
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
   return s || fallback;
@@ -88,7 +98,6 @@ function safeStr(x: any, fallback = ""): string {
 export default function RegisterPage() {
   const nav = useNavigate();
   const location = useLocation();
-  const pattern = topPattern();
 
   const state =
     (location.state as {
@@ -118,10 +127,8 @@ export default function RegisterPage() {
     <div style={{ minHeight: "100vh", background: "#F8FBFE" }}>
       <div
         style={{
-          backgroundImage: `url("${pattern}")`,
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
+          background:
+            "radial-gradient(circle at 14% 18%, rgba(214,175,71,0.15) 0%, rgba(214,175,71,0.00) 28%), radial-gradient(circle at 86% 4%, rgba(70,112,158,0.13) 0%, rgba(70,112,158,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FC 100%)",
           borderBottom: "1px solid rgba(11,31,51,0.06)",
         }}
       >
@@ -131,22 +138,35 @@ export default function RegisterPage() {
             <img src={Wordmark} alt="GSN wordmark" style={{ height: 30, width: "auto" }} />
           </div>
 
-          <div style={sectionLabel()}>Founder registration</div>
+          <div style={sectionLabel()}>
+            {registerIconText("join-person-plus", "Founder registration", 22)}
+          </div>
 
-          <h1
+          <div
             style={{
               marginTop: 12,
               marginBottom: 16,
-              fontSize: 54,
-              lineHeight: 1.08,
-              color: "#0B1F33",
-              fontWeight: 1000,
-              maxWidth: 860,
-              letterSpacing: -1,
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              flexWrap: "wrap",
             }}
           >
-            Founder registration should follow the public create entry, not replace it.
-          </h1>
+            {registerIconTile("community", 62)}
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 54,
+                lineHeight: 1.08,
+                color: "#0B1F33",
+                fontWeight: 1000,
+                maxWidth: 860,
+                letterSpacing: 0,
+              }}
+            >
+              Founder registration should follow the public create entry, not replace it.
+            </h1>
+          </div>
 
           <p
             style={{
@@ -157,9 +177,8 @@ export default function RegisterPage() {
               maxWidth: 980,
             }}
           >
-            This founder registration handoff should confirm the
-            community details already entered and route you onward without becoming a
-            second create form.
+            This founder registration handoff should confirm the community details already
+            entered and route you onward without becoming a second create form.
           </p>
         </div>
       </div>
@@ -174,7 +193,9 @@ export default function RegisterPage() {
           }}
         >
           <div style={pageCard()}>
-            <div style={sectionLabel()}>Create entry summary</div>
+            <div style={sectionLabel()}>
+              {registerIconText("document", "Create entry summary", 22)}
+            </div>
 
             <div
               style={{
@@ -185,7 +206,9 @@ export default function RegisterPage() {
                 lineHeight: 1.15,
               }}
             >
-              {hasCreateEntry ? "Your public create entry is captured." : "No create entry details detected yet."}
+              {hasCreateEntry
+                ? "Your public create entry is captured."
+                : "No create entry details detected yet."}
             </div>
 
             <div
@@ -196,14 +219,14 @@ export default function RegisterPage() {
                 fontSize: 15,
               }}
             >
-              Review the community details below, then continue through the secure
-              access route that already exists in this build.
+              Review the community details below, then continue through the secure access route
+              that already exists in this build.
             </div>
 
             <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
               <div style={softCard()}>
                 <div style={{ ...sectionLabel(), color: "#64748B", letterSpacing: 0.4 }}>
-                  Community name
+                  {registerIconText("community", "Community name", 22)}
                 </div>
                 <div
                   style={{
@@ -219,7 +242,7 @@ export default function RegisterPage() {
 
               <div style={softCard()}>
                 <div style={{ ...sectionLabel(), color: "#64748B", letterSpacing: 0.4 }}>
-                  Short description
+                  {registerIconText("document", "Short description", 22)}
                 </div>
                 <div
                   style={{
@@ -235,7 +258,7 @@ export default function RegisterPage() {
 
               <div style={softCard()}>
                 <div style={{ ...sectionLabel(), color: "#64748B", letterSpacing: 0.4 }}>
-                  Founder email
+                  {registerIconText("id", "Founder email", 22)}
                 </div>
                 <div
                   style={{
@@ -252,7 +275,9 @@ export default function RegisterPage() {
           </div>
 
           <div style={pageCard()}>
-            <div style={sectionLabel()}>Next step</div>
+            <div style={sectionLabel()}>
+              {registerIconText("navigation", "Next step", 22)}
+            </div>
 
             <div
               style={{
@@ -272,9 +297,9 @@ export default function RegisterPage() {
                 lineHeight: 1.85,
               }}
             >
-              In this build, founder continuation should move through the secure
-              access route that already exists, rather than duplicating a second
-              public registration workflow here.
+              In this build, founder continuation should move through the secure access route
+              that already exists, rather than duplicating a second public registration workflow
+              here.
             </div>
 
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
@@ -283,7 +308,7 @@ export default function RegisterPage() {
                 debugId="register.continue-login"
                 style={button(true)}
               >
-                Continue to Sign In
+                {registerIconText("lock", "Continue to Sign In")}
               </PrimaryButton>
 
               <StableCtaLink
@@ -291,7 +316,7 @@ export default function RegisterPage() {
                 debugId="register.activate-membership"
                 style={button(false)}
               >
-                Activate Approved Membership
+                {registerIconText("join-person-plus", "Activate Approved Membership")}
               </StableCtaLink>
 
               <StableCtaLink
@@ -299,7 +324,7 @@ export default function RegisterPage() {
                 debugId="register.create-entry"
                 style={button(false)}
               >
-                Back to Create Entry
+                {registerIconText("community", "Back to Create Entry")}
               </StableCtaLink>
 
               <StableCtaLink
@@ -307,7 +332,7 @@ export default function RegisterPage() {
                 debugId="register.welcome"
                 style={button(false)}
               >
-                Back to Welcome
+                {registerIconText("home", "Back to Welcome")}
               </StableCtaLink>
             </div>
 
@@ -323,9 +348,11 @@ export default function RegisterPage() {
                 fontSize: 14,
               }}
             >
-              This remains a clean handoff page. Community creation belongs
-              to public create entry, and private community control belongs after
-              proper access.
+              {registerIconText(
+                "shield",
+                "This remains a clean handoff page. Community creation belongs to public create entry, and private community control belongs after proper access.",
+                24
+              )}
             </div>
           </div>
         </div>
@@ -341,31 +368,31 @@ export default function RegisterPage() {
         >
           <div>
             <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              Public create entry first
+              {registerIconText("community", "Public create entry first", 22)}
             </div>
             <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              Founder details should begin in the public create page, not be scattered
-              across multiple public pages.
+              Founder details should begin in the public create page, not be scattered across
+              multiple public pages.
             </p>
           </div>
 
           <div>
             <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              Secure access next
+              {registerIconText("lock", "Secure access next", 22)}
             </div>
             <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              After public create entry, secure sign-in and activation routes take over
-              before private community management appears.
+              After public create entry, secure sign-in and activation routes take over before
+              private community management appears.
             </p>
           </div>
 
           <div>
             <div style={{ fontSize: 14, fontWeight: 1000, color: "#0B1F33" }}>
-              No duplicate public workflow
+              {registerIconText("check", "No duplicate public workflow", 22)}
             </div>
             <p style={{ marginTop: 12, marginBottom: 0, color: "#5F768D", lineHeight: 1.85 }}>
-              This should confirm and route, not ask for the same community details
-              all over again.
+              This should confirm and route, not ask for the same community details all over
+              again.
             </p>
           </div>
         </div>

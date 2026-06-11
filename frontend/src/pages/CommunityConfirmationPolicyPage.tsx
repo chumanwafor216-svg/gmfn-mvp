@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
   getCommunityConfirmationPolicy,
@@ -146,6 +147,94 @@ function statusPill(active: boolean, label: string): React.CSSProperties {
     fontWeight: 950,
     whiteSpace: "nowrap",
   };
+}
+
+function iconTile(
+  name: GsnIconName,
+  tone: "navy" | "blue" | "gold" | "green" | "red" = "navy",
+  size = 17
+) {
+  const palette = {
+    navy: {
+      color: "#0B2D4A",
+      background: "rgba(255,255,255,0.96)",
+      border: "1px solid rgba(13,95,168,0.14)",
+    },
+    blue: {
+      color: "#0B63D1",
+      background: "rgba(255,255,255,0.96)",
+      border: "1px solid rgba(29,95,212,0.18)",
+    },
+    gold: {
+      color: "#7A4A00",
+      background: "rgba(255,255,255,0.96)",
+      border: "1px solid rgba(214,170,69,0.32)",
+    },
+    green: {
+      color: "#065F46",
+      background: "rgba(255,255,255,0.96)",
+      border: "1px solid rgba(34,197,94,0.18)",
+    },
+    red: {
+      color: "#991B1B",
+      background: "rgba(255,255,255,0.96)",
+      border: "1px solid rgba(239,68,68,0.18)",
+    },
+  }[tone];
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 30,
+        height: 30,
+        borderRadius: 12,
+        display: "inline-grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        boxShadow:
+          "0 8px 16px rgba(2,6,23,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        ...palette,
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(24, Math.round(size * 1.55))} />
+    </span>
+  );
+}
+
+function labelWithIcon(
+  name: GsnIconName,
+  label: React.ReactNode,
+  tone: "navy" | "blue" | "gold" | "green" | "red" = "blue"
+) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      {iconTile(name, tone, 16)}
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function sectionLabelWithIcon(
+  name: GsnIconName,
+  label: string,
+  tone: "navy" | "blue" | "gold" | "green" | "red" = "blue"
+) {
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      {iconTile(name, tone, 16)}
+      <span style={sectionLabel()}>{label}</span>
+    </div>
+  );
+}
+
+function statusPillWithIcon(active: boolean, label: string, icon: GsnIconName) {
+  return (
+    <span style={{ ...statusPill(active, label), display: "inline-flex", alignItems: "center", gap: 7 }}>
+      {iconTile(icon, active ? "green" : "red", 14)}
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function normalizeContact(raw: any): RelayContact | null {
@@ -303,7 +392,7 @@ function CommunityConfirmationPolicyPage() {
       <PageTopNav
         sectionLabel="Community confirmation"
         title="Instant Confirmation Policy"
-        subtitle="Choose who can receive live confirmation requests. GSN calculates the outcome from responses."
+        subtitle="Choose who may answer live community confirmation requests."
         homeTo={APP_ROUTES.DASHBOARD}
         homeLabel="Dashboard"
         backTo={APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX}
@@ -311,10 +400,10 @@ function CommunityConfirmationPolicyPage() {
       />
 
       <ExplainToggle
-        label="Why this matters"
-        what="The TrustSlip may tell an outsider that community confirmation is available."
-        why="This page decides who may answer those requests, whether instant voting is allowed, and how many confirmations are enough for a useful signal."
-        next="Admins manage routing only. The confirmation result must come from response counts, not from an admin endorsement."
+        label="How this works"
+        what="A TrustSlip may say community confirmation is available."
+        why="This page controls who can answer and how many answers are enough."
+        next="Admins set routing. The result still comes from member responses."
         tone="blue"
         style={{ marginTop: 16 }}
       />
@@ -351,7 +440,7 @@ function CommunityConfirmationPolicyPage() {
         >
           <div>
             <div style={{ color: "#F2C766", fontSize: 12, fontWeight: 1000, textTransform: "uppercase" }}>
-              Community control
+              {labelWithIcon("shield", "Community control", "gold")}
             </div>
             <h1 style={{ margin: "8px 0 0", fontSize: isCompact ? 30 : 42, lineHeight: 1, fontWeight: 1000 }}>
               Who can answer for this community?
@@ -372,19 +461,25 @@ function CommunityConfirmationPolicyPage() {
             }}
           >
             <div style={statTile("rgba(255,255,255,0.08)")}>
-              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>Requests</div>
+              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>
+                {labelWithIcon("megaphone", "Requests", "gold")}
+              </div>
               <div style={{ marginTop: 4, color: relayOn ? "#B7F7CA" : "#FECACA", fontSize: 24, fontWeight: 1000 }}>
                 {relayOn ? "On" : "Off"}
               </div>
             </div>
             <div style={statTile("rgba(255,255,255,0.08)")}>
-              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>Contacts</div>
+              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>
+                {labelWithIcon("community", "Contacts", "gold")}
+              </div>
               <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
                 {policy.contactable_reference_count || 0}
               </div>
             </div>
             <div style={statTile("rgba(255,255,255,0.08)")}>
-              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>Members</div>
+              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>
+                {labelWithIcon("user", "Members", "gold")}
+              </div>
               <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
                 {policy.active_member_count || 0}
               </div>
@@ -396,7 +491,7 @@ function CommunityConfirmationPolicyPage() {
       {!communityId ? (
         <section style={{ marginTop: 14, ...softCard("#FEF2F2") }}>
           <div style={{ color: "#991B1B", fontWeight: 1000 }}>
-            No active community is selected.
+            {labelWithIcon("alert", "No active community is selected.", "red")}
           </div>
           <p style={{ margin: "8px 0 0", ...helperText() }}>
             Open Community and choose the community before managing instant confirmation.
@@ -409,7 +504,7 @@ function CommunityConfirmationPolicyPage() {
             style={{ marginTop: 12 }}
             debugId="community-confirmation-policy.open-community"
           >
-            Open Community
+            {labelWithIcon("community", "Open Community", "blue")}
           </SecondaryButton>
         </section>
       ) : null}
@@ -424,9 +519,9 @@ function CommunityConfirmationPolicyPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Policy switches</div>
+            {sectionLabelWithIcon("shield", "Policy switches", "blue")}
             <div style={{ marginTop: 6, ...helperText(), color: "#07172C" }}>
-              These switches decide whether live confirmation can be requested and whether eligible members can answer quickly.
+              Turn request routing and quick answers on or off.
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -435,11 +530,12 @@ function CommunityConfirmationPolicyPage() {
               onClick={() => void loadPolicy()}
               busy={loading}
               busyLabel="Refreshing..."
-              stableHeight={44}
+              stableHeight={52}
+              fullWidth={isCompact}
               minWidth={120}
               debugId="community-confirmation-policy.refresh"
             >
-              Refresh
+              {labelWithIcon("refresh", "Refresh", "blue")}
             </SecondaryButton>
             <SecondaryButton
               type="button"
@@ -447,11 +543,12 @@ function CommunityConfirmationPolicyPage() {
                 safeCopy(copyText);
                 setNotice({ tone: "success", text: "Relay policy summary copied." });
               }}
-              stableHeight={44}
+              stableHeight={52}
+              fullWidth={isCompact}
               minWidth={120}
               debugId="community-confirmation-policy.copy"
             >
-              Copy summary
+              {labelWithIcon("copy", "Copy summary", "blue")}
             </SecondaryButton>
           </div>
         </div>
@@ -489,10 +586,10 @@ function CommunityConfirmationPolicyPage() {
           ].map((item) => (
             <div key={item.key} style={innerCard(item.active ? "#F4FBF7" : "#FEF2F2")}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                <div style={{ color: "#07172C", fontWeight: 1000 }}>{item.title}</div>
-                <span style={statusPill(item.active, item.active ? "On" : "Off")}>
-                  {item.active ? "On" : "Off"}
-                </span>
+                <div style={{ color: "#07172C", fontWeight: 1000 }}>
+                  {labelWithIcon(item.key === "relay" ? "megaphone" : item.key === "instant" ? "spark" : "globe", item.title, item.active ? "green" : "red")}
+                </div>
+                {statusPillWithIcon(item.active, item.active ? "On" : "Off", item.active ? "check" : "alert")}
               </div>
               <p style={{ margin: "8px 0 12px", ...helperText(), fontSize: 13 }}>
                 {item.text}
@@ -504,10 +601,10 @@ function CommunityConfirmationPolicyPage() {
                 busy={busyKey === item.key}
                 busyLabel="Saving..."
                 fullWidth
-                stableHeight={46}
+                stableHeight={isCompact ? 52 : 46}
                 debugId={`community-confirmation-policy.${item.key}`}
               >
-                Turn {item.active ? "off" : "on"}
+                {labelWithIcon(item.active ? "lock" : "check", `Turn ${item.active ? "off" : "on"}`, item.active ? "red" : "green")}
               </SecondaryButton>
             </div>
           ))}
@@ -522,9 +619,11 @@ function CommunityConfirmationPolicyPage() {
           }}
         >
           <div style={innerCard("#F8FBFF")}>
-            <div style={{ color: "#07172C", fontWeight: 1000 }}>Minimum positive answers</div>
+            <div style={{ color: "#07172C", fontWeight: 1000 }}>
+              {labelWithIcon("check", "Minimum positive answers", "green")}
+            </div>
             <p style={{ margin: "6px 0 10px", ...helperText(), fontSize: 13 }}>
-              Use at least two where possible. One answer is usually only a weak signal.
+              Two answers are stronger than one.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[1, 2, 3].map((value) => (
@@ -538,7 +637,7 @@ function CommunityConfirmationPolicyPage() {
                   }
                   disabled={!communityId || Boolean(busyKey)}
                   busy={busyKey === `min-${value}`}
-                  stableHeight={42}
+                  stableHeight={isCompact ? 48 : 42}
                   minWidth={72}
                   debugId={`community-confirmation-policy.minimum-${value}`}
                 >
@@ -548,9 +647,11 @@ function CommunityConfirmationPolicyPage() {
             </div>
           </div>
           <div style={innerCard("#F8FBFF")}>
-            <div style={{ color: "#07172C", fontWeight: 1000 }}>Response window</div>
+            <div style={{ color: "#07172C", fontWeight: 1000 }}>
+              {labelWithIcon("calendar", "Response window", "blue")}
+            </div>
             <p style={{ margin: "6px 0 10px", ...helperText(), fontSize: 13 }}>
-              A short window is better for instant checks. A longer window is safer for formal review.
+              Short for quick checks. Longer for formal review.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[
@@ -568,7 +669,7 @@ function CommunityConfirmationPolicyPage() {
                   }
                   disabled={!communityId || Boolean(busyKey)}
                   busy={busyKey === `window-${seconds}`}
-                  stableHeight={42}
+                  stableHeight={isCompact ? 48 : 42}
                   minWidth={88}
                   debugId={`community-confirmation-policy.window-${seconds}`}
                 >
@@ -578,7 +679,9 @@ function CommunityConfirmationPolicyPage() {
             </div>
           </div>
           <div style={innerCard("#FFFDF5")}>
-            <div style={{ color: "#07172C", fontWeight: 1000 }}>Review timing</div>
+            <div style={{ color: "#07172C", fontWeight: 1000 }}>
+              {labelWithIcon("alert", "Review timing", "gold")}
+            </div>
             <p style={{ margin: "6px 0 10px", ...helperText(), fontSize: 13 }}>
               Cases need attention after {hoursLabel(policy.review_attention_after_hours || 24)} and become overdue after {hoursLabel(policy.review_overdue_after_hours || 72)}.
             </p>
@@ -599,7 +702,7 @@ function CommunityConfirmationPolicyPage() {
                   }
                   disabled={!communityId || Boolean(busyKey)}
                   busy={busyKey === `review-sla-${attentionHours}-${overdueHours}`}
-                  stableHeight={42}
+                  stableHeight={isCompact ? 48 : 42}
                   minWidth={88}
                   debugId={`community-confirmation-policy.review-sla-${attentionHours}-${overdueHours}`}
                 >
@@ -612,12 +715,12 @@ function CommunityConfirmationPolicyPage() {
       </section>
 
       <section style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
-        <div style={sectionLabel()}>Eligible response pool</div>
+        {sectionLabelWithIcon("community", "Eligible response pool", "blue")}
         <h2 style={{ margin: "6px 0 0", color: "#07172C", fontSize: 24, fontWeight: 1000 }}>
           People allowed to answer confirmation requests
         </h2>
         <p style={{ margin: "8px 0 0", ...helperText() }}>
-          These members may receive confirmation requests through GSN. The public TrustSlip should never expose raw private contact details or individual votes.
+          These members may receive GSN relay requests. Public papers never show private contacts or raw votes.
         </p>
 
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -663,7 +766,7 @@ function CommunityConfirmationPolicyPage() {
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
                         ) : (
-                          firstTruthy(contact.display_name, "ME").slice(0, 2).toUpperCase()
+                          <GsnLegacyIcon name="user" size={34} />
                         )}
                       </div>
                       <div>
@@ -671,15 +774,9 @@ function CommunityConfirmationPolicyPage() {
                           {firstTruthy(contact.display_name, `Member ${contact.user_id}`)}
                         </div>
                         <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 8 }}>
-                          <span style={statusPill(receiving, receiving ? "Receiving" : "Paused")}>
-                            {receiving ? "Receiving" : "Paused"}
-                          </span>
-                          <span style={statusPill(Boolean(contact.phone_verified), contact.phone_verified ? "Phone verified" : "Phone not shown")}>
-                            {contact.phone_verified ? "Phone verified" : "Phone not shown"}
-                          </span>
-                          <span style={statusPill(!contact.member_opted_out, contact.member_opted_out ? "Member opted out" : "Opted in")}>
-                            {contact.member_opted_out ? "Member opted out" : "Opted in"}
-                          </span>
+                          {statusPillWithIcon(receiving, receiving ? "Receiving" : "Paused", receiving ? "check" : "lock")}
+                          {statusPillWithIcon(Boolean(contact.phone_verified), contact.phone_verified ? "Phone verified" : "Phone not shown", "phone")}
+                          {statusPillWithIcon(!contact.member_opted_out, contact.member_opted_out ? "Member opted out" : "Opted in", contact.member_opted_out ? "lock" : "check")}
                         </div>
                         <p style={{ margin: "8px 0 0", ...helperText(), fontSize: 13 }}>
                           {firstTruthy(contact.gsn_id, contact.role_type, contact.membership_role, "GSN relay contact")}
@@ -705,10 +802,10 @@ function CommunityConfirmationPolicyPage() {
                         disabled={!communityId || Boolean(busyKey) || Boolean(contact.member_opted_out)}
                         busy={busyKey === key}
                         busyLabel="Saving..."
-                        stableHeight={46}
+                        stableHeight={isCompact ? 52 : 46}
                         debugId={`community-confirmation-policy.contact.${contact.user_id}.relay`}
                       >
-                        {receiving ? "Pause requests" : "Allow requests"}
+                        {labelWithIcon(receiving ? "lock" : "megaphone", receiving ? "Pause requests" : "Allow requests", receiving ? "red" : "green")}
                       </SecondaryButton>
                       <SecondaryButton
                         type="button"
@@ -722,10 +819,10 @@ function CommunityConfirmationPolicyPage() {
                         disabled={!communityId || Boolean(busyKey) || Boolean(contact.member_opted_out)}
                         busy={busyKey === key}
                         busyLabel="Saving..."
-                        stableHeight={46}
+                        stableHeight={isCompact ? 52 : 46}
                         debugId={`community-confirmation-policy.contact.${contact.user_id}.instant`}
                       >
-                        Instant {contact.can_receive_instant_pulse ? "on" : "off"}
+                        {labelWithIcon("spark", `Instant ${contact.can_receive_instant_pulse ? "on" : "off"}`, contact.can_receive_instant_pulse ? "green" : "gold")}
                       </SecondaryButton>
                     </div>
                   </div>
@@ -737,9 +834,11 @@ function CommunityConfirmationPolicyPage() {
       </section>
 
       <section style={{ marginTop: 14, ...pageCard("#07172C"), color: "#FFFFFF" }}>
-        <div style={{ color: "#F2C766", fontWeight: 1000 }}>Privacy rule</div>
+        <div style={{ color: "#F2C766", fontWeight: 1000 }}>
+          {labelWithIcon("lock", "Privacy rule", "gold")}
+        </div>
         <p style={{ margin: "8px 0 0", color: "#D7E2EF", fontWeight: 800, lineHeight: 1.5 }}>
-          GSN can ask eligible members for live confirmation, but public readers receive a controlled aggregate outcome, not a member phone list or raw vote list. A member opt-out remains respected here.
+          GSN can ask eligible members, but public readers see only the controlled outcome. Private contacts and raw votes stay protected.
         </p>
         <PrimaryButton
           type="button"
@@ -749,7 +848,7 @@ function CommunityConfirmationPolicyPage() {
           style={{ marginTop: 14 }}
           debugId="community-confirmation-policy.open-inbox"
         >
-          Open responder inbox
+          {labelWithIcon("navigation", "Open responder inbox", "navy")}
         </PrimaryButton>
       </section>
     </div>

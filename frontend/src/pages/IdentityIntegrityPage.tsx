@@ -45,10 +45,8 @@ import {
   getTrustBandShortLabel,
   normalizeTrustBand,
 } from "../lib/trustBandLanguage";
-import {
-  TrustPaperIcon,
-  type TrustPaperIconName,
-} from "../components/TrustPaperMarks";
+import { resolveProfileImageUrl } from "../lib/profileImage";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 
 type TrustEventRow = {
   id?: number | string;
@@ -73,6 +71,7 @@ type TrustSlipRecord = {
   official_id_recorded?: boolean | null;
   official_id_verified?: boolean | null;
   photo_recorded?: boolean | null;
+  profile_image_url?: string | null;
   identity_context?: Record<string, any> | null;
   trust_band?: string | null;
   trust_class?: string | null;
@@ -146,7 +145,6 @@ type IdentityRecoverySummary = {
 };
 
 const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v2";
-const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -409,7 +407,7 @@ function compactFactCard(): React.CSSProperties {
 }
 
 function sectionIconHeader(
-  icon: TrustPaperIconName,
+  icon: GsnIconName,
   title: string,
   detail: string,
   right?: React.ReactNode
@@ -426,7 +424,7 @@ function sectionIconHeader(
       }}
     >
       <span style={iconTile()}>
-        <TrustPaperIcon name={icon} size={23} strokeWidth={2.85} />
+        <GsnLegacyIcon name={icon} size={36} />
       </span>
       <span style={{ minWidth: 0 }}>
         <span style={sectionLabel()}>{title}</span>
@@ -468,15 +466,6 @@ function writeLocalJSON(key: string, value: any) {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // ignore
-  }
-}
-
-function readStoredImage(key: string): string {
-  try {
-    if (typeof window === "undefined") return "";
-    return window.localStorage.getItem(key) || "";
-  } catch {
-    return "";
   }
 }
 
@@ -527,6 +516,10 @@ function normalizeTrustSlipRecord(raw: any): TrustSlipRecord | null {
     official_id_verified:
       src?.official_id_verified ?? src?.identity_context?.official_id_verified ?? null,
     photo_recorded: src?.photo_recorded ?? src?.identity_context?.photo_recorded ?? null,
+    profile_image_url: firstTruthy(
+      src?.profile_image_url,
+      src?.identity_context?.profile_image_url
+    ),
     identity_context: src?.identity_context || null,
     trust_band: firstTruthy(src?.trust_band, src?.trust_class),
     trust_class: firstTruthy(src?.trust_class, src?.trust_band),
@@ -1106,7 +1099,6 @@ export default function IdentityIntegrityPage() {
     "selfie" | "identity_photo"
   >("selfie");
   const [identityPhotoBusy, setIdentityPhotoBusy] = useState(false);
-  const [avatarSrc, setAvatarSrc] = useState("");
   const selfiePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const idPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -1126,10 +1118,6 @@ export default function IdentityIntegrityPage() {
   useEffect(() => {
     writeLocalJSON(IDENTITY_PAGE_UI_STORAGE_KEY, collapsed);
   }, [collapsed]);
-
-  useEffect(() => {
-    setAvatarSrc(readStoredImage(DASHBOARD_AVATAR_STORAGE_KEY));
-  }, []);
 
   useEffect(() => {
     if (requestedIdentityTask) setActiveIdentityTask(requestedIdentityTask);
@@ -1214,6 +1202,18 @@ export default function IdentityIntegrityPage() {
   const profileInitials = useMemo(() => {
     return initialsFromName(displayName);
   }, [displayName]);
+
+  const avatarSrc = useMemo(() => {
+    return resolveProfileImageUrl(
+      firstTruthy(
+        me?.profile_image_url,
+        me?.avatar_url,
+        me?.photo_url,
+        trustSlip?.profile_image_url,
+        trustSlip?.identity_context?.profile_image_url
+      )
+    );
+  }, [me, trustSlip]);
 
   const communityLabel = useMemo(() => {
     return (
@@ -1458,7 +1458,7 @@ export default function IdentityIntegrityPage() {
 
   const identityTaskRows: Array<{
     key: IdentityTaskKey;
-    icon: TrustPaperIconName;
+    icon: GsnIconName;
     title: string;
     status: string;
     tone: "ready" | "pending" | "watch" | "neutral";
@@ -1792,6 +1792,21 @@ export default function IdentityIntegrityPage() {
     navigateWithOrigin(navigate, item.to, location);
   }
 
+  function selectIdentityTask(key: IdentityTaskKey) {
+    setActiveIdentityTask(key);
+
+    if (key !== "official_id") {
+      if (identityPhotoPreview) URL.revokeObjectURL(identityPhotoPreview);
+      setIdentityPhotoFile(null);
+      setIdentityPhotoPreview("");
+      setOfficialIdTaskMessage("");
+    }
+
+    if (key !== "phone") {
+      setPhoneTaskMessage("");
+    }
+  }
+
   function openIdentityTask(item: typeof activeTask) {
     if (item.to) {
       navigateWithOrigin(navigate, item.to, location);
@@ -1954,7 +1969,7 @@ export default function IdentityIntegrityPage() {
           : officialIdType.toLowerCase().includes("passport")
             ? "passport_photo"
             : "identity_photo";
-      const out = await recordSignedInIdentityPhoto({
+      await recordSignedInIdentityPhoto({
         file: identityPhotoFile,
         document_type: documentType,
         note:
@@ -1962,26 +1977,15 @@ export default function IdentityIntegrityPage() {
             ? "Signed-in selfie evidence from Identity Integrity."
             : `Signed-in ${officialIdType} image evidence from Identity Integrity.`,
       });
-      const evidenceUrl = safeStr(out?.evidence_url);
       setMe((prev: any) => ({
         ...(prev || {}),
         photo_recorded: true,
-        profile_image_url:
-          identityPhotoKind === "selfie"
-            ? evidenceUrl || identityPhotoPreview || prev?.profile_image_url
-            : prev?.profile_image_url,
+        profile_image_url: prev?.profile_image_url,
         official_id_recorded:
           identityPhotoKind === "identity_photo"
             ? true
             : prev?.official_id_recorded,
       }));
-      if (identityPhotoKind === "selfie") {
-        const nextAvatar = evidenceUrl || identityPhotoPreview;
-        setAvatarSrc(nextAvatar);
-        if (typeof window !== "undefined" && nextAvatar) {
-          window.localStorage.setItem(DASHBOARD_AVATAR_STORAGE_KEY, nextAvatar);
-        }
-      }
       setIdentityPhotoFile(null);
       setIdentityPhotoPreview("");
       setOfficialIdTaskMessage(
@@ -2115,11 +2119,11 @@ export default function IdentityIntegrityPage() {
               }}
             >
               <span style={compactStatusChip(identitySignals.missingCount <= 0 ? "ready" : "pending")}>
-                <TrustPaperIcon name="shield" size={15} strokeWidth={2.8} />
+                <GsnLegacyIcon name="shield" size={22} />
                 {identityHealthLabel}
               </span>
               <span style={compactStatusChip("neutral")}>
-                <TrustPaperIcon name="id" size={15} strokeWidth={2.8} />
+                <GsnLegacyIcon name="id" size={22} />
                 Identity anchor
               </span>
             </div>
@@ -2153,25 +2157,25 @@ export default function IdentityIntegrityPage() {
         >
           {[
             {
-              icon: "id" as TrustPaperIconName,
+              icon: "id" as GsnIconName,
               label: "GSN ID",
               value: gmfnId,
               tone: "watch" as const,
             },
             {
-              icon: "community" as TrustPaperIconName,
+              icon: "community" as GsnIconName,
               label: "Community",
               value: communityLabel,
               tone: identitySignals.communityReady ? "ready" as const : "neutral" as const,
             },
             {
-              icon: "shield" as TrustPaperIconName,
+              icon: "shield" as GsnIconName,
               label: "Continuity",
               value: continuity.label,
               tone: continuity.status === "trusted" ? "ready" as const : "pending" as const,
             },
             {
-              icon: "document" as TrustPaperIconName,
+              icon: "document" as GsnIconName,
               label: "TrustSlip",
               value: trustSlipCode || "Pending",
               tone: trustSlipCode ? "ready" as const : "neutral" as const,
@@ -2179,7 +2183,7 @@ export default function IdentityIntegrityPage() {
           ].map((item) => (
             <div key={item.label} style={compactFactCard()}>
               <span style={iconTile(identityIconTone(item.tone).color, identityIconTone(item.tone).bg)}>
-                <TrustPaperIcon name={item.icon} size={23} strokeWidth={2.9} />
+                <GsnLegacyIcon name={item.icon} size={36} />
               </span>
               <span style={{ minWidth: 0 }}>
                 <span
@@ -2213,11 +2217,11 @@ export default function IdentityIntegrityPage() {
           ))}
         </div>
 
-        <CardActionRow minHeight={isCompact ? 46 : 52} style={{ marginTop: 12 }}>
+        <CardActionRow minHeight={52} style={{ marginTop: 12 }}>
           <PrimaryButton
             onClick={copyGmfnId}
             disabled={!gmfnId || gmfnId === "Pending"}
-            stableHeight={isCompact ? 46 : 52}
+            stableHeight={isCompact ? 52 : 52}
             minWidth={isCompact ? undefined : 132}
             debugId="identity-integrity.copy-gmfn-id"
           >
@@ -2227,7 +2231,7 @@ export default function IdentityIntegrityPage() {
           <SecondaryButton
             onClick={copyTrustSlipCode}
             disabled={!trustSlipCode}
-            stableHeight={isCompact ? 46 : 52}
+            stableHeight={isCompact ? 52 : 52}
             minWidth={isCompact ? undefined : 146}
             debugId="identity-integrity.copy-trust-slip-code"
           >
@@ -2236,7 +2240,7 @@ export default function IdentityIntegrityPage() {
 
           <SubtleButton
             onClick={copyIdentitySnapshot}
-            stableHeight={isCompact ? 46 : 52}
+            stableHeight={isCompact ? 52 : 52}
             minWidth={isCompact ? undefined : 140}
             debugId="identity-integrity.copy-snapshot"
           >
@@ -2258,8 +2262,8 @@ export default function IdentityIntegrityPage() {
             return (
               <SecondaryButton
                 key={item.key}
-                onClick={() => setActiveIdentityTask(item.key)}
-                stableHeight={isCompact ? 48 : 58}
+                onClick={() => selectIdentityTask(item.key)}
+                stableHeight={isCompact ? 54 : 58}
                 fullWidth
                 debugId={`identity-integrity.task.${item.key}`}
                 style={{
@@ -2275,11 +2279,7 @@ export default function IdentityIntegrityPage() {
                 }}
               >
                 <span style={taskIconBadge(active, item.tone)}>
-                  <TrustPaperIcon
-                    name={item.icon}
-                    size={active ? 20 : 18}
-                    strokeWidth={2.85}
-                  />
+                  <GsnLegacyIcon name={item.icon} size={active ? 30 : 26} />
                 </span>
                 <span style={{ minWidth: 0, textAlign: "left" }}>
                   <span style={{ display: "block", fontWeight: 1000, fontSize: 12.5 }}>
@@ -2318,6 +2318,8 @@ export default function IdentityIntegrityPage() {
             gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
             gap: 10,
             alignItems: "center",
+            minHeight: isCompact ? 178 : undefined,
+            overflow: "hidden",
           }}
         >
           <div
@@ -2334,7 +2336,7 @@ export default function IdentityIntegrityPage() {
                 identityIconTone(activeTask.tone).bg
               )}
             >
-              <TrustPaperIcon name={activeTask.icon} size={24} strokeWidth={2.9} />
+              <GsnLegacyIcon name={activeTask.icon} size={38} />
             </span>
             <span style={{ minWidth: 0 }}>
               <span
@@ -2358,8 +2360,8 @@ export default function IdentityIntegrityPage() {
 
           <SecondaryButton
             onClick={() => openIdentityTask(activeTask)}
-            stableHeight={isCompact ? 48 : 52}
-            fullWidth={isCompact}
+            stableHeight={isCompact ? 52 : 52}
+            fullWidth
             minWidth={isCompact ? undefined : 190}
             debugId="identity-integrity.active-task-action"
             style={{
@@ -2393,6 +2395,7 @@ export default function IdentityIntegrityPage() {
               padding: isCompact ? 10 : 12,
               display: "grid",
               gap: 8,
+              overflow: "hidden",
             }}
           >
             <div
@@ -2419,7 +2422,7 @@ export default function IdentityIntegrityPage() {
                 <div
                   key={`${activeTask.key}-${index}`}
                   style={{
-                    minHeight: 42,
+                    minHeight: isCompact ? 48 : 42,
                     borderRadius: 13,
                     border: "1px solid rgba(37,78,119,0.10)",
                     background: "#FFFFFF",
@@ -2460,7 +2463,7 @@ export default function IdentityIntegrityPage() {
                     placeholder="+447700900123"
                     disabled={phoneBusy || Boolean(phoneVerificationId)}
                     style={{
-                      minHeight: 46,
+                      minHeight: isCompact ? 52 : 46,
                       borderRadius: 13,
                       border: "1px solid rgba(37,78,119,0.16)",
                       padding: "0 12px",
@@ -2480,7 +2483,7 @@ export default function IdentityIntegrityPage() {
                       onChange={(event) => setPhoneCode(event.target.value)}
                       placeholder="6 digits"
                       style={{
-                        minHeight: 46,
+                        minHeight: isCompact ? 52 : 46,
                         borderRadius: 13,
                         border: "1px solid rgba(37,78,119,0.16)",
                         padding: "0 12px",
@@ -2528,7 +2531,7 @@ export default function IdentityIntegrityPage() {
                 <PrimaryButton
                   type="submit"
                   disabled={phoneBusy || !phoneInput || (Boolean(phoneVerificationId) && !phoneCode)}
-                  stableHeight={46}
+                  stableHeight={isCompact ? 52 : 46}
                   fullWidth
                   debugId="identity-integrity.phone-completion-submit"
                 >
@@ -2560,7 +2563,7 @@ export default function IdentityIntegrityPage() {
                     value={officialIdType}
                     onChange={(event) => setOfficialIdType(event.target.value)}
                     style={{
-                      minHeight: 46,
+                      minHeight: isCompact ? 52 : 46,
                       borderRadius: 13,
                       border: "1px solid rgba(37,78,119,0.16)",
                       padding: "0 12px",
@@ -2586,7 +2589,7 @@ export default function IdentityIntegrityPage() {
                     onChange={(event) => setOfficialIdReference(event.target.value)}
                     placeholder="Last digits or reference"
                     style={{
-                      minHeight: 46,
+                      minHeight: isCompact ? 52 : 46,
                       borderRadius: 13,
                       border: "1px solid rgba(37,78,119,0.16)",
                       padding: "0 12px",
@@ -2605,7 +2608,7 @@ export default function IdentityIntegrityPage() {
                     onChange={(event) => setOfficialIdCountry(event.target.value)}
                     placeholder="GB, NG, GH..."
                     style={{
-                      minHeight: 46,
+                      minHeight: isCompact ? 52 : 46,
                       borderRadius: 13,
                       border: "1px solid rgba(37,78,119,0.16)",
                       padding: "0 12px",
@@ -2659,7 +2662,7 @@ export default function IdentityIntegrityPage() {
                             selfiePhotoInputRef.current.click();
                           }
                         }}
-                        stableHeight={42}
+                        stableHeight={isCompact ? 52 : 42}
                         fullWidth
                         debugId="identity-integrity.identity-photo.selfie"
                         style={{ borderRadius: 13 }}
@@ -2674,7 +2677,7 @@ export default function IdentityIntegrityPage() {
                             idPhotoInputRef.current.click();
                           }
                         }}
-                        stableHeight={42}
+                        stableHeight={isCompact ? 52 : 42}
                         fullWidth
                         debugId="identity-integrity.identity-photo.id-photo"
                         style={{ borderRadius: 13 }}
@@ -2739,8 +2742,8 @@ export default function IdentityIntegrityPage() {
                         type="button"
                         onClick={handleRecordIdentityPhoto}
                         disabled={identityPhotoBusy || !identityPhotoFile}
-                        stableHeight={42}
-                        fullWidth={isCompact}
+                        stableHeight={isCompact ? 52 : 42}
+                        fullWidth
                         debugId="identity-integrity.identity-photo.record"
                         style={{ borderRadius: 13 }}
                       >
@@ -2757,7 +2760,7 @@ export default function IdentityIntegrityPage() {
                     !officialIdReference ||
                     !officialIdCountry
                   }
-                  stableHeight={46}
+                  stableHeight={isCompact ? 52 : 46}
                   fullWidth
                   debugId="identity-integrity.official-id-completion-submit"
                   style={{ gridColumn: "1 / -1" }}
@@ -2796,14 +2799,14 @@ export default function IdentityIntegrityPage() {
         >
           <StableCtaLink
             to={routes.trust}
-            stableHeight={isCompact ? 44 : 48}
+            stableHeight={isCompact ? 52 : 48}
             debugId="identity-integrity.open-trust"
           >
             Trust Passport
           </StableCtaLink>
           <StableCtaLink
             to={routes.trustSlip}
-            stableHeight={isCompact ? 44 : 48}
+            stableHeight={isCompact ? 52 : 48}
             debugId="identity-integrity.front-trust-slip"
           >
             TrustSlip
@@ -2818,11 +2821,11 @@ export default function IdentityIntegrityPage() {
           "Local trust, wider consistency, and TrustSlip status.",
           <SubtleButton
             onClick={() => toggleSection("summary")}
-            stableHeight={40}
+            stableHeight={52}
             style={collapseToggle()}
             debugId="identity-integrity.toggle-summary"
           >
-            {collapsed.summary ? "Open" : "Collapse"}
+            {collapsed.summary ? "Open" : "Hide"}
           </SubtleButton>
         )}
 
@@ -2947,11 +2950,11 @@ export default function IdentityIntegrityPage() {
             </span>
             <SubtleButton
               onClick={() => toggleSection("continuity")}
-              stableHeight={40}
+              stableHeight={52}
               style={collapseToggle()}
               debugId="identity-integrity.toggle-continuity"
             >
-              {collapsed.continuity ? "Open" : "Collapse"}
+              {collapsed.continuity ? "Open" : "Hide"}
             </SubtleButton>
           </div>
         )}
@@ -3035,11 +3038,11 @@ export default function IdentityIntegrityPage() {
             </span>
             <SubtleButton
               onClick={() => toggleSection("recovery")}
-              stableHeight={40}
+              stableHeight={52}
               style={collapseToggle()}
               debugId="identity-integrity.toggle-recovery"
             >
-              {collapsed.recovery && activeIdentityTask !== "recovery" ? "Open" : "Collapse"}
+              {collapsed.recovery && activeIdentityTask !== "recovery" ? "Open" : "Hide"}
             </SubtleButton>
           </div>
         )}
@@ -3146,7 +3149,7 @@ export default function IdentityIntegrityPage() {
                 type="submit"
                 busy={recoveryBusy}
                 busyLabel="Saving..."
-                stableHeight={48}
+                stableHeight={isCompact ? 52 : 48}
                 fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 260}
                 debugId="identity-integrity.recovery-save"
@@ -3199,7 +3202,7 @@ export default function IdentityIntegrityPage() {
                 busy={recoveryBusy}
                 busyLabel="Checking..."
                 disabled={recovery.locked}
-                stableHeight={48}
+                stableHeight={isCompact ? 52 : 48}
                 fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 280}
                 debugId="identity-integrity.recovery-verify"
@@ -3218,11 +3221,11 @@ export default function IdentityIntegrityPage() {
           "What helped, what weakened, and the next repair line.",
           <SubtleButton
             onClick={() => toggleSection("reasons")}
-            stableHeight={40}
+            stableHeight={52}
             style={collapseToggle()}
             debugId="identity-integrity.toggle-reasons"
           >
-            {collapsed.reasons ? "Open" : "Collapse"}
+            {collapsed.reasons ? "Open" : "Hide"}
           </SubtleButton>
         )}
 
@@ -3332,11 +3335,11 @@ export default function IdentityIntegrityPage() {
             </span>
             <SubtleButton
               onClick={() => toggleSection("timeline")}
-              stableHeight={40}
+              stableHeight={52}
               style={collapseToggle()}
               debugId="identity-integrity.toggle-timeline"
             >
-              {collapsed.timeline ? "Open" : "Collapse"}
+              {collapsed.timeline ? "Open" : "Hide"}
             </SubtleButton>
           </div>
         )}
@@ -3417,11 +3420,11 @@ export default function IdentityIntegrityPage() {
           "The next useful move after the identity reading.",
           <SubtleButton
             onClick={() => toggleSection("next")}
-            stableHeight={40}
+            stableHeight={52}
             style={collapseToggle()}
             debugId="identity-integrity.toggle-next"
           >
-            {collapsed.next ? "Open" : "Collapse"}
+            {collapsed.next ? "Open" : "Hide"}
           </SubtleButton>
         )}
 
@@ -3455,7 +3458,7 @@ export default function IdentityIntegrityPage() {
                 <StableCtaLink
                   to={nextMoveTo}
                   kind="primary"
-                  stableHeight={isCompact ? 46 : 50}
+                  stableHeight={isCompact ? 52 : 50}
                   fullWidth={isCompact}
                   minWidth={isCompact ? undefined : 210}
                   debugId="identity-integrity.next-move"
@@ -3465,7 +3468,7 @@ export default function IdentityIntegrityPage() {
 
                 <StableCtaLink
                   to={routes.trustSlip}
-                  stableHeight={isCompact ? 46 : 50}
+                  stableHeight={isCompact ? 52 : 50}
                   fullWidth={isCompact}
                   minWidth={isCompact ? undefined : 132}
                   debugId="identity-integrity.open-trust-slip"
@@ -3475,7 +3478,7 @@ export default function IdentityIntegrityPage() {
 
                 <StableCtaLink
                   to={routes.notifications}
-                  stableHeight={isCompact ? 46 : 50}
+                  stableHeight={isCompact ? 52 : 50}
                   fullWidth={isCompact}
                   minWidth={isCompact ? undefined : 146}
                   debugId="identity-integrity.open-notifications"
@@ -3566,11 +3569,3 @@ function continuityTone(
     label: "Trusted",
   };
 }
-
-
-
-
-
-
-
-

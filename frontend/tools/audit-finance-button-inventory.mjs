@@ -124,8 +124,23 @@ for (const debugId of expectedOrder) {
 }
 
 assertContains(
-  /type FinanceGlyphName[\s\S]*?function FinanceGlyph\([\s\S]*?function FinanceSectionLabel\(/,
-  "Finance page must use deterministic route-local SVG glyphs for phone-visible finance marks."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?type FinanceGlyphName[\s\S]*?FINANCE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<FinanceGlyphName, GsnIconName>[\s\S]*?function FinanceGlyph\([\s\S]*?<GsnLegacyIcon[\s\S]*?function FinanceSectionLabel\(/,
+  "Finance page must use deterministic 3D GSN icon marks for phone-visible finance marks."
+);
+
+assertContains(
+  /const FINANCE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "proof"[\s\S]*?out: "wallet"[\s\S]*?receipt: "proof"[\s\S]*?signal: "financeInstitution"/,
+  "Finance semantic icons must use the bank-building meaning for institutional finance, proof icons for records, and wallet only for personal money movement."
+);
+
+assertContains(
+  /debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?width: isCompact \? 50 : 64[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?FinanceGlyph name=\{item\.icon\} size=\{isCompact \? 34 : 44\}/,
+  "Finance main tool icons must sit on larger light embossed tiles, not heavy colored disks."
+);
+
+assertContains(
+  /gridTemplateColumns: "42px minmax\(0, 1fr\)"[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?FinanceGlyph name=\{item\.icon\} size=\{30\}/,
+  "Finance snapshot icons must use light embossed tiles with larger 3D objects."
 );
 
 assertContains(

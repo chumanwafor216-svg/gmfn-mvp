@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { GsnRealisticIcon, type Gsn3DIconKey } from "../../components/GsnRealisticIcon";
 import { PrimaryButton, StableCtaLink } from "../../components/StableButton";
 import {
-  TrustPaperBadgeIcon,
-  TrustPaperIcon,
   TrustPaperSeal,
   TrustPaperWatermark,
-  type TrustPaperIconName,
 } from "../../components/TrustPaperMarks";
 import {
   institutionalInnerCard,
@@ -14,7 +12,7 @@ import {
   institutionalStatTile,
 } from "../../lib/institutionalSurface";
 
-export type TrustSlipVerifyQuickAnswer = [TrustPaperIconName, string, string];
+export type TrustSlipVerifyQuickAnswer = [Gsn3DIconKey, string, string];
 
 type CommunityConfirmationResult = {
   requests_sent?: number | null;
@@ -282,14 +280,63 @@ function publicVerifyPanel(bg = "#FFFFFF"): React.CSSProperties {
 function paperMiniRow(): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "28px minmax(0, 1fr)",
-    gap: 9,
+    gridTemplateColumns: "34px minmax(0, 1fr)",
+    gap: 10,
     alignItems: "start",
     color: "#334155",
     fontSize: 13,
     fontWeight: 850,
     lineHeight: 1.35,
   };
+}
+
+function paperIconBadge(
+  name: Gsn3DIconKey,
+  tone: "trust" | "warning" | "neutral" = "trust",
+  size = 32
+): React.ReactNode {
+  const meta = {
+    trust: {
+      color: "#7A4A00",
+      bg: "rgba(255,255,255,0.97)",
+      border: "rgba(226,192,106,0.36)",
+    },
+    warning: {
+      color: "#8A4B08",
+      bg: "linear-gradient(180deg, #FFFDF6 0%, #FFF7DB 100%)",
+      border: "rgba(217,149,36,0.24)",
+    },
+    neutral: {
+      color: "#0B63D1",
+      bg: "rgba(255,255,255,0.97)",
+      border: "rgba(13,95,168,0.14)",
+    },
+  }[tone];
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 11,
+        display: "inline-grid",
+        placeItems: "center",
+        color: meta.color,
+        background: meta.bg,
+        border: `1px solid ${meta.border}`,
+        boxShadow:
+          "0 8px 16px rgba(7,23,44,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+      }}
+    >
+      <GsnRealisticIcon
+        name={name}
+        size={Math.max(28, Math.round(size * 0.88))}
+        decorative
+        imageStyle={{ width: "96%", height: "96%" }}
+      />
+    </span>
+  );
 }
 
 function paperDataRow(): React.CSSProperties {
@@ -394,7 +441,7 @@ export default function TrustSlipVerifyPublicPaper({
               placeItems: "center",
             }}
           >
-            <TrustPaperIcon name="shield" size={36} />
+            <GsnRealisticIcon name="trust-shield" size={46} decorative />
           </span>
           <div
             style={{
@@ -516,7 +563,11 @@ export default function TrustSlipVerifyPublicPaper({
                 border: "1px solid rgba(255,255,255,0.18)",
               }}
             >
-              <TrustPaperIcon name={validNow ? "shield" : "alert"} size={compact ? 34 : 44} />
+              <GsnRealisticIcon
+                name="trust-shield"
+                size={compact ? 44 : 58}
+                decorative
+              />
             </span>
             <div
               style={{
@@ -528,7 +579,13 @@ export default function TrustSlipVerifyPublicPaper({
             >
               {publicValidityLabel}
             </div>
-            {!compact ? <TrustPaperIcon name={validNow ? "shield" : "lock"} size={64} /> : null}
+            {!compact ? (
+              <GsnRealisticIcon
+                name={validNow ? "trust-shield" : "vault-safe"}
+                size={70}
+                decorative
+              />
+            ) : null}
           </div>
 
           <div
@@ -554,7 +611,11 @@ export default function TrustSlipVerifyPublicPaper({
                 border: "2px solid rgba(214,170,69,0.45)",
               }}
             >
-              <TrustPaperIcon name="document" size={compact ? 24 : 32} />
+              <GsnRealisticIcon
+                name="records-folder"
+                size={compact ? 38 : 48}
+                decorative
+              />
             </span>
             <div>
               <div style={{ color: "#07172C", fontSize: compact ? 17 : 21, fontWeight: 1000 }}>
@@ -606,7 +667,7 @@ export default function TrustSlipVerifyPublicPaper({
                   fontWeight: 1000,
                 }}
               >
-                <TrustPaperBadgeIcon name="shield" ok={validNow} />
+                {paperIconBadge("trust-shield", validNow ? "trust" : "warning", 38)}
                 <span>
                   {publicValidityLabel}
                   <span style={{ display: "block", fontSize: 12, fontWeight: 850 }}>
@@ -716,7 +777,7 @@ export default function TrustSlipVerifyPublicPaper({
                   {verifyUrl ? (
                     <QRCodeSVG value={verifyUrl} size={78} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
                   ) : (
-                    <TrustPaperIcon name="qr" size={48} color="#94A3B8" />
+                    <GsnRealisticIcon name="qr-record" size={58} decorative />
                   )}
                 </div>
               </div>
@@ -735,7 +796,7 @@ export default function TrustSlipVerifyPublicPaper({
                 {quickTrustAnswers.map(([icon, title, answer]) => (
                   <div key={title} style={{ ...innerCard("#FFFFFF"), padding: 10 }}>
                     <div style={paperMiniRow()}>
-                      <TrustPaperIcon name={icon} size={21} color="#0B63D1" />
+                      {paperIconBadge(icon, "neutral")}
                       <div>
                         <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 13 }}>{title}</div>
                         <div style={{ marginTop: 3, color: "#64748B", fontWeight: 800, fontSize: 12 }}>
@@ -845,7 +906,7 @@ export default function TrustSlipVerifyPublicPaper({
               >
                 <div style={{ ...documentMetaCard("#FFFFFF"), border: "1px solid rgba(11,99,209,0.14)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#07172C", fontWeight: 1000 }}>
-                    <TrustPaperIcon name="community" size={22} color="#0B63D1" />
+                    {paperIconBadge("community-building", "trust", 38)}
                     Instant confirmation result
                   </div>
                   {confirmationOutcome ? (
@@ -873,7 +934,7 @@ export default function TrustSlipVerifyPublicPaper({
                         <StableCtaLink
                           to={confirmationPublicPath}
                           kind="soft"
-                          stableHeight={44}
+                          stableHeight={52}
                           debugId="trust-slip-verify.community-confirmation.open-outcome"
                           style={{ marginTop: 10, width: "100%" }}
                         >
@@ -903,7 +964,7 @@ export default function TrustSlipVerifyPublicPaper({
                         Result return channel
                       </div>
                       <p style={{ margin: "6px 0 0", color: "#64748B", fontWeight: 850, lineHeight: 1.45 }}>
-                        The result link is created first. Add a business SMS or WhatsApp number only if you want GSN to hold it for configured delivery later.
+                        GSN creates the result link first. Add SMS or WhatsApp only when you want a return notice later.
                       </p>
                     </div>
 
@@ -1011,7 +1072,7 @@ export default function TrustSlipVerifyPublicPaper({
                         Consent needed
                       </div>
                       <p style={{ margin: "7px 0 0", color: "#334155", fontWeight: 850, lineHeight: 1.45 }}>
-                        Keep the result-link option, or tick consent before GSN stores a return number for SMS or WhatsApp delivery.
+                        Keep result-link only, or tick consent before adding a return number.
                       </p>
                     </div>
                   ) : null}
@@ -1064,7 +1125,7 @@ export default function TrustSlipVerifyPublicPaper({
             placeItems: "center",
           }}
         >
-          <TrustPaperIcon name="shield" size={35} />
+          <GsnRealisticIcon name="trust-shield" size={50} decorative />
         </span>
         <div>
           <div style={{ color: "#F6D77A", fontSize: compact ? 15 : 18, fontWeight: 1000 }}>
@@ -1074,7 +1135,7 @@ export default function TrustSlipVerifyPublicPaper({
             public evidence first, private detail protected, decision left with the reader.
           </div>
         </div>
-        {!compact ? <TrustPaperIcon name="globe" size={60} color="#D6AA45" /> : null}
+        {!compact ? <GsnRealisticIcon name="public-globe" size={66} decorative /> : null}
       </footer>
     </section>
   );

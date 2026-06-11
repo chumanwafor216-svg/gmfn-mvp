@@ -154,7 +154,7 @@ export default function ExplainToggle(props: ExplainToggleProps) {
 
         <SubtleButton
           onClick={() => setOpen((prev) => !prev)}
-          stableHeight={38}
+          stableHeight={52}
           debugId="explain-toggle.toggle"
           style={{
             gap: 8,

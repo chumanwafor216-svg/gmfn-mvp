@@ -315,8 +315,8 @@ if (allActionRootMarkers !== expectedFileInputActionRoots * 2) {
 }
 
 assertShopContains(
-  /const shopHeroShortcuts = \[[\s\S]*?label: "Dashboard"[\s\S]*?label: "Marketplace"[\s\S]*?label: "Shop gallery"[\s\S]*?label: "Free spotlight"[\s\S]*?label: "Subscription spotlight"[\s\S]*?label: "Paid Repost"[\s\S]*?label: "Vault"[\s\S]*?\];/,
-  "Shop Control hero shortcuts must keep Dashboard, Marketplace, Shop gallery, Free spotlight, Subscription spotlight, Paid Repost, and Vault in the audited order."
+  /const shopHeroShortcuts:[\s\S]*?icon: GsnIconName[\s\S]*?label: "Dashboard"[\s\S]*?icon: "chart"[\s\S]*?label: "Marketplace"[\s\S]*?icon: "shop"[\s\S]*?label: "Shop gallery"[\s\S]*?icon: "image"[\s\S]*?label: "Free spotlight"[\s\S]*?icon: "megaphone"[\s\S]*?label: "Subscription spotlight"[\s\S]*?icon: "card"[\s\S]*?label: "Paid Repost"[\s\S]*?icon: "refresh"[\s\S]*?label: "Vault"[\s\S]*?icon: "vault"[\s\S]*?\];/,
+  "Shop Control hero shortcuts must keep Dashboard, Marketplace, Shop gallery, Free spotlight, Subscription spotlight, Paid Repost, and Vault in the audited order with 3D GSN icon names."
 );
 
 assertShopContains(

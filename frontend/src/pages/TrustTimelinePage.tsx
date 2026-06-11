@@ -7,6 +7,7 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { getSelectedClanId, safeCopy as copyWithFallback } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
@@ -221,6 +222,24 @@ function deltaBadge(tone: "pos" | "neg" | "zero"): React.CSSProperties {
   return { ...base, background: "#F8FAFC", borderColor: "#E2E8F0", color: "#475569" };
 }
 
+function actionLabel(icon: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={icon} size={17} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function sectionHeading(icon: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={icon} size={16} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
@@ -320,7 +339,7 @@ export default function TrustTimelinePage() {
       <PageTopNav
         sectionLabel="Trust Timeline"
         title="Trust Timeline"
-        subtitle="Read the explainable event trail behind your trust movement and export the evidence bundle when needed."
+        subtitle="See the trust events behind your standing and save the evidence bundle when you need proof."
       />
 
       <section
@@ -328,7 +347,7 @@ export default function TrustTimelinePage() {
           "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
         )}
       >
-        <div style={sectionLabel()}>Explainable trust movement</div>
+        <div style={sectionLabel()}>{sectionHeading("chart", "Trust Movement")}</div>
         <div
           style={{
             marginTop: 10,
@@ -339,8 +358,8 @@ export default function TrustTimelinePage() {
             maxWidth: 760,
           }}
         >
-          See why your trust changed, when it changed, and which evidence pack
-          can defend it.
+          See why your trust changed, when it changed, and which evidence can
+          support it.
         </div>
         <div
           style={{
@@ -351,22 +370,31 @@ export default function TrustTimelinePage() {
             maxWidth: 820,
           }}
         >
-          This page turns the trust trail into a readable timeline before you
-          answer a challenge, support a claim, or export proof.
+          Use this page before you answer a question, support a claim, or save
+          proof for a review.
         </div>
 
         <CardActionRow style={{ marginTop: 16 }}>
-          <StableCtaLink to={routes.trustSlip} debugId="trust-timeline.trust-slip">
-            Back to TrustSlip
+          <StableCtaLink
+            to={routes.trustSlip}
+            stableHeight={52}
+            debugId="trust-timeline.trust-slip"
+          >
+            {actionLabel("document", "Open TrustSlip")}
           </StableCtaLink>
-          <PrimaryButton onClick={loadAll} debugId="trust-timeline.refresh">
-            Refresh
+          <PrimaryButton
+            onClick={loadAll}
+            stableHeight={52}
+            debugId="trust-timeline.refresh"
+          >
+            {actionLabel("refresh", "Refresh")}
           </PrimaryButton>
           <SubtleButton
             onClick={downloadTimelinePdf}
+            stableHeight={52}
             debugId="trust-timeline.download-pdf"
           >
-            Download Timeline PDF
+            {actionLabel("document", "Download timeline")}
           </SubtleButton>
         </CardActionRow>
       </section>
@@ -400,7 +428,7 @@ export default function TrustTimelinePage() {
               flexWrap: "wrap",
             }}
           >
-            <div style={sectionLabel()}>Score (explainable)</div>
+            <div style={sectionLabel()}>{sectionHeading("shield", "Trust Reading")}</div>
             <div style={{ fontSize: 12, ...helperText() }}>
               {totals.total} events - {totals.pos} positive - {totals.neg} negative
             </div>
@@ -418,7 +446,7 @@ export default function TrustTimelinePage() {
             }}
           >
             <div style={{ fontSize: 14, fontWeight: 800 }}>
-              Why did my trust change? (latest)
+              Latest trust change
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               <div>
@@ -447,18 +475,18 @@ export default function TrustTimelinePage() {
               flexWrap: "wrap",
             }}
           >
-            <div style={sectionLabel()}>Evidence Pack</div>
-            <div style={{ fontSize: 12, ...helperText() }}>Reference bundle</div>
+            <div style={sectionLabel()}>{sectionHeading("vault", "Evidence Bundle")}</div>
+            <div style={{ fontSize: 12, ...helperText() }}>Reference for review</div>
           </div>
 
           <div style={{ marginTop: 10 }}>
             <div style={helperText()}>
-              Pack ID helps you reference a specific evidence bundle during
-              merchant and admin calls.
+              This reference helps you point to the exact evidence bundle during
+              a merchant, support, or admin review.
             </div>
 
             <div style={{ marginTop: 10, fontSize: 14 }}>
-              <b>Pack ID:</b>{" "}
+              <b>Evidence reference:</b>{" "}
               <span
                 style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
               >
@@ -470,21 +498,23 @@ export default function TrustTimelinePage() {
               <SecondaryButton
                 disabled={!packId}
                 onClick={() => packId && safeCopy(packId)}
+                stableHeight={52}
                 debugId="trust-timeline.copy-pack-id"
               >
-                Copy Pack ID
+                {actionLabel("copy", "Copy reference")}
               </SecondaryButton>
 
               <SubtleButton
                 onClick={downloadEvidenceZip}
+                stableHeight={52}
                 debugId="trust-timeline.download-evidence-zip"
               >
-                Download Evidence Pack (ZIP)
+                {actionLabel("vault", "Download evidence")}
               </SubtleButton>
             </CardActionRow>
 
             <div style={{ marginTop: 10, fontSize: 12, ...helperText() }}>
-              Use the Pack ID when you need to reference this evidence bundle.
+              Use this reference when someone needs to check the same evidence later.
             </div>
           </div>
         </section>
@@ -500,9 +530,9 @@ export default function TrustTimelinePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionLabel()}>Events</div>
+          <div style={sectionLabel()}>{sectionHeading("calendar", "Events")}</div>
           <div style={{ fontSize: 12, ...helperText() }}>
-            Chronological trust event log.
+            Trust events in order.
           </div>
         </div>
 
@@ -524,10 +554,10 @@ export default function TrustTimelinePage() {
                 <thead>
                   <tr>
                     <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #E2E8F0" }}>When</th>
-                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #E2E8F0" }}>Type</th>
+                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #E2E8F0" }}>Signal</th>
                     <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #E2E8F0" }}>Label</th>
                     <th style={{ textAlign: "right", padding: 10, borderBottom: "1px solid #E2E8F0" }}>Delta</th>
-                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #E2E8F0" }}>Refs</th>
+                    <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #E2E8F0" }}>Reference</th>
                     <th style={{ textAlign: "left", padding: 10, borderBottom: "1px solid #E2E8F0" }}>Reason / Note</th>
                   </tr>
                 </thead>
@@ -568,8 +598,8 @@ export default function TrustTimelinePage() {
           )}
 
           <div style={{ marginTop: 12, fontSize: 12, ...helperText() }}>
-            Disclaimer: This timeline is a community trust record. It is not a
-            bank guarantee and does not auto-debit any guarantor.
+            This timeline is a community trust record. It is not a bank
+            guarantee and it does not move money from any guarantor.
           </div>
         </div>
       </section>

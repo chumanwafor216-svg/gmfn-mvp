@@ -8,10 +8,12 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import {
-  TrustPaperIcon,
+  GsnLegacyIcon,
+  type GsnIconName,
+} from "../components/GsnLegacyIcon";
+import {
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
-  type TrustPaperIconName,
 } from "../components/TrustPaperMarks";
 import * as api from "../lib/api";
 import {
@@ -110,6 +112,7 @@ type MerchantSummary = {
   expiry_policy?: string | null;
   phone_recorded?: boolean | null;
   phone_verified?: boolean | null;
+  photo_recorded?: boolean | null;
   bank_details_recorded?: boolean | null;
   bank_verified?: boolean | null;
   bank_evidence_status?: string | null;
@@ -145,6 +148,7 @@ type TrustSlipSummary = {
   community?: string | null;
   phone_recorded?: boolean | null;
   phone_verified?: boolean | null;
+  photo_recorded?: boolean | null;
   bank_details_recorded?: boolean | null;
   bank_verified?: boolean | null;
   bank_evidence_status?: string | null;
@@ -706,6 +710,68 @@ function overviewIconBox(isCompact = false): React.CSSProperties {
   };
 }
 
+function trustIconBadge(
+  name: GsnIconName,
+  size = 30,
+  tone: "navy" | "blue" | "green" | "amber" | "red" = "navy"
+): React.ReactElement {
+  const palette = {
+    navy: {
+      color: "#0B4EA2",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.88) 100%)",
+      border: "1px solid rgba(12,41,71,0.08)",
+    },
+    blue: {
+      color: "#0B63D1",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.88) 100%)",
+      border: "1px solid rgba(11,99,209,0.14)",
+    },
+    green: {
+      color: "#168254",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.88) 100%)",
+      border: "1px solid rgba(22,130,84,0.14)",
+    },
+    amber: {
+      color: "#92400E",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.88) 100%)",
+      border: "1px solid rgba(146,64,14,0.16)",
+    },
+    red: {
+      color: "#991B1B",
+      background:
+        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.88) 100%)",
+      border: "1px solid rgba(153,27,27,0.16)",
+    },
+  }[tone];
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size >= 34 ? 13 : 11,
+        display: "grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        boxShadow:
+          "0 9px 18px rgba(2,6,23,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
+        ...palette,
+      }}
+    >
+      <GsnLegacyIcon
+        name={name}
+        size={Math.max(26, Math.round(size * 0.96))}
+        decorative
+      />
+    </span>
+  );
+}
+
 function overviewStatusBox(ok: boolean, muted = false): React.CSSProperties {
   const warning = !ok && !muted;
   return {
@@ -1219,6 +1285,7 @@ export default function TrustScorePage() {
     useState<TrustPassportLaneKey>("standing");
   const [showIdentityCompletionPaths, setShowIdentityCompletionPaths] =
     useState(false);
+  const [identityEvidenceOpen, setIdentityEvidenceOpen] = useState(false);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -1760,6 +1827,13 @@ export default function TrustScorePage() {
       me?.passport_verified_at ||
       me?.official_id_verified_at
   );
+  const photoEvidenceRecorded = Boolean(
+    trustSlipSummary?.photo_recorded ||
+      identityContext?.photo_recorded ||
+      identityContext?.photo_evidence_recorded ||
+      trustSlipSummary?.merchant_summary?.photo_recorded ||
+      me?.photo_recorded
+  );
   const identityEvidence = useMemo(() => {
     const backendSummary =
       trustSlipSummary?.identity_evidence_summary ||
@@ -1769,7 +1843,7 @@ export default function TrustScorePage() {
     const local = buildIdentityEvidenceCompletion({
       detailsDone: Boolean(memberName || gmfnId),
       phoneDone: phoneRecorded,
-      photoRecorded: Boolean(profileImageUrl),
+      photoRecorded: photoEvidenceRecorded,
       bankRecorded,
       officialIdRecorded,
       countReadyAsProgress: false,
@@ -1789,8 +1863,8 @@ export default function TrustScorePage() {
     identityContext?.identity_evidence_summary,
     memberName,
     officialIdRecorded,
+    photoEvidenceRecorded,
     phoneRecorded,
-    profileImageUrl,
     trustSlipSummary?.identity_evidence_summary,
     trustSlipSummary?.merchant_summary?.identity_evidence_summary,
   ]);
@@ -2009,7 +2083,7 @@ export default function TrustScorePage() {
 
   const verificationBadges = [
     {
-      icon: "phone" as TrustPaperIconName,
+      icon: "phone" as GsnIconName,
       label: passportVm.identity.phoneVerified
         ? "Phone verified"
         : passportVm.identity.phoneRecorded
@@ -2019,7 +2093,7 @@ export default function TrustScorePage() {
       muted: passportVm.identity.phoneRecorded && !passportVm.identity.phoneVerified,
     },
     {
-      icon: "community" as TrustPaperIconName,
+      icon: "community" as GsnIconName,
       label:
         passportVm.identity.communityIdentityConfirmed
           ? "Community confirmed"
@@ -2027,7 +2101,7 @@ export default function TrustScorePage() {
       ok: passportVm.identity.communityIdentityConfirmed,
     },
     {
-      icon: "shield" as TrustPaperIconName,
+      icon: "shield" as GsnIconName,
       label:
         passportVm.identity.identityContinuity === "clean"
           ? "Continuity confirmed"
@@ -2038,7 +2112,7 @@ export default function TrustScorePage() {
       muted: passportVm.identity.identityContinuity !== "clean" && identityEvidence.score >= 35,
     },
     {
-      icon: "wallet" as TrustPaperIconName,
+      icon: "wallet" as GsnIconName,
       label:
         passportVm.identity.bankVerified === true
           ? firstTruthy(passportVm.identity.bankVerificationLabel, "Bank verified")
@@ -2049,7 +2123,7 @@ export default function TrustScorePage() {
       muted: passportVm.identity.bankRecorded && passportVm.identity.bankVerified !== true,
     },
     {
-      icon: "document" as TrustPaperIconName,
+      icon: "document" as GsnIconName,
       label: passportVm.identity.passportVerified
         ? firstTruthy(passportVm.identity.passportVerificationLabel, "ID verified")
         : passportVm.identity.officialIdRecorded
@@ -2066,7 +2140,7 @@ export default function TrustScorePage() {
   ]);
   const activeBand = safeStr(currentBand).toUpperCase().slice(0, 1);
 
-  const identityRows: Array<[TrustPaperIconName, string, string]> = [
+  const identityRows: Array<[GsnIconName, string, string]> = [
     ["id", "GSN ID", passportVm.identity.gmfnId],
     ["community", "Community", passportVm.identity.communityName],
     ["hash", "Community ID", passportVm.identity.communityId],
@@ -2074,7 +2148,7 @@ export default function TrustScorePage() {
   ];
 
   const identityCompletionRows: Array<{
-    icon: TrustPaperIconName;
+    icon: GsnIconName;
     label: string;
     state: string;
     detail: string;
@@ -2161,7 +2235,7 @@ export default function TrustScorePage() {
     string,
     string,
     string,
-    TrustPaperIconName,
+    GsnIconName,
     "Ready" | "Limited"
   ]> = [
     [
@@ -2196,11 +2270,11 @@ export default function TrustScorePage() {
     ],
   ];
 
-  const trustQuestionIcons: Record<string, TrustPaperIconName> = {
+  const trustQuestionIcons: Record<string, GsnIconName> = {
     "Identity verified": "shield",
     "Support trust": "community",
     "Contribution discipline": "chart",
-    "Finance discipline": "wallet",
+    "Finance discipline": "financeInstitution",
     "Trade trust": "shop",
     "Follow-through": "check",
     "Community stability": "home",
@@ -2209,7 +2283,7 @@ export default function TrustScorePage() {
 
   const trustSurfaceCards = [
     {
-      icon: "home" as TrustPaperIconName,
+      icon: "home" as GsnIconName,
       title: "Local community trust",
       detail: "How this member is currently reading inside the active community.",
       action: "View local reading",
@@ -2219,10 +2293,10 @@ export default function TrustScorePage() {
       debugId: "trust-score.surface.local-community-trust",
     },
     {
-      icon: "globe" as TrustPaperIconName,
+      icon: "globe" as GsnIconName,
       title: "Cross-community consistency",
       detail:
-        "How consistent this member's trust signals appear across communities. CCI is the internal label.",
+        "How steady this member's trust signals appear across communities.",
       action: "View consistency reading",
       to: routes.cciReading,
       value: cci.classText,
@@ -2258,12 +2332,12 @@ export default function TrustScorePage() {
     ["No auto-debit", "Yes"],
   ];
 
-  const financeDisciplineCards: Array<[string, string, string, TrustPaperIconName]> = [
+  const financeDisciplineCards: Array<[string, string, string, GsnIconName]> = [
     [
       "Trust limit",
       `${trustLimit} ${trustCurrency}`,
       "The current ceiling GSN can show from this trust record.",
-      "wallet",
+      "financeInstitution",
     ],
     [
       "Available capacity",
@@ -2281,7 +2355,7 @@ export default function TrustScorePage() {
       "Overexposure",
       safeStr(capacityContext?.overexposure_ratio || "0.00"),
       "How stretched the guarantee position looks right now.",
-      "chart",
+      "financeInstitution",
     ],
     [
       "Risk level",
@@ -2293,7 +2367,7 @@ export default function TrustScorePage() {
 
   const trustPassportLanes: Array<{
     key: TrustPassportLaneKey;
-    icon: TrustPaperIconName;
+    icon: GsnIconName;
     label: string;
     detail: string;
   }> = [
@@ -2305,7 +2379,7 @@ export default function TrustScorePage() {
     },
     {
       key: "evidence",
-      icon: "chart",
+      icon: "proof",
       label: "Evidence Story",
       detail: "What helped, what pressured, and why trust moved.",
     },
@@ -2317,13 +2391,13 @@ export default function TrustScorePage() {
     },
     {
       key: "finance",
-      icon: "wallet",
+      icon: "financeInstitution",
       label: "Finance Discipline",
       detail: "Limit, capacity, locked guarantees, and risk context.",
     },
     {
       key: "documents",
-      icon: "document",
+      icon: "proof",
       label: "Documents / TrustSlip",
       detail: "Open, verify, copy, refresh, or export the reading.",
     },
@@ -2422,7 +2496,7 @@ export default function TrustScorePage() {
                 whiteSpace: "nowrap",
               }}
             >
-              <TrustPaperIcon name={activeLane.icon} size={18} />
+              {trustIconBadge(activeLane.icon, 26, "blue")}
               One lane open
             </span>
           </div>
@@ -2464,7 +2538,7 @@ export default function TrustScorePage() {
                 </span>
                 <span style={overviewStatusBox(true, true)}>
                   <span style={overviewBadge(true, true)}>
-                    <TrustPaperIcon name="community" size={15} strokeWidth={2.65} />
+                    <GsnLegacyIcon name="community" size={22} decorative />
                   </span>
                   {communityFootprint.length} active
                 </span>
@@ -2583,11 +2657,7 @@ export default function TrustScorePage() {
                     paddingInline: 12,
                   }}
                 >
-                  <TrustPaperIcon
-                    name={lane.icon}
-                    size={isCompact ? 18 : 20}
-                    color={isActive ? "#0B63D1" : "#526579"}
-                  />
+                  <GsnLegacyIcon name={lane.icon} size={isCompact ? 28 : 32} decorative />
                   {lane.label}
                 </SecondaryButton>
               );
@@ -2672,7 +2742,7 @@ export default function TrustScorePage() {
                     boxShadow: "0 10px 20px rgba(160,117,33,0.10)",
                   }}
                 >
-                  <TrustPaperIcon name="shield" size={isCompact ? 14 : 16} />
+                  <GsnLegacyIcon name="shield" size={isCompact ? 22 : 24} decorative />
                   Snapshot 1
                 </div>
                 <span
@@ -2692,7 +2762,7 @@ export default function TrustScorePage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  <TrustPaperIcon name="check" size={isCompact ? 14 : 16} strokeWidth={2.8} />
+                  <GsnLegacyIcon name="check" size={isCompact ? 22 : 24} decorative />
                   Photo clear
                 </span>
               </div>
@@ -2733,24 +2803,25 @@ export default function TrustScorePage() {
                 "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.92) 100%)",
               padding: isCompact ? 9 : 12,
               display: "grid",
-              gridTemplateColumns: isCompact ? "58px minmax(0, 1fr)" : "68px minmax(0, 1fr)",
+              gridTemplateColumns: isCompact
+                ? "36px minmax(0, 1fr) auto"
+                : "44px minmax(0, 1fr) auto",
               gap: isCompact ? 9 : 12,
               alignItems: "center",
               position: "relative",
               zIndex: 1,
             }}
           >
-            <div style={evidenceDialStyle(identityEvidence.degrees, isCompact)}>
-              <div style={evidenceDialInnerStyle(isCompact)}>{identityEvidence.score}%</div>
-            </div>
-            <div style={{ minWidth: 0, display: "grid", gap: 6 }}>
+            <span style={overviewBadge(identityEvidence.score >= 60, identityEvidence.score < 60)}>
+              <GsnLegacyIcon name="shield" size={22} decorative />
+            </span>
+            <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: 8,
-                  flexWrap: "wrap",
                 }}
               >
                 <span
@@ -2759,12 +2830,15 @@ export default function TrustScorePage() {
                     fontWeight: 1000,
                     fontSize: isCompact ? 14 : 16,
                     lineHeight: 1.1,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   Identity evidence
                 </span>
                 <span style={statusPillStyle(identityEvidence.label)}>
-                  {identityEvidence.label}
+                  {identityEvidence.score}% | {identityEvidence.label}
                 </span>
               </div>
               <div
@@ -2777,7 +2851,47 @@ export default function TrustScorePage() {
               >
                 Recorded evidence raises readiness. Verified evidence raises confidence.
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            </div>
+            <SubtleButton
+              onClick={() => setIdentityEvidenceOpen((open) => !open)}
+              stableHeight={isCompact ? 48 : 40}
+              aria-expanded={identityEvidenceOpen}
+              style={{
+                minWidth: isCompact ? 58 : 70,
+                borderRadius: 999,
+                paddingInline: isCompact ? 8 : 12,
+                fontSize: isCompact ? 11 : 12,
+                fontWeight: 1000,
+                whiteSpace: "nowrap",
+              }}
+              debugId="trust-score.identity-evidence-meter.toggle"
+            >
+              <GsnLegacyIcon
+                name={identityEvidenceOpen ? "chevronUp" : "chevronDown"}
+                size={22}
+                decorative
+              />
+              {identityEvidenceOpen ? "Hide" : "Open"}
+            </SubtleButton>
+
+            {identityEvidenceOpen ? (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "58px minmax(0, 1fr)"
+                    : "68px minmax(0, 1fr)",
+                  gap: isCompact ? 9 : 12,
+                  alignItems: "center",
+                  paddingTop: isCompact ? 6 : 8,
+                  borderTop: "1px solid rgba(216,227,238,0.58)",
+                }}
+              >
+                <div style={evidenceDialStyle(identityEvidence.degrees, isCompact)}>
+                  <div style={evidenceDialInnerStyle(isCompact)}>{identityEvidence.score}%</div>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, minWidth: 0 }}>
                 {identityEvidence.items.slice(0, 5).map((item) => (
                   <span
                     key={item.key}
@@ -2799,8 +2913,9 @@ export default function TrustScorePage() {
                     {item.label}
                   </span>
                 ))}
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
 
           <div
@@ -2836,12 +2951,7 @@ export default function TrustScorePage() {
                 }}
               >
                 <span style={overviewIconBox(isCompact)}>
-                  <TrustPaperIcon
-                    name={icon}
-                    size={isCompact ? 21 : 26}
-                    color="#FFFFFF"
-                    strokeWidth={2.85}
-                  />
+                  <GsnLegacyIcon name={icon} size={isCompact ? 31 : 40} decorative />
                 </span>
                 <span style={{ minWidth: 0 }}>
                   <span
@@ -2888,7 +2998,7 @@ export default function TrustScorePage() {
             {verificationBadges.map((item) => (
               <span key={item.label} style={overviewStatusBox(item.ok, item.muted)}>
                 <span style={overviewBadge(item.ok, item.muted)}>
-                  <TrustPaperIcon name={item.icon} size={15} strokeWidth={2.65} />
+                  <GsnLegacyIcon name={item.icon} size={22} decorative />
                 </span>
                 <span
                   style={{
@@ -2903,7 +3013,7 @@ export default function TrustScorePage() {
             ))}
             <span style={overviewStatusBox(false, true)}>
               <span style={overviewBadge(false, true)}>
-                <TrustPaperIcon name="community" size={15} strokeWidth={2.65} />
+                <GsnLegacyIcon name="community" size={22} decorative />
               </span>
               <span
                 style={{
@@ -2940,7 +3050,7 @@ export default function TrustScorePage() {
               }}
               debugId="trust-score.complete-identification"
             >
-              <TrustPaperIcon name="id" size={isCompact ? 18 : 21} strokeWidth={2.4} />
+              <GsnLegacyIcon name="id" size={isCompact ? 28 : 32} decorative />
               Complete ID checks
             </PrimaryButton>
             <SecondaryButton
@@ -3040,7 +3150,7 @@ export default function TrustScorePage() {
                     }}
                   >
                     <span style={overviewBadge(item.ok)}>
-                      <TrustPaperIcon name={item.icon} size={15} strokeWidth={2.65} />
+                      <GsnLegacyIcon name={item.icon} size={22} decorative />
                     </span>
                     <span
                       style={{
@@ -3253,10 +3363,10 @@ export default function TrustScorePage() {
                         gap: 8,
                       }}
                     >
-                      <TrustPaperIcon
+                      <GsnLegacyIcon
                         name={trustQuestionIcons[item.title] || "shield"}
-                        size={19}
-                        color="#0B63D1"
+                        size={30}
+                        decorative
                       />
                       {item.title}
                     </span>
@@ -3297,7 +3407,7 @@ export default function TrustScorePage() {
                 letterSpacing: 1.6,
               }}
             >
-              <TrustPaperIcon name="chart" size={20} />
+              <GsnLegacyIcon name="chart" size={32} decorative />
               Evidence Story
             </div>
             <div
@@ -3392,7 +3502,7 @@ export default function TrustScorePage() {
                 textTransform: "uppercase",
               }}
             >
-              <TrustPaperIcon name="alert" size={20} />
+              <GsnLegacyIcon name="alert" size={32} decorative />
               Repair or Next Step
             </div>
             <div
@@ -3464,7 +3574,7 @@ export default function TrustScorePage() {
                 fontWeight: 1000,
               }}
             >
-              <TrustPaperIcon name="alert" size={isCompact ? 18 : 20} />
+              <GsnLegacyIcon name="alert" size={isCompact ? 28 : 32} decorative />
               {nextStep.ctaLabel}
             </PrimaryButton>
           </section>
@@ -3497,7 +3607,7 @@ export default function TrustScorePage() {
               <div style={{ ...innerCard("#F0FBF4"), position: "relative", overflow: "hidden" }}>
                 <TrustPaperWatermark name="shield" color="#166534" size={130} opacity={0.065} />
                 <div style={{ color: "#166534", fontWeight: 1000, fontSize: 17, display: "flex", alignItems: "center", gap: 8 }}>
-                  <TrustPaperIcon name="shield" size={21} />
+                  <GsnLegacyIcon name="shield" size={32} decorative />
                   What helps trust
                 </div>
                 <ul style={{ ...helperText(), margin: "10px 0 0", paddingLeft: 18 }}>
@@ -3509,7 +3619,7 @@ export default function TrustScorePage() {
               <div style={{ ...innerCard("#FFF1F2"), position: "relative", overflow: "hidden" }}>
                 <TrustPaperWatermark name="alert" color="#991B1B" size={130} opacity={0.06} />
                 <div style={{ color: "#991B1B", fontWeight: 1000, fontSize: 17, display: "flex", alignItems: "center", gap: 8 }}>
-                  <TrustPaperIcon name="alert" size={21} />
+                  <GsnLegacyIcon name="alert" size={32} decorative />
                   What creates pressure
                 </div>
                 <ul style={{ ...helperText(), margin: "10px 0 0", paddingLeft: 18 }}>
@@ -3556,7 +3666,7 @@ export default function TrustScorePage() {
                   textTransform: "uppercase",
                 }}
               >
-                <TrustPaperIcon name="community" size={20} />
+                <GsnLegacyIcon name="community" size={32} decorative />
                 Community Confirmation
               </div>
               <div
@@ -3620,7 +3730,7 @@ export default function TrustScorePage() {
                           fontWeight: 1000,
                         }}
                       >
-                        <TrustPaperIcon name={icon} size={18} />
+                        {trustIconBadge(icon, 28, status === "Ready" ? "green" : "red")}
                         {label}
                       </span>
                       <span style={statusPillStyle(status)}>{status}</span>
@@ -3659,7 +3769,7 @@ export default function TrustScorePage() {
               {trustSurfaceCards.map((item) => (
                 <div key={item.title} style={{ ...innerCard(item.tone), display: "grid", gap: 8 }}>
                   <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 17, display: "flex", alignItems: "center", gap: 9 }}>
-                    <TrustPaperIcon name={item.icon} size={25} color="#0B63D1" />
+                    {trustIconBadge(item.icon, 34, "blue")}
                     {item.title}
                   </div>
                   <p style={{ ...helperText(), margin: 0 }}>{item.detail}</p>
@@ -3675,7 +3785,7 @@ export default function TrustScorePage() {
                     <span style={statusPillStyle(item.value)}>{item.value}</span>
                     <SecondaryButton
                       onClick={() => openTrustRoute(item.to)}
-                      stableHeight={isCompact ? 36 : 38}
+                      stableHeight={isCompact ? 52 : 40}
                       fullWidth={isCompact}
                       debugId={item.debugId}
                       style={{
@@ -3780,7 +3890,7 @@ export default function TrustScorePage() {
                     paddingInline: 10,
                   }}
                 >
-                  <TrustPaperIcon name="refresh" size={isCompact ? 17 : 19} />
+                  {trustIconBadge("refresh", isCompact ? 26 : 28, "navy")}
                   Refresh trust reading
                 </PrimaryButton>
                 <SecondaryButton
@@ -3795,7 +3905,7 @@ export default function TrustScorePage() {
                     paddingInline: 10,
                   }}
                 >
-                  <TrustPaperIcon name="copy" size={isCompact ? 17 : 19} />
+                  {trustIconBadge("copy", isCompact ? 26 : 28, "navy")}
                   Copy snapshot
                 </SecondaryButton>
                 <SecondaryButton
@@ -3810,7 +3920,7 @@ export default function TrustScorePage() {
                     paddingInline: 10,
                   }}
                 >
-                  <TrustPaperIcon name="document" size={isCompact ? 17 : 19} />
+                  {trustIconBadge("document", isCompact ? 26 : 28, "navy")}
                   Open TrustSlip
                 </SecondaryButton>
                 <SecondaryButton
@@ -3835,7 +3945,7 @@ export default function TrustScorePage() {
                     paddingInline: 10,
                   }}
                 >
-                  <TrustPaperIcon name="search" size={isCompact ? 17 : 19} />
+                  {trustIconBadge("search", isCompact ? 26 : 28, "navy")}
                   {verifyPath ? "Open TrustSlip verify" : "Prepare TrustSlip verify"}
                 </SecondaryButton>
               </div>
@@ -3850,7 +3960,7 @@ export default function TrustScorePage() {
                 <DangerButton
                   onClick={scrollToPressureNotes}
                   fullWidth
-                  stableHeight={40}
+                  stableHeight={isCompact ? 52 : 40}
                   debugId="trust-score.review-care"
                   style={{ borderRadius: 10, fontSize: 13, fontWeight: 950 }}
                 >
@@ -3866,7 +3976,7 @@ export default function TrustScorePage() {
                     }
                   }}
                   fullWidth
-                  stableHeight={40}
+                  stableHeight={isCompact ? 52 : 40}
                   debugId="trust-score.export"
                   style={{ borderRadius: 10, fontSize: 13, fontWeight: 950 }}
                 >
@@ -3915,7 +4025,7 @@ export default function TrustScorePage() {
                 textTransform: "uppercase",
               }}
             >
-              <TrustPaperIcon name="wallet" size={20} />
+              <GsnLegacyIcon name="financeInstitution" size={32} decorative />
               Finance Discipline
             </div>
             <div
@@ -3972,7 +4082,7 @@ export default function TrustScorePage() {
                       fontWeight: 1000,
                     }}
                   >
-                    <TrustPaperIcon name={icon} size={18} />
+                    {trustIconBadge(icon, 28, label === "Risk level" ? "red" : "blue")}
                     {label}
                   </div>
                   <div

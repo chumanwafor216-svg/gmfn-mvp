@@ -239,7 +239,7 @@ assertContains(
 assertFileContains(
   ownerSurfaceNavFile,
   ownerSurfaceNavSource,
-  /links\.map\(\(link\) => \([\s\S]*?<StableCtaLink[\s\S]*?stableHeight=\{compact \? 38 : 42\}[\s\S]*?debugId=\{link\.debugId\}/,
+  /links\.map\(\(link\) => \([\s\S]*?<StableCtaLink[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{link\.debugId\}/,
   "OwnerOnlySurfaceNav links must keep fixed-height stable route buttons."
 );
 
@@ -251,7 +251,7 @@ assertContains(
 assertFileContains(
   installPromptFile,
   installPromptSource,
-  /<PrimaryButton[\s\S]*?stableHeight=\{compact \? 42 : 46\}[\s\S]*?debugId=\{`gsn-install\.\$\{surface\}\.setup`\}/,
+  /<PrimaryButton[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`gsn-install\.\$\{surface\}\.setup`\}/,
   "GsnInstallPrompt must keep one fixed-height install/setup action."
 );
 
@@ -267,19 +267,19 @@ if (mediaFrameInvocationCount !== expectedMediaFrameInvocations) {
 }
 
 assertContains(
-  /<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="🔊"[\s\S]*?audioUnlockOffLabel="🔇"[\s\S]*?audioUnlockErrorLabel="▶️"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?minWidth: isCompact \? 34 : 38[\s\S]*?width: isCompact \? 34 : 38[\s\S]*?minHeight: isCompact \? 34 : 38/,
+  /<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?minWidth: isCompact \? 34 : 38[\s\S]*?width: isCompact \? 34 : 38[\s\S]*?minHeight: isCompact \? 34 : 38/,
   "Public Shop mini Spotlight media audio control must stay icon-only and fixed-size."
 );
 
 assertContains(
-  /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?showVideoControls=\{isProductOpen\}[\s\S]*?showAudioUnlock=\{hasVideoStory\}[\s\S]*?audioUnlockLabel="🔊"[\s\S]*?audioUnlockOffLabel="🔇"[\s\S]*?audioUnlockErrorLabel="▶️"[\s\S]*?minWidth: diaryMediaControlHeight[\s\S]*?width: diaryMediaControlHeight[\s\S]*?minHeight: diaryMediaControlHeight/,
+  /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?showVideoControls=\{isProductOpen\}[\s\S]*?showAudioUnlock=\{hasVideoStory\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockErrorLabel="Play"[\s\S]*?minWidth: diaryMediaControlHeight[\s\S]*?width: diaryMediaControlHeight[\s\S]*?minHeight: diaryMediaControlHeight/,
   "Public Shop diary media audio controls must stay icon-only, fixed-size, and tied to each product card."
 );
 
 assertFileContains(
   mediaFrameFile,
   mediaFrameSource,
-  /<SecondaryButton[\s\S]*?data-media-control="true"[\s\S]*?stableHeight=\{42\}[\s\S]*?debugId="spotlight-media-frame\.toggle-audio"[\s\S]*?title=\{audioUnlocked \? "Turn video sound off" : "Turn video sound on"\}/,
+  /<SecondaryButton[\s\S]*?data-media-control="true"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="spotlight-media-frame\.toggle-audio"[\s\S]*?title=\{audioUnlocked \? "Turn video sound off" : "Turn video sound on"\}/,
   "Shared SpotlightMediaFrame audio button must remain a stable media-control action."
 );
 
@@ -294,7 +294,7 @@ assertContains(
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
+  /stableHeight=\{isCompact \? 52 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?stableHeight=\{isCompact \? 52 : 54\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 52 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
   "Public Shop signboard Share, Verify, and WhatsApp buttons must keep fixed phone geometry."
 );
 

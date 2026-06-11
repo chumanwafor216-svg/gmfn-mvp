@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryGuideLauncher } from "../components/EntryControls";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
   activateMembership,
@@ -16,6 +17,14 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
 
 type LegacyActivationIconName = "check" | "clear" | "id" | "lock" | "shield";
 
+const LEGACY_ACTIVATION_ICON_MAP = {
+  check: "check",
+  clear: "alert",
+  id: "id",
+  lock: "lock",
+  shield: "shield",
+} satisfies Record<LegacyActivationIconName, GsnIconName>;
+
 function LegacyActivationIcon({
   name,
   size = 18,
@@ -23,58 +32,14 @@ function LegacyActivationIcon({
   name: LegacyActivationIconName;
   size?: number;
 }) {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2.2,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-
-  switch (name) {
-    case "check":
-      return (
-        <svg {...common}>
-          <path d="m5 12.5 4.2 4.1L19 7" />
-        </svg>
-      );
-    case "clear":
-      return (
-        <svg {...common}>
-          <path d="M6 6l12 12" />
-          <path d="M18 6 6 18" />
-        </svg>
-      );
-    case "id":
-      return (
-        <svg {...common}>
-          <rect x="4" y="6" width="16" height="12" rx="2.4" />
-          <circle cx="9" cy="11" r="1.7" />
-          <path d="M7 15c.5-1.4 1.2-2.1 2-2.1s1.5.7 2 2.1" />
-          <path d="M13.5 10h3.5" />
-          <path d="M13.5 14h3" />
-        </svg>
-      );
-    case "lock":
-      return (
-        <svg {...common}>
-          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-          <path d="M6.5 11h11v9h-11z" />
-          <path d="M12 15v2" />
-        </svg>
-      );
-    case "shield":
-      return (
-        <svg {...common}>
-          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
-          <path d="m8.6 12.2 2.2 2.2 4.8-5" />
-        </svg>
-      );
-  }
+  return (
+    <GsnLegacyIcon
+      name={LEGACY_ACTIVATION_ICON_MAP[name]}
+      size={Math.max(size, Math.round(size * 1.25))}
+      decorative
+      style={{ display: "inline-grid", flex: "0 0 auto" }}
+    />
+  );
 }
 
 function iconText(icon: LegacyActivationIconName, label: string) {

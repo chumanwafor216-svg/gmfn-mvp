@@ -117,7 +117,7 @@ export default function TrustDocumentFamilyMap({
                 <StableCtaLink
                   to={item.to}
                   debugId={`trust-document-family.open.${item.id}`}
-                  stableHeight={40}
+                  stableHeight={52}
                   style={linkStyle()}
                 >
                   Open {item.title}

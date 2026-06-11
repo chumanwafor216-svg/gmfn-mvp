@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   normalizedJoinInviteUrl,
   personalizedJoinInviteUrl,
@@ -1931,11 +1932,21 @@ function shareMessageCardStyle(isCompact = false): React.CSSProperties {
 function joinShareMessageCardStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...shareMessageCardStyle(isCompact),
-    height: isCompact ? 92 : 132,
-    minHeight: isCompact ? 92 : 132,
-    maxHeight: isCompact ? 92 : 132,
+    height: isCompact ? 146 : 132,
+    minHeight: isCompact ? 146 : 132,
+    maxHeight: isCompact ? 146 : 132,
     overscrollBehavior: "contain",
     scrollbarWidth: "thin",
+  };
+}
+
+function linkReserveTextStyle(): React.CSSProperties {
+  return {
+    ...marketplaceLinkSummaryStyle(false),
+    height: 66,
+    minHeight: 66,
+    maxHeight: 66,
+    overflowY: "auto",
   };
 }
 
@@ -2279,7 +2290,7 @@ function marketplaceInlineActionsStyle(
     gridTemplateColumns: isCompact
       ? "repeat(2, minmax(0, 1fr))"
       : "repeat(auto-fit, minmax(168px, 1fr))",
-    gridAutoRows: "58px",
+    gridAutoRows: isCompact ? "52px" : "58px",
     gap: 8,
     alignItems: "stretch",
     alignContent: "start",
@@ -2296,9 +2307,9 @@ function marketplaceInlineActionStyle(
   return {
     ...marketplaceActionStyle(kind, disabled),
     width: "100%",
-    height: 58,
-    minHeight: 58,
-    maxHeight: 58,
+    height: _isCompact ? 52 : 58,
+    minHeight: _isCompact ? 52 : 58,
+    maxHeight: _isCompact ? 52 : 58,
     padding: _isCompact ? "0 8px" : "0 11px",
     pointerEvents: "auto",
     touchAction: "manipulation",
@@ -2315,16 +2326,20 @@ function marketplaceMoneyPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
     marginTop: isCompact ? 12 : 16,
     display: "grid",
-    gridTemplateColumns: "1fr",
+    gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
     gap: isCompact ? 8 : 12,
     overflowAnchor: "none",
     transition: "none",
   };
 }
 
-function marketplaceMoneyRouteCardStyle(isCompact: boolean): React.CSSProperties {
+function marketplaceMoneyRouteCardStyle(
+  isCompact: boolean,
+  wide = false
+): React.CSSProperties {
   return {
-    minHeight: isCompact ? 92 : 150,
+    minHeight: isCompact ? (wide ? 84 : 112) : 150,
+    gridColumn: isCompact && wide ? "1 / -1" : undefined,
     borderRadius: isCompact ? 16 : 24,
     border: "1px solid rgba(16,37,59,0.08)",
     background:
@@ -2334,10 +2349,14 @@ function marketplaceMoneyRouteCardStyle(isCompact: boolean): React.CSSProperties
     padding: isCompact ? "10px" : "22px 24px",
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "50px minmax(0, 1fr) auto"
+      ? wide
+        ? "42px minmax(0, 1fr) auto"
+        : "38px minmax(0, 1fr)"
       : "92px minmax(0, 1fr) auto",
     gridTemplateAreas: isCompact
-      ? '"icon text status"'
+      ? wide
+        ? '"icon text status"'
+        : '"icon status" "text text"'
       : '"icon text status"',
     gap: isCompact ? "9px" : "14px 24px",
     alignItems: "center",
@@ -2749,6 +2768,40 @@ type MarketplaceGlyphName =
   | "verify"
   | "whatsapp";
 
+const MARKETPLACE_GLYPH_ICON_MAP = {
+  bank: "financeInstitution",
+  card: "card",
+  cash: "wallet",
+  chart: "financeInstitution",
+  chevron: "navigation",
+  chevronUp: "navigation",
+  control: "vault",
+  copy: "copy",
+  cycle: "refresh",
+  demand: "megaphone",
+  email: "phone",
+  eye: "eye",
+  heart: "shield",
+  join: "join-person-plus",
+  ledger: "proof",
+  links: "qr",
+  members: "community",
+  open: "navigation",
+  payment: "repaymentSchedule",
+  pool: "financeInstitution",
+  refresh: "refresh",
+  repost: "megaphone",
+  rosca: "repaymentSchedule",
+  shop: "marketplace",
+  spark: "spark",
+  support: "community",
+  target: "qr",
+  trade: "marketplace",
+  trust: "shield",
+  verify: "proof",
+  whatsapp: "phone",
+} satisfies Record<MarketplaceGlyphName, GsnIconName>;
+
 function MarketplaceGlyph({
   name,
   size = 24,
@@ -2756,11 +2809,11 @@ function MarketplaceGlyph({
   name: MarketplaceGlyphName;
   size?: number;
 }) {
-  let glyph: React.ReactNode;
+  let _glyph: React.ReactNode;
 
   switch (name) {
     case "bank":
-      glyph = (
+      _glyph = (
         <>
           <path d="M4 10h16" />
           <path d="M5 10l7-5 7 5" />
@@ -2772,7 +2825,7 @@ function MarketplaceGlyph({
       );
       break;
     case "card":
-      glyph = (
+      _glyph = (
         <>
           <rect x="3.5" y="6" width="17" height="12" rx="2.5" />
           <path d="M3.5 10h17" />
@@ -2781,7 +2834,7 @@ function MarketplaceGlyph({
       );
       break;
     case "pool":
-      glyph = (
+      _glyph = (
         <>
           <rect x="4" y="5" width="16" height="14" rx="2.8" />
           <path d="M4 9h16" />
@@ -2793,7 +2846,7 @@ function MarketplaceGlyph({
       );
       break;
     case "cash":
-      glyph = (
+      _glyph = (
         <>
           <rect x="3.5" y="7" width="17" height="10" rx="2.5" />
           <circle cx="12" cy="12" r="2.25" />
@@ -2803,7 +2856,7 @@ function MarketplaceGlyph({
       );
       break;
     case "chart":
-      glyph = (
+      _glyph = (
         <>
           <path d="M4 18h16" />
           <path d="M6 15l4-4 3 2.5 5-7" />
@@ -2812,13 +2865,13 @@ function MarketplaceGlyph({
       );
       break;
     case "chevron":
-      glyph = <path d="M9 5.5 15.5 12 9 18.5" />;
+      _glyph = <path d="M9 5.5 15.5 12 9 18.5" />;
       break;
     case "chevronUp":
-      glyph = <path d="M5.5 14.5 12 8l6.5 6.5" />;
+      _glyph = <path d="M5.5 14.5 12 8l6.5 6.5" />;
       break;
     case "copy":
-      glyph = (
+      _glyph = (
         <>
           <rect x="8" y="7" width="10" height="13" rx="2" />
           <path d="M6 17H5.8A2.8 2.8 0 0 1 3 14.2V6.8A2.8 2.8 0 0 1 5.8 4H13a2.8 2.8 0 0 1 2.8 2.8V7" />
@@ -2827,7 +2880,7 @@ function MarketplaceGlyph({
       );
       break;
     case "email":
-      glyph = (
+      _glyph = (
         <>
           <rect x="3.8" y="6" width="16.4" height="12" rx="2.5" />
           <path d="m5.5 8.5 6.5 4.8 6.5-4.8" />
@@ -2835,7 +2888,7 @@ function MarketplaceGlyph({
       );
       break;
     case "open":
-      glyph = (
+      _glyph = (
         <>
           <path d="M13 5h6v6" />
           <path d="M19 5 11 13" />
@@ -2844,7 +2897,7 @@ function MarketplaceGlyph({
       );
       break;
     case "refresh":
-      glyph = (
+      _glyph = (
         <>
           <path d="M6.5 8.2A6.8 6.8 0 0 1 18 9.5" />
           <path d="M18 5.8v3.7h-3.7" />
@@ -2854,7 +2907,7 @@ function MarketplaceGlyph({
       );
       break;
     case "join":
-      glyph = (
+      _glyph = (
         <>
           <circle cx="9" cy="9" r="3" />
           <path d="M4.5 18.2c.7-3 2.2-4.5 4.5-4.5s3.8 1.5 4.5 4.5" />
@@ -2864,7 +2917,7 @@ function MarketplaceGlyph({
       );
       break;
     case "verify":
-      glyph = (
+      _glyph = (
         <>
           <path d="M12 3.8 18.5 6v5.3c0 4-2.5 7.1-6.5 8.9-4-1.8-6.5-4.9-6.5-8.9V6z" />
           <path d="M8.8 12.1 11 14.3l4.2-4.6" />
@@ -2872,7 +2925,7 @@ function MarketplaceGlyph({
       );
       break;
     case "whatsapp":
-      glyph = (
+      _glyph = (
         <>
           <path d="M5.5 18.3 6.6 15.2A7 7 0 1 1 9 17.5z" />
           <path d="M9.2 8.8c.5 2.5 2 4.1 4.6 4.9" />
@@ -2882,7 +2935,7 @@ function MarketplaceGlyph({
       );
       break;
     case "repost":
-      glyph = (
+      _glyph = (
         <>
           <path d="M4 13h3l8 4V7l-8 4H4z" />
           <path d="M7 13l1 5" />
@@ -2892,7 +2945,7 @@ function MarketplaceGlyph({
       );
       break;
     case "target":
-      glyph = (
+      _glyph = (
         <>
           <circle cx="12" cy="12" r="7.2" />
           <circle cx="12" cy="12" r="3.6" />
@@ -2901,7 +2954,7 @@ function MarketplaceGlyph({
       );
       break;
     case "payment":
-      glyph = (
+      _glyph = (
         <>
           <rect x="4" y="5" width="5" height="5" rx="1" />
           <rect x="15" y="5" width="5" height="5" rx="1" />
@@ -2914,7 +2967,7 @@ function MarketplaceGlyph({
       );
       break;
     case "control":
-      glyph = (
+      _glyph = (
         <>
           <circle cx="12" cy="12" r="2.7" />
           <path d="M12 4.5v2" />
@@ -2929,7 +2982,7 @@ function MarketplaceGlyph({
       );
       break;
     case "cycle":
-      glyph = (
+      _glyph = (
         <>
           <path d="M7.2 7.1A7 7 0 0 1 18.5 9" />
           <path d="M18.5 5.5V9h-3.5" />
@@ -2940,7 +2993,7 @@ function MarketplaceGlyph({
       );
       break;
     case "rosca":
-      glyph = (
+      _glyph = (
         <>
           <circle cx="12" cy="12" r="7.2" />
           <path d="M7.2 8.8a6.4 6.4 0 0 1 5.4-2.1" />
@@ -2953,7 +3006,7 @@ function MarketplaceGlyph({
       );
       break;
     case "demand":
-      glyph = (
+      _glyph = (
         <>
           <path d="M4 13h3l8 4V7l-8 4H4z" />
           <path d="M7 13l1 5" />
@@ -2962,7 +3015,7 @@ function MarketplaceGlyph({
       );
       break;
     case "eye":
-      glyph = (
+      _glyph = (
         <>
           <path d="M3.5 12s3.2-5.2 8.5-5.2 8.5 5.2 8.5 5.2-3.2 5.2-8.5 5.2S3.5 12 3.5 12z" />
           <circle cx="12" cy="12" r="2.8" />
@@ -2971,7 +3024,7 @@ function MarketplaceGlyph({
       );
       break;
     case "heart":
-      glyph = (
+      _glyph = (
         <>
           <path d="M12 19s-7-4.3-7-9.1C5 7.4 6.8 6 8.8 6c1.2 0 2.4.6 3.2 1.6C12.8 6.6 14 6 15.2 6 17.2 6 19 7.4 19 9.9 19 14.7 12 19 12 19z" />
           <path d="M8 13h8" />
@@ -2979,7 +3032,7 @@ function MarketplaceGlyph({
       );
       break;
     case "ledger":
-      glyph = (
+      _glyph = (
         <>
           <rect x="5" y="4" width="14" height="16" rx="2.5" />
           <path d="M8.5 8h7" />
@@ -2989,7 +3042,7 @@ function MarketplaceGlyph({
       );
       break;
     case "links":
-      glyph = (
+      _glyph = (
         <>
           <path d="M8.5 12.5 6.8 14.2a3 3 0 0 0 4.2 4.2l2.1-2.1" />
           <path d="M15.5 11.5l1.7-1.7A3 3 0 0 0 13 5.6l-2.1 2.1" />
@@ -2998,7 +3051,7 @@ function MarketplaceGlyph({
       );
       break;
     case "members":
-      glyph = (
+      _glyph = (
         <>
           <circle cx="9" cy="9" r="2.7" />
           <circle cx="16" cy="10" r="2.2" />
@@ -3008,7 +3061,7 @@ function MarketplaceGlyph({
       );
       break;
     case "trade":
-      glyph = (
+      _glyph = (
         <>
           <path d="M5 10h14l-1.2-4.5H6.2z" />
           <path d="M6.5 10v8.5h11V10" />
@@ -3019,7 +3072,7 @@ function MarketplaceGlyph({
       );
       break;
     case "shop":
-      glyph = (
+      _glyph = (
         <>
           <path d="M5 10h14l-1.2-4.5H6.2z" />
           <path d="M6.5 10v8.5h11V10" />
@@ -3029,7 +3082,7 @@ function MarketplaceGlyph({
       );
       break;
     case "spark":
-      glyph = (
+      _glyph = (
         <>
           <path d="M12 3v4" />
           <path d="M12 17v4" />
@@ -3043,7 +3096,7 @@ function MarketplaceGlyph({
       );
       break;
     case "support":
-      glyph = (
+      _glyph = (
         <>
           <path d="M5.5 13.5h3.3l2.3 2.2a2.2 2.2 0 0 0 2.9.1l4.5-3.4a1.7 1.7 0 0 0-2-2.7l-3 2.1" />
           <path d="M8.8 13.5l2.5-2.7a2.8 2.8 0 0 1 3.9-.2l.6.5" />
@@ -3053,7 +3106,7 @@ function MarketplaceGlyph({
       );
       break;
     case "trust":
-      glyph = (
+      _glyph = (
         <>
           <path d="M12 3.8 18.5 6v5.3c0 4-2.5 7.1-6.5 8.9-4-1.8-6.5-4.9-6.5-8.9V6z" />
           <path d="M8.8 12.1 11 14.3l4.2-4.6" />
@@ -3061,27 +3114,18 @@ function MarketplaceGlyph({
       );
       break;
     default:
-      glyph = null;
+      _glyph = null;
   }
 
+  void _glyph;
+
   return (
-    <svg
-      aria-hidden="true"
-      focusable="false"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-    >
-      <g
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2.1}
-      >
-        {glyph}
-      </g>
-    </svg>
+    <GsnLegacyIcon
+      name={MARKETPLACE_GLYPH_ICON_MAP[name]}
+      size={Math.max(size, Math.round(size * 1.15))}
+      decorative
+      style={{ display: "inline-grid", flex: "0 0 auto" }}
+    />
   );
 }
 
@@ -6245,7 +6289,7 @@ export default function MarketplacePage() {
 
         {sectionsOpen.money ? (
           <div style={marketplaceMoneyPanelStyle(isCompact)}>
-            <div style={marketplaceMoneyRouteCardStyle(isCompact)}>
+            <div style={marketplaceMoneyRouteCardStyle(isCompact, true)}>
               <span
                 aria-hidden="true"
                 style={marketplaceMoneyIconBubbleStyle(isCompact, "soft")}
@@ -6936,12 +6980,13 @@ export default function MarketplacePage() {
             debugId="marketplace.links.toggle"
             type="button"
             onClick={(event) => toggleSectionFromButton(event, "tools")}
+            stableHeight={52}
             style={{
               ...marketplaceActionStyle("soft"),
               width: 112,
-              height: 46,
-              minHeight: 46,
-              maxHeight: 46,
+              height: 52,
+              minHeight: 52,
+              maxHeight: 52,
             }}
           >
             <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
@@ -6995,6 +7040,7 @@ export default function MarketplacePage() {
                       <MarketplaceGlyph name="join" size={isCompact ? 25 : 30} />
                     </span>
                     <div style={{ minWidth: 0 }}>
+                      <div style={sectionLabel()}>Join this community</div>
                       <div style={marketplaceLinkRowTitleStyle(isCompact)}>
                         {isCompact ? "1. Join" : "1. Join Community"}
                       </div>
@@ -7090,59 +7136,63 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="copy" size={18} />
                       </span>
-                      Copy
+                      Copy Join Link
                     </StableButton>
-                    <StableButton
-                      debugId="marketplace.links.join.refresh"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          void handleCreateInviteLink();
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        creatingInviteLink || !canManageMarketplaceLinks,
-                        isCompact
-                      )}
-                    >
-                      {creatingInviteLink
-                        ? "Refreshing..."
-                        : canManageMarketplaceLinks
-                          ? (
-                            <>
-                              <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                                <MarketplaceGlyph name="refresh" size={18} />
-                              </span>
-                              Refresh
-                            </>
-                          )
-                          : "Admin only"}
-                    </StableButton>
-                    <StableButton
-                      debugId="marketplace.links.join.copy-message"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          copyMarketplaceMessage(
-                            joinWhatsappMessage,
-                            personalizedInviteLink,
-                            "Join message copied.",
-                            marketplaceJoinLinkMissingMessage
-                          );
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !inviteLink,
-                        isCompact
-                      )}
-                    >
-                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                        <MarketplaceGlyph name="copy" size={18} />
-                      </span>
-                      Copy Text
-                    </StableButton>
+                    {!isCompact ? (
+                      <StableButton
+                        debugId="marketplace.links.join.refresh"
+                        type="button"
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            void handleCreateInviteLink();
+                          });
+                        }}
+                        style={marketplaceInlineActionStyle(
+                          "secondary",
+                          creatingInviteLink || !canManageMarketplaceLinks,
+                          isCompact
+                        )}
+                      >
+                        {creatingInviteLink
+                          ? "Refreshing..."
+                          : canManageMarketplaceLinks
+                            ? (
+                              <>
+                                <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                                  <MarketplaceGlyph name="refresh" size={18} />
+                                </span>
+                                Refresh Join Link
+                              </>
+                            )
+                            : "Admin only"}
+                      </StableButton>
+                    ) : null}
+                    {!isCompact ? (
+                      <StableButton
+                        debugId="marketplace.links.join.copy-message"
+                        type="button"
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            copyMarketplaceMessage(
+                              joinWhatsappMessage,
+                              personalizedInviteLink,
+                              "Join message copied.",
+                              marketplaceJoinLinkMissingMessage
+                            );
+                          });
+                        }}
+                        style={marketplaceInlineActionStyle(
+                          "secondary",
+                          !inviteLink,
+                          isCompact
+                        )}
+                      >
+                        <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                          <MarketplaceGlyph name="copy" size={18} />
+                        </span>
+                        Copy Invite Message
+                      </StableButton>
+                    ) : null}
                     <StableButton
                       debugId="marketplace.links.join.email"
                       type="button"
@@ -7165,7 +7215,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="email" size={18} />
                       </span>
-                      Email
+                      Email Join Link
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.whatsapp"
@@ -7238,7 +7288,7 @@ export default function MarketplacePage() {
                       {publicCommunityWorkspaceLink ? "Ready" : "Pending"}
                     </span>
                   </div>
-                  <div style={marketplaceLinkSummaryStyle(isCompact)}>
+                  <div style={linkReserveTextStyle()}>
                     <MarketplaceGlyph name="verify" size={15} />
                     {publicCommunityWorkspaceLink
                       ? maskedMarketplaceFaceLabel
@@ -7387,7 +7437,7 @@ export default function MarketplacePage() {
                           lineHeight: 1.2,
                         }}
                       >
-                        {isCompact ? buildMaskedLinkLabel(publicShopViewLink, "shop", activeCommunityName) : publicShopViewLink}
+                        {publicShopViewLink}
                       </StableCtaLink>
                     ) : (
                       publicShopUnavailableText
@@ -7462,7 +7512,7 @@ export default function MarketplacePage() {
                           <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                             <MarketplaceGlyph name="copy" size={18} />
                           </span>
-                          Copy
+                          Copy Shop Link
                         </>
                       )}
                     </StableButton>
@@ -7494,7 +7544,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="email" size={18} />
                       </span>
-                      Email
+                      Email Link
                     </StableButton>
                     <StableButton
                       type="button"
@@ -7524,7 +7574,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="open" size={18} />
                       </span>
-                      Open
+                      Open Shop Face
                     </StableButton>
                   </div>
                 </div>
@@ -7986,7 +8036,7 @@ export default function MarketplacePage() {
                   >
                     <StableDisclosureSummary
                       debugId="marketplace.network-repost.target-help.summary"
-                      stableHeight={36}
+                      stableHeight={52}
                       style={{
                         cursor: "pointer",
                         color: "#0B1F33",
@@ -8124,7 +8174,7 @@ export default function MarketplacePage() {
                               <StableButton
                                 type="button"
                                 debugId={`marketplace.network-repost.target.${code || index}.use`}
-                                stableHeight={46}
+                                stableHeight={52}
                                 onClick={(event) => {
                                   runMarketplaceAction(event, () => {
                                     if (!code) {
@@ -8147,9 +8197,9 @@ export default function MarketplacePage() {
                                     !code,
                                     isCompact
                                   ),
-                                  height: 46,
-                                  minHeight: 46,
-                                  maxHeight: 46,
+                                  height: 52,
+                                  minHeight: 52,
+                                  maxHeight: 52,
                                 }}
                               >
                                 <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
@@ -8288,7 +8338,7 @@ export default function MarketplacePage() {
                   >
                     <StableDisclosureSummary
                       debugId="marketplace.network-repost.credit-details.summary"
-                      stableHeight={36}
+                      stableHeight={52}
                       style={{
                         cursor: "pointer",
                         color: "#0B1F33",
@@ -9476,3 +9526,4 @@ export default function MarketplacePage() {
     </MarketplaceShell>
   );
 }
+

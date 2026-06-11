@@ -18,13 +18,12 @@ export default function PaymentInstructionsPanel({ loanId, borrowerUserId, curre
   const reference = useMemo(() => makeReference(loanId, borrowerUserId), [loanId, borrowerUserId]);
   const [msg, setMsg] = useState<string | null>(null);
 
-  // ✅ Replace these with your real bank details (pilot-safe)
   const bank = {
     bankName: "Your Bank Name",
     accountName: "GSN Pilot Account",
     accountNumber: "00000000",
     sortCode: "00-00-00",
-    note: "If you’re in Nigeria, replace sort code with NUBAN details.",
+    note: "If you're in Nigeria, replace sort code with NUBAN details.",
   };
 
   return (
@@ -50,7 +49,7 @@ export default function PaymentInstructionsPanel({ loanId, borrowerUserId, curre
         <div style={{ fontWeight: 800 }}>Reference (very important)</div>
         <div style={{ marginTop: 6, fontFamily: "monospace" }}>{reference}</div>
         <SecondaryButton
-          stableHeight={38}
+          stableHeight={52}
           debugId="payment-instructions-panel.copy-reference"
           style={{ marginTop: 10, padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "white" }}
           onClick={async () => {

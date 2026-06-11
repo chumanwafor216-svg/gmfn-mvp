@@ -14,8 +14,8 @@ A screen is acceptable only if:
   decision, the current state, and the next action without scrolling whenever
   possible.
 - It uses the approved color system.
-- Meaningful icons are app-native SVG pictograms with enough size, contrast,
-  and stable tile/badge placement to read clearly on phone.
+- Meaningful icons follow the GSN Icon Protocol: premium realistic 3D object
+  icons, not flat, outline, faded, cartoon, or emoji-style primary icons.
 - It uses consistent rounded cards.
 - It uses enough spacing.
 - It avoids long paragraphs.
@@ -62,7 +62,7 @@ the intended information unit.
 
 - The title, required facts, status signals, and primary action should be
   visible without scrolling inside that snapshot.
-- Use short labels, compact rows/chips, and SVG pictograms.
+- Use short labels, compact rows/chips, and premium realistic 3D object icons.
 - Verification photos and official marks must not cover each other; the person,
   ID, or proof item being shown must remain visible.
 - The snapshot must include the next completion or verification action when it

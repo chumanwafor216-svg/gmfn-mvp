@@ -285,26 +285,26 @@ export function buildTrustSlipVerifyViewModel({
   const publicValidityLabel = validNow ? "VALID NOW" : banner.title;
   const quickTrustAnswers: TrustSlipVerifyQuickAnswer[] = [
     [
-      "community",
+      "community-building",
       "Support, finance, contribution, or trade?",
       hasBlockingState ? "Not from this paper alone." : "Use carefully for low-risk decisions.",
     ],
     [
-      "check",
+      "trust-shield",
       "Do they follow through?",
       safeStr(record?.last_full_repayment_at)
         ? "Some evidence is visible."
         : "Not enough evidence is visible.",
     ],
     [
-      "community",
+      "community-building",
       "Are they stable inside a real community?",
       communityLabel !== "Not stated"
         ? "Community context is visible."
         : "Stability is not shown.",
     ],
     [
-      "shield",
+      "trust-shield",
       "Is there verified history behind the claim?",
       snapshotLabel === "Snapshot recorded"
         ? "A recorded snapshot exists."

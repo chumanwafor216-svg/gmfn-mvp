@@ -161,8 +161,8 @@ assertContains(
 
 assertContains(
   "trust",
-  /buildIdentityEvidenceCompletion[\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?Identity evidence[\s\S]*?Recorded evidence raises readiness\. Verified evidence raises confidence\./,
-  "Trust Passport Identity Overview must keep the reusable identity evidence meter and the recorded-vs-verified language."
+  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?buildIdentityEvidenceCompletion[\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?Identity evidence[\s\S]*?Recorded evidence raises readiness\. Verified evidence raises confidence\.[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?identityEvidenceOpen \?/,
+  "Trust Passport Identity Overview must keep the reusable identity evidence meter collapsed behind a real toggle with recorded-vs-verified language."
 );
 
 assertContains(

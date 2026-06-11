@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -254,6 +255,87 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 1000,
     whiteSpace: "normal",
   };
+}
+
+function analyticsIconBadge(
+  icon: GsnIconName,
+  children: React.ReactNode,
+  primary = false
+) {
+  return (
+    <span style={badge(primary)}>
+      <GsnLegacyIcon
+        name={icon}
+        size={15}
+      />
+      <span>{children}</span>
+    </span>
+  );
+}
+
+function sectionLabelWithIcon(
+  icon: GsnIconName,
+  label: React.ReactNode,
+  dark = false
+) {
+  return (
+    <span
+      style={{
+        ...sectionLabel(),
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        color: dark ? "#D8E7F6" : "#4A627A",
+      }}
+    >
+      <span
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 10,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: dark
+            ? "linear-gradient(180deg, rgba(242,199,102,0.22) 0%, rgba(242,199,102,0.10) 100%)"
+            : "linear-gradient(180deg, #08233A 0%, #061827 100%)",
+          border: dark
+            ? "1px solid rgba(242,199,102,0.34)"
+            : "1px solid rgba(8,35,58,0.16)",
+          color: dark ? "#F2C766" : "#FFFFFF",
+          boxShadow: "0 10px 20px rgba(7,20,36,0.10)",
+          flex: "0 0 auto",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={15} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={18} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function eventIcon(category: EventCategory): GsnIconName {
+  if (category === "built") return "check";
+  if (category === "weakened") return "alert";
+  if (category === "repair") return "refresh";
+  return "shield";
 }
 
 function collapseToggle(): React.CSSProperties {
@@ -585,7 +667,7 @@ export default function TrustAnalyticsPage() {
       <PageTopNav
         sectionLabel="Trust Analytics"
         title="Trust Analytics"
-        subtitle="Read the visible trust pattern, signal mix, and recent trend before stepping into deeper admin intervention."
+        subtitle="Read the trust pattern, signal mix, and recent movement before taking deeper admin action."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
@@ -594,9 +676,9 @@ export default function TrustAnalyticsPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen reads the visible trust pattern, signal mix, and recent trust trend before you move into deeper intervention pages."
-        why="It helps you understand whether trust looks stable, improving, or weakening before you make a heavier admin move."
-        next="Start with the current reading, then move through the signal overview, signal mix, and recent timeline to understand the pattern."
+        what="This screen shows whether trust is building, protected, weakening, or needing repair."
+        why="It helps you act from the record instead of guessing."
+        next="Start with the current reading, then check the overview, mix, and timeline."
         tone="light"
       />
 
@@ -612,7 +694,7 @@ export default function TrustAnalyticsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Analytics overview</div>
+            <div>{sectionLabelWithIcon("chart", "Analytics overview", true)}</div>
 
             <div
               style={{
@@ -627,7 +709,7 @@ export default function TrustAnalyticsPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Read pattern trends and signal mix here before moving into deeper intervention pages.
+              Read the trust pattern before opening deeper intervention pages.
             </div>
 
             <div
@@ -638,16 +720,14 @@ export default function TrustAnalyticsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Role: {roleLabel}</span>
-              <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>
-                Recent trust events: {summary.total}
-              </span>
+              {analyticsIconBadge("user", <>Role: {roleLabel}</>, true)}
+              {analyticsIconBadge("community", <>Community: {communityLabel}</>)}
+              {analyticsIconBadge("document", <>Recent events: {summary.total}</>)}
             </div>
           </div>
 
           <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Current reading</div>
+            <div>{sectionLabelWithIcon("shield", "Current reading")}</div>
 
             <div
               style={{
@@ -669,9 +749,9 @@ export default function TrustAnalyticsPage() {
 
         <ExplainToggle
           label="What this does"
-          what="This current reading compresses the trust pattern into one practical interpretation so you can quickly see whether the visible trust picture looks stronger, weaker, or mixed."
-          why="It helps you avoid jumping into intervention pages before you understand the overall direction of the trust signals."
-          next="Read this summary first, then use the sections below to confirm why the pattern looks the way it does."
+          what="This reading turns the trust signals into one practical direction."
+          why="It helps you avoid heavier action before you understand the pattern."
+          next="Use the sections below to see why the pattern looks this way."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -688,19 +768,19 @@ export default function TrustAnalyticsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Signal overview</div>
+            <div>{sectionLabelWithIcon("chart", "Signal overview")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              A clean first reading of the visible trust mix.
+              A quick count of what the visible record is saying.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("overview")}
-            stableHeight={40}
+            stableHeight={52}
             debugId="trust-analytics.toggle.overview"
             style={collapseToggle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {labelWithIcon(collapsed.overview ? "chevronDown" : "chevronUp", collapsed.overview ? "Open" : "Hide")}
           </SecondaryButton>
         </div>
 
@@ -716,7 +796,7 @@ export default function TrustAnalyticsPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Total</div>
+              <div>{sectionLabelWithIcon("document", "Total")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -730,7 +810,7 @@ export default function TrustAnalyticsPage() {
             </div>
 
             <div style={statTile("#F3FBF5")}>
-              <div style={sectionLabel()}>Built</div>
+              <div>{sectionLabelWithIcon("check", "Built")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -744,7 +824,7 @@ export default function TrustAnalyticsPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Protected</div>
+              <div>{sectionLabelWithIcon("shield", "Protected")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -758,7 +838,7 @@ export default function TrustAnalyticsPage() {
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Weakened</div>
+              <div>{sectionLabelWithIcon("alert", "Weakened")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -772,7 +852,7 @@ export default function TrustAnalyticsPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Repair</div>
+              <div>{sectionLabelWithIcon("refresh", "Repair")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -786,7 +866,7 @@ export default function TrustAnalyticsPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Last 7 days</div>
+              <div>{sectionLabelWithIcon("calendar", "Last 7 days")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -813,19 +893,19 @@ export default function TrustAnalyticsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Signal mix</div>
+            <div>{sectionLabelWithIcon("spark", "Signal mix")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The strongest building side and weakening side signals.
+              The strongest building and repair signals in view.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("mix")}
-            stableHeight={40}
+            stableHeight={52}
             debugId="trust-analytics.toggle.mix"
             style={collapseToggle()}
           >
-            {collapsed.mix ? "Open" : "Collapse"}
+            {labelWithIcon(collapsed.mix ? "chevronDown" : "chevronUp", collapsed.mix ? "Open" : "Hide")}
           </SecondaryButton>
         </div>
 
@@ -846,13 +926,13 @@ export default function TrustAnalyticsPage() {
                   fontSize: 15,
                 }}
               >
-                Stronger positive side
+                {labelWithIcon("check", "Stronger positive side")}
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {builtRows.length === 0 ? (
                   <div style={helperText()}>
-                    No strong built-side event is currently shown.
+                    No strong built-side event is shown yet.
                   </div>
                 ) : (
                   builtRows.map((row) => (
@@ -883,13 +963,13 @@ export default function TrustAnalyticsPage() {
                   fontSize: 15,
                 }}
               >
-                Stronger negative or repair side
+                {labelWithIcon("alert", "Weakened or repair side")}
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {weakenedRows.length === 0 ? (
                   <div style={helperText()}>
-                    No weakened or repair-side event is currently shown.
+                    No weakened or repair-side event is shown yet.
                   </div>
                 ) : (
                   weakenedRows.map((row) => (
@@ -926,19 +1006,19 @@ export default function TrustAnalyticsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Recent trust timeline</div>
+            <div>{sectionLabelWithIcon("calendar", "Recent trust timeline")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The latest visible trust movement, in clean order.
+              The latest visible trust movement, newest first.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("timeline")}
-            stableHeight={40}
+            stableHeight={52}
             debugId="trust-analytics.toggle.timeline"
             style={collapseToggle()}
           >
-            {collapsed.timeline ? "Open" : "Collapse"}
+            {labelWithIcon(collapsed.timeline ? "chevronDown" : "chevronUp", collapsed.timeline ? "Open" : "Hide")}
           </SecondaryButton>
         </div>
 
@@ -958,20 +1038,31 @@ export default function TrustAnalyticsPage() {
                     style={{
                       ...innerCard(tone.bg),
                       display: "grid",
-                      gridTemplateColumns: "18px minmax(0, 1fr)",
+                      gridTemplateColumns: "38px minmax(0, 1fr)",
                       gap: 12,
                       alignItems: "start",
                     }}
                   >
                     <div
                       style={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: 999,
-                        background: tone.dot,
-                        marginTop: 6,
+                        width: 34,
+                        height: 34,
+                        borderRadius: 12,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "linear-gradient(180deg, #08233A 0%, #061827 100%)",
+                        color: "#FFFFFF",
+                        border: "1px solid rgba(8,35,58,0.16)",
+                        boxShadow: "0 10px 20px rgba(7,20,36,0.10)",
+                        marginTop: 2,
                       }}
-                    />
+                    >
+                      <GsnLegacyIcon
+                        name={eventIcon(row.category)}
+                        size={18}
+                      />
+                    </div>
 
                     <div>
                       <div
@@ -994,11 +1085,12 @@ export default function TrustAnalyticsPage() {
                         </div>
 
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <span style={badge(true)}>{tone.label}</span>
+                          {analyticsIconBadge(eventIcon(row.category), tone.label, true)}
                           {row.createdAt ? (
-                            <span style={badge(false)}>
-                              {safeDateTime(row.createdAt)}
-                            </span>
+                            analyticsIconBadge(
+                              "calendar",
+                              safeDateTime(row.createdAt)
+                            )
                           ) : null}
                         </div>
                       </div>
@@ -1022,19 +1114,19 @@ export default function TrustAnalyticsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Reading notes</div>
+            <div>{sectionLabelWithIcon("document", "Reading notes")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              What this page is for, and what it is not for.
+              What to read here, and where to take action.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("notes")}
-            stableHeight={40}
+            stableHeight={52}
             debugId="trust-analytics.toggle.notes"
             style={collapseToggle()}
           >
-            {collapsed.notes ? "Open" : "Collapse"}
+            {labelWithIcon(collapsed.notes ? "chevronDown" : "chevronUp", collapsed.notes ? "Open" : "Hide")}
           </SecondaryButton>
         </div>
 
@@ -1055,10 +1147,10 @@ export default function TrustAnalyticsPage() {
                   fontSize: 15,
                 }}
               >
-                Read patterns here
+                {labelWithIcon("chart", "Read patterns here")}
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Read pattern mix and trust trends before moving into deeper intervention pages.
+                Read trust trends before moving into deeper intervention pages.
               </div>
             </div>
 
@@ -1070,10 +1162,10 @@ export default function TrustAnalyticsPage() {
                   fontSize: 15,
                 }}
               >
-                Use other admin pages for action
+                {labelWithIcon("navigation", "Use action pages for action")}
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Move into System Operations, Exposure, or Trust Graph when the work is live handling, risk review, or structural relationship analysis.
+                Move to System Operations, Exposure, or Trust Graph for live handling, risk review, or relationship checks.
               </div>
             </div>
           </div>
@@ -1081,7 +1173,7 @@ export default function TrustAnalyticsPage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Where next</div>
+        <div>{sectionLabelWithIcon("navigation", "Where next")}</div>
 
         <div
           style={{
@@ -1096,32 +1188,31 @@ export default function TrustAnalyticsPage() {
             kind="primary"
             debugId="trust-analytics.route.system-operations"
           >
-            System Operations
+            {labelWithIcon("shield", "System Operations")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.exposure}
             kind="secondary"
             debugId="trust-analytics.route.exposure"
           >
-            Exposure
+            {labelWithIcon("alert", "Exposure")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.trustGraph}
             kind="secondary"
             debugId="trust-analytics.route.trust-graph"
           >
-            Trust Graph
+            {labelWithIcon("chart", "Trust Graph")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.commandCenter}
             kind="soft"
             debugId="trust-analytics.route.command-center"
           >
-            Command Center
+            {labelWithIcon("navigation", "Command Center")}
           </StableCtaLink>
         </div>
       </section>
     </div>
   );
 }
-

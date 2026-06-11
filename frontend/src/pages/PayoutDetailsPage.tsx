@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
-import { TrustPaperIcon, type TrustPaperIconName } from "../components/TrustPaperMarks";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
@@ -95,6 +95,8 @@ function payoutPrimaryButtonStyle(disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
     opacity: disabled ? 0.72 : 1,
+    whiteSpace: "nowrap",
+    transition: "none",
   };
 }
 
@@ -112,7 +114,44 @@ function payoutSecondaryButtonStyle(disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
     opacity: disabled ? 0.72 : 1,
+    whiteSpace: "nowrap",
+    transition: "none",
   };
+}
+
+function actionText(name: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 11,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#0B2D4A",
+          background: "rgba(255,255,255,0.96)",
+          border: "1px solid rgba(226,192,106,0.30)",
+          boxShadow:
+            "0 8px 16px rgba(2,6,23,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={26} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function inputStyle(): React.CSSProperties {
@@ -194,13 +233,13 @@ function IconBadge({
   tone = "navy",
   size = 22,
 }: {
-  name: TrustPaperIconName;
+  name: GsnIconName;
   tone?: "navy" | "gold" | "green" | "soft";
   size?: number;
 }) {
   return (
     <span style={iconTile(tone)}>
-      <TrustPaperIcon name={name} size={size} strokeWidth={2.35} />
+      <GsnLegacyIcon name={name} size={Math.max(30, Math.round(size * 1.45))} />
     </span>
   );
 }
@@ -495,10 +534,10 @@ export default function PayoutDetailsPage() {
       return {
         title: "Choose the community first",
         detail:
-          "Payout details belong to the same money path as withdrawals and support. Confirm your current community first whenever possible.",
-        today: "Open Community Home and confirm the community you are working in.",
+          "Confirm the community before saving payout details.",
+        today: "Open Community Home and confirm the active community.",
         tomorrow:
-          "A clear community keeps payout movement easier to understand.",
+          "Then return here and save the destination.",
       };
     }
 
@@ -506,22 +545,22 @@ export default function PayoutDetailsPage() {
       return {
         title: "Complete the payout destination first",
         detail:
-          "Approved withdrawals should wait until your payout destination is complete enough for the route to be understood.",
+          "Approved withdrawals need a clear destination.",
         today: needsUkSortCode
           ? "Complete account name, bank, account number, UK sort code, country, and currency."
-          : "Complete the payout fields and save them for the withdrawal path.",
+          : "Complete the payout fields and save.",
         tomorrow:
-          "A clear payout destination reduces mistakes and delay when withdrawal begins.",
+          "Withdrawal can then use this record.",
       };
     }
 
     return {
       title: "Keep the payout destination ready for withdrawal",
       detail:
-        "Your payout destination is ready enough for the withdrawal flow. The next step is to use Withdrawal Instructions when the support route is approved.",
-      today: "Review the details and keep them accurate before initiating withdrawal.",
+        "This destination is ready for approved withdrawals.",
+      today: "Review the details before withdrawal.",
       tomorrow:
-        "A stable payout destination keeps the money path calmer and more traceable.",
+        "Use Withdrawal Instructions when approval is ready.",
     };
   }, [selectedClanId, isReady, needsUkSortCode]);
 
@@ -645,8 +684,16 @@ export default function PayoutDetailsPage() {
               {nextStep.title}
             </div>
 
-            <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.8 }}>
-              Record the bank or wallet account that should receive approved withdrawals.
+            <div
+              style={{
+                marginTop: 10,
+                color: "#D7E3F1",
+                lineHeight: 1.45,
+                fontWeight: 760,
+                maxWidth: 620,
+              }}
+            >
+              {nextStep.detail}
             </div>
 
             <div
@@ -666,15 +713,13 @@ export default function PayoutDetailsPage() {
               </span>
             </div>
 
-            <div
-              style={{
-                marginTop: 16,
-                color: "#D7E3F1",
-                lineHeight: 1.75,
-                fontWeight: 800,
-              }}
-            >
-              GSN records the destination. It does not move money from this page.
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(false)}>
+                <GsnLegacyIcon name="document" size={24} /> Record only
+              </span>
+              <span style={badge(false)}>
+                <GsnLegacyIcon name="shield" size={24} /> No money moves here
+              </span>
             </div>
           </div>
 
@@ -746,7 +791,7 @@ export default function PayoutDetailsPage() {
         >
           <label style={{ display: "grid", gap: 7 }}>
             <span style={lightSectionLabel()}>
-              <TrustPaperIcon name="user" size={15} /> Account name
+              <GsnLegacyIcon name="user" size={24} /> Account name
             </span>
             <input
               value={form.account_name}
@@ -758,7 +803,7 @@ export default function PayoutDetailsPage() {
 
           <label style={{ display: "grid", gap: 7 }}>
             <span style={lightSectionLabel()}>
-              <TrustPaperIcon name="hash" size={15} /> Account / wallet number
+              <GsnLegacyIcon name="hash" size={24} /> Account / wallet number
             </span>
             <input
               value={form.account_number}
@@ -770,7 +815,7 @@ export default function PayoutDetailsPage() {
 
           <label style={{ display: "grid", gap: 7 }}>
             <span style={lightSectionLabel()}>
-              <TrustPaperIcon name="bank" size={15} /> Bank / wallet provider
+              <GsnLegacyIcon name="bank" size={24} /> Bank / wallet provider
             </span>
             <input
               value={form.bank_name}
@@ -782,7 +827,7 @@ export default function PayoutDetailsPage() {
 
           <label style={{ display: "grid", gap: 7 }}>
             <span style={lightSectionLabel()}>
-              <TrustPaperIcon name="hash" size={15} /> UK sort code
+              <GsnLegacyIcon name="hash" size={24} /> UK sort code
             </span>
             <input
               value={form.sort_code}
@@ -795,7 +840,7 @@ export default function PayoutDetailsPage() {
 
           <label style={{ display: "grid", gap: 7 }}>
             <span style={lightSectionLabel()}>
-              <TrustPaperIcon name="globe" size={15} /> Country
+              <GsnLegacyIcon name="globe" size={24} /> Country
             </span>
             <input
               value={form.country}
@@ -807,7 +852,7 @@ export default function PayoutDetailsPage() {
 
           <label style={{ display: "grid", gap: 7 }}>
             <span style={lightSectionLabel()}>
-              <TrustPaperIcon name="wallet" size={15} /> Currency
+              <GsnLegacyIcon name="wallet" size={24} /> Currency
             </span>
             <select
               value={form.currency}
@@ -840,7 +885,7 @@ export default function PayoutDetailsPage() {
               border: "1px solid rgba(123,161,204,0.28)",
             }}
           >
-            <TrustPaperIcon name="shield" size={15} /> Recorded destination
+            <GsnLegacyIcon name="shield" size={24} /> Recorded destination
           </span>
           <span
             style={{
@@ -853,7 +898,7 @@ export default function PayoutDetailsPage() {
                   : "1px solid rgba(46,155,98,0.24)",
             }}
           >
-            <TrustPaperIcon name={needsUkSortCode && !safeStr(form.sort_code) ? "alert" : "check"} size={15} />
+            <GsnLegacyIcon name={needsUkSortCode && !safeStr(form.sort_code) ? "alert" : "check"} size={24} />
             {needsUkSortCode && !safeStr(form.sort_code)
               ? "UK sort code needed"
               : "Region fields ready"}
@@ -863,9 +908,12 @@ export default function PayoutDetailsPage() {
         <div
           style={{
             marginTop: 16,
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "repeat(3, minmax(146px, max-content))",
             gap: 10,
-            flexWrap: "wrap",
+            alignItems: "center",
           }}
         >
           <PrimaryButton
@@ -873,25 +921,34 @@ export default function PayoutDetailsPage() {
               void savePayout();
             }}
             debugId="payout-details.save"
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 148}
+            stableHeight={52}
             style={payoutPrimaryButtonStyle(false)}
           >
-            Save Payout Details
+            {actionText("check", "Save details")}
           </PrimaryButton>
 
           <SecondaryButton
             onClick={copySummary}
             debugId="payout-details.copy-summary"
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 150}
+            stableHeight={52}
             style={payoutSecondaryButtonStyle(false)}
           >
-            Copy Summary
+            {actionText("copy", "Copy summary")}
           </SecondaryButton>
 
           <SecondaryButton
             onClick={clearLocal}
             debugId="payout-details.clear-local"
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 132}
+            stableHeight={52}
             style={payoutSecondaryButtonStyle(false)}
           >
-            Clear Local Details
+            {actionText("refresh", "Clear local")}
           </SecondaryButton>
         </div>
 
@@ -912,7 +969,7 @@ export default function PayoutDetailsPage() {
             }}
           >
             <div style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 1000 }}>
-              <TrustPaperIcon name="check" size={18} />
+              <GsnLegacyIcon name="check" size={28} />
               {safeStr(proofFeedback.confirmation_message) ||
                 "Your payout destination has been recorded."}
             </div>
@@ -955,12 +1012,12 @@ export default function PayoutDetailsPage() {
             style={{
               marginTop: 10,
               color: "#4A5F78",
-              lineHeight: 1.8,
+              lineHeight: 1.45,
             }}
           >
             {isReady
-              ? "The core payout fields are complete enough for the withdrawal flow."
-              : "Complete all core payout fields before relying on the withdrawal path."}
+              ? "Core fields are complete."
+              : "Complete the required fields before withdrawal."}
           </div>
         </div>
 
@@ -975,7 +1032,7 @@ export default function PayoutDetailsPage() {
             style={{
               marginTop: 10,
               color: "#4A5F78",
-              lineHeight: 1.8,
+              lineHeight: 1.45,
               whiteSpace: "pre-wrap",
             }}
           >
@@ -997,34 +1054,38 @@ export default function PayoutDetailsPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.7 }}>
-          Once your payout destination is complete, return to Withdrawal Instructions
-          when a support route is approved. That page handles the next payout step.
+        <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.45, fontWeight: 760 }}>
+          After approval, open Withdrawal Instructions. That page handles the next payout step.
         </div>
 
         <div
           style={{
             marginTop: 16,
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(150px, max-content))",
             gap: 10,
-            flexWrap: "wrap",
+            alignItems: "center",
           }}
         >
           <StableCtaLink
             to={routes.moneyOut}
             debugId="payout-details.open-money-out"
-            stableHeight={48}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 150}
+            stableHeight={52}
             style={payoutPrimaryButtonStyle(false)}
           >
-            Open Withdrawal Instructions
+            {actionText("wallet", "Money Out")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.loans}
             debugId="payout-details.open-loans"
-            stableHeight={48}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 166}
+            stableHeight={52}
             style={payoutSecondaryButtonStyle(false)}
           >
-            Return to Loans & Support
+            {actionText("briefcase", "Loans & Support")}
           </StableCtaLink>
         </div>
       </section>

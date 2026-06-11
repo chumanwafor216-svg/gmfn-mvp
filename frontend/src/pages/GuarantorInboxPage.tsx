@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import {
@@ -251,6 +252,46 @@ function guarantorInboxCollapseButtonStyle(): React.CSSProperties {
     cursor: "pointer",
     boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
   };
+}
+
+function guarantorInboxActionText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 22
+) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={size} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function guarantorInboxRouteHeading(name: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={24} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
 }
 
 function noticeCard(tone: Notice["tone"]): React.CSSProperties {
@@ -903,7 +944,7 @@ export default function GuarantorInboxPage() {
                 debugId="guarantor-inbox.copy-queue"
                 style={guarantorInboxSecondaryButtonStyle(false)}
               >
-                Copy Queue Summary
+                {guarantorInboxActionText("copy", "Copy queue")}
               </SecondaryButton>
             </div>
 
@@ -969,11 +1010,15 @@ export default function GuarantorInboxPage() {
           <SubtleButton
             onClick={() => toggleSection("overview")}
             minWidth={116}
-            stableHeight={44}
+            stableHeight={52}
             debugId="guarantor-inbox.toggle-overview"
             style={guarantorInboxCollapseButtonStyle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {guarantorInboxActionText(
+              collapsed.overview ? "chevronDown" : "chevronUp",
+              collapsed.overview ? "Open" : "Hide",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1065,11 +1110,15 @@ export default function GuarantorInboxPage() {
           <SubtleButton
             onClick={() => toggleSection("queue")}
             minWidth={116}
-            stableHeight={44}
+            stableHeight={52}
             debugId="guarantor-inbox.toggle-queue"
             style={guarantorInboxCollapseButtonStyle()}
           >
-            {collapsed.queue ? "Open" : "Collapse"}
+            {guarantorInboxActionText(
+              collapsed.queue ? "chevronDown" : "chevronUp",
+              collapsed.queue ? "Open" : "Hide",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1081,11 +1130,15 @@ export default function GuarantorInboxPage() {
                   key={x}
                   onClick={() => setFilter(x)}
                   minWidth={108}
-                  stableHeight={46}
+                  stableHeight={52}
                   debugId={`guarantor-inbox.filter.${x}`}
                   style={guarantorInboxFilterButtonStyle(filter === x)}
                 >
-                  {x[0].toUpperCase() + x.slice(1)}
+                  {guarantorInboxActionText(
+                    x === "pending" ? "alert" : x === "approved" ? "check" : x === "declined" ? "lock" : "document",
+                    x[0].toUpperCase() + x.slice(1),
+                    20
+                  )}
                 </SecondaryButton>
               ))}
             </div>
@@ -1204,8 +1257,8 @@ export default function GuarantorInboxPage() {
                               style={guarantorInboxPrimaryButtonStyle(Boolean(busyDecisionKey))}
                             >
                               {busyDecisionKey === `${row.loanId}-${row.id}-approved`
-                                ? "Approving..."
-                                : "Approve support"}
+                                ? guarantorInboxActionText("refresh", "Approving", 20)
+                                : guarantorInboxActionText("check", "Approve", 20)}
                             </PrimaryButton>
                             <SecondaryButton
                               onClick={() => void handleDecision(row, "declined")}
@@ -1216,8 +1269,8 @@ export default function GuarantorInboxPage() {
                               style={guarantorInboxSecondaryButtonStyle(Boolean(busyDecisionKey))}
                             >
                               {busyDecisionKey === `${row.loanId}-${row.id}-declined`
-                                ? "Declining..."
-                                : "Decline"}
+                                ? guarantorInboxActionText("refresh", "Declining", 20)
+                                : guarantorInboxActionText("lock", "Decline", 20)}
                             </SecondaryButton>
                           </>
                         ) : null}
@@ -1227,7 +1280,7 @@ export default function GuarantorInboxPage() {
                           stableHeight={48}
                           style={guarantorInboxSecondaryButtonStyle(false)}
                         >
-                          Open workbench
+                          {guarantorInboxActionText("briefcase", "Workbench", 20)}
                         </StableCtaLink>
                         <StableCtaLink
                           to={routes.loans}
@@ -1235,7 +1288,7 @@ export default function GuarantorInboxPage() {
                           stableHeight={48}
                           style={guarantorInboxSecondaryButtonStyle(false)}
                         >
-                          Loans & Support
+                          {guarantorInboxActionText("community", "Loans", 20)}
                         </StableCtaLink>
                       </div>
                     </div>
@@ -1267,11 +1320,15 @@ export default function GuarantorInboxPage() {
           <SubtleButton
             onClick={() => toggleSection("guidance")}
             minWidth={116}
-            stableHeight={44}
+            stableHeight={52}
             debugId="guarantor-inbox.toggle-guidance"
             style={guarantorInboxCollapseButtonStyle()}
           >
-            {collapsed.guidance ? "Open" : "Collapse"}
+            {guarantorInboxActionText(
+              collapsed.guidance ? "chevronDown" : "chevronUp",
+              collapsed.guidance ? "Open" : "Hide",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1341,11 +1398,15 @@ export default function GuarantorInboxPage() {
           <SubtleButton
             onClick={() => toggleSection("routes")}
             minWidth={116}
-            stableHeight={44}
+            stableHeight={52}
             debugId="guarantor-inbox.toggle-routes"
             style={guarantorInboxCollapseButtonStyle()}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {guarantorInboxActionText(
+              collapsed.routes ? "chevronDown" : "chevronUp",
+              collapsed.routes ? "Open" : "Hide",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1373,7 +1434,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                {nextStep.ctaLabel}
+                {guarantorInboxRouteHeading("navigation", nextStep.ctaLabel)}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {nextStep.detail}
@@ -1395,7 +1456,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Loan Workbench
+                {guarantorInboxRouteHeading("briefcase", "Loan Workbench")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when you are continuing the deeper support decision.
@@ -1417,7 +1478,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Loan Suggestions
+                {guarantorInboxRouteHeading("search", "Loan Suggestions")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the next question is candidate fit rather than queue state.
@@ -1439,7 +1500,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Loans & Support
+                {guarantorInboxRouteHeading("community", "Loans & Support")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the broader support overview.
@@ -1461,7 +1522,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Marketplace
+                {guarantorInboxRouteHeading("shop", "Marketplace")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to Marketplace only after the current queue reading is complete.
@@ -1483,7 +1544,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Action Inbox
+                {guarantorInboxRouteHeading("alert", "Action Inbox")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the broader notification picture matters around the support decision.

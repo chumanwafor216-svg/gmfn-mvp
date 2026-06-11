@@ -1,4 +1,6 @@
 import React from "react";
+import GSNBrandMark from "../../components/GSNBrandMark";
+import { GsnLegacyIcon, type GsnIconName } from "../../components/GsnLegacyIcon";
 import TrustSlipReaderBlock from "../../components/TrustSlipReaderBlock";
 import {
   institutionalInnerCard,
@@ -168,20 +170,81 @@ function documentFrameStyle(): React.CSSProperties {
   };
 }
 
-function documentWatermarkStyle(): React.CSSProperties {
+function documentBrandWatermarkStyle(): React.CSSProperties {
   return {
     position: "absolute",
-    top: 18,
-    right: -16,
-    transform: "rotate(-90deg)",
-    transformOrigin: "top right",
-    letterSpacing: 3.1,
-    fontSize: 11,
-    fontWeight: 900,
-    color: "rgba(11,31,51,0.08)",
+    top: -28,
+    right: -10,
+    opacity: 0.055,
     pointerEvents: "none",
-    textTransform: "uppercase",
   };
+}
+
+function documentIconBadge(name: GsnIconName, size = 34): React.ReactNode {
+  const frameSize = size + 14;
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: frameSize,
+        height: frameSize,
+        minWidth: frameSize,
+        borderRadius: Math.max(16, Math.round(size * 0.52)),
+        display: "inline-grid",
+        placeItems: "center",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.76) 100%)",
+        border: "1px solid rgba(20,52,83,0.12)",
+        boxShadow:
+          "0 14px 28px rgba(7,20,36,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
+      }}
+    >
+      <GsnLegacyIcon
+        name={name}
+        size={size + 8}
+        imageStyle={{
+          filter: "drop-shadow(0 8px 10px rgba(7,20,36,0.18))",
+          transform: "scale(1.06)",
+        }}
+      />
+    </span>
+  );
+}
+
+function documentSectionHeading(name: GsnIconName, label: string): React.ReactNode {
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      {documentIconBadge(name, 26)}
+      <span style={sectionLabel()}>{label}</span>
+    </div>
+  );
+}
+
+function documentCardTitle(name: GsnIconName, label: string): React.ReactNode {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        color: "#0B1F33",
+        fontWeight: 900,
+        fontSize: 15,
+        lineHeight: 1.2,
+      }}
+    >
+      {documentIconBadge(name, 24)}
+      <span>{label}</span>
+    </div>
+  );
 }
 
 function documentFooterGrid(compact: boolean): React.CSSProperties {
@@ -292,10 +355,16 @@ export default function TrustSlipVerifyPrivateEvidence({
         className="print-trust-document"
         style={{ ...pageCard("#FFFFFF"), ...documentFrameStyle() }}
       >
-        <div className="print-watermark" aria-hidden style={documentWatermarkStyle()}>
-          GSN Verify
+        <div
+          className="print-watermark"
+          aria-hidden="true"
+          style={documentBrandWatermarkStyle()}
+        >
+          <GSNBrandMark width={132} height={166} />
         </div>
-        <div style={sectionLabel()}>Verification summary</div>
+        <div style={{ position: "relative", zIndex: 1 }}>
+          {documentSectionHeading("shield", "Verification summary")}
+        </div>
 
         <div
           style={{
@@ -308,7 +377,7 @@ export default function TrustSlipVerifyPrivateEvidence({
           }}
         >
           <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>Holder identity</div>
+            {documentSectionHeading("id", "Holder identity")}
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div style={statTile()}>
@@ -359,7 +428,7 @@ export default function TrustSlipVerifyPrivateEvidence({
           </div>
 
           <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Visible trust reading</div>
+            {documentSectionHeading("shield", "Visible trust reading")}
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div style={statTile()}>
@@ -419,7 +488,7 @@ export default function TrustSlipVerifyPrivateEvidence({
                     {cciBand ? `/ ${cciBand}` : ""}
                   </div>
                   <div style={{ ...helperText(), color: "#64748B" }}>
-                    CCI is the internal label for this wider consistency reading.
+                    This wider reading compares trust signals across community records.
                   </div>
                   <div style={{ ...helperText(), color: "#0B1F33" }}>
                     Sponsor count: {sponsorCount === null ? "Not shown" : sponsorCount}
@@ -446,7 +515,7 @@ export default function TrustSlipVerifyPrivateEvidence({
         </div>
 
         <div style={{ marginTop: 14, ...softCard("#FFFFFF") }}>
-          <div style={sectionLabel()}>Commitment and contribution record</div>
+          {documentSectionHeading("document", "Commitment and contribution record")}
           <div
             style={{
               marginTop: 12,
@@ -456,9 +525,7 @@ export default function TrustSlipVerifyPrivateEvidence({
             }}
           >
             <div style={innerCard("#FFFFFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
-                Personal commitment
-              </div>
+              {documentCardTitle("id", "Personal commitment")}
               <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                 <div style={helperText()}>
                   Commitments recorded:{" "}
@@ -481,9 +548,7 @@ export default function TrustSlipVerifyPrivateEvidence({
             </div>
 
             <div style={innerCard("#F8FBFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
-                Contribution payment record
-              </div>
+              {documentCardTitle("wallet", "Contribution payment record")}
               <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                 <div style={helperText()}>
                   Expected: {countText(contributionDiscipline?.expected_count)}
@@ -509,9 +574,7 @@ export default function TrustSlipVerifyPrivateEvidence({
             </div>
 
             <div style={innerCard("#FFFFFF")}>
-              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
-                Repayment discipline
-              </div>
+              {documentCardTitle("bank", "Repayment discipline")}
               <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                 <div style={helperText()}>
                   Expected: {countText(repaymentDiscipline?.expected_count)}
@@ -575,7 +638,7 @@ export default function TrustSlipVerifyPrivateEvidence({
           }}
         >
           <div style={documentMetaCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Document reference</div>
+            {documentSectionHeading("qr", "Document reference")}
             <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
               Verification code: {resolvedCode || "Not available"}
             </div>
@@ -585,7 +648,7 @@ export default function TrustSlipVerifyPrivateEvidence({
           </div>
 
           <div style={documentMetaCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Validity window</div>
+            {documentSectionHeading("calendar", "Validity window")}
             <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
               Issued: {safeDateTime(issuedAt) || "Not stated"}
             </div>
@@ -598,7 +661,7 @@ export default function TrustSlipVerifyPrivateEvidence({
           </div>
 
           <div style={documentMetaCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Follow-through evidence</div>
+            {documentSectionHeading("check", "Follow-through evidence")}
             <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
               Last release: {lastReleaseText}
             </div>
@@ -608,7 +671,7 @@ export default function TrustSlipVerifyPrivateEvidence({
           </div>
 
           <div style={documentMetaCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Evidence controls</div>
+            {documentSectionHeading("lock", "Evidence controls")}
             <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
               Snapshot: {snapshotLabel}
             </div>

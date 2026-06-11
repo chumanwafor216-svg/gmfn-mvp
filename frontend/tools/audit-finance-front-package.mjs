@@ -60,8 +60,8 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /Choose what you need now[\s\S]*?Open one finance lane at a time\.[\s\S]*?Marketplace money stays local there[\s\S]*?money story together across communities/,
-  "Finance front tools must tell users to open one finance lane at a time and separate local Marketplace money from cumulative Finance."
+  /Choose what you need now[\s\S]*?Open one finance lane at a time\. Keep the current money task focused\./,
+  "Finance front tools must tell users to open one finance lane at a time and keep the current money task focused."
 );
 
 [
@@ -102,7 +102,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /Finance quick snapshot[\s\S]*?A short reading only\. Open a lane for the full money record\.[\s\S]*?Money in[\s\S]*?Money out[\s\S]*?Net movement[\s\S]*?Recent Finance Events[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?Finance Signals[\s\S]*?debugId="finance\.view-signals"/,
+  /Finance quick snapshot[\s\S]*?Short reading only\. Open a lane for the full record\.[\s\S]*?Money in[\s\S]*?Money out[\s\S]*?Net movement[\s\S]*?Recent Finance Events[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?Finance Signals[\s\S]*?debugId="finance\.view-signals"/,
   "Finance must keep one compact snapshot after the lane chooser instead of exposing separate cash-flow, event, and signal blocks."
 );
 
@@ -117,10 +117,17 @@ assertNotContains(
   assertContains(
     financeFile,
     financeSource,
-    new RegExp(`name === "${glyphName}"[\\s\\S]*?<path|name === "${glyphName}"[\\s\\S]*?<rect`),
-    `Finance must keep deterministic route-local SVG glyphs for ${glyphName}.`
+    new RegExp(`${glyphName}: "[^"]+"`),
+    `Finance must map ${glyphName} to a deterministic 3D GSN icon.`
   );
 });
+
+assertContains(
+  financeFile,
+  financeSource,
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?FINANCE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<FinanceGlyphName, GsnIconName>[\s\S]*?function FinanceGlyph[\s\S]*?<GsnLegacyIcon/,
+  "FinanceGlyph must render through the shared 3D GSN icon adapter."
+);
 
 assertContains(
   financeFile,

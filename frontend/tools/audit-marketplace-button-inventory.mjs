@@ -692,8 +692,18 @@ assertContains(
 );
 
 assertContains(
-  /function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 52 : 58[\s\S]*?minHeight: _isCompact \? 52 : 58[\s\S]*?maxHeight: _isCompact \? 52 : 58[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.open"[\s\S]*?stableHeight=\{58\}/,
-  "Marketplace inline/link-desk buttons must keep one stable row reserve: 52px on phone and 58px on desktop so public-shop controls cannot jump between refresh/copy/email/open states."
+  /function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 52 : 58[\s\S]*?minHeight: _isCompact \? 52 : 58[\s\S]*?maxHeight: _isCompact \? 52 : 58/,
+  "Marketplace inline/link-desk buttons must keep one stable row reserve: 52px on phone and 58px on desktop."
+);
+
+assertContains(
+  /debugId="marketplace\.public-shop\.refresh"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.open"[\s\S]*?stableHeight=\{58\}/,
+  "Marketplace public-shop controls must keep stable refresh, copy, email, and open row heights."
+);
+
+assertContains(
+  /debugId="marketplace\.links\.join\.copy"[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.refresh"[\s\S]*?\) : null\}[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?\) : null\}[\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?debugId="marketplace\.links\.join\.whatsapp"/,
+  "Marketplace Join Link Center must keep only Copy, Email, and WhatsApp visible on compact phones; refresh and copy-text stay desktop-only."
 );
 
 assertNotContains(
@@ -702,8 +712,8 @@ assertNotContains(
 );
 
 assertContains(
-  /type MarketplaceGlyphName[\s\S]*?function MarketplaceGlyph[\s\S]*?name: MarketplaceGlyphName/,
-  "Marketplace front button inventory must keep deterministic SVG glyphs for phone-stable action marks."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?type MarketplaceGlyphName[\s\S]*?MARKETPLACE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<MarketplaceGlyphName, GsnIconName>[\s\S]*?function MarketplaceGlyph[\s\S]*?name: MarketplaceGlyphName[\s\S]*?<GsnLegacyIcon/,
+  "Marketplace front button inventory must keep deterministic 3D GSN icons for phone-stable action marks."
 );
 
 assertNotContains(

@@ -138,7 +138,7 @@ export default function LoanWorkbenchPage() {
             onClick={loadWorkspace}
             busy={loading}
             busyLabel="Loading..."
-            stableHeight={40}
+            stableHeight={52}
             debugId="loan-workbench-legacy.load"
             style={{
               borderRadius: 12,

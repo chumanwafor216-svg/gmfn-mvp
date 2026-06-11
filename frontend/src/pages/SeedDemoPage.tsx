@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { PrimaryButton } from "../components/StableButton";
 import { devBootstrapClan } from "../lib/api";
 
@@ -24,6 +25,36 @@ function card(): React.CSSProperties {
   };
 }
 
+function labelWithIcon(icon: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={icon} size={24} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function tileIcon(icon: GsnIconName): React.ReactNode {
+  return (
+    <span
+      style={{
+        width: 46,
+        height: 46,
+        borderRadius: 16,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#EAF3FF",
+        color: "#0B63D1",
+        border: "1px solid rgba(11,99,209,0.14)",
+        flex: "0 0 auto",
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={34} />
+    </span>
+  );
+}
+
 export default function SeedDemoPage() {
   const pattern = useMemo(() => topPattern(), []);
   const [busy, setBusy] = useState(false);
@@ -36,9 +67,9 @@ export default function SeedDemoPage() {
     setErr(null);
     try {
       await devBootstrapClan();
-      setMsg("Demo seed completed.");
+      setMsg("Test records are ready.");
     } catch (e: any) {
-      setErr(String(e?.message || e || "Unable to run demo seed."));
+      setErr(String(e?.message || e || "Unable to prepare test records."));
     } finally {
       setBusy(false);
     }
@@ -59,9 +90,11 @@ export default function SeedDemoPage() {
         }}
       >
         <div style={{ padding: 24 }}>
-          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Seed Demo Data</div>
+          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>
+            Prepare Test Records
+          </div>
           <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-            Controlled demo setup for development and pilot showcase preparation.
+            Use this controlled setup only when you need a known pilot test state.
           </div>
 
           {msg && (
@@ -105,29 +138,37 @@ export default function SeedDemoPage() {
             }}
           >
             <div style={{ ...card(), background: "linear-gradient(180deg, rgba(239,246,255,0.96) 0%, rgba(255,255,255,0.98) 100%)" }}>
-              <div style={{ fontSize: 12, color: "#5B7693", fontWeight: 1000, letterSpacing: 0.8 }}>
-                DEV / PILOT TOOL
-              </div>
-              <div style={{ marginTop: 10, fontSize: 28, fontWeight: 1000, color: "#0B1F33" }}>
-                Controlled seed setup
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                {tileIcon("shield")}
+                <div>
+                  <div style={{ fontSize: 12, color: "#5B7693", fontWeight: 1000, letterSpacing: 0.8 }}>
+                    CONTROLLED SETUP
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 28, fontWeight: 1000, color: "#0B1F33" }}>
+                    Prepare a known test state
+                  </div>
+                </div>
               </div>
               <div style={{ marginTop: 10, color: "#6B7A88", lineHeight: 1.8 }}>
-                Use this only when you want to prepare or refresh a known demo state.
+                This may create or refresh records for guided pilot checks. Use it only when you
+                intend to reset the test story.
               </div>
             </div>
 
             <div style={card()}>
-              <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Run seed action</div>
+              <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>
+                {labelWithIcon("refresh", "Prepare records")}
+              </div>
               <div style={{ marginTop: 10, color: "#6B7A88", lineHeight: 1.8 }}>
-                This action may create or reset development data required for demonstration flows.
+                Continue only if you want GSN to refresh the controlled test records for this environment.
               </div>
               <div style={{ marginTop: 16 }}>
                 <PrimaryButton
                   onClick={runSeed}
                   disabled={busy}
                   busy={busy}
-                  busyLabel="Running..."
-                  stableHeight={44}
+                  busyLabel={labelWithIcon("refresh", "Preparing")}
+                  stableHeight={52}
                   debugId="seed-demo.run"
                   style={{
                     padding: "12px 16px",
@@ -140,7 +181,7 @@ export default function SeedDemoPage() {
                     fontSize: 14,
                   }}
                 >
-                  Run demo seed
+                  {labelWithIcon("refresh", "Prepare test records")}
                 </PrimaryButton>
               </div>
             </div>

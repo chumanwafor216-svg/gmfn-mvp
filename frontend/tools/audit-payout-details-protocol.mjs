@@ -28,8 +28,8 @@ function assertNotContains(pattern, message) {
 }
 
 assertContains(
-  /import \{ TrustPaperIcon, type TrustPaperIconName \} from "\.\.\/components\/TrustPaperMarks";/,
-  "Payout Details must use app-native SVG pictograms instead of emoji or bare text-only controls."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";/,
+  "Payout Details must use the shared 3D GSN icon wrapper instead of emoji, bare text-only controls, or legacy SVG marks."
 );
 
 assertContains(
@@ -53,7 +53,12 @@ assertContains(
 );
 
 assertContains(
-  /GSN records the destination\. It does not move money from this page\./,
+  /function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?<GsnLegacyIcon name=\{name\} size=\{26\} \/>[\s\S]*?debugId="payout-details\.save"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("check", "Save details"\)\}[\s\S]*?debugId="payout-details\.copy-summary"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("copy", "Copy summary"\)\}[\s\S]*?debugId="payout-details\.clear-local"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("refresh", "Clear local"\)\}[\s\S]*?debugId="payout-details\.open-money-out"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("wallet", "Money Out"\)\}[\s\S]*?debugId="payout-details\.open-loans"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("briefcase", "Loans & Support"\)\}/,
+  "Payout Details action rows must keep compact 3D icon-led no-wrap labels and stable heights for phone testing."
+);
+
+assertContains(
+  /Record only[\s\S]*?No money moves here/,
   "Payout Details must keep one concise custody boundary statement."
 );
 
@@ -65,6 +70,11 @@ assertNotContains(
 assertNotContains(
   /[\u{1F300}-\u{1FAFF}]/u,
   "Payout Details must not use emoji as primary app icons."
+);
+
+assertNotContains(
+  /Save Payout Details|Clear Local Details|Open Withdrawal Instructions|Return to Loans & Support/,
+  "Payout Details must not restore long action labels that wrap on phone."
 );
 
 if (findings.length > 0) {

@@ -215,7 +215,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /debugId="trust-slip\.community-confirmation\.request"[\s\S]*?communityVerifyPath \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?\) : \([\s\S]*?<SecondaryButton[\s\S]*?Public community record is not ready yet[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
+  /debugId="trust-slip\.community-confirmation\.request"[\s\S]*?communityVerifyPath \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?\) : \([\s\S]*?<SecondaryButton[\s\S]*?The public community record is not ready yet[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
   "TrustSlip community record action must be highlighted when ready and explain itself when unavailable."
 );
 
@@ -275,7 +275,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /communityVerifyPath \? \([\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?\) : \([\s\S]*?Public community record is not ready yet[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
+  /communityVerifyPath \? \([\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?\) : \([\s\S]*?The public community record is not ready yet[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
   "TrustSlip page community record action must be visually highlighted when available and must explain itself when unavailable."
 );
 

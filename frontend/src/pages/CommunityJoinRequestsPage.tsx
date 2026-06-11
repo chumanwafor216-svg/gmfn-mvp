@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
 import {
   CardActionRow,
@@ -305,6 +306,21 @@ type JoinRequestIconName =
   | "review"
   | "shield";
 
+const JOIN_REQUEST_ICON_MAP = {
+  approve: "check",
+  clock: "document",
+  copy: "copy",
+  home: "home",
+  id: "id",
+  invite: "join-person-plus",
+  market: "shop",
+  person: "user",
+  refresh: "refresh",
+  reject: "alert",
+  review: "shield",
+  shield: "shield",
+} satisfies Record<JoinRequestIconName, GsnIconName>;
+
 function JoinRequestIcon({
   name,
   size = 20,
@@ -312,114 +328,14 @@ function JoinRequestIcon({
   name: JoinRequestIconName;
   size?: number;
 }) {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2.25,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-
-  switch (name) {
-    case "approve":
-      return (
-        <svg {...common}>
-          <path d="m5 12 4.2 4.2L19 6.8" />
-        </svg>
-      );
-    case "clock":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8.2" />
-          <path d="M12 7.5v5l3.2 2" />
-        </svg>
-      );
-    case "copy":
-      return (
-        <svg {...common}>
-          <rect x="8" y="8" width="10" height="12" rx="2" />
-          <path d="M6 16H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
-        </svg>
-      );
-    case "home":
-      return (
-        <svg {...common}>
-          <path d="M4 11.5 12 5l8 6.5V20H4z" />
-          <path d="M9.5 20v-5h5v5" />
-        </svg>
-      );
-    case "id":
-      return (
-        <svg {...common}>
-          <rect x="4" y="5" width="16" height="14" rx="2.5" />
-          <circle cx="9" cy="11" r="2" />
-          <path d="M7 16c.5-1.4 1.2-2 2-2s1.5.6 2 2" />
-          <path d="M14 10h3" />
-          <path d="M14 14h3" />
-        </svg>
-      );
-    case "invite":
-      return (
-        <svg {...common}>
-          <path d="M4 7.5 12 13l8-5.5" />
-          <rect x="4" y="6" width="16" height="12" rx="2.5" />
-        </svg>
-      );
-    case "market":
-      return (
-        <svg {...common}>
-          <path d="M5 10h14l-1-4H6z" />
-          <path d="M7 10v9h10v-9" />
-          <path d="M9 19v-5h6v5" />
-        </svg>
-      );
-    case "person":
-      return (
-        <svg {...common}>
-          <circle cx="10" cy="8" r="3" />
-          <path d="M4.5 19c.8-3.5 2.6-5 5.5-5s4.7 1.5 5.5 5" />
-          <path d="M18 8v5" />
-          <path d="M15.5 10.5h5" />
-        </svg>
-      );
-    case "refresh":
-      return (
-        <svg {...common}>
-          <path d="M20 7v5h-5" />
-          <path d="M4 17v-5h5" />
-          <path d="M6.2 9A7 7 0 0 1 18.7 7.7L20 12" />
-          <path d="M17.8 15A7 7 0 0 1 5.3 16.3L4 12" />
-        </svg>
-      );
-    case "reject":
-      return (
-        <svg {...common}>
-          <path d="m7 7 10 10" />
-          <path d="m17 7-10 10" />
-        </svg>
-      );
-    case "review":
-      return (
-        <svg {...common}>
-          <path d="M12 3.8 19 6v5.5c0 4.2-2.6 7-7 8.7-4.4-1.7-7-4.5-7-8.7V6z" />
-          <path d="M9 12h6" />
-          <path d="M9 15h4" />
-        </svg>
-      );
-    case "shield":
-      return (
-        <svg {...common}>
-          <path d="M12 3.8 19 6v5.5c0 4.2-2.6 7-7 8.7-4.4-1.7-7-4.5-7-8.7V6z" />
-          <path d="m8.8 12.3 2 2 4.4-4.7" />
-        </svg>
-      );
-    default:
-      return null;
-  }
+  return (
+    <GsnLegacyIcon
+      name={JOIN_REQUEST_ICON_MAP[name]}
+      size={Math.max(size, Math.round(size * 1.25))}
+      decorative
+      style={{ display: "inline-grid", flex: "0 0 auto" }}
+    />
+  );
 }
 
 function iconText(name: JoinRequestIconName, label: React.ReactNode) {
@@ -444,25 +360,25 @@ function iconTile(name: JoinRequestIconName, tone: "navy" | "gold" | "green" | "
     tone === "gold"
       ? {
           color: "#7C5A06",
-          background: "linear-gradient(180deg, #FFF6D8 0%, #F7D97B 100%)",
+          background: "rgba(255,255,255,0.96)",
           border: "1px solid rgba(201,161,54,0.28)",
         }
       : tone === "green"
         ? {
-            color: "#FFFFFF",
-            background: "linear-gradient(180deg, #28A96B 0%, #137B4C 100%)",
-            border: "1px solid rgba(46,155,98,0.32)",
+            color: "#137B4C",
+            background: "rgba(255,255,255,0.96)",
+            border: "1px solid rgba(46,155,98,0.24)",
           }
         : tone === "red"
           ? {
               color: "#991B1B",
-              background: "linear-gradient(180deg, #FFF7F7 0%, #FEE2E2 100%)",
+              background: "rgba(255,255,255,0.96)",
               border: "1px solid rgba(239,68,68,0.24)",
             }
           : {
-              color: "#FFFFFF",
-              background: "linear-gradient(180deg, #0B2D4A 0%, #061827 100%)",
-              border: "1px solid rgba(123,161,204,0.28)",
+              color: "#0B2D4A",
+              background: "rgba(255,255,255,0.96)",
+              border: "1px solid rgba(13,95,168,0.14)",
             };
 
   void name;
@@ -474,7 +390,8 @@ function iconTile(name: JoinRequestIconName, tone: "navy" | "gold" | "green" | "
     alignItems: "center",
     justifyContent: "center",
     flex: "0 0 44px",
-    boxShadow: "0 12px 24px rgba(2,8,23,0.16)",
+    boxShadow:
+      "0 10px 18px rgba(2,8,23,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
     ...palette,
   };
 }

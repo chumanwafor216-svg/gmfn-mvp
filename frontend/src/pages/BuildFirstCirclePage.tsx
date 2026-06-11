@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -178,8 +179,10 @@ function collapseToggle(): React.CSSProperties {
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    overflowWrap: "normal",
+    textOverflow: "ellipsis",
     lineHeight: 1.2,
   };
 }
@@ -204,8 +207,10 @@ function compactButtonStyle(primary = false): React.CSSProperties {
     fontSize: 13,
     fontWeight: 950,
     lineHeight: 1.15,
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    overflowWrap: "normal",
+    textOverflow: "ellipsis",
     border: primary
       ? "1px solid rgba(172,204,255,0.42)"
       : "1px solid rgba(203,220,240,0.20)",
@@ -213,6 +218,108 @@ function compactButtonStyle(primary = false): React.CSSProperties {
       ? "0 14px 26px rgba(11,99,209,0.24), inset 0 1px 0 rgba(255,255,255,0.16)"
       : "0 10px 20px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
   };
+}
+
+function firstCircleIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 20
+): React.ReactElement {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={size} style={{ flex: "0 0 auto" }} />
+      <span
+        style={{
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function firstCircleStepIcon(
+  name: GsnIconName,
+  step: string,
+  tone: "blue" | "green" | "violet" = "blue"
+): React.ReactElement {
+  const toneStyle =
+    tone === "green"
+      ? {
+          background: "rgba(34,197,94,0.16)",
+          border: "1px solid rgba(187,247,208,0.18)",
+        }
+      : tone === "violet"
+        ? {
+            background: "rgba(124,58,237,0.18)",
+            border: "1px solid rgba(221,214,254,0.18)",
+          }
+        : {
+            background: "rgba(37,99,235,0.18)",
+            border: "1px solid rgba(191,219,254,0.18)",
+          };
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 48,
+        height: 48,
+        borderRadius: 16,
+        display: "grid",
+        placeItems: "center",
+        position: "relative",
+        boxShadow:
+          "0 12px 22px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+        ...toneStyle,
+      }}
+    >
+      <GsnLegacyIcon name={name} size={38} />
+      <span
+        style={{
+          position: "absolute",
+          right: -5,
+          bottom: -5,
+          width: 20,
+          height: 20,
+          borderRadius: 999,
+          display: "grid",
+          placeItems: "center",
+          background: "#F8FBFF",
+          color: "#08233A",
+          fontSize: 11,
+          fontWeight: 1000,
+          border: "1px solid rgba(8,35,58,0.16)",
+        }}
+      >
+        {step}
+      </span>
+    </span>
+  );
+}
+
+function roleIconName(role: string): GsnIconName {
+  const value = safeStr(role).toLowerCase();
+  if (value.includes("service")) return "briefcase";
+  if (value.includes("supplier") || value.includes("buyer")) return "shop";
+  if (value.includes("dealer") || value.includes("trader")) return "wallet";
+  return "community";
 }
 
 function heroLinkStyle(): React.CSSProperties {
@@ -1145,8 +1252,18 @@ export default function BuildFirstCirclePage() {
         />
 
         <section style={pageCard()}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading first-circle workspace...
+          <div
+            style={{
+              color: "#DCEBFB",
+              lineHeight: 1.8,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              fontWeight: 900,
+            }}
+          >
+            <GsnLegacyIcon name="refresh" size={30} />
+            <span>Loading first-circle workspace...</span>
           </div>
         </section>
       </div>
@@ -1219,7 +1336,7 @@ export default function BuildFirstCirclePage() {
                 debugId="build-first-circle.hero.dashboard"
                 style={heroLinkStyle()}
               >
-                Dashboard
+                {firstCircleIconText("home", "Dashboard", 20)}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.community}
@@ -1227,7 +1344,7 @@ export default function BuildFirstCirclePage() {
                 debugId="build-first-circle.hero.community"
                 style={heroLinkStyle()}
               >
-                Community Home
+                {firstCircleIconText("community", "Community", 20)}
               </StableCtaLink>
             </div>
           </div>
@@ -1247,7 +1364,13 @@ export default function BuildFirstCirclePage() {
                 "radial-gradient(circle, rgba(203,220,240,0.14) 0%, rgba(203,220,240,0.04) 58%, rgba(203,220,240,0.00) 100%)",
             }}
           >
-            GSN
+            <GsnLegacyIcon
+              name="community"
+              size={isCompact ? 78 : 132}
+              style={{
+                filter: "drop-shadow(0 22px 34px rgba(2,6,23,0.32))",
+              }}
+            />
           </div>
         </div>
       </section>
@@ -1341,21 +1464,7 @@ export default function BuildFirstCirclePage() {
                 alignItems: "start",
               }}
             >
-              <div
-                aria-hidden="true"
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 999,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "rgba(37,99,235,0.24)",
-                  color: "#DBEAFE",
-                  fontWeight: 1000,
-                }}
-              >
-                1
-              </div>
+              {firstCircleStepIcon("briefcase", "1")}
               <div>
                 <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
                   Pick your aim
@@ -1400,7 +1509,7 @@ export default function BuildFirstCirclePage() {
                         key={role}
                         kind={active ? "primary" : "secondary"}
                         onClick={() => setRole(role)}
-                        stableHeight={44}
+                        stableHeight={52}
                         debugId={`build-first-circle.quick-role.${role}`}
                         style={{
                           borderRadius: 14,
@@ -1412,15 +1521,17 @@ export default function BuildFirstCirclePage() {
                           fontSize: 13,
                         }}
                       >
-                        {roleText(role)}
+                        {firstCircleIconText(roleIconName(role), roleText(role), 18)}
                       </StableButton>
                     );
                   })}
                 </div>
               </div>
-              <div style={{ color: "#8EA7C4", fontSize: 24, lineHeight: 1 }}>
-                v
-              </div>
+              <GsnLegacyIcon
+                name="chevronDown"
+                size={24}
+                style={{ opacity: 0.72 }}
+              />
             </div>
           </div>
 
@@ -1433,21 +1544,7 @@ export default function BuildFirstCirclePage() {
                 alignItems: "start",
               }}
             >
-              <div
-                aria-hidden="true"
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 999,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "rgba(37,99,235,0.24)",
-                  color: "#DBEAFE",
-                  fontWeight: 1000,
-                }}
-              >
-                2
-              </div>
+              {firstCircleStepIcon("join-person-plus", "2")}
               <div>
                 <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
                   Add 3 people
@@ -1498,9 +1595,11 @@ export default function BuildFirstCirclePage() {
                   ))}
                 </div>
               </div>
-              <div style={{ color: "#8EA7C4", fontSize: 24, lineHeight: 1 }}>
-                v
-              </div>
+              <GsnLegacyIcon
+                name="chevronDown"
+                size={24}
+                style={{ opacity: 0.72 }}
+              />
             </div>
           </div>
 
@@ -1513,21 +1612,7 @@ export default function BuildFirstCirclePage() {
                 alignItems: "center",
               }}
             >
-              <div
-                aria-hidden="true"
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 999,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "rgba(34,197,94,0.18)",
-                  color: "#BBF7D0",
-                  fontWeight: 1000,
-                }}
-              >
-                3
-              </div>
+              {firstCircleStepIcon("check", "3", "green")}
               <div
                 style={{
                   display: "grid",
@@ -1561,7 +1646,11 @@ export default function BuildFirstCirclePage() {
                     minWidth: isCompact ? undefined : 132,
                   }}
                 >
-                  {collapsed.contacts ? "Open list" : "Close list"}
+                  {firstCircleIconText(
+                    collapsed.contacts ? "eye" : "lock",
+                    collapsed.contacts ? "Open list" : "Close list",
+                    18
+                  )}
                 </SecondaryButton>
               </div>
             </div>
@@ -1616,7 +1705,11 @@ export default function BuildFirstCirclePage() {
                           debugId={`build-first-circle.contact.${item.id}.toggle-selected`}
                           style={compactButtonStyle(item.selected)}
                         >
-                          {item.selected ? "Included" : "Include"}
+                          {firstCircleIconText(
+                            item.selected ? "check" : "join-person-plus",
+                            item.selected ? "Included" : "Include",
+                            18
+                          )}
                         </StableButton>
                         <SubtleButton
                           onClick={() => removeContact(item.id)}
@@ -1624,7 +1717,7 @@ export default function BuildFirstCirclePage() {
                           debugId={`build-first-circle.contact.${item.id}.remove`}
                           style={compactButtonStyle(false)}
                         >
-                          Remove
+                          {firstCircleIconText("lock", "Remove", 18)}
                         </SubtleButton>
                       </div>
                     </div>
@@ -1643,21 +1736,7 @@ export default function BuildFirstCirclePage() {
                 alignItems: "start",
               }}
             >
-              <div
-                aria-hidden="true"
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 999,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "rgba(124,58,237,0.20)",
-                  color: "#DDD6FE",
-                  fontWeight: 1000,
-                }}
-              >
-                4
-              </div>
+              {firstCircleStepIcon("document", "4", "violet")}
               <div>
                 <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
                   Invite message
@@ -1690,7 +1769,7 @@ export default function BuildFirstCirclePage() {
                     debugId="build-first-circle.copy-invite"
                     style={compactButtonStyle(false)}
                   >
-                    Copy invite
+                    {firstCircleIconText("copy", "Copy invite", 18)}
                   </SecondaryButton>
                   <PrimaryButton
                     onClick={openWhatsAppInvite}
@@ -1702,13 +1781,15 @@ export default function BuildFirstCirclePage() {
                       border: "1px solid rgba(187,247,208,0.22)",
                     }}
                   >
-                    Share WhatsApp
+                    {firstCircleIconText("phone", "WhatsApp", 18)}
                   </PrimaryButton>
                 </div>
               </div>
-              <div style={{ color: "#8EA7C4", fontSize: 24, lineHeight: 1 }}>
-                v
-              </div>
+              <GsnLegacyIcon
+                name="chevronDown"
+                size={24}
+                style={{ opacity: 0.72 }}
+              />
             </div>
           </div>
         </div>
@@ -1840,7 +1921,7 @@ export default function BuildFirstCirclePage() {
                 debugId="build-first-circle.focus-invite"
                 style={compactButtonStyle(true)}
               >
-                Invite
+                {firstCircleIconText("join-person-plus", "Invite", 18)}
               </PrimaryButton>
             </div>
           </div>
@@ -1893,11 +1974,11 @@ export default function BuildFirstCirclePage() {
             </span>
             <SubtleButton
               onClick={closeFocusedAction}
-              stableHeight={44}
+              stableHeight={52}
               debugId="build-first-circle.close-invite-focus"
               style={collapseToggle()}
             >
-              Close
+              {firstCircleIconText("lock", "Close", 18)}
             </SubtleButton>
           </div>
         </div>
@@ -1914,7 +1995,7 @@ export default function BuildFirstCirclePage() {
             debugId="build-first-circle.quick.phone-contacts"
             style={compactButtonStyle(true)}
           >
-            Phone book
+            {firstCircleIconText("phone", "Phone book", 18)}
           </PrimaryButton>
           <SecondaryButton
             onClick={openWhatsAppInvite}
@@ -1922,7 +2003,7 @@ export default function BuildFirstCirclePage() {
             debugId="build-first-circle.quick.whatsapp"
             style={compactButtonStyle(false)}
           >
-            WhatsApp
+            {firstCircleIconText("phone", "WhatsApp", 18)}
           </SecondaryButton>
           <SecondaryButton
             onClick={openEmailInvite}
@@ -1930,7 +2011,7 @@ export default function BuildFirstCirclePage() {
             debugId="build-first-circle.quick.email"
             style={compactButtonStyle(false)}
           >
-            Email
+            {firstCircleIconText("document", "Email", 18)}
           </SecondaryButton>
           <SecondaryButton
             onClick={openFacebookInvite}
@@ -1938,7 +2019,7 @@ export default function BuildFirstCirclePage() {
             debugId="build-first-circle.quick.facebook"
             style={compactButtonStyle(false)}
           >
-            Facebook
+            {firstCircleIconText("globe", "Facebook", 18)}
           </SecondaryButton>
           <SecondaryButton
             onClick={() => {
@@ -1948,7 +2029,7 @@ export default function BuildFirstCirclePage() {
             debugId="build-first-circle.quick.share"
             style={compactButtonStyle(false)}
           >
-            Share
+            {firstCircleIconText("navigation", "Share", 18)}
           </SecondaryButton>
           <SecondaryButton
             onClick={() => {
@@ -1958,7 +2039,7 @@ export default function BuildFirstCirclePage() {
             debugId="build-first-circle.quick.copy"
             style={compactButtonStyle(false)}
           >
-            Copy
+            {firstCircleIconText("copy", "Copy", 18)}
           </SecondaryButton>
         </div>
       </section>
@@ -2023,7 +2104,7 @@ export default function BuildFirstCirclePage() {
                     debugId={`build-first-circle.role.${role}`}
                     style={compactButtonStyle(active)}
                   >
-                    {roleText(role)}
+                    {firstCircleIconText(roleIconName(role), roleText(role), 18)}
                   </StableButton>
                 );
               })}
@@ -2198,7 +2279,7 @@ export default function BuildFirstCirclePage() {
                     debugId="build-first-circle.add-person"
                     style={compactButtonStyle(true)}
                   >
-                    Add Person
+                    {firstCircleIconText("join-person-plus", "Add person", 18)}
                   </PrimaryButton>
 
                   <SecondaryButton
@@ -2209,7 +2290,7 @@ export default function BuildFirstCirclePage() {
                     debugId="build-first-circle.clear-form"
                     style={compactButtonStyle(false)}
                   >
-                    Clear Form
+                    {firstCircleIconText("refresh", "Clear", 18)}
                   </SecondaryButton>
                 </div>
               </div>
@@ -2234,7 +2315,7 @@ export default function BuildFirstCirclePage() {
                   debugId="build-first-circle.choose-phone-contacts"
                   style={compactButtonStyle(false)}
                 >
-                  Choose from Phone Contacts
+                  {firstCircleIconText("phone", "Phone contacts", 18)}
                 </SecondaryButton>
               </div>
 
@@ -2286,11 +2367,15 @@ export default function BuildFirstCirclePage() {
               onClick={() => {
                 toggleSection("contacts");
               }}
-              stableHeight={44}
+              stableHeight={52}
               debugId="build-first-circle.toggle-contacts"
               style={collapseToggle()}
             >
-              {collapsed.contacts ? "Open" : "Collapse"}
+              {firstCircleIconText(
+                collapsed.contacts ? "eye" : "lock",
+                collapsed.contacts ? "Open" : "Hide",
+                18
+              )}
             </SubtleButton>
           </div>
         </div>
@@ -2362,7 +2447,11 @@ export default function BuildFirstCirclePage() {
                         debugId={`build-first-circle.contact.${item.id}.toggle-selected`}
                         style={compactButtonStyle(item.selected)}
                       >
-                        {item.selected ? "Included" : "Include"}
+                        {firstCircleIconText(
+                          item.selected ? "check" : "join-person-plus",
+                          item.selected ? "Included" : "Include",
+                          18
+                        )}
                       </StableButton>
 
                       <SubtleButton
@@ -2373,7 +2462,7 @@ export default function BuildFirstCirclePage() {
                         debugId={`build-first-circle.contact.${item.id}.remove`}
                         style={compactButtonStyle(false)}
                       >
-                        Remove
+                        {firstCircleIconText("lock", "Remove", 18)}
                       </SubtleButton>
                     </div>
                   </div>
@@ -2405,11 +2494,15 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               toggleSection("invite");
             }}
-            stableHeight={44}
+            stableHeight={52}
             debugId="build-first-circle.toggle-invite"
             style={collapseToggle()}
-          >
-            {collapsed.invite ? "Open" : "Collapse"}
+            >
+            {firstCircleIconText(
+              collapsed.invite ? "eye" : "lock",
+              collapsed.invite ? "Open" : "Hide",
+              18
+            )}
           </SubtleButton>
         </div>
 
@@ -2472,7 +2565,7 @@ export default function BuildFirstCirclePage() {
                       debugId="build-first-circle.copy-invite-bundle"
                       style={compactButtonStyle(true)}
                   >
-                    Copy message
+                    {firstCircleIconText("copy", "Copy message", 18)}
                   </PrimaryButton>
 
                   <SecondaryButton
@@ -2483,7 +2576,7 @@ export default function BuildFirstCirclePage() {
                     debugId="build-first-circle.reset"
                     style={compactButtonStyle(false)}
                   >
-                    Reset First Circle
+                    {firstCircleIconText("refresh", "Reset", 18)}
                   </SecondaryButton>
                 </div>
 

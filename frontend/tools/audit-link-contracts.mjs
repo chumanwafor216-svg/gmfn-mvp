@@ -688,20 +688,14 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function joinLinkReserveTextStyle\(isCompact: boolean\): React\.CSSProperties[\s\S]*?height: isCompact \? 78 : 66,[\s\S]*?maxHeight: isCompact \? 78 : 66,[\s\S]*?overflowY: "auto",/,
-  "The Join this community URL reserve must stay fixed-height so the buttons do not jump when a long invite link appears."
-);
-
-assertContains(
-  "src/pages/MarketplacePage.tsx",
   /function joinShareMessageCardStyle\(isCompact: boolean\): React\.CSSProperties[\s\S]*?height: isCompact \? 146 : 132,[\s\S]*?maxHeight: isCompact \? 146 : 132,[\s\S]*?overscrollBehavior: "contain",/,
   "The Join this community message preview must stay fixed-height so the lane does not reflow after invite creation."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /sectionLabel\(\)}>Join this community[\s\S]*?joinLinkReserveTextStyle\(isCompact\)[\s\S]*?Copy Join Link[\s\S]*?Refresh Join Link[\s\S]*?Copy Invite Message[\s\S]*?Email Join Link[\s\S]*?WhatsApp[\s\S]*?joinShareMessageCardStyle\(isCompact\)/,
-  "The Join this community lane must keep its stable button set and order."
+  /sectionLabel\(\)}>Join this community[\s\S]*?marketplaceLinkSummaryStyle\(isCompact\)[\s\S]*?Copy Join Link[\s\S]*?Refresh Join Link[\s\S]*?Copy Invite Message[\s\S]*?Email Join Link[\s\S]*?WhatsApp[\s\S]*?joinShareMessageCardStyle\(isCompact\)/,
+  "The Join this community lane must keep its compact masked summary and stable button set/order."
 );
 
 assertContains(

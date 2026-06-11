@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
@@ -366,6 +367,66 @@ function routeTileDetailStyle(): React.CSSProperties {
     fontSize: 13,
     lineHeight: 1.35,
   };
+}
+
+function loanReadinessActionText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 22
+) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={size} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function loanReadinessRouteHeading(name: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={24} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function loanReadinessIconTile(name: GsnIconName, size = 64) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 18,
+        display: "grid",
+        placeItems: "center",
+        background: "rgba(255,255,255,0.10)",
+        border: "1px solid rgba(212,175,55,0.18)",
+        overflow: "hidden",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(30, Math.round(size * 0.78))} />
+    </span>
+  );
 }
 
 function sectionLabel(): React.CSSProperties {
@@ -786,9 +847,9 @@ export default function LoanReadinessPage() {
     if (cameFromWithdrawalSupport && borrowerCount === 0) {
       return {
         level: "watch" as const,
-        title: "Money Out has handed off into support continuation.",
+        title: "Money Out has opened a support path.",
         detail:
-          "The withdrawal route has already determined that support is needed. The next clean move is to start or continue the borrower-side support draft now.",
+          "Money Out has already shown that support is needed. Start or continue that support request now.",
       };
     }
 
@@ -796,9 +857,9 @@ export default function LoanReadinessPage() {
       return {
         level: "blocked" as const,
         title:
-          "Readiness is blocked by active borrower load and waiting guarantor decisions.",
+          "Readiness is blocked by an active support request and waiting guarantor decisions.",
         detail:
-          "Your borrower-side support activity is already active, and guarantor decisions are still waiting. Clear one pressure area before starting another.",
+          "You already have an active support request, and guarantor decisions are still waiting. Clear one pressure area before starting another.",
       };
     }
 
@@ -806,9 +867,9 @@ export default function LoanReadinessPage() {
       return {
         level: "watch" as const,
         title:
-          "Readiness is reduced because your borrower-side support activity is still active.",
+          "Readiness is reduced because a support request is still active.",
         detail:
-          "Finish or stabilize the current borrower-side path before starting another support movement.",
+          "Finish or stabilize the current support request before starting another one.",
       };
     }
 
@@ -826,9 +887,9 @@ export default function LoanReadinessPage() {
       return {
         level: "watch" as const,
         title:
-          "Readiness is moderate because you still carry guarantor-side responsibility.",
+          "Readiness is moderate because you still carry guarantor responsibility.",
         detail:
-          "You may still be operationally capable, but existing guarantor-side exposure should be watched before expanding further.",
+          "You may still be able to continue, but existing guarantor responsibility should be watched before expanding further.",
       };
     }
 
@@ -836,7 +897,7 @@ export default function LoanReadinessPage() {
       level: "ready" as const,
       title: "Readiness looks clean enough to continue the next support step.",
       detail:
-        "No active borrower-side path or waiting guarantor request is visibly blocking the next support movement right now.",
+        "No active support request or waiting guarantor request is visibly blocking the next support step right now.",
     };
   }, [
     selectedClanId,
@@ -852,13 +913,13 @@ export default function LoanReadinessPage() {
 
     if (cameFromWithdrawalSupport && !activeBorrowerLoan) {
       rows.push(
-        "Money Out has already identified a support-backed withdrawal need, but no borrower-side support draft is visible yet."
+        "Money Out has already identified a support-backed withdrawal need, but no support request is visible yet."
       );
     }
 
     if (borrowerLoans.length > 0) {
       rows.push(
-        `You still have ${borrowerLoans.length} active borrower-side support item${
+        `You still have ${borrowerLoans.length} active support request${
           borrowerLoans.length === 1 ? "" : "s"
         }.`
       );
@@ -874,7 +935,7 @@ export default function LoanReadinessPage() {
 
     if (guarantorLoans.length > 0) {
       rows.push(
-        `You still carry ${guarantorLoans.length} guarantor-side active support item${
+        `You still carry ${guarantorLoans.length} active guarantor responsibility item${
           guarantorLoans.length === 1 ? "" : "s"
         }.`
       );
@@ -898,11 +959,11 @@ export default function LoanReadinessPage() {
     const rows: string[] = [];
 
     if (!cameFromWithdrawalSupport) {
-      rows.push("This can read readiness before the next support move becomes heavier.");
+      rows.push("This can read readiness before the next support step becomes heavier.");
     }
 
     if (borrowerLoans.length === 0) {
-      rows.push("No active borrower-side support flow is visibly blocking you right now.");
+      rows.push("No active support request is visibly blocking you right now.");
     }
 
     if (guarantorInbox.length === 0) {
@@ -910,7 +971,7 @@ export default function LoanReadinessPage() {
     }
 
     if (guarantorLoans.length === 0) {
-      rows.push("No active guarantor-side support burden is currently shown.");
+      rows.push("No active guarantor responsibility is currently shown.");
     }
 
     if (poolNumber > 0) {
@@ -945,9 +1006,9 @@ export default function LoanReadinessPage() {
 
     if (cameFromWithdrawalSupport && !activeBorrowerLoan) {
       return {
-        title: "Start or continue the borrower-side support draft.",
+        title: "Start or continue the support request.",
         detail:
-          "Money Out has already handed off into support continuation. Open the support start page and carry the withdrawal need forward.",
+          "Money Out has already shown a support need. Open the support start page and carry that need forward.",
         ctaTo: routes.startSupport,
         ctaLabel: "Open Support Start Page",
       };
@@ -965,9 +1026,9 @@ export default function LoanReadinessPage() {
 
     if (activeBorrowerLoan) {
       return {
-        title: "Continue into fit suggestions for the current borrower-side support item.",
+        title: "Continue into fit suggestions for the current support request.",
         detail:
-          "The borrower-side support item is already visible, so the next clean step is usually fit reading.",
+          "The support request is already visible, so the next clean step is usually fit reading.",
         ctaTo: routes.suggestions,
         ctaLabel: "Open Loan Suggestions",
       };
@@ -975,16 +1036,16 @@ export default function LoanReadinessPage() {
 
     if (guarantorLoans.length > 0) {
       return {
-        title: "Review your guarantor-side commitments before expanding further.",
+        title: "Review your guarantor commitments before expanding further.",
         detail:
-          "Existing guarantor-side responsibility should remain visible before another support load is added.",
+          "Existing guarantor responsibility should remain visible before another support load is added.",
         ctaTo: routes.loans,
         ctaLabel: "Open Loans & Support",
       };
     }
 
     return {
-      title: "You can begin the next support movement when ready.",
+      title: "You can begin the next support step when ready.",
       detail:
         "No visible pressure is blocking the next step right now.",
       ctaTo: routes.startSupport,
@@ -1134,6 +1195,9 @@ export default function LoanReadinessPage() {
                     lineHeight: 1.3,
                   }}
                 >
+                  <div style={{ marginBottom: 8 }}>
+                    {loanReadinessIconTile("community", 58)}
+                  </div>
                   {communityLabel}
                 </div>
               )}
@@ -1173,7 +1237,7 @@ export default function LoanReadinessPage() {
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Readiness stage</span>
               {cameFromWithdrawalSupport ? (
-                <span style={badge(false)}>Money Out support handoff</span>
+                <span style={badge(false)}>Money Out support link</span>
               ) : null}
             </div>
           </div>
@@ -1247,14 +1311,18 @@ export default function LoanReadinessPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {loanReadinessActionText(
+              collapsed.overview ? "chevronDown" : "chevronUp",
+              collapsed.overview ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
         <ExplainToggle
           label="What this summary shows"
-          what="This section gathers the visible readiness pressures into one compact view: borrower load, guarantor load, waiting decisions, pool position, and handoff context."
-          why="It gives you one place to judge whether the support flow feels calm enough to continue."
+          what="This gathers support pressure, guarantor load, waiting decisions, pool position, and linked Money Out context."
+          why="It gives you one place to judge whether the support path feels calm enough to continue."
           next="Scan the strongest pressure first, then open the readiness reading below if you need the deeper explanation."
           tone="light"
           style={{ marginTop: 12 }}
@@ -1372,7 +1440,7 @@ export default function LoanReadinessPage() {
                   ? withdrawalAmount
                     ? `${withdrawalAmount} ${poolCurrency}`
                     : "Visible"
-                  : "No handoff"}
+                  : "No linked request"}
               </div>
             </div>
 
@@ -1457,7 +1525,11 @@ export default function LoanReadinessPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.reading ? "Open" : "Collapse"}
+            {loanReadinessActionText(
+              collapsed.reading ? "chevronDown" : "chevronUp",
+              collapsed.reading ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1534,7 +1606,7 @@ export default function LoanReadinessPage() {
                     fontSize: 15,
                   }}
                 >
-                  Money Out handoff context
+                  Money Out support context
                 </div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -1589,7 +1661,11 @@ export default function LoanReadinessPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.blockers ? "Open" : "Collapse"}
+            {loanReadinessActionText(
+              collapsed.blockers ? "chevronDown" : "chevronUp",
+              collapsed.blockers ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1656,13 +1732,13 @@ export default function LoanReadinessPage() {
                   fontSize: 15,
                 }}
               >
-                Active borrower-side items
+                Active support requests
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {borrowerLoans.length === 0 ? (
                   <div style={helperText()}>
-                    No borrower-side active item is reducing readiness right now.
+                    No active support request is reducing readiness right now.
                   </div>
                 ) : (
                   borrowerLoans.slice(0, 6).map((row, index) => (
@@ -1732,7 +1808,11 @@ export default function LoanReadinessPage() {
               flex: "0 0 auto",
             }}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {loanReadinessActionText(
+              collapsed.routes ? "chevronDown" : "chevronUp",
+              collapsed.routes ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1755,7 +1835,7 @@ export default function LoanReadinessPage() {
               style={routeTileStyle(true)}
             >
               <div style={routeTileTitleStyle()}>
-                {recommendedNext.ctaLabel}
+                {loanReadinessRouteHeading("navigation", recommendedNext.ctaLabel)}
               </div>
               <div style={routeTileDetailStyle()}>
                 {recommendedNext.title}
@@ -1773,7 +1853,7 @@ export default function LoanReadinessPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                Loan Suggestions
+                {loanReadinessRouteHeading("search", "Loan Suggestions")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open this when the next question is candidate fit after readiness is clear.
@@ -1788,7 +1868,7 @@ export default function LoanReadinessPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                Loan Workbench
+                {loanReadinessRouteHeading("briefcase", "Loan Workbench")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open this for deeper support handling once readiness is clear.
@@ -1803,7 +1883,7 @@ export default function LoanReadinessPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                Open Focus Commitments
+                {loanReadinessRouteHeading("check", "Open Focus Commitments")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open the Dashboard focus section when readiness depends on steadier
@@ -1820,7 +1900,7 @@ export default function LoanReadinessPage() {
                 style={routeTileStyle(false)}
               >
                 <div style={routeTileTitleStyle()}>
-                  Support Start Page
+                  {loanReadinessRouteHeading("wallet", "Support Start Page")}
                 </div>
                 <div style={routeTileDetailStyle()}>
                   Return here when the draft itself must be started or resumed.
@@ -1836,7 +1916,7 @@ export default function LoanReadinessPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                Incoming Guarantor Requests
+                {loanReadinessRouteHeading("alert", "Incoming Guarantor Requests")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open the queue if someone is waiting directly on your decision.
@@ -1853,10 +1933,10 @@ export default function LoanReadinessPage() {
                   style={routeTileStyle(false)}
                 >
                   <div style={routeTileTitleStyle()}>
-                    Money Out
+                    {loanReadinessRouteHeading("wallet", "Money Out")}
                   </div>
                   <div style={routeTileDetailStyle()}>
-                    Return to the originating withdrawal path only when you need to verify the handoff source.
+                    Return to Money Out only when you need to check where this request started.
                   </div>
                 </StableCtaLink>
 
@@ -1868,7 +1948,7 @@ export default function LoanReadinessPage() {
                   style={routeTileStyle(false)}
                 >
                   <div style={routeTileTitleStyle()}>
-                    Action Inbox
+                    {loanReadinessRouteHeading("alert", "Action Inbox")}
                   </div>
                   <div style={routeTileDetailStyle()}>
                     Open this when the broader waiting picture matters around support response.

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
+import GSNBrandMark from "../components/GSNBrandMark";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -14,10 +15,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
-import {
-  TrustPaperIcon,
-  type TrustPaperIconName,
-} from "../components/TrustPaperMarks";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   getMe,
@@ -188,19 +186,38 @@ function badge(primary = false): React.CSSProperties {
 }
 
 function iconBadge(
-  icon: TrustPaperIconName,
+  icon: GsnIconName,
   label: React.ReactNode,
   primary = false
 ) {
   return (
     <span style={badge(primary)}>
-      <TrustPaperIcon name={icon} size={14} strokeWidth={2.7} />
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 auto",
+          width: 20,
+          height: 20,
+          borderRadius: 7,
+          display: "inline-grid",
+          placeItems: "center",
+          color: primary ? "#F8D876" : "#0B63D1",
+          background: "rgba(255,255,255,0.94)",
+          border: primary
+            ? "1px solid rgba(226,192,106,0.30)"
+            : "1px solid rgba(13,95,168,0.14)",
+          boxShadow:
+            "0 7px 14px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={18} />
+      </span>
       <span>{label}</span>
     </span>
   );
 }
 
-function labelWithIcon(icon: TrustPaperIconName, label: React.ReactNode) {
+function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
   return (
     <span
       style={{
@@ -210,7 +227,24 @@ function labelWithIcon(icon: TrustPaperIconName, label: React.ReactNode) {
         minWidth: 0,
       }}
     >
-      <TrustPaperIcon name={icon} size={15} strokeWidth={2.65} />
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 auto",
+          width: 22,
+          height: 22,
+          borderRadius: 8,
+          display: "inline-grid",
+          placeItems: "center",
+          color: "#0B63D1",
+          background: "rgba(255,255,255,0.94)",
+          border: "1px solid rgba(13,95,168,0.14)",
+          boxShadow:
+            "0 8px 16px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={18} />
+      </span>
       <span>{label}</span>
     </span>
   );
@@ -1603,16 +1637,35 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       {!embedded ? (
         <>
       <section
-        style={pageCard(
-          "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
-        )}
+        style={{
+          ...pageCard(
+            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+          ),
+          position: "relative",
+          overflow: "hidden",
+        }}
       >
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            right: isCompact ? -26 : 10,
+            top: isCompact ? 8 : -18,
+            opacity: 0.075,
+            pointerEvents: "none",
+            transform: isCompact ? "rotate(-6deg)" : "rotate(-4deg)",
+          }}
+        >
+          <GSNBrandMark width={isCompact ? 116 : 172} height={isCompact ? 144 : 216} />
+        </div>
         <div
           style={{
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.08fr) 320px",
             gap: 16,
             alignItems: "start",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           <div>

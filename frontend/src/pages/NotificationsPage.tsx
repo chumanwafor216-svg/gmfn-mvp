@@ -9,6 +9,7 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   getMyNotifications,
   getMySettings,
@@ -68,6 +69,59 @@ const BUCKET_ORDER: GuidanceInboxBucketKey[] = [
   "watchAndWait",
   "generalUpdates",
 ];
+
+function notificationIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 22
+) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={size} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function notificationIconTile(
+  name: GsnIconName,
+  size = 56,
+  bg = "rgba(219,234,254,0.12)",
+  radius: number | string = 18
+) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        display: "grid",
+        placeItems: "center",
+        background: bg,
+        overflow: "hidden",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(28, Math.round(size * 0.78))} />
+    </span>
+  );
+}
+
+function bucketIconName(bucket: GuidanceInboxBucketKey): GsnIconName {
+  if (bucket === "actNow") return "alert";
+  if (bucket === "dueSoon") return "calendar";
+  if (bucket === "watchAndWait") return "eye";
+  return "document";
+}
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -1102,21 +1156,12 @@ export default function NotificationsPage() {
             alignItems: "center",
           }}
         >
-          <div
-            aria-hidden="true"
-            style={{
-              width: isPhone ? 64 : 92,
-              height: isPhone ? 64 : 92,
-              borderRadius: 20,
-              display: "grid",
-              placeItems: "center",
-              background: "linear-gradient(180deg, #0B63D1 0%, #064AAD 100%)",
-              boxShadow: "0 18px 34px rgba(4,58,138,0.34)",
-              fontSize: isPhone ? 34 : 44,
-            }}
-          >
-            In
-          </div>
+          {notificationIconTile(
+            "document",
+            isPhone ? 64 : 92,
+            "linear-gradient(180deg, #0B63D1 0%, #064AAD 100%)",
+            20
+          )}
 
           <div>
             <div
@@ -1148,7 +1193,7 @@ export default function NotificationsPage() {
                 stableHeight={52}
                 debugId="notifications.hero.dashboard"
               >
-                Go to Dashboard
+                {notificationIconText("home", "Go to Dashboard")}
               </StableCtaLink>
             </div>
           </div>
@@ -1180,21 +1225,7 @@ export default function NotificationsPage() {
             alignItems: "center",
           }}
         >
-          <div
-            aria-hidden="true"
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
-              display: "grid",
-              placeItems: "center",
-              background: "#F0F7FF",
-              color: "#0B63D1",
-              fontSize: 28,
-            }}
-          >
-            I
-          </div>
+          {notificationIconTile("document", 52, "#F0F7FF", 14)}
           <div>
             <div style={sectionLabel()}>Inbox summary</div>
             <div
@@ -1225,9 +1256,7 @@ export default function NotificationsPage() {
         >
           <div style={statTile()}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 24 }}>
-                In
-              </span>
+              <GsnLegacyIcon name="document" size={24} />
               <div style={sectionLabel()}>Unread</div>
             </div>
             <div
@@ -1249,9 +1278,7 @@ export default function NotificationsPage() {
 
           <div style={statTile()}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span aria-hidden="true" style={{ color: "#DC2626", fontSize: 24 }}>
-                !
-              </span>
+              <GsnLegacyIcon name="alert" size={24} />
               <div style={sectionLabel()}>Act now</div>
             </div>
             <div
@@ -1273,9 +1300,7 @@ export default function NotificationsPage() {
 
           <div style={statTile()}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span aria-hidden="true" style={{ color: "#F59E0B", fontSize: 24 }}>
-                T
-              </span>
+              <GsnLegacyIcon name="calendar" size={24} />
               <div style={sectionLabel()}>Due soon</div>
             </div>
             <div
@@ -1297,9 +1322,7 @@ export default function NotificationsPage() {
 
           <div style={statTile()}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 24 }}>
-                O
-              </span>
+              <GsnLegacyIcon name="eye" size={24} />
               <div style={sectionLabel()}>Watch</div>
             </div>
             <div
@@ -1327,7 +1350,7 @@ export default function NotificationsPage() {
             stableHeight={56}
             debugId="notifications.show-urgent"
           >
-            Show urgent items (Act now)
+            {notificationIconText("alert", "Show urgent items (Act now)")}
           </PrimaryButton>
         </div>
 
@@ -1336,7 +1359,7 @@ export default function NotificationsPage() {
             <StableCtaLink
               to={routes.dashboard}
               kind="secondary"
-              stableHeight={46}
+              stableHeight={52}
               debugId="notifications.hero.dashboard"
               style={{
                 width: "fit-content",
@@ -1347,7 +1370,7 @@ export default function NotificationsPage() {
                 fontWeight: 900,
               }}
             >
-              Go to Dashboard
+              {notificationIconText("home", "Go to Dashboard")}
             </StableCtaLink>
           </div>
         ) : null}
@@ -1370,21 +1393,7 @@ export default function NotificationsPage() {
               alignItems: "center",
             }}
           >
-            <div
-              aria-hidden="true"
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 999,
-                display: "grid",
-                placeItems: "center",
-                background: "rgba(219,234,254,0.12)",
-                color: "#F8FBFF",
-                fontSize: 28,
-              }}
-            >
-              ▶
-            </div>
+            {notificationIconTile("navigation", 56, "rgba(219,234,254,0.12)", 999)}
             <div>
               <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>Start here</div>
               <div
@@ -1405,7 +1414,11 @@ export default function NotificationsPage() {
             stableHeight={48}
             debugId="notifications.toggle-focus"
           >
-            {collapsed.focus ? "Open ^" : "Collapse ^"}
+            {notificationIconText(
+              collapsed.focus ? "chevronDown" : "chevronUp",
+              collapsed.focus ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1427,21 +1440,7 @@ export default function NotificationsPage() {
                   alignItems: "center",
                 }}
               >
-                <div
-                  aria-hidden="true"
-                  style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 18,
-                    display: "grid",
-                    placeItems: "center",
-                    background: "#FFF7E0",
-                    color: "#F59E0B",
-                    fontSize: 34,
-                  }}
-                >
-                  !
-                </div>
+                {notificationIconTile("alert", 72, "#FFF7E0", 18)}
                 <div>
                   <div
                     style={{
@@ -1470,7 +1469,7 @@ export default function NotificationsPage() {
                   stableHeight={54}
                   debugId="notifications.focus.primary"
                 >
-                  {focusNotice.ctaLabel}
+                  {notificationIconText("navigation", focusNotice.ctaLabel)}
                 </PrimaryButton>
 
                 <StableCtaLink
@@ -1478,7 +1477,7 @@ export default function NotificationsPage() {
                   stableHeight={50}
                   debugId="notifications.focus.open-page"
                 >
-                  Open page
+                  {notificationIconText("navigation", "Open page")}
                 </StableCtaLink>
 
                 {focusNotice.unread && /^\d+$/.test(safeStr(focusNotice.id)) ? (
@@ -1487,7 +1486,7 @@ export default function NotificationsPage() {
                     stableHeight={50}
                     debugId="notifications.focus.mark-read"
                   >
-                    Mark as read
+                    {notificationIconText("check", "Mark as read")}
                   </SecondaryButton>
                 ) : null}
               </div>
@@ -1514,21 +1513,7 @@ export default function NotificationsPage() {
               alignItems: "center",
             }}
           >
-            <div
-              aria-hidden="true"
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 999,
-                display: "grid",
-                placeItems: "center",
-                background: "rgba(219,234,254,0.12)",
-                color: "#F8FBFF",
-                fontSize: 28,
-              }}
-            >
-              =
-            </div>
+            {notificationIconTile("document", 56, "rgba(219,234,254,0.12)", 999)}
             <div>
               <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>
                 All waiting items
@@ -1552,7 +1537,11 @@ export default function NotificationsPage() {
             stableHeight={48}
             debugId="notifications.toggle-buckets"
           >
-            {collapsed.buckets ? "Open ^" : "Collapse ^"}
+            {notificationIconText(
+              collapsed.buckets ? "chevronDown" : "chevronUp",
+              collapsed.buckets ? "Open" : "Collapse",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1575,14 +1564,7 @@ export default function NotificationsPage() {
                 const rows = bucketRows[bucket];
                 const tone = bucketTone(bucket);
                 const isLast = index === BUCKET_ORDER.length - 1;
-                const icon =
-                  bucket === "actNow"
-                    ? "!"
-                    : bucket === "dueSoon"
-                    ? "T"
-                    : bucket === "watchAndWait"
-                    ? "O"
-                    : "U";
+                const icon = bucketIconName(bucket);
 
                 return (
                   <StableButton
@@ -1628,7 +1610,7 @@ export default function NotificationsPage() {
                         fontWeight: 950,
                       }}
                     >
-                      {icon}
+                      <GsnLegacyIcon name={icon} size={isPhone ? 30 : 34} />
                     </span>
                     <span style={{ minWidth: 0 }}>
                       <span
@@ -1678,7 +1660,7 @@ export default function NotificationsPage() {
                       aria-hidden="true"
                       style={{ color: "#07172C", fontSize: 26, fontWeight: 950 }}
                     >
-                      {">"}
+                      <GsnLegacyIcon name="navigation" size={22} />
                     </span>
                   </StableButton>
                 );
@@ -1704,7 +1686,10 @@ export default function NotificationsPage() {
               stableHeight={52}
               debugId="notifications.selected.open"
             >
-              {selectedNotice.ctaLabel || "Open page"}
+              {notificationIconText(
+                "navigation",
+                selectedNotice.ctaLabel || "Open page"
+              )}
             </StableCtaLink>
             {selectedNotice.unread && /^\d+$/.test(safeStr(selectedNotice.id)) ? (
               <SecondaryButton
@@ -1712,7 +1697,7 @@ export default function NotificationsPage() {
                 stableHeight={52}
                 debugId="notifications.selected.mark-read"
               >
-                Mark as read
+                {notificationIconText("check", "Mark as read")}
               </SecondaryButton>
             ) : null}
             <SubtleButton
@@ -1720,7 +1705,7 @@ export default function NotificationsPage() {
               stableHeight={52}
               debugId="notifications.selected.close"
             >
-              Close
+              {notificationIconText("chevronUp", "Close")}
             </SubtleButton>
           </div>
         </section>
@@ -1759,7 +1744,10 @@ export default function NotificationsPage() {
                       stableHeight={52}
                       debugId={`notifications.notice.${notice.id}.primary`}
                     >
-                      {settings.openActionsDirectly ? notice.ctaLabel : "Review first"}
+                      {notificationIconText(
+                        settings.openActionsDirectly ? "navigation" : "eye",
+                        settings.openActionsDirectly ? notice.ctaLabel : "Review first"
+                      )}
                     </PrimaryButton>
 
                     <StableCtaLink
@@ -1767,7 +1755,7 @@ export default function NotificationsPage() {
                       stableHeight={52}
                       debugId={`notifications.notice.${notice.id}.open-page`}
                     >
-                      Open page
+                      {notificationIconText("navigation", "Open page")}
                     </StableCtaLink>
 
                     {notice.unread && /^\d+$/.test(safeStr(notice.id)) ? (
@@ -1776,7 +1764,7 @@ export default function NotificationsPage() {
                         stableHeight={52}
                         debugId={`notifications.notice.${notice.id}.mark-read`}
                       >
-                        Mark as read
+                        {notificationIconText("check", "Mark as read")}
                       </SubtleButton>
                     ) : null}
                   </div>
@@ -1798,21 +1786,7 @@ export default function NotificationsPage() {
           alignItems: "center",
         }}
       >
-        <div
-          aria-hidden="true"
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 14,
-            display: "grid",
-            placeItems: "center",
-            background: "#DBEAFE",
-            color: "#0B63D1",
-            fontSize: 28,
-          }}
-        >
-          D
-        </div>
+        {notificationIconTile("shield", 52, "#DBEAFE", 14)}
         <div>
           <div
             style={{
@@ -1833,12 +1807,10 @@ export default function NotificationsPage() {
           style={{
             display: isPhone ? "none" : undefined,
             justifySelf: "end",
-            color: "rgba(11,99,209,0.12)",
-            fontSize: 72,
-            lineHeight: 1,
+            opacity: 0.18,
           }}
         >
-          Box
+          <GsnLegacyIcon name="vault" size={78} />
         </div>
       </section>
 
@@ -1865,7 +1837,11 @@ export default function NotificationsPage() {
             stableHeight={48}
             debugId="notifications.toggle-raw-feed"
           >
-            {collapsed.rawFeed ? "Open" : "Collapse"}
+            {notificationIconText(
+              collapsed.rawFeed ? "chevronDown" : "chevronUp",
+              collapsed.rawFeed ? "Open" : "Hide",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1939,7 +1915,11 @@ export default function NotificationsPage() {
             stableHeight={48}
             debugId="notifications.toggle-reading"
           >
-            {collapsed.reading ? "Open" : "Collapse"}
+            {notificationIconText(
+              collapsed.reading ? "chevronDown" : "chevronUp",
+              collapsed.reading ? "Open" : "Hide",
+              20
+            )}
           </SubtleButton>
         </div>
 
@@ -1958,12 +1938,16 @@ export default function NotificationsPage() {
                 <div key={`meaning-${bucket}`} style={innerCard(tone.bg)}>
                   <div
                     style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
                       color: tone.text,
                       fontSize: 16,
                       fontWeight: 950,
                       lineHeight: 1.2,
                     }}
                   >
+                    <GsnLegacyIcon name={bucketIconName(bucket)} size={24} />
                     {bucketTitle(bucket)}
                   </div>
                   <div style={{ marginTop: 8, ...helperText() }}>

@@ -395,7 +395,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
             <SubtleButton
               aria-label="Dismiss companion message"
               onClick={() => removeToast(toast.id)}
-              stableHeight={32}
+              stableHeight={52}
               minWidth={32}
               debugId={`companion-toast.${toast.id}.dismiss-icon`}
               style={dismissButton()}
@@ -426,7 +426,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
             {toast.ctaTo ? (
               <PrimaryButton
                 onClick={() => handleToastOpen(toast)}
-                stableHeight={36}
+                stableHeight={52}
                 debugId={`companion-toast.${toast.id}.open`}
                 style={actionButton(toast.priority)}
               >
@@ -436,7 +436,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
 
             <SecondaryButton
               onClick={() => removeToast(toast.id)}
-              stableHeight={36}
+              stableHeight={52}
               debugId={`companion-toast.${toast.id}.dismiss`}
               style={{
                 borderRadius: 12,

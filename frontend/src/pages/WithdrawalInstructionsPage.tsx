@@ -2,10 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
-import {
-  TrustPaperIcon,
-  type TrustPaperIconName,
-} from "../components/TrustPaperMarks";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { navigateWithOrigin } from "../lib/nav";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
@@ -265,17 +262,34 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function iconLabel(icon: TrustPaperIconName, label: string): React.ReactElement {
+function iconLabel(icon: GsnIconName, label: string): React.ReactElement {
   return (
     <div
       style={{
         ...sectionLabel(),
         display: "inline-flex",
         alignItems: "center",
-        gap: 7,
+        gap: 8,
       }}
     >
-      <TrustPaperIcon name={icon} size={15} strokeWidth={2.4} />
+      <span
+        aria-hidden="true"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 10,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#0B2D4A",
+          background: "rgba(255,255,255,0.96)",
+          border: "1px solid rgba(226,192,106,0.30)",
+          boxShadow:
+            "0 8px 16px rgba(2,6,23,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={26} />
+      </span>
       <span>{label}</span>
     </div>
   );
@@ -392,7 +406,7 @@ function helperText(): React.CSSProperties {
   return {
     color: "#DCE8F5",
     fontSize: 14.5,
-    lineHeight: 1.75,
+    lineHeight: 1.45,
   };
 }
 
@@ -1327,7 +1341,7 @@ export default function WithdrawalInstructionsPage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+          <div style={{ color: "#64748B", lineHeight: 1.45 }}>
             Loading withdrawal page...
           </div>
         </section>
@@ -1346,9 +1360,9 @@ export default function WithdrawalInstructionsPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Focused Task"
-        title="Loans & Support"
-        subtitle="Money Out"
+        sectionLabel="Money Out"
+        title="Guided Withdrawal"
+        subtitle="Set amount, payout account, rail, and result."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.marketplace}
@@ -1386,10 +1400,9 @@ export default function WithdrawalInstructionsPage() {
               : "rgba(214,170,69,0.18)",
           }}
         >
-          <TrustPaperIcon
+          <GsnLegacyIcon
             name={identityReady ? "check" : "alert"}
-            size={24}
-            color={identityReady ? "#B9F0CD" : "#F6D878"}
+            size={36}
           />
         </div>
         <div>
@@ -1444,7 +1457,7 @@ export default function WithdrawalInstructionsPage() {
                 "0 22px 42px rgba(2,6,23,0.32), inset 0 1px 0 rgba(255,255,255,0.10)",
             }}
           >
-            <TrustPaperIcon name="wallet" size={isCompact ? 30 : 46} />
+            <GsnLegacyIcon name="wallet" size={isCompact ? 42 : 64} />
           </div>
 
           <div>
@@ -1489,7 +1502,7 @@ export default function WithdrawalInstructionsPage() {
           style={{
             marginTop: 18,
             display: "grid",
-            gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(56px, 1fr))",
             gap: isCompact ? 7 : 10,
             alignItems: "start",
           }}
@@ -1533,11 +1546,7 @@ export default function WithdrawalInstructionsPage() {
                   fontSize: isCompact ? 16 : 18,
                 }}
               >
-                <TrustPaperIcon
-                  name={icon as TrustPaperIconName}
-                  size={17}
-                  strokeWidth={2.4}
-                />
+                <GsnLegacyIcon name={icon as GsnIconName} size={isCompact ? 26 : 30} />
               </span>
               <span
                 style={{
@@ -1574,11 +1583,11 @@ export default function WithdrawalInstructionsPage() {
           <SubtleButton
             onClick={() => toggleSection("overview")}
             minWidth={128}
-            stableHeight={46}
+            stableHeight={52}
             debugId="money-out.toggle-overview"
             style={moneyOutCollapseButtonStyle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {collapsed.overview ? "Open" : "Hide"}
           </SubtleButton>
         </div>
 
@@ -1588,7 +1597,7 @@ export default function WithdrawalInstructionsPage() {
               marginTop: 14,
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "1fr 1fr"
+                ? "repeat(auto-fit, minmax(138px, 1fr))"
                 : "repeat(3, minmax(0, 1fr))",
               gap: 12,
             }}
@@ -1623,12 +1632,12 @@ export default function WithdrawalInstructionsPage() {
               </div>
             </div>
 
-            <div style={statTile("#FFFBEF")}>
+            <div style={statTile()}>
               {iconLabel("alert", "Support gap")}
               <div
                 style={{
                   marginTop: 8,
-                  color: "#92400E",
+                  color: "#FCD34D",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.25,
@@ -1707,11 +1716,11 @@ export default function WithdrawalInstructionsPage() {
           <SubtleButton
             onClick={() => toggleSection("request")}
             minWidth={128}
-            stableHeight={46}
+            stableHeight={52}
             debugId="money-out.toggle-request"
             style={moneyOutCollapseButtonStyle()}
           >
-            {collapsed.request ? "Open" : "Collapse"}
+            {collapsed.request ? "Open" : "Hide"}
           </SubtleButton>
         </div>
 
@@ -1767,7 +1776,7 @@ export default function WithdrawalInstructionsPage() {
                   ...helperText(),
                 }}
               >
-                  Amount, payout, rail, and result stay together until this request is clearly matched.
+                Amount, payout, rail, and result stay together.
               </div>
 
               <div
@@ -1797,10 +1806,10 @@ export default function WithdrawalInstructionsPage() {
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     {!effectiveAvailableKnown
-                      ? "The route cannot decide until the effective-available pool reading is visible."
+                      ? "Waiting for the pool reading."
                       : requiresSupport
                       ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your effective available pool is ${effectiveAvailableText} ${poolCurrency}.`
-                      : "The requested amount fits inside your effective available pool."}
+                      : "This amount fits the available pool."}
                   </div>
                 </div>
 
@@ -1819,7 +1828,7 @@ export default function WithdrawalInstructionsPage() {
                         : "",
                     ]
                       .filter(Boolean)
-                      .join(" | ") || "Open the support pages if you need more background before continuing."}
+                      .join(" | ") || "Open support if the amount needs backing."}
                   </div>
                 </div>
               </div>
@@ -1892,7 +1901,7 @@ export default function WithdrawalInstructionsPage() {
 
                 <SubtleButton
                   onClick={handleResetTask}
-                  stableHeight={42}
+                  stableHeight={52}
                   debugId="money-out.reset-task"
                   style={moneyOutActionButtonStyle("soft")}
                 >
@@ -1924,11 +1933,11 @@ export default function WithdrawalInstructionsPage() {
           <SubtleButton
             onClick={() => toggleSection("destination")}
             minWidth={128}
-            stableHeight={46}
+            stableHeight={52}
             debugId="money-out.toggle-destination"
             style={moneyOutCollapseButtonStyle()}
           >
-            {collapsed.destination ? "Open" : "Collapse"}
+            {collapsed.destination ? "Open" : "Hide"}
           </SubtleButton>
         </div>
 
@@ -2227,7 +2236,7 @@ export default function WithdrawalInstructionsPage() {
             disabled={loadingRoute}
             debugId="money-out.refresh-community-rail"
             minWidth={isCompact ? undefined : 136}
-            stableHeight={46}
+            stableHeight={52}
             style={moneyOutActionButtonStyle("secondary", loadingRoute)}
           >
             {loadingRoute ? "Loading..." : "Refresh rail"}
@@ -2290,7 +2299,7 @@ export default function WithdrawalInstructionsPage() {
                 <StableCtaLink
                   to={routes.finance}
                   debugId="money-out.rail.open-finance"
-                  stableHeight={48}
+                  stableHeight={52}
                   style={moneyOutActionButtonStyle("secondary")}
                 >
                   Finance
@@ -2299,7 +2308,7 @@ export default function WithdrawalInstructionsPage() {
                 <StableCtaLink
                   to={routes.payoutDetails}
                   debugId="money-out.rail.open-payout-details"
-                  stableHeight={48}
+                  stableHeight={52}
                   style={moneyOutActionButtonStyle("secondary")}
                 >
                   Payout
@@ -2313,7 +2322,7 @@ export default function WithdrawalInstructionsPage() {
           <SubtleButton
             onClick={() => toggleSection("rail")}
             minWidth={128}
-            stableHeight={46}
+            stableHeight={52}
             debugId="money-out.toggle-rail"
             style={moneyOutCollapseButtonStyle()}
           >
@@ -2343,11 +2352,11 @@ export default function WithdrawalInstructionsPage() {
             <SubtleButton
               onClick={() => toggleSection("result")}
               minWidth={128}
-              stableHeight={46}
+              stableHeight={52}
               debugId="money-out.toggle-result"
               style={moneyOutCollapseButtonStyle()}
             >
-              {collapsed.result ? "Open" : "Collapse"}
+              {collapsed.result ? "Open" : "Hide"}
             </SubtleButton>
 
             <SecondaryButton
@@ -2355,7 +2364,7 @@ export default function WithdrawalInstructionsPage() {
               disabled={refreshing}
               debugId="money-out.refresh-status"
               minWidth={isCompact ? undefined : 120}
-              stableHeight={46}
+              stableHeight={52}
               style={moneyOutActionButtonStyle("secondary", refreshing)}
             >
               {refreshing ? "Refreshing..." : "Refresh"}
@@ -2397,13 +2406,13 @@ export default function WithdrawalInstructionsPage() {
                 </div>
 
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>App explanation</div>
+                  <div style={sectionLabel()}>Route reading</div>
                   <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                     {!effectiveAvailableKnown
-                      ? "The effective-available pool reading is not visible yet, so wait for that reading before this route decides the path."
+                      ? "Wait for the pool reading before this route decides."
                       : !requiresSupport
-                      ? "Your requested amount stays inside the effective available pool, so this withdrawal can proceed directly if the community rail and your personal payout destination are both ready."
-                      : "Your requested amount is above the effective available pool, so the route now needs support. Continue there for readiness, fit, and deeper workbench handling."}
+                      ? "This amount can proceed directly once rail and payout are ready."
+                      : "This amount needs support. Continue into readiness, fit, and workbench."}
                   </div>
                 </div>
 
@@ -2449,27 +2458,21 @@ export default function WithdrawalInstructionsPage() {
                   <div style={innerCard("#FFFBEF")}>
                     <div style={sectionLabel()}>Awaiting pool reading</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      The execution path is still waiting for the effective-available
-                      pool reading. Once that reading is visible, use the decision lane
-                      above to continue with the right route.
+                      Wait for the pool reading, then continue from the decision lane.
                     </div>
                   </div>
                 ) : !requiresSupport && !latestWithdrawalResult ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Use the decision lane above</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Submit direct withdrawal from the decision lane after you confirm
-                      the amount, community rail, and personal payout account. This
-                      result area stays focused on what happened after that step.
+                      Confirm amount, rail, and payout account before submitting.
                     </div>
                   </div>
                 ) : requiresSupport && !withdrawalCanWidenRoutes ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Support path chosen</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      This route has already determined that support is needed. Continue
-                      below with the support pages instead of repeating the same decision
-                      action here.
+                      Continue with support pages instead of repeating the same decision.
                     </div>
                   </div>
                 ) : null}
@@ -2479,7 +2482,7 @@ export default function WithdrawalInstructionsPage() {
                       <StableCtaLink
                         to={routes.loanReadiness}
                         debugId="money-out.result.open-readiness"
-                        stableHeight={48}
+                        stableHeight={52}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
                         Readiness
@@ -2488,7 +2491,7 @@ export default function WithdrawalInstructionsPage() {
                       <StableCtaLink
                         to={routes.loanSuggestions}
                         debugId="money-out.result.open-suggestions"
-                        stableHeight={48}
+                        stableHeight={52}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
                         Suggestions
@@ -2497,7 +2500,7 @@ export default function WithdrawalInstructionsPage() {
                       <StableCtaLink
                         to={routes.loanWorkbench}
                         debugId="money-out.result.open-workbench"
-                        stableHeight={48}
+                        stableHeight={52}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
                         Workbench
@@ -2508,7 +2511,7 @@ export default function WithdrawalInstructionsPage() {
                     <StableCtaLink
                       to={routes.finance}
                       debugId="money-out.result.open-finance"
-                      stableHeight={48}
+                      stableHeight={52}
                       style={moneyOutActionButtonStyle("secondary")}
                     >
                       Finance
@@ -2517,7 +2520,7 @@ export default function WithdrawalInstructionsPage() {
                       <StableCtaLink
                         to={routes.payoutDetails}
                         debugId="money-out.result.open-payout-details"
-                        stableHeight={48}
+                        stableHeight={52}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
                         Payout
@@ -2546,21 +2549,21 @@ export default function WithdrawalInstructionsPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {withdrawalCanWidenRoutes
-                ? "Related routes reopen after this withdrawal has reached a visible result."
+                ? "Related routes reopen after a visible result."
                 : requiresSupport
-                ? "This route has already determined that support is required. Continue into the support flow instead of switching to unrelated pages."
-                : "This withdrawal is still active. Keep the route focused on amount, rail, destination, and result."}
+                ? "Support is required. Continue inside the support flow."
+                : "Keep this task focused on amount, rail, payout, and result."}
             </div>
           </div>
 
           <SubtleButton
             onClick={() => toggleSection("routes")}
             minWidth={128}
-            stableHeight={46}
+            stableHeight={52}
             debugId="money-out.toggle-routes"
             style={moneyOutCollapseButtonStyle()}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {collapsed.routes ? "Open" : "Hide"}
           </SubtleButton>
         </div>
 
@@ -2572,14 +2575,14 @@ export default function WithdrawalInstructionsPage() {
                 display: "grid",
                 gridTemplateColumns: isCompact
                   ? "1fr"
-                  : "repeat(3, minmax(0, 1fr))",
+                  : "repeat(auto-fit, minmax(156px, 1fr))",
                 gap: 12,
               }}
             >
                 <StableCtaLink
                   to={routes.finance}
                   debugId="money-out.route.finance"
-                  stableHeight={48}
+                  stableHeight={52}
                   fullWidth
                   style={moneyOutActionButtonStyle("primary")}
                 >
@@ -2589,7 +2592,7 @@ export default function WithdrawalInstructionsPage() {
                 <StableCtaLink
                   to={routes.payoutDetails}
                   debugId="money-out.route.payout-details"
-                  stableHeight={48}
+                  stableHeight={52}
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
@@ -2599,7 +2602,7 @@ export default function WithdrawalInstructionsPage() {
                 <StableCtaLink
                   to={routes.paymentRails}
                   debugId="money-out.route.payment-rails"
-                  stableHeight={48}
+                  stableHeight={52}
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
@@ -2609,7 +2612,7 @@ export default function WithdrawalInstructionsPage() {
                 <StableCtaLink
                   to={routes.loanReadiness}
                   debugId="money-out.route.readiness"
-                  stableHeight={48}
+                  stableHeight={52}
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
@@ -2619,7 +2622,7 @@ export default function WithdrawalInstructionsPage() {
                 <StableCtaLink
                   to={routes.loanWorkbench}
                   debugId="money-out.route.workbench"
-                  stableHeight={48}
+                  stableHeight={52}
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
@@ -2629,7 +2632,7 @@ export default function WithdrawalInstructionsPage() {
                 <StableCtaLink
                   to={routes.loans}
                   debugId="money-out.route.loans"
-                  stableHeight={48}
+                  stableHeight={52}
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
@@ -2639,7 +2642,7 @@ export default function WithdrawalInstructionsPage() {
               <StableCtaLink
                 to={routes.marketplace}
                 debugId="money-out.route.marketplace"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyOutActionButtonStyle("secondary")}
               >
@@ -2649,7 +2652,7 @@ export default function WithdrawalInstructionsPage() {
               <StableCtaLink
                 to={routes.notifications}
                 debugId="money-out.route.notifications"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyOutActionButtonStyle("secondary")}
               >
@@ -2661,8 +2664,7 @@ export default function WithdrawalInstructionsPage() {
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                  Keep this withdrawal on one path until the route produces a direct
-                  result or hands you into the support flow.
+                  Keep this withdrawal on one path until it produces a result or moves into support.
                 </div>
               </div>
             </div>

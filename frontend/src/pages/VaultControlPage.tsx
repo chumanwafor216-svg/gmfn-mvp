@@ -6,6 +6,7 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   createVaultShopAccessLink,
   extendVaultShopAccessLink,
@@ -46,6 +47,32 @@ import {
 } from "../styles/gmfnBrand";
 
 type NoticeTone = "success" | "error" | "info";
+
+function labelWithIcon(name: GsnIconName, label: React.ReactNode): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 auto",
+          width: 28,
+          height: 28,
+          borderRadius: 10,
+          display: "inline-grid",
+          placeItems: "center",
+          color: "#0B63D1",
+          background: "rgba(255,255,255,0.96)",
+          border: "1px solid rgba(13,95,168,0.14)",
+          boxShadow:
+            "0 8px 16px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={22} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
 
 type ShopRecord = {
   id: number;
@@ -1662,7 +1689,9 @@ export default function VaultControlPage() {
       >
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 330px", gap: 28, alignItems: "center" }}>
           <div>
-            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>🏦 VAULT CONTROL</div>
+            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>
+              {labelWithIcon("vault", "Vault Control")}
+            </div>
             <h1 style={{ margin: "18px 0 0", color: "#FFFFFF", fontSize: isCompact ? 30 : 38, lineHeight: 1.04, fontWeight: 950, textTransform: "uppercase", textShadow: "0 2px 18px rgba(0,0,0,0.28)" }}>
               {shopName}
             </h1>
@@ -1670,7 +1699,7 @@ export default function VaultControlPage() {
               Same shop signboard. Private paid blocks. Access only through a link you create.
             </div>
             <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <span style={vaultHeroBadge(true)}>🏦 Vault</span>
+              <span style={vaultHeroBadge(true)}>{labelWithIcon("vault", "Vault")}</span>
               <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} paid slots</span>
               <span style={vaultHeroBadge(false)}>One block at a time</span>
             </div>
@@ -1768,7 +1797,9 @@ export default function VaultControlPage() {
               {selectedVaultSlotCount} slot{selectedVaultSlotCount === 1 ? "" : "s"} selected = {selectedVaultPaymentLabel}
             </div>
             <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
-              <div style={{ ...sectionLabel(), color: "#8A640E" }}>💡 Best value check</div>
+              <div style={{ ...sectionLabel(), color: "#8A640E" }}>
+                {labelWithIcon("spark", "Best value check")}
+              </div>
               <div style={{ marginTop: 6, fontWeight: 820, lineHeight: 1.55 }}>{selectedVaultBundleText}</div>
             </div>
             <div style={{ marginTop: 14, ...helperText() }}>
@@ -1799,7 +1830,7 @@ export default function VaultControlPage() {
                 busyLabel="Generating payment code..."
                 debugId="vault-control.generate-payment-code"
               >
-                {creatingPayment ? "Generating payment code..." : "🔐 Generate payment code"}
+                {creatingPayment ? "Generating payment code..." : "Generate payment code"}
               </SecondaryButton>
             ) : null}
             <div style={{ marginTop: 14, ...helperText(), fontWeight: 800 }}>
@@ -1818,7 +1849,7 @@ export default function VaultControlPage() {
         {panelHeader(
           "payment",
           2,
-          "🏦 Payment code and bank transfer",
+          "Payment code and bank transfer",
           activeVaultPayment
             ? `${activeVaultPaymentReference || "Payment code ready"} - ${activeVaultPaymentAmount ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency) : "amount shown inside"}`
             : "Generate the payment code after agreeing to the quote."
@@ -1854,7 +1885,7 @@ export default function VaultControlPage() {
                 style={brandActionButton("soft")}
                 debugId="vault-control.check-payment-status"
               >
-                🔎 Check payment status
+                {labelWithIcon("search", "Check payment status")}
               </SubtleButton>
             </div>
           </>
@@ -1918,7 +1949,10 @@ export default function VaultControlPage() {
         </div>
 
         <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
-          <div style={stepTitle()}><span style={stepBadge()}>4</span>🔐 Selected private block</div>
+          <div style={stepTitle()}>
+            <span style={stepBadge()}>4</span>
+            {labelWithIcon("lock", "Selected private block")}
+          </div>
           <div style={{ marginTop: 14, borderRadius: 18, overflow: "hidden", minHeight: 160, background: gmfnBrand.gradients.hero }}>
             {selectedProduct ? (
               <SpotlightMediaFrame
@@ -2087,7 +2121,7 @@ export default function VaultControlPage() {
             "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
-        {panelHeader("flow", 0, "🧭 Your 3-step flow", "Open this only when you want the short Vault process reminder.", true)}
+        {panelHeader("flow", 0, "Your 3-step flow", "Open this only when you want the short Vault process reminder.", true)}
         {openVaultPanels.flow ? (
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr 1fr", gap: 12, color: "#FFFFFF" }}>
           {["Activate slots|Choose and pay for your Vault slots.", "Add private offer|Add your content to the paid block.", "Create block link|Share the link privately. Access is by link only."].map((entry, index) => {
@@ -2146,7 +2180,7 @@ export default function VaultControlPage() {
                     style={brandActionButton("primary", savingProduct)}
                     debugId="vault-control.editor.save"
                   >
-                    {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "💾 Save Vault block"}
+                    {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "Save Vault block"}
                   </PrimaryButton>
                   <SecondaryButton
                     onClick={() => { resetProductForm(); setEditorOpen(false); }}
@@ -2159,7 +2193,9 @@ export default function VaultControlPage() {
               </div>
             </div>
             <div style={{ ...innerCard("linear-gradient(145deg, #071424 0%, #0D2640 48%, #173A5C 100%)"), border: "1px solid rgba(243,208,106,0.20)" }}>
-              <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold }}>👀 Preview</div>
+              <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold }}>
+                {labelWithIcon("eye", "Preview")}
+              </div>
               <div style={{ marginTop: 12, borderRadius: 18, overflow: "hidden", minHeight: 220, background: "#061827" }}>
                 {firstTruthy(videoPreviewUrl, videoUrlInput) ? (
                   <SpotlightMediaFrame

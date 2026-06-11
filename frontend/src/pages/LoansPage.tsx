@@ -3,9 +3,9 @@ import { useLocation } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
 import {
-  TrustPaperIcon,
-  type TrustPaperIconName,
-} from "../components/TrustPaperMarks";
+  GsnLegacyIcon,
+  type GsnIconName,
+} from "../components/GsnLegacyIcon";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -329,33 +329,32 @@ function routeIconCircle(primary = false, compact = false): React.CSSProperties 
     alignItems: "center",
     justifyContent: "center",
     background: primary
-      ? "linear-gradient(180deg, #1F73E0 0%, #0B4EB3 100%)"
-      : "linear-gradient(180deg, #EEF6FF 0%, #E5EEF8 100%)",
-    color: primary ? "#FFFFFF" : "#0B4EB3",
+      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,250,255,0.88) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,246,255,0.90) 100%)",
+    color: "#0B4EB3",
     fontSize: compact ? 19 : 24,
-    boxShadow: primary
-      ? "0 10px 20px rgba(19,95,209,0.22)"
-      : "inset 0 1px 0 rgba(255,255,255,0.95)",
+    border: "1px solid rgba(12,41,71,0.08)",
+    boxShadow:
+      "0 10px 20px rgba(7,23,44,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
 function routeIcon(
-  name: TrustPaperIconName,
+  name: GsnIconName,
   primary = false,
   compact = false
 ): React.ReactElement {
   return (
     <span style={routeIconCircle(primary, compact)} aria-hidden="true">
-      <TrustPaperIcon
+      <GsnLegacyIcon
         name={name}
-        size={compact ? 20 : 24}
-        strokeWidth={2.4}
+        size={compact ? 34 : 42}
       />
     </span>
   );
 }
 
-function iconLabel(name: TrustPaperIconName, label: string): React.ReactElement {
+function iconLabel(name: GsnIconName, label: string): React.ReactElement {
   return (
     <div
       style={{
@@ -365,7 +364,7 @@ function iconLabel(name: TrustPaperIconName, label: string): React.ReactElement 
         gap: 7,
       }}
     >
-      <TrustPaperIcon name={name} size={15} strokeWidth={2.4} />
+      <GsnLegacyIcon name={name} size={22} />
       <span>{label}</span>
     </div>
   );
@@ -828,13 +827,15 @@ export default function LoansPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 background:
-                  "linear-gradient(180deg, rgba(242,207,119,0.95) 0%, rgba(184,137,37,0.95) 100%)",
+                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,250,255,0.88) 100%)",
                 color: "#07172C",
                 fontSize: 34,
-                boxShadow: "0 16px 32px rgba(2,6,23,0.28)",
+                border: "1px solid rgba(255,255,255,0.28)",
+                boxShadow:
+                  "0 16px 32px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.86)",
               }}
             >
-              <TrustPaperIcon name="wallet" size={34} strokeWidth={2.4} />
+              <GsnLegacyIcon name="financeInstitution" size={64} />
             </div>
             <div style={{ marginTop: 14, ...sectionLabel(), color: "#D7E3F1" }}>
               Pool position
@@ -906,7 +907,7 @@ export default function LoansPage() {
             }}
           >
             <div style={statTile("#F8FBFF")}>
-              {iconLabel("document", "Active loans")}
+              {iconLabel("repaymentSchedule", "Active loans")}
               <div
                 style={{
                   marginTop: 8,
@@ -962,7 +963,7 @@ export default function LoansPage() {
             </div>
 
             <div style={{ ...statTile("#F0FBF6"), gridColumn: isCompact ? "1 / -1" : "span 2" }}>
-              {iconLabel("wallet", "Pool")}
+              {iconLabel("financeInstitution", "Pool")}
               <div
                 style={{
                   marginTop: 8,
@@ -990,7 +991,7 @@ export default function LoansPage() {
         >
           <div style={{ display: "grid", gridTemplateColumns: "96px minmax(0, 1fr)", gap: 16 }}>
             <span style={{ ...routeIconCircle(false), width: 86, height: 86 }}>
-              <TrustPaperIcon name="spark" size={42} strokeWidth={2.3} />
+              <GsnLegacyIcon name="spark" size={52} />
             </span>
             <div>
               <div style={sectionLabel()}>Current support focus</div>
@@ -1222,7 +1223,7 @@ export default function LoansPage() {
             }}
           >
             <span style={{ ...routeIconCircle(false), width: 64, height: 64 }}>
-              <TrustPaperIcon name="user" size={32} strokeWidth={2.4} />
+              <GsnLegacyIcon name="user" size={42} />
             </span>
             <div>
               <div style={{ ...routeTitleStyle(), color: "#0B4EB3" }}>
@@ -1246,7 +1247,7 @@ export default function LoansPage() {
             }}
           >
             <span style={{ ...routeIconCircle(false), width: 64, height: 64 }}>
-              <TrustPaperIcon name="community" size={32} strokeWidth={2.4} />
+              <GsnLegacyIcon name="community" size={42} />
             </span>
             <div>
               <div style={{ ...routeTitleStyle(), color: "#5B21B6" }}>
@@ -1277,11 +1278,11 @@ export default function LoansPage() {
           alignItems: "center",
         }}
       >
-        {routeIcon("document")}
+        {routeIcon("proof")}
         <div>
           <div style={{ color: "#07172C", fontWeight: 950, lineHeight: 1.35 }}>
             Loans & Support stays community-specific. Finance shows the money picture;
-            Loans & Support handles live workflow and decisions.
+            Loans & Support handles live steps and decisions.
           </div>
         </div>
       </section>

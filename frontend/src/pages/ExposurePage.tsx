@@ -9,6 +9,10 @@ import {
 } from "../lib/api";
 
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
+import {
+  GsnLegacyIcon,
+  type GsnIconName,
+} from "../components/GsnLegacyIcon";
 import { formatMoney } from "../lib/money";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
@@ -101,7 +105,7 @@ function routeLinkStyle(): React.CSSProperties {
     marginLeft: 6,
     display: "inline-flex",
     alignItems: "center",
-    minHeight: 40,
+    minHeight: 52,
   };
 }
 
@@ -109,18 +113,27 @@ function inlineLinkStyle(): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
-    minHeight: 24,
-    padding: 0,
-    border: "none",
-    borderRadius: 0,
-    background: "transparent",
+    justifyContent: "center",
+    minHeight: 48,
+    padding: "0 10px",
+    border: "1px solid rgba(37,99,235,0.16)",
+    borderRadius: 12,
+    background: "#EFF6FF",
     boxShadow: "none",
     color: "#2563EB",
     fontSize: "inherit",
-    fontWeight: 700,
-    textDecoration: "underline",
-    textUnderlineOffset: 2,
+    fontWeight: 800,
+    textDecoration: "none",
   };
+}
+
+function labelWithIcon(name: GsnIconName, label: React.ReactNode): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      <GsnLegacyIcon name={name} size={26} />
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
@@ -201,7 +214,7 @@ export default function ExposurePage() {
       const res = await getExposureAdmin();
       const r = safeRows(res);
       setRows(r);
-      setMsg(`Loaded ${r.length} row(s) ✅`);
+      setMsg(`Loaded ${r.length} exposure row${r.length === 1 ? "" : "s"}.`);
     } catch (e: any) {
       setErr(e?.message || String(e));
       setRows([]);
@@ -267,7 +280,7 @@ export default function ExposurePage() {
       setLastDefaulted(n(res?.defaulted));
 
       setMsg(
-        `Overdue scan complete ✅ scanned=${n(res?.scanned)}, matched=${n(res?.matched)}, defaulted=${n(res?.defaulted)}`
+        `Overdue scan complete. Scanned ${n(res?.scanned)}, matched ${n(res?.matched)}, defaulted ${n(res?.defaulted)}.`
       );
 
       await loadExposureUI();
@@ -362,22 +375,22 @@ export default function ExposurePage() {
             disabled={loading || !isAdmin}
             busy={loading}
             busyLabel="Working..."
-            stableHeight={40}
+            stableHeight={52}
             debugId="exposure.run-overdue"
             style={toolButtonStyle(loading || !isAdmin)}
           >
-            Run overdue detector now
+            {labelWithIcon("search", "Run overdue detector")}
           </SecondaryButton>
 
           <SecondaryButton
             onClick={loadExposureUI}
             disabled={loading || !isAdmin}
             busy={loading}
-            stableHeight={40}
+            stableHeight={52}
             debugId="exposure.refresh"
             style={toolButtonStyle(loading || !isAdmin)}
           >
-            Refresh exposure
+            {labelWithIcon("refresh", "Refresh exposure")}
           </SecondaryButton>
 
           <SecondaryButton
@@ -385,20 +398,20 @@ export default function ExposurePage() {
             disabled={cciLoading || rows.length === 0}
             busy={cciLoading}
             busyLabel="Loading consistency..."
-            stableHeight={40}
+            stableHeight={52}
             debugId="exposure.load-cci"
             style={toolButtonStyle(cciLoading || rows.length === 0)}
           >
-            Load consistency scores
+            {labelWithIcon("chart", "Load consistency")}
           </SecondaryButton>
 
           <StableCtaLink
             to={routes.trustAnalytics}
-            stableHeight={40}
+            stableHeight={52}
             debugId="exposure.open-trust-analytics"
             style={routeLinkStyle()}
           >
-            Trust Analytics →
+            {labelWithIcon("navigation", "Trust Analytics")}
           </StableCtaLink>
         </div>
 
@@ -522,7 +535,7 @@ export default function ExposurePage() {
                       {e.loan_id ? (
                         <StableCtaLink
                           to={loanTimelineLink(e.loan_id)}
-                          stableHeight={24}
+                          stableHeight={48}
                           debugId={`exposure.loan.${e.loan_id}.timeline`}
                           style={inlineLinkStyle()}
                         >
@@ -537,7 +550,7 @@ export default function ExposurePage() {
                       {borrowerId ? (
                         <StableCtaLink
                           to={userTimelineLink(borrowerId)}
-                          stableHeight={24}
+                          stableHeight={48}
                           debugId={`exposure.user.${borrowerId}.timeline`}
                           style={inlineLinkStyle()}
                         >
@@ -566,11 +579,11 @@ export default function ExposurePage() {
       <div style={{ marginTop: 12 }}>
         <StableCtaLink
           to={routes.dashboard}
-          stableHeight={40}
+          stableHeight={52}
           debugId="exposure.back-dashboard"
           style={routeLinkStyle()}
         >
-          ← Back to Dashboard
+          {labelWithIcon("home", "Back to Dashboard")}
         </StableCtaLink>
       </div>
     </div>

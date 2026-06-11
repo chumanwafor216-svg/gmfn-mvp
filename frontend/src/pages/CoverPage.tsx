@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 
 
@@ -602,6 +603,38 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
   };
 
+}
+
+function coverIconText(name: GsnIconName, label: React.ReactNode, size = 26) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+      <GsnLegacyIcon name={name} size={size} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function coverIconBadge(name: GsnIconName) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 48,
+        height: 48,
+        borderRadius: 18,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.07) 100%)",
+        border: "1px solid rgba(255,255,255,0.16)",
+        boxShadow:
+          "0 16px 30px rgba(1,9,22,0.30), inset 0 1px 0 rgba(255,255,255,0.14)",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={34} />
+    </span>
+  );
 }
 
 
@@ -1512,6 +1545,8 @@ export default function CoverPage() {
             }}
           >
             <div style={{ ...buttonDockStyle(), display: "grid", gap: 10, justifyItems: "center" }}>
+              {coverIconBadge("shield")}
+
               <PrimaryButton
                 onClick={goNext}
                 busy={busy}
@@ -1521,14 +1556,14 @@ export default function CoverPage() {
                 debugId="cover.continue"
                 style={buttonStyle(busy)}
               >
-                Continue
+                {coverIconText("navigation", "Continue")}
               </PrimaryButton>
 
               <SecondaryButton
                 onClick={openGuide}
                 disabled={busy}
                 minWidth={236}
-                stableHeight={40}
+                stableHeight={52}
                 debugId="cover.about-gsn"
                 style={{
                   ...buttonStyle(busy),
@@ -1550,7 +1585,7 @@ export default function CoverPage() {
                   textShadow: busy ? "none" : "0 1px 0 rgba(0,0,0,0.30)",
                 }}
               >
-                About GSN & I
+                {coverIconText("id", "About GSN & I", 22)}
               </SecondaryButton>
             </div>
           </div>
@@ -1564,6 +1599,3 @@ export default function CoverPage() {
   );
 
 }
-
-
-

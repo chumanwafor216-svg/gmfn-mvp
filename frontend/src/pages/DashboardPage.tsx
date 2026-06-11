@@ -8693,9 +8693,9 @@ export default function DashboardPage() {
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
                   showAudioUnlock={Boolean(spotlightVideoCandidate)}
-                  audioUnlockLabel="🔊"
-                  audioUnlockOffLabel="🔇"
-                  audioUnlockErrorLabel="▶"
+                  audioUnlockLabel="On"
+                  audioUnlockOffLabel="Off"
+                  audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
                     top: isPhone ? 14 : 16,
                     right: isPhone ? 14 : 16,
@@ -8741,7 +8741,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={openSpotlightWhatsApp}
                   onPointerDown={consumeDashboardPointerEvent}
-                  stableHeight={isPhone ? 40 : 42}
+                  stableHeight={52}
                   style={{
                     position: "absolute",
                     right: isPhone ? 16 : 18,
@@ -8749,7 +8749,7 @@ export default function DashboardPage() {
                     zIndex: 5,
                     minWidth: isPhone ? 94 : 108,
                     width: "auto",
-                    minHeight: isPhone ? 40 : 42,
+                    minHeight: 52,
                     padding: isPhone ? "8px 12px" : "9px 14px",
                     borderRadius: 999,
                     background:
@@ -9160,9 +9160,9 @@ export default function DashboardPage() {
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
                   showAudioUnlock={Boolean(spotlightVideoCandidate)}
-                  audioUnlockLabel="🔊"
-                  audioUnlockOffLabel="🔇"
-                  audioUnlockErrorLabel="▶"
+                  audioUnlockLabel="On"
+                  audioUnlockOffLabel="Off"
+                  audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
                     top: isPhone ? 14 : 16,
                     right: isPhone ? 14 : 16,

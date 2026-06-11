@@ -536,7 +536,7 @@ export default function InviteLandingPage() {
                   disabled={!canContinue || continuing}
                   busy={continuing}
                   busyLabel="Opening..."
-                  stableHeight={46}
+                  stableHeight={52}
                   debugId="invite-landing.open-founder-entry"
                 >
                   Open founder entry
@@ -545,7 +545,7 @@ export default function InviteLandingPage() {
                 <StableCtaLink
                   to="/guide"
                   kind="secondary"
-                  stableHeight={46}
+                  stableHeight={52}
                   debugId="invite-landing.open-guide"
                 >
                   Open full GSN guide
@@ -554,7 +554,7 @@ export default function InviteLandingPage() {
                 <StableCtaLink
                   to="/guide"
                   kind="secondary"
-                  stableHeight={46}
+                  stableHeight={52}
                   debugId="invite-landing.open-focus-guide"
                 >
                   Read about Focus Commitments first
@@ -563,7 +563,7 @@ export default function InviteLandingPage() {
                 <StableCtaLink
                   to="/welcome"
                   kind="secondary"
-                  stableHeight={46}
+                  stableHeight={52}
                   debugId="invite-landing.open-welcome"
                 >
                   Open Welcome

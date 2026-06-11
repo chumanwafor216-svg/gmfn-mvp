@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -161,7 +162,7 @@ function helperText(): React.CSSProperties {
   return {
     color: "#C8D8EA",
     fontSize: 14.5,
-    lineHeight: 1.75,
+    lineHeight: 1.45,
   };
 }
 
@@ -201,7 +202,9 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
+    height: 52,
+    minHeight: 52,
+    maxHeight: 52,
     minWidth: 124,
     padding: "9px 13px",
     borderRadius: 12,
@@ -219,6 +222,42 @@ function collapseToggle(): React.CSSProperties {
     transition: "none",
     boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
+}
+
+function actionText(name: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 11,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#0B4EA2",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.86) 100%)",
+          border: "1px solid rgba(12,41,71,0.08)",
+          boxShadow:
+            "0 9px 18px rgba(2,6,23,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={26} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function communityName(currentClan: any): string {
@@ -639,7 +678,7 @@ export default function RepaymentPage() {
           backLabel="Loans & Support"
         />
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>Loading repayment route...</div>
+          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.45 }}>Loading repayment route...</div>
         </section>
       </div>
     );
@@ -659,8 +698,8 @@ export default function RepaymentPage() {
         />
         <section style={pageCard("#FEF2F2")}>
           <div style={{ color: "#991B1B", fontWeight: 900 }}>Loan repayment could not be opened.</div>
-          <div style={{ marginTop: 8, color: "#991B1B", lineHeight: 1.8 }}>
-            Open the correct support item first, then continue into repayment from its loan summary.
+          <div style={{ marginTop: 8, color: "#991B1B", lineHeight: 1.45 }}>
+            Open the support item first, then start repayment from its summary.
           </div>
         </section>
       </div>
@@ -672,7 +711,7 @@ export default function RepaymentPage() {
       <PageTopNav
         sectionLabel="Repayment"
         title={`Loan Repayment #${numericLoanId}`}
-        subtitle="Repayment is its own guided money stage. It stays tied to one support item from exact amount and reference through payment and reconciliation."
+        subtitle="Pay one support item with the exact amount and reference."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loanSummary}
@@ -681,9 +720,9 @@ export default function RepaymentPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page is one step inside Loans & Support. It handles one repayment from exact amount and reference through payment instruction, result, and reconciliation."
-        why="It keeps repayment tied to the correct support item so you do not lose the amount, reference, or status that the support flow depends on. Finance records the outcome after the money move is done."
-        next="Start with the repayment overview, follow the instruction exactly, then confirm the result and reconciliation state before moving away."
+        what="This gives the exact repayment amount, reference, and result state."
+        why="It keeps payment tied to the right support item."
+        next="Generate the instruction, copy it, then wait for reconciliation."
         tone="blue"
       />
 
@@ -704,7 +743,7 @@ export default function RepaymentPage() {
         </div>
         <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
           {generatingInstruction
-            ? "GSN is generating this repayment instruction now. Other repayment actions are held until the response returns."
+            ? "GSN is generating the repayment instruction now."
             : routeState.detail}
         </div>
       </div>
@@ -753,9 +792,8 @@ export default function RepaymentPage() {
               Repay loan #{numericLoanId}
             </div>
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              This route stays tied to one approved support item. The exact amount,
-              exact reference, and next step should remain visible until repayment
-              is clearly waiting for confirmation.
+              Keep the amount, reference, and next step together until payment
+              is waiting for confirmation.
             </div>
             <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>Community ID: {communityCode}</span>
@@ -790,19 +828,19 @@ export default function RepaymentPage() {
           <SubtleButton
             type="button"
             onClick={() => toggleSection("overview")}
-            stableHeight={46}
+            stableHeight={52}
             debugId="repayment.toggle-overview"
             style={collapseToggle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {actionText(collapsed.overview ? "eye" : "lock", collapsed.overview ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
         <ExplainToggle
           label="What this does"
-          what="This overview keeps the core repayment facts visible: loan status, outstanding amount, paid total, and due timing."
-          why="You need these facts together before you act, otherwise it is easy to pay the wrong amount or lose the repayment context."
-          next="Open this overview first, confirm the facts, and then continue into the repayment instruction below."
+          what="This keeps status, amount, paid total, and due time together."
+          why="It helps prevent paying the wrong amount."
+          next="Confirm the facts, then generate the instruction."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -812,7 +850,7 @@ export default function RepaymentPage() {
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))",
               gap: 12,
             }}
           >
@@ -858,11 +896,11 @@ export default function RepaymentPage() {
           <SubtleButton
             type="button"
             onClick={() => toggleSection("instruction")}
-            stableHeight={46}
+            stableHeight={52}
             debugId="repayment.toggle-instruction"
             style={collapseToggle()}
           >
-            {collapsed.instruction ? "Open" : "Collapse"}
+            {actionText(collapsed.instruction ? "eye" : "lock", collapsed.instruction ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
@@ -881,7 +919,7 @@ export default function RepaymentPage() {
 
               {!instruction ? (
                 <div style={{ marginTop: 10, ...helperText() }}>
-                  Generate the repayment instruction to reveal the exact reference and settlement details for this loan.
+                  Generate the instruction to reveal the exact reference and settlement details.
                 </div>
               ) : (
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -933,7 +971,7 @@ export default function RepaymentPage() {
                   stableHeight={54}
                   debugId="repayment.generate-instruction"
                 >
-                  Generate instruction
+                  {actionText("repaymentSchedule", "Generate")}
                 </PrimaryButton>
 
                 <SecondaryButton
@@ -944,7 +982,7 @@ export default function RepaymentPage() {
                   stableHeight={54}
                   debugId="repayment.copy-reference"
                 >
-                  Copy reference
+                  {actionText("copy", "Copy reference")}
                 </SecondaryButton>
 
                 <SecondaryButton
@@ -955,7 +993,7 @@ export default function RepaymentPage() {
                   stableHeight={54}
                   debugId="repayment.copy-full-instruction"
                 >
-                  Copy instruction
+                  {actionText("repaymentSchedule", "Copy instruction")}
                 </SecondaryButton>
               </div>
             </div>
@@ -968,17 +1006,17 @@ export default function RepaymentPage() {
           <div>
             <div style={sectionLabel()}>Result and reconciliation</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Stay on this route until repayment is clearly awaiting reconciliation or visibly confirmed elsewhere.
+              Stay here until the repayment is waiting or confirmed.
             </div>
           </div>
           <SubtleButton
             type="button"
             onClick={() => toggleSection("result")}
-            stableHeight={46}
+            stableHeight={52}
             debugId="repayment.toggle-result"
             style={collapseToggle()}
           >
-            {collapsed.result ? "Open" : "Collapse"}
+            {actionText(collapsed.result ? "eye" : "lock", collapsed.result ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
@@ -1056,8 +1094,7 @@ export default function RepaymentPage() {
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Expected payment visibility</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Finance has not yet shown a matching repayment expectation for this
-                      generated reference.
+                      Finance has not shown a matching repayment expectation yet.
                     </div>
                   </div>
                 ) : null}
@@ -1077,16 +1114,14 @@ export default function RepaymentPage() {
                   stableHeight={54}
                   debugId="repayment.confirm-paid"
                 >
-                  {paymentConfirmedAt ? "Payment declared" : "Confirm paid"}
+                  {actionText("check", paymentConfirmedAt ? "Declared" : "Confirm paid")}
                 </PrimaryButton>
 
                 {repaymentTaskActive ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Keep the route focused</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      This repayment is still active. Confirm payment here when
-                      you have used the exact reference, then keep the route open
-                      until repayment is clearly awaiting reconciliation.
+                      Confirm payment only after using the exact reference.
                     </div>
                   </div>
                 ) : (
@@ -1094,8 +1129,7 @@ export default function RepaymentPage() {
                     <div style={sectionLabel()}>Move on from here</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       This repayment has reached a visible conclusion. Use the
-                      next-routes section below to reopen Loan Summary, Finance,
-                      or Loans &amp; Support from one place.
+                      route buttons below.
                     </div>
                   </div>
                 )}
@@ -1113,18 +1147,18 @@ export default function RepaymentPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {repaymentTaskActive
-                ? "This repayment is still active. Keep the route focused on the exact loan, exact amount, exact reference, and reconciliation state."
-                : "Related routes reopen after repayment has reached a visible conclusion."}
+                ? "Finish this repayment before moving to another route."
+                : "Open the next page you need."}
             </div>
           </div>
           <SubtleButton
             type="button"
             onClick={() => toggleSection("routes")}
-            stableHeight={46}
+            stableHeight={52}
             debugId="repayment.toggle-routes"
             style={collapseToggle()}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {actionText(collapsed.routes ? "eye" : "lock", collapsed.routes ? "Open" : "Hide")}
           </SubtleButton>
         </div>
 
@@ -1134,9 +1168,8 @@ export default function RepaymentPage() {
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                  Stay inside this repayment path until the instruction is generated,
-                  payment is made with the exact reference, and the route is clearly
-                  awaiting reconciliation.
+                  Stay here until the instruction is generated and payment is
+                  waiting for reconciliation.
                 </div>
               </div>
             </div>
@@ -1156,7 +1189,7 @@ export default function RepaymentPage() {
                 fullWidth
                 debugId="repayment.route.loan-summary"
               >
-                Loan Summary
+                {actionText("proof", "Loan Summary")}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.finance}
@@ -1165,7 +1198,7 @@ export default function RepaymentPage() {
                 fullWidth
                 debugId="repayment.route.finance"
               >
-                Finance
+                {actionText("financeInstitution", "Finance")}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.loans}
@@ -1174,7 +1207,7 @@ export default function RepaymentPage() {
                 fullWidth
                 debugId="repayment.route.loans"
               >
-                Loans & Support
+                {actionText("community", "Loans & Support")}
               </StableCtaLink>
             </div>
           )

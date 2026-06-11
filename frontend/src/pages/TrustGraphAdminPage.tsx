@@ -8,6 +8,7 @@ import {
 } from "../lib/api";
 import TrustGraphSummaryCard from "../components/TrustGraphSummaryCard";
 import TrustGraphEdgeList from "../components/TrustGraphEdgeList";
+import { StableDisclosureSummary } from "../components/StableButton";
 import { Alert, Button, Card, PageHeader, Pill } from "../components/uiKit";
 
 function safeStr(x: any): string {
@@ -77,8 +78,8 @@ export default function TrustGraphAdminPage() {
   return (
     <div style={{ padding: 18, maxWidth: 1200 }}>
       <PageHeader
-        title="TrustGraph Command Centre"
-        subtitle="Protected cross-community trust architecture, explainability, and consistency command view. CCI remains the internal label."
+        title="Trust Graph Command Centre"
+        subtitle="Protected cross-community trust structure, consistency reading, and operator review."
         right={
           <Button onClick={loadAll} disabled={loading || busy}>
             {loading ? "Loading..." : busy ? "Working..." : "Refresh"}
@@ -181,7 +182,7 @@ export default function TrustGraphAdminPage() {
                 onClick={loadAll}
                 disabled={busy}
               >
-                Open my TrustGraph
+                Open my Trust Graph
               </Button>
             </div>
           </div>
@@ -275,24 +276,47 @@ export default function TrustGraphAdminPage() {
           </div>
 
           <Card style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Explainability</div>
+            <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Reading reasons</div>
             <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
-              Why this graph and consistency score were produced. CCI is kept as the internal metric name.
+              Why this graph and consistency reading were produced.
             </div>
 
-            <pre
+            <details
               style={{
                 marginTop: 10,
-                background: "#f8fafc",
+                border: "1px solid rgba(11,31,51,0.10)",
                 borderRadius: 12,
-                padding: 12,
-                fontSize: 12,
-                overflowX: "auto",
-                color: "#334155",
+                background: "#f8fafc",
+                overflow: "hidden",
               }}
             >
-              {JSON.stringify(graph.summary?.explainability || {}, null, 2)}
-            </pre>
+              <StableDisclosureSummary
+                debugId="trust-graph-admin.source-details"
+                stableHeight={44}
+                style={{
+                  cursor: "pointer",
+                  padding: "12px 14px",
+                  color: "#0B1F33",
+                  fontSize: 13,
+                  fontWeight: 1000,
+                }}
+              >
+                Open source reading details
+              </StableDisclosureSummary>
+              <pre
+                aria-label="Source reading details"
+                style={{
+                  margin: 0,
+                  borderTop: "1px solid rgba(11,31,51,0.10)",
+                  padding: 12,
+                  fontSize: 12,
+                  overflowX: "auto",
+                  color: "#334155",
+                }}
+              >
+                {JSON.stringify(graph.summary?.explainability || {}, null, 2)}
+              </pre>
+            </details>
           </Card>
 
           <div style={{ marginTop: 12 }}>

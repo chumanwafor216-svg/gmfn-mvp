@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink } from "../components/StableButton";
 import {
@@ -125,12 +126,55 @@ function actionLink(primary = false): React.CSSProperties {
     fontWeight: 1000,
     fontSize: 14,
     cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
+    whiteSpace: "nowrap",
+    overflowWrap: "normal",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
     boxShadow: primary
       ? "0 14px 30px rgba(29,95,212,0.25)"
       : "0 12px 24px rgba(15,23,42,0.06)",
   };
+}
+
+function loanDecisionActionText(name: GsnIconName, label: React.ReactNode, size = 22) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={size} />
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function loanDecisionFactHeading(name: GsnIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        minWidth: 0,
+        color: "#39526C",
+        fontSize: 12,
+        fontWeight: 900,
+        letterSpacing: 0.35,
+        textTransform: "uppercase",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={22} />
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function statusStyle(status: string): React.CSSProperties {
@@ -277,19 +321,19 @@ export default function LoanDecisionPage() {
           }}
         >
           <div style={statTile()}>
-            <div style={sectionLabel()}>Visible Items</div>
+            {loanDecisionFactHeading("document", "Visible Items")}
             <div style={{ marginTop: 8, fontSize: 28, fontWeight: 1000, color: "#0B1F33" }}>
               {decisionSummary.total}
             </div>
           </div>
           <div style={statTile("#F0FDF4")}>
-            <div style={sectionLabel()}>Approved Or Active</div>
+            {loanDecisionFactHeading("check", "Approved Or Active")}
             <div style={{ marginTop: 8, fontSize: 28, fontWeight: 1000, color: "#065F46" }}>
               {decisionSummary.approved}
             </div>
           </div>
           <div style={statTile("#FFFBEB")}>
-            <div style={sectionLabel()}>Waiting Review</div>
+            {loanDecisionFactHeading("alert", "Waiting Review")}
             <div style={{ marginTop: 8, fontSize: 28, fontWeight: 1000, color: "#92400E" }}>
               {decisionSummary.review}
             </div>
@@ -306,11 +350,16 @@ export default function LoanDecisionPage() {
 
         <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
           {loans.length === 0 ? (
-            <div style={softCard()}>
-              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>No visible support decisions yet</div>
-              <div style={{ ...helperText(), marginTop: 8 }}>
-                When a support item enters review, approval, repayment, or closure,
-                it will appear here in a calmer reading format.
+            <div style={{ ...softCard(), display: "flex", gap: 12, alignItems: "center" }}>
+              <GsnLegacyIcon name="document" size={46} />
+              <div>
+                <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                  No visible support decisions yet
+                </div>
+                <div style={{ ...helperText(), marginTop: 8 }}>
+                  When a support item enters review, approval, repayment, or closure,
+                  it will appear here in a calmer reading format.
+                </div>
               </div>
             </div>
           ) : (
@@ -359,19 +408,19 @@ export default function LoanDecisionPage() {
                     }}
                   >
                     <div style={innerCard()}>
-                      <div style={sectionLabel()}>Borrower</div>
+                      {loanDecisionFactHeading("user", "Borrower")}
                       <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B1F33" }}>
                         {safeStr(loan?.borrower_name) || "Not visible yet"}
                       </div>
                     </div>
                     <div style={innerCard()}>
-                      <div style={sectionLabel()}>Guarantor</div>
+                      {loanDecisionFactHeading("shield", "Guarantor")}
                       <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B1F33" }}>
                         {safeStr(loan?.guarantor_name) || "Not linked yet"}
                       </div>
                     </div>
                     <div style={innerCard("#F8FBFF")}>
-                      <div style={sectionLabel()}>Purpose</div>
+                      {loanDecisionFactHeading("document", "Purpose")}
                       <div style={{ marginTop: 8, color: "#0B1F33", lineHeight: 1.65 }}>
                         {safeStr(loan?.purpose) || "Purpose is still being prepared."}
                       </div>
@@ -394,7 +443,7 @@ export default function LoanDecisionPage() {
                       stableHeight={48}
                       style={actionLink(true)}
                     >
-                      Open Loan Summary
+                      {loanDecisionActionText("document", "Summary", 20)}
                     </StableCtaLink>
                     <StableCtaLink
                       to={routes.workbench}
@@ -402,7 +451,7 @@ export default function LoanDecisionPage() {
                       debugId={`loan-decision.${loanId || index}.workbench`}
                       style={actionLink(false)}
                     >
-                      Open Workbench
+                      {loanDecisionActionText("briefcase", "Workbench", 20)}
                     </StableCtaLink>
                   </div>
                 </div>
@@ -421,7 +470,7 @@ export default function LoanDecisionPage() {
             debugId="loan-decision.route.workbench"
             style={actionLink(true)}
           >
-            Loan Workbench
+            {loanDecisionActionText("briefcase", "Workbench", 20)}
           </StableCtaLink>
           <StableCtaLink
             to={routes.loans}
@@ -429,7 +478,7 @@ export default function LoanDecisionPage() {
             debugId="loan-decision.route.loans"
             style={actionLink(false)}
           >
-            Return to Loans & Support
+            {loanDecisionActionText("community", "Loans", 20)}
           </StableCtaLink>
           <StableCtaLink
             to={routes.finance}
@@ -437,7 +486,7 @@ export default function LoanDecisionPage() {
             debugId="loan-decision.route.finance"
             style={actionLink(false)}
           >
-            Open Finance
+            {loanDecisionActionText("wallet", "Finance", 20)}
           </StableCtaLink>
         </div>
       </section>

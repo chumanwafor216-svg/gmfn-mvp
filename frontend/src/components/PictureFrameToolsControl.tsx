@@ -223,7 +223,7 @@ export default function PictureFrameToolsControl({
                     }
                     action.onClick?.(event);
                   }}
-                  stableHeight={44}
+                  stableHeight={52}
                   fullWidth
                   debugId={`picture-frame-tools.action.${action.label}`}
                   style={action.style}

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import { SecondaryButton } from "./StableButton";
 
 type SpotlightMediaFrameProps = {
@@ -222,12 +223,16 @@ export default function SpotlightMediaFrame(
     : audioError
     ? props.audioUnlockErrorLabel || audioError
     : audioOnLabel;
+  const audioUnlockIconOnly = [
+    props.audioUnlockStyle?.width,
+    props.audioUnlockStyle?.minWidth,
+  ].some((value) => typeof value === "number" && value <= 52);
 
   const audioUnlockButton = shouldShowAudioUnlock ? (
     <SecondaryButton
       data-media-control="true"
       onClick={toggleAudio}
-      stableHeight={42}
+      stableHeight={52}
       debugId="spotlight-media-frame.toggle-audio"
       style={{
         position: "absolute",
@@ -235,18 +240,23 @@ export default function SpotlightMediaFrame(
         top: 14,
         zIndex: 4,
         minHeight: 42,
-        padding: "10px 14px",
+        padding: "8px 12px 8px 8px",
         borderRadius: 999,
-        border: "1px solid rgba(255, 226, 160, 0.64)",
-        background:
-          "linear-gradient(180deg, rgba(255,244,204,0.98) 0%, rgba(244,196,83,0.94) 100%)",
+        border: "1px solid rgba(226, 192, 106, 0.38)",
+        background: "rgba(255, 255, 255, 0.94)",
         color: "#071827",
         fontSize: 13,
         fontWeight: 900,
         lineHeight: 1,
-        boxShadow: "0 14px 28px rgba(2, 12, 27, 0.28)",
+        boxShadow:
+          "0 14px 28px rgba(2, 12, 27, 0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
         cursor: "pointer",
         touchAction: "manipulation",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: audioUnlockIconOnly ? 0 : 7,
+        whiteSpace: "nowrap",
         ...props.audioUnlockStyle,
       }}
       title={audioUnlocked ? "Turn video sound off" : "Turn video sound on"}
@@ -256,7 +266,12 @@ export default function SpotlightMediaFrame(
           : "Turn video sound on"
       }
     >
-      {audioVisibleLabel}
+      <GsnLegacyIcon
+        name={audioUnlocked ? "soundOff" : "soundOn"}
+        size={audioUnlockIconOnly ? 30 : 28}
+        decorative
+      />
+      {audioUnlockIconOnly ? null : <span>{audioVisibleLabel}</span>}
     </SecondaryButton>
   ) : null;
 

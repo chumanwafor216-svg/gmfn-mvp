@@ -6,6 +6,7 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   activateApprovedMember,
   activateMembership,
@@ -61,103 +62,28 @@ type ActivationIconName =
   | "rocket"
   | "shield";
 
-function ActivationIcon({ name, size = 18 }: { name: ActivationIconName; size?: number }) {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2.2,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
+const ACTIVATION_ICON_MAP = {
+  check: "check",
+  community: "community",
+  eye: "eye",
+  eyeOff: "lock",
+  id: "id",
+  info: "document",
+  lock: "lock",
+  request: "document",
+  rocket: "join-person-plus",
+  shield: "shield",
+} satisfies Record<ActivationIconName, GsnIconName>;
 
-  switch (name) {
-    case "check":
-      return (
-        <svg {...common}>
-          <path d="m5 12.5 4.2 4.1L19 7" />
-        </svg>
-      );
-    case "community":
-      return (
-        <svg {...common}>
-          <circle cx="8" cy="9" r="3" />
-          <circle cx="16" cy="9" r="3" />
-          <path d="M3.5 20c.7-3.1 2.4-5 4.5-5s3.8 1.9 4.5 5" />
-          <path d="M11.5 20c.7-3.1 2.4-5 4.5-5s3.8 1.9 4.5 5" />
-        </svg>
-      );
-    case "eye":
-      return (
-        <svg {...common}>
-          <path d="M3.5 12s3-5 8.5-5 8.5 5 8.5 5-3 5-8.5 5-8.5-5-8.5-5z" />
-          <circle cx="12" cy="12" r="2.4" />
-        </svg>
-      );
-    case "eyeOff":
-      return (
-        <svg {...common}>
-          <path d="m4 4 16 16" />
-          <path d="M9.6 9.7A2.5 2.5 0 0 0 12 14.5c.7 0 1.3-.3 1.8-.7" />
-          <path d="M6.4 6.9C4.6 8.2 3.5 10 3.5 12c0 0 3 5 8.5 5 1.6 0 2.9-.4 4.1-1" />
-          <path d="M10.3 7.2c.5-.1 1.1-.2 1.7-.2 5.5 0 8.5 5 8.5 5a12.5 12.5 0 0 1-2 2.4" />
-        </svg>
-      );
-    case "id":
-      return (
-        <svg {...common}>
-          <rect x="4" y="6" width="16" height="12" rx="2.4" />
-          <circle cx="9" cy="11" r="1.7" />
-          <path d="M7 15c.5-1.4 1.2-2.1 2-2.1s1.5.7 2 2.1" />
-          <path d="M13.5 10h3.5" />
-          <path d="M13.5 14h3" />
-        </svg>
-      );
-    case "info":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="8" />
-          <path d="M12 11v5" />
-          <path d="M12 8h.01" />
-        </svg>
-      );
-    case "lock":
-      return (
-        <svg {...common}>
-          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-          <path d="M6.5 11h11v9h-11z" />
-          <path d="M12 15v2" />
-        </svg>
-      );
-    case "request":
-      return (
-        <svg {...common}>
-          <path d="M7 4h10v16H7z" />
-          <path d="M10 8h4" />
-          <path d="M10 12h4" />
-          <path d="M10 16h3" />
-        </svg>
-      );
-    case "rocket":
-      return (
-        <svg {...common}>
-          <path d="M14 4c3.3.7 5.3 2.7 6 6l-6.5 6.5-4-4z" />
-          <path d="M9.5 12.5 6 13l-2 4 4-2 .5-3.5" />
-          <path d="M14 4 9 6 7.5 9.5" />
-          <circle cx="15" cy="9" r="1.4" />
-        </svg>
-      );
-    case "shield":
-      return (
-        <svg {...common}>
-          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
-          <path d="m8.6 12.2 2.2 2.2 4.8-5" />
-        </svg>
-      );
-  }
+function ActivationIcon({ name, size = 18 }: { name: ActivationIconName; size?: number }) {
+  return (
+    <GsnLegacyIcon
+      name={ACTIVATION_ICON_MAP[name]}
+      size={Math.max(size, Math.round(size * 1.22))}
+      decorative
+      style={{ display: "inline-grid", flex: "0 0 auto" }}
+    />
+  );
 }
 
 type ActivationNoticeTone = "success" | "error" | "warning" | "info";
@@ -466,14 +392,14 @@ function fieldCheckStyle(): React.CSSProperties {
 function passwordToggleStyle(): React.CSSProperties {
   return {
     position: "absolute",
-    right: 14,
+    right: 10,
     top: "50%",
     transform: "translateY(-50%)",
-    minWidth: 36,
-    width: 36,
-    minHeight: 36,
-    height: 36,
-    maxHeight: 36,
+    minWidth: 44,
+    width: 44,
+    minHeight: 44,
+    height: 44,
+    maxHeight: 44,
     borderRadius: 999,
     border: "1px solid rgba(242,199,102,0.24)",
     background: "rgba(4,19,35,0.28)",
@@ -953,7 +879,7 @@ export default function MemberActivationPage() {
             <StableCtaLink
               to={notice.actionPath}
               kind="secondary"
-              stableHeight={40}
+              stableHeight={52}
               debugId="member-activation.notice-action"
               style={{
                 marginTop: 12,
@@ -1055,7 +981,7 @@ export default function MemberActivationPage() {
             <SubtleButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={isCompact ? 34 : 40}
+              stableHeight={isCompact ? 52 : 52}
               debugId="member-activation.about"
               style={railActionStyle("about", isCompact)}
             >
@@ -1064,7 +990,7 @@ export default function MemberActivationPage() {
             <PrimaryButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={isCompact ? 34 : 40}
+              stableHeight={isCompact ? 52 : 52}
               debugId="member-activation.guide"
               style={railActionStyle("guide", isCompact)}
             >
@@ -1238,7 +1164,7 @@ export default function MemberActivationPage() {
                   <SubtleButton
                     type="button"
                     onClick={() => setShowPassword((current) => !current)}
-                    stableHeight={36}
+                    stableHeight={52}
                     minWidth={36}
                     debugId="member-activation.password.toggle"
                     aria-label={showPassword ? "Hide password" : "Show password"}
@@ -1271,7 +1197,7 @@ export default function MemberActivationPage() {
                   <SubtleButton
                     type="button"
                     onClick={() => setShowConfirmPassword((current) => !current)}
-                    stableHeight={36}
+                    stableHeight={52}
                     minWidth={36}
                     debugId="member-activation.confirm-password.toggle"
                     aria-label={

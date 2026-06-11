@@ -83,6 +83,9 @@ Current explicit frozen paths:
 - `frontend/src/lib/mobileTapGuard.ts` mobile tap routing contract is caged by `frontend/tools/audit-mobile-tap-stability.mjs`; do not relax wrong-root suppression, orphan-click suppression, or original-action replay without a real phone regression reason.
 - `frontend/tools/audit-protected-button-freeze.mjs` defines the current protected button freeze band. Run `npm --prefix frontend run audit:protected-button-freeze` before and after Marketplace button work to confirm Dashboard, Community Home, Action Inbox, entry/auth, shared tap guard, and global stable-action hygiene were not disturbed.
 - `docs/BUTTON_STABILITY_FREEZE.md` records the protected freeze band and the lane-by-lane Marketplace stabilization protocol; update it if the protected freeze band intentionally changes.
+- `.github/workflows/render-deploy.yml` is frozen in manual-only mode during the active pilot to conserve Render pipeline minutes. Do not restore a `push` trigger or automatic deploy behavior unless the product owner explicitly approves it.
+- `.github/workflows/tests.yml` is frozen with backend-relevant path filters plus manual dispatch during the active pilot. Do not remove the path filters or make frontend/docs-only pushes run backend tests automatically unless the product owner explicitly approves it.
+- Render dashboard frontend Auto-Deploy is an external frozen operational setting and should remain off during the active pilot unless the product owner explicitly approves turning it back on.
 - [ADD EXACT PATHS HERE]
 - [ADD EXACT PATHS HERE]
 

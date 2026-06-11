@@ -8,6 +8,7 @@ import {
   StableDisclosureSummary,
   SubtleButton,
 } from "../components/StableButton";
+import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import * as api from "../lib/api";
 import {
   institutionalPageCard,
@@ -86,6 +87,37 @@ function helperText(): React.CSSProperties {
     fontSize: 14.5,
     lineHeight: 1.75,
   };
+}
+
+function labelWithIcon(icon: Gsn3DIconKey, label: React.ReactNode): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 auto",
+          width: 34,
+          height: 34,
+          borderRadius: 8,
+          display: "inline-grid",
+          placeItems: "center",
+          color: "#7A4A00",
+          background: "rgba(255,255,255,0.97)",
+          border: "1px solid rgba(226,192,106,0.34)",
+          boxShadow:
+            "0 8px 16px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnRealisticIcon
+          name={icon}
+          size={30}
+          decorative
+          imageStyle={{ width: "96%", height: "96%" }}
+        />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function noticeCard(tone: NoticeTone): React.CSSProperties {
@@ -560,7 +592,7 @@ export default function TrustSlipVerifyPage() {
           fontWeight: 1000,
         }}
       >
-        Print / save PDF
+        {labelWithIcon("records-folder", "Print / save PDF")}
       </SecondaryButton>
       {isAppRoute ? (
         <SecondaryButton
@@ -572,7 +604,7 @@ export default function TrustSlipVerifyPage() {
           debugId="trust-slip-verify.public.open-passport"
           style={{ borderRadius: 12, fontWeight: 1000 }}
         >
-          Lite view
+          {labelWithIcon("public-globe", "Lite view")}
         </SecondaryButton>
       ) : (
         <SecondaryButton
@@ -584,7 +616,7 @@ export default function TrustSlipVerifyPage() {
           debugId="trust-slip-verify.public.open-guide"
           style={{ borderRadius: 12, fontWeight: 1000 }}
         >
-          Lite view
+          {labelWithIcon("public-globe", "Lite view")}
         </SecondaryButton>
       )}
       {communityVerifyPath ? (
@@ -602,7 +634,7 @@ export default function TrustSlipVerifyPage() {
             fontWeight: 1000,
           }}
         >
-          Request current TrustSlip
+          {labelWithIcon("trust-shield", "Request current TrustSlip")}
         </StableCtaLink>
       ) : (
         <SecondaryButton
@@ -624,7 +656,7 @@ export default function TrustSlipVerifyPage() {
             fontWeight: 1000,
           }}
         >
-          Request current TrustSlip
+          {labelWithIcon("trust-shield", "Request current TrustSlip")}
         </SecondaryButton>
       )}
       <div style={{ display: "none" }}>
@@ -633,10 +665,10 @@ export default function TrustSlipVerifyPage() {
           onClick={() => {
             void copyVerifyLink();
           }}
-          stableHeight={44}
+          stableHeight={isCompact ? 52 : 44}
           debugId="trust-slip-verify.public.copy-link"
         >
-          Copy verify link
+          {labelWithIcon("public-globe", "Copy verify link")}
         </SecondaryButton>
       </div>
     </div>
@@ -942,7 +974,7 @@ export default function TrustSlipVerifyPage() {
               gap: 0,
             }}
           >
-            Private/internal detail
+            {labelWithIcon("vault-safe", "Private review details")}
             <span
               style={{
                 display: "inline-flex",
@@ -959,7 +991,7 @@ export default function TrustSlipVerifyPage() {
                 textTransform: "uppercase",
               }}
             >
-              Not the public/shareable TrustSlip
+              Not for public sharing
             </span>
             <span
               style={{
@@ -971,7 +1003,7 @@ export default function TrustSlipVerifyPage() {
                 lineHeight: 1.45,
               }}
             >
-              Review, repair, and deeper evidence only. Keep this separate from the public paper.
+              Use this for review, repair, and deeper evidence. Keep it separate from the public TrustSlip.
             </span>
           </StableDisclosureSummary>
 
@@ -1038,7 +1070,8 @@ export default function TrustSlipVerifyPage() {
             onClick={() => {
               void copyCode();
             }}
-            stableHeight={44}
+            stableHeight={isCompact ? 52 : 44}
+            fullWidth={isCompact}
             minWidth={isCompact ? undefined : 166}
             debugId="trust-slip-verify.copy-code"
           >
@@ -1050,7 +1083,8 @@ export default function TrustSlipVerifyPage() {
             onClick={() => {
               void copyVerifyLink();
             }}
-            stableHeight={44}
+            stableHeight={isCompact ? 52 : 44}
+            fullWidth={isCompact}
             minWidth={isCompact ? undefined : 148}
             debugId="trust-slip-verify.copy-link"
           >
@@ -1062,7 +1096,8 @@ export default function TrustSlipVerifyPage() {
             onClick={() => {
               void copyGmfnId();
             }}
-            stableHeight={44}
+            stableHeight={isCompact ? 52 : 44}
+            fullWidth={isCompact}
             minWidth={isCompact ? undefined : 124}
             debugId="trust-slip-verify.copy-gmfn-id"
           >
@@ -1081,7 +1116,8 @@ export default function TrustSlipVerifyPage() {
                 "Print is not available in this browser. Use Copy snapshot or Copy verify link."
               );
             }}
-            stableHeight={44}
+            stableHeight={isCompact ? 52 : 44}
+            fullWidth={isCompact}
             minWidth={isCompact ? undefined : 92}
             debugId="trust-slip-verify.print"
           >
@@ -1093,7 +1129,8 @@ export default function TrustSlipVerifyPage() {
             onClick={() => {
               void copyVerificationSnapshot();
             }}
-            stableHeight={44}
+            stableHeight={isCompact ? 52 : 44}
+            fullWidth={isCompact}
             minWidth={isCompact ? undefined : 132}
             debugId="trust-slip-verify.copy-snapshot"
           >
@@ -1104,7 +1141,8 @@ export default function TrustSlipVerifyPage() {
             <StableCtaLink
               to={routes.trust}
               kind="soft"
-              stableHeight={44}
+              stableHeight={isCompact ? 52 : 44}
+              fullWidth={isCompact}
               minWidth={isCompact ? undefined : 140}
               debugId="trust-slip-verify.route.trust"
             >
@@ -1114,7 +1152,8 @@ export default function TrustSlipVerifyPage() {
             <StableCtaLink
               to="/guide"
               kind="soft"
-              stableHeight={44}
+              stableHeight={isCompact ? 52 : 44}
+              fullWidth={isCompact}
               minWidth={isCompact ? undefined : 132}
               debugId="trust-slip-verify.route.trust"
             >

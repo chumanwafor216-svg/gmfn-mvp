@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
 import { CardActionRow, SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import { getMe, getSelectedClanId, safeCopy } from "../lib/api";
@@ -86,6 +87,64 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 1000,
     whiteSpace: "normal",
   };
+}
+
+function cciIconBadge(
+  icon: GsnIconName,
+  label: React.ReactNode,
+  primary = false
+): React.ReactNode {
+  return (
+    <span style={badge(primary)}>
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 auto",
+          width: 20,
+          height: 20,
+          borderRadius: 7,
+          display: "inline-grid",
+          placeItems: "center",
+          color: primary ? "#7A4A00" : "#0B63D1",
+          background: "rgba(255,255,255,0.96)",
+          border: primary
+            ? "1px solid rgba(214,170,69,0.30)"
+            : "1px solid rgba(13,95,168,0.14)",
+          boxShadow:
+            "0 7px 14px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={20} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function labelWithIcon(icon: GsnIconName, label: React.ReactNode): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 auto",
+          width: 22,
+          height: 22,
+          borderRadius: 8,
+          display: "inline-grid",
+          placeItems: "center",
+          color: "#0B63D1",
+          background: "rgba(255,255,255,0.96)",
+          border: "1px solid rgba(13,95,168,0.14)",
+          boxShadow:
+            "0 8px 16px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={icon} size={22} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function getCciState(me: any): ReadingState {
@@ -308,7 +367,7 @@ export default function CCIReadingPage() {
       <PageTopNav
         sectionLabel="Cross-community consistency"
         title="Cross-community consistency"
-        subtitle="Your wider consistency reading without opening the full Trust Passport. CCI is the internal label."
+        subtitle="Your wider trust reading across communities."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -316,16 +375,16 @@ export default function CCIReadingPage() {
       />
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Cross-community consistency</div>
+        <div style={sectionLabel()}>{labelWithIcon("community", "Cross-community consistency")}</div>
         <div style={{ marginTop: 10, color: "#0B1F33", fontSize: isCompact ? 28 : 34, fontWeight: 900, lineHeight: 1.1 }}>
           Wider trust consistency reading
         </div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-          Use this page when you want to see how steady the member's visible trust signals look beyond one immediate community.
+          See how steady this member's visible trust signals look beyond one community.
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span style={badge(true)}>Class {cci.classText}</span>
-          <span style={badge(false)}>Score {cci.scoreText}</span>
+          {cciIconBadge("chart", <>Class {cci.classText}</>, true)}
+          {cciIconBadge("search", <>Score {cci.scoreText}</>)}
         </div>
 
         <div
@@ -338,7 +397,7 @@ export default function CCIReadingPage() {
           }}
         >
           <div style={{ ...innerCard(tone.bg), border: tone.border }}>
-            <div style={sectionLabel()}>Reading</div>
+            <div style={sectionLabel()}>{labelWithIcon("chart", "Reading")}</div>
             <div style={{ marginTop: 12, color: tone.text, fontWeight: 900, fontSize: 34, lineHeight: 1 }}>
               Class {cci.classText}
             </div>
@@ -351,37 +410,37 @@ export default function CCIReadingPage() {
           </div>
 
           <div style={innerCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Why this reading</div>
+            <div style={sectionLabel()}>{labelWithIcon("shield", "Why this reading")}</div>
             <div style={{ marginTop: 10, ...helperText() }}>
               {loading ? "Loading the consistency reading..." : cci.whyText}
             </div>
-            <CardActionRow minHeight={isCompact ? 44 : 48} style={{ marginTop: 16 }}>
+            <CardActionRow minHeight={isCompact ? 52 : 48} style={{ marginTop: 16 }}>
               <StableCtaLink
                 to={routes.identity}
-                stableHeight={isCompact ? 44 : 48}
+                stableHeight={isCompact ? 52 : 48}
                 fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 210}
                 debugId="cci-reading.identity"
               >
-                Open Identity & Integrity
+                {labelWithIcon("id", "Open Identity & Integrity")}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.trust}
-                stableHeight={isCompact ? 44 : 48}
+                stableHeight={isCompact ? 52 : 48}
                 fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 178}
                 debugId="cci-reading.trust"
               >
-                Open Trust Passport
+                {labelWithIcon("document", "Open Trust Passport")}
               </StableCtaLink>
               <SecondaryButton
                 onClick={copyCciSnapshot}
-                stableHeight={isCompact ? 44 : 48}
+                stableHeight={isCompact ? 52 : 48}
                 fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 216}
                 debugId="cci-reading.copy-snapshot"
               >
-                Copy consistency snapshot
+                {labelWithIcon("copy", "Copy snapshot")}
               </SecondaryButton>
             </CardActionRow>
           </div>
@@ -392,7 +451,7 @@ export default function CCIReadingPage() {
         storageKey="gmfn.cciReading.nextActionGuide.v1"
         compact={isCompact}
         items={guideItems}
-        intro="Say what you want next in plain words like verify identity, explain my trust, or open the portable proof. GSN will point you to the closest trust document surface."
+        intro="Choose the next trust step in plain language. GSN will point you to the right proof surface."
         onSelect={handleGuideSelect}
       />
 
@@ -400,18 +459,18 @@ export default function CCIReadingPage() {
         compact={isCompact}
         items={familyItems}
         title="Where consistency sits inside the trust-document family"
-        intro="Cross-community consistency is only one reading inside the wider trust system. Use this map when you need to decide whether to stay with this narrow read, move into the fuller personal trust story, carry portable proof, or confirm public validity."
+        intro="Use this map to decide whether you need this narrow reading, a fuller trust story, portable proof, or public verification."
       />
 
       <TrustDocumentUseCases
         compact={isCompact}
         items={trustDocumentUseCases}
         title="Which trust question should stay here?"
-        intro="Stay here when the question is the narrower cross-community consistency read. Move out when someone needs the stable identity anchor, the fuller trust story, portable proof, or a public validity check."
+        intro="Stay here for the wider consistency read. Move to another trust surface when someone needs identity, proof, or public verification."
       />
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>What to do with this reading</div>
+        <div style={sectionLabel()}>{labelWithIcon("navigation", "What to do with this reading")}</div>
         <div
           style={{
             marginTop: 10,
@@ -425,8 +484,8 @@ export default function CCIReadingPage() {
               Use this for the wider read
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This page helps you understand how people outside your immediate
-              community may read your visible trust behaviour right now.
+              Use it when someone needs a quick view of trust consistency
+              across communities.
             </div>
           </div>
 
@@ -435,9 +494,8 @@ export default function CCIReadingPage() {
               Do not stop here if you need proof
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              If someone needs a portable trust document or a public verify
-              code, continue into TrustSlip or Trust Passport instead of using
-              this page alone.
+              For a portable document or public verify code, open TrustSlip or
+              Trust Passport.
             </div>
           </div>
         </div>

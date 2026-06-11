@@ -169,8 +169,14 @@ assertOrderedSnippets(
 
 assertContains(
   "trust",
-  /"Finance discipline": "wallet"/,
+  /"Finance discipline": "financeInstitution"/,
   "Finance Discipline lane must keep a finance-discipline trust-question mapping."
+);
+
+assertContains(
+  "trust",
+  /key: "evidence"[\s\S]*?icon: "proof"[\s\S]*?key: "finance"[\s\S]*?icon: "financeInstitution"[\s\S]*?key: "documents"[\s\S]*?icon: "proof"/,
+  "Trust Passport lanes must use proof and finance-institution 3D meanings for evidence, finance, and document lanes."
 );
 
 assertOrderedSnippets(

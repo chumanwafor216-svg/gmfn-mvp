@@ -1,5 +1,6 @@
 import React from "react";
 import ExplainToggle from "../../components/ExplainToggle";
+import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import {
   institutionalPageCard,
   institutionalStatTile,
@@ -59,6 +60,39 @@ function badge(success = true): React.CSSProperties {
   };
 }
 
+function resultIconBadge(compact: boolean, loadError?: string) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: compact ? 60 : 72,
+        height: compact ? 60 : 72,
+        minWidth: compact ? 60 : 72,
+        borderRadius: compact ? 20 : 24,
+        display: "inline-grid",
+        placeItems: "center",
+        background: loadError
+          ? "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,247,237,0.76))"
+          : "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,251,255,0.76))",
+        border: loadError
+          ? "1px solid rgba(200,58,58,0.16)"
+          : "1px solid rgba(20,52,83,0.12)",
+        boxShadow:
+          "0 16px 32px rgba(7,20,36,0.12), inset 0 1px 0 rgba(255,255,255,0.96)",
+      }}
+    >
+      <GsnLegacyIcon
+        name={loadError ? "alert" : "shield"}
+        size={compact ? 56 : 66}
+        imageStyle={{
+          filter: "drop-shadow(0 10px 12px rgba(7,20,36,0.20))",
+          transform: "scale(1.06)",
+        }}
+      />
+    </span>
+  );
+}
+
 export default function TrustSlipVerifyResultCard({
   bannerTitle,
   bannerDetail,
@@ -76,7 +110,30 @@ export default function TrustSlipVerifyResultCard({
         marginTop: 14,
       }}
     >
-      <div style={sectionLabel()}>Verification result</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: compact ? "60px minmax(0, 1fr)" : "72px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        {resultIconBadge(compact, loadError)}
+        <div>
+          <div style={sectionLabel()}>Verification result</div>
+          <div
+            style={{
+              marginTop: 5,
+              color: "#0B1F33",
+              fontSize: compact ? 16 : 18,
+              fontWeight: 1000,
+              lineHeight: 1.2,
+            }}
+          >
+            {bannerTitle}
+          </div>
+        </div>
+      </div>
 
       <ExplainToggle
         label="What this result means"
@@ -86,18 +143,6 @@ export default function TrustSlipVerifyResultCard({
         tone="light"
         style={{ marginTop: 12 }}
       />
-
-      <div
-        style={{
-          marginTop: 10,
-          color: bannerStyle.text,
-          fontWeight: 900,
-          fontSize: compact ? 24 : 30,
-          lineHeight: 1.15,
-        }}
-      >
-        {bannerTitle}
-      </div>
 
       <div style={{ marginTop: 12, ...helperText(), color: "#0B1F33" }}>
         {loadError || bannerDetail}

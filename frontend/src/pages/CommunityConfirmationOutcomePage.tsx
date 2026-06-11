@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, StableDisclosureSummary } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
-  TrustPaperIcon,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
 import {
@@ -323,6 +323,81 @@ function badgeStyle(tone: "good" | "warn" | "bad" | "info" = "info"): React.CSSP
     fontWeight: 1000,
     lineHeight: 1.15,
   };
+}
+
+function outcomeIconBadge(
+  name: GsnIconName,
+  size = 28,
+  tone: "navy" | "blue" | "green" | "amber" | "red" = "navy"
+): React.ReactElement {
+  const palette = {
+    navy: {
+      color: "#EAF3FF",
+      background:
+        "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+      border: "1px solid rgba(196,216,238,0.22)",
+    },
+    blue: {
+      color: "#EAF3FF",
+      background: "linear-gradient(180deg, #2367D1 0%, #0B3E78 100%)",
+      border: "1px solid rgba(123,161,204,0.28)",
+    },
+    green: {
+      color: "#ECFDF5",
+      background: "linear-gradient(180deg, #2E9B62 0%, #12653C 100%)",
+      border: "1px solid rgba(167,243,208,0.28)",
+    },
+    amber: {
+      color: "#FFF7E6",
+      background: "linear-gradient(180deg, #D6AA45 0%, #9A6817 100%)",
+      border: "1px solid rgba(252,211,77,0.30)",
+    },
+    red: {
+      color: "#FEF2F2",
+      background: "linear-gradient(180deg, #C83A3A 0%, #7F1D1D 100%)",
+      border: "1px solid rgba(254,202,202,0.30)",
+    },
+  }[tone];
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size >= 34 ? 13 : 11,
+        display: "grid",
+        placeItems: "center",
+        flex: "0 0 auto",
+        boxShadow:
+          "0 9px 18px rgba(2,6,23,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
+        ...palette,
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(24, Math.round(size * 0.9))} />
+    </span>
+  );
+}
+
+function outcomeButtonLabel(
+  icon: GsnIconName,
+  text: React.ReactNode,
+  tone: "navy" | "blue" | "green" | "amber" | "red" = "blue"
+) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 9,
+        minWidth: 0,
+      }}
+    >
+      {outcomeIconBadge(icon, 26, tone)}
+      <span style={{ minWidth: 0 }}>{text}</span>
+    </span>
+  );
 }
 
 function outcomeTitle(status: string, confidence: string): string {
@@ -848,7 +923,7 @@ export default function CommunityConfirmationOutcomePage() {
                   fontWeight: 1000,
                 }}
               >
-                <TrustPaperIcon name="shield" size={isCompactPaper ? 15 : 18} color="#F6D77A" />
+                <GsnLegacyIcon name="shield" size={isCompactPaper ? 24 : 28} />
                 Public Paper
               </span>
             </div>
@@ -970,10 +1045,9 @@ export default function CommunityConfirmationOutcomePage() {
                       boxShadow: "0 14px 28px rgba(6,24,39,0.12)",
                     }}
                   >
-                    <TrustPaperIcon
+                    <GsnLegacyIcon
                       name={liveWindowOpen ? "community" : status === "expired" ? "alert" : "shield"}
-                      size={isCompactPaper ? 27 : 36}
-                      strokeWidth={1.9}
+                      size={isCompactPaper ? 38 : 52}
                     />
                   </div>
                   <div style={{ display: "grid", gap: isCompactPaper ? 4 : 7, minWidth: 0 }}>
@@ -1043,7 +1117,7 @@ export default function CommunityConfirmationOutcomePage() {
                 >
                   <div style={sectionCard("#FFFFFF")}>
                     <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                      <TrustPaperIcon name="user" size={22} color="#0B63D1" />
+                      {outcomeIconBadge("user", 32, "blue")}
                       Who is being confirmed?
                     </h2>
                     <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
@@ -1059,7 +1133,7 @@ export default function CommunityConfirmationOutcomePage() {
 
                   <div style={sectionCard("#F8FBFF")}>
                     <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                      <TrustPaperIcon name="document" size={22} color="#0B63D1" />
+                      {outcomeIconBadge("document", 32, "blue")}
                       What was requested?
                     </h2>
                     <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
@@ -1073,7 +1147,7 @@ export default function CommunityConfirmationOutcomePage() {
                 <section style={sectionCard("#FFFFFF")}>
                   <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
                     <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                      <TrustPaperIcon name="community" size={23} color="#0B63D1" />
+                      {outcomeIconBadge("community", 32, "blue")}
                       Community response
                     </h2>
                     <p style={helperText()}>
@@ -1105,7 +1179,7 @@ export default function CommunityConfirmationOutcomePage() {
                 >
                   <div style={sectionCard("#F7FAFF")}>
                     <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                      <TrustPaperIcon name="document" size={22} color="#0B63D1" />
+                      {outcomeIconBadge("document", 32, "blue")}
                       Simple reading
                     </h2>
                     <p style={{ ...helperText(), color: "#1F3145", marginTop: 10 }}>
@@ -1119,7 +1193,7 @@ export default function CommunityConfirmationOutcomePage() {
                   </div>
                   <div style={sectionCard("#FFF7E6")}>
                     <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                      <TrustPaperIcon name="shield" size={22} color="#B7791F" />
+                      {outcomeIconBadge("shield", 32, "amber")}
                       Reader decision note
                     </h2>
                     <p style={{ ...helperText(), color: "#07172C", marginTop: 10, fontWeight: 900 }}>
@@ -1129,7 +1203,7 @@ export default function CommunityConfirmationOutcomePage() {
                   </div>
                   <div style={sectionCard("#F8FBFF")}>
                     <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                      <TrustPaperIcon name="copy" size={22} color="#0B63D1" />
+                      {outcomeIconBadge("copy", 32, "blue")}
                       Result return
                     </h2>
                     <p style={{ ...helperText(), color: "#1F3145", marginTop: 10 }}>
@@ -1203,7 +1277,7 @@ export default function CommunityConfirmationOutcomePage() {
 
                 <section style={sectionCard("#FFFFFF")}>
                   <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                    <TrustPaperIcon name="spark" size={22} color="#0B63D1" />
+                    {outcomeIconBadge("spark", 32, "blue")}
                     Public actions
                   </h2>
                   <div
@@ -1219,7 +1293,7 @@ export default function CommunityConfirmationOutcomePage() {
                       stableHeight={64}
                       onClick={() => void loadOutcome()}
                     >
-                      <TrustPaperIcon name="refresh" size={20} />
+                      {outcomeIconBadge("refresh", 28, "blue")}
                       Refresh outcome
                     </PrimaryButton>
                     <SecondaryButton
@@ -1227,7 +1301,7 @@ export default function CommunityConfirmationOutcomePage() {
                       stableHeight={64}
                       onClick={() => void copyLink()}
                     >
-                      <TrustPaperIcon name="copy" size={20} />
+                      {outcomeIconBadge("copy", 28, "navy")}
                       Copy public link
                     </SecondaryButton>
                     <SecondaryButton
@@ -1235,7 +1309,7 @@ export default function CommunityConfirmationOutcomePage() {
                       stableHeight={64}
                       onClick={printPage}
                     >
-                      <TrustPaperIcon name="document" size={20} />
+                      {outcomeIconBadge("document", 28, "navy")}
                       Print / Save PDF
                     </SecondaryButton>
                   </div>
@@ -1254,14 +1328,16 @@ export default function CommunityConfirmationOutcomePage() {
                       color: "#07172C",
                     }}
                   >
-                    <span>Record provider decision</span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                      {outcomeIconBadge("pen", 28, "blue")}
+                      Record provider decision
+                    </span>
                     <span style={badgeStyle("info")}>Signed-in action</span>
                   </StableDisclosureSummary>
                   <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
                     <p style={helperText()}>
-                      If you are the merchant, provider, or opportunity gatekeeper, record what
-                      you did after reading this confirmation. This adds a Trust Event without
-                      exposing private community contacts.
+                      If you acted on this paper, record the decision. GSN adds it to the trust
+                      trail without exposing private contacts.
                     </p>
                     <div
                       style={{
@@ -1276,7 +1352,7 @@ export default function CommunityConfirmationOutcomePage() {
                         busy={decisionBusy === "partial_release"}
                         onClick={() => void recordDecision("partial_release")}
                       >
-                        Reduce and proceed
+                        {outcomeButtonLabel("check", "Reduce and proceed", "green")}
                       </PrimaryButton>
                       <SecondaryButton
                         debugId="community-confirmation-outcome.decision.did-not-release"
@@ -1284,7 +1360,7 @@ export default function CommunityConfirmationOutcomePage() {
                         busy={decisionBusy === "did_not_release"}
                         onClick={() => void recordDecision("did_not_release")}
                       >
-                        Do not proceed
+                        {outcomeButtonLabel("lock", "Do not proceed", "navy")}
                       </SecondaryButton>
                       <SecondaryButton
                         debugId="community-confirmation-outcome.decision.deferred"
@@ -1292,7 +1368,7 @@ export default function CommunityConfirmationOutcomePage() {
                         busy={decisionBusy === "deferred"}
                         onClick={() => void recordDecision("deferred")}
                       >
-                        Ask for more evidence
+                        {outcomeButtonLabel("search", "Ask for evidence", "blue")}
                       </SecondaryButton>
                     </div>
                     {decisionSnapshot ? (
@@ -1313,8 +1389,7 @@ export default function CommunityConfirmationOutcomePage() {
                           </span>
                         </div>
                         <p style={helperText()}>
-                          If something changes after the first decision, record the new status here.
-                          GSN keeps this as part of the same evidence trail.
+                          If the outcome changes, update it here. It stays on the same evidence trail.
                         </p>
                         <div
                           style={{
@@ -1329,7 +1404,7 @@ export default function CommunityConfirmationOutcomePage() {
                             busy={decisionBusy === "status:settled"}
                             onClick={() => void updateDecisionStatus("settled")}
                           >
-                            Mark settled
+                            {outcomeButtonLabel("check", "Mark settled", "green")}
                           </PrimaryButton>
                           <SecondaryButton
                             debugId="community-confirmation-outcome.decision-status.issue"
@@ -1337,7 +1412,7 @@ export default function CommunityConfirmationOutcomePage() {
                             busy={decisionBusy === "status:issue_reported"}
                             onClick={() => void updateDecisionStatus("issue_reported")}
                           >
-                            Report issue
+                            {outcomeButtonLabel("alert", "Report issue", "red")}
                           </SecondaryButton>
                           <SecondaryButton
                             debugId="community-confirmation-outcome.decision-status.review"
@@ -1345,7 +1420,7 @@ export default function CommunityConfirmationOutcomePage() {
                             busy={decisionBusy === "status:under_review"}
                             onClick={() => void updateDecisionStatus("under_review")}
                           >
-                            Send to review
+                            {outcomeButtonLabel("document", "Send to review", "blue")}
                           </SecondaryButton>
                         </div>
                       </div>
@@ -1366,8 +1441,7 @@ export default function CommunityConfirmationOutcomePage() {
                         </span>
                       </div>
                       <p style={helperText()}>
-                        Close, cancel, or send this confirmation to review when the live request
-                        should no longer sit open. This records the lifecycle decision as a Trust Event.
+                        Close, cancel, or review this request when it should no longer stay open.
                       </p>
                       <textarea
                         value={requestStatusNote}
@@ -1403,7 +1477,7 @@ export default function CommunityConfirmationOutcomePage() {
                           busy={requestStatusBusy === "closed"}
                           onClick={() => void updateRequestStatus("closed")}
                         >
-                          Close request
+                          {outcomeButtonLabel("check", "Close request", "green")}
                         </PrimaryButton>
                         <SecondaryButton
                           debugId="community-confirmation-outcome.request-status.review"
@@ -1411,7 +1485,7 @@ export default function CommunityConfirmationOutcomePage() {
                           busy={requestStatusBusy === "under_review"}
                           onClick={() => void updateRequestStatus("under_review")}
                         >
-                          Send to review
+                          {outcomeButtonLabel("document", "Send to review", "blue")}
                         </SecondaryButton>
                         <SecondaryButton
                           debugId="community-confirmation-outcome.request-status.cancel"
@@ -1419,7 +1493,7 @@ export default function CommunityConfirmationOutcomePage() {
                           busy={requestStatusBusy === "cancelled"}
                           onClick={() => void updateRequestStatus("cancelled")}
                         >
-                          Cancel request
+                          {outcomeButtonLabel("lock", "Cancel request", "navy")}
                         </SecondaryButton>
                       </div>
                       {outcome.review_case ? (
@@ -1445,8 +1519,7 @@ export default function CommunityConfirmationOutcomePage() {
                             ) : null}
                           </div>
                           <p style={helperText()}>
-                            This confirmation has a review case. Close it only after the record
-                            has been checked. The outcome becomes part of the Trust Event trail.
+                            This paper has a review case. Close it only after checking the record.
                           </p>
                           {outcome.review_case.trustReadingEffect?.label ? (
                             <div
@@ -1492,7 +1565,10 @@ export default function CommunityConfirmationOutcomePage() {
                                 color: "#07172C",
                               }}
                             >
-                              <span>Internal review evidence</span>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                                {outcomeIconBadge("document", 28, "blue")}
+                                Internal evidence
+                              </span>
                               <span style={badgeStyle("info")}>
                                 {reviewEvidenceBusy === "load"
                                   ? "Loading"
@@ -1501,9 +1577,8 @@ export default function CommunityConfirmationOutcomePage() {
                             </StableDisclosureSummary>
                             <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
                               <p style={helperText()}>
-                                Add private review context here. It is recorded for GSN review and
-                                trust integrity, but it is not exposed as public member contact
-                                information on this paper.
+                                Add private review context here. It supports trust integrity and
+                                stays off the public contact record.
                               </p>
                               {reviewEvidence.length ? (
                                 <div style={{ display: "grid", gap: 10 }}>
@@ -1639,7 +1714,7 @@ export default function CommunityConfirmationOutcomePage() {
                                   busy={reviewEvidenceBusy === "add"}
                                   onClick={() => void addReviewEvidence()}
                                 >
-                                  Add review evidence
+                                  {outcomeButtonLabel("document", "Add evidence", "blue")}
                                 </SecondaryButton>
                               </div>
                             </div>
@@ -1678,7 +1753,7 @@ export default function CommunityConfirmationOutcomePage() {
                               busy={reviewBusy === "confirmed_clean"}
                               onClick={() => void resolveReviewCase("confirmed_clean", "none")}
                             >
-                              Resolve clean
+                              {outcomeButtonLabel("check", "Resolve clean", "green")}
                             </PrimaryButton>
                             <SecondaryButton
                               debugId="community-confirmation-outcome.review.resolve-caution"
@@ -1686,7 +1761,7 @@ export default function CommunityConfirmationOutcomePage() {
                               busy={reviewBusy === "insufficient_evidence"}
                               onClick={() => void resolveReviewCase("insufficient_evidence", "caution")}
                             >
-                              Resolve with caution
+                              {outcomeButtonLabel("alert", "Resolve caution", "amber")}
                             </SecondaryButton>
                             <SecondaryButton
                               debugId="community-confirmation-outcome.review.dismiss"
@@ -1694,7 +1769,7 @@ export default function CommunityConfirmationOutcomePage() {
                               busy={reviewBusy === "dismissed"}
                               onClick={() => void resolveReviewCase("dismissed", "none")}
                             >
-                              Dismiss review
+                              {outcomeButtonLabel("lock", "Dismiss review", "navy")}
                             </SecondaryButton>
                           </div>
                         </div>
@@ -1761,7 +1836,7 @@ export default function CommunityConfirmationOutcomePage() {
             }}
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-              <TrustPaperIcon name="shield" size={28} color="#F6D77A" />
+              <GsnLegacyIcon name="shield" size={36} />
               <span>
                 Human-first community confirmation:{" "}
                 <span style={{ color: "#FFFFFF" }}>
@@ -1770,8 +1845,8 @@ export default function CommunityConfirmationOutcomePage() {
               </span>
             </span>
             <span style={{ display: "inline-flex", gap: 12, color: "#F6D77A" }} aria-hidden="true">
-              <TrustPaperIcon name="spark" size={22} />
-              <TrustPaperIcon name="lock" size={22} />
+              <GsnLegacyIcon name="spark" size={30} />
+              <GsnLegacyIcon name="lock" size={30} />
             </span>
           </div>
         </article>
@@ -1834,7 +1909,7 @@ function Stat({
 }: {
   label: string;
   value: number;
-  icon: React.ComponentProps<typeof TrustPaperIcon>["name"];
+  icon: GsnIconName;
   tone?: "good" | "warn" | "bad" | "info";
   compact?: boolean;
 }) {
@@ -1845,7 +1920,7 @@ function Stat({
       <span
         style={{
           display: "grid",
-          gridTemplateColumns: compact ? "16px minmax(0, 1fr)" : "22px minmax(0, 1fr)",
+          gridTemplateColumns: compact ? "24px minmax(0, 1fr)" : "28px minmax(0, 1fr)",
           alignItems: "start",
           gap: compact ? 5 : 8,
           color,
@@ -1855,7 +1930,11 @@ function Stat({
           minWidth: 0,
         }}
       >
-        <TrustPaperIcon name={icon} size={compact ? 14 : 19} />
+        {outcomeIconBadge(
+          icon,
+          compact ? 24 : 28,
+          tone === "bad" ? "red" : tone === "warn" ? "amber" : tone === "good" ? "green" : "blue"
+        )}
         <span style={{ minWidth: 0 }}>{label}</span>
       </span>
       <strong
@@ -1864,7 +1943,7 @@ function Stat({
           fontSize: compact ? 24 : 30,
           fontWeight: 1000,
           lineHeight: 1,
-          paddingLeft: compact ? 21 : 30,
+          paddingLeft: compact ? 29 : 36,
         }}
       >
         {value}

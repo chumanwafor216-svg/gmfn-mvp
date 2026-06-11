@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
-import { TrustPaperIcon } from "../components/TrustPaperMarks";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -219,6 +219,40 @@ function moneyInCollapseButtonStyle(): React.CSSProperties {
     flex: "0 0 auto",
     transition: "none",
   };
+}
+
+function moneyInActionText(name: GsnIconName, label: string) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 11,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#0B2D4A",
+          background: "rgba(255,255,255,0.96)",
+          border: "1px solid rgba(226,192,106,0.30)",
+          boxShadow:
+            "0 8px 16px rgba(2,6,23,0.10), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={26} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function helperText(): React.CSSProperties {
@@ -1131,7 +1165,7 @@ export default function PaymentInstructionsPage() {
               whiteSpace: "nowrap",
             }}
           >
-            <TrustPaperIcon name="home" size={20} color="currentColor" />
+            <GsnLegacyIcon name="home" size={30} />
             {isCompact ? null : <span>Menu</span>}
           </span>
         </StableCtaLink>
@@ -1179,7 +1213,7 @@ export default function PaymentInstructionsPage() {
               whiteSpace: "nowrap",
             }}
           >
-            <TrustPaperIcon name="briefcase" size={20} color="currentColor" />
+            <GsnLegacyIcon name="briefcase" size={30} />
             <span>Tools</span>
           </span>
         </StableCtaLink>
@@ -1212,7 +1246,7 @@ export default function PaymentInstructionsPage() {
               flex: "0 0 auto",
             }}
           >
-            <TrustPaperIcon name="shop" size={28} color="currentColor" />
+            <GsnLegacyIcon name="shop" size={38} />
           </div>
           <div
             style={{
@@ -1306,11 +1340,9 @@ export default function PaymentInstructionsPage() {
               fontSize: 34,
             }}
           >
-            <TrustPaperIcon
+            <GsnLegacyIcon
               name={generatingInstruction || refreshingRoute ? "refresh" : "check"}
-              size={34}
-              color="currentColor"
-              strokeWidth={1.9}
+              size={48}
             />
           </div>
           <div>
@@ -1384,14 +1416,14 @@ export default function PaymentInstructionsPage() {
               value: matchedEvent
                 ? "Matched"
                 : paymentConfirmed
-                  ? "Reconciling"
+                  ? "Matching records"
                   : "Not confirmed",
               color: matchedEvent ? "#2E9B62" : "#92400E",
             },
           ].map((tile) => (
             <div key={tile.label} style={moneyInFactTile(isCompact)}>
               <span style={moneyInIconCircle(tile.color)} aria-hidden="true">
-                <TrustPaperIcon name={tile.iconName} size={19} color="#FFFFFF" />
+                <GsnLegacyIcon name={tile.iconName} size={30} />
               </span>
               <span
                 style={{
@@ -1437,7 +1469,7 @@ export default function PaymentInstructionsPage() {
         <SubtleButton
           onClick={() => toggleSection("overview")}
           minWidth={148}
-          stableHeight={42}
+          stableHeight={52}
           debugId="money-in.toggle-overview"
           style={{
             ...moneyInActionButtonStyle("soft"),
@@ -1448,7 +1480,10 @@ export default function PaymentInstructionsPage() {
             boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
           }}
         >
-          {collapsed.overview ? "Show Details" : "Hide Details"}
+          {moneyInActionText(
+            collapsed.overview ? "document" : "lock",
+            collapsed.overview ? "Open" : "Hide"
+          )}
         </SubtleButton>
 
         {!collapsed.overview ? (
@@ -1490,7 +1525,7 @@ export default function PaymentInstructionsPage() {
               fontSize: 24,
             }}
           >
-            <TrustPaperIcon name="document" size={22} color="#F8FBFF" />
+            <GsnLegacyIcon name="document" size={34} />
           </span>
           <h2
             style={{
@@ -1581,33 +1616,31 @@ export default function PaymentInstructionsPage() {
               onClick={() => void handleGenerateInstruction()}
               disabled={generatingInstruction}
               debugId="money-in.generate-instruction"
-              minWidth={isCompact ? undefined : 186}
-              stableHeight={62}
+              stableHeight={56}
               fullWidth
               style={moneyInActionButtonStyle("primary", generatingInstruction)}
             >
-              {generatingInstruction ? "Generating..." : "Generate instruction"}
+              {moneyInActionText("document", generatingInstruction ? "Generating" : "Generate")}
             </PrimaryButton>
 
             <SecondaryButton
               onClick={() => void handleRefreshRoute()}
               disabled={generatingInstruction || refreshingRoute}
               debugId="money-in.refresh-route"
-              minWidth={isCompact ? undefined : 132}
-              stableHeight={62}
+              stableHeight={56}
               fullWidth
               style={moneyInActionButtonStyle(
                 "secondary",
                 generatingInstruction || refreshingRoute
               )}
             >
-              {refreshingRoute ? "Refreshing..." : "Refresh"}
+              {moneyInActionText("refresh", refreshingRoute ? "Refreshing" : "Refresh")}
             </SecondaryButton>
           </div>
 
           <SubtleButton
             onClick={handleResetTask}
-            stableHeight={38}
+            stableHeight={52}
             debugId="money-in.reset-task"
             style={{
               ...moneyInActionButtonStyle("soft"),
@@ -1620,7 +1653,7 @@ export default function PaymentInstructionsPage() {
               fontSize: 17,
             }}
           >
-            Reset
+            {moneyInActionText("refresh", "Reset")}
           </SubtleButton>
         </div>
       </section>
@@ -1639,7 +1672,7 @@ export default function PaymentInstructionsPage() {
               color: "#F2C766",
             }}
           >
-            <TrustPaperIcon name="shield" size={19} color="#F2C766" />
+            <GsnLegacyIcon name="shield" size={30} />
           </span>
           <span
             style={{
@@ -1666,7 +1699,7 @@ export default function PaymentInstructionsPage() {
               color: "#6BA7FF",
             }}
           >
-            <TrustPaperIcon name="alert" size={19} color="#6BA7FF" />
+            <GsnLegacyIcon name="alert" size={30} />
           </span>
           <span
             style={{
@@ -1702,11 +1735,14 @@ export default function PaymentInstructionsPage() {
           <SubtleButton
             onClick={() => toggleSection("instruction")}
             minWidth={128}
-            stableHeight={46}
+            stableHeight={52}
             debugId="money-in.toggle-instruction"
             style={moneyInCollapseButtonStyle()}
           >
-            {collapsed.instruction ? "Open" : "Collapse"}
+            {moneyInActionText(
+              collapsed.instruction ? "document" : "lock",
+              collapsed.instruction ? "Open" : "Hide"
+            )}
           </SubtleButton>
         </div>
 
@@ -1802,32 +1838,32 @@ export default function PaymentInstructionsPage() {
                   <PrimaryButton
                     onClick={handleCopyReference}
                     debugId="money-in.copy-reference"
-                    minWidth={isCompact ? undefined : 152}
                     stableHeight={52}
+                    fullWidth
                     style={moneyInActionButtonStyle("primary")}
                   >
-                    Copy reference
+                    {moneyInActionText("copy", "Copy ref")}
                   </PrimaryButton>
 
                   <SecondaryButton
                     onClick={handleCopyInstruction}
                     debugId="money-in.copy-instruction"
-                    minWidth={isCompact ? undefined : 166}
                     stableHeight={52}
+                    fullWidth
                     style={moneyInActionButtonStyle("secondary")}
                   >
-                    Copy instruction
+                    {moneyInActionText("copy", "Copy text")}
                   </SecondaryButton>
 
                   <SecondaryButton
                     onClick={handleConfirmPaymentMade}
                     disabled={paymentConfirmed}
                     debugId="money-in.confirm-paid"
-                    minWidth={isCompact ? undefined : 170}
                     stableHeight={52}
+                    fullWidth
                     style={moneyInActionButtonStyle("secondary", paymentConfirmed)}
                   >
-                    {paymentConfirmed ? "Payment declared" : "Confirm paid"}
+                    {moneyInActionText("check", paymentConfirmed ? "Declared" : "Confirm paid")}
                   </SecondaryButton>
                 </div>
               </div>
@@ -1858,11 +1894,14 @@ export default function PaymentInstructionsPage() {
           <SubtleButton
             onClick={() => toggleSection("result")}
             minWidth={128}
-            stableHeight={46}
+            stableHeight={52}
             debugId="money-in.toggle-result"
             style={moneyInCollapseButtonStyle()}
           >
-            {collapsed.result ? "Open" : "Collapse"}
+            {moneyInActionText(
+              collapsed.result ? "document" : "lock",
+              collapsed.result ? "Open" : "Hide"
+            )}
           </SubtleButton>
         </div>
 
@@ -1981,11 +2020,11 @@ export default function PaymentInstructionsPage() {
 
                 <SubtleButton
                   onClick={handleResetTask}
-                  stableHeight={42}
+                  stableHeight={52}
                   debugId="money-in.reset-task"
                   style={moneyInActionButtonStyle("soft")}
                 >
-                  Reset Money In
+                  {moneyInActionText("refresh", "Reset")}
                 </SubtleButton>
               </div>
             </div>
@@ -2019,11 +2058,14 @@ export default function PaymentInstructionsPage() {
           <SubtleButton
             onClick={() => toggleSection("routes")}
             minWidth={128}
-            stableHeight={46}
+            stableHeight={52}
             debugId="money-in.toggle-routes"
             style={moneyInCollapseButtonStyle()}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {moneyInActionText(
+              collapsed.routes ? "document" : "lock",
+              collapsed.routes ? "Open" : "Hide"
+            )}
           </SubtleButton>
         </div>
 
@@ -2042,81 +2084,81 @@ export default function PaymentInstructionsPage() {
               <StableCtaLink
                 to={routes.finance}
                 debugId="money-in.route.finance"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyInActionButtonStyle("primary")}
               >
-                Finance
+                {moneyInActionText("wallet", "Finance")}
               </StableCtaLink>
 
               <StableCtaLink
                 to={routes.moneyOut}
                 debugId="money-in.route.money-out"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyInActionButtonStyle("secondary")}
               >
-                Money Out
+                {moneyInActionText("bank", "Money Out")}
               </StableCtaLink>
 
               <StableCtaLink
                 to={routes.paymentRails}
                 debugId="money-in.route.payment-rails"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyInActionButtonStyle("secondary")}
               >
-                Payment Rails
+                {moneyInActionText("briefcase", "Rails")}
               </StableCtaLink>
 
               <StableCtaLink
                 to={routes.payoutDetails}
                 debugId="money-in.route.payout-details"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyInActionButtonStyle("secondary")}
               >
-                Payout Details
+                {moneyInActionText("document", "Payout")}
               </StableCtaLink>
 
               <StableCtaLink
                 to={routes.loans}
                 debugId="money-in.route.loans"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyInActionButtonStyle("secondary")}
               >
-                Loans
+                {moneyInActionText("community", "Loans")}
               </StableCtaLink>
 
               <StableCtaLink
                 to={routes.marketplace}
                 debugId="money-in.route.marketplace"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyInActionButtonStyle("secondary")}
               >
-                Marketplace
+                {moneyInActionText("shop", "Market")}
               </StableCtaLink>
 
               <StableCtaLink
                 to={routes.community}
                 debugId="money-in.route.community"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyInActionButtonStyle("secondary")}
               >
-                Community Home
+                {moneyInActionText("home", "Community")}
               </StableCtaLink>
 
               <StableCtaLink
                 to={routes.notifications}
                 debugId="money-in.route.notifications"
-                stableHeight={48}
+                stableHeight={52}
                 fullWidth
                 style={moneyInActionButtonStyle("secondary")}
               >
-                Action Inbox
+                {moneyInActionText("alert", "Inbox")}
               </StableCtaLink>
             </div>
           ) : (

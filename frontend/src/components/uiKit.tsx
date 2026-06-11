@@ -43,7 +43,7 @@ export function Button({
       {...props}
       type={type}
       className="gmfn-btn"
-      stableHeight={44}
+      stableHeight={52}
       style={{
         minHeight: 44,
         padding: "10px 14px",

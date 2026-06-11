@@ -167,7 +167,19 @@ Hide by default:
 ## Visual Rules
 
 - Institutional, not playful.
-- Use icons for meaning, not decoration.
+- Use premium realistic 3D object icons for meaning, not decoration.
+- Do not use flat, outline, faded, cartoon, or emoji-style icons as primary UI
+  icons.
+- Keep icon objects simple enough to read fast on mobile, inside stable rounded
+  containers.
+- Prefer light, transparent, white, or near-colorless icon containers so the
+  object carries the meaning. Heavy colored shields can make the icon feel
+  decorative or hidden, especially for users who rely more on what they see
+  than what they read.
+- Use hopeful institutional objects for domain meaning: a bank building can
+  communicate stronger finance confidence than a small wallet; a real
+  shopfront or market stall can communicate marketplace opportunity more
+  clearly than a generic cart.
 - Use watermarks lightly; they must never fight the content.
 - Green means ready.
 - Amber means caution or needs refresh.

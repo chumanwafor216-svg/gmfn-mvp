@@ -1,5 +1,6 @@
 // src/components/GMFNConfirmModal.tsx
 import { useState } from "react";
+import { GsnLegacyIcon } from "./GsnLegacyIcon";
 import { PrimaryButton, SecondaryButton } from "./StableButton";
 
 export type GMFNConfirmResult = {
@@ -90,7 +91,10 @@ export default function GMFNConfirmModal({
 )} 
 
         {communityImpact && (
-          <div style={impactBox}>👥 {communityImpact}</div>
+          <div style={impactBox}>
+            <GsnLegacyIcon name="community" size={26} />
+            <span>{communityImpact}</span>
+          </div>
         )}
 
         <label style={label}>Reason</label>
@@ -113,7 +117,7 @@ export default function GMFNConfirmModal({
           <SecondaryButton
             onClick={onClose}
             disabled={loading}
-            stableHeight={40}
+            stableHeight={52}
             debugId="gmfn-confirm.cancel"
           >
             {cancelLabel}
@@ -123,10 +127,10 @@ export default function GMFNConfirmModal({
             disabled={loading}
             busy={loading}
             busyLabel="Working..."
-            stableHeight={40}
+            stableHeight={52}
             debugId="gmfn-confirm.confirm"
           >
-            {loading ? "Working…" : confirmLabel}
+            {loading ? "Working..." : confirmLabel}
           </PrimaryButton>
         </div>
       </div>
@@ -180,6 +184,9 @@ const impactBox: React.CSSProperties = {
   background: "#f3f4f6",
   borderRadius: 6,
   fontSize: 13,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
 }; 
 const box: React.CSSProperties = {
   marginTop: 12,

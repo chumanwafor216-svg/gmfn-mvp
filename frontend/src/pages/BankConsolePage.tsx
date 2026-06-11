@@ -7,6 +7,7 @@ import {
   institutionalPageCard,
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   bankIngestEvent,
   getCurrentClan,
@@ -105,6 +106,8 @@ function bankConsolePrimaryButtonStyle(disabled = false): React.CSSProperties {
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
     opacity: disabled ? 0.72 : 1,
+    whiteSpace: "nowrap",
+    transition: "none",
   };
 }
 
@@ -118,7 +121,57 @@ function bankConsoleSecondaryButtonStyle(disabled = false): React.CSSProperties 
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
     opacity: disabled ? 0.72 : 1,
+    whiteSpace: "nowrap",
+    transition: "none",
   };
+}
+
+function actionText(name: GsnIconName, label: string): React.ReactNode {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 11,
+          display: "grid",
+          placeItems: "center",
+          flex: "0 0 auto",
+          color: "#EAF3FF",
+          background:
+            "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+          border: "1px solid rgba(196,216,238,0.22)",
+          boxShadow:
+            "0 9px 18px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={26} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function nextStepActionText(step: NextStepState): React.ReactNode {
+  if (step.ctaLabel.toLowerCase().includes("reconcile")) {
+    return actionText("refresh", "Match records");
+  }
+
+  if (step.ctaLabel.toLowerCase().includes("community")) {
+    return actionText("community", "Community Home");
+  }
+
+  return actionText("briefcase", "Loans & Support");
 }
 
 function inputStyle(): React.CSSProperties {
@@ -285,10 +338,11 @@ function renderStepAction(step: NextStepState) {
     <StableCtaLink
       to={step.ctaTo}
       debugId="bank-console.next-step"
-      stableHeight={42}
+      minWidth={156}
+      stableHeight={52}
       style={bankConsolePrimaryButtonStyle(false)}
     >
-      {step.ctaLabel}
+      {nextStepActionText(step)}
     </StableCtaLink>
   );
 }
@@ -514,11 +568,11 @@ export default function BankConsolePage() {
             ? "One bank event is still unmatched"
             : `${unmatched.length} bank events are still unmatched`,
         detail:
-          "After ingestion, the next valid step is reconciliation and review of unmatched items, not guesswork.",
-        today: "Run reconciliation and review the unmatched queue carefully.",
+          "Match records first, then review the unmatched queue.",
+        today: "Match records now, then open the item still needing review.",
         tomorrow:
-          "Resolving unmatched events makes settlement cleaner and more defensible.",
-        ctaLabel: "Run reconciliation below",
+          "Clean matches make settlement easier to defend.",
+        ctaLabel: "Match records",
         ctaTo: routes.bankConsole,
       };
     }
@@ -526,10 +580,10 @@ export default function BankConsolePage() {
     return {
       title: "Operations path is calmer right now",
       detail:
-        "Use manual ingest only when a real event needs to enter the reconciliation path, then review what matched and what did not.",
-      today: "Review the recent events and only ingest what is truly needed.",
+        "Only ingest a real event that needs review now.",
+      today: "Check recent events before adding anything manually.",
       tomorrow:
-        "Controlled ingest and reconciliation keeps the money path institutional.",
+        "Fewer manual entries keeps the money record cleaner.",
       ctaLabel: "Return to Loans & Support",
       ctaTo: routes.loans,
     };
@@ -558,7 +612,7 @@ export default function BankConsolePage() {
             >
               {title}
             </div>
-            <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
+            <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.45 }}>
               {hint}
             </div>
           </div>
@@ -568,7 +622,7 @@ export default function BankConsolePage() {
 
         <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
           {rows.length === 0 ? (
-            <div style={{ color: "#6B7A88", lineHeight: 1.8 }}>{emptyText}</div>
+            <div style={{ color: "#6B7A88", lineHeight: 1.45 }}>{emptyText}</div>
           ) : null}
 
           {rows.map((row: BankConsoleRow, i: number) => {
@@ -691,9 +745,9 @@ export default function BankConsolePage() {
                 <div
                   style={{
                     marginTop: 12,
-                    display: "flex",
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "minmax(132px, max-content)",
                     gap: 10,
-                    flexWrap: "wrap",
                   }}
                 >
                   <SecondaryButton
@@ -709,11 +763,13 @@ export default function BankConsolePage() {
                         ].join(" | ")
                       )
                     }
-                    stableHeight={42}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 132}
+                    stableHeight={52}
                     debugId={`bank-console.row.${safeStr(row.id || displayReference || i)}.copy`}
                     style={bankConsoleSecondaryButtonStyle(false)}
                   >
-                    Copy summary
+                    {actionText("copy", "Copy summary")}
                   </SecondaryButton>
                 </div>
               </div>
@@ -729,7 +785,7 @@ export default function BankConsolePage() {
       <PageTopNav
         sectionLabel="Bank Console"
         title="Bank Console"
-        subtitle="Review bank events here, run reconciliation, and see what has matched or remained unmatched."
+        subtitle="Match bank events and review what is still open."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
@@ -747,9 +803,9 @@ export default function BankConsolePage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen brings together recent bank events, unmatched items, expected payments, and reconciliation actions in one banking review desk."
-        why="It helps you understand what has arrived, what has already matched, and which money events still need careful review."
-        next="Read the top summary first, then move into recent events, expected items, or manual ingest depending on what needs to be matched next."
+        what="See bank events, matches, and items still needing review."
+        why="It keeps community money records traceable."
+        next="Match records first. Add manually only when a real event is missing."
         tone="light"
         style={{ marginTop: 18 }}
       />
@@ -793,10 +849,9 @@ export default function BankConsolePage() {
               {nextStep.title}
             </div>
 
-            <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.8 }}>
-              Review incoming bank events, match
-              them against expected references, and see which items are
-              confirmed and which still need review.
+            <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.45 }}>
+              Check incoming bank events, confirm matches, and review anything
+              still unmatched.
             </div>
 
             <div
@@ -816,20 +871,25 @@ export default function BankConsolePage() {
             <div
               style={{
                 marginTop: 16,
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(2, minmax(142px, max-content))",
                 gap: 10,
-                flexWrap: "wrap",
+                alignItems: "center",
               }}
             >
               {renderStepAction(nextStep)}
               <SecondaryButton
                 onClick={() => void loadAll()}
                 disabled={loading}
-                stableHeight={42}
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 142}
+                stableHeight={52}
                 debugId="bank-console.refresh"
                 style={bankConsoleSecondaryButtonStyle(loading)}
               >
-                {loading ? "Refreshing..." : "Refresh now"}
+                {actionText("refresh", loading ? "Refreshing" : "Refresh")}
               </SecondaryButton>
             </div>
           </div>
@@ -945,19 +1005,18 @@ export default function BankConsolePage() {
 
       <section id="bank-manual-ingest" style={{ ...pageCard(), marginTop: 18 }}>
         <div style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}>
-          Manual Ingest
+          Record Missing Bank Event
         </div>
 
-        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
-          Enter a real bank event only when it should enter the reconciliation
-          path.
+        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.45 }}>
+          Add one real bank event only when it is missing from the bank feed.
         </div>
 
         <ExplainToggle
           label="How to use this"
-          what="Manual ingest is the place for entering a real bank event when it needs to enter the reconciliation path and does not already appear in the recent feed."
-          why="It prevents the reconciliation desk from becoming noisy with duplicate or speculative entries."
-          next="Use this only for a real event that should be tracked now, then refresh and confirm whether it matched or stayed unmatched."
+          what="Record one missing real bank event."
+          why="This avoids duplicate or speculative entries."
+          next="Save it, refresh, then check whether it matched."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -1016,29 +1075,36 @@ export default function BankConsolePage() {
         <div
           style={{
             marginTop: 14,
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "repeat(2, minmax(152px, max-content))",
             gap: 10,
-            flexWrap: "wrap",
+            alignItems: "center",
           }}
         >
           <PrimaryButton
             onClick={() => void ingestNow()}
             disabled={busyIngest}
-            stableHeight={42}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 152}
+            stableHeight={52}
             debugId="bank-console.ingest"
             style={bankConsolePrimaryButtonStyle(busyIngest)}
           >
-            {busyIngest ? "Ingesting..." : "Ingest event"}
+            {actionText("document", busyIngest ? "Recording" : "Record event")}
           </PrimaryButton>
 
           <SecondaryButton
             onClick={() => void reconcileNow()}
             disabled={busyReconcile}
-            stableHeight={42}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 152}
+            stableHeight={52}
             debugId="bank-console.reconcile"
             style={bankConsoleSecondaryButtonStyle(busyReconcile)}
           >
-            {busyReconcile ? "Reconciling..." : "Run reconciliation"}
+            {actionText("refresh", busyReconcile ? "Matching" : "Match records")}
           </SecondaryButton>
         </div>
       </section>
@@ -1086,11 +1152,11 @@ export default function BankConsolePage() {
               <div
                 style={{ fontSize: 18, fontWeight: 1000, color: "#0B1F33" }}
               >
-                Expected Payments / Config
+                Expected Payments / Setup
               </div>
-              <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
-                Expected payment rows when available, or config visibility when
-                not.
+              <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.45 }}>
+                Expected payment rows, or setup visibility when rows are not
+                ready.
               </div>
             </div>
 
@@ -1216,12 +1282,12 @@ export default function BankConsolePage() {
                   style={{
                     marginTop: 8,
                     color: "#475569",
-                    lineHeight: 1.8,
+                    lineHeight: 1.45,
                   }}
                 >
                   {expectedDetail ||
                     safeStr(cfg?.detail) ||
-                    "Expected payment visibility is available when the current community has matching bank and reconciliation data."}
+                    "Expected payments appear when this community has matching bank data."}
                 </div>
 
                 {cfg ? (
@@ -1235,11 +1301,12 @@ export default function BankConsolePage() {
                   >
                     <SecondaryButton
                       onClick={() => safeCopy(JSON.stringify(cfg, null, 2))}
-                      stableHeight={42}
+                      minWidth={150}
+                      stableHeight={52}
                       debugId="bank-console.copy-config"
                       style={bankConsoleSecondaryButtonStyle(false)}
                     >
-                      Copy config snapshot
+                      {actionText("copy", "Copy settings")}
                     </SecondaryButton>
                   </div>
                 ) : null}

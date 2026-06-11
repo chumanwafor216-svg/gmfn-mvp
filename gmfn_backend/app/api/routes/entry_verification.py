@@ -889,10 +889,6 @@ async def record_signed_in_identity_photo(
     db.add(check)
     db.flush()
 
-    if normalized_document_type == "selfie":
-        db_user.profile_image_url = evidence_url
-        db.add(db_user)
-
     clan_id = _active_clan_id_for_user(db, int(db_user.id))
     photo_meta = build_trust_meta(
         reason="signed_in_identity_photo_recorded",

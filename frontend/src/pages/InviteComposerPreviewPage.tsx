@@ -292,7 +292,7 @@ export default function InviteComposerPreviewPage() {
           >
             <PrimaryButton
               type="button"
-              stableHeight={42}
+              stableHeight={52}
               debugId="invite-composer-preview.create-package"
               style={goldBtn()}
             >

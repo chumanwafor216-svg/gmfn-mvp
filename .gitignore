@@ -28,6 +28,10 @@ _runtime_logs/
 *.db.backup*
 pytest-tmp*/
 frontend/pytest-tmp*/
+.pytest-basetemp*/
+.pytest-tmp/
+.pytest_tmp_current/
+gmfn_backend/.pytest_tmp_*/
 frontend/tsconfig.tsbuildinfo
 frontend/dist/
 frontend/uploads/
@@ -35,3 +39,4 @@ uploads/
 
 # Local upload artifacts
 gmfn_backend/uploads/
+test_uploads/

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   createMarketplaceBroadcast,
   getAccessToken,
@@ -35,6 +36,32 @@ import {
 
 type NoticeTone = "success" | "error" | "info";
 type Notice = { tone: NoticeTone; text: string } | null;
+
+function labelWithIcon(name: GsnIconName, label: React.ReactNode): React.ReactNode {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 auto",
+          width: 28,
+          height: 28,
+          borderRadius: 10,
+          display: "inline-grid",
+          placeItems: "center",
+          color: "#7A4A00",
+          background: "rgba(255,255,255,0.97)",
+          border: "1px solid rgba(226,192,106,0.34)",
+          boxShadow:
+            "0 8px 16px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }}
+      >
+        <GsnLegacyIcon name={name} size={22} />
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
 
 type ShopRecord = {
   id: number;
@@ -818,9 +845,11 @@ export default function SubscriptionSpotlightPage() {
       >
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 320px", gap: 26, alignItems: "center" }}>
           <div>
-            <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.gold }}>💳 SHOP CONTROL</div>
+            <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.gold }}>
+              {labelWithIcon("shop", "Shop Control")}
+            </div>
             <h1 style={{ margin: "16px 0 0", color: "#FFFFFF", fontSize: isCompact ? 30 : 38, lineHeight: 1.04, fontWeight: 950, textTransform: "uppercase" }}>
-              ⭐ Subscription Spotlight
+              Subscription Spotlight
             </h1>
             <div style={{ marginTop: 12, color: "#F8FBFF", fontSize: isCompact ? 22 : 28, lineHeight: 1.1, fontWeight: 950 }}>
               {shopName}
@@ -829,10 +858,14 @@ export default function SubscriptionSpotlightPage() {
               Paid priority for one clear shop update. Choose credits, confirm the exact price, pay through the bank rail, then publish from this page only.
             </div>
             <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <span style={heroBadge(true)}>⭐ Subscription Spotlight</span>
-              <span style={heroBadge(usableCredits > 0)}>✅ {usableCredits} ready credit{usableCredits === 1 ? "" : "s"}</span>
-              <span style={heroBadge(effectiveActivePaidCount > 0)}>📣 Live paid: {effectiveActivePaidCount}</span>
-              <span style={heroBadge(false)}>⏳ One paid run at a time</span>
+              <span style={heroBadge(true)}>{labelWithIcon("spark", "Subscription Spotlight")}</span>
+              <span style={heroBadge(usableCredits > 0)}>
+                {labelWithIcon("check", `${usableCredits} ready credit${usableCredits === 1 ? "" : "s"}`)}
+              </span>
+              <span style={heroBadge(effectiveActivePaidCount > 0)}>
+                {labelWithIcon("megaphone", <>Live paid: {effectiveActivePaidCount}</>)}
+              </span>
+              <span style={heroBadge(false)}>{labelWithIcon("lock", "One paid run at a time")}</span>
             </div>
           </div>
           <div
@@ -856,7 +889,7 @@ export default function SubscriptionSpotlightPage() {
               S
             </div>
             <div style={{ position: "absolute", left: 18, right: 18, bottom: 18, textAlign: "center", color: "#FFFFFF", fontWeight: 950, fontSize: 20 }}>
-              ⭐ Priority spotlight
+              {labelWithIcon("spark", "Priority spotlight")}
             </div>
           </div>
         </div>
@@ -865,12 +898,14 @@ export default function SubscriptionSpotlightPage() {
       <section style={{ ...brandPageCard(), padding: 0 }}>
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr" }}>
           <div style={{ padding: isCompact ? 20 : 24, borderRight: isCompact ? "none" : `1px solid ${gmfnBrand.colors.line}` }}>
-            <div style={sectionTitle()}>1. ⭐ Activate spotlight credits</div>
+            <div style={sectionTitle()}>{labelWithIcon("spark", "1. Activate spotlight credits")}</div>
             <div style={{ marginTop: 12, ...brandHelperText(), fontWeight: 760 }}>
               Choose the number of paid spotlight credits you want now. Each confirmed credit lets you publish one paid spotlight run.
             </div>
             <div style={{ marginTop: 14, ...brandInnerCard("linear-gradient(180deg, #FFF9E7 0%, #FFFFFF 100%)") }}>
-              <div style={{ ...brandSectionLabel(), color: "#8A640E" }}>🏷️ Pricing rule</div>
+              <div style={{ ...brandSectionLabel(), color: "#8A640E" }}>
+                {labelWithIcon("tag", "Pricing rule")}
+              </div>
               <div style={{ marginTop: 6, color: gmfnBrand.colors.ink, fontWeight: 900, lineHeight: 1.45 }}>
                 1-5 credits are GBP 1 each. The 6-credit bundle is GBP 5.
               </div>
@@ -901,7 +936,9 @@ export default function SubscriptionSpotlightPage() {
           </div>
 
           <div style={{ padding: isCompact ? 20 : 24, background: "linear-gradient(180deg, rgba(250,253,255,0.96), rgba(239,246,253,0.94))" }}>
-            <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.accent }}>💳 Payment preview</div>
+            <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.accent }}>
+              {labelWithIcon("card", "Payment preview")}
+            </div>
             <div style={{ marginTop: 16, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>
               {selectedCredits} credit{selectedCredits === 1 ? "" : "s"} selected = {selectedLabel}
             </div>
@@ -918,7 +955,7 @@ export default function SubscriptionSpotlightPage() {
               debugId="subscription-spotlight.confirm-quote"
               style={{ ...brandActionButton("primary"), marginTop: 18, minHeight: 62, width: "100%" }}
             >
-              ✅ Agree: {agreementText}
+              {labelWithIcon("check", <>Agree: {agreementText}</>)}
             </PrimaryButton>
             <SecondaryButton
               type="button"
@@ -930,7 +967,7 @@ export default function SubscriptionSpotlightPage() {
               debugId="subscription-spotlight.generate-payment-code"
               style={{ ...brandActionButton("secondary", creatingInstruction || !shop?.id), marginTop: 10, minHeight: 54, width: "100%" }}
             >
-              {creatingInstruction ? "Generating payment code..." : "🔐 Generate payment code"}
+              {creatingInstruction ? "Generating payment code..." : "Generate payment code"}
             </SecondaryButton>
             <div style={{ marginTop: 14, ...brandHelperText(), fontWeight: 820 }}>
               Payment instructions expire {paymentDueDays} days after generation. Payment goes to the GSN platform account, not the community.
@@ -945,7 +982,7 @@ export default function SubscriptionSpotlightPage() {
       </section>
 
       <section style={brandPageCard()}>
-        <div style={sectionTitle()}>2. 🏦 Payment code and bank transfer</div>
+        <div style={sectionTitle()}>{labelWithIcon("bank", "2. Payment code and bank transfer")}</div>
         {latestPayment ? (
           <>
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 14 }}>
@@ -972,7 +1009,7 @@ export default function SubscriptionSpotlightPage() {
                 disabled={paymentLines.length === 0}
                 debugId="subscription-spotlight.copy-payment-details"
               >
-                📋 Copy payment details
+                {labelWithIcon("copy", "Copy payment details")}
               </SecondaryButton>
               <SubtleButton
                 type="button"
@@ -983,7 +1020,7 @@ export default function SubscriptionSpotlightPage() {
                 style={brandActionButton("soft", checkingPayment)}
                 debugId="subscription-spotlight.check-payment-status"
               >
-                {checkingPayment ? "Checking..." : "🔎 Check payment status"}
+                {checkingPayment ? "Checking..." : labelWithIcon("search", "Check payment status")}
               </SubtleButton>
             </div>
           </>
@@ -995,15 +1032,21 @@ export default function SubscriptionSpotlightPage() {
       </section>
 
       <section style={brandPageCard()}>
-        <div style={sectionTitle()}>3. 📣 Publish Subscription Spotlight</div>
+        <div style={sectionTitle()}>{labelWithIcon("megaphone", "3. Publish Subscription Spotlight")}</div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span style={brandBadge(usableCredits > 0)}>✅ {usableCredits} ready credit{usableCredits === 1 ? "" : "s"}</span>
-          <span style={brandBadge(effectiveActivePaidCount > 0)}>📣 Live paid: {effectiveActivePaidCount}</span>
-          <span style={brandBadge(canPublishPaid)}>📝 Publisher: {canPublishPaid ? "Open" : "Waiting"}</span>
+          <span style={brandBadge(usableCredits > 0)}>
+            {labelWithIcon("check", `${usableCredits} ready credit${usableCredits === 1 ? "" : "s"}`)}
+          </span>
+          <span style={brandBadge(effectiveActivePaidCount > 0)}>
+            {labelWithIcon("megaphone", <>Live paid: {effectiveActivePaidCount}</>)}
+          </span>
+          <span style={brandBadge(canPublishPaid)}>
+            {labelWithIcon("pen", <>Publisher: {canPublishPaid ? "Open" : "Waiting"}</>)}
+          </span>
         </div>
         {activePaidSpotlights.length > 0 ? (
           <div style={{ marginTop: 14, ...brandInnerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)") }}>
-            <div style={brandSectionLabel()}>📣 Live paid spotlight</div>
+            <div style={brandSectionLabel()}>{labelWithIcon("megaphone", "Live paid spotlight")}</div>
             <div style={{ marginTop: 8, color: gmfnBrand.colors.ink, fontWeight: 950, fontSize: 18 }}>
               {firstTruthy(activePaidSpotlights[0]?.message, "A paid spotlight is live for this shop.")}
             </div>
@@ -1033,9 +1076,15 @@ export default function SubscriptionSpotlightPage() {
               style={inputStyle()}
             />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={brandBadge(Boolean(imageFile))}>{imageFile ? "🖼️ Picture ready" : "🖼️ Picture optional"}</span>
-              <span style={brandBadge(Boolean(videoFile))}>{videoFile ? "🎬 Video ready" : "🎬 Video optional"}</span>
-              {(preparingImage || preparingVideo) ? <span style={brandBadge(false)}>⚙️ Preparing media</span> : null}
+              <span style={brandBadge(Boolean(imageFile))}>
+                {labelWithIcon("image", imageFile ? "Picture ready" : "Picture optional")}
+              </span>
+              <span style={brandBadge(Boolean(videoFile))}>
+                {labelWithIcon("video", videoFile ? "Video ready" : "Video optional")}
+              </span>
+              {(preparingImage || preparingVideo) ? (
+                <span style={brandBadge(false)}>{labelWithIcon("refresh", "Preparing media")}</span>
+              ) : null}
             </div>
             <PrimaryButton
               type="button"
@@ -1047,11 +1096,13 @@ export default function SubscriptionSpotlightPage() {
               debugId="subscription-spotlight.publish"
               style={{ ...brandActionButton("primary", publishing), minHeight: 58 }}
             >
-              {publishing ? "Publishing..." : "📣 Publish Subscription Spotlight"}
+              {publishing ? "Publishing..." : "Publish Subscription Spotlight"}
             </PrimaryButton>
           </div>
           <div style={{ ...brandInnerCard("linear-gradient(145deg, #071424 0%, #0D2640 48%, #173A5C 100%)"), border: "1px solid rgba(243,208,106,0.20)" }}>
-            <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.gold }}>👀 Preview</div>
+            <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.gold }}>
+              {labelWithIcon("eye", "Preview")}
+            </div>
             <div style={{ marginTop: 12, borderRadius: 18, overflow: "hidden", minHeight: 220, background: "#061827" }}>
               {imagePreviewUrl || videoPreviewUrl ? (
                 <SpotlightMediaFrame

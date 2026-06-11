@@ -7,6 +7,7 @@ import {
   SecondaryButton,
   StableDisclosureSummary,
 } from "../components/StableButton";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { APP_ROUTES } from "../lib/appRoutes";
 import {
   addCommunityConfirmationReviewEvidence,
@@ -481,6 +482,37 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function labelWithIcon(
+  icon: GsnIconName,
+  text: React.ReactNode,
+  color = "currentColor"
+) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+        color,
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={26} />
+      <span style={{ minWidth: 0 }}>{text}</span>
+    </span>
+  );
+}
+
+function sectionLabelWithIcon(icon: GsnIconName, text: React.ReactNode) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={icon} size={24} />
+      <span>{text}</span>
+    </span>
+  );
+}
+
 function pillStyle(tone: ResponseOption["tone"] | "neutral"): React.CSSProperties {
   const positive = tone === "positive";
   const caution = tone === "caution";
@@ -534,13 +566,6 @@ function subjectName(row: ConfirmationRow): string {
     row.subjectUserId ? `Member #${row.subjectUserId}` : "",
     "Member"
   );
-}
-
-function subjectInitials(row: ConfirmationRow): string {
-  const name = subjectName(row);
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return name.slice(0, 2).toUpperCase();
 }
 
 function reviewStatusLabel(row: ReviewCaseRow): string {
@@ -1164,7 +1189,7 @@ function CommunityConfirmationInboxPage() {
       <PageTopNav
         sectionLabel="Community confirmation"
         title="Confirmation Inbox"
-        subtitle="Answer only when you genuinely know the member inside this community."
+        subtitle="Answer only what you truly know."
         homeTo={APP_ROUTES.DASHBOARD}
         homeLabel="Dashboard"
         backTo={APP_ROUTES.TRUST_SLIP}
@@ -1172,10 +1197,10 @@ function CommunityConfirmationInboxPage() {
       />
 
       <ExplainToggle
-        label="What this inbox does"
-        what="This inbox lets eligible community members answer a live TrustSlip confirmation request."
-        why="A public TrustSlip can say someone belongs to a community, but a reader may need stronger reassurance for this specific decision."
-        next="Use the safest true answer. GSN shows only aggregate results outside; it does not publish your private contact details or your individual vote."
+        label="How to answer"
+        what="Eligible members answer live community checks here."
+        why="A reader needs a clear trust signal without seeing private community contacts."
+        next="Choose the true answer. GSN shares the result pattern, not your private contact."
         tone="blue"
         style={{ marginTop: 16 }}
       />
@@ -1211,14 +1236,21 @@ function CommunityConfirmationInboxPage() {
           }}
         >
           <div>
-            <div style={{ color: "#F2C766", fontSize: 12, fontWeight: 1000, textTransform: "uppercase" }}>
-              Instant community confirmation
+            <div
+              style={{
+                color: "#F2C766",
+                fontSize: 12,
+                fontWeight: 1000,
+                textTransform: "uppercase",
+              }}
+            >
+              {sectionLabelWithIcon("shield", "Community signal")}
             </div>
             <h1 style={{ margin: "8px 0 0", fontSize: isCompact ? 30 : 42, lineHeight: 1, fontWeight: 1000 }}>
-              Answer the live community check.
+              Answer the live check.
             </h1>
             <p style={{ margin: "12px 0 0", color: "#D7E2EF", fontSize: 16, fontWeight: 800, lineHeight: 1.5 }}>
-              This is not a guarantee. It is a privacy-safe response signal that helps an outside reader decide whether to ask for more evidence, reduce risk, proceed carefully, or step back.
+              Give the safest honest signal. GSN keeps private contacts out of the public paper.
             </p>
           </div>
           <div
@@ -1230,19 +1262,27 @@ function CommunityConfirmationInboxPage() {
             }}
           >
             <div style={statTile("rgba(255,255,255,0.08)")}>
-              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>Pending</div>
+              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>
+                {sectionLabelWithIcon("calendar", "Pending")}
+              </div>
               <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: 28, fontWeight: 1000 }}>{pendingCount}</div>
             </div>
             <div style={statTile("rgba(255,255,255,0.08)")}>
-              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>Instant</div>
+              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>
+                {sectionLabelWithIcon("spark", "Instant")}
+              </div>
               <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: 28, fontWeight: 1000 }}>{instantCount}</div>
             </div>
             <div style={statTile("rgba(255,255,255,0.08)")}>
-              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>Relay</div>
+              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>
+                {sectionLabelWithIcon("phone", "Relay")}
+              </div>
               <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: 28, fontWeight: 1000 }}>{relayCount}</div>
             </div>
             <div style={statTile("rgba(255,255,255,0.08)")}>
-              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>Review</div>
+              <div style={{ ...sectionLabel(), color: "#B9C7D8" }}>
+                {sectionLabelWithIcon("document", "Review")}
+              </div>
               <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: 28, fontWeight: 1000 }}>{reviewCaseCount}</div>
             </div>
           </div>
@@ -1259,9 +1299,9 @@ function CommunityConfirmationInboxPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Response rule</div>
+            <div style={sectionLabel()}>{sectionLabelWithIcon("check", "Response rule")}</div>
             <div style={{ marginTop: 6, ...helperText(), color: "#07172C" }}>
-              Respond from what you personally and honestly know. Do not answer from pressure, friendship, fear, or guesswork.
+              Answer from personal knowledge only. No pressure, no guesswork.
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1270,11 +1310,12 @@ function CommunityConfirmationInboxPage() {
               onClick={() => void loadInbox()}
               busy={loading}
               busyLabel="Refreshing..."
-              stableHeight={44}
+              stableHeight={isCompact ? 52 : 44}
+              fullWidth={isCompact}
               minWidth={120}
               debugId="community-confirmation-inbox.refresh"
             >
-              Refresh
+              {labelWithIcon("refresh", "Refresh")}
             </SecondaryButton>
             <SecondaryButton
               type="button"
@@ -1282,11 +1323,12 @@ function CommunityConfirmationInboxPage() {
                 safeCopy(queueText);
                 setNotice({ tone: "success", text: "Inbox summary copied." });
               }}
-              stableHeight={44}
+              stableHeight={isCompact ? 52 : 44}
+              fullWidth={isCompact}
               minWidth={120}
               debugId="community-confirmation-inbox.copy-summary"
             >
-              Copy summary
+              {labelWithIcon("copy", "Copy summary")}
             </SecondaryButton>
           </div>
         </div>
@@ -1306,7 +1348,7 @@ function CommunityConfirmationInboxPage() {
           }}
         >
           <span>
-            Review cases
+            {sectionLabelWithIcon("document", "Review cases")}
             <span style={{ marginLeft: 8, ...pillStyle(visibleReviewCaseCount ? "caution" : "neutral") }}>
               {visibleReviewCaseCount}
               {reviewCaseTotalAvailable > visibleReviewCaseCount
@@ -1329,18 +1371,19 @@ function CommunityConfirmationInboxPage() {
             }}
           >
             <p style={{ margin: 0, ...helperText() }}>
-              These are confirmation cases that need checking before they become a clean trust signal. Keep the public paper simple; keep the sensitive review work here.
+              Check cases here before they become a public trust signal. Sensitive review work stays inside GSN.
             </p>
             <SecondaryButton
               type="button"
               onClick={() => void loadReviewCases()}
               busy={reviewCasesLoading}
               busyLabel="Refreshing..."
-              stableHeight={44}
+              stableHeight={isCompact ? 52 : 44}
+              fullWidth={isCompact}
               minWidth={120}
               debugId="community-confirmation-inbox.review-cases.refresh"
             >
-              Refresh cases
+              {labelWithIcon("refresh", "Refresh cases")}
             </SecondaryButton>
           </div>
 
@@ -1357,21 +1400,20 @@ function CommunityConfirmationInboxPage() {
                 fontWeight: 1000,
               }}
             >
-              <span>Record overdue review markers</span>
+              <span>{sectionLabelWithIcon("calendar", "Overdue markers")}</span>
               <span aria-hidden="true" style={{ color: "#D6AA45", fontSize: 20 }}>
                 +
               </span>
             </StableDisclosureSummary>
             <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
               <p style={{ margin: 0, ...helperText() }}>
-                This checks active review cases and records missing attention or overdue
-                markers into the Trust Event trail. It does not change a trust score,
-                close a case, or expose private community contacts.
+                Scan open cases and record missed-attention markers in the trust trail.
+                This does not close cases or expose private contacts.
               </p>
               {currentUserRole !== "admin" ? (
                 <p style={{ margin: 0, ...helperText(), color: "#9A6A00", fontWeight: 800 }}>
-                  Community admins should enter a Community ID before scanning. Platform
-                  admins can scan all visible communities.
+                  Community admins should enter a Community ID. Platform admins can scan
+                  all visible communities.
                 </p>
               ) : null}
               {reviewSlaScanSummary ? (
@@ -1405,20 +1447,22 @@ function CommunityConfirmationInboxPage() {
                   disabled={!canScanReviewSla}
                   busy={busyKey === "review-sla-scan"}
                   busyLabel="Scanning..."
-                  stableHeight={46}
+                  stableHeight={isCompact ? 52 : 46}
+                  fullWidth={isCompact}
                   minWidth={180}
                   debugId="community-confirmation-inbox.review-cases.scan-sla"
                 >
-                  Run SLA scan
+                  {labelWithIcon("search", "Run scan")}
                 </PrimaryButton>
                 <SecondaryButton
                   type="button"
                   onClick={() => setReviewSlaScanSummary(null)}
-                  stableHeight={46}
+                  stableHeight={isCompact ? 52 : 46}
+                  fullWidth={isCompact}
                   minWidth={120}
                   debugId="community-confirmation-inbox.review-cases.clear-sla-scan"
                 >
-                  Clear result
+                  {labelWithIcon("refresh", "Clear result")}
                 </SecondaryButton>
               </div>
             </div>
@@ -1558,11 +1602,12 @@ function CommunityConfirmationInboxPage() {
                 onClick={() => void loadReviewCases({ offset: 0 })}
                 busy={reviewCasesLoading}
                 busyLabel="Applying..."
-                stableHeight={46}
+                stableHeight={isCompact ? 52 : 46}
+                fullWidth={isCompact}
                 minWidth={120}
                 debugId="community-confirmation-inbox.review-cases.apply-filters"
               >
-                Apply
+                {labelWithIcon("check", "Apply")}
               </PrimaryButton>
               {reviewCommunityFilter ? (
                 <SecondaryButton
@@ -1571,11 +1616,12 @@ function CommunityConfirmationInboxPage() {
                     setReviewCommunityFilter("");
                     void loadReviewCases({ communityId: "", offset: 0 });
                   }}
-                  stableHeight={46}
+                  stableHeight={isCompact ? 52 : 46}
+                  fullWidth={isCompact}
                   minWidth={110}
                   debugId="community-confirmation-inbox.review-cases.clear-community-filter"
                 >
-                  Clear
+                  {labelWithIcon("refresh", "Clear")}
                 </SecondaryButton>
               ) : null}
             </div>
@@ -1591,8 +1637,7 @@ function CommunityConfirmationInboxPage() {
           >
             <p style={{ margin: 0, ...helperText() }}>
               Showing review cases {reviewPageStart}-{reviewPageEnd} of{" "}
-              {reviewCaseTotalAvailable}. Urgent open work stays first unless you choose
-              a different sort.
+              {reviewCaseTotalAvailable}. Urgent open work stays first.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <SecondaryButton
@@ -1603,11 +1648,12 @@ function CommunityConfirmationInboxPage() {
                   }
                 }}
                 disabled={reviewPreviousOffset === null || reviewCasesLoading}
-                stableHeight={44}
+                stableHeight={isCompact ? 52 : 44}
+                fullWidth={isCompact}
                 minWidth={110}
                 debugId="community-confirmation-inbox.review-cases.previous-page"
               >
-                Previous
+                {labelWithIcon("chevronUp", "Previous")}
               </SecondaryButton>
               <PrimaryButton
                 type="button"
@@ -1617,11 +1663,12 @@ function CommunityConfirmationInboxPage() {
                   }
                 }}
                 disabled={reviewNextOffset === null || reviewCasesLoading}
-                stableHeight={44}
+                stableHeight={isCompact ? 52 : 44}
+                fullWidth={isCompact}
                 minWidth={110}
                 debugId="community-confirmation-inbox.review-cases.next-page"
               >
-                Next
+                {labelWithIcon("chevronDown", "Next")}
               </PrimaryButton>
             </div>
           </div>
@@ -1715,11 +1762,12 @@ function CommunityConfirmationInboxPage() {
                               text: "This review case does not have a public outcome link yet.",
                             })
                       }
-                      stableHeight={46}
+                      stableHeight={isCompact ? 52 : 46}
+                      fullWidth={isCompact}
                       minWidth={180}
                       debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.open-outcome`}
                     >
-                      Open outcome paper
+                      {labelWithIcon("navigation", "Open outcome")}
                     </PrimaryButton>
                     <SecondaryButton
                       type="button"
@@ -1734,11 +1782,12 @@ function CommunityConfirmationInboxPage() {
                         );
                         setNotice({ tone: "success", text: "Review case summary copied." });
                       }}
-                      stableHeight={46}
+                      stableHeight={isCompact ? 52 : 46}
+                      fullWidth={isCompact}
                       minWidth={180}
                       debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.copy`}
                     >
-                      Copy case summary
+                      {labelWithIcon("copy", "Copy summary")}
                     </SecondaryButton>
                   </div>
                   <details style={{ gridColumn: "1 / -1", ...innerCard("#FFFFFF") }}>
@@ -1755,7 +1804,7 @@ function CommunityConfirmationInboxPage() {
                       }}
                     >
                       <span>
-                        Assignment
+                        {sectionLabelWithIcon("user", "Assignment")}
                         <span style={{ marginLeft: 8, ...pillStyle(row.assignedToUserId ? "positive" : "caution") }}>
                           {row.assignedToUserId ? `User ${row.assignedToUserId}` : "Unassigned"}
                         </span>
@@ -1766,8 +1815,7 @@ function CommunityConfirmationInboxPage() {
                     </StableDisclosureSummary>
                     <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                       <p style={{ margin: 0, ...helperText() }}>
-                        Assigning a case makes the reviewer responsible for the next action. GSN records the assignment as an internal trust event, but it does not expose private community contacts.
-                        Only platform or community admins can assign or release cases.
+                        Assign a reviewer for the next action. GSN records it internally and keeps private contacts protected.
                       </p>
                       <div
                         style={{
@@ -1777,14 +1825,14 @@ function CommunityConfirmationInboxPage() {
                         }}
                       >
                         <div style={innerCard("#F8FBFF")}>
-                          <div style={sectionLabel()}>Current handler</div>
+                          <div style={sectionLabel()}>{sectionLabelWithIcon("user", "Current handler")}</div>
                           <div style={{ marginTop: 6, color: "#07172C", fontWeight: 1000 }}>
                             {row.assignedToUserId ? `Assigned to user ${row.assignedToUserId}` : "Not assigned yet"}
                           </div>
                           <p style={{ margin: "8px 0 0", ...helperText() }}>
                             {currentUserId
-                              ? `You are signed in as user ${currentUserId}.`
-                              : "GSN could not read your signed-in user number yet."}
+                              ? `Signed in as user ${currentUserId}.`
+                              : "GSN could not read your user number yet."}
                           </p>
                         </div>
                         <label style={{ display: "grid", gap: 6, ...helperText(), color: "#07172C" }}>
@@ -1842,7 +1890,7 @@ function CommunityConfirmationInboxPage() {
                           stableHeight={48}
                           minWidth={160}
                         >
-                          Claim review
+                          {labelWithIcon("check", "Claim")}
                         </PrimaryButton>
                         <SecondaryButton
                           type="button"
@@ -1860,7 +1908,7 @@ function CommunityConfirmationInboxPage() {
                           minWidth={160}
                           debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.assignment-release`}
                         >
-                          Release review
+                          {labelWithIcon("refresh", "Release")}
                         </SecondaryButton>
                         <label style={{ display: "grid", gap: 6, ...helperText(), color: "#07172C" }}>
                           Assign by user ID
@@ -1894,7 +1942,7 @@ function CommunityConfirmationInboxPage() {
                         minWidth={190}
                         debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.assignment-manual`}
                       >
-                        Assign reviewer
+                        {labelWithIcon("user", "Assign reviewer")}
                       </SecondaryButton>
                     </div>
                   </details>
@@ -1912,7 +1960,7 @@ function CommunityConfirmationInboxPage() {
                       }}
                     >
                       <span>
-                        Internal review evidence
+                        {sectionLabelWithIcon("document", "Internal evidence")}
                         <span style={{ marginLeft: 8, ...pillStyle("neutral") }}>
                           {(reviewEvidence[row.reviewCaseId] || []).length}
                         </span>
@@ -1931,7 +1979,7 @@ function CommunityConfirmationInboxPage() {
                         }}
                       >
                         <p style={{ margin: 0, ...helperText() }}>
-                          Evidence here is internal review material. It should explain why a case is resolved, not expose private responder contacts.
+                          Add only the facts needed to explain the review outcome. Keep responder contacts private.
                         </p>
                         <SecondaryButton
                           type="button"
@@ -1939,11 +1987,12 @@ function CommunityConfirmationInboxPage() {
                           disabled={Boolean(busyKey)}
                           busy={busyKey === `review-${row.reviewCaseId}-evidence-load`}
                           busyLabel="Loading..."
-                          stableHeight={44}
+                          stableHeight={isCompact ? 52 : 44}
+                          fullWidth={isCompact}
                           minWidth={150}
                           debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.evidence-refresh`}
                         >
-                          Load evidence
+                          {labelWithIcon("eye", "Load evidence")}
                         </SecondaryButton>
                       </div>
                       {(reviewEvidence[row.reviewCaseId] || []).length ? (
@@ -2086,7 +2135,7 @@ function CommunityConfirmationInboxPage() {
                         minWidth={180}
                         debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.evidence-add`}
                       >
-                        Add evidence
+                        {labelWithIcon("document", "Add evidence")}
                       </PrimaryButton>
                     </div>
                   </details>
@@ -2103,14 +2152,14 @@ function CommunityConfirmationInboxPage() {
                         fontWeight: 1000,
                       }}
                     >
-                      <span>Resolve this case</span>
+                      <span>{sectionLabelWithIcon("check", "Resolve case")}</span>
                       <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 20 }}>
                         +
                       </span>
                     </StableDisclosureSummary>
                     <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                       <p style={{ margin: 0, ...helperText() }}>
-                        Only resolve this when you have enough review evidence. A resolved case can affect the member's trust reading; a dismissed case should use no trust change.
+                        Resolve only when the evidence is clear. Dismissed cases should use no trust change.
                       </p>
                       <div
                         style={{
@@ -2226,7 +2275,7 @@ function CommunityConfirmationInboxPage() {
                         minWidth={190}
                         debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.resolve`}
                       >
-                        Resolve review
+                        {labelWithIcon("check", "Resolve review")}
                       </PrimaryButton>
                     </div>
                   </details>
@@ -2248,9 +2297,9 @@ function CommunityConfirmationInboxPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Your relay availability</div>
+            <div style={sectionLabel()}>{sectionLabelWithIcon("phone", "Relay availability")}</div>
             <div style={{ marginTop: 6, ...helperText(), color: "#07172C" }}>
-              Choose whether GSN may send you community confirmation requests. This does not expose your phone number publicly.
+              Choose if GSN may send you confirmation requests. Your phone number stays private.
             </div>
           </div>
           <SecondaryButton
@@ -2258,11 +2307,12 @@ function CommunityConfirmationInboxPage() {
             onClick={() => void loadSettings()}
             busy={settingsLoading}
             busyLabel="Refreshing..."
-            stableHeight={44}
+            stableHeight={isCompact ? 52 : 44}
+            fullWidth={isCompact}
             minWidth={140}
             debugId="community-confirmation-inbox.settings.refresh"
           >
-            Refresh settings
+            {labelWithIcon("refresh", "Refresh settings")}
           </SecondaryButton>
           {canManageRelayPolicy ? (
             <PrimaryButton
@@ -2272,13 +2322,14 @@ function CommunityConfirmationInboxPage() {
                   navigate,
                   APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY,
                   location
-                )
-              }
-              stableHeight={44}
+              )
+            }
+              stableHeight={isCompact ? 52 : 44}
+              fullWidth={isCompact}
               minWidth={160}
               debugId="community-confirmation-inbox.open-policy"
             >
-              Manage policy
+              {labelWithIcon("shield", "Manage policy")}
             </PrimaryButton>
           ) : null}
         </div>
@@ -2332,10 +2383,10 @@ function CommunityConfirmationInboxPage() {
                         disabled={Boolean(busyKey)}
                         busy={busyKey === `setting-${setting.communityId}`}
                         busyLabel="Updating..."
-                        stableHeight={46}
+                        stableHeight={isCompact ? 52 : 46}
                         debugId={`community-confirmation-inbox.settings.${setting.communityId}.opt-out`}
                       >
-                        Stop receiving
+                        {labelWithIcon("lock", "Stop requests")}
                       </SecondaryButton>
                     ) : (
                       <PrimaryButton
@@ -2346,10 +2397,10 @@ function CommunityConfirmationInboxPage() {
                         disabled={Boolean(busyKey)}
                         busy={busyKey === `setting-${setting.communityId}`}
                         busyLabel="Updating..."
-                        stableHeight={46}
+                        stableHeight={isCompact ? 52 : 46}
                         debugId={`community-confirmation-inbox.settings.${setting.communityId}.opt-in`}
                       >
-                        Start receiving
+                        {labelWithIcon("phone", "Start requests")}
                       </PrimaryButton>
                     )}
                     <SecondaryButton
@@ -2363,10 +2414,13 @@ function CommunityConfirmationInboxPage() {
                       disabled={Boolean(busyKey) || !enabled}
                       busy={busyKey === `setting-${setting.communityId}`}
                       busyLabel="Updating..."
-                      stableHeight={46}
+                      stableHeight={isCompact ? 52 : 46}
                       debugId={`community-confirmation-inbox.settings.${setting.communityId}.toggle-instant`}
                     >
-                      Instant pulse {setting.canReceiveInstantPulse ? "on" : "off"}
+                      {labelWithIcon(
+                        "spark",
+                        `Instant ${setting.canReceiveInstantPulse ? "on" : "off"}`
+                      )}
                     </SecondaryButton>
                   </div>
                 </div>
@@ -2387,7 +2441,7 @@ function CommunityConfirmationInboxPage() {
               No community confirmation requests need your answer.
             </div>
             <p style={{ margin: "8px 0 0", ...helperText() }}>
-              When someone requests a TrustSlip community check and you are eligible to respond, it will appear here.
+              Eligible TrustSlip checks will appear here.
             </p>
           </div>
         ) : (
@@ -2456,7 +2510,7 @@ function CommunityConfirmationInboxPage() {
                             style={{ width: "100%", height: "100%", objectFit: "cover" }}
                           />
                         ) : (
-                          subjectInitials(row)
+                          <GsnLegacyIcon name="user" size={34} />
                         )}
                       </div>
                       <div>
@@ -2477,7 +2531,7 @@ function CommunityConfirmationInboxPage() {
                       </div>
                     </div>
                     <p style={{ margin: "12px 0 0", ...helperText() }}>
-                      Community: {firstTruthy(row.communityName, row.communityId, "Not shown")}. {row.readerNote || "Respond only if you genuinely know this member."}
+                      Community: {firstTruthy(row.communityName, row.communityId, "Not shown")}. {row.readerNote || "Answer only if you genuinely know this member."}
                     </p>
                     <div style={{ marginTop: 10, display: "grid", gap: 5, ...helperText() }}>
                       <span>Created: {safeDateTime(row.createdAt)}</span>
@@ -2494,7 +2548,7 @@ function CommunityConfirmationInboxPage() {
                         Private context for GSN review
                       </label>
                       <p style={{ margin: "6px 0 10px", ...helperText(), fontSize: 13 }}>
-                        Optional. This note is not shown on the public TrustSlip outcome. It helps GSN understand your answer if there is a later dispute.
+                        Optional. Not shown publicly. Helps GSN understand your answer if reviewed later.
                       </p>
                       <textarea
                         id={`community-confirmation-note-${row.id}`}
@@ -2531,11 +2585,12 @@ function CommunityConfirmationInboxPage() {
                   <SecondaryButton
                     type="button"
                     onClick={() => navigateWithOrigin(navigate, APP_ROUTES.TRUST_SLIP, location)}
-                    stableHeight={44}
+                    stableHeight={isCompact ? 52 : 44}
+                    fullWidth={isCompact}
                     minWidth={140}
                     debugId={`community-confirmation-inbox.${row.id}.open-trust-slip`}
                   >
-                    Open TrustSlip
+                    {labelWithIcon("navigation", "Open TrustSlip")}
                   </SecondaryButton>
                 </div>
 
@@ -2586,10 +2641,10 @@ function CommunityConfirmationInboxPage() {
                             busy={busyKey === key}
                             busyLabel="Recording..."
                             fullWidth
-                            stableHeight={46}
+                            stableHeight={isCompact ? 52 : 46}
                             debugId={`community-confirmation-inbox.${row.id}.${option.type}`}
                           >
-                            {responseActionLabel(option)}
+                            {labelWithIcon("check", responseActionLabel(option))}
                           </PrimaryButton>
                         ) : (
                           <SecondaryButton
@@ -2599,10 +2654,10 @@ function CommunityConfirmationInboxPage() {
                             busy={busyKey === key}
                             busyLabel="Recording..."
                             fullWidth
-                            stableHeight={46}
+                            stableHeight={isCompact ? 52 : 46}
                             debugId={`community-confirmation-inbox.${row.id}.${option.type}`}
                           >
-                            {responseActionLabel(option)}
+                            {labelWithIcon(option.tone === "caution" ? "alert" : "shield", responseActionLabel(option))}
                           </SecondaryButton>
                         )}
                       </div>

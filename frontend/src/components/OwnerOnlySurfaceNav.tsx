@@ -169,7 +169,7 @@ export default function OwnerOnlySurfaceNav({
             key={link.debugId}
             to={link.to}
             minWidth={0}
-            stableHeight={compact ? 38 : 42}
+            stableHeight={52}
             debugId={link.debugId}
             style={{
               fontSize: compact ? 10.8 : 13,

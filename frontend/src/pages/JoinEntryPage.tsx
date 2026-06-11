@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   CardActionRow,
   PrimaryButton,
@@ -146,6 +147,7 @@ function badge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
+    gap: 6,
     padding: "6px 10px",
     borderRadius: 999,
     background: primary ? "#EAF2FF" : "#F8FAFC",
@@ -157,6 +159,43 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     whiteSpace: "normal",
   };
+}
+
+function joinEntryIconText(
+  name: GsnIconName,
+  label: React.ReactNode,
+  size = 24
+) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <GsnLegacyIcon name={name} size={size} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function joinEntryIconTile(name: GsnIconName, size = 48) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 17,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: `0 0 ${size}px`,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(233,241,250,0.86) 100%)",
+        border: "1px solid rgba(37,78,119,0.14)",
+        boxShadow:
+          "0 14px 28px rgba(15,23,42,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
+      }}
+    >
+      <GsnLegacyIcon name={name} size={Math.max(28, size - 12)} />
+    </span>
+  );
 }
 
 function entryChoiceActionStyle(kind: "primary" | "secondary"): React.CSSProperties {
@@ -1616,7 +1655,7 @@ export default function JoinEntryPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Community invitation
+                  {joinEntryIconText("join-person-plus", "Community invitation", 22)}
                 </div>
               </div>
             </div>
@@ -1632,12 +1671,22 @@ export default function JoinEntryPage() {
           <div style={pageCard()}>
             <div
               style={{
-                fontSize: 22,
-                fontWeight: 1000,
-                color: "#0B1F33",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                flexWrap: "wrap",
               }}
             >
-              Invitation message
+              {joinEntryIconTile("document", 48)}
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 1000,
+                  color: "#0B1F33",
+                }}
+              >
+                Invitation message
+              </div>
             </div>
 
             <div style={{ marginTop: 18, ...softCard() }}>
@@ -1648,7 +1697,9 @@ export default function JoinEntryPage() {
                     marginBottom: 14,
                   }}
                 >
-                  <div style={labelText()}>Saved progress on this device</div>
+                  <div style={labelText()}>
+                    {joinEntryIconText("records-folder", "Saved progress on this device", 22)}
+                  </div>
                   <div
                     style={{
                       marginTop: 8,
@@ -1674,7 +1725,10 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("primary")}
                     >
-                      {resumeBusy ? "Opening saved request..." : "Reopen saved request"}
+                      {joinEntryIconText(
+                        "refresh",
+                        resumeBusy ? "Opening saved request..." : "Reopen saved request"
+                      )}
                     </PrimaryButton>
                     <SecondaryButton
                       type="button"
@@ -1683,7 +1737,7 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      Clear saved request
+                      {joinEntryIconText("lock", "Clear saved request")}
                     </SecondaryButton>
                   </CardActionRow>
                 </div>
@@ -1697,13 +1751,19 @@ export default function JoinEntryPage() {
                   marginBottom: 14,
                 }}
               >
-                <span style={badge(true)}>Invited by {inviterLabel}</span>
+                <span style={badge(true)}>
+                  {joinEntryIconText("id", `Invited by ${inviterLabel}`, 20)}
+                </span>
                 <span style={badge(false)}>
-                  {resolvedCommunityName || "This GSN community"}
+                  {joinEntryIconText(
+                    "community",
+                    resolvedCommunityName || "This GSN community",
+                    20
+                  )}
                 </span>
                 {resolvedInviteExpiry ? (
                   <span style={badge(false)}>
-                    Expires {safeDateTime(resolvedInviteExpiry)}
+                    {joinEntryIconText("calendar", `Expires ${safeDateTime(resolvedInviteExpiry)}`, 20)}
                   </span>
                 ) : null}
               </div>
@@ -1714,7 +1774,7 @@ export default function JoinEntryPage() {
                   fontSize: 15,
                 }}
               >
-                Invitation letter
+                {joinEntryIconText("document", "Invitation letter", 22)}
               </div>
 
               <div
@@ -1735,7 +1795,9 @@ export default function JoinEntryPage() {
           </div>
 
           <div style={pageCard()}>
-            <div style={labelText()}>Join request form</div>
+            <div style={labelText()}>
+              {joinEntryIconText("join-person-plus", "Join request form", 22)}
+            </div>
 
             <div
               style={{
@@ -1745,7 +1807,7 @@ export default function JoinEntryPage() {
                 color: "#0B1F33",
               }}
             >
-              Submit your request
+              {joinEntryIconText("pen", "Submit your request", 24)}
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
@@ -1756,7 +1818,9 @@ export default function JoinEntryPage() {
 
             {joinResumeNotice ? (
               <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
-                <div style={labelText()}>Continue unfinished join request</div>
+                <div style={labelText()}>
+                  {joinEntryIconText("refresh", "Continue unfinished join request", 22)}
+                </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   {joinResumeNotice}
                 </div>
@@ -1768,7 +1832,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("primary")}
                   >
-                    Continue entry
+                    {joinEntryIconText("navigation", "Continue entry")}
                   </PrimaryButton>
                   <SecondaryButton
                     type="button"
@@ -1777,7 +1841,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    Start again
+                    {joinEntryIconText("refresh", "Start again")}
                   </SecondaryButton>
                 </CardActionRow>
               </div>
@@ -1785,7 +1849,9 @@ export default function JoinEntryPage() {
 
             {currentMemberChecked && usingExistingIdentity ? (
               <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
-                <div style={labelText()}>Existing GSN identity</div>
+                <div style={labelText()}>
+                  {joinEntryIconText("id", "Existing GSN identity", 22)}
+                </div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1795,7 +1861,11 @@ export default function JoinEntryPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Join this community with your existing GSN identity.
+                  {joinEntryIconText(
+                    "community",
+                    "Join this community with your existing GSN identity.",
+                    26
+                  )}
                 </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   This adds a new community membership request for{" "}
@@ -1810,9 +1880,15 @@ export default function JoinEntryPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <span style={badge(true)}>GSN ID {currentGmfnId}</span>
+                  <span style={badge(true)}>
+                    {joinEntryIconText("id", `GSN ID ${currentGmfnId}`, 20)}
+                  </span>
                   <span style={badge(false)}>
-                    {cleanText(currentMember?.email || "Signed in")}
+                    {joinEntryIconText(
+                      "check",
+                      cleanText(currentMember?.email || "Signed in"),
+                      20
+                    )}
                   </span>
                 </div>
                 <div style={{ marginTop: 14 }}>
@@ -1826,7 +1902,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("primary")}
                   >
-                    Join with existing GSN ID
+                    {joinEntryIconText("id", "Join with existing GSN ID")}
                   </PrimaryButton>
                 </div>
               </div>
@@ -1854,7 +1930,7 @@ export default function JoinEntryPage() {
               >
                 <div style={{ flex: "1 1 280px", minWidth: 0 }}>
                   <div style={{ ...labelText(), marginBottom: 4 }}>
-                    Choose how you are joining
+                    {joinEntryIconText("navigation", "Choose how you are joining", 22)}
                   </div>
                   <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
                     If you already have a GSN ID, sign in first so this invite
@@ -1879,7 +1955,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    I already have a GSN ID
+                    {joinEntryIconText("id", "I already have a GSN ID")}
                   </StableCtaLink>
 
                   <SecondaryButton
@@ -1897,11 +1973,14 @@ export default function JoinEntryPage() {
                       cursor: canOpenForm ? "pointer" : "not-allowed",
                     }}
                   >
-                    {inviteChecking
-                      ? "Checking"
-                      : formOpen
-                      ? "Close new-member form"
-                      : "I am new to GSN"}
+                    {joinEntryIconText(
+                      formOpen ? "lock" : "join-person-plus",
+                      inviteChecking
+                        ? "Checking"
+                        : formOpen
+                        ? "Close new-member form"
+                        : "I am new to GSN"
+                    )}
                   </SecondaryButton>
                 </div>
               </div>
@@ -1936,7 +2015,7 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("primary")}
                     >
-                      Check code
+                      {joinEntryIconText("search", "Check code")}
                     </PrimaryButton>
                   </div>
                 ) : null}
@@ -1962,7 +2041,7 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      Sign in to continue
+                      {joinEntryIconText("lock", "Sign in to continue")}
                     </StableCtaLink>
                   </div>
                 ) : null}
@@ -2009,7 +2088,7 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      Open this community
+                      {joinEntryIconText("community", "Open this community")}
                     </StableCtaLink>
                   ) : submittedRequestId ? (
                     <StableCtaLink
@@ -2019,7 +2098,7 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      Check approval status
+                      {joinEntryIconText("eye", "Check approval status")}
                     </StableCtaLink>
                   ) : (
                     <StableCtaLink
@@ -2029,7 +2108,7 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      Open pending page
+                      {joinEntryIconText("document", "Open pending page")}
                     </StableCtaLink>
                   )}
                 </div>
@@ -2182,7 +2261,7 @@ export default function JoinEntryPage() {
                     width: isCompact ? "100%" : "min(100%, 420px)",
                   }}
                 >
-                  Submit Join Request
+                  {joinEntryIconText("join-person-plus", "Submit Join Request")}
                 </PrimaryButton>
               </div>
             </form>
@@ -2208,7 +2287,7 @@ export default function JoinEntryPage() {
               width: "min(100%, 260px)",
             }}
           >
-            Back to Welcome
+            {joinEntryIconText("home", "Back to Welcome")}
           </StableCtaLink>
         </div>
         </div>

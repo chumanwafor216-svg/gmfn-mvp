@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableButton, StableCtaLink } from "../components/StableButton";
 import {
@@ -164,7 +165,7 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
+    minHeight: 52,
     padding: "8px 12px",
     borderRadius: 12,
     border: "1px solid rgba(122,152,195,0.20)",
@@ -176,6 +177,89 @@ function collapseToggle(): React.CSSProperties {
     whiteSpace: "normal",
     textAlign: "center",
   };
+}
+
+function iconBadge(tone: "navy" | "blue" | "gold" | "green" | "red" = "navy"): React.CSSProperties {
+  const palette = {
+    navy: {
+      color: "#EAF3FF",
+      bg: "linear-gradient(180deg, rgba(28,76,122,0.98) 0%, rgba(7,28,47,0.98) 100%)",
+      border: "1px solid rgba(196,216,238,0.22)",
+      shadow: "0 9px 18px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.12)",
+    },
+    blue: {
+      color: "#0B63D1",
+      bg: "linear-gradient(180deg, #F8FCFF 0%, #E4F0FF 100%)",
+      border: "1px solid rgba(29,95,212,0.18)",
+      shadow: "0 9px 18px rgba(29,95,212,0.10)",
+    },
+    gold: {
+      color: "#7A4A00",
+      bg: "linear-gradient(180deg, #FFF8D9 0%, #F5D88A 100%)",
+      border: "1px solid rgba(214,170,69,0.32)",
+      shadow: "0 9px 18px rgba(146,96,12,0.12)",
+    },
+    green: {
+      color: "#065F46",
+      bg: "linear-gradient(180deg, #ECFDF5 0%, #D6F4E4 100%)",
+      border: "1px solid rgba(34,197,94,0.18)",
+      shadow: "0 9px 18px rgba(34,197,94,0.10)",
+    },
+    red: {
+      color: "#991B1B",
+      bg: "linear-gradient(180deg, #FFF5F5 0%, #FEE2E2 100%)",
+      border: "1px solid rgba(239,68,68,0.18)",
+      shadow: "0 9px 18px rgba(239,68,68,0.10)",
+    },
+  }[tone];
+
+  return {
+    width: 30,
+    height: 30,
+    borderRadius: 12,
+    display: "inline-grid",
+    placeItems: "center",
+    flex: "0 0 auto",
+    color: palette.color,
+    background: palette.bg,
+    border: palette.border,
+    boxShadow: palette.shadow,
+  };
+}
+
+function iconNode(name: GsnIconName, tone: "navy" | "blue" | "gold" | "green" | "red" = "navy", size = 17) {
+  return (
+    <span aria-hidden="true" style={iconBadge(tone)}>
+      <GsnLegacyIcon name={name} size={Math.max(24, Math.round(size * 1.55))} />
+    </span>
+  );
+}
+
+function sectionLabelWithIcon(name: GsnIconName, label: string, tone: "navy" | "blue" | "gold" | "green" | "red" = "blue") {
+  return (
+    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      {iconNode(name, tone, 16)}
+      <span style={sectionLabel()}>{label}</span>
+    </div>
+  );
+}
+
+function badgeWithIcon(name: GsnIconName, label: React.ReactNode, primary = false, tone: "navy" | "blue" | "gold" | "green" | "red" = primary ? "blue" : "navy") {
+  return (
+    <span style={{ ...badge(primary), minHeight: 36, gap: 8 }}>
+      {iconNode(name, tone, 15)}
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function actionLabel(name: GsnIconName, label: string, tone: "navy" | "blue" | "gold" | "green" | "red" = "navy") {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, minWidth: 0 }}>
+      {iconNode(name, tone, 16)}
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function helperText(): React.CSSProperties {
@@ -1023,7 +1107,7 @@ export default function SystemOperationsPage() {
       <PageTopNav
         sectionLabel="System Operations"
         title="System Operations"
-        subtitle="Review live operational reading, handle alerts, and move into the right admin or member page."
+        subtitle="See the live pressure, then open the right admin task."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
@@ -1031,10 +1115,10 @@ export default function SystemOperationsPage() {
       />
 
       <ExplainToggle
-        label="What this screen does"
-        what="This screen gathers the live operational reading, immediate signals, and queue pressure so you can decide which admin or member page needs attention next."
-        why="It helps you see operational focus clearly instead of scanning multiple tools with no shared priority view."
-        next="Read what matters now first, then move into the operational overview, live signals, or operational queues depending on the pressure you see."
+        label="How to use this"
+        what="This page gathers the live admin pressure in one place."
+        why="It helps you act on the strongest signal first."
+        next="Read what matters now, then open the route that matches the work."
         tone="light"
       />
 
@@ -1050,7 +1134,7 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Operator overview</div>
+            {sectionLabelWithIcon("navigation", "Operator overview", "gold")}
 
             <div
               style={{
@@ -1065,7 +1149,7 @@ export default function SystemOperationsPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Review live operational awareness here when you need to see what is happening now, what needs follow-up, and where to move next.
+              See what is happening now, what needs follow-up, and where to move next.
             </div>
 
             <div
@@ -1076,14 +1160,14 @@ export default function SystemOperationsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Role: {roleLabel}</span>
-              <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>Operational page</span>
+              {badgeWithIcon("user", <>Role: {roleLabel}</>, true, "blue")}
+              {badgeWithIcon("community", <>Community: {communityLabel}</>)}
+              {badgeWithIcon("chart", "Operations")}
             </div>
           </div>
 
           <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>What matters now</div>
+            {sectionLabelWithIcon("alert", "What matters now", operationalFocus ? "gold" : "green")}
 
             <div
               style={{
@@ -1102,16 +1186,16 @@ export default function SystemOperationsPage() {
             <div style={{ marginTop: 10, ...helperText() }}>
               {operationalFocus
                 ? safeStr((operationalFocus as any).detail || "Review the top signal and move into the right admin page.")
-                : "No immediate admin queue is currently dominating the visible operational feed."}
+                : "No admin queue is dominating the live feed right now."}
             </div>
           </div>
         </div>
 
         <ExplainToggle
-          label="What this does"
-          what="This block surfaces the strongest operational focus right now so you can see whether the system is calm or whether one signal should take priority."
-          why="It keeps you from treating every queue or alert as equally urgent when the product already has a clearer dominant signal."
-          next="Read this first, then use the operational sections below to confirm the queues and routes behind that focus."
+          label="Focus"
+          what="The strongest signal is shown first."
+          why="Not every queue deserves the same urgency."
+          next="Confirm the numbers below, then move into the matching route."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -1128,19 +1212,19 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Operational overview</div>
+            {sectionLabelWithIcon("chart", "Operational overview", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              A quick reading of live operational pressure.
+              Live pressure in six short facts.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("overview")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="system-operations.toggle.overview"
             style={collapseToggle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {collapsed.overview ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
@@ -1156,7 +1240,7 @@ export default function SystemOperationsPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Pending pool</div>
+              {sectionLabelWithIcon("wallet", "Pending pool", "blue")}
               <div
                 style={{
                   marginTop: 8,
@@ -1170,7 +1254,7 @@ export default function SystemOperationsPage() {
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Unmatched bank</div>
+              {sectionLabelWithIcon("bank", "Unmatched bank", "red")}
               <div
                 style={{
                   marginTop: 8,
@@ -1184,7 +1268,7 @@ export default function SystemOperationsPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Expected payments</div>
+              {sectionLabelWithIcon("calendar", "Expected payments", "gold")}
               <div
                 style={{
                   marginTop: 8,
@@ -1198,7 +1282,7 @@ export default function SystemOperationsPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Recent bank</div>
+              {sectionLabelWithIcon("refresh", "Recent bank", "blue")}
               <div
                 style={{
                   marginTop: 8,
@@ -1212,7 +1296,7 @@ export default function SystemOperationsPage() {
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Incomplete loans</div>
+              {sectionLabelWithIcon("document", "Incomplete loans", "red")}
               <div
                 style={{
                   marginTop: 8,
@@ -1226,7 +1310,7 @@ export default function SystemOperationsPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Identity cases</div>
+              {sectionLabelWithIcon("id", "Identity cases", "gold")}
               <div
                 style={{
                   marginTop: 8,
@@ -1253,27 +1337,27 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Entry support monitor</div>
+            {sectionLabelWithIcon("user", "Entry support monitor", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Follow public create-entry and join-request applicants from the admin side during verification.
+              Help applicants finish phone, bank, community, or activation steps.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("intake")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="system-operations.toggle.intake"
             style={collapseToggle()}
           >
-            {collapsed.intake ? "Open" : "Collapse"}
+            {collapsed.intake ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
         <ExplainToggle
-          label="What this monitor does"
-          what="This monitor shows whether applicants are still at phone proof, bank or wallet details, community setup, completed account creation, or join-request activation."
-          why="It stops entry support from becoming guesswork. If someone says they are stuck, the admin can see the last known backend stage and the safest next action."
-          next="Look first at records needing help, then use the next-action text to decide whether the applicant should continue, sign in, start again, or receive an activation link."
+          label="Entry help"
+          what="This monitor shows the last known entry stage."
+          why="A stuck applicant needs the next step, not a long explanation."
+          next="Use the stage and next action to guide the person."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -1286,7 +1370,7 @@ export default function SystemOperationsPage() {
                 border: "1px solid rgba(11,99,209,0.14)",
               }}
             >
-              <div style={sectionLabel()}>First support action</div>
+              {sectionLabelWithIcon("alert", "First support action", "gold")}
               <div
                 style={{
                   marginTop: 8,
@@ -1328,42 +1412,42 @@ export default function SystemOperationsPage() {
               }}
             >
               <div style={statTile("#F8FBFF")}>
-                <div style={sectionLabel()}>Create records</div>
+                {sectionLabelWithIcon("document", "Create records", "blue")}
                 <div style={{ marginTop: 8, color: "#0B63D1", fontSize: 24, fontWeight: 900 }}>
                   {pilotIntakeSummary.createTotal}
                 </div>
               </div>
 
               <div style={statTile("#ECFDF5")}>
-                <div style={sectionLabel()}>Completed</div>
+                {sectionLabelWithIcon("check", "Completed", "green")}
                 <div style={{ marginTop: 8, color: "#065F46", fontSize: 24, fontWeight: 900 }}>
                   {pilotIntakeSummary.createCompleted}
                 </div>
               </div>
 
               <div style={statTile("#FFFBEF")}>
-                <div style={sectionLabel()}>Ready community</div>
+                {sectionLabelWithIcon("community", "Ready community", "gold")}
                 <div style={{ marginTop: 8, color: "#92400E", fontSize: 24, fontWeight: 900 }}>
                   {pilotIntakeSummary.createReady}
                 </div>
               </div>
 
               <div style={statTile("#FFFBEF")}>
-                <div style={sectionLabel()}>Bank/wallet</div>
+                {sectionLabelWithIcon("bank", "Bank/wallet", "gold")}
                 <div style={{ marginTop: 8, color: "#92400E", fontSize: 24, fontWeight: 900 }}>
                   {pilotIntakeSummary.createAwaitingBank}
                 </div>
               </div>
 
               <div style={statTile("#FFF5F5")}>
-                <div style={sectionLabel()}>Needs help</div>
+                {sectionLabelWithIcon("alert", "Needs help", "red")}
                 <div style={{ marginTop: 8, color: "#991B1B", fontSize: 24, fontWeight: 900 }}>
                   {pilotIntakeSummary.needsAttention}
                 </div>
               </div>
 
               <div style={statTile("#F8FBFF")}>
-                <div style={sectionLabel()}>Join requests</div>
+                {sectionLabelWithIcon("user", "Join requests", "blue")}
                 <div style={{ marginTop: 8, color: "#0B63D1", fontSize: 24, fontWeight: 900 }}>
                   {pilotIntakeSummary.joinTotal}
                 </div>
@@ -1378,7 +1462,7 @@ export default function SystemOperationsPage() {
               }}
             >
               <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>Create-entry applicants</div>
+                {sectionLabelWithIcon("user", "Create-entry applicants", "blue")}
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   {pilotCreateRows.length === 0 ? (
                     <div style={helperText()}>
@@ -1460,15 +1544,9 @@ export default function SystemOperationsPage() {
                               flexWrap: "wrap",
                             }}
                           >
-                            <span style={badge(false)}>
-                              Bank: {firstTruthy(row?.bank_country, "not recorded")}
-                            </span>
-                            <span style={badge(false)}>
-                              Region: {firstTruthy(row?.region_consistency_status, "unknown")}
-                            </span>
-                            <span style={badge(false)}>
-                              Checks: {verificationChecks.length}
-                            </span>
+                            {badgeWithIcon("bank", <>Bank: {firstTruthy(row?.bank_country, "not recorded")}</>)}
+                            {badgeWithIcon("globe", <>Region: {firstTruthy(row?.region_consistency_status, "unknown")}</>)}
+                            {badgeWithIcon("shield", <>Checks: {verificationChecks.length}</>)}
                           </div>
 
                           {communityNames.length > 0 ? (
@@ -1507,7 +1585,7 @@ export default function SystemOperationsPage() {
                                       }}
                                     >
                                       <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                                        Photo evidence
+                                        {actionLabel("image", "Photo evidence", "blue")}
                                       </div>
                                       <span style={badge(checkStatus === "matched")}>
                                         {pilotStageLabel(checkStatus || "review")}
@@ -1545,10 +1623,10 @@ export default function SystemOperationsPage() {
                                           debugId={`system-operations.identity-photo.${checkId}.open`}
                                           disabled={reviewingCheckId === checkId}
                                           busy={reviewingCheckId === checkId}
-                                          onClick={() => handleOpenIdentityPhotoEvidence(checkId)}
-                                        >
-                                          Open photo
-                                        </StableButton>
+                                        onClick={() => handleOpenIdentityPhotoEvidence(checkId)}
+                                      >
+                                          {actionLabel("eye", "Open photo", "blue")}
+                                      </StableButton>
                                       ) : null}
 
                                       <StableButton
@@ -1562,7 +1640,7 @@ export default function SystemOperationsPage() {
                                           handleIdentityPhotoDecision(checkId, "verify")
                                         }
                                       >
-                                        Accept manual review
+                                        {actionLabel("check", "Accept", "green")}
                                       </StableButton>
 
                                       <StableButton
@@ -1576,7 +1654,7 @@ export default function SystemOperationsPage() {
                                           handleIdentityPhotoDecision(checkId, "needs_more")
                                         }
                                       >
-                                        Request clearer proof
+                                        {actionLabel("image", "Clearer proof", "gold")}
                                       </StableButton>
 
                                       <StableButton
@@ -1590,7 +1668,7 @@ export default function SystemOperationsPage() {
                                           handleIdentityPhotoDecision(checkId, "reject")
                                         }
                                       >
-                                        Reject
+                                        {actionLabel("alert", "Reject", "red")}
                                       </StableButton>
 
                                       {terminal ? (
@@ -1601,9 +1679,9 @@ export default function SystemOperationsPage() {
                                           disabled={!hasAttachedUser || reviewingCheckId === checkId}
                                           busy={reviewingCheckId === checkId}
                                           debugId={`system-operations.identity-photo.${checkId}.reopen`}
-                                          onClick={() => handleIdentityPhotoCorrection(checkId)}
-                                        >
-                                          Reopen review
+                                        onClick={() => handleIdentityPhotoCorrection(checkId)}
+                                      >
+                                          {actionLabel("refresh", "Reopen", "blue")}
                                         </StableButton>
                                       ) : null}
                                     </div>
@@ -1624,7 +1702,7 @@ export default function SystemOperationsPage() {
               </div>
 
               <div style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Join-request applicants</div>
+                {sectionLabelWithIcon("community", "Join-request applicants", "blue")}
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   {pilotJoinRows.length === 0 ? (
                     <div style={helperText()}>
@@ -1717,19 +1795,19 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Live operational signals</div>
+            {sectionLabelWithIcon("spark", "Live operational signals", "gold")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              The latest visible operational feed, ordered for reading.
+              Newest visible signals, ordered for action.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("signals")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="system-operations.toggle.signals"
             style={collapseToggle()}
           >
-            {collapsed.signals ? "Open" : "Collapse"}
+            {collapsed.signals ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
@@ -1737,7 +1815,7 @@ export default function SystemOperationsPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {recentSignals.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                No live operational signal is currently shown.
+                No live operational signal is shown right now.
               </div>
             ) : (
               recentSignals.map((row) => {
@@ -1765,7 +1843,7 @@ export default function SystemOperationsPage() {
                       </div>
 
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span style={badge(true)}>{tone.label}</span>
+                        {badgeWithIcon(row.level === "high" ? "alert" : "spark", tone.label, true, row.level === "high" ? "red" : "blue")}
                       </div>
                     </div>
 
@@ -1796,7 +1874,7 @@ export default function SystemOperationsPage() {
                         kind="secondary"
                         debugId={`system-operations.signal.${row.id}.route`}
                       >
-                        {row.ctaLabel}
+                        {actionLabel("navigation", row.ctaLabel, "blue")}
                       </StableCtaLink>
                     </div>
                   </div>
@@ -1818,19 +1896,19 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Operational queues</div>
+            {sectionLabelWithIcon("briefcase", "Operational queues", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Read queue pressure before choosing intervention.
+              Choose the queue that needs intervention.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("queues")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="system-operations.toggle.queues"
             style={collapseToggle()}
           >
-            {collapsed.queues ? "Open" : "Collapse"}
+            {collapsed.queues ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
@@ -1854,7 +1932,7 @@ export default function SystemOperationsPage() {
                 Immediate queue
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This queue is for signals that should not wait long: unmatched bank events, incomplete loans nearing auto-cancel, and identity or pool items that need intervention now.
+                Items that should not wait: bank matches, loan deadlines, identity review, or pool confirmation.
               </div>
 
               <div
@@ -1865,9 +1943,9 @@ export default function SystemOperationsPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <span style={badge(true)}>Pending pool: {summary.pendingPool}</span>
-                <span style={badge(false)}>Unmatched bank: {summary.unmatchedBank}</span>
-                <span style={badge(false)}>Incomplete loans: {summary.incompleteLoans}</span>
+                {badgeWithIcon("wallet", <>Pending pool: {summary.pendingPool}</>, true)}
+                {badgeWithIcon("bank", <>Unmatched bank: {summary.unmatchedBank}</>)}
+                {badgeWithIcon("document", <>Incomplete loans: {summary.incompleteLoans}</>)}
               </div>
             </div>
 
@@ -1882,7 +1960,7 @@ export default function SystemOperationsPage() {
                 Follow-up queue
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This queue is for items that are not yet critical but should be handled before the money path or admin reading drifts further.
+                Items that are not critical yet, but should be cleaned before they grow.
               </div>
 
               <div
@@ -1893,9 +1971,9 @@ export default function SystemOperationsPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <span style={badge(true)}>Expected payments: {summary.expectedPayments}</span>
-                <span style={badge(false)}>Pending pool: {summary.pendingPool}</span>
-                <span style={badge(false)}>Identity cases: {summary.identityInterventions}</span>
+                {badgeWithIcon("calendar", <>Expected payments: {summary.expectedPayments}</>, true)}
+                {badgeWithIcon("wallet", <>Pending pool: {summary.pendingPool}</>)}
+                {badgeWithIcon("id", <>Identity cases: {summary.identityInterventions}</>)}
               </div>
             </div>
           </div>
@@ -1913,19 +1991,19 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Next routes</div>
+            {sectionLabelWithIcon("navigation", "Next routes", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Move from live reading into the admin page you need next.
+              Open the page that matches the active work.
             </div>
           </div>
 
           <SecondaryButton
             onClick={() => toggleSection("routes")}
-            stableHeight={38}
+            stableHeight={52}
             debugId="system-operations.toggle.routes"
             style={collapseToggle()}
           >
-            {collapsed.routes ? "Open" : "Collapse"}
+            {collapsed.routes ? "Open" : "Hide"}
           </SecondaryButton>
         </div>
 
@@ -1954,10 +2032,10 @@ export default function SystemOperationsPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Bank Console
+                {actionLabel("bank", "Bank Console", "blue")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is about reconciliation, unmatched bank events, pending pool confirmation, or expected payments.
+                Reconcile money, bank events, pool confirmation, and expected payments.
               </div>
             </StableCtaLink>
 
@@ -1974,10 +2052,10 @@ export default function SystemOperationsPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Incomplete Loans
+                {actionLabel("document", "Incomplete Loans", "gold")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when approval progress, locked coverage, or auto-cancel timing is driving the work.
+                Check approval progress, locked cover, and auto-cancel timing.
               </div>
             </StableCtaLink>
 
@@ -1994,10 +2072,10 @@ export default function SystemOperationsPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Identity Risk
+                {actionLabel("id", "Identity Risk", "red")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is about risky identity overlap, repeated device matches, or account integrity intervention.
+                Review identity overlap, repeated devices, and account integrity.
               </div>
             </StableCtaLink>
 
@@ -2014,10 +2092,10 @@ export default function SystemOperationsPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Trust Analytics
+                {actionLabel("chart", "Trust Analytics", "blue")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when the work is about trend reading after the urgent admin queues are under control.
+                Read trends after urgent queues are under control.
               </div>
             </StableCtaLink>
           </div>
@@ -2026,5 +2104,3 @@ export default function SystemOperationsPage() {
     </div>
   );
 }
-
-

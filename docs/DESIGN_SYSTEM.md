@@ -139,17 +139,87 @@ one current state, and one next action before exposing deeper details.
 - Button height should normally stay between `48px` and `56px`.
 - Chip height should normally stay between `32px` and `36px`.
 
-## Icon Quality Protocol
+## GSN Icon Protocol
 
-- Use app-native SVG pictograms for identity, finance, marketplace, trust, and
-  task surfaces. Do not use emoji as primary app icons.
-- Icons must look deliberate and readable on phone: avoid pale inline marks
-  floating beside text when the icon is carrying meaning.
+Use one icon style across the product: premium skeuomorphic / realistic 3D
+icons.
+
+Best short label:
+
+```text
+Use premium realistic 3D icons, not flat or outline icons.
+```
+
+Useful names for the style:
+- skeuomorphic / realistic 3D icons
+- photoreal object icons
+- premium 3D UI icons
+- real-object app icons
+- high-fidelity icons
+
+Avoid:
+- flat icons
+- outline icons
+- line icons
+- cartoon icons
+- faded glyph icons
+- emoji as primary UI icons
+
+Rules:
+- Every main icon must look like a real object, place, or tool.
+- Do not use flat, outline, faded, cartoon, or emoji-style icons for primary UI.
+- Use realistic 3D icons with depth, light, shadow, and clear material feel.
+- Icons must stay simple enough to read fast on mobile.
+- Use the same angle and family across screens: front view or soft 3/4 view.
+- Use premium colors that fit GSN: navy, gold, white, controlled green.
+- Prefer transparent, white, or very light neutral icon tiles. Avoid trapping
+  the 3D object inside heavy navy, red, green, or gold shields unless the
+  background itself is carrying a critical status.
+- Make the object large enough to be understood before the text is read. The
+  tile may be stable and compact, but the object should feel embossed,
+  raised, and materially present.
+- Put icons inside clean rounded containers, not floating randomly.
+- Choose the object for the hope and meaning it carries, not only for category
+  accuracy. For example, `Finance` should lean toward a bank building, cash
+  drawer, or institutional money house when the page is about economic dignity
+  and future access; a wallet/card can be used for personal payment details,
+  but it should not be the only symbol for the whole finance domain.
+- `Marketplace` should lean toward a shopfront, stall, or real trading place;
+  a cart/basket belongs only where the action is literally shopping or moving
+  goods.
+- Use real-object meaning:
+  - spotlight = real loudspeaker or megaphone for announcement/publicity
+  - sound controls = real speaker/loudspeaker for audio on/off
+  - video/media = video camera or playable media object, not a megaphone
+  - community home = premium house, hall, or civic building
+  - shop / marketplace = shopfront, market stall, or real trading place
+  - vault = safe box
+  - finance = bank building, cash drawer, or institutional money house
+  - wallet/card = personal payout, payment-detail, or card context
+  - repayment = calendar or payment plan with money/check evidence
+  - trust = shield badge or seal
+  - proof/certificate = sealed paper, certificate packet, or evidence package
+  - records = document folder
+  - join = person-plus
+- For hero areas, use larger realistic object illustrations.
+- For buttons and compact cards, use simplified 3D icons, not full photographs.
+
+Prompt words:
+- `premium skeuomorphic 3D icon`
+- `realistic object icon`
+- `high-fidelity marketplace icon`
+- `glossy executive app icon`
+- `real-world storefront icon`
+- `premium banking icon`
+- `3D safe vault icon`
+- `3D community building icon`
+
+Final rule:
+- Photos can be used in banners or hero cards.
+- Icons inside the UI must be realistic 3D object icons, not literal photos and
+  not flat symbols.
 - Important task and fact icons should sit inside stable tiles or badges with
   strong navy, gold, green, or neutral contrast.
-- Pictograms in fact cards should normally be at least `22px` inside a
-  `42px-48px` tile. Task selector icons should normally be at least `18px` and
-  badge-backed when space allows.
 - Icons must not cover photos, proof evidence, or record text.
 - Icon tiles must not cause button labels or card text to split into one-letter
   stacks.
@@ -176,7 +246,7 @@ snapshots:
   primary action
 - remove decorative height, oversized badges, repeated dividers, and explanatory
   paragraphs
-- use compact SVG pictograms instead of emoji-style marks
+- use compact premium realistic 3D icons instead of emoji-style marks
 - keep verification photos, IDs, seals, and names unobstructed; badges may sit
   beside or dock on an edge, but must not cover the evidence being shown
 - keep long IDs readable with whole-word wrapping only; do not split labels into

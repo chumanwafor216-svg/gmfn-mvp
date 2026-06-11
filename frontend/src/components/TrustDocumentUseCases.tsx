@@ -129,7 +129,7 @@ export default function TrustDocumentUseCases({
                 <StableCtaLink
                   to={item.to}
                   debugId={`trust-document-use-cases.open.${item.id}`}
-                  stableHeight={40}
+                  stableHeight={52}
                   style={linkStyle()}
                 >
                   Open {item.title.replace(/^Start with\s+|^Stay with\s+|^Carry\s+|^Open\s+/, "")}

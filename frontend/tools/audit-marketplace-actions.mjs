@@ -236,14 +236,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /type MarketplaceGlyphName[\s\S]*?function MarketplaceGlyph[\s\S]*?name: MarketplaceGlyphName/,
-  "Marketplace front action marks must use deterministic SVG glyphs instead of device emoji fonts."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?type MarketplaceGlyphName[\s\S]*?MARKETPLACE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<MarketplaceGlyphName, GsnIconName>[\s\S]*?function MarketplaceGlyph[\s\S]*?name: MarketplaceGlyphName[\s\S]*?<GsnLegacyIcon/,
+  "Marketplace front action marks must use deterministic 3D GSN icons instead of device emoji fonts."
 );
 
 assertNotContains(
   "src/pages/MarketplacePage.tsx",
   /[\u{1F6CD}\u{1F465}\u{1F6E1}\u{1F4B3}\u{1F91D}\u{1F6D2}\u{1F4B7}\u{1F3E6}\u{1F49A}\u{1F4CB}\u{1F4E3}\u{1F5C2}\u{2728}\u{203A}\u{2303}]/gu,
-  "Marketplace front action marks must not use emoji or text chevrons; use MarketplaceGlyph instead."
+  "Marketplace front action marks must not use emoji or text chevrons; use MarketplaceGlyph backed by 3D GSN icons instead."
 );
 
 assertNotContains(
@@ -314,8 +314,26 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"[\s\S]*?function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceFrontLaneCardStyle[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\)[\s\S]*?minHeight: isCompact \? 126 : 116[\s\S]*?height: "auto"[\s\S]*?maxHeight: "none"[\s\S]*?58px minmax\(0, 1fr\) 18px[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 58 : 64[\s\S]*?height: isCompact \? 58 : 64[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
-  "Marketplace front grouped-lane cards and inner action rows must keep phone-safe geometry, clamped text, and stable tap targets."
+  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"/,
+  "Marketplace actions must keep phone-safe heights and inline row reserves."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"/,
+  "Marketplace inner rows must keep phone-safe geometry and tap-stable layout."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceFrontLaneCardStyle[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\)[\s\S]*?minHeight: isCompact \? 126 : 116[\s\S]*?height: "auto"[\s\S]*?maxHeight: "none"[\s\S]*?58px minmax\(0, 1fr\) 18px[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 58 : 64[\s\S]*?height: isCompact \? 58 : 64/,
+  "Marketplace front grouped-lane cards must keep stable icon and row geometry."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceFrontTagStyle[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
+  "Marketplace lane text must stay clamped with stable row arrows."
 );
 
 assertContains(

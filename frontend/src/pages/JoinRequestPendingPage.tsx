@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { CardActionRow, StableCtaLink } from "../components/StableButton";
 import { getJoinApprovalStatus } from "../lib/api";
 import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
@@ -32,6 +33,23 @@ type FactRow = {
   label: string;
   value: string;
 };
+
+const PENDING_ICON_MAP = {
+  approval: "community",
+  book: "document",
+  community: "community",
+  decision: "shield",
+  details: "document",
+  entry: "join-person-plus",
+  eye: "eye",
+  focus: "shield",
+  lock: "lock",
+  market: "shop",
+  progress: "chart",
+  request: "document",
+  shield: "shield",
+  welcome: "spark",
+} satisfies Record<IconName, GsnIconName>;
 
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
@@ -153,133 +171,14 @@ function IconGlyph({
   name: IconName;
   size?: number;
 }) {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 2.2,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-
-  switch (name) {
-    case "approval":
-      return (
-        <svg {...common}>
-          <path d="M4 11.5 9.2 6l5.2 5.5v8.5H4z" />
-          <path d="M9 20v-5h5v5" />
-          <path d="M15.8 11.2h4.2v8.8h-4.2" />
-        </svg>
-      );
-    case "book":
-      return (
-        <svg {...common}>
-          <path d="M5 5.5c2.5-1.2 4.6-1.2 7 0v14c-2.4-1.2-4.5-1.2-7 0z" />
-          <path d="M12 5.5c2.4-1.2 4.5-1.2 7 0v14c-2.5-1.2-4.6-1.2-7 0z" />
-        </svg>
-      );
-    case "community":
-      return (
-        <svg {...common}>
-          <path d="M4 20v-7l8-7 8 7v7" />
-          <path d="M9 20v-6h6v6" />
-        </svg>
-      );
-    case "decision":
-      return (
-        <svg {...common}>
-          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
-          <path d="m8.6 12.2 2.2 2.2 4.8-5" />
-        </svg>
-      );
-    case "details":
-      return (
-        <svg {...common}>
-          <path d="M7 4h10v16H7z" />
-          <path d="M10 8h4" />
-          <path d="M10 12h4" />
-          <path d="M10 16h3" />
-        </svg>
-      );
-    case "entry":
-      return (
-        <svg {...common}>
-          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
-          <path d="M9 12h6" />
-          <path d="M12 9v6" />
-        </svg>
-      );
-    case "eye":
-      return (
-        <svg {...common}>
-          <path d="M3.5 12s3-5 8.5-5 8.5 5 8.5 5-3 5-8.5 5-8.5-5-8.5-5z" />
-          <circle cx="12" cy="12" r="2.4" />
-        </svg>
-      );
-    case "focus":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="7" />
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 5v3" />
-          <path d="M19 12h-3" />
-        </svg>
-      );
-    case "lock":
-      return (
-        <svg {...common}>
-          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-          <path d="M6.5 11h11v9h-11z" />
-          <path d="M12 15v2" />
-        </svg>
-      );
-    case "market":
-      return (
-        <svg {...common}>
-          <path d="M6 8h12l-1 12H7z" />
-          <path d="M9 8a3 3 0 0 1 6 0" />
-        </svg>
-      );
-    case "progress":
-      return (
-        <svg {...common}>
-          <path d="M5 19V9" />
-          <path d="M10 19V5" />
-          <path d="M15 19v-7" />
-          <path d="M20 19V7" />
-        </svg>
-      );
-    case "request":
-      return (
-        <svg {...common}>
-          <path d="M7 4h10v16H7z" />
-          <path d="M9.5 9h5" />
-          <path d="M9.5 13h5" />
-          <path d="M9.5 17h3" />
-        </svg>
-      );
-    case "shield":
-      return (
-        <svg {...common}>
-          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
-          <path d="M8.3 13h7.4" />
-          <path d="M12 9.3v7.4" />
-        </svg>
-      );
-    case "welcome":
-      return (
-        <svg {...common}>
-          <path d="M5 12c2-4 4.4-4 6.4 0 1.9 3.8 4.2 3.8 6.6 0" />
-          <path d="M4 17h16" />
-          <path d="M7 7h.01" />
-        </svg>
-      );
-    default:
-      return null;
-  }
+  return (
+    <GsnLegacyIcon
+      name={PENDING_ICON_MAP[name]}
+      size={Math.max(size, Math.round(size * 1.22))}
+      decorative
+      style={{ display: "inline-grid", flex: "0 0 auto" }}
+    />
+  );
 }
 
 function GsnMark({ isCompact }: { isCompact: boolean }) {

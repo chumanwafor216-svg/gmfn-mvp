@@ -361,7 +361,7 @@ export default function IntroductionPage() {
           <StableCtaLink
             to={welcomeTo}
             debugId="introduction.footer.welcome"
-            stableHeight={40}
+            stableHeight={52}
             style={secondaryLinkStyle()}
           >
             Welcome
@@ -370,7 +370,7 @@ export default function IntroductionPage() {
           <StableCtaLink
             to={guideTo}
             debugId="introduction.footer.guide"
-            stableHeight={40}
+            stableHeight={52}
             style={secondaryLinkStyle()}
           >
             My GSN and I
@@ -379,7 +379,7 @@ export default function IntroductionPage() {
           <StableCtaLink
             to={commitmentTo}
             debugId="introduction.footer.commitment"
-            stableHeight={40}
+            stableHeight={52}
             style={secondaryLinkStyle()}
           >
             Commitment Builder
