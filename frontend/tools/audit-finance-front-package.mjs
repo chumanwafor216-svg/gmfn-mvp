@@ -132,6 +132,20 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
+  /const FINANCE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?card: "financeInstitution"[\s\S]*?down: "financeInstitution"[\s\S]*?out: "wallet"[\s\S]*?wallet: "financeInstitution"/,
+  "Finance primary money icons must use institutional finance imagery, while wallet imagery stays reserved for payout or money-out contexts."
+);
+
+assertContains(
+  financeFile,
+  financeSource,
+  /<FinanceGlyph name="bank" size=\{isCompact \? 52 : 66\} \/>/,
+  "Finance hero must use the institutional bank-building 3D icon instead of a plain text badge."
+);
+
+assertContains(
+  financeFile,
+  financeSource,
   /stableHeight=\{isCompact \? 124 : 132\}[\s\S]*?financeToolButtonStyle\(isCompact\)[\s\S]*?stableHeight=\{isCompact \? 88 : 76\}[\s\S]*?financeMiniToolButtonStyle\(isCompact\)/,
   "Finance front and secondary tool buttons must keep fixed phone-safe geometry."
 );

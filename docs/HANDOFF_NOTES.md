@@ -111,6 +111,46 @@
   - it does not prove all Marketplace subpanels are visually perfect on a real
     phone. Physical screenshot review is still required for final polish.
 
+### Finance production polish slice (2026-06-11)
+
+- Applied the production polish gate to the next route target:
+  `frontend/src/pages/FinancePage.tsx`.
+- Changes made:
+  - Finance hero now uses the institutional bank-building 3D icon instead of a
+    plain text `GSN` badge;
+  - primary finance glyph mappings now use the finance-institution icon for
+    main finance, visible balance, money-in, and summary contexts;
+  - wallet imagery remains reserved for payout / money-out contexts;
+  - removed remaining non-zero/negative letter spacing from Finance section
+    labels, table heads, and the hero title.
+- Updated `frontend/tools/audit-finance-front-package.mjs` so the audit now
+  protects:
+  - institutional finance imagery for primary money contexts;
+  - wallet imagery staying limited to payout/money-out contexts;
+  - the Finance hero using the bank-building 3D icon instead of a plain text
+    badge.
+- Verification passed locally from `frontend`:
+  - `npm run audit:finance-front-package`;
+  - `npm run audit:finance-button-inventory`;
+  - `npm run audit:finance-actions`;
+  - `npm run audit:finance-money-summary-lane`;
+  - `npm run audit:finance-money-movement-lanes`;
+  - `npm run audit:finance-banking-rails-lane`;
+  - `npm run audit:finance-records-events-lane`;
+  - `npm run audit:finance-signals-readiness-lane`;
+  - `npm run audit:finance-lane-map`;
+  - `npm run audit:finance-secondary-route-tools`;
+  - `npm exec -- eslint src/pages/FinancePage.tsx
+    tools/audit-finance-front-package.mjs`;
+  - `npm exec -- tsc -b --pretty false`;
+  - `npm run build`.
+- Current truth:
+  - this completes a targeted Finance icon-meaning and hero correction under
+    the new standard;
+  - this still does not verify full borrowing repayment logic. Pay-in-full,
+    pay-in-parts, partial repayment, overdue/missed, and reversal logic remain
+    a later end-to-end workstream.
+
 ### GSN icon meaning and borrowing repayment queue (2026-06-11)
 
 - Operational update - pipeline shortage / batch publishing:

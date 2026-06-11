@@ -143,18 +143,18 @@ type FinanceGlyphName =
 
 const FINANCE_GLYPH_ICON_MAP = {
   bank: "financeInstitution",
-  card: "card",
+  card: "financeInstitution",
   chart: "financeInstitution",
   check: "check",
   community: "community",
-  down: "wallet",
+  down: "financeInstitution",
   history: "records-folder",
   ledger: "proof",
   out: "wallet",
   receipt: "proof",
   shield: "shield",
   signal: "financeInstitution",
-  wallet: "wallet",
+  wallet: "financeInstitution",
 } satisfies Record<FinanceGlyphName, GsnIconName>;
 
 const FINANCE_UI_STORAGE_KEY = "gmfn.finance.sections.v3";
@@ -532,7 +532,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: "#42617D",
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -709,7 +709,7 @@ function tableHeadCell(): React.CSSProperties {
     color: "#C8D8EA",
     fontSize: 11,
     fontWeight: 950,
-    letterSpacing: 0.28,
+    letterSpacing: 0,
     textAlign: "left",
     textTransform: "uppercase",
     whiteSpace: "nowrap",
@@ -1716,7 +1716,7 @@ export default function FinancePage() {
                 fontSize: isCompact ? 31 : 44,
                 lineHeight: 1.04,
                 fontWeight: 950,
-                letterSpacing: -0.5,
+                letterSpacing: 0,
                 maxWidth: 620,
               }}
             >
@@ -1808,13 +1808,14 @@ export default function FinancePage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#F2CF77",
-              fontSize: isCompact ? 34 : 44,
-              fontWeight: 950,
-              boxShadow: "inset 0 0 28px rgba(214,170,69,0.10)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,252,255,0.94) 100%)",
+              color: "#0B2D4A",
+              boxShadow:
+                "0 14px 28px rgba(7,23,44,0.16), inset 4px 0 0 rgba(214,170,69,0.20), inset 0 1px 0 rgba(255,255,255,0.96)",
             }}
           >
-            GSN
+            <FinanceGlyph name="bank" size={isCompact ? 52 : 66} />
           </div>
         </div>
 
