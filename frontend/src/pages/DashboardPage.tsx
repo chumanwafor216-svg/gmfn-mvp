@@ -6727,10 +6727,10 @@ export default function DashboardPage() {
             ),
             order: 10,
             width: "100%",
-            maxWidth: isPhone ? "100%" : 660,
+            maxWidth: isPhone ? "100%" : 520,
             margin: "0 auto",
-            padding: isPhone ? 13 : 18,
-            borderRadius: isPhone ? 26 : 32,
+            padding: isPhone ? 12 : 16,
+            borderRadius: isPhone ? 28 : 34,
             border: "1px solid rgba(255,255,255,0.82)",
             display: "grid",
             boxShadow:
@@ -6744,10 +6744,10 @@ export default function DashboardPage() {
               display: "grid",
               gridTemplateColumns: isPhone
                 ? "minmax(0, 1fr) minmax(112px, 132px)"
-                : "minmax(0, 1fr) 178px",
+                : "minmax(0, 1fr) 170px",
               gap: isPhone ? 12 : 18,
               alignItems: "start",
-              padding: isPhone ? "16px 14px 14px" : "22px 22px 18px",
+              padding: isPhone ? "16px 14px 8px" : "22px 22px 10px",
               borderRadius: isPhone ? 20 : 24,
               border: "1px solid rgba(16,37,59,0.08)",
               background:
@@ -6777,7 +6777,7 @@ export default function DashboardPage() {
                 style={{
                   marginTop: isPhone ? 10 : 12,
                   color: DASHBOARD_BRAND.ink,
-                  fontSize: isPhone ? 27 : 42,
+                  fontSize: isPhone ? 30 : 39,
                   fontWeight: 1000,
                   lineHeight: 1.02,
                   textWrap: "balance",
@@ -6794,56 +6794,6 @@ export default function DashboardPage() {
                 >
                   first currency
                 </span>
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(34px, 1fr) auto minmax(34px, 1fr)",
-                  gap: isPhone ? 8 : 12,
-                  marginTop: isPhone ? 18 : 24,
-                  alignItems: "center",
-                  maxWidth: isPhone ? 246 : 330,
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    height: 1,
-                    background:
-                      "linear-gradient(90deg, rgba(201,154,39,0), rgba(201,154,39,0.48))",
-                  }}
-                />
-                <span
-                  style={{
-                    display: "inline-flex",
-                    minHeight: isPhone ? 34 : 38,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: isPhone ? 6 : 8,
-                    padding: isPhone ? "5px 14px" : "6px 18px",
-                    borderRadius: 999,
-                    background:
-                      "linear-gradient(180deg, rgba(255,249,225,0.98) 0%, rgba(239,207,113,0.94) 100%)",
-                    border: "1px solid rgba(145,103,19,0.22)",
-                    color: "#6B4300",
-                    fontSize: isPhone ? 13 : 15,
-                    fontWeight: 1000,
-                    letterSpacing: 0,
-                    boxShadow:
-                      "0 10px 18px rgba(145,103,19,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
-                  }}
-                >
-                  <GsnLegacyIcon name="proof" size={isPhone ? 20 : 23} />
-                  GSN
-                </span>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    height: 1,
-                    background:
-                      "linear-gradient(90deg, rgba(201,154,39,0.48), rgba(201,154,39,0))",
-                  }}
-                />
               </div>
             </div>
 
@@ -7047,6 +6997,147 @@ export default function DashboardPage() {
           </div>
 
           <div
+            aria-label="GSN Global Support Network connector"
+            style={{
+              order: 15,
+              display: "grid",
+              gridTemplateColumns: "minmax(42px, 1fr) auto minmax(42px, 1fr)",
+              alignItems: "center",
+              gap: isPhone ? 6 : 10,
+              padding: isPhone ? "4px 12px 8px" : "5px 18px 10px",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
+              borderLeft: "1px solid rgba(16,37,59,0.08)",
+              borderRight: "1px solid rgba(16,37,59,0.08)",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr auto",
+                alignItems: "center",
+                gap: isPhone ? 5 : 7,
+                minWidth: 0,
+              }}
+            >
+              <span
+                style={{
+                  width: isPhone ? 30 : 36,
+                  height: isPhone ? 18 : 22,
+                  borderRadius: "18px 18px 10px 22px",
+                  background:
+                    "radial-gradient(circle at 74% 30%, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.54) 25%, rgba(222,176,67,0.86) 74%, rgba(170,116,21,0.82) 100%)",
+                  boxShadow:
+                    "0 8px 14px rgba(145,103,19,0.16), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  transform: "rotate(16deg)",
+                }}
+              />
+              <span
+                style={{
+                  height: 1,
+                  background:
+                    "linear-gradient(90deg, rgba(201,154,39,0.16), rgba(201,154,39,0.58))",
+                }}
+              />
+              <span
+                style={{
+                  width: isPhone ? 28 : 34,
+                  height: isPhone ? 14 : 17,
+                  borderRadius: 999,
+                  border: "1.5px solid rgba(201,154,39,0.52)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.62), 0 6px 10px rgba(145,103,19,0.08)",
+                }}
+              />
+            </span>
+            <span
+              style={{
+                display: "grid",
+                justifyItems: "center",
+                gap: 2,
+                minWidth: isPhone ? 92 : 110,
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  minHeight: isPhone ? 40 : 46,
+                  minWidth: isPhone ? 82 : 100,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: isPhone ? "5px 16px" : "6px 22px",
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(180deg, rgba(255,247,218,1) 0%, rgba(238,194,79,0.98) 54%, rgba(211,153,38,0.95) 100%)",
+                  border: "1px solid rgba(145,103,19,0.28)",
+                  color: "#3B2400",
+                  fontSize: isPhone ? 18 : 21,
+                  fontWeight: 1000,
+                  letterSpacing: 2.2,
+                  boxShadow:
+                    "0 12px 22px rgba(145,103,19,0.15), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(145,103,19,0.14)",
+                }}
+              >
+                GSN
+              </span>
+              <span
+                style={{
+                  color: "rgba(53,81,107,0.7)",
+                  fontSize: isPhone ? 7.4 : 8.5,
+                  fontWeight: 850,
+                  lineHeight: 1.1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Global Support Network
+              </span>
+            </span>
+            <span
+              aria-hidden="true"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr auto",
+                alignItems: "center",
+                gap: isPhone ? 5 : 7,
+                minWidth: 0,
+              }}
+            >
+              <span
+                style={{
+                  width: isPhone ? 28 : 34,
+                  height: isPhone ? 14 : 17,
+                  borderRadius: 999,
+                  border: "1.5px solid rgba(201,154,39,0.52)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.62), 0 6px 10px rgba(145,103,19,0.08)",
+                }}
+              />
+              <span
+                style={{
+                  height: 1,
+                  background:
+                    "linear-gradient(90deg, rgba(201,154,39,0.58), rgba(201,154,39,0.16))",
+                }}
+              />
+              <span
+                style={{
+                  width: isPhone ? 30 : 36,
+                  height: isPhone ? 18 : 22,
+                  borderRadius: "18px 18px 22px 10px",
+                  background:
+                    "radial-gradient(circle at 26% 30%, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.54) 25%, rgba(222,176,67,0.86) 74%, rgba(170,116,21,0.82) 100%)",
+                  boxShadow:
+                    "0 8px 14px rgba(145,103,19,0.16), inset 0 1px 0 rgba(255,255,255,0.8)",
+                  transform: "rotate(-16deg)",
+                }}
+              />
+            </span>
+          </div>
+
+          <div
             style={{
               marginTop: isPhone ? 12 : 14,
               order: 20,
@@ -7070,10 +7161,10 @@ export default function DashboardPage() {
             ].map(([icon, label], index) => {
               const helper =
                 label === "Visible"
-                  ? "Verifiable identity"
+                  ? "Verifiable identity you can see"
                   : label === "Portable"
-                  ? "Works anywhere"
-                  : "Trusted where it matters";
+                  ? "Your identity, anytime, anywhere"
+                  : "Accepted and trusted where it matters";
 
               return (
                 <div
@@ -7133,7 +7224,7 @@ export default function DashboardPage() {
                       fontSize: isPhone ? 9.4 : 11,
                       fontWeight: 750,
                       lineHeight: 1.22,
-                      maxWidth: 92,
+                      maxWidth: isPhone ? 106 : 126,
                       overflowWrap: "break-word",
                     }}
                   >
@@ -7148,7 +7239,7 @@ export default function DashboardPage() {
             style={{
               marginTop: isPhone ? 10 : 12,
               order: 40,
-              display: "grid",
+              display: "none",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(242,247,253,0.92) 100%)",
@@ -7356,15 +7447,28 @@ export default function DashboardPage() {
                 justifyContent: "center",
                 justifySelf: "center",
                 background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,243,255,0.94) 100%)",
-                border: "1px solid rgba(16,37,59,0.08)",
+                  "radial-gradient(circle at 34% 28%, rgba(255,247,218,0.94) 0%, rgba(201,154,39,0.62) 28%, rgba(16,37,59,0.96) 70%, rgba(7,21,38,0.98) 100%)",
+                border: "1px solid rgba(201,154,39,0.36)",
                 boxShadow:
-                  "0 10px 18px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
-                color: "#0D3A63",
+                  "0 12px 22px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.48)",
+                color: "#F6D77A",
                 zIndex: 1,
               }}
             >
-              <DashboardSignalIcon name="trust" size={isPhone ? 31 : 36} />
+              <span
+                style={{
+                  display: "grid",
+                  justifyItems: "center",
+                  gap: 1,
+                  color: "#F8E7A3",
+                  fontSize: isPhone ? 11 : 13,
+                  fontWeight: 1000,
+                  lineHeight: 1,
+                }}
+              >
+                <GSNBrandMark width={isPhone ? 25 : 31} height={isPhone ? 30 : 37} />
+                <span>GSN</span>
+              </span>
             </span>
 
             <span
@@ -7398,7 +7502,7 @@ export default function DashboardPage() {
                   maxWidth: isPhone ? 210 : 360,
                 }}
               >
-                Your permanent network identity
+                Your verified identity across the network
               </span>
             </span>
 

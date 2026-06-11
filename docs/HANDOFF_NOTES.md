@@ -46919,3 +46919,48 @@ GSN-branded invite composer and invite-entry continuity.
   - this protects the source structure and contract;
   - it is still not a rendered browser screenshot comparison;
   - no push or Render deploy was triggered.
+
+### Dashboard trust-card closer-reference correction (2026-06-11)
+
+- Trigger:
+  - product owner rejected the prior trust-card pass as still too different
+    from the supplied screenshot reference;
+  - explicit instruction was to change only the referenced GSN card portion,
+    keep the work close to the screenshot, restore the connected GSN/hands
+    meaning, and use watermarking where possible.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - narrowed the `/app/dashboard` Identity Passport card so it reads more
+      like the phone screenshot card instead of a broad dashboard slab;
+    - removed the earlier small GSN badge from under the headline and replaced
+      it with a central `GSN` connector band with gold hand/link shapes and the
+      `Global Support Network` caption;
+    - changed the proof-row helper language to match the reference more
+      closely: `Verifiable identity you can see`, `Your identity, anytime,
+      anywhere`, and `Accepted and trusted where it matters`;
+    - changed the Global ID mark from a generic shield tile to a circular
+      GSN-style seal and changed the helper copy to `Your verified identity
+      across the network`;
+    - visually removed the extra Trust / CCI / TrustSlip strip from inside the
+      card so the card itself contains only the reference elements.
+  - `frontend/tools/audit-dashboard-actions.mjs`
+    - updated the trust-card guard so it protects the central connector,
+      reference proof language, watermark, Global ID, and issued/status
+      metadata.
+- Verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx tools\audit-dashboard-actions.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - this should be closer to the supplied reference than the previous pass;
+  - the hand/link motif is CSS-built because the current icon asset pack does
+    not include realistic hands;
+  - the Trust / CCI / TrustSlip buttons remain in source for protected contract
+    continuity, but the card now hides that extra visible strip to respect the
+    screenshot request;
+  - this is still build/audit verified, not a rendered browser screenshot
+    comparison;
+  - no push or Render deploy was triggered.
