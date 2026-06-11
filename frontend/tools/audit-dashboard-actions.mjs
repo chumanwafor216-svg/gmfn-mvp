@@ -186,6 +186,11 @@ assertContains(
 );
 
 assertContains(
+  /data-dashboard-passport-reference="gsn-trust-card"[\s\S]*?Your trust[\s\S]*?first currency[\s\S]*?<GsnLegacyIcon name="proof"[\s\S]*?Frame tools[\s\S]*?Verifiable identity[\s\S]*?Works anywhere[\s\S]*?Trusted where it matters[\s\S]*?<GSNBrandMark width=\{isPhone \? 70 : 90\}[\s\S]*?GSN Global ID[\s\S]*?Issued by GSN[\s\S]*?Status:/,
+  "Dashboard passport must keep the supplied GSN trust-card reference treatment: framed headline, light proof icons, watermark, and truthful issued/status metadata."
+);
+
+assertContains(
   /GSN Global ID[\s\S]*?Your permanent network identity[\s\S]*?globalIdParts[\s\S]*?\{visibleGsnId\}/,
   "Dashboard passport Global ID block must keep the simplified centered identity card."
 );

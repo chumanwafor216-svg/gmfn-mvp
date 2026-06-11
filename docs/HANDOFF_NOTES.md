@@ -46899,3 +46899,23 @@ GSN-branded invite composer and invite-entry continuity.
   - the app does not and should not copy the surrounding ChatGPT/phone chrome
     shown in the screenshot;
   - no push or Render deploy was triggered.
+
+### Dashboard trust-card audit guard (2026-06-11)
+
+- Trigger:
+  - continuing the supplied-reference dashboard card pass by preventing the
+    new trust-card treatment from quietly drifting back.
+- Changed locally, not pushed:
+  - `frontend/tools/audit-dashboard-actions.mjs`
+    - added a guard requiring the `/app/dashboard` passport card to keep the
+      `gsn-trust-card` reference marker, framed trust headline, light proof
+      icon row, GSN watermark, `GSN Global ID`, and truthful issued/status
+      metadata.
+- Verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint tools\audit-dashboard-actions.mjs`.
+- Unabated truth:
+  - this protects the source structure and contract;
+  - it is still not a rendered browser screenshot comparison;
+  - no push or Render deploy was triggered.
