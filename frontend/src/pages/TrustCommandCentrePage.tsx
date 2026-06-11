@@ -291,6 +291,8 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
 function statTile(): React.CSSProperties {
   return {
     ...institutionalStatTile("#FFFFFF"),
+    minWidth: 0,
+    overflow: "hidden",
     border: "1px solid rgba(20,52,83,0.17)",
     background:
       "radial-gradient(circle at 16% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 84% 14%, rgba(38,96,171,0.10) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(240,246,252,0.984) 100%)",
@@ -411,9 +413,39 @@ function sectionLabelWithIcon(
       >
         <GsnLegacyIcon name={icon} size={15} />
       </span>
-      <span>{label}</span>
+      <span
+        style={{
+          minWidth: 0,
+          overflowWrap: "break-word",
+          wordBreak: "break-word",
+        }}
+      >
+        {label}
+      </span>
     </span>
   );
+}
+
+function commandStatValueStyle(): React.CSSProperties {
+  return {
+    marginTop: 8,
+    color: "#0B1F33",
+    fontWeight: 900,
+    fontSize: 18,
+    lineHeight: 1.25,
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+  };
+}
+
+function commandStatDetailStyle(): React.CSSProperties {
+  return {
+    marginTop: 8,
+    ...helperText(),
+    fontSize: 13,
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+  };
 }
 
 function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
@@ -1568,96 +1600,58 @@ export default function TrustCommandCentrePage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(5, minmax(0, 1fr))",
+                  gridTemplateColumns: isCompact
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "repeat(5, minmax(0, 1fr))",
                   gap: 12,
                 }}
               >
                 <div style={statTile()}>
                   <div>{sectionLabelWithIcon("shield", "System health")}</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.25,
-                    }}
-                  >
+                  <div style={commandStatValueStyle()}>
                     {systemOk ? "Healthy" : "Needs review"}
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  <div style={commandStatDetailStyle()}>
                     Database: {firstTruthy(executiveReading.systemHealth?.database, "unknown")}
                   </div>
                 </div>
 
                 <div style={statTile()}>
                   <div>{sectionLabelWithIcon("document", "Protocol stage")}</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.25,
-                    }}
-                  >
+                  <div style={commandStatValueStyle()}>
                     {protocolStage.replace(/_/g, " ")}
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  <div style={commandStatDetailStyle()}>
                     Next priority: {firstTruthy(protocolNextPriorities[0], "Not specified")}
                   </div>
                 </div>
 
                 <div style={statTile()}>
                   <div>{sectionLabelWithIcon("check", "Operational readiness")}</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.25,
-                    }}
-                  >
+                  <div style={commandStatValueStyle()}>
                     {pilotOverallLabel}
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  <div style={commandStatDetailStyle()}>
                     Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Needs proof: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
                   </div>
                 </div>
 
                 <div style={statTile()}>
                   <div>{sectionLabelWithIcon("wallet", "Clan liquidity")}</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.25,
-                    }}
-                  >
+                  <div style={commandStatValueStyle()}>
                     {formatNumber(liquidity?.lockedTotal || 0)} locked
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  <div style={commandStatDetailStyle()}>
                     Active loans: {Number(liquidity?.activeLoansCount || 0)} | Pledged: {safeStr(liquidity?.pledgedTotal || "0")}
                   </div>
                 </div>
 
                 <div style={statTile()}>
                   <div>{sectionLabelWithIcon("alert", "Exposure pressure")}</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.25,
-                    }}
-                  >
+                  <div style={commandStatValueStyle()}>
                     {exposureTotals ? `${formatNumber(exposureTotals.exposure)} exposed` : "Unavailable"}
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  <div style={commandStatDetailStyle()}>
                     {exposureTotals
                       ? `Available: ${formatNumber(exposureTotals.available)} | Pool: ${formatNumber(exposureTotals.pool)}`
                       : selectedClanId > 0
@@ -2136,7 +2130,7 @@ export default function TrustCommandCentrePage() {
               marginTop: 14,
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "1fr 1fr"
+                ? "repeat(2, minmax(0, 1fr))"
                 : "repeat(4, minmax(0, 1fr))",
               gap: 12,
             }}

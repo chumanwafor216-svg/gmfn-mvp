@@ -1,3 +1,32 @@
+### Admin Tools phone stat-grid overflow repair (2026-06-11)
+
+- Product owner supplied a phone screenshot of Admin Tools where the executive
+  status tiles were wider than the phone viewport; the right column was clipped
+  instead of wrapping inside the visible page.
+- Confirmed the affected implementation is
+  `frontend/src/pages/TrustCommandCentrePage.tsx`.
+- Frontend change:
+  - Executive reading and command-summary phone grids now use
+    `repeat(2, minmax(0, 1fr))` instead of plain `1fr 1fr`, so long labels and
+    values cannot force the grid wider than the viewport.
+  - Admin stat tiles now set `minWidth: 0` and `overflow: hidden`.
+  - Section labels and executive stat values/details now allow word wrapping
+    inside the card instead of widening the whole grid.
+- Verification passed locally:
+  - `npm run audit:admin-ops-actions`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm exec -- eslint src\pages\TrustCommandCentrePage.tsx`
+  - `npm run audit:protected-button-freeze`
+  - `npm run build`
+  - `git diff --check`
+- Unabated truth:
+  - this fixes the identified code-level overflow cause;
+  - it still needs the phone page reloaded for visual acceptance because this
+    frontend has no local screenshot harness.
+- Publishing posture:
+  - no push and no Render deploy; keep batching locally until the owner says
+    the current batch is ready to publish.
+
 ### Money-out rail and ROSCA phone audit polish (2026-06-11)
 
 - Product owner supplied phone screenshots showing:
