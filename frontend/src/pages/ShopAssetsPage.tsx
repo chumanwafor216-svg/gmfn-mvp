@@ -17,6 +17,7 @@ import {
 } from "../lib/institutionalSurface";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { PAID_REPOST_HASH } from "../lib/ownerShopHandles";
 import {
   getMe,
   getMyMarketplaceShop,
@@ -107,8 +108,6 @@ const PUBLIC_GALLERY_VISIBILITY_MODES = new Set([
   "public_gallery",
   "shop_gallery",
 ]);
-const PAID_REPOST_HASH = "marketplace-paid-network-placement";
-
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
 }

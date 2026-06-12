@@ -95,7 +95,7 @@ for (const file of signedInCommunityShopFiles) {
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: "free-spotlight"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?debugId="community-home\.spotlight-status\.open-free"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
+  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?debugId="community-home\.spotlight-status\.open-free"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
   "Community Home Free Spotlight actions must keep guarded routing to the canonical Shop Control spotlight publisher."
 );
 
@@ -107,19 +107,19 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /id: "owner-actions"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.joinRequests[\s\S]*?id: "shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: "vault-control"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.vaultControl[\s\S]*?id: "free-spotlight"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: "spotlight-subscription"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.subscriptionSpotlight[\s\S]*?id: "paid-repost"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost[\s\S]*?id: "rosca"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?id: "trusted-circle"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.buildFirstCircle[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /id: "owner-actions"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.joinRequests[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.shopGalleryTools[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.vaultControl[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.subscriptionSpotlight[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost[\s\S]*?id: "rosca"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?id: ownerShopHandle\("community-package"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.communityPackages[\s\S]*?id: "trusted-circle"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.buildFirstCircle[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact owner/tool rows must remain traceable and route to the deeper owner surfaces."
 );
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /const PAID_REPOST_HASH = "marketplace-paid-network-placement";[\s\S]*?paidRepost:\s*routeTarget\(\s*"marketplace"[\s\S]*?PAID_REPOST_HASH[\s\S]*?case "spotlight-repost":[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost/,
+  /PAID_REPOST_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?paidRepost:\s*routeTarget\(\s*"marketplace"[\s\S]*?PAID_REPOST_HASH[\s\S]*?case "spotlight-repost":[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost/,
   "Community Home Paid Repost must route through the paid placement rail while remaining a spotlight-family handle."
 );
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /const ROSCA_MARKETPLACE_HASH = "marketplace-rosca";[\s\S]*?rosca:\s*routeTarget\(\s*"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?routes\.rosca[\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /ROSCA_MARKETPLACE_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?rosca:\s*routeTarget\(\s*"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?routes\.rosca[\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home ROSCA must stay visible as its own launcher and route to the Marketplace ROSCA desk."
 );
 
@@ -155,8 +155,8 @@ assertContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /debugId="community-shop-control\.shortcut\.spotlight"[\s\S]*?debugId="community-shop-control\.shortcut\.paid-spotlight"[\s\S]*?debugId="community-shop-control\.shortcut\.paid-repost"/,
-  "Community Shop Control shortcut buttons must keep separate Free Spotlight, Paid Spotlight, and Paid Repost debug IDs."
+  /OWNER_SHOP_HASHES[\s\S]*?PAID_REPOST_HASH[\s\S]*?ownerShopHandle[\s\S]*?debugId="community-shop-control\.shortcut\.spotlight"[\s\S]*?ownerShopHandle\("free-spotlight"\)\.label[\s\S]*?debugId="community-shop-control\.shortcut\.paid-spotlight"[\s\S]*?ownerShopHandle\("spotlight-subscription"\)\.label[\s\S]*?debugId="community-shop-control\.shortcut\.paid-repost"[\s\S]*?ownerShopHandle\("paid-repost"\)\.label[\s\S]*?debugId="community-shop-control\.shortcut\.community-package"[\s\S]*?ownerShopHandle\("community-package"\)\.label/,
+  "Community Shop Control shortcut buttons must use shared owner-shop handles for Free Spotlight, Spotlight Subscription, Paid Repost, and Community Package."
 );
 
 assertContains(

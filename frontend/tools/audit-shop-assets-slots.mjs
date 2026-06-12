@@ -144,7 +144,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /const PAID_REPOST_HASH = "marketplace-paid-network-placement";[\s\S]*?function buildPaidRepostPath\(product: ProductRecord, blockNumber: number\): string \{[\s\S]*?repost_product_id[\s\S]*?block[\s\S]*?source", "shop-control-gallery"[\s\S]*?PAID_REPOST_HASH/,
+  /PAID_REPOST_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?function buildPaidRepostPath\(product: ProductRecord, blockNumber: number\): string \{[\s\S]*?repost_product_id[\s\S]*?block[\s\S]*?source", "shop-control-gallery"[\s\S]*?PAID_REPOST_HASH/,
   "Shop Assets owner-side Repost must route the exact selected block into the paid placement rail."
 );
 

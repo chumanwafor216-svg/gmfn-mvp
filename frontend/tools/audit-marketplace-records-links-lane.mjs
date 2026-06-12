@@ -39,7 +39,7 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Link Center[\s\S]*?Share, verify, shop, repost\.[\s\S]*?Join[\s\S]*?Verify[\s\S]*?Shop Face[\s\S]*?Paid Repost/,
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Link Center[\s\S]*?Share, verify, shop, repost\.[\s\S]*?Join[\s\S]*?Verify[\s\S]*?Shop Face[\s\S]*?Paid Repost[\s\S]*?Packages/,
   "Link Center grouped card must open marketplace-owned links and not look like the member/trade lane."
 );
 
@@ -85,6 +85,8 @@ if (!recordsLinksSection.text) {
     "marketplace.network-repost.refresh-credits",
     "marketplace.network-repost.place",
     "marketplace.network-repost.subscription",
+    "marketplace.links.community-packages",
+    "marketplace.links.package-spotlight",
     "marketplace.links.owner-shop-control",
   ];
 
@@ -123,7 +125,11 @@ if (!recordsLinksSection.text) {
     /debugId="marketplace\.network-repost\.target-help\.summary"/,
     /debugId="marketplace\.network-repost\.credit-details\.summary"/,
     /\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.payment-actions"\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?debugId="marketplace\.network-repost\.credit-details\.summary"[\s\S]*?debugId="marketplace\.network-repost\.subscription"/,
-    /5\. Owner Controls/,
+    /5\. Community Packages/,
+    /15 members included\. Extra members, shop blocks, ROSCA, and meetings live here\./,
+    /debugId="marketplace\.links\.community-packages"[\s\S]*?OWNER_SHOP_HASHES\.communityPackage/,
+    /debugId="marketplace\.links\.package-spotlight"/,
+    /6\. Owner Controls/,
     /Manage your shop & settings/,
     /Open Control/,
     /<MarketplaceGlyph name="join"/,
@@ -144,7 +150,7 @@ if (!recordsLinksSection.text) {
     }
   });
 
-  if (/(Member Ledger|People, shops|Trusted Trade|Support Requests|Money Pool|ROSCA|guarantor|Loan Readiness|Trust Passport|TrustSlip|CCI|What these links do|Choose the door|Outgoing links)/.test(recordsLinksSection.text)) {
+  if (/(Member Ledger|People, shops|Trusted Trade|Support Requests|Money Pool|guarantor|Loan Readiness|Trust Passport|TrustSlip|CCI|What these links do|Choose the door|Outgoing links)/.test(recordsLinksSection.text)) {
     addFinding(
       recordsLinksSection.start,
       "Link Center detail section must stay compact and must not expose other major lane responsibilities.",

@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const shopControlFile = "src/pages/ShopControlPage.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const stableButtonFile = "src/components/StableButton.tsx";
+const ownerShopHandlesFile = "src/lib/ownerShopHandles.ts";
 const shopControlSource = readFileSync(
   join(frontendRoot, shopControlFile),
   "utf8"
@@ -17,6 +18,10 @@ const stableButtonSource = readFileSync(
   join(frontendRoot, stableButtonFile),
   "utf8"
 );
+const ownerShopHandlesSource = readFileSync(
+  join(frontendRoot, ownerShopHandlesFile),
+  "utf8"
+);
 const findings = [];
 
 const expectedSourceActions = {
@@ -24,8 +29,8 @@ const expectedSourceActions = {
   SecondaryButton: 18,
   SubtleButton: 2,
   StableButton: 3,
-  StableCtaLink: 5,
-  total: 39,
+  StableCtaLink: 7,
+  total: 41,
 };
 const expectedNativeFieldCount = 24;
 const expectedFileInputActionRoots = 2;
@@ -92,6 +97,20 @@ function assertStableButtonContains(
   if (pattern.test(stableButtonSource)) return;
   findings.push({
     file: stableButtonFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
+function assertOwnerShopHandlesContains(
+  pattern,
+  message,
+  text = "Expected owner shop handle registry pattern was not found."
+) {
+  if (pattern.test(ownerShopHandlesSource)) return;
+  findings.push({
+    file: ownerShopHandlesFile,
     line: 1,
     message,
     text,
@@ -315,8 +334,18 @@ if (allActionRootMarkers !== expectedFileInputActionRoots * 2) {
 }
 
 assertShopContains(
-  /const shopHeroShortcuts:[\s\S]*?icon: GsnIconName[\s\S]*?label: "Dashboard"[\s\S]*?icon: "chart"[\s\S]*?label: "Marketplace"[\s\S]*?icon: "marketplace"[\s\S]*?label: "Shop gallery"[\s\S]*?icon: "shop"[\s\S]*?label: "Free spotlight"[\s\S]*?icon: "megaphone"[\s\S]*?label: "Subscription spotlight"[\s\S]*?icon: "financeInstitution"[\s\S]*?label: "Paid Repost"[\s\S]*?icon: "megaphone"[\s\S]*?label: "Vault"[\s\S]*?icon: "vault"[\s\S]*?\];/,
-  "Shop Control hero shortcuts must keep Dashboard, Marketplace, Shop gallery, Free spotlight, Subscription spotlight, Paid Repost, and Vault in the audited order with 3D GSN icon names."
+  /SHOP_CONTROL_SHORTCUTS[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?const SHOP_CONTROL_SHORTCUT_ICONS:[\s\S]*?"shop-billboard": "shop"[\s\S]*?"shop-diaries": "document"[\s\S]*?"shop-summary": "chart"[\s\S]*?"community-package": "financeInstitution"[\s\S]*?const shopHeroShortcuts:[\s\S]*?SHOP_CONTROL_SHORTCUTS\.map/,
+  "Shop Control hero shortcuts must focus owner shop control: billboard, 12 Shop Diaries, summary, and Community package."
+);
+
+assertOwnerShopHandlesContains(
+  /function ownerShopLayerForTarget\(targetId: string\):[\s\S]*?normalized\.includes\("gallery"\)[\s\S]*?return "products";[\s\S]*?normalized\.includes\("package"\)[\s\S]*?return "paid-tools";/,
+  "Shop Control hash routing must open gallery/diary links on the products layer and package links on the paid-tools package layer."
+);
+
+assertShopContains(
+  /setActiveOwnerLayer\(ownerShopLayerForTarget\(targetId\)\)/,
+  "Shop Control must use the shared ownerShopLayerForTarget hash router."
 );
 
 assertShopContains(
@@ -355,6 +384,11 @@ if (/â|�/.test(shopControlSource)) {
 assertShopContains(
   /activeOwnerLayer === "products" \? \(\s*<section\s*id="shop-control-gallery-tools"/,
   "Shop Control overview must not expose the embedded product/gallery workspace before the owner opens Shop gallery."
+);
+
+assertShopContains(
+  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard and 12 Shop Diaries[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.community-package"/,
+  "Shop Control gallery tools must expose billboard control and Community package from the 12 Shop Diaries lane."
 );
 
 if (

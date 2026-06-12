@@ -12,10 +12,10 @@ const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
 const expectedStableButtonTemplateCount = 15;
 const expectedNativeFieldCount = 0;
-const expectedNextActionGuideItemCount = 11;
+const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 5;
 const expectedSpotlightGuidedActionCount = 5;
-const expectedCompactToolRowCount = 9;
+const expectedCompactToolRowCount = 11;
 const expectedExpandedRouteLocalActionTemplates = 30;
 const expectedMobileShellBreakdown = {
   top: 2,
@@ -78,7 +78,7 @@ function countIdsInBlock(pattern, label) {
     return 0;
   }
 
-  return (block.match(/\bid: "/g) || []).length;
+  return (block.match(/\bid:\s*(?:"|ownerShopHandle\()/g) || []).length;
 }
 
 const actionPattern = /<StableButton\b[\s\S]*?(?:\/>|<\/StableButton>)/g;
@@ -243,8 +243,13 @@ if (compactToolRowCount !== expectedCompactToolRowCount) {
 }
 
 assertContains(
-  /const communityNextActionItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "choose-community"[\s\S]*?id: "marketplace"[\s\S]*?id: "create-community"[\s\S]*?id: "join-community"[\s\S]*?id: "circle"[\s\S]*?id: "shop-control"[\s\S]*?id: "spotlight"[\s\S]*?id: "finance"[\s\S]*?id: "support"[\s\S]*?id: "trust"[\s\S]*?id: "notifications"/,
+  /const communityNextActionItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "choose-community"[\s\S]*?id: "marketplace"[\s\S]*?id: "create-community"[\s\S]*?id: "join-community"[\s\S]*?id: "circle"[\s\S]*?id: "shop-control"[\s\S]*?id: "community-packages"[\s\S]*?id: "spotlight"[\s\S]*?id: "finance"[\s\S]*?id: "support"[\s\S]*?id: "trust"[\s\S]*?id: "notifications"/,
   "Community Home next-action guide must keep the full inner action manifest."
+);
+
+assertContains(
+  /communityPackages: routeTarget\([\s\S]*?"shop"[\s\S]*?hash: OWNER_SHOP_HASHES\.communityPackage[\s\S]*?case "community-packages"[\s\S]*?routes\.communityPackages/,
+  "Community Home Community packages guide item must open the Shop Control community package lane."
 );
 
 assertContains(
@@ -289,29 +294,43 @@ assertContains(
 );
 
 assertContains(
-  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: "shop-control"[\s\S]*?id: "vault-control"[\s\S]*?id: "free-spotlight"[\s\S]*?id: "spotlight-subscription"[\s\S]*?id: "paid-repost"[\s\S]*?id: "rosca"[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?id: "rosca"[\s\S]*?id: ownerShopHandle\("community-package"\)\.id[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact tool row manifest must stay traceable and ordered."
 );
 
 [
-  ["owner-actions", "joinRequests"],
-  ["vault-control", "vaultControl"],
-  ["free-spotlight", "freeSpotlight"],
-  ["spotlight-subscription", "subscriptionSpotlight"],
-  ["paid-repost", "paidRepost"],
-  ["rosca", "rosca"],
-  ["trusted-circle", "buildFirstCircle"],
-].forEach(([id, route]) => {
+  ["owner-actions", "joinRequests", false],
+  ["shop-gallery-tools", "shopGalleryTools", true],
+  ["vault-control", "vaultControl", true],
+  ["spotlight-subscription", "subscriptionSpotlight", true],
+  ["paid-repost", "paidRepost", true],
+  ["rosca", "rosca", false],
+  ["community-package", "communityPackages", true],
+  ["trusted-circle", "buildFirstCircle", false],
+].forEach(([id, route, isOwnerHandle]) => {
+  const idPattern = isOwnerHandle
+    ? `id: ownerShopHandle\\("${id}"\\)\\.id`
+    : `id: "${id}"`;
   assertContains(
     new RegExp(
-      `id: "${id}"[\\s\\S]*?openSelectedCommunityRoute\\([\\s\\S]*?routes\\.${route}`
+      `${idPattern}[\\s\\S]*?openSelectedCommunityRoute\\([\\s\\S]*?routes\\.${route}`
     ),
     `Community Home compact tool row ${id} must use the selected-community route guard.`
   );
 });
 
 assertContains(
-  /const ROSCA_MARKETPLACE_HASH = "marketplace-rosca";[\s\S]*?rosca:\s*routeTarget\([\s\S]*?"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca/,
+  /id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?title: ownerShopHandle\("free-spotlight"\)\.label[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?"spotlight"/,
+  "Community Home Free Spotlight row must stay as the single local status handle on Community Home."
+);
+
+assertContains(
+  /shopGalleryTools: routeTarget\([\s\S]*?"shop"[\s\S]*?hash: OWNER_SHOP_HASHES\.diaries[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?routes\.shopGalleryTools/,
+  "Community Home Shop Gallery Tools row must route to the Shop Control gallery tools lane."
+);
+
+assertContains(
+  /ROSCA_MARKETPLACE_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?rosca:\s*routeTarget\([\s\S]*?"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca/,
   "Community Home ROSCA row must route into the Marketplace ROSCA section through the selected-community route guard."
 );
 

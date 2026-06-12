@@ -4,6 +4,12 @@ import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "./S
 import * as api from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
+import {
+  OWNER_SHOP_HANDLES,
+  OWNER_SHOP_HASHES,
+  PAID_REPOST_HASH,
+  type OwnerShopHandleId,
+} from "../lib/ownerShopHandles";
 import { publicShopDiariesPath, publicShopDiariesUrl } from "../lib/publicLinks";
 
 type NoticeTone = "success" | "error";
@@ -110,8 +116,6 @@ function routeTarget(
   }).to as string;
 }
 
-const PAID_REPOST_HASH = "marketplace-paid-network-placement";
-
 function resolveImageSrc(raw: any): string {
   const value = safeStr(raw);
   if (!value) return "";
@@ -130,6 +134,12 @@ function resolveImageSrc(raw: any): string {
   }
 
   return `${apiOrigin()}/${value.replace(/^\/+/, "")}`;
+}
+
+function ownerShopHandle(id: OwnerShopHandleId) {
+  const handle = OWNER_SHOP_HANDLES.find((item) => item.id === id);
+  if (!handle) throw new Error(`Missing owner shop handle: ${id}`);
+  return handle;
 }
 
 function normalizeShop(raw: any, fallbackGmfnId: string, currentClan: any): ShopSummary | null {
@@ -466,19 +476,19 @@ export default function CommunityShopControlPanel({
         "shop",
         selectedClanId,
         "community-shop-control.route.shop-summary",
-        { hash: "shop-control-summary" }
+        { hash: OWNER_SHOP_HASHES.summary }
       ),
       shopGallery: routeTarget(
         "shop",
         selectedClanId,
         "community-shop-control.route.shop-gallery",
-        { hash: "shop-control-gallery-tools" }
+        { hash: OWNER_SHOP_HASHES.diaries }
       ),
       shopSpotlight: routeTarget(
         "shop",
         selectedClanId,
         "community-shop-control.route.shop-spotlight",
-        { hash: "shop-control-spotlight" }
+        { hash: OWNER_SHOP_HASHES.freeSpotlight }
       ),
       subscriptionSpotlight: routeTarget(
         "subscriptionSpotlight",
@@ -495,6 +505,12 @@ export default function CommunityShopControlPanel({
         "vaultControl",
         selectedClanId,
         "community-shop-control.route.vault-control"
+      ),
+      communityPackages: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-shop-control.route.community-packages",
+        { hash: OWNER_SHOP_HASHES.communityPackage }
       ),
     }),
     [selectedClanId]
@@ -927,7 +943,7 @@ export default function CommunityShopControlPanel({
                   display: "grid",
                   gridTemplateColumns: isCompact
                     ? "1fr"
-                    : "repeat(5, minmax(0, 1fr))",
+                    : "repeat(3, minmax(0, 1fr))",
                   gap: 10,
                 }}
               >
@@ -938,7 +954,7 @@ export default function CommunityShopControlPanel({
                   debugId="community-shop-control.shortcut.pictures"
                   style={communityShopActionStyle("secondary")}
                 >
-                  Pictures & Products
+                  {ownerShopHandle("shop-gallery-tools").label}
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={() => openPanelRoute(routes.shopSpotlight)}
@@ -947,7 +963,7 @@ export default function CommunityShopControlPanel({
                   debugId="community-shop-control.shortcut.spotlight"
                   style={communityShopActionStyle("secondary")}
                 >
-                  Owner Spotlight
+                  {ownerShopHandle("free-spotlight").label}
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={() => openPanelRoute(routes.subscriptionSpotlight)}
@@ -956,7 +972,7 @@ export default function CommunityShopControlPanel({
                   debugId="community-shop-control.shortcut.paid-spotlight"
                   style={communityShopActionStyle("secondary")}
                 >
-                  Paid Spotlight
+                  {ownerShopHandle("spotlight-subscription").label}
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={() => openPanelRoute(routes.paidRepost)}
@@ -965,7 +981,7 @@ export default function CommunityShopControlPanel({
                   debugId="community-shop-control.shortcut.paid-repost"
                   style={communityShopActionStyle("secondary")}
                 >
-                  Paid Repost
+                  {ownerShopHandle("paid-repost").label}
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={() => openPanelRoute(routes.vaultControl)}
@@ -974,7 +990,16 @@ export default function CommunityShopControlPanel({
                   debugId="community-shop-control.shortcut.vault"
                   style={communityShopActionStyle("secondary")}
                 >
-                  Private Vault Access
+                  {ownerShopHandle("vault-control").label}
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => openPanelRoute(routes.communityPackages)}
+                  stableHeight={48}
+                  fullWidth
+                  debugId="community-shop-control.shortcut.community-package"
+                  style={communityShopActionStyle("secondary")}
+                >
+                  {ownerShopHandle("community-package").label}
                 </SecondaryButton>
               </div>
             </div>

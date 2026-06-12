@@ -1,3 +1,301 @@
+### Public Shop final phone polish: signboard badge and Spotlight control (2026-06-12)
+
+- Trigger:
+  - product owner liked the latest full-media Spotlight direction but called
+    out two final phone defects: the top billboard logo did not feel centered,
+    and the Spotlight speaker/control was blocking part of the media.
+- Changed locally:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - compact signboard badge is now seated lower inside the shop billboard
+      instead of being pinned to the top edge;
+    - compact signboard artwork is translated slightly right so the cart-heavy
+      SVG reads visually centered inside the badge;
+    - compact Spotlight media sound control moved from bottom-right to
+      top-right and reduced from 38px to 34px so it no longer blocks the lower
+      media/action area.
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated the Public Shop mini Spotlight audio-control audit to protect
+      the new 34px compact icon-only geometry.
+- Unabated truth:
+  - this is route-level Public Shop UI polish, not a global system redesign;
+  - shared button/tap audits should still be run after this change because the
+    route uses protected stable button contracts.
+
+### Public Shop top billboard compact reflow (2026-06-12)
+
+- Trigger:
+  - product owner accepted the direction of the Spotlight but called out the
+    top shop billboard/signboard as still wasting space.
+- Confirmed issue:
+  - compact `public-shop-signboard` used a two-column grid where the shop logo
+    occupied a left column and the title/facts occupied the right column;
+  - after the logo ended, the left column stayed empty while the ID/community
+    card continued only on the right, creating visible dead space.
+- Changed locally:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - compact billboard no longer reserves a permanent logo column;
+    - logo badge is now positioned top-left inside the billboard;
+    - title/category/trust copy starts beside the logo with left padding;
+    - GSN Global ID and Community fact card now expands full-width under the
+      top identity band;
+    - compact badge shell reduced from 76px to 74px and internal SVG from
+      76px/74px to 74px/72px so it stays aligned with the new layout.
+- Verification passed locally:
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm run audit:tap-stability`
+  - `npm run build`
+- Unabated truth:
+  - this directly addresses the top billboard dead-space root cause;
+  - the phone screenshot is still needed to confirm the title/logo/fact rhythm
+    is visually acceptable.
+
+### Public Shop Spotlight full-media billboard pass (2026-06-12)
+
+- Trigger:
+  - product owner rejected the previous Spotlight layout because it still had
+    too much white space and the media looked like a side item instead of the
+    actual billboard.
+- Changed locally:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - compact Public Shop Spotlight now uses the media as the whole horizontal
+      billboard background;
+    - text, Spotlight label, detail, Explore, and WhatsApp are overlaid on top
+      of the media with a dark readability gradient;
+    - compact Spotlight card padding is removed so the media fills the surface;
+    - compact Spotlight min-height is now 244px so the video/image reads as one
+      horizontal billboard instead of a small corner thumbnail;
+    - media frame is absolute on phone and fills the card;
+    - title/detail/buttons sit in the lower-left overlay, avoiding the empty
+      white lower-right area that appeared in the screenshot.
+- Verification passed locally:
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-shop-gallery-button-inventory.mjs`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm run audit:tap-stability`
+  - `npm run build`
+- Unabated truth:
+  - this is a stronger structural correction than the previous side-by-side
+    card;
+  - it should remove the visible white-space defect, but the phone screenshot
+    remains the final judge.
+
+### Public Shop Spotlight billboard tightening (2026-06-12)
+
+- Trigger:
+  - product owner reviewed another phone screenshot and called out the
+    Spotlight billboard as too weak: the media was small, shifted into one
+    corner, and left too much empty white space.
+- Confirmed issue:
+  - compact Spotlight used a fixed `112px` right media column with only a
+    `100px` media frame, while the card itself became taller because the left
+    text/actions stacked vertically;
+  - this made the media feel like a small corner thumbnail instead of a
+    respected billboard.
+- Changed locally:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - compact Spotlight now uses a wider right media panel:
+      `minmax(0, 1fr) minmax(142px, 43%)`;
+    - media fills the full right panel with a compact min-height of 178px;
+    - Explore and WhatsApp now sit as a tight two-column action pair on phone;
+    - compact Spotlight button height is tightened from 44px to 42px;
+    - the mini media audio/unmute control is standardized to 38px so it reads
+      as a deliberate media button instead of a tiny floating control.
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated the mini Spotlight media-control audit to protect the new 38px
+      fixed control geometry.
+- Verification passed locally:
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-shop-gallery-button-inventory.mjs`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm run audit:tap-stability`
+  - `npm run build`
+- Unabated truth:
+  - this should remove the worst Spotlight white-space defect and make the
+    billboard more respectful;
+  - final proof still depends on the owner hard-refreshing the phone page and
+    sending the next screenshot.
+
+### Public Shop phone screenshot correction: shortcut rail and badge overlap (2026-06-12)
+
+- Trigger:
+  - product owner supplied fresh phone screenshots from
+    `http://192.168.1.13:5174/shop/...`.
+- Confirmed visual problems:
+  - the signed-in `Public Shop shortcuts` panel rendered as a large 3-column
+    button grid and consumed the first phone viewport;
+  - the compact storefront badge overlapped the `CHUMA INTERNATIONAL SHOP`
+    title and crowded the category/trust rows;
+  - root cause for the overlap: the compact badge wrapper had been reduced to
+    76px, but `ReferenceShopSignboardVisual` still rendered its compact SVG at
+    98px and allowed overflow.
+- Changed locally:
+  - `frontend/src/components/OwnerOnlySurfaceNav.tsx`
+    - compact mode is now a slim horizontal chip rail;
+    - compact shortcut buttons use fixed 38px stable height instead of 52px;
+    - desktop/non-compact owner nav keeps its existing grid layout.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - `ReferenceShopSignboardVisual` compact dimensions now match the 76px
+      public-shop badge, preventing overflow onto the shop name.
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated the owner shortcut stable-height audit from compact 52px to
+      compact 38px while preserving fixed button contracts.
+- Verification passed locally:
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx src\components\OwnerOnlySurfaceNav.tsx tools\audit-shop-gallery-button-inventory.mjs`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm run audit:tap-stability`
+  - `npm run build`
+- Unabated truth:
+  - this directly fixes the two obvious screenshot defects;
+  - the dev server is running on port `5174`, so the owner should hard refresh
+    the phone page to confirm the shortcut rail and badge/title spacing.
+
+### Public Shop compact whitespace correction (2026-06-11)
+
+- Trigger:
+  - product owner reviewed the phone page again and called out too much white
+    space, a misshaped WhatsApp/action row, and Spotlight title/media overlap.
+- Frontend changes:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - tightened the phone stack gap, GSN brandbar, signboard padding, and
+      border radii;
+    - reduced the compact shop badge from 92px to 76px and moved the verified
+      tick with it;
+    - lowered compact shop title/category/trust/fact-row sizes so the
+      certificate reads as one compact card instead of a tall poster;
+    - removed the shop description line from the compact signboard, because it
+      was creating dead vertical space between the ID card and actions;
+    - shortened the compact Share / Verify / WhatsApp action geometry from
+      52px to 46px while preserving fixed stable heights and debug IDs;
+    - compressed the four proof/status cells from 62px to 52px on phone;
+    - tightened the compact Spotlight card, reduced its media frame from 112px
+      to 100px, narrowed the media column, and added `overflowWrap` /
+      `wordBreak` protection so long shop names cannot run under the image.
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated the audited Public Shop signboard button geometry baseline from
+      compact 52px to compact 46px; the audit still checks the same Share,
+      Verify, and WhatsApp fixed action contracts.
+- Verification passed locally:
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm run audit:tap-stability`
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-shop-gallery-button-inventory.mjs`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run build`
+  - `git diff --check -- frontend\src\pages\ShopGalleryPage.tsx frontend\tools\audit-shop-gallery-button-inventory.mjs frontend\src\styles\public-shop.css frontend\src\styles\tokens.css docs\HANDOFF_NOTES.md`
+- Screenshot attempt:
+  - `http://127.0.0.1:5173/shop/GMFN-U-9867079C` returned `200`;
+  - `http://127.0.0.1:5173/api/health` returned OK/dev mode;
+  - Playwright CLI was not locally runnable without npm registry access, so no
+    fresh automated screenshot was captured in this session.
+- Unabated truth:
+  - code/audit/build verification is clean;
+  - final visual acceptance still requires a hard refresh on the real phone and
+    another screenshot, because the sandbox could not capture the rendered
+    phone viewport without downloading Playwright.
+
+### Public Shop phone resize and button audit polish (2026-06-11)
+
+- Product owner supplied fresh phone screenshots after the first Public Shop
+  reference pass.
+- Confirmed remaining phone issues:
+  - shop title clipped into `INTERNATIO...`;
+  - first shop certificate card was still too tall for phone review;
+  - Spotlight title/media competed horizontally and the media could visually
+    sit over the title area;
+  - button geometry needed re-audit after compression.
+- Frontend change:
+  - `frontend/src/pages/ShopGalleryPage.tsx` mobile-only geometry tightened:
+    - reduced signboard padding;
+    - reduced compact storefront badge from 108px to 92px;
+    - widened the text column by shrinking the left visual rail;
+    - lowered compact shop-title type and removed mobile ellipsis clipping;
+    - tightened category, trust line, identity fact rows, description, and
+      action-row spacing while keeping button stable heights;
+    - constrained Spotlight to `minmax(0, 1fr) 118px` on phone;
+    - added `minWidth: 0` and clamp rules to Spotlight title/detail so text
+      cannot run underneath media;
+    - kept the existing 52px stable action heights for public shop front
+      buttons and mini Spotlight buttons.
+- Verification passed locally:
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm run audit:tap-stability`
+  - `npm run build`
+  - `git diff --check -- frontend\src\pages\ShopGalleryPage.tsx frontend\src\styles\public-shop.css frontend\src\styles\tokens.css docs\HANDOFF_NOTES.md`
+- Local phone test plumbing confirmed:
+  - frontend listening on `0.0.0.0:5173`;
+  - backend listening on `0.0.0.0:8012`;
+  - `http://192.168.1.13:5173/api/health` returns `{"ok":true,"dev_mode":true}`;
+  - phone client `192.168.1.12` is actively connecting to laptop port `5173`.
+- Unabated truth:
+  - code audits and build are clean;
+  - visual acceptance still depends on the owner reloading the actual phone
+    page and checking whether the title/card/Spotlight now fit well enough.
+
+### Public Shop reference visual pass (2026-06-11)
+
+- Product owner supplied a phone reference for the public shop face with a
+  white/gold GSN certificate-style shop card, verified storefront badge,
+  compact identity facts, Share / Verify / WhatsApp actions, status tiles, and
+  a compact Spotlight product preview.
+- Confirmed the affected route is the public shop surface:
+  - `/shop/:gmfnId`;
+  - frontend implementation: `frontend/src/pages/ShopGalleryPage.tsx`.
+- Frontend changes:
+  - `frontend/src/styles/tokens.css` changes `theme-public-shop` from a dark
+    navy page background to a light white/gold/soft-blue surface.
+  - `frontend/src/styles/public-shop.css` now lets the public-shop shell use
+    the route text color and prevents horizontal overflow.
+  - `frontend/src/pages/ShopGalleryPage.tsx` restyles the first viewport:
+    - GSN brand strip is now light, premium, and closer to the reference;
+    - shop signboard is now a white/gold official card instead of a dark hero;
+    - storefront visual sits in a circular badge with a green verified mark;
+    - shop name, category, trust line, GSN Global ID, and community facts use
+      compact readable rows;
+    - Share / Verify remain light secondary certificate actions while WhatsApp
+      remains the green primary contact action;
+    - status strip keeps four compact proof tiles and renames
+      `Community Checked` to `Verified Community`;
+    - Spotlight card now uses a compact green label, stronger uppercase title,
+      and side-by-side `Explore` / `WhatsApp` controls.
+- Preserved behavior:
+  - no backend changes;
+  - no route changes;
+  - no action inventory changes;
+  - existing Share, Verify, WhatsApp, Spotlight, Vault, and Shop Diaries
+    handlers/debug IDs are preserved.
+- Verification passed locally:
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm run audit:protected-button-freeze`
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run build`
+  - `git diff --check -- frontend\src\pages\ShopGalleryPage.tsx frontend\src\styles\public-shop.css frontend\src\styles\tokens.css`
+- Unabated truth:
+  - this is a strong visual move toward the attached reference;
+  - it intentionally does not add fake notification bubbles, fake phone chrome,
+    or public bottom navigation;
+  - accepted proof still needs the owner to reload the phone view and compare
+    the actual page to the reference screenshot.
+- Publishing posture:
+  - no push and no Render deploy; keep batching locally until the owner says
+    the current batch is ready to publish.
+
 ### Admin Tools phone stat-grid overflow repair (2026-06-11)
 
 - Product owner supplied a phone screenshot of Admin Tools where the executive
@@ -47500,3 +47798,187 @@ GSN-branded invite composer and invite-entry continuity.
   - the next visual pass should open actual generated PDFs/screenshots and
     confirm the watermark, title, generated time, reference, limitation/footer,
     spacing, and paper dignity are acceptable to the product owner.
+
+### Marketplace community package exposure (2026-06-12)
+
+- Trigger:
+  - product owner noticed that Community Package, shop gallery tools, and paid
+    growth logic existed in the system but were not obvious enough from
+    Marketplace/Community Home during the current button tracing and polishing
+    pass.
+- Confirmed backend truth:
+  - normal community member capacity is 15;
+  - extra member places are supplied by the `extra_members` community package;
+  - package catalog currently exposes extra shop blocks, extra member places,
+    ROSCA yearly service, and community meeting pack;
+  - paid/subscription Spotlight is a separate spotlight feature path, not a
+    community package catalog item.
+- Changed locally, not pushed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - keeps the member-capacity snapshot returned by `listClanMembers`;
+    - adds a compact `Community Packages` row inside Link Center showing:
+      member usage/total, included + paid extra places, extra shop blocks,
+      ROSCA yearly status, and meeting pack status;
+    - adds `Open Packages`, routed to
+      `/app/shop-control#shop-control-community-packages`;
+    - adds a nearby `Paid Spotlight` button so Spotlight remains discoverable
+      while staying separate from the package catalog;
+    - adds `Packages` to the Link Center front tags.
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - adds a `Community packages` guided action that sends the selected
+      community to the Shop Control package lane.
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - protects the new package row and route.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - updates Marketplace stable action inventory from 57 to 59.
+  - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - updates Community Home guide item inventory from 11 to 12 and protects
+      the package route.
+- Verification:
+  - Passed `node frontend\tools\audit-marketplace-records-links-lane.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-community-home-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-front-package.mjs`.
+  - Passed `npm run build` from `frontend`.
+- Deployment protocol:
+  - no push or Render deploy was triggered; keep batching local work until the
+    product owner says the batch is ready to publish.
+- Unabated truth:
+  - this exposes the package ladder as the backend currently supports it;
+  - it does not create a new bundled package that grants free Spotlight;
+  - phone visual testing should confirm Link Center does not feel crowded after
+    adding the package row.
+
+### Community Home owner handle restoration (2026-06-12)
+
+- Trigger:
+  - product owner clarified the architecture: owner-side shop handles live in
+    Community Home because one GSN ID owns one global public shop across all
+    communities, while Marketplace only gives each selected community its own
+    contextual window/link.
+- Changed locally, not pushed:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - added a direct `Shop Gallery Tools` handle to the compact owner row,
+      routed to `/app/shop-control#shop-control-gallery-tools`;
+    - added a `Public Spotlight` handle that opens the Community Home owner
+      spotlight status lane;
+    - added `Community Package` as a first-class compact owner handle, routed
+      to `/app/shop-control#shop-control-community-packages`;
+    - kept existing handles for Owner Shop Control, Private Vault, Free
+      Spotlight, Spotlight Subscription, Paid Repost, ROSCA, Trusted Circle,
+      and owner Spotlight Status.
+  - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - updates compact owner/tool row inventory from 9 to 12 and protects the
+      new route/order.
+  - `frontend/tools/audit-community-shop-actions.mjs`
+    - protects the expanded Community Home owner handle list and routes.
+- Verification:
+  - Passed `node frontend\tools\audit-community-home-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-community-shop-actions.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this intentionally makes Community Home busier than before, but it matches
+    the clarified product ownership rule;
+  - visual phone review should decide whether the 12-row handle list needs a
+    tighter grouping label or a small collapse affordance after the owner sees
+    it live.
+
+### Community Home duplicate Spotlight and Shop Control routing repair (2026-06-12)
+
+- Trigger:
+  - product owner clarified that `Public Spotlight` and `Free Spotlight` mean
+    the same working free/community spotlight path, and that Shop Control should
+    lead to actual shop owner controls: shop billboard and 12 Shop Diaries,
+    with Community Package reachable where extra shop blocks are needed.
+- Changed locally, not pushed:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - removed the duplicate compact owner row that separately opened the free
+      spotlight publisher;
+    - renamed the working local `Public Spotlight` row to `Free Spotlight`;
+    - the single `Free Spotlight` row now opens the Community Home owner
+      spotlight status lane, where the deeper `Open Free Spotlight` publisher
+      button still exists.
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - fixed hash-to-layer routing so `#shop-control-gallery-tools` opens the
+      products/gallery layer instead of falling back to overview;
+    - fixed `#shop-control-community-packages` so it opens the paid-tools
+      package layer instead of falling back to overview;
+    - changed the Shop Control hero shortcuts from Dashboard/Marketplace/
+      Spotlight clutter to actual owner controls: `Shop billboard`,
+      `12 Shop Diaries`, `Shop summary`, and `Community package`;
+    - added a compact Shop Gallery Tools header with direct `Shop billboard`
+      and `Community package` actions above the embedded product/diary tool.
+  - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - updates compact owner/tool row inventory from 12 to 11 and protects the
+      single Free Spotlight row.
+  - `frontend/tools/audit-community-shop-actions.mjs`
+    - protects the corrected Community Home Free Spotlight routing contract.
+  - `frontend/tools/audit-shop-control-button-inventory.mjs`
+    - updates Shop Control action inventory for the two new gallery-lane links;
+    - protects the corrected hero shortcut set and hash routing behavior.
+- Verification:
+  - Passed `node frontend\tools\audit-community-home-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-community-shop-actions.mjs`.
+  - Passed `node frontend\tools\audit-shop-control-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `node frontend\tools\audit-shop-assets-slots.mjs`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this fixes a real routing bug: the visible buttons previously could point
+    to hashes whose sections were not rendered because the owner layer was wrong;
+  - phone visual review is still needed to judge whether the Shop Control hero
+    wording is strong enough for the owner.
+
+### Owner shop handles moved to shared registry (2026-06-12)
+
+- Trigger:
+  - product owner asked whether the Community Home / Shop Gallery / Spotlight /
+    Community Package corrections were done at system level so they do not have
+    to be corrected twice.
+- Changed locally, not pushed:
+  - `frontend/src/lib/ownerShopHandles.ts`
+    - added the canonical owner-shop handle registry for Owner Shop Control,
+      Shop Gallery Tools, Private Vault, Free Spotlight, Spotlight
+      Subscription, Paid Repost, and Community Package;
+    - centralized owner-shop hash constants for summary, billboard, diaries,
+      free spotlight, subscription spotlight, and community package;
+    - centralized paid-repost and ROSCA marketplace hashes;
+    - added the shared Shop Control shortcut list and the hash-to-layer resolver.
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - now reads owner-shop row ids, titles, details, icons, and route hashes
+      from the shared registry where possible.
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - now reads hero shortcut definitions and hash layer resolution from the
+      shared registry.
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+    - now uses shared owner-shop labels/hashes for Gallery Tools, Free
+      Spotlight, Spotlight Subscription, Paid Repost, Vault, and Community
+      Package;
+    - added the missing Community Package shortcut to the owner shortcut panel.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace Community Package link now uses the shared shop-control
+      package hash.
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - owner-side Paid Repost now uses the shared paid-repost hash.
+  - Audits updated to protect the shared registry instead of old page-local
+    literal strings:
+    - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - `frontend/tools/audit-community-home-phone-buttons.mjs`
+    - `frontend/tools/audit-community-shop-actions.mjs`
+    - `frontend/tools/audit-shop-control-button-inventory.mjs`
+    - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - `frontend/tools/audit-shop-assets-slots.mjs`
+- Verification:
+  - Passed `node frontend\tools\audit-community-home-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-community-shop-actions.mjs`.
+  - Passed `node frontend\tools\audit-shop-control-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-records-links-lane.mjs`.
+  - Passed `node frontend\tools\audit-shop-assets-slots.mjs`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this is now system-level for the owner-shop handles touched in this stream;
+  - a few legacy route aliases still contain literal hashes in `App.tsx` and
+    `appRoutes.ts`; they are compatibility redirects/routes and were left alone
+    to avoid changing public route contracts during pilot testing.

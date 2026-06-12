@@ -14,6 +14,7 @@ import {
   type CtaIntent,
 } from "../lib/ctaTargets";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
+import { OWNER_SHOP_HASHES } from "../lib/ownerShopHandles";
 import {
   publicApiUrl,
   publicFrontendUrl,
@@ -70,6 +71,7 @@ import {
   scrollElementToMarketplaceLanding,
   traceMarketplaceLanding,
 } from "../lib/marketplaceActionStability";
+import { brandClampLines } from "../styles/gmfnBrand";
 
 type CommunityRow = {
   id?: number;
@@ -236,6 +238,14 @@ type CommunityPackageStatusItem = {
   engine_ready?: boolean | null;
   message?: string | null;
   latest_payment?: ExpectedPaymentRecord | null;
+};
+
+type CommunityMemberCapacitySnapshot = {
+  included: number;
+  extra: number;
+  total: number;
+  used: number;
+  remaining: number;
 };
 
 type RoscaRoundSummary = {
@@ -631,6 +641,43 @@ function rowsOf<T = any>(input: any): T[] {
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function nonNegativeWholeNumber(value: any, fallback = 0): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return fallback;
+  return Math.floor(n);
+}
+
+function readCommunityMemberCapacity(
+  source: any,
+  fallbackUsed = 0
+): CommunityMemberCapacitySnapshot {
+  const included = nonNegativeWholeNumber(
+    source?.member_capacity_included,
+    15
+  );
+  const extra = nonNegativeWholeNumber(source?.member_capacity_extra, 0);
+  const total = nonNegativeWholeNumber(
+    source?.member_capacity_total,
+    included + extra
+  );
+  const used = nonNegativeWholeNumber(
+    source?.member_capacity_used,
+    fallbackUsed
+  );
+  const remaining = nonNegativeWholeNumber(
+    source?.member_capacity_remaining,
+    Math.max(total - used, 0)
+  );
+
+  return {
+    included,
+    extra,
+    total,
+    used,
+    remaining,
+  };
 }
 
 function paymentQuantity(payment?: ExpectedPaymentRecord | null): number {
@@ -3301,6 +3348,8 @@ export default function MarketplacePage() {
   const [communityPackageItems, setCommunityPackageItems] = useState<
     CommunityPackageStatusItem[]
   >([]);
+  const [communityMemberCapacity, setCommunityMemberCapacity] =
+    useState<CommunityMemberCapacitySnapshot | null>(null);
   const [roscaCycles, setRoscaCycles] = useState<RoscaCycleSummary[]>([]);
   const [roscaTitle, setRoscaTitle] = useState("Community ROSCA cycle");
   const [roscaContributionAmount, setRoscaContributionAmount] = useState("25.00");
@@ -4201,6 +4250,9 @@ export default function MarketplacePage() {
       setMe(meRes || null);
       setSelectedCommunity(resolvedCommunity);
       setMembers(memberRows);
+      setCommunityMemberCapacity(
+        readCommunityMemberCapacity(membersRes, memberRows.length)
+      );
       setShops(shopRows);
       setPublicShopRecord(normalizeMarketplaceShop(ownerShopRes));
       setPoolInfo(poolRes);
@@ -4936,9 +4988,67 @@ export default function MarketplacePage() {
     });
     return map;
   }, [communityPackageItems]);
+  const extraShopBlocksPackage =
+    communityPackageByCode.get("extra_shop_blocks") || null;
+  const extraMembersPackage =
+    communityPackageByCode.get("extra_members") || null;
+  const meetingPackage =
+    communityPackageByCode.get("community_meeting_pack") || null;
   const roscaPackage = communityPackageByCode.get("rosca_cycle") || null;
   const roscaYearlyActive =
     positiveNumber(roscaPackage?.active_remaining) > 0;
+  const communityPackageRows = useMemo(
+    () => [
+      {
+        key: "members",
+        title: "Member places",
+        value: communityMemberCapacity
+          ? `${communityMemberCapacity.used}/${communityMemberCapacity.total}`
+          : "15 included",
+        detail: communityMemberCapacity
+          ? `${communityMemberCapacity.included} included + ${communityMemberCapacity.extra} paid extra. From member 16, use Community Package.`
+          : "Normal community quota is 15 members. Extra members use Community Package.",
+        status:
+          communityMemberCapacity && communityMemberCapacity.remaining <= 0
+            ? "Buy more"
+            : "Capacity",
+      },
+      {
+        key: "shop-blocks",
+        title: "Shop blocks",
+        value: `${positiveNumber(extraShopBlocksPackage?.active_remaining)} ready`,
+        detail:
+          extraShopBlocksPackage?.message ||
+          "Extra public shop blocks are applied to this shop after payment is matched.",
+        status: "GBP 1 unit",
+      },
+      {
+        key: "rosca",
+        title: "ROSCA yearly",
+        value: roscaYearlyActive ? "Active" : "Not active",
+        detail:
+          roscaPackage?.message ||
+          "ROSCA yearly service opens contribution cycles for this community.",
+        status: "GBP 60 yearly",
+      },
+      {
+        key: "meeting",
+        title: "Meeting pack",
+        value: `${positiveNumber(meetingPackage?.active_remaining)} ready`,
+        detail:
+          meetingPackage?.message ||
+          "Meeting packs create reminders, share text, notifications, and summary evidence.",
+        status: "Package",
+      },
+    ],
+    [
+      communityMemberCapacity,
+      extraShopBlocksPackage,
+      meetingPackage,
+      roscaPackage,
+      roscaYearlyActive,
+    ]
+  );
   const latestRoscaCycle = useMemo(() => {
     if (!roscaCycles.length) return null;
     return roscaCycles[roscaCycles.length - 1] || null;
@@ -5967,6 +6077,11 @@ export default function MarketplacePage() {
                     style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
                   >
                     Paid Repost
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
+                  >
+                    Packages
                   </span>
                 </span>
               </span>
@@ -8418,6 +8533,150 @@ export default function MarketplacePage() {
                   </details>
                 </div>
 
+                <div style={marketplaceLinkRowStyle(isCompact, true)}>
+                  <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
+                    <span
+                      aria-hidden="true"
+                      style={marketplaceLinkRowIconStyle("gold", isCompact)}
+                    >
+                      <MarketplaceGlyph name="payment" size={isCompact ? 25 : 30} />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={marketplaceLinkRowTitleStyle(isCompact)}>
+                        5. Community Packages
+                      </div>
+                      <div style={marketplaceLinkRowSubStyle(isCompact)}>
+                        15 members included. Extra members, shop blocks, ROSCA, and meetings live here.
+                      </div>
+                    </div>
+                    <span
+                      style={marketplaceLinkRowStatusStyle(
+                        communityMemberCapacity && communityMemberCapacity.remaining <= 0
+                          ? "warn"
+                          : "ready",
+                        isCompact
+                      )}
+                    >
+                      {communityMemberCapacity
+                        ? `${communityMemberCapacity.remaining} left`
+                        : "Check"}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "repeat(2, minmax(0, 1fr))"
+                        : "repeat(4, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {communityPackageRows.map((row) => (
+                      <div
+                        key={row.key}
+                        style={{
+                          minHeight: isCompact ? 92 : 112,
+                          borderRadius: isCompact ? 16 : 18,
+                          border: "1px solid rgba(16,37,59,0.09)",
+                          background:
+                            "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+                          padding: isCompact ? "9px 10px" : "12px 13px",
+                          boxSizing: "border-box",
+                          display: "flex",
+                          flexDirection: "column",
+                          justifyContent: "space-between",
+                          gap: 7,
+                          minWidth: 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "#07172C",
+                            fontSize: isCompact ? 13 : 15,
+                            lineHeight: 1.08,
+                            fontWeight: 950,
+                          }}
+                        >
+                          {row.title}
+                        </span>
+                        <span
+                          style={{
+                            color: "#0B5A34",
+                            fontSize: isCompact ? 15 : 18,
+                            lineHeight: 1.1,
+                            fontWeight: 950,
+                          }}
+                        >
+                          {row.value}
+                        </span>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            color: "#516579",
+                            fontSize: isCompact ? 10.5 : 12,
+                            lineHeight: 1.22,
+                            fontWeight: 760,
+                          }}
+                        >
+                          {row.detail}
+                        </span>
+                        <span
+                          style={{
+                            alignSelf: "flex-start",
+                            borderRadius: 999,
+                            padding: "4px 7px",
+                            background: "#FFF7DE",
+                            color: "#805A0F",
+                            fontSize: 10.5,
+                            fontWeight: 950,
+                            lineHeight: 1,
+                          }}
+                        >
+                          {row.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={marketplaceInlineActionsStyle(isCompact)}>
+                    <StableButton
+                      debugId="marketplace.links.community-packages"
+                      type="button"
+                      onClick={(event) =>
+                        openMarketplaceRoute(
+                          event,
+                          `${APP_ROUTES.SHOP}#${OWNER_SHOP_HASHES.communityPackage}`
+                        )
+                      }
+                      style={marketplaceInlineActionStyle(
+                        "primary",
+                        false,
+                        isCompact
+                      )}
+                    >
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="payment" size={18} />
+                      </span>
+                      Open Packages
+                    </StableButton>
+                    <StableCtaLink
+                      to={routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, activeCommunityId)}
+                      debugId="marketplace.links.package-spotlight"
+                      stableHeight={isCompact ? 52 : 58}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        false,
+                        isCompact
+                      )}
+                    >
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="spark" size={18} />
+                      </span>
+                      Paid Spotlight
+                    </StableCtaLink>
+                  </div>
+                </div>
+
                 <div style={marketplaceLinkRowStyle(isCompact)}>
                   <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
                     <span
@@ -8428,7 +8687,7 @@ export default function MarketplacePage() {
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                        5. Owner Controls
+                        6. Owner Controls
                       </div>
                       <div style={marketplaceLinkRowSubStyle(isCompact)}>
                         Manage your shop & settings.

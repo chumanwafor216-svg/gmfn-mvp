@@ -42,6 +42,13 @@ import { publicFrontendUrl } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 import { rememberPublishRecovery } from "../lib/publishRecovery";
 import { navigateWithOrigin } from "../lib/nav";
+import {
+  OWNER_SHOP_HASHES,
+  PAID_REPOST_HASH,
+  SHOP_CONTROL_SHORTCUTS,
+  ownerShopLayerForTarget,
+  type ShopControlShortcutId,
+} from "../lib/ownerShopHandles";
 
 type ShopRecord = {
   id: number;
@@ -248,24 +255,12 @@ function routeTarget(
   }).to as string;
 }
 
-const PAID_REPOST_HASH = "marketplace-paid-network-placement";
-
-function shopControlLayerForTarget(targetId: string): ShopControlLayerKey {
-  const normalized = safeStr(targetId).replace(/^#/, "").toLowerCase();
-  if (normalized.includes("overview")) return "overview";
-  if (normalized.includes("products")) return "products";
-  if (normalized.includes("spotlight")) return "spotlight";
-  if (normalized.includes("picture") || normalized.includes("gallery") || normalized.includes("face")) {
-    return "overview";
-  }
-  if (normalized.includes("details")) return "shop-details";
-  if (normalized.includes("vault")) return "vault";
-  if (normalized.includes("unlock") || normalized.includes("paid") || normalized.includes("subscription")) {
-    return "paid-tools";
-  }
-  if (normalized.includes("summary")) return "summary";
-  return "overview";
-}
+const SHOP_CONTROL_SHORTCUT_ICONS: Record<ShopControlShortcutId, GsnIconName> = {
+  "shop-billboard": "shop",
+  "shop-diaries": "document",
+  "shop-summary": "chart",
+  "community-package": "financeInstitution",
+};
 
 const SPOTLIGHT_ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const SPOTLIGHT_ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
@@ -834,7 +829,25 @@ export default function ShopControlPage() {
         "shop",
         effectiveShopClanId,
         "shop-control.route.gallery",
-        { hash: "shop-control-gallery-tools" }
+        { hash: OWNER_SHOP_HASHES.diaries }
+      ),
+      shopDetails: routeTarget(
+        "shop",
+        effectiveShopClanId,
+        "shop-control.route.details",
+        { hash: OWNER_SHOP_HASHES.billboard }
+      ),
+      shopSummary: routeTarget(
+        "shop",
+        effectiveShopClanId,
+        "shop-control.route.summary",
+        { hash: OWNER_SHOP_HASHES.summary }
+      ),
+      communityPackages: routeTarget(
+        "shop",
+        effectiveShopClanId,
+        "shop-control.route.community-packages",
+        { hash: OWNER_SHOP_HASHES.communityPackage }
       ),
       shopAssets: routeTarget(
         "shopAssets",
@@ -874,15 +887,13 @@ export default function ShopControlPage() {
     label: string;
     icon: GsnIconName;
     to: string;
-  }> = [
-    { label: "Dashboard", icon: "chart", to: routes.dashboard },
-    { label: "Marketplace", icon: "marketplace", to: routes.marketplace },
-    { label: "Shop gallery", icon: "shop", to: routes.shopGallery },
-    { label: "Free spotlight", icon: "megaphone", to: routes.freeSpotlight },
-    { label: "Subscription spotlight", icon: "financeInstitution", to: routes.subscriptionSpotlight },
-    { label: "Paid Repost", icon: "megaphone", to: routes.paidRepost },
-    { label: "Vault", icon: "vault", to: routes.vaultControl },
-  ];
+  }> = SHOP_CONTROL_SHORTCUTS.map((item) => ({
+    label: item.label,
+    icon: SHOP_CONTROL_SHORTCUT_ICONS[item.id],
+    to: routeTarget("shop", effectiveShopClanId, `shop-control.route.${item.id}`, {
+      hash: item.hash,
+    }),
+  }));
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1278,7 +1289,7 @@ export default function ShopControlPage() {
     }
 
     if (targetId !== "shop-control-spotlight") {
-      setActiveOwnerLayer(shopControlLayerForTarget(targetId));
+      setActiveOwnerLayer(ownerShopLayerForTarget(targetId));
     }
 
     cancelPendingControlReveal();
@@ -3256,6 +3267,40 @@ export default function ShopControlPage() {
           id="shop-control-gallery-tools"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)")}
         >
+          <div
+            style={{
+              marginBottom: 14,
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
+              border: "1px solid rgba(214,170,69,0.16)",
+            }}
+          >
+            <div style={sectionLabel()}>Shop Gallery Tools</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
+              Control the public shop billboard and 12 Shop Diaries.
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              Use this lane for pictures, products, diary blocks, and the public shop face.
+              When the community needs extra public shop blocks, open Community Package.
+            </div>
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>
+              <StableCtaLink
+                to={routes.shopDetails}
+                kind="secondary"
+                fullWidth
+                debugId="shop-control.gallery.shop-billboard"
+              >
+                Shop billboard
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.communityPackages}
+                kind="secondary"
+                fullWidth
+                debugId="shop-control.gallery.community-package"
+              >
+                Community package
+              </StableCtaLink>
+            </div>
+          </div>
           <ShopAssetsPage
             embedded
             preferredClanId={effectiveShopClanId || selectedClanId || null}

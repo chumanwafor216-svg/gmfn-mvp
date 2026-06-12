@@ -29,6 +29,13 @@ import {
   SPOTLIGHT_PILOT_ROTATION_MS,
   SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
 } from "../lib/spotlightPilot";
+import {
+  OWNER_SHOP_HANDLES,
+  OWNER_SHOP_HASHES,
+  PAID_REPOST_HASH,
+  ROSCA_MARKETPLACE_HASH,
+  type OwnerShopHandleId,
+} from "../lib/ownerShopHandles";
 
 type ClanItem = {
   id?: number;
@@ -97,6 +104,24 @@ type ActiveCommunitySpotlight = {
 };
 
 type CommunityIconMark = GsnIconName;
+
+const COMMUNITY_OWNER_HANDLE_ICONS: Record<OwnerShopHandleId, CommunityIconMark> = {
+  "shop-control": "shop-storefront",
+  "shop-gallery-tools": "shop-storefront",
+  "vault-control": "vault",
+  "free-spotlight": "spotlight-megaphone",
+  "spotlight-subscription": "financeInstitution",
+  "paid-repost": "spotlight-megaphone",
+  "community-package": "financeInstitution",
+};
+
+function ownerShopHandle(id: OwnerShopHandleId) {
+  const handle = OWNER_SHOP_HANDLES.find((item) => item.id === id);
+  if (!handle) {
+    throw new Error(`Missing owner shop handle: ${id}`);
+  }
+  return handle;
+}
 
 function communityIconGlyph(icon: CommunityIconMark, size = 22): React.ReactNode {
   return <GsnLegacyIcon name={icon} size={Math.max(26, Math.round(size * 1.28))} />;
@@ -251,9 +276,6 @@ function getClanName(clan: ClanItem | null | undefined): string {
     "Community"
   );
 }
-
-const PAID_REPOST_HASH = "marketplace-paid-network-placement";
-const ROSCA_MARKETPLACE_HASH = "marketplace-rosca";
 
 function routeTarget(
   intent: CtaIntent,
@@ -1115,13 +1137,25 @@ export default function CommunityHomePage() {
         "shop",
         selectedClanId,
         "community-home.route.shop-spotlight",
-        { hash: "shop-control-spotlight" }
+        { hash: OWNER_SHOP_HASHES.freeSpotlight }
       ),
       shopOwnerShortcuts: routeTarget(
         "shop",
         selectedClanId,
         "community-home.route.shop-owner-shortcuts",
         { hash: "community-shop-control-owner-shortcuts" }
+      ),
+      shopGalleryTools: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-home.route.shop-gallery-tools",
+        { hash: OWNER_SHOP_HASHES.diaries }
+      ),
+      communityPackages: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-home.route.community-packages",
+        { hash: OWNER_SHOP_HASHES.communityPackage }
       ),
       freeSpotlight: routeTarget(
         "freeSpotlight",
@@ -1293,6 +1327,15 @@ export default function CommunityHomePage() {
           : "Choose one community first, then open the shop controls tied to that community.",
         technical: "Shop control",
         keywords: ["shop", "seller", "gallery", "control", "products"],
+      },
+      {
+        id: "community-packages",
+        label: "Community packages",
+        detail: selectedClanId
+          ? "See the 15-member quota, extra member places, shop blocks, ROSCA, and meeting packs."
+          : "Choose one community first, then open its package and capacity tools.",
+        technical: "Community package",
+        keywords: ["package", "capacity", "members", "15", "shop blocks", "rosca"],
       },
       {
         id: "spotlight",
@@ -2066,6 +2109,22 @@ export default function CommunityHomePage() {
           break;
         }
         openCommunityShopControl(event);
+        break;
+      case "community-packages":
+        if (!selectedClanId) {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities",
+            true
+          );
+          break;
+        }
+        openSelectedCommunityRoute(
+          event,
+          routes.communityPackages,
+          "Choose a community first, then open Community Packages."
+        );
         break;
       case "spotlight":
         openGuidedSpotlightFamily(event);
@@ -2979,20 +3038,30 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "shop-storefront",
-              id: "shop-control",
-              title: "Owner Shop Control",
-              detail:
-                "Manage shop face, products, and public links",
+              icon: COMMUNITY_OWNER_HANDLE_ICONS["shop-control"],
+              id: ownerShopHandle("shop-control").id,
+              title: ownerShopHandle("shop-control").label,
+              detail: ownerShopHandle("shop-control").detail,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityShopControl(event),
             },
             {
-              icon: "vault",
-              id: "vault-control",
-              title: "Private Vault",
-              detail:
-                "Paid private blocks, one link at a time",
+              icon: COMMUNITY_OWNER_HANDLE_ICONS["shop-gallery-tools"],
+              id: ownerShopHandle("shop-gallery-tools").id,
+              title: ownerShopHandle("shop-gallery-tools").label,
+              detail: ownerShopHandle("shop-gallery-tools").detail,
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openSelectedCommunityRoute(
+                  event,
+                  routes.shopGalleryTools,
+                  "Choose a community first, then open Shop Gallery Tools."
+                ),
+            },
+            {
+              icon: COMMUNITY_OWNER_HANDLE_ICONS["vault-control"],
+              id: ownerShopHandle("vault-control").id,
+              title: ownerShopHandle("vault-control").label,
+              detail: ownerShopHandle("vault-control").detail,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openSelectedCommunityRoute(
                   event,
@@ -3001,24 +3070,22 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "spotlight-megaphone",
-              id: "free-spotlight",
-              title: "Free Spotlight",
-              detail:
-                "Publish the normal community spotlight lane",
+              icon: COMMUNITY_OWNER_HANDLE_ICONS["free-spotlight"],
+              id: ownerShopHandle("free-spotlight").id,
+              title: ownerShopHandle("free-spotlight").label,
+              detail: ownerShopHandle("free-spotlight").detail,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
+                openCommunityHomeSection(
                   event,
-                  routes.freeSpotlight,
-                  "Choose a community first, then open Free Spotlight."
+                  "community-home-spotlight-gears",
+                  "spotlight"
                 ),
             },
             {
-              icon: "financeInstitution",
-              id: "spotlight-subscription",
-              title: "Spotlight Subscription",
-              detail:
-                "Control the paid priority spotlight lane",
+              icon: COMMUNITY_OWNER_HANDLE_ICONS["spotlight-subscription"],
+              id: ownerShopHandle("spotlight-subscription").id,
+              title: ownerShopHandle("spotlight-subscription").label,
+              detail: ownerShopHandle("spotlight-subscription").detail,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openSelectedCommunityRoute(
                   event,
@@ -3027,11 +3094,10 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: "spotlight-megaphone",
-              id: "paid-repost",
-              title: "Paid Repost",
-              detail:
-                "Send one shop block into another community Spotlight",
+              icon: COMMUNITY_OWNER_HANDLE_ICONS["paid-repost"],
+              id: ownerShopHandle("paid-repost").id,
+              title: ownerShopHandle("paid-repost").label,
+              detail: ownerShopHandle("paid-repost").detail,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openSelectedCommunityRoute(
                   event,
@@ -3050,6 +3116,18 @@ export default function CommunityHomePage() {
                   event,
                   routes.rosca,
                   "Choose a community first, then open ROSCA in Marketplace."
+                ),
+            },
+            {
+              icon: COMMUNITY_OWNER_HANDLE_ICONS["community-package"],
+              id: ownerShopHandle("community-package").id,
+              title: ownerShopHandle("community-package").label,
+              detail: ownerShopHandle("community-package").detail,
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openSelectedCommunityRoute(
+                  event,
+                  routes.communityPackages,
+                  "Choose a community first, then open Community Package."
                 ),
             },
             {
