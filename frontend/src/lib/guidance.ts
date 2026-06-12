@@ -873,14 +873,18 @@ function buildIdentityEvidenceNotices(params: {
   const routeHint =
     primary === "bank"
       ? "Use payout details to record bank or wallet evidence."
-      : "Open Trust Passport to see what is already recorded and what still needs proof.";
+      : "Trust Passport shows what is recorded and what still needs proof.";
+  const detail =
+    primary === "bank"
+      ? `${detailLead} ${routeHint}`
+      : `${detailLead} ${completion.next}`;
 
   return [
     {
       id: `identity-evidence-${primary || completion.status}-${completion.score}`,
       kind: "identity.evidence-completion",
       title,
-      detail: `${detailLead} ${completion.next} ${routeHint}`,
+      detail,
       ctaLabel,
       ctaTo,
       bucket: isRepair || completion.score < 55 ? "dueSoon" : "watchAndWait",

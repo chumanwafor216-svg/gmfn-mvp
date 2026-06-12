@@ -1,3 +1,762 @@
+### Local checkpoint saved, awaiting publish decision (2026-06-12)
+
+- Trigger:
+  - product owner asked whether this work was being saved with the other
+    finished work awaiting Render, then said to continue.
+- Current save state:
+  - a local Git checkpoint commit now contains the full GSN proof / audit polish
+    batch;
+  - the branch is `main`;
+  - the branch is ahead of `origin/main` locally;
+  - no GitHub push happened;
+  - no Render deploy or Render trigger happened.
+- How to confirm:
+  - run `git log -1 --oneline` for the exact local checkpoint SHA;
+  - run `git status -sb` and expect `main...origin/main [ahead 1]` while this
+    checkpoint remains unpublished.
+- Devil's advocate / do not overclaim:
+  - this is saved as a local Git checkpoint, which is safer than a loose working
+    tree;
+  - it is still not backed up to GitHub and not live on Render until the owner
+    explicitly says to publish the batch;
+  - if this machine is lost before push, the unpublished checkpoint is lost with
+    it.
+
+### Batch readiness inventory after full local verification (2026-06-12)
+
+- Trigger:
+  - product owner said to continue after the local frontend/backend sweep;
+  - product owner also said to push to Render only when the batch is finished.
+- Current local runtime pulse:
+  - `http://127.0.0.1:8012/health` returns `{"ok":true,"dev_mode":true}`;
+  - `http://192.168.1.13:5190/health` returns `{"ok":true,"dev_mode":true}`;
+  - `netstat` shows listeners on:
+    - `0.0.0.0:8012`
+    - `0.0.0.0:5190`
+  - phone should still use `http://192.168.1.13:5190/` while it is on the same
+    Wi-Fi as the laptop.
+- Additional continuation check:
+  - attempted an automated in-app browser smoke check, but the `iab` browser
+    surface was unavailable in this session;
+  - checked the repo for local Playwright support and found no installed
+    `frontend/node_modules/playwright` and no Playwright config, so no visual
+    browser automation was run;
+  - reran `npm run audit:protected-button-freeze` and it passed;
+  - reran `npm run audit:button-stability` and it passed;
+  - reran `git diff --check` and it still reported only LF-to-CRLF
+    normalization warnings, with no whitespace errors.
+- Current git truth:
+  - `git status --short` shows a broad dirty batch:
+    - 62 tracked files modified;
+    - 10 untracked files;
+    - no files staged.
+  - `git diff --stat` currently reports:
+    - 62 tracked files changed;
+    - 3899 insertions;
+    - 945 deletions.
+  - `git diff --check` exits clean:
+    - only LF-to-CRLF normalization warnings from Git;
+    - no whitespace errors reported.
+- Main changed buckets visible in the worktree:
+  - docs / protocol:
+    - `AGENTS.md`
+    - `README.md`
+    - `docs/HANDOFF_NOTES.md`
+    - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - `docs/PROJECT_PROTOCOL.md`
+    - `docs/UX_ACCEPTANCE_CHECKLIST.md`
+    - `docs/APP_WIDE_AUDIT_PROTOCOL.md` (untracked)
+    - `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md` (untracked)
+  - frontend runtime / app shell / proof and share helpers:
+    - `frontend/package.json`
+    - `frontend/public/sw.js`
+    - `frontend/server.mjs`
+    - `frontend/src/layout/AppLayout.tsx`
+    - `frontend/src/components/*`
+    - `frontend/src/lib/*`
+    - `frontend/src/styles/*`
+  - frontend pages:
+    - Community, Dashboard, Marketplace, Shop, Finance, Trust, Welcome, and
+      related public-paper / instruction pages are modified.
+  - frontend audit tools:
+    - many existing audit scripts are modified;
+    - new untracked audit scripts include entry copy/flow, inner navigation,
+      payment instruction phone rows, and share-tag actions.
+- Already verified locally before this inventory:
+  - full frontend lint passed;
+  - TypeScript build passed;
+  - production frontend build passed;
+  - all wired local frontend audits passed, except the Render-targeting live API
+    audit was intentionally run against local backend with `--url`;
+  - local live API identity audit passed against `http://127.0.0.1:8012`;
+  - full backend suite passed outside sandbox:
+    - `244 passed`, 54 warnings.
+- Runtime truth:
+  - frontend dev server remains the phone target:
+    - `http://192.168.1.13:5190/`;
+  - backend is the local API target:
+    - `0.0.0.0:8012`;
+  - prior phone HTTP 500 was caused by missing backend, not by the current
+    frontend bundle.
+- Devil's advocate / do not overclaim:
+  - this batch is locally verified but not deployed;
+  - default `audit:live-api-identity-routes` still fails against Render because
+    Render API is behind the local backend;
+  - do not push, promote to `main`, or trigger Render until the owner explicitly
+    says this batch is finished;
+  - before publishing, stage deliberately because the worktree is broad and
+    includes both tracked and untracked files.
+
+### Full local audit sweep and backend tests verified (2026-06-12)
+
+- Trigger:
+  - product owner said to continue after frontend lint/build were clean.
+- Frontend verification:
+  - ran every wired local frontend audit script except
+    `audit:live-api-identity-routes`, because that script defaults to Render
+    and the deployed API drift is already known;
+  - result: all 68 local audit scripts passed in one sweep.
+- Local live API verification:
+  - `npm run audit:live-api-identity-routes -- --url http://127.0.0.1:8012`
+    passed against the local backend.
+- Backend verification:
+  - first sandboxed backend full-test attempt ran most tests but errored on
+    pytest temp-directory access, not assertions:
+    - `239 passed`, 5 setup errors from Windows temp permission handling;
+  - targeted rerun of the five affected public-shop tests outside the sandbox
+    passed:
+    - `5 passed`;
+  - full backend test suite outside the sandbox passed:
+    - `244 passed`, 54 warnings.
+- Warnings worth tracking:
+  - SQLAlchemy / sqlite3 datetime adapter deprecation warnings under Python
+    3.13 / Python 3.12-era sqlite behavior;
+  - Pydantic V2 deprecation warning for `payload.__fields_set__` in
+    `gmfn_backend/app/api/routes/marketplace.py`.
+- Devil's advocate / remaining truth:
+  - this is strong local evidence across frontend audits, lint, build, live
+    local API, and backend tests;
+  - it still does not replace owner phone acceptance of the actual flows;
+  - no commit, push, Render deploy, or deploy trigger happened.
+
+### Full frontend lint made clean locally (2026-06-12)
+
+- Trigger:
+  - continuation after the audit sweep; `npm run lint` had not yet been run as
+    a full repo check in this session.
+- Finding:
+  - `frontend/public/sw.js` failed lint because service-worker globals
+    (`self`, `caches`, `fetch`, `URL`) were not declared for ESLint;
+  - `frontend/server.mjs` failed lint because Node/server globals
+    (`process`, `URL`, `fetch`, `AbortSignal`, `Buffer`) were not declared;
+  - `frontend/server.mjs` also had legacy `formatPrice()` code left unused
+    after richer public-shop share metadata stopped using a plain price string.
+- Changed locally:
+  - `frontend/public/sw.js`
+    - added file-local service-worker global declaration.
+  - `frontend/server.mjs`
+    - added file-local Node/server global declaration;
+    - marked the legacy `formatPrice()` helper with a single scoped lint
+      suppression instead of changing server behavior around route metadata.
+- Verification:
+  - `npm run lint`
+  - `npm run audit:live-api-identity-routes -- --url http://127.0.0.1:8012`
+  - `npm run audit:link-contracts`
+  - `npm run audit:protocol-readiness`
+  - `npm run audit:icon-protocol`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm run build`
+- Devil's advocate / remaining truth:
+  - the scoped `formatPrice()` suppression preserves behavior but is still a
+    small code-smell marker; remove the helper later if route metadata never
+    needs formatted prices again;
+  - no backend tests, commit, push, or Render deploy happened in this pass.
+
+### Remaining frontend audit sweep and script wiring (2026-06-12)
+
+- Trigger:
+  - product owner said to continue locally and confirmed Render should only be
+    pushed when the batch is finished.
+- Additional local changes:
+  - `frontend/tools/audit-marketplace-button-lines.mjs`
+    - updated expected stable Marketplace action count from 57 to 59;
+    - reason: the current Marketplace inventory already intentionally protects
+      the extra join/social-share and public-shop/social-share package actions.
+  - `frontend/package.json`
+    - added `audit:inner-navigation-origin`;
+    - added `audit:payment-instruction-phone-rows`;
+    - reason: both audit files existed locally and passed, but were not wired
+      into package scripts.
+- Additional verification passed:
+  - `npm run audit:entry-auth`
+  - `npm run audit:member-entry-actions`
+  - `npm run audit:spotlight-controls`
+  - `npm run audit:spotlight-quota`
+  - `npm run audit:action-surfaces`
+  - `npm run audit:marketplace-button-lines`
+  - `npm run audit:marketplace-button-inventory`
+  - `npm run audit:global-action-debugids`
+  - `npm run audit:global-raw-action-elements`
+  - `npm run audit:icon-protocol`
+  - `npm run audit:protocol-readiness`
+  - `npm run audit:tap-stability`
+  - `npm run audit:inner-navigation-origin`
+  - `npm run audit:payment-instruction-phone-rows`
+  - `npm exec -- eslint tools\audit-inner-navigation-origin.mjs tools\audit-payment-instruction-phone-rows.mjs tools\audit-marketplace-button-lines.mjs`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run build`
+- Devil's advocate / remaining truth:
+  - these are source/audit/build checks, not a full manual phone walkthrough;
+  - do not push/deploy until the owner confirms the batch is finished;
+  - the local phone stack should stay on `http://192.168.1.13:5190/` while
+    backend remains on `0.0.0.0:8012`.
+
+### Marketplace / Finance / Trust guard sweep continued locally (2026-06-12)
+
+- Trigger:
+  - product owner confirmed Render should only be pushed when the current batch
+    is finished and asked to continue locally.
+- Continued local scope:
+  - read the current route-purpose / guided-surface docs for Marketplace,
+    mobile density, production polish, and lane discipline;
+  - kept work local only, with no commit, push, Render trigger, or deploy.
+- Stale guard alignments made locally:
+  - `frontend/tools/audit-payout-details-protocol.mjs`
+    - updated the UK sort-code copied-summary guard to accept the current GSN
+      snapshot-paper payout package;
+    - preserved the actual protected behavior: `sort_code` remains in state,
+      backend payload fields, note payload, and copied summary.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - aligned Public Shop Spotlight link checks with the current contract:
+      source community/product/block truth is still preserved in
+      `miniSpotlightView.shopTo`, but the retired public `Open` / `Explore`
+      redirect action must not return;
+    - added an explicit guard against restoring
+      `shop-gallery.open-spotlight-preview` / `openSpotlightPreview()`.
+- Verification passed:
+  - Marketplace:
+    - `npm run audit:marketplace-actions`
+    - `npm run audit:marketplace-button-inventory`
+    - `npm run audit:marketplace-money-pool-lane`
+    - `npm run audit:marketplace-rosca-lane`
+    - `npm run audit:marketplace-support-lane`
+    - `npm run audit:marketplace-trusted-trade-lane`
+    - `npm run audit:marketplace-records-links-lane`
+    - `npm run audit:marketplace-more-tools-lane`
+    - `npm run audit:marketplace-trust-pill`
+    - `npm run audit:marketplace-demand-box-lane`
+    - `npm run audit:marketplace-front-package`
+  - Finance / payout:
+    - `npm run audit:finance-actions`
+    - `npm run audit:finance-button-inventory`
+    - `npm run audit:finance-front-package`
+    - `npm run audit:finance-lane-map`
+    - `npm run audit:finance-banking-rails-lane`
+    - `npm run audit:finance-money-movement-lanes`
+    - `npm run audit:finance-money-summary-lane`
+    - `npm run audit:finance-records-events-lane`
+    - `npm run audit:finance-secondary-route-tools`
+    - `npm run audit:finance-signals-readiness-lane`
+    - `npm run audit:payout-details-protocol`
+  - Trust / proof:
+    - `npm run audit:trust-actions`
+    - `npm run audit:proof-surfaces`
+    - `npm run audit:trust-passport-button-inventory`
+    - `npm run audit:trust-passport-front-package`
+    - `npm run audit:identity-integrity-front-package`
+    - `npm run audit:trust-passport-lane-map`
+    - `npm run audit:trust-passport-community-confirmation-lane`
+    - `npm run audit:trust-passport-evidence-story-lane`
+    - `npm run audit:trust-passport-finance-discipline-lane`
+    - `npm run audit:trust-passport-repair-lane`
+  - Shop / links / global:
+    - `npm run audit:community-shop-actions`
+    - `npm run audit:shop-control-button-inventory`
+    - `npm run audit:vault-control-button-inventory`
+    - `npm run audit:shop-gallery-button-inventory`
+    - `npm run audit:shop-assets-slots`
+    - `npm run audit:demand-box-front-package`
+    - `npm run audit:loans-actions`
+    - `npm run audit:admin-ops-actions`
+    - `npm run audit:link-contracts`
+    - `npm run audit:route-fallthrough`
+    - `npm run audit:protected-button-freeze`
+    - `npm run audit:button-stability`
+    - `npm exec -- eslint tools\audit-link-contracts.mjs tools\audit-payout-details-protocol.mjs tools\audit-community-shop-actions.mjs`
+    - `npm exec -- tsc -b --pretty false`
+    - `npm run build`
+- Devil's advocate / remaining truth:
+  - the local guard/build surface is coherent, but this is still not the same
+    as final owner phone acceptance;
+  - the deployed Render API drift noted earlier still remains until the batch
+    is intentionally published/deployed;
+  - broad worktree remains dirty with many pre-existing batch files, so stage
+    only intentional files when the owner says the batch is ready.
+
+### Local phone stack restored after HTTP 500 (2026-06-12)
+
+- Trigger:
+  - phone showed HTTP 500 after the frontend dev server was already reachable.
+- Confirmed cause:
+  - Vite was listening on `0.0.0.0:5190` and the phone was reaching
+    `http://192.168.1.13:5190/`;
+  - frontend logs showed proxy failures to `127.0.0.1:8012`;
+  - nothing was listening on backend port `8012` at first, so `/api/auth/login`
+    could not reach FastAPI.
+- Runtime restored:
+  - backend is now listening on `0.0.0.0:8012`;
+  - `http://127.0.0.1:8012/health` returns
+    `{"ok":true,"dev_mode":true}`;
+  - `http://192.168.1.13:5190/health` and
+    `http://192.168.1.13:5190/api/openapi.json` work through the same
+    phone-facing frontend port.
+- Verification:
+  - direct bad login to `http://127.0.0.1:8012/auth/login` returns `401`;
+  - proxied bad login to `http://192.168.1.13:5190/api/auth/login` returns
+    `401`, proving the app proxy path is no longer the HTTP 500 failure;
+  - `node tools/audit-live-api-identity-routes.mjs --url http://127.0.0.1:8012`
+    passed locally;
+  - `npm run audit:dashboard-actions`
+  - `npm run audit:dashboard-button-inventory`
+  - `npm run audit:dashboard-phone-buttons`
+  - `npm run audit:action-response-protocol`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+- Devil's advocate / remaining truth:
+  - `npm run audit:live-api-identity-routes` without `--url` still checks
+    `https://gmfn-api.onrender.com` and fails because the deployed API is
+    missing the newer identity routes / withdrawal fields;
+  - that Render failure is a deployed-backend drift signal, not a current
+    laptop/phone-stack failure;
+  - no code push, deploy, or Render trigger happened in this pass.
+
+### Community / Shop action audit aligned to current Public Shop contract (2026-06-12)
+
+- Trigger:
+  - continuation after fixing First Circle / Vault action response;
+  - `npm run audit:community-shop-actions` still failed on stale Community Home
+    and Public Shop traceability expectations.
+- Confirmed source truth:
+  - Community Home compact owner/tool rows still expose 11 traceable owner/tool
+    rows and route to the deeper owner surfaces;
+  - Free Spotlight now routes directly to the canonical Free Spotlight publisher
+    from the compact tool row instead of opening the old local spotlight section;
+  - Public Shop no longer exposes the old Spotlight `Open` / `Explore` redirect;
+  - Public Shop Spotlight uses one `WhatsApp` handle that opens compact `Chat`
+    / `Call` controls for the active rotating Spotlight owner;
+  - Spotlight WhatsApp uses `miniSpotlightView.sourceShopWhatsApp`, populated
+    from backend source-shop WhatsApp fields, not only the current page shop.
+- Changed locally:
+  - `frontend/tools/audit-community-shop-actions.mjs`
+    - updated the Community Home compact owner/tool row guard for the current
+      direct Free Spotlight route;
+    - updated the Public Shop visitor action guard to protect Share, Verify,
+      owner WhatsApp, Spotlight Chat/Call chooser, Vault request, and Vault
+      copy controls;
+    - updated the Spotlight contact guard to protect
+      `shop-gallery.spotlight.whatsapp-chat` and the rotating source-shop
+      WhatsApp data path.
+- Verification:
+  - `npm run audit:community-shop-actions`
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm run audit:community-home-button-inventory`
+  - `npm exec -- eslint tools\audit-community-shop-actions.mjs`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run build`
+- Devil's advocate / remaining truth:
+  - this was an audit alignment pass, not a visual redesign;
+  - no Community Home or Public Shop runtime source was changed in this pass;
+  - phone review is still needed to judge the actual feel of the Public Shop
+    Spotlight contact chooser and Community Home owner rows.
+
+### First Circle / Vault action-response continuation fixed (2026-06-12)
+
+- Trigger:
+  - continuation from the pre-Dashboard entry audit handoff, where
+    `npm run audit:action-response-protocol` was still failing outside the
+    entry band on First Circle and Vault Control.
+- Frontend changes:
+  - `frontend/src/components/SocialTagShareButton.tsx`
+    - changed the trigger so it opens unless the caller explicitly disables it;
+    - missing or unready share links now get explained from inside the chooser
+      instead of making the surface untappable.
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+    - removed the invite-link disabled gate from the First Circle social-share
+      chooser so an unready invite can produce visible "link not ready" feedback.
+  - `frontend/tools/audit-action-response-protocol.mjs`
+    - updated Vault Control expectations to match the current branded private
+      Vault invite package copy behavior;
+    - tightened the disabled-button guard so it checks the exact copy/open
+      action tag instead of drifting into the neighboring, intentionally
+      disabled Vault social-share chooser.
+- Preserved product constraints:
+  - Vault Control `Share block` remains explicitly disabled until a real
+    private Vault link exists.
+  - Vault Control `Copy block link` and `Open private view` remain tappable so
+    missing-link states explain what to do first.
+  - No backend routes, auth, schema, permissions, or deploy settings changed.
+- Verification:
+  - `npm run audit:action-response-protocol`
+  - `npm run audit:share-tag-actions`
+  - `npm run audit:vault-control-button-inventory`
+  - `npm exec -- eslint src\components\SocialTagShareButton.tsx src\pages\BuildFirstCirclePage.tsx src\pages\VaultControlPage.tsx tools\audit-action-response-protocol.mjs`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:button-stability`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run build`
+- Devil's advocate / remaining truth:
+  - this was source/audit/build verified, not phone-screenshot verified;
+  - broad worktree state is still a large local batch with many unrelated
+    modified files, so do not push/deploy unless the product owner explicitly
+    says this batch is ready.
+
+### Pre-Dashboard entry audit started and caged (2026-06-12)
+
+- Trigger:
+  - product owner asked to start the new app-wide audit regime from Cover
+    through the last pre-Dashboard screen.
+- Scope mapped:
+  - `/cover` -> `CoverPage`
+  - `/welcome` -> `WelcomePage`
+  - `/login` -> `LoginPage`
+  - `/create` -> `CreateEntryPage`
+  - `/join` plus invite aliases -> `JoinEntryPage`
+  - `/pending-approval` -> `JoinRequestPendingPage`
+  - `/join-approval/:requestId` -> `JoinApprovalPage`
+  - `/activate-membership` -> `MemberActivationPage`
+  - `/app/dashboard` remains outside this pass.
+- New line auditors:
+  - `frontend/tools/audit-entry-flow-polish.mjs`
+    - guards the pre-Dashboard route band;
+    - confirms Cover/Welcome stay public-entry guarded;
+    - confirms the authenticated app shell stays behind `/app` and
+      `RequireAuth`;
+    - confirms create and join entry paths remain distinct;
+    - confirms pre-Dashboard pages do not render app shell/bottom-nav surfaces;
+    - confirms deep entry screens expose in-page return paths.
+  - `frontend/tools/audit-entry-copy-response.mjs`
+    - guards user-facing entry strings against builder/backend wording;
+    - confirms Cover, Welcome, Sign In, Create, Join, Pending, Approval, and
+      Activation keep visible purpose/action-response contracts.
+- Wiring:
+  - added `audit:entry-flow-polish` and `audit:entry-copy-response` to
+    `frontend/package.json`;
+  - added both new auditors to `frontend/tools/audit-protected-button-freeze.mjs`.
+- Verification:
+  - `npm run audit:entry-flow-polish`
+  - `npm run audit:entry-copy-response`
+  - `npm exec -- eslint tools\audit-entry-flow-polish.mjs tools\audit-entry-copy-response.mjs tools\audit-protected-button-freeze.mjs`
+  - `npm run audit:protected-button-freeze`
+  - `npm run build`
+- Devil's advocate / outside-scope finding:
+  - `npm run audit:action-response-protocol` currently fails outside the
+    pre-Dashboard entry band on First Circle and Vault Control action-response
+    contracts. This was not fixed in this entry pass because those routes belong
+    to later domains and should not be pulled into the pre-Dashboard cage
+    without an intentional scope switch.
+- Follow-up in same pass:
+  - `frontend/src/pages/WelcomePage.tsx`
+    - added explicit `debugId`s to every `EntryActionButton` choice on Welcome
+      so phone taps from sign-in, sign-up, create, join, activation, invitation,
+      and signed-in dashboard continuation can be traced.
+  - `frontend/tools/audit-entry-flow-polish.mjs`
+    - now requires page-level `EntryActionButton` controls in the
+      pre-Dashboard band to carry a `debugId`.
+  - re-ran:
+    - `npm run audit:entry-flow-polish`
+    - `npm run audit:entry-copy-response`
+    - `npm exec -- eslint src\pages\WelcomePage.tsx tools\audit-entry-flow-polish.mjs tools\audit-entry-copy-response.mjs`
+    - `npm run audit:protected-button-freeze`
+    - `npm run build`
+
+### App-wide audit protocol made official (2026-06-12)
+
+- Trigger:
+  - product owner asked to turn the agreed audit basket into an official
+    protocol before starting the entry-to-dashboard audit.
+- Protocol added:
+  - `docs/APP_WIDE_AUDIT_PROTOCOL.md`
+    - route purpose;
+    - user-facing language;
+    - action honesty;
+    - empty-state truth;
+    - button surface count and tap stability;
+    - pre-auth/post-auth boundary;
+    - permission visibility;
+    - data-source truth;
+    - mobile density;
+    - icon meaning;
+    - one-step recovery;
+    - repetition/naming;
+    - end-to-end paths;
+    - in-page navigation and return paths;
+    - focused deterministic task behavior;
+    - action response and journey continuation;
+    - domain-by-domain regression cages.
+- Official references updated:
+  - `AGENTS.md`
+  - `README.md`
+  - `docs/PROJECT_PROTOCOL.md`
+  - `docs/UX_ACCEPTANCE_CHECKLIST.md`
+- Next recommended pass:
+  - audit entry/inflow from Cover through the last pre-Dashboard screen;
+  - add one or two practical line auditors for entry polish, copy/density,
+    navigation return paths, and action response rather than trying to script
+    every human visual judgement.
+- Devil's advocate:
+  - this protocol improves consistency, but it does not replace the product
+    owner's phone-feel review. Scripts can cage contracts; the phone still
+    judges whether a page feels calm, compact, and premium.
+
+### Money Out community rail placeholder guard (2026-06-12)
+
+- Trigger:
+  - product owner reported that the Finance / Money Out "community money-out
+    rail" looked already filled because labels like `Bank Transfer`, `GSN
+    Settlement Rail`, and `To be assigned` made the surface feel official even
+    when real settlement details were not configured.
+- Confirmed cause:
+  - the backend fallback settlement config can return placeholder labels for
+    unconfigured rails;
+  - `WithdrawalInstructionsPage` was treating any bank/account label as a ready
+    community withdrawal rail, so placeholders appeared like real bank details.
+- Frontend changes:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - Community money-out rail is collapsed by default.
+    - Placeholder settlement values are filtered before readiness/display.
+    - A community rail now counts as ready only when it has a real bank account,
+      mobile-money rail, or international rail detail.
+    - Empty placeholder rails no longer expose fake filled lines or copy as if
+      they are valid settlement instructions.
+  - `frontend/tools/audit-finance-actions.mjs`
+    - added a Finance audit guard so this page cannot go back to placeholder
+      bank/account readiness.
+- Verification:
+  - `npm run audit:finance-actions`
+  - `npm run audit:button-stability`
+  - `npm run audit:protected-button-freeze`
+  - `npm exec -- eslint src\pages\WithdrawalInstructionsPage.tsx tools\audit-finance-actions.mjs`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run build`
+- Devil's advocate / remaining truth:
+  - this fix is scoped to the Money Out frontend surface; backend fallback
+    placeholders still exist and may need a broader product decision if other
+    payment pages should stop receiving them entirely.
+  - verified by source audits and build, not by a fresh phone screenshot.
+
+### Social tag/share endpoint added beside WhatsApp/email/copy (2026-06-12)
+
+- Trigger:
+  - product owner approved adding a practical Twitter/X-style handle option
+    for cases where the sender does not have the receiver's phone number, while
+    first "caging" the current progress so the addition does not disrupt the
+    app.
+- Product truth:
+  - this is not a backend social engine, auto-posting system, DM sender, or API
+    integration;
+  - GSN prepares the share text and link, then opens the user's platform or
+    copies caption text;
+  - tagging is not guaranteed delivery, and the UI says that clearly.
+  - corrected product shape: WhatsApp stays visible and separate for the main
+    user base; wider channels live under `Share`.
+- Frontend changes:
+  - `frontend/src/lib/share.ts`
+    - added shared social share helpers for normalized handles, X intent URLs,
+      Facebook share URLs, email fallback URLs, and copied social text;
+    - fixed `copyToClipboard` to return the real `safeCopy` result.
+  - `frontend/src/components/SocialTagShareButton.tsx`
+    - stable-button modal for `X`, `Facebook`, `LinkedIn`, `Instagram`,
+      `TikTok`, `Copy all text`, and `Copy text`;
+    - uses one optional `Handle or name, if needed` field so the surface stays
+      compact and the user is not asked to fill the same idea four times;
+    - uses a compact responsive channel grid so the buttons do not shake or
+      widen the modal on mobile;
+    - includes the visible warning that GSN opens the platform and cannot
+      guarantee delivery.
+  - `frontend/src/components/ShareActions.tsx`
+    - added the shared `Share` chooser next to Copy link and WhatsApp.
+  - `frontend/src/components/ShareButtons.tsx`
+    - added the shared `Share` chooser while keeping Copy link, WhatsApp, Copy
+      text, and QR.
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+    - added `Share` beside Copy invite and WhatsApp for the first-circle join
+      invite package.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added `Share` beside Marketplace join-link sharing;
+    - added `Share` beside Public Shop link sharing using the same GSN
+      public-shop package text as copy/email.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - added a public `Share` chooser for the TrustSlip Verify snapshot/link.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - changed the existing Public Shop `Share` button to open the wider share
+      chooser;
+    - restored the signboard action row to Share, Verify, WhatsApp so the
+      surface stays compact and familiar.
+    - rebuilt the compact Public Shop Spotlight card so phone media uses a
+      strict 7fr/3fr split: the media owns the dominant 70% left rail and the
+      spotlight text/actions stay in a cramped 30% right rail instead of
+      covering the media;
+    - corrected rejected interim ideas that made the Spotlight feel like a main
+      billboard: the compact phone block is now capped at 172px high, with the
+      media frame at 162px, so it no longer commands most of the Shop Gallery
+      screen;
+    - tightened the Public Shop owner contact flow so the main surface stays as
+      one `WhatsApp` button; tapping it opens a compact `Chat` / `Call` chooser
+      instead of exposing a large contact section or separate call/chat choices
+      on the main page;
+    - corrected the Public Shop Spotlight action rail separately: removed the
+      redirecting `Open` / `Explore` control, leaving one Spotlight `WhatsApp`
+      handle that swaps into `Chat` / `Call` for the active Spotlight media
+      owner's number;
+    - removed the old phone overlay curtain from Spotlight and shortened phone
+      action labels to `Open` and `Chat` while keeping desktop labels fuller.
+    - changed Shop Diaries product/block sharing from a visitor-facing block
+      action into an owner-only `Share` chooser on each opened diary block;
+    - visitors still keep the WhatsApp owner-contact action on each opened
+      block, but they do not see the block social-share chooser.
+  - `frontend/src/pages/VaultControlPage.tsx`
+    - added an owner-side `Share block` chooser to the Private block link
+      panel;
+    - the chooser is disabled until the owner has created a private Vault link;
+    - it uses the existing GSN Vault invite package so X/Facebook/LinkedIn/
+      Instagram/TikTok/copy all carry the same private-link limitation text as
+      `Copy block link`.
+  - `frontend/src/pages/ShopAccessPage.tsx`
+    - intentionally unchanged: private-link recipients can view the Vault
+      access they were given, but they do not get a rebroadcast/social-share
+      chooser from the visitor page.
+  - `frontend/tools/audit-share-tag-actions.mjs`
+    - cage audit protecting the user-controlled social flow, required debug
+      IDs, one-field modal shape, compact channel grid, social URL helpers, and
+      copy/WhatsApp/email-style fallbacks;
+    - rejects the older per-platform field design and the extra Public Shop
+      `Tag` button so the row stays Share, Verify, WhatsApp;
+    - protects the owner-only Shop Diaries block share rule so block social
+      sharing does not silently become visitor-facing again;
+    - protects Vault social sharing as an owner-issued private-link action and
+      rejects adding the chooser to `ShopAccessPage`.
+  - `frontend/tools/audit-protected-button-freeze.mjs`
+    - now runs the share/tag audit as part of the protected cage.
+  - `frontend/tools/audit-marketplace-actions.mjs`
+    - updated the stale compact inline-row expectation from 52px to the actual
+      current 56px Marketplace button geometry.
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated the Public Shop button inventory to protect the three-action
+      signboard row: Share, Verify, WhatsApp, with Share opening the chooser.
+    - updated the product action inventory to protect 21 page stable action
+      templates and 2 social-share templates after the block share action moved
+      from visitor-facing `SecondaryButton` to owner-only `SocialTagShareButton`.
+    - now protects the compact Spotlight split layout: 172px phone card,
+      162px media frame, media on the dominant 70% left rail, text/actions in
+      the compact 30% right rail, with no media-covering overlay and no
+      whole-card enlargement.
+    - now protects the owner contact cage: one visible `WhatsApp` surface
+      action, then a compact 40px phone `Chat` / `Call` chooser after tap.
+    - now rejects the old Spotlight `Open` / `Explore` redirect action and
+      protects the Spotlight-only `WhatsApp` -> `Chat` / `Call` contact flow.
+  - `frontend/tools/audit-button-stability.mjs`
+    - aligned the broad Marketplace geometry guardrail with the current 56px
+      compact inline-row contract;
+    - protects the Shop Diaries owner-only block-share rail: visitors get open
+      and owner-contact; owners additionally get Share and Paid Repost;
+    - protects Vault Control using the shared social chooser in the private
+      block link panel.
+  - `frontend/tools/audit-vault-control-button-inventory.mjs`
+    - now counts one owner-side social tag/share template and requires
+      `vault-control.link.social-share` to stay disabled until a private block
+      link exists.
+  - `frontend/package.json`
+    - added `npm run audit:share-tag-actions`.
+- Verification passed locally:
+  - `npm exec -- eslint src\lib\share.ts src\components\SocialTagShareButton.tsx src\components\ShareActions.tsx src\components\ShareButtons.tsx src\pages\BuildFirstCirclePage.tsx src\pages\MarketplacePage.tsx src\pages\TrustSlipVerifyPage.tsx tools\audit-share-tag-actions.mjs tools\audit-protected-button-freeze.mjs`
+  - `npm exec -- eslint src\lib\share.ts src\components\SocialTagShareButton.tsx src\components\ShareActions.tsx src\components\ShareButtons.tsx src\pages\BuildFirstCirclePage.tsx src\pages\MarketplacePage.tsx src\pages\TrustSlipVerifyPage.tsx tools\audit-share-tag-actions.mjs tools\audit-protected-button-freeze.mjs`
+  - `npm exec -- eslint src\components\SocialTagShareButton.tsx src\lib\share.ts tools\audit-share-tag-actions.mjs`
+  - `npm run audit:share-tag-actions`
+  - `npm run audit:protected-button-freeze`
+  - `npm run audit:marketplace-button-inventory`
+  - `npm run audit:marketplace-actions`
+  - `npm run audit:trust-actions`
+  - `npm run audit:member-entry-actions`
+  - `npm run audit:shop-gallery-button-inventory`
+  - `npm run audit:button-stability`
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-share-tag-actions.mjs tools\audit-shop-gallery-button-inventory.mjs tools\audit-button-stability.mjs`
+  - `node tools\audit-link-contracts.mjs`
+  - `npm run audit:vault-control-button-inventory`
+  - `npm exec -- eslint src\pages\VaultControlPage.tsx tools\audit-share-tag-actions.mjs tools\audit-vault-control-button-inventory.mjs tools\audit-button-stability.mjs`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run build`
+  - `git diff --check -- docs/HANDOFF_NOTES.md frontend/src/lib/share.ts frontend/src/components/SocialTagShareButton.tsx frontend/src/components/ShareActions.tsx frontend/src/components/ShareButtons.tsx frontend/src/pages/BuildFirstCirclePage.tsx frontend/src/pages/MarketplacePage.tsx frontend/src/pages/TrustSlipVerifyPage.tsx frontend/src/pages/ShopGalleryPage.tsx frontend/tools/audit-share-tag-actions.mjs frontend/tools/audit-shop-gallery-button-inventory.mjs frontend/tools/audit-protected-button-freeze.mjs frontend/tools/audit-marketplace-actions.mjs frontend/tools/audit-button-stability.mjs frontend/package.json`
+- Remaining truth:
+  - Facebook sharing cannot reliably prefill a person tag; users add the tag
+    inside Facebook after the share dialog opens.
+  - Instagram web sharing is copy-based in this MVP; the app copies caption
+    text instead of pretending it can post to Instagram.
+  - TikTok is also copy-based in this MVP; users paste the prepared caption
+    inside TikTok.
+  - LinkedIn can open a share dialog, but users still add mentions inside
+    LinkedIn when needed.
+  - Vault social sharing is still link-based, not recipient account delivery;
+    anyone with an active private Vault link can open what that link permits
+    until it expires, is revoked, or hits its backend limits.
+  - `node tools\audit-community-shop-actions.mjs` currently fails on a
+    `CommunityHomePage` owner/tool-row traceability regex unrelated to this
+    Public Shop Spotlight split; protected freeze, link contracts, Shop Gallery
+    inventory, TypeScript, and build pass.
+  - no backend routes, auth, schema, permissions, social API credentials, or
+    deployment files were changed.
+
+### Dashboard Spotlight, mobile menu, and TrustSlip Verify compact pass (2026-06-12)
+
+- Trigger:
+  - product owner asked for a compactness/polish pass: remove dead-looking
+    Spotlight speaker behavior, move the unnecessary live-count cube into the
+    existing Sharing matters area, reorganize the messy mobile menu toward the
+    supplied reference, and fix the TrustSlip Verify phone alignment.
+- Frontend changes:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - removed the permanent live/queued and rotation header chips from Your
+      Spotlight;
+    - folded live/queued status into the compact Sharing matters row;
+    - kept rotation timing behind Learn more;
+    - stopped Dashboard Spotlight media from exposing the speaker/audio unlock
+      control and removed the static megaphone overlay that looked actionable
+      but did nothing.
+  - `frontend/src/layout/AppLayout.tsx`
+    - rebuilt the mobile drawer into a clearer GSN Navigation panel with a
+      You are here card, icon-led main destinations, compact tools/resources,
+      and steady chevron rows;
+    - preserved existing route targets, bottom navigation, and app-shell debug
+      IDs.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - changed the compact public paper hero from a cramped two-column header to
+      a stacked phone document header so `TrustSlip Verify` no longer pushes
+      off the right edge.
+  - `frontend/tools/audit-dashboard-phone-buttons.mjs`
+    - updated the Dashboard phone audit to protect the new compact rule:
+      live-count inside Sharing matters, rotation inside Learn more, and no
+      Dashboard media speaker/audio control.
+- Verification passed locally:
+  - `npm exec -- eslint src\layout\AppLayout.tsx src\pages\DashboardPage.tsx src\pages\trustSlipVerify\TrustSlipVerifyPublicPaper.tsx tools\audit-dashboard-phone-buttons.mjs`
+  - `npm run audit:dashboard-phone-buttons`
+  - `npm run audit:dashboard-button-inventory`
+  - `npm run audit:tap-stability`
+  - `npm run audit:trust-actions`
+  - `npm exec -- tsc -b --pretty false`
+  - `npm run audit:protected-button-freeze`
+  - `npm run build`
+  - `git diff --check -- frontend\src\layout\AppLayout.tsx frontend\src\pages\DashboardPage.tsx frontend\src\pages\trustSlipVerify\TrustSlipVerifyPublicPaper.tsx frontend\tools\audit-dashboard-phone-buttons.mjs`
+- Remaining truth:
+  - `npm run audit:button-stability` now passes after the broad Marketplace
+    geometry guardrail was aligned with the current 56px compact row contract.
+  - no backend routes, auth, schema, permissions, or deployment files were
+    changed.
+
 ### Public Shop final phone polish: signboard badge and Spotlight control (2026-06-12)
 
 - Trigger:
@@ -47982,3 +48741,680 @@ GSN-branded invite composer and invite-entry continuity.
   - a few legacy route aliases still contain literal hashes in `App.tsx` and
     `appRoutes.ts`; they are compatibility redirects/routes and were left alone
     to avoid changing public route contracts during pilot testing.
+
+### Marketplace phone stabilization and proof-snapshot TODO (2026-06-12)
+
+- Trigger:
+  - product owner is scanning real phone screens for sizing, clipping, jumping
+    buttons, misplaced icons, and customer-facing proof/snapshot packaging gaps.
+  - phone screenshots showed Marketplace Demand Box text splitting into a tall
+    word column, Link Center / Shop Face actions clipping, raw shop links
+    dominating the card, Community Package cards truncating, and Owner Control
+    phone labels getting cut.
+- Changed locally, not pushed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - tightened Marketplace inline action geometry to stable 56px phone rows
+      with whole-word wrapping instead of clipped long labels;
+    - shortened phone-only labels for Join, Shop Face, Package, Spotlight, and
+      Owner Control actions while keeping fuller desktop labels;
+    - changed the visible public shop face text from the raw URL to a masked
+      GSN-facing label while preserving the real link target;
+    - made Demand Box use a phone-safe one-column shell with an icon/text row so
+      the description no longer collapses word-by-word;
+    - stacked Community Package mini cards into readable one-column phone
+      records instead of squeezing them into two narrow columns.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - protects the new readable phone action geometry and updated Link Center
+      action inventory.
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - protects masked public shop text, phone-safe Community Package card
+      stacking, and the compact Owner Control label.
+  - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - records that copy/snapshot text packages still need official GSN
+      snapshot treatment before evidence acceptance.
+- Verification:
+  - Passed `node frontend\tools\audit-marketplace-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-records-links-lane.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - this is a source-level and audit-level Marketplace phone fix, not proof
+    that the exact Android browser screenshot is perfect yet;
+  - copy snapshot / customer-facing proof packaging is recorded as the next
+    evidence-surface task, but it has not been implemented in this slice;
+  - no push was made because `docs/FREEZE_POLICY.md` currently says routine
+    pilot work should stay batch-first and push only when the product owner says
+    the current batch is ready.
+
+### Phone polish batch mode and fresh customer-facing fixes (2026-06-12)
+
+- Trigger:
+  - product owner confirmed Render/pipeline credits are exhausted for now, so
+    do not push routine corrections; continue local polish, audits, and build
+    verification until the owner says the batch is ready to publish.
+  - new phone screenshots showed:
+    - Companion identity evidence toast too large while inspecting payment
+      details;
+    - transfer/payment instruction values breaking into narrow vertical word
+      stacks;
+    - Community Join Requests content rail overflowing right, with Home/Market/
+      Refresh buttons clipped.
+- Changed locally, not pushed:
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+    - removed the route-level negative margin that was pushing the page outside
+      the phone viewport;
+    - tightened the top route buttons so Home and Market share the first compact
+      row and Refresh gets a full-width second row;
+    - kept the route inside the protected Join Requests mobile layout cage.
+  - `frontend/src/pages/SubscriptionSpotlightPage.tsx`
+    - added phone-safe payment instruction row/value styles;
+    - stacks transfer detail labels and values into one readable phone column.
+  - `frontend/src/pages/VaultControlPage.tsx`
+    - applied the same phone-safe payment instruction row/value treatment to
+      Vault payment details.
+  - `frontend/src/components/CompanionLayer.tsx`
+    - made companion toasts narrower, shorter, scroll-capped, and less
+      obstructive on phone.
+  - `frontend/src/lib/guidance.ts`
+    - shortened the identity evidence companion detail so it gives one direct
+      instruction instead of a paragraph-like repeated message.
+  - `frontend/tools/audit-community-join-requests-layout.mjs`
+    - now protects the no-negative-margin phone shell and full-width compact
+      Refresh row.
+  - `frontend/tools/audit-payment-instruction-phone-rows.mjs`
+    - new audit protecting one-column phone transfer rows for Subscription
+      Spotlight and Vault Control.
+- Verification:
+  - Passed `node frontend\tools\audit-community-join-requests-layout.mjs`.
+  - Passed `node frontend\tools\audit-payment-instruction-phone-rows.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `node frontend\tools\audit-vault-control-button-inventory.mjs`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - these changes are local only; nothing was pushed to GitHub or Render;
+  - the screenshots should be refreshed on the actual phone because audits and
+    build confirm source stability, not final Android font rendering;
+  - the companion close symbol still appears as a legacy mojibake character in
+    source and should be cleaned in a later encoding-safe pass if it renders
+    incorrectly on phone.
+
+### Dashboard Spotlight decongestion and inner navigation origin pass (2026-06-12)
+
+- Trigger:
+  - product owner asked to decongest Dashboard `Your Spotlight` by removing the
+    permanently visible `Rotates every 30 seconds` chip and moving that detail
+    into the `Learn more` explanation area.
+  - product owner also flagged that inner pages often lack a source-aware way to
+    return to the page they came from, instead only offering broad main-page
+    navigation.
+- Changed locally, not pushed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - removed the visible rotation chip from the Spotlight header so the phone
+      header keeps only the live/queued status;
+    - moved rotation timing into the `Learn more` detail grid;
+    - compacted and tucked the Spotlight media speaker/unlock control so it no
+      longer dominates the media corner on phone.
+  - `frontend/src/lib/nav.ts`
+    - normalized origin navigation state to carry both `from` and `originPath`;
+    - `resolveBackTarget()` now accepts either key while still rejecting unsafe
+      or same-page targets.
+  - `frontend/src/components/OriginLink.tsx`
+    - writes both `originPath` and `from` so link-based inner navigation has a
+      shared source contract.
+  - `frontend/src/components/PageTopNav.tsx`
+    - shows a default `Back` link when a safe origin exists, even when a page did
+      not manually pass a custom back label.
+  - `frontend/tools/audit-dashboard-phone-buttons.mjs`
+    - protects the Dashboard Spotlight rotation detail staying inside `Learn
+      more` and the compact phone speaker control.
+  - `frontend/tools/audit-inner-navigation-origin.mjs`
+    - new audit protecting the shared source-aware Back contract.
+- Verification:
+  - Passed `node frontend\tools\audit-dashboard-phone-buttons.mjs`.
+  - Passed `node frontend\tools\audit-dashboard-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-inner-navigation-origin.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `node frontend\tools\audit-payment-instruction-phone-rows.mjs`.
+  - Passed `node frontend\tools\audit-icon-protocol.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing line-ending warnings only.
+- Unabated truth:
+  - this is a local source-level and audit-level fix only; nothing was pushed to
+    GitHub or Render because the current batch is intentionally being held until
+    the product owner says to publish;
+  - the Back improvement covers routes that use `OriginLink`, `originState`, or
+    `withOriginState` plus `PageTopNav`; custom pages that bypass these shared
+    contracts still need follow-up route-by-route inspection;
+  - this did not touch the frozen Dashboard Market Wisdom section.
+
+### Institutional proof surface inventory checkpoint (2026-06-12)
+
+- Trigger:
+  - product owner asked to treat visitor/user-facing pages, PDF pages, links,
+    copy snapshots, and sendable information as GSN headed-paper surfaces with
+    watermark, logo, official frame, and authority, without first rewriting the
+    underlying wording.
+- Changed locally, not pushed:
+  - `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md`
+    - new working inventory of pages and backend PDF services that can move
+      between users/visitors as proof, verification, payment instruction,
+      invite, shop access, copied summary, or snapshot;
+    - groups surfaces by priority: existing official-paper surfaces, user/
+      visitor proof papers, payment/receipt-like papers, invite/link/shop
+      packages, guarantor/loan/support evidence, admin/internal snapshots, and
+      backend PDFs to visually open;
+    - records the proposed implementation order: build one shared frontend GSN
+      Snapshot/Headed Paper wrapper, convert `trustDocumentSnapshots.ts`, then
+      apply variants to public verification, payment, link/invite, and loan/
+      guarantor evidence surfaces.
+  - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - links the new inventory as the source for the proof-surface rollout.
+- Follow-up clarification added:
+  - product owner emphasized that community verification links, Trust Passport
+    snapshots, community invites, shop-view invites, vault/private-view invites,
+    and similar link tools are not merely technical URLs;
+  - they are also GSN marketing/branding surfaces and must arrive as
+    professionally positioned GSN packages, not raw link text or developer-like
+    output.
+- Verification:
+  - Documentation-only change; no frontend build needed for this inventory
+    checkpoint.
+- Unabated truth:
+  - this is the map, not the implementation;
+  - the inventory was built from current code search and should be expanded
+    whenever another route exposes `Copy`, `Share`, `Print`, `PDF`, `Verify`,
+    public link, payment instruction, or snapshot behavior;
+  - existing backend PDF source is guarded by an institutional proof audit, but
+    real generated PDFs still need visual review before acceptance.
+
+### Institutional headed-paper copy/link implementation pass (2026-06-12)
+
+- Trigger:
+  - product owner clarified that copy snapshots and invite/link tools must leave
+    GSN as branded institutional packages, not raw links or plain developer-like
+    text.
+  - named surfaces included community verification links, Trust Passport
+    snapshots, community invites, public shop-view invites, and private Vault
+    invites.
+- Changed locally, not pushed:
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - new shared formatter for official text-based GSN headed-paper packages;
+    - adds generated UTC timestamp, title, purpose, reference, context, record
+      details, action/verification link, privacy note, limitation note, and GSN
+      footer;
+    - includes specific helpers for Community Verification Link, Community
+      Invite, Public Shop Invitation, and Private Vault Invitation.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - routes Identity & Integrity, CCI, TrustSlip, TrustSlip Verify, and Trust
+      Passport copied snapshots through the shared GSN headed-paper formatter.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - Copy Link now copies a full branded GSN community verification package
+      instead of only the public URL.
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+    - First Circle/community invite copy/share/WhatsApp/email text now uses the
+      branded GSN community invite package.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - public shop share/copy text now uses the branded GSN public shop
+      invitation package while keeping the actual shop URL as the action link.
+  - `frontend/src/pages/VaultControlPage.tsx`
+    - Create block link and Copy block link now copy a branded GSN Private Vault
+      Invitation package instead of a bare private URL;
+    - Open private view still opens the raw private link in the browser, because
+      that is the actual access route.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now protects the shared headed-paper formatter and the Community Verify,
+      First Circle, Public Shop, and Private Vault copy/link integrations.
+- Verification:
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `npm exec -- eslint src\lib\gsnSnapshotPaper.ts src\lib\trustDocumentSnapshots.ts src\pages\CommunityVerifyPage.tsx src\pages\BuildFirstCirclePage.tsx src\pages\ShopGalleryPage.tsx src\pages\VaultControlPage.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `node frontend\tools\audit-vault-control-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `git diff --check`; it printed existing line-ending warnings only.
+- Unabated truth:
+  - this pass upgrades the copied/sent text packages system-level for the named
+    trust, community, shop, and vault link surfaces;
+  - it does not yet visually redesign every page as a screenshot-ready card;
+  - payment/receipt-like pages, loan/guarantor/support evidence, marketplace
+    link-center variants, and backend-generated PDFs remain in the inventory for
+    continued conversion and visual review;
+  - nothing was pushed to GitHub or Render because the active pilot is still in
+    batch-first / push-last mode.
+
+### Institutional payment/receipt copy package pass (2026-06-12)
+
+- Trigger:
+  - continuation of the proof-surface rollout; product owner asked that
+    customer-facing payment, payout, receipt-like, link, and screenshotable
+    surfaces look official and carry GSN authority rather than raw app text.
+- Changed locally, not pushed:
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - added `buildGsnPaymentInstructionPackage()` for payment, payout, rail,
+      withdrawal, subscription, and vault payment copy packages;
+    - package includes GSN headed-paper title/purpose, generated UTC time,
+      member/GSN/community context, route, amount, status, due/currentness,
+      detail lines, privacy note, and limitation that the paper is not a
+      receipt or proof of cleared funds until reconciliation confirms it.
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - Money In `Copy text` now copies `GSN Money In Payment Instruction`;
+    - `Copy ref` intentionally still copies only the raw reference because that
+      code is meant to be pasted into a bank transfer field.
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - full repayment instruction copy now uses `GSN Loan Repayment Instruction`;
+    - reference-only copy remains raw for bank-reference use.
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - `Copy rail`, `Copy payout`, and `Copy summary` now produce branded GSN
+      headed-paper packages: Community Withdrawal Rail, Payout Account Summary,
+      and Withdrawal Summary.
+  - `frontend/src/pages/PayoutDetailsPage.tsx`
+    - payout summary builder now returns `GSN Payout Details Snapshot`;
+    - both the copied summary and on-page preview use the same headed-paper
+      text package.
+  - `frontend/src/pages/SubscriptionSpotlightPage.tsx`
+    - `Copy payment details` now copies a `GSN Subscription Spotlight Payment
+      Instruction`;
+    - generated payment-code auto-copy still copies only the raw code for bank
+      transfer use.
+  - `frontend/src/pages/VaultControlPage.tsx`
+    - `Copy payment details` now copies a `GSN Private Vault Payment
+      Instruction`;
+    - generated Vault payment-code auto-copy still copies only the raw code.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now protects the payment package helper and the Money In, Repayment,
+      Withdrawal, Payout Details, Subscription Spotlight, and Vault payment
+      integrations.
+- Verification:
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `npm exec -- eslint src\lib\gsnSnapshotPaper.ts src\pages\PaymentInstructionsPage.tsx src\pages\RepaymentPage.tsx src\pages\WithdrawalInstructionsPage.tsx src\pages\PayoutDetailsPage.tsx src\pages\SubscriptionSpotlightPage.tsx src\pages\VaultControlPage.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `node frontend\tools\audit-payment-instruction-phone-rows.mjs`.
+  - Passed `node frontend\tools\audit-vault-control-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `git diff --check`; it printed existing line-ending warnings only.
+- Unabated truth:
+  - this pass upgrades copied payment/payout instruction text, not the full
+    visual redesign of every payment page into a rendered paper card;
+  - reference/code-only copy buttons are intentionally still raw codes because
+    wrapping them would make bank-transfer paste worse;
+  - remaining inventory still includes broader Loan Summary snapshots,
+    guarantor/support evidence, Marketplace link-center variants, Shop Control
+    / Shop Assets owner-link copies, and backend PDF visual review;
+  - nothing was pushed or deployed.
+
+### Institutional marketplace/owner link package pass (2026-06-12)
+
+- Trigger:
+  - continuation of the institutional proof rollout; product owner asked that
+    invite links, shop links, marketplace links, and private access links become
+    branded GSN information packages rather than raw developer-like URLs.
+- Changed locally, not pushed:
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - extended `buildGsnPublicShopLinkPackage()` with optional public block and
+      item/update fields so shop-owner copied item links can identify the exact
+      Shop Diaries block, not only the whole shop.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace Join Link copy/email/WhatsApp now sends a
+      `GSN Community Invite` package;
+    - Marketplace Community Verification copy/email now sends a
+      `GSN Community Verification Link` package;
+    - Marketplace Public Shop copy/email now sends a `GSN Public Shop
+      Invitation` package;
+    - `Open` actions still use the raw URL because packaged text cannot be
+      navigated as a route.
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - Shop Assets whole-shop, public block, product-editor, and saved-item copy
+      actions now use a shared route-local `buildPublicShopPackage()` wrapper
+      around `buildGsnPublicShopLinkPackage()`;
+    - missing shop/item links still fail cleanly instead of producing an
+      official-looking paper with no action link.
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+    - Community Home owner shop-control `Copy Public Shop Link` now copies the
+      branded public shop package.
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - Shop Control Vault create-and-copy and copy-existing private links now use
+      `GSN Private Vault Invitation` packages;
+    - Vault `Open` actions still use raw URLs for navigation.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now protects Marketplace link center, Shop Assets, Community Home
+      shop-control, and Shop Control Vault link package integrations.
+- Verification:
+  - Passed `npm exec -- eslint src\lib\gsnSnapshotPaper.ts src\pages\MarketplacePage.tsx src\pages\ShopAssetsPage.tsx src\components\CommunityShopControlPanel.tsx src\pages\ShopControlPage.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-records-links-lane.mjs`.
+  - Passed `node frontend\tools\audit-shop-assets-slots.mjs`.
+  - Passed `node frontend\tools\audit-shop-control-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-community-shop-actions.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `node frontend\tools\audit-vault-control-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-payment-instruction-phone-rows.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing CRLF/LF warnings only.
+- Unabated truth:
+  - this upgrades copied/sent text packages for the main marketplace and owner
+    link surfaces, but it is still not a visual paper-card redesign of every
+    route;
+  - raw URL open behavior is intentionally preserved where the user needs to
+    navigate;
+  - remaining inventory still includes broader Loan Summary snapshots,
+    guarantor/support evidence, Demand Box/shareable request evidence, legacy
+    Clans invite package review, and generated backend PDF visual review;
+  - nothing was pushed to GitHub or deployed to Render because the current
+    posture is batch-first / push-last.
+
+### Institutional loan/guarantor support evidence package pass (2026-06-12)
+
+- Trigger:
+  - continuation of the institutional proof rollout; remaining inventory called
+    out Loan Summary snapshots, guarantor/support evidence, and copied
+    support-state summaries as evidence that may move between people.
+- Changed locally, not pushed:
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - added `buildGsnSupportEvidencePackage()` for loan, guarantor, and support
+      evidence snapshots;
+    - package includes GSN headed-paper framing, member/GSN/community context,
+      loan/support id, amount/status, generated UTC time, detail lines, privacy
+      note, and limitation that the paper is not a bank guarantee, lending
+      approval, receipt, or automatic payout.
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - `Copy summary` now copies `GSN Loan Summary Snapshot`;
+    - `Copy audit` now copies `GSN Loan Audit Link` with the trust analytics
+      URL inside the branded package rather than as a bare internal link.
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+    - `Copy queue` now copies `GSN Guarantor Queue Snapshot`, preserving the
+      same visible counts while avoiding hidden borrower-file exposure.
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+    - `Copy summary` now copies `GSN Guarantor Earnings Snapshot`;
+    - the existing truth that guarantor value is not automatic payout remains
+      inside the copied package.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now protects the support evidence helper plus Loan Summary, Guarantor
+      Inbox, and Guarantor Earnings integrations.
+- Verification:
+  - Passed `npm exec -- eslint src\lib\gsnSnapshotPaper.ts src\pages\LoanSummaryPage.tsx src\pages\GuarantorInboxPage.tsx src\pages\GuarantorEarningsPage.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-loans-actions.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing CRLF/LF warnings only.
+- Unabated truth:
+  - `LoanWorkbenchPage.tsx` still copies the raw loan ID by design because it is
+    an exact identifier, like a payment reference; wrapping it would make paste
+    use worse.
+  - `node frontend\tools\audit-link-contracts.mjs` currently fails on older
+    public-shop/link-contract expectations unrelated to this loan support
+    evidence slice. The failures name Community Home Free Spotlight routing,
+    Marketplace visible public-shop link/reserve expectations, Community Home
+    shop-control link-copy expectations, Shop Assets link-copy expectations,
+    and Public Shop Gallery copy expectations. This audit needs a dedicated
+    reconciliation pass because the new institutional link packages changed
+    what "copy link" means in several places.
+  - this pass upgrades copied text evidence; it does not visually redesign Loan
+    Summary, Guarantor Inbox, or Guarantor Earnings into rendered paper-card
+    screenshots.
+  - nothing was pushed or deployed.
+
+### Link-contract reconciliation after institutional packages (2026-06-12)
+
+- Trigger:
+  - the institutional proof/link package pass intentionally changed several
+    copy actions from raw URLs into GSN headed-paper packages, leaving
+    `audit-link-contracts` behind the current system behavior.
+- Changed locally, not pushed:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - Community Home owner handle `Free spotlight` now routes directly to the
+      canonical Shop Control free spotlight publisher instead of first opening
+      the local spotlight overview.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace public-shop visible link now shows the full public shop URL
+      inside the shared stable link primitive;
+    - public-shop link reserve now uses a fixed 66px height so refreshing or
+      hydrating the link does not make phone buttons jump;
+    - removed the now-unused masked public-shop label while preserving masked
+      summaries for join/community verification lanes.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated link-copy assertions to protect GSN package copying for
+      Community Shop Control, Shop Assets, and Public Shop Gallery while still
+      requiring active-shop checks, clipboard-success feedback, and canonical
+      public-shop URLs inside the package.
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - aligned Records & Links guardrail with the stronger rule: join/community
+      summaries can remain masked, but the public shop link must show the full
+      public domain.
+- Verification:
+  - Passed `node frontend\tools\audit-link-contracts.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-records-links-lane.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-shop-gallery-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-mobile-tap-stability.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `npm exec -- eslint src\pages\CommunityHomePage.tsx src\pages\MarketplacePage.tsx src\components\CommunityShopControlPanel.tsx src\pages\ShopAssetsPage.tsx src\pages\ShopGalleryPage.tsx tools\audit-link-contracts.mjs tools\audit-marketplace-records-links-lane.mjs` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing CRLF/LF warnings only.
+- Unabated truth:
+  - this is a system-level guardrail reconciliation, not a deploy;
+  - public-shop copy actions now copy branded packages, while open/navigation
+    actions still use raw URLs because that is what browsers need;
+  - full visual headed-paper redesign for rendered/screenshotted pages remains
+    separate work;
+  - nothing was pushed or deployed because the current posture is still
+    batch-first / push-last until pipeline credit is available.
+
+### Visual GSN snapshot paper preview pass (2026-06-12)
+
+- Trigger:
+  - product-owner direction that proof/screenshot/customer-facing surfaces
+    should not look like raw app panels or developer text;
+  - previous passes upgraded copied text packages, but several visible previews
+    still did not render as official GSN headed paper.
+- Changed locally, not pushed:
+  - `frontend/src/components/GsnSnapshotPaperCard.tsx`
+    - added shared visual headed-paper renderer for text produced by
+      `gsnSnapshotPaper.ts`;
+    - parses title, purpose, generated time, reference, GSN record context,
+      record details, verification/action link, privacy note, limitation note,
+      and footer;
+    - renders with GSN brand mark, watermark, official frame, fact grid,
+      detail rows, link block, privacy/limitation blocks, and institutional
+      security footer.
+  - `frontend/src/pages/PayoutDetailsPage.tsx`
+    - stored payout summary now renders as the shared GSN Snapshot Paper card;
+    - copy action uses the same memoized `payoutSummaryPaper` shown on screen.
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - loan summary snapshot now has a visible GSN headed-paper preview in the
+      top support context area;
+    - copy summary uses the same `loanSummaryPaper` shown on screen.
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+    - guarantor earnings summary now renders as a visible GSN headed-paper
+      preview and copy uses the same `earningsPaper`.
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+    - guarantor queue summary now renders as a visible GSN headed-paper preview
+      and copy uses the same `queuePaper`.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now protects the shared visual paper card and the four page integrations
+      so the official paper preview does not regress to plain text.
+- Verification:
+  - Passed `npm exec -- eslint src\components\GsnSnapshotPaperCard.tsx src\pages\PayoutDetailsPage.tsx src\pages\LoanSummaryPage.tsx src\pages\GuarantorEarningsPage.tsx src\pages\GuarantorInboxPage.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-loans-actions.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `node frontend\tools\audit-mobile-tap-stability.mjs`.
+  - Passed `node frontend\tools\audit-link-contracts.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - this is the first visual-paper integration pass, not every proof surface in
+    the inventory;
+  - the component is system-level and reusable, but remaining surfaces such as
+    Identity, CCI, TrustSlip, Trust Passport, public community verification,
+    Demand Box, and backend-generated PDFs still need visual review/integration;
+  - no GitHub push or Render deploy was done because the current posture remains
+    batch-first / push-last during the pipeline-credit shortage.
+
+### Trust Passport snapshot visual-paper correction (2026-06-12)
+
+- Trigger:
+  - product owner showed the phone still displaying/copying the raw
+    `GLOBAL SUPPORT NETWORK (GSN) / Official GSN headed paper` text for
+    `GSN Trust Passport Snapshot`.
+- Changed locally, not pushed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - added the shared `GsnSnapshotPaperCard`;
+    - created one memoized `trustPassportPaper` value from
+      `buildTrustPassportSnapshot()`;
+    - `Copy snapshot` now copies the same paper package shown on screen;
+    - Documents / TrustSlip lane now renders the Trust Passport snapshot as the
+      official visual GSN paper card instead of leaving the user with only raw
+      text.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now protects the Trust Passport visual snapshot card and same-source copy
+      behavior.
+- Verification:
+  - Passed `npm exec -- eslint src\pages\TrustScorePage.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-trust-passport-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-trust-passport-front-package.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - pasting a copied snapshot into WhatsApp or a text field will still appear as
+    plain text because normal clipboard text cannot carry the visual card
+    styling;
+  - the route now has an in-app screenshot-ready GSN paper card for the Trust
+    Passport snapshot, but image/PDF sharing would need a separate export/share
+    feature.
+
+### Trust snapshot layman-language correction (2026-06-12)
+
+- Trigger:
+  - product owner correctly challenged the shareable wording such as
+    `Trust band: D` / `Trust score: 0.20` as too technical and too likely to
+    make a person look permanently bad rather than showing a growth path.
+- Changed locally, not pushed:
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - added friendly trust-band wording for shareable snapshots;
+    - bare A/B/C/D/E codes are now explained in plain language, for example
+      `Early or limited visible trust record (D) - the record is still growing
+      or under pressure; use caution and ask for current proof`;
+    - score lines now say the score is a visible trust signal, not a character
+      label, and that the record can strengthen through confirmed activity;
+    - Identity, CCI, TrustSlip, TrustSlip Verify, and Trust Passport copied
+      papers now use the layman wording rather than bare technical labels.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now protects against shareable trust snapshots regressing to bare
+      `Trust band`, `Trust score`, `Local community trust`, or
+      `Cross-community consistency` labels without explanation.
+- Verification:
+  - Passed `npm exec -- eslint src\lib\trustDocumentSnapshots.ts src\pages\TrustScorePage.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `node frontend\tools\audit-trust-passport-button-inventory.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Local viewing note:
+  - `netstat` confirmed a Node listener on `0.0.0.0:5174`, so the phone should
+    use `http://192.168.1.13:5174/` on the same Wi-Fi;
+  - if the phone still shows old text, hard-refresh the tab or close/reopen it
+    because the browser may be holding an older Vite bundle.
+- Unabated truth:
+  - the visual paper card is visible in the app; copied text pasted into
+    WhatsApp remains plain text by nature of clipboard text;
+  - a real branded image/PDF share still needs a separate export/share feature.
+
+### Trust Passport snapshot concise-text correction (2026-06-12)
+
+- Trigger:
+  - product owner showed the phone still pasting the Trust Passport snapshot as
+    a long raw-text paper package and correctly called out two issues:
+    1. copied text was too wordy for sharing;
+    2. pasted text still had no visual GSN paper background.
+- Changed locally, not pushed:
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - `buildTrustPassportSnapshot()` now returns a shorter, purpose-built Trust
+      Passport share text instead of the full generic headed-paper package;
+    - the share text now uses compact plain-language readings such as
+      `Early, limited record (D) - use caution; ask for current proof`;
+    - score wording is shortened to
+      `signal only; not a character label`;
+    - privacy/limitation wording is reduced to the essentials.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - the Trust Passport action label is now `Copy text`, because copied text
+      cannot truthfully carry the branded card background;
+    - the screen now tells the user to use screenshot or print when they need
+      the visible branded GSN paper background.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - guardrails now protect the concise humane wording and prevent the Trust
+      Passport snapshot from regressing to bare technical trust labels.
+- Verification:
+  - Passed `npm exec -- eslint src\lib\trustDocumentSnapshots.ts src\pages\TrustScorePage.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `node frontend\tools\audit-trust-passport-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-trust-passport-front-package.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - a WhatsApp/text-field paste will always be plain text unless we build an
+    image/PDF/share-card export;
+  - the branded background is now an in-app visual card for screenshot/print,
+    not part of the clipboard text itself;
+  - no push or Render deploy was done because the current posture remains
+    batch-first / push-last during the pipeline-credit shortage.
+
+### Institutional proof packages receiver-language pass (2026-06-12)
+
+- Trigger:
+  - product owner clarified that the proof/link/payment packages must address
+    the person using or receiving the record, not the builder or product team;
+  - text such as `A branded GSN snapshot...`, `Use this branded link...`,
+    `careful reader`, and `viewer should...` was too internal and not direct
+    enough for real sharing.
+- Changed locally, not pushed:
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - shared package defaults now use concise receiver-facing language:
+      `Check...`, `Open...`, `Confirm...`, and `Keep...`;
+    - removed builder-facing references to branded packages from community
+      verification, community invite, public shop, private Vault, payment, and
+      support evidence package copy;
+    - shortened privacy and limitation notes while keeping the needed caution.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - Identity & Integrity, CCI, TrustSlip, TrustSlip Verify, and Trust
+      Passport snapshot purposes now speak directly to the person using the
+      document;
+    - Trust Passport copy now says `Short trust summary for your decision`,
+      and keeps the concise, humane trust reading language.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - helper note now says `official GSN paper background` instead of
+      builder-flavored `branded GSN paper background`.
+  - Route-level package purposes were tightened in:
+    - `frontend/src/pages/LoanSummaryPage.tsx`
+    - `frontend/src/pages/GuarantorInboxPage.tsx`
+    - `frontend/src/pages/GuarantorEarningsPage.tsx`
+    - `frontend/src/pages/PayoutDetailsPage.tsx`
+    - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - `frontend/src/pages/RepaymentPage.tsx`
+    - `frontend/src/pages/SubscriptionSpotlightPage.tsx`
+    - `frontend/src/pages/VaultControlPage.tsx`
+    - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - `frontend/src/components/CommunityShopControlPanel.tsx`
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now rejects `A branded`, `Use this branded`, `viewer should`,
+      `careful reader`, and `Short shareable` inside the shared proof package
+      and trust snapshot sources.
+- Verification:
+  - Passed `npm exec -- eslint src\lib\gsnSnapshotPaper.ts src\lib\trustDocumentSnapshots.ts src\pages\TrustScorePage.tsx src\pages\LoanSummaryPage.tsx src\pages\GuarantorInboxPage.tsx src\pages\GuarantorEarningsPage.tsx src\pages\PayoutDetailsPage.tsx src\pages\PaymentInstructionsPage.tsx src\pages\RepaymentPage.tsx src\pages\SubscriptionSpotlightPage.tsx src\pages\VaultControlPage.tsx src\pages\WithdrawalInstructionsPage.tsx src\components\CommunityShopControlPanel.tsx tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `node frontend\tools\audit-protected-button-freeze.mjs`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - this cleans the known proof/link/payment package surfaces already converted
+    to the GSN paper system; it does not mean every remaining page in the app
+    has been language-audited;
+  - exact reference-only copy actions remain raw by design because bank/payment
+    paste fields need the exact code, not a paragraph;
+  - no push or Render deploy was done.

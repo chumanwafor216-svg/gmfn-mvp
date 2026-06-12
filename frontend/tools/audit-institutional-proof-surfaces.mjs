@@ -21,6 +21,25 @@ const files = {
   privateEvidence: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
   resultCard: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
+  snapshotPaper: "frontend/src/lib/gsnSnapshotPaper.ts",
+  snapshotPaperCard: "frontend/src/components/GsnSnapshotPaperCard.tsx",
+  trustSnapshots: "frontend/src/lib/trustDocumentSnapshots.ts",
+  communityVerify: "frontend/src/pages/CommunityVerifyPage.tsx",
+  firstCircle: "frontend/src/pages/BuildFirstCirclePage.tsx",
+  marketplace: "frontend/src/pages/MarketplacePage.tsx",
+  shopAssets: "frontend/src/pages/ShopAssetsPage.tsx",
+  communityShopControl: "frontend/src/components/CommunityShopControlPanel.tsx",
+  shopControl: "frontend/src/pages/ShopControlPage.tsx",
+  publicShop: "frontend/src/pages/ShopGalleryPage.tsx",
+  vaultControl: "frontend/src/pages/VaultControlPage.tsx",
+  paymentInstructions: "frontend/src/pages/PaymentInstructionsPage.tsx",
+  repayment: "frontend/src/pages/RepaymentPage.tsx",
+  withdrawal: "frontend/src/pages/WithdrawalInstructionsPage.tsx",
+  payoutDetails: "frontend/src/pages/PayoutDetailsPage.tsx",
+  subscriptionSpotlight: "frontend/src/pages/SubscriptionSpotlightPage.tsx",
+  loanSummary: "frontend/src/pages/LoanSummaryPage.tsx",
+  guarantorInbox: "frontend/src/pages/GuarantorInboxPage.tsx",
+  guarantorEarnings: "frontend/src/pages/GuarantorEarningsPage.tsx",
   trustSlip: "frontend/src/pages/TrustSlipPage.tsx",
   trustPassport: "frontend/src/pages/TrustScorePage.tsx",
   evidencePanel: "frontend/src/components/EvidencePackPanel.tsx",
@@ -267,6 +286,167 @@ assertContains(
 );
 
 assertContains(
+  "snapshotPaper",
+  /Official GSN headed paper[\s\S]*?Generated \(UTC\):[\s\S]*?Global Support Network \(GSN\)/,
+  "Shared copied snapshot papers must keep GSN headed-paper authority, generated time, and footer."
+);
+assertContains(
+  "snapshotPaper",
+  /buildGsnCommunityVerifyLinkPackage[\s\S]*?GSN Community Verification Link[\s\S]*?buildGsnInviteLinkPackage[\s\S]*?GSN Community Invite[\s\S]*?buildGsnPublicShopLinkPackage[\s\S]*?GSN Public Shop Invitation/,
+  "Shared proof package helper must cover community verification, community invites, and public shop invitations."
+);
+assertContains(
+  "snapshotPaper",
+  /buildGsnVaultInvitePackage[\s\S]*?GSN Private Vault Invitation/,
+  "Shared proof package helper must cover private Vault invitation packages."
+);
+assertContains(
+  "snapshotPaper",
+  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Payment Instruction[\s\S]*?Not a receipt or bank guarantee until reconciliation confirms funds/,
+  "Shared proof package helper must cover payment, payout, and receipt-like instruction packages."
+);
+assertContains(
+  "snapshotPaper",
+  /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Evidence Snapshot[\s\S]*?Not a guarantee, lending approval, receipt, or payout/,
+  "Shared proof package helper must cover loan, guarantor, and support evidence snapshots."
+);
+assertNotContains(
+  "snapshotPaper",
+  /A branded|Use this branded|viewer should|careful reader/g,
+  "Shared proof package text must speak to the receiver, not describe builder-side branding."
+);
+assertContains(
+  "snapshotPaperCard",
+  /import GSNBrandMark[\s\S]*?TrustPaperWatermark[\s\S]*?TrustPaperSecurityFooter/,
+  "Shared visual snapshot paper card must use the GSN mark, watermark, and institutional footer."
+);
+assertContains(
+  "snapshotPaperCard",
+  /Title:[\s\S]*?Generated \(UTC\):[\s\S]*?Reference:[\s\S]*?Verification \/ action link:[\s\S]*?Privacy:[\s\S]*?Limitation:/,
+  "Shared visual snapshot paper card must parse headed-paper title, generated time, reference, link, privacy, and limitation fields."
+);
+assertContains(
+  "snapshotPaperCard",
+  /GSN record context[\s\S]*?Record details[\s\S]*?Record Details/,
+  "Shared visual snapshot paper card must render context and record details as official paper sections."
+);
+assertContains(
+  "trustSnapshots",
+  /import \{ buildGsnSnapshotPaper, gsnGeneratedAt \} from "\.\/gsnSnapshotPaper";[\s\S]*?GSN Identity & Integrity Snapshot[\s\S]*?GSN Cross-Community Consistency Snapshot[\s\S]*?GSN TrustSlip Snapshot[\s\S]*?GSN TrustSlip Verification Snapshot[\s\S]*?GSN Trust Passport Snapshot/,
+  "Trust document copy snapshots must use GSN headed-paper helpers and keep Trust Passport official."
+);
+assertNotContains(
+  "trustSnapshots",
+  /A branded|Use this branded|careful reader|Short shareable/g,
+  "Trust document snapshots must use direct receiver-facing language, not builder-side package language."
+);
+assertContains(
+  "trustSnapshots",
+  /function friendlyTrustBand[\s\S]*?Early, limited record[\s\S]*?use caution; ask for current proof[\s\S]*?function friendlyScore[\s\S]*?signal only; not a character label/,
+  "Trust document snapshots must explain trust bands in concise humane growth language instead of sending bare A/B/C/D/E codes."
+);
+assertNotContains(
+  "trustSnapshots",
+  /cleanLine\("Trust band"|cleanLine\("Trust score"|cleanLine\("Local community trust"|cleanLine\("Cross-community consistency"/g,
+  "Shareable trust snapshots must not expose bare technical trust labels without layman explanation."
+);
+assertContains(
+  "communityVerify",
+  /buildGsnCommunityVerifyLinkPackage[\s\S]*?safeCopy\(packageText\)/,
+  "Community verification copied links must leave as branded GSN verification packages, not raw URLs."
+);
+assertContains(
+  "firstCircle",
+  /buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle/,
+  "First Circle community invite copy/share text must use the branded GSN invite package."
+);
+assertContains(
+  "marketplace",
+  /buildGsnInviteLinkPackage[\s\S]*?joinInvitePackage[\s\S]*?copyMarketplaceLink\([\s\S]*?joinInvitePackage/,
+  "Marketplace join link copy must use the branded GSN invite package."
+);
+assertContains(
+  "marketplace",
+  /buildGsnCommunityVerifyLinkPackage[\s\S]*?marketplaceEmailMessage[\s\S]*?copyMarketplaceLink\([\s\S]*?marketplaceEmailMessage/,
+  "Marketplace community verification link copy must use the branded GSN verification package."
+);
+assertContains(
+  "marketplace",
+  /buildGsnPublicShopLinkPackage[\s\S]*?Public shop package refreshed and copied/,
+  "Marketplace public shop link copy/email must use the branded GSN public shop package."
+);
+assertContains(
+  "publicShop",
+  /buildGsnPublicShopLinkPackage[\s\S]*?function buildPublicShopPackage[\s\S]*?safeCopy\(\s*buildPublicShopPackage/,
+  "Public shop copied links must use the branded GSN public shop package."
+);
+assertContains(
+  "shopAssets",
+  /buildGsnPublicShopLinkPackage[\s\S]*?function buildPublicShopPackage[\s\S]*?Public shop package copied[\s\S]*?Public shop block package copied[\s\S]*?Public shop item package copied/,
+  "Shop Assets public shop and item copy actions must use the branded GSN public shop package."
+);
+assertContains(
+  "communityShopControl",
+  /buildGsnPublicShopLinkPackage[\s\S]*?api\.safeCopy\([\s\S]*?Public shop package copied/,
+  "Community Home shop-control public link copy must use the branded GSN public shop package."
+);
+assertContains(
+  "shopControl",
+  /buildGsnVaultInvitePackage[\s\S]*?function buildVaultViewingLinkPackage[\s\S]*?Vault viewing package/,
+  "Shop Control private Vault viewing links must use the branded GSN Vault invitation package."
+);
+assertContains(
+  "vaultControl",
+  /buildGsnVaultInvitePackage[\s\S]*?function buildVaultInvitePackage[\s\S]*?safeCopy\(buildVaultInvitePackage\(url, link\)\)[\s\S]*?safeCopy\(buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)\)/,
+  "Private Vault copied links must use the branded GSN private Vault package."
+);
+assertContains(
+  "paymentInstructions",
+  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Money In Payment Instruction[\s\S]*?copyText\(text\)/,
+  "Money In copied full instructions must use the branded GSN payment instruction package."
+);
+assertContains(
+  "repayment",
+  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Loan Repayment Instruction[\s\S]*?safeCopy\(text\)/,
+  "Repayment copied full instructions must use the branded GSN payment instruction package."
+);
+assertContains(
+  "withdrawal",
+  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Community Withdrawal Rail[\s\S]*?GSN Payout Account Summary[\s\S]*?GSN Withdrawal Summary/,
+  "Money Out copied rail, payout, and withdrawal summaries must use branded GSN payment instruction packages."
+);
+assertContains(
+  "payoutDetails",
+  /GsnSnapshotPaperCard[\s\S]*?payoutSummaryPaper[\s\S]*?safeCopy\(payoutSummaryPaper\)/,
+  "Payout Details summaries must use the branded GSN payout details snapshot for both visible paper preview and copy."
+);
+assertContains(
+  "subscriptionSpotlight",
+  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Subscription Spotlight Payment Instruction[\s\S]*?safeCopy\(text\)/,
+  "Subscription Spotlight copied payment details must use the branded GSN payment instruction package."
+);
+assertContains(
+  "vaultControl",
+  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Private Vault Payment Instruction[\s\S]*?safeCopy\(text\)/,
+  "Vault copied payment details must use the branded GSN payment instruction package."
+);
+assertContains(
+  "loanSummary",
+  /buildGsnSupportEvidencePackage[\s\S]*?GSN Loan Audit Link[\s\S]*?loanSummaryPaper[\s\S]*?GSN Loan Summary Snapshot[\s\S]*?GsnSnapshotPaperCard/,
+  "Loan Summary copied summary, visual preview, and audit link must use branded GSN support evidence packages."
+);
+assertContains(
+  "guarantorInbox",
+  /queuePaper[\s\S]*?GSN Guarantor Queue Snapshot[\s\S]*?safeCopy\(queuePaper\)[\s\S]*?GsnSnapshotPaperCard/,
+  "Guarantor Inbox queue summary must use a branded GSN support evidence package for both visible paper preview and copy."
+);
+assertContains(
+  "guarantorEarnings",
+  /earningsPaper[\s\S]*?GSN Guarantor Earnings Snapshot[\s\S]*?safeCopy\(earningsPaper\)[\s\S]*?GsnSnapshotPaperCard/,
+  "Guarantor Earnings summary must use a branded GSN support evidence package for both visible paper preview and copy."
+);
+
+assertContains(
   "trustSlip",
   /Open TrustSlip Verify[\s\S]*?Copy Verify Link[\s\S]*?Open Public Verify/,
   "TrustSlip page must keep open/copy/public verify actions."
@@ -280,6 +460,11 @@ assertContains(
   "trustPassport",
   /7\. Shareable trust tools[\s\S]*?debugId="trust-score\.verify"[\s\S]*?Open TrustSlip verify/,
   "Trust Passport must keep the shareable TrustSlip verify action."
+);
+assertContains(
+  "trustPassport",
+  /GsnSnapshotPaperCard[\s\S]*?trustPassportPaper[\s\S]*?buildTrustPassportSnapshot[\s\S]*?copyTrustSnapshot\(\)[\s\S]*?trustPassportPaper[\s\S]*?paperText=\{trustPassportPaper\}/,
+  "Trust Passport copied snapshot and visible snapshot preview must use the same GSN Snapshot Paper package."
 );
 assertContains(
   "trustPassport",

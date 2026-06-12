@@ -56,6 +56,18 @@ const protectedAudits = [
     script: "audit-member-entry-actions.mjs",
   },
   {
+    label: "entry flow polish",
+    script: "audit-entry-flow-polish.mjs",
+  },
+  {
+    label: "entry copy and response",
+    script: "audit-entry-copy-response.mjs",
+  },
+  {
+    label: "share tag actions",
+    script: "audit-share-tag-actions.mjs",
+  },
+  {
     label: "route fallthrough recovery",
     script: "audit-route-fallthrough.mjs",
   },

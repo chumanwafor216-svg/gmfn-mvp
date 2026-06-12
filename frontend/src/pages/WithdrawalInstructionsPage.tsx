@@ -7,6 +7,7 @@ import { navigateWithOrigin } from "../lib/nav";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
 import {
   getCommunityMoneySurface,
   loadCommunityWithdrawalRoute,
@@ -525,7 +526,7 @@ function defaultCollapseState(): CollapseState {
     overview: false,
     request: false,
     destination: true,
-    rail: false,
+    rail: true,
     result: false,
     routes: true,
   };
@@ -555,17 +556,69 @@ function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
   return `${WITHDRAWAL_TASK_STORAGE_KEY_PREFIX}.${gmfnId || "me"}.${clanId || 0}`;
 }
 
-function settlementLines(settlement: CommunityMoneySettlement | null): string[] {
+function isPlaceholderRailValue(value: any): boolean {
+  const text = safeStr(value).toLowerCase();
+  return (
+    !text ||
+    text === "to be assigned" ||
+    text === "gsn settlement" ||
+    text === "gsn settlement rail" ||
+    text === "bank transfer" ||
+    text === "payment setup is not ready for this region yet."
+  );
+}
+
+function railValue(value: any): string {
+  return isPlaceholderRailValue(value) ? "" : safeStr(value);
+}
+
+function settlementReady(settlement: CommunityMoneySettlement | null): boolean {
+  if (!settlement) return false;
+
+  const hasBankAccount =
+    Boolean(railValue(settlement.bankName)) &&
+    Boolean(railValue(settlement.accountName)) &&
+    Boolean(railValue(settlement.accountNumber));
+  const hasMobileMoney =
+    Boolean(railValue(settlement.mobileMoneyProvider)) &&
+    Boolean(railValue(settlement.mobileMoneyNumber));
+  const hasInternationalRail =
+    Boolean(railValue(settlement.iban)) ||
+    (Boolean(railValue(settlement.swiftBic)) &&
+      (Boolean(railValue(settlement.bankCode)) ||
+        Boolean(railValue(settlement.branchCode)) ||
+        Boolean(railValue(settlement.routingNumber))));
+
+  return hasBankAccount || hasMobileMoney || hasInternationalRail;
+}
+
+function visibleSettlementLines(settlement: CommunityMoneySettlement | null): string[] {
   if (!settlement) return [];
+  if (!settlementReady(settlement)) return [];
 
   return [
-    settlement.railName ? `Rail: ${settlement.railName}` : "",
-    settlement.bankName ? `Bank: ${settlement.bankName}` : "",
-    settlement.accountName ? `Account name: ${settlement.accountName}` : "",
-    settlement.accountNumber ? `Account number: ${settlement.accountNumber}` : "",
-    settlement.sortCode ? `Sort code: ${settlement.sortCode}` : "",
-    settlement.country ? `Country: ${settlement.country}` : "",
-    settlement.supportNote ? settlement.supportNote : "",
+    railValue(settlement.railName) ? `Rail: ${railValue(settlement.railName)}` : "",
+    railValue(settlement.bankName) ? `Bank: ${railValue(settlement.bankName)}` : "",
+    railValue(settlement.accountName)
+      ? `Account name: ${railValue(settlement.accountName)}`
+      : "",
+    railValue(settlement.accountNumber)
+      ? `Account number: ${railValue(settlement.accountNumber)}`
+      : "",
+    railValue(settlement.sortCode) ? `Sort code: ${railValue(settlement.sortCode)}` : "",
+    railValue(settlement.routingNumber)
+      ? `Routing number: ${railValue(settlement.routingNumber)}`
+      : "",
+    railValue(settlement.iban) ? `IBAN: ${railValue(settlement.iban)}` : "",
+    railValue(settlement.swiftBic) ? `SWIFT/BIC: ${railValue(settlement.swiftBic)}` : "",
+    railValue(settlement.mobileMoneyProvider)
+      ? `Mobile money: ${railValue(settlement.mobileMoneyProvider)}`
+      : "",
+    railValue(settlement.mobileMoneyNumber)
+      ? `Mobile money number: ${railValue(settlement.mobileMoneyNumber)}`
+      : "",
+    railValue(settlement.country) ? `Country: ${railValue(settlement.country)}` : "",
+    railValue(settlement.supportNote) ? railValue(settlement.supportNote) : "",
   ].filter(Boolean);
 }
 
@@ -928,11 +981,7 @@ export default function WithdrawalInstructionsPage() {
   const communitySettlement =
     activeWithdrawalRoute?.settlement || moneySurface?.communitySettlement || null;
 
-  const communityRailReady = Boolean(
-    communitySettlement?.bankName ||
-      communitySettlement?.accountName ||
-      communitySettlement?.accountNumber
-  );
+  const communityRailReady = settlementReady(communitySettlement);
 
   const destinationCountry = destinationCountryHint(destination, me);
   const payoutNeedsSortCode = needsUkSortCode(destination, me, poolCurrency);
@@ -949,7 +998,7 @@ export default function WithdrawalInstructionsPage() {
   );
 
   const communitySettlementLines = useMemo(
-    () => settlementLines(communitySettlement),
+    () => visibleSettlementLines(communitySettlement),
     [communitySettlement]
   );
 
@@ -1287,18 +1336,30 @@ export default function WithdrawalInstructionsPage() {
   }
 
   function handleCopyCommunityRail() {
-    const text = communitySettlementLines.join("\n");
-    if (!text) {
+    const lines = communitySettlementLines;
+    if (lines.length <= 0) {
       showNotice("error", "Community withdrawal rail is not ready.");
       return;
     }
+
+    const text = buildGsnPaymentInstructionPackage({
+      title: "GSN Community Withdrawal Rail",
+      purpose: "Identify the community rail connected to the Money Out route.",
+      memberName,
+      gsnId: currentGmfnId,
+      communityName: communityLabel,
+      communityId: publicCommunityId,
+      routeName: "Money Out - Community Rail",
+      status: guidedState.step,
+      detailLines: lines,
+    });
 
     copyText(text);
     showNotice("success", "Community withdrawal rail copied.");
   }
 
   function handleCopyPayoutAccount() {
-    const text = [
+    const lines = [
       destination.destinationName
         ? `Account name: ${destination.destinationName}`
         : "",
@@ -1313,20 +1374,31 @@ export default function WithdrawalInstructionsPage() {
         : "",
       destination.note ? `Note: ${destination.note}` : "",
     ]
-      .filter(Boolean)
-      .join("\n");
+      .filter(Boolean);
 
-    if (!text) {
+    if (lines.length <= 0) {
       showNotice("error", "Personal payout account is still empty.");
       return;
     }
+
+    const text = buildGsnPaymentInstructionPackage({
+      title: "GSN Payout Account Summary",
+      purpose: "Review the member payout destination saved for approved withdrawals.",
+      memberName,
+      gsnId: currentGmfnId,
+      communityName: communityLabel,
+      communityId: publicCommunityId,
+      routeName: "Money Out - Payout Destination",
+      status: guidedState.step,
+      detailLines: lines,
+    });
 
     copyText(text);
     showNotice("success", "Personal payout account copied.");
   }
 
   function handleCopyWithdrawalSummary() {
-    const text = [
+    const lines = [
       `Community: ${communityLabel}`,
       `Community ID: ${publicCommunityId}`,
       `GSN ID: ${currentGmfnId || "Awaiting issue"}`,
@@ -1352,13 +1424,27 @@ export default function WithdrawalInstructionsPage() {
         ? `Community rail: ${communitySettlement.bankName}`
         : "",
     ]
-      .filter(Boolean)
-      .join("\n");
+      .filter(Boolean);
 
-    if (!text) {
+    if (lines.length <= 0) {
       showNotice("error", "Nothing is ready to copy yet.");
       return;
     }
+
+    const text = buildGsnPaymentInstructionPackage({
+      title: "GSN Withdrawal Summary",
+      purpose: "Keep the requested Money Out amount, payout destination, and route state together.",
+      memberName,
+      gsnId: currentGmfnId,
+      communityName: communityLabel,
+      communityId: publicCommunityId,
+      routeName: "Money Out",
+      amount: requestedAmount > 0
+        ? `${fmtMoney(requestedAmount)} ${poolCurrency}`
+        : "",
+      status: guidedState.step,
+      detailLines: lines,
+    });
 
     copyText(text);
     showNotice("success", "Withdrawal summary copied.");

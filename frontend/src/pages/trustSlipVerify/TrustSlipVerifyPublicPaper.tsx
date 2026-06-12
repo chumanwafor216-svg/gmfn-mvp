@@ -258,11 +258,11 @@ function publicVerifyHero(compact: boolean): React.CSSProperties {
     position: "relative",
     overflow: "hidden",
     display: "grid",
-    gridTemplateColumns: compact ? "128px minmax(0, 1fr)" : "190px minmax(0, 1fr)",
-    gap: compact ? 14 : 24,
-    alignItems: "center",
-    minHeight: compact ? 176 : 220,
-    padding: compact ? "22px 20px 30px" : "34px 44px 42px",
+    gridTemplateColumns: compact ? "minmax(0, 1fr)" : "190px minmax(0, 1fr)",
+    gap: compact ? 13 : 24,
+    alignItems: compact ? "start" : "center",
+    minHeight: compact ? "auto" : 220,
+    padding: compact ? "18px 18px 26px" : "34px 44px 42px",
     background: "linear-gradient(135deg, #061827 0%, #082A48 100%)",
     color: "#FFFFFF",
   };
@@ -444,31 +444,38 @@ export default function TrustSlipVerifyPublicPaper({
             position: "relative",
             zIndex: 1,
             display: "grid",
-            gridTemplateColumns: "54px minmax(0, 1fr)",
-            gap: 10,
+            gridTemplateColumns: compact ? "44px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
+            gap: compact ? 9 : 10,
             alignItems: "center",
-            borderRight: "1px solid rgba(255,255,255,0.16)",
-            paddingRight: compact ? 10 : 20,
+            borderRight: compact ? "none" : "1px solid rgba(255,255,255,0.16)",
+            borderBottom: compact ? "1px solid rgba(255,255,255,0.14)" : "none",
+            paddingRight: compact ? 0 : 20,
+            paddingBottom: compact ? 12 : 0,
+            minWidth: 0,
           }}
         >
           <span
             aria-hidden
             style={{
-              width: 54,
-              height: 54,
-              borderRadius: 12,
+              width: compact ? 44 : 54,
+              height: compact ? 44 : 54,
+              borderRadius: compact ? 11 : 12,
               border: "1px solid rgba(246,215,122,0.55)",
               color: "#F6D77A",
               display: "grid",
               placeItems: "center",
             }}
           >
-            <GsnRealisticIcon name="trust-shield" size={46} decorative />
+            <GsnRealisticIcon
+              name="trust-shield"
+              size={compact ? 38 : 46}
+              decorative
+            />
           </span>
           <div
             style={{
               color: "#FFFFFF",
-              fontSize: compact ? 13 : 17,
+              fontSize: compact ? 12 : 17,
               lineHeight: 1.08,
               fontWeight: 1000,
               textTransform: "uppercase",
@@ -477,7 +484,7 @@ export default function TrustSlipVerifyPublicPaper({
             Global<br />Support<br />Network
           </div>
         </div>
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ position: "relative", zIndex: 1, minWidth: 0 }}>
           <div
             style={{
               display: "inline-flex",
@@ -498,10 +505,12 @@ export default function TrustSlipVerifyPublicPaper({
             style={{
               margin: "12px 0 0",
               color: "#FFFFFF",
-              fontSize: compact ? 36 : 58,
+              fontSize: compact ? 34 : 58,
               lineHeight: 1,
               fontWeight: 1000,
               fontFamily: "Georgia, 'Times New Roman', serif",
+              overflowWrap: "normal",
+              wordBreak: "normal",
             }}
           >
             TrustSlip Verify
@@ -511,7 +520,7 @@ export default function TrustSlipVerifyPublicPaper({
               margin: "12px 0 0",
               maxWidth: 520,
               color: "#DCE8F4",
-              fontSize: compact ? 15 : 20,
+              fontSize: compact ? 14 : 20,
               lineHeight: 1.35,
               fontWeight: 760,
             }}
@@ -522,12 +531,13 @@ export default function TrustSlipVerifyPublicPaper({
             style={{
               marginTop: 14,
               display: "flex",
-              gap: 12,
+              gap: compact ? 9 : 12,
               alignItems: "center",
+              flexWrap: "wrap",
               color: "#F6D77A",
               fontWeight: 1000,
               textTransform: "uppercase",
-              fontSize: compact ? 12 : 15,
+              fontSize: compact ? 11 : 15,
             }}
           >
             <span style={{ color: "#FFFFFF" }}>GSN</span>

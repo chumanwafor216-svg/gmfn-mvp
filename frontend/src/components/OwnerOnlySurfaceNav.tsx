@@ -134,10 +134,10 @@ export default function OwnerOnlySurfaceNav({
       style={{
         display: "grid",
         gridTemplateColumns: compact ? "1fr" : "auto minmax(0, 1fr)",
-        gap: compact ? 8 : 12,
+        gap: compact ? 6 : 12,
         alignItems: "center",
-        borderRadius: compact ? 18 : 22,
-        padding: compact ? 10 : 12,
+        borderRadius: compact ? 14 : 22,
+        padding: compact ? "7px 8px" : 12,
         border: "1px solid rgba(246,196,83,0.34)",
         background:
           "linear-gradient(135deg, rgba(8,35,61,0.96) 0%, rgba(7,58,107,0.94) 100%)",
@@ -149,19 +149,24 @@ export default function OwnerOnlySurfaceNav({
         style={{
           color: "#F6D77A",
           fontWeight: 950,
-          fontSize: compact ? 12 : 13,
+          fontSize: compact ? 10 : 13,
           textTransform: "uppercase",
           letterSpacing: 0,
           whiteSpace: "nowrap",
+          lineHeight: 1,
         }}
       >
         {label}
       </div>
       <div
         style={{
-          display: "grid",
+          display: compact ? "flex" : "grid",
           gridTemplateColumns: navGridTemplateColumns,
-          gap: compact ? 7 : 8,
+          gap: compact ? 6 : 8,
+          overflowX: compact ? "auto" : undefined,
+          overscrollBehaviorX: compact ? "contain" : undefined,
+          scrollbarWidth: compact ? "none" : undefined,
+          paddingBottom: compact ? 1 : undefined,
         }}
       >
         {links.map((link) => (
@@ -169,12 +174,15 @@ export default function OwnerOnlySurfaceNav({
             key={link.debugId}
             to={link.to}
             minWidth={0}
-            stableHeight={52}
+            stableHeight={compact ? 38 : 52}
             debugId={link.debugId}
             style={{
-              fontSize: compact ? 10.8 : 13,
-              borderRadius: 13,
-              padding: compact ? "7px 4px" : "8px 10px",
+              flex: compact ? "0 0 auto" : undefined,
+              minWidth: compact ? 94 : 0,
+              fontSize: compact ? 10 : 13,
+              borderRadius: compact ? 11 : 13,
+              padding: compact ? "5px 8px" : "8px 10px",
+              whiteSpace: "nowrap",
             }}
           >
             {link.label}

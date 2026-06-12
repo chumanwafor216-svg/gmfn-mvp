@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 57;
+const expectedStableActionCount = 59;
 const expectedNativeFieldCount = 14;
 const expectedSourceBreakdown = {
   front: 11,
-  body: 46,
+  body: 48,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -290,7 +290,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Link Center[\s\S]*?Share, verify, shop, repost\.[\s\S]*?Join[\s\S]*?Verify[\s\S]*?Shop Face[\s\S]*?Paid Repost/,
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Link Center[\s\S]*?Share, verify, shop, repost\.[\s\S]*?Join[\s\S]*?Verify[\s\S]*?Shop Face[\s\S]*?Paid Repost[\s\S]*?Packages/,
   "Marketplace Link Center grouped card must open marketplace-owned links and avoid member/trade wording."
 );
 
@@ -624,6 +624,8 @@ const expectedOrder = [
   exactDebugId("marketplace.network-repost.refresh-credits"),
   exactDebugId("marketplace.network-repost.place"),
   exactDebugId("marketplace.network-repost.subscription"),
+  exactDebugId("marketplace.links.community-packages"),
+  exactDebugId("marketplace.links.package-spotlight"),
   exactDebugId("marketplace.links.owner-shop-control"),
   exactDebugId("marketplace.members.toggle"),
   exactDebugId("marketplace.members.demand-box"),
@@ -692,8 +694,8 @@ assertContains(
 );
 
 assertContains(
-  /function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 52 : 58[\s\S]*?minHeight: _isCompact \? 52 : 58[\s\S]*?maxHeight: _isCompact \? 52 : 58/,
-  "Marketplace inline/link-desk buttons must keep one stable row reserve: 52px on phone and 58px on desktop."
+  /function marketplaceInlineActionsStyle[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(128px, 1fr\)\)"[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 56 : 58[\s\S]*?minHeight: _isCompact \? 56 : 58[\s\S]*?maxHeight: _isCompact \? 56 : 58[\s\S]*?whiteSpace: "normal"[\s\S]*?wordBreak: "normal"/,
+  "Marketplace inline/link-desk buttons must keep stable readable phone geometry: 56px phone rows, 58px desktop rows, and whole-word wrapping."
 );
 
 assertContains(

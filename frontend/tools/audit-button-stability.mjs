@@ -169,7 +169,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 52 : 58[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceFrontLaneCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\),[\s\S]*?minHeight: isCompact \? 126 : 116,[\s\S]*?height: "auto",[\s\S]*?maxHeight: "none",[\s\S]*?"58px minmax\(0, 1fr\) 18px"[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 58 : 64,[\s\S]*?height: isCompact \? 58 : 64,[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?whiteSpace: "nowrap",[\s\S]*?overflow: "hidden",[\s\S]*?textOverflow: "ellipsis",[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
+  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 56 : 58[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceFrontLaneCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\),[\s\S]*?minHeight: isCompact \? 126 : 116,[\s\S]*?height: "auto",[\s\S]*?maxHeight: "none",[\s\S]*?"58px minmax\(0, 1fr\) 18px"[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 58 : 64,[\s\S]*?height: isCompact \? 58 : 64,[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?whiteSpace: "nowrap",[\s\S]*?overflow: "hidden",[\s\S]*?textOverflow: "ellipsis",[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
   "Marketplace grouped-lane cards must keep phone-safe geometry with clamped text so card content cannot stretch, overlap, or create unstable tap targets."
 );
 
@@ -1432,14 +1432,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?onClick=\{\(\) => setShopVerificationQrOpen\(\(open\) => !open\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?debugId="shop-gallery\.open-spotlight-preview"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?debugId="shop-gallery\.toggle-all-products"/,
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?onClick=\{\(\) => setShopVerificationQrOpen\(\(open\) => !open\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.spotlight\.phone-call"[\s\S]*?debugId="shop-gallery\.spotlight\.contact\.choose"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?debugId="shop-gallery\.toggle-all-products"/,
   "Shop Gallery must use shared stable primitives for hero, vault, product, spotlight, and remaining public-shop actions."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon[\s\S]*?name="public-globe"[\s\S]*?aria-label=\{`Share \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon name="qr-record"[\s\S]*?aria-label=\{`Contact owner about \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon name="phone-contact"/,
-  "Shop Gallery product cards must use compact 3D real-life signs for sound, open/close, block share, and owner contact while keeping accessible action labels."
+  /audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon[\s\S]*?name="public-globe"[\s\S]*?showBlockPlacementAction \? \([\s\S]*?<SocialTagShareButton[\s\S]*?buttonLabel="Share"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?aria-label=\{`Contact owner about \$\{displayTitle\}`\}[\s\S]*?<GsnRealisticIcon name="phone-contact"/,
+  "Shop Gallery product cards must use compact real-life signs for sound, open/close, owner-only block share, and visitor owner contact while keeping accessible action labels."
 );
 
 assertNotContains(
@@ -1450,8 +1450,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const diaryOpenActionCount = showBlockPlacementAction \? 4 : 3;[\s\S]*?repeat\(\$\{diaryOpenActionCount\}, \$\{diaryActionWidth\}px\)[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?stableHeight=\{diaryActionHeight\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
-  "Shop Gallery owner-only product placement action must share the fixed product action rail without resizing the public card controls."
+  /const diaryOpenActionCount = showBlockPlacementAction \? 4 : 2;[\s\S]*?repeat\(\$\{diaryOpenActionCount\}, \$\{diaryActionWidth\}px\)[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?stableHeight=\{diaryActionHeight\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  "Shop Gallery owner-only product share and placement actions must share the fixed product action rail without resizing the public visitor controls."
 );
 
 assertNotContains(
@@ -1480,7 +1480,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?debugId=\{`vault-control\.panel\.\$\{panel\}\.toggle`\}[\s\S]*?debugId=\{`vault-control\.payment-slot\.\$\{slot\}`\}[\s\S]*?debugId="vault-control\.confirm-quote"[\s\S]*?debugId="vault-control\.generate-payment-code"[\s\S]*?debugId="vault-control\.copy-payment-details"[\s\S]*?debugId=\{`vault-control\.block-slot\.\$\{slotNumber\}\.select`\}[\s\S]*?debugId="vault-control\.selected-block\.add"[\s\S]*?debugId="vault-control\.link\.create-or-replace"[\s\S]*?debugId="vault-control\.editor\.save"/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import SocialTagShareButton from "\.\.\/components\/SocialTagShareButton";[\s\S]*?debugId=\{`vault-control\.panel\.\$\{panel\}\.toggle`\}[\s\S]*?debugId=\{`vault-control\.payment-slot\.\$\{slot\}`\}[\s\S]*?debugId="vault-control\.confirm-quote"[\s\S]*?debugId="vault-control\.generate-payment-code"[\s\S]*?debugId="vault-control\.copy-payment-details"[\s\S]*?debugId=\{`vault-control\.block-slot\.\$\{slotNumber\}\.select`\}[\s\S]*?debugId="vault-control\.selected-block\.add"[\s\S]*?debugId="vault-control\.link\.create-or-replace"[\s\S]*?debugId="vault-control\.link\.social-share"[\s\S]*?debugId="vault-control\.editor\.save"/,
   "Vault Control must use shared stable primitives for panel, payment, block, link, and editor actions."
 );
 

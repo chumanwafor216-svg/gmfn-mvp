@@ -314,7 +314,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"/,
+  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"/,
   "Marketplace actions must keep phone-safe heights and inline row reserves."
 );
 

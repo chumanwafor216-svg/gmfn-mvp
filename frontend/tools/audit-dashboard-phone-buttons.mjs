@@ -100,6 +100,18 @@ const requiredDashboardPatterns = [
     message:
       "Dashboard passport and main picture-frame tools must mutually close the other rail before opening.",
   },
+  {
+    pattern:
+      /Your Spotlight[\s\S]*?Live community spotlight[\s\S]*?Sharing matters\.[\s\S]*?\{spotlightQueueTotal \|\| spotlights\.length\} live or queued\.[\s\S]*?debugId="dashboard\.spotlight\.guide\.toggle"[\s\S]*?spotlightGuideOpen \? \([\s\S]*?Rotates every \{SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL\} seconds\./,
+    message:
+      "Dashboard Spotlight must keep live count inside Sharing matters and rotation timing inside Learn More, not as permanent header chips.",
+  },
+  {
+    pattern:
+      /<SpotlightMediaFrame[\s\S]*?showVideoControls=\{false\}[\s\S]*?autoPlayVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?mutedVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?loopVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?showAudioUnlock=\{false\}[\s\S]*?maxVideoSeconds=\{SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS\}/,
+    message:
+      "Dashboard Spotlight primary media preview must not expose a dead-looking speaker/audio control.",
+  },
 ];
 
 for (const check of requiredDashboardPatterns) {

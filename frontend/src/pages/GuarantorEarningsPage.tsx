@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import PageTopNav from "../components/PageTopNav";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
@@ -20,6 +21,7 @@ import {
   setSelectedClanId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
 
 type GuarantorEarningItem = {
   loan_guarantor_id?: number;
@@ -733,25 +735,49 @@ export default function GuarantorEarningsPage() {
     }));
   }
 
-  function copySummary() {
-    const text = [
-      `Community: ${selectedCommunityLabel}`,
-      `Community ID: ${communityPublicId}`,
-      `Member: ${memberName}`,
-      `GSN ID: ${gmfnId}`,
-      memberRole ? `Role: ${memberRole}` : "",
-      `Total earned: ${fmtMoney(totals.total)} ${currency}`,
-      `Potential share: ${fmtMoney(totals.estimatedTotal)} ${currency}`,
-      `This month: ${fmtMoney(totals.thisMonth)} ${currency}`,
-      `This year: ${fmtMoney(totals.thisYear)} ${currency}`,
-      `Settled items: ${totals.settledCount}`,
-      `Pending items: ${totals.pendingCount}`,
-      GUARANTOR_EARNINGS_PAYOUT_TRUTH,
+  const earningsPaper = useMemo(
+    () =>
+      buildGsnSupportEvidencePackage({
+        title: "GSN Guarantor Earnings Snapshot",
+        purpose: "Review visible guarantor value, settled items, and pending items for this member.",
+        reference: `guarantor-earnings-${communityPublicId || selectedClanId || "current"}`,
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: selectedCommunityLabel,
+        communityId: communityPublicId,
+        routeName: "Guarantor Earnings",
+        amount: `${fmtMoney(totals.total)} ${currency}`,
+        status: totals.pendingCount > 0 ? "Pending items visible" : "Current visible total",
+        detailLines: [
+          `Total earned: ${fmtMoney(totals.total)} ${currency}`,
+          `Potential share: ${fmtMoney(totals.estimatedTotal)} ${currency}`,
+          `This month: ${fmtMoney(totals.thisMonth)} ${currency}`,
+          `This year: ${fmtMoney(totals.thisYear)} ${currency}`,
+          `Settled items: ${totals.settledCount}`,
+          `Pending items: ${totals.pendingCount}`,
+          GUARANTOR_EARNINGS_PAYOUT_TRUTH,
+        ],
+      }),
+    [
+      communityPublicId,
+      currency,
+      gmfnId,
+      memberName,
+      memberRole,
+      selectedClanId,
+      selectedCommunityLabel,
+      totals.estimatedTotal,
+      totals.pendingCount,
+      totals.settledCount,
+      totals.thisMonth,
+      totals.thisYear,
+      totals.total,
     ]
-      .filter(Boolean)
-      .join("\n");
+  );
 
-    safeCopy(text);
+  function copySummary() {
+    safeCopy(earningsPaper);
   }
 
   return (
@@ -944,6 +970,14 @@ export default function GuarantorEarningsPage() {
                 {guarantorEarningsActionText("copy", "Copy summary")}
               </SecondaryButton>
             </div>
+
+            <GsnSnapshotPaperCard
+              paperText={earningsPaper}
+              compact={isCompact}
+              icon="chart"
+              maxBodyLines={isCompact ? 6 : undefined}
+              style={{ marginTop: 14 }}
+            />
           </div>
 
           <div style={{ display: "grid", gap: 12 }}>

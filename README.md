@@ -20,6 +20,10 @@ For production polish, icon meaning, screenshot-quality, proof-document
 presentation, and route completion gates, also read
 `docs/GSN_PRODUCTION_POLISH_STANDARD.md`.
 
+For app-wide page auditing, including entry-to-dashboard checks, in-page
+navigation, action response, placeholder truth, permission visibility, and
+domain-by-domain cage rules, also read `docs/APP_WIDE_AUDIT_PROTOCOL.md`.
+
 For innovation-case, investor, policy, TrustSlip, merchant-verification, or
 development-finance explanation work, also read
 `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`.

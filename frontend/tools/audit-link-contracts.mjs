@@ -303,7 +303,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?break;[\s\S]*?id: "free-spotlight"[\s\S]*?onClick: \(event: React\.SyntheticEvent<HTMLElement>\) =>[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
+  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?break;[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?onClick: \(event: React\.SyntheticEvent<HTMLElement>\) =>[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
   "Community Home Free Spotlight actions must route directly to the canonical Shop Control spotlight publisher instead of falling through to the local overview or public fallback."
 );
 
@@ -670,7 +670,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /<StableCtaLink[\s\S]*?to=\{publicShopViewLink\}[\s\S]*?\{publicShopViewLink\}[\s\S]*?<\/StableCtaLink>/,
+  /<StableCtaLink[\s\S]*?to=\{publicShopViewLink\}[\s\S]*?debugId="marketplace\.public-shop\.visible-link"[\s\S]*?\{publicShopViewLink\}[\s\S]*?<\/StableCtaLink>/,
   "Marketplace public shop card must visibly show the full public shop domain as a real public link through the shared stable link primitive."
 );
 
@@ -694,8 +694,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /sectionLabel\(\)}>Join this community[\s\S]*?marketplaceLinkSummaryStyle\(isCompact\)[\s\S]*?Copy Join Link[\s\S]*?Refresh Join Link[\s\S]*?Copy Invite Message[\s\S]*?Email Join Link[\s\S]*?WhatsApp[\s\S]*?joinShareMessageCardStyle\(isCompact\)/,
-  "The Join this community lane must keep its compact masked summary and stable button set/order."
+  /sectionLabel\(\)}>Join this community[\s\S]*?linkReserveTextStyle\(\)[\s\S]*?Copy Join Link[\s\S]*?Refresh Join Link[\s\S]*?Copy Invite Message[\s\S]*?Email Join Link[\s\S]*?WhatsApp[\s\S]*?joinShareMessageCardStyle\(isCompact\)/,
+  "The Join this community lane must keep its compact masked fixed-height summary and stable button set/order."
 );
 
 assertContains(
@@ -784,8 +784,8 @@ assertContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /async function copyShopLink\(\)[\s\S]*?if \(!publicShopTo\)[\s\S]*?not connected to an active shop[\s\S]*?const copied = await api\.safeCopy\(publicShopLink\)/,
-  "Owner shop control must not copy a public shop link until the active shop link is confirmed."
+  /async function copyShopLink\(\)[\s\S]*?if \(!publicShopTo\)[\s\S]*?not connected to an active shop[\s\S]*?const copied = await api\.safeCopy\([\s\S]*?buildGsnPublicShopLinkPackage\([\s\S]*?shopLink: publicShopLink/,
+  "Owner shop control must not copy a public shop package until the active shop link is confirmed."
 );
 
 assertContains(
@@ -808,8 +808,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?Public shop poster link copied\.[\s\S]*?Public shop block poster link copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item poster link copied\. It opens this item inside the Shop Diaries\./,
-  "Shop Assets copy actions must copy frontend-domain preview-ready Shop Diaries and exact block/item links with honest feedback."
+  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?buildPublicShopPackage\([\s\S]*?buildGsnPublicShopLinkPackage\([\s\S]*?shopLink: link[\s\S]*?Public shop package copied\.[\s\S]*?Public shop block package copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item package copied\. It opens this item inside the Shop Diaries\./,
+  "Shop Assets copy actions must copy frontend-domain preview-ready GSN packages for Shop Diaries and exact block/item links with honest feedback."
 );
 
 assertContains(
@@ -844,8 +844,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopShareLink\);[\s\S]*?Public shop poster link copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
-  "Public Shop Gallery copy must block failed public-shop links and copy the canonical root shop route only after clipboard success."
+  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\([\s\S]*?buildPublicShopPackage\(absoluteShopShareLink[\s\S]*?Public shop poster link copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
+  "Public Shop Gallery copy must block failed public-shop links and copy a canonical root-shop GSN package only after clipboard success."
 );
 
 assertContains(
@@ -976,8 +976,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{[\s\S]*?publicShopSharePath,[\s\S]*?\} from "\.\.\/lib\/publicLinks";[\s\S]*?sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?src\?\.source_product_id \|\| src\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?src\?\.source_product_block \|\| src\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?src\?\.source_product_slot_number \|\| src\?\.sourceProductSlotNumber[\s\S]*?const spotlightProductId = positiveNumber\(miniSpotlight\?\.sourceProductId\);[\s\S]*?const spotlightProductBlock =[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductBlock\) \|\|[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductSlotNumber\);[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId: spotlightShopGmfnId,[\s\S]*?clanId: spotlightClanId \|\| undefined,[\s\S]*?productId: spotlightProductId \|\| undefined,[\s\S]*?block: spotlightProductBlock \|\| undefined,[\s\S]*?\}\)[\s\S]*?function openSpotlightPreview\(\)[\s\S]*?hasExactSpotlightBlock[\s\S]*?miniSpotlightView\.shopTo[\s\S]*?window\.location\.href = miniSpotlightView\.shopTo/,
-  "Public Shop Spotlight must preserve broadcast source community/product/block truth and navigate exact sourced placements to the exact public shop community/block."
+  /import \{[\s\S]*?publicShopSharePath,[\s\S]*?\} from "\.\.\/lib\/publicLinks";[\s\S]*?sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?src\?\.source_product_id \|\| src\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?src\?\.source_product_block \|\| src\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?src\?\.source_product_slot_number \|\| src\?\.sourceProductSlotNumber[\s\S]*?const spotlightProductId = positiveNumber\(miniSpotlight\?\.sourceProductId\);[\s\S]*?const spotlightProductBlock =[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductBlock\) \|\|[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductSlotNumber\);[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId: spotlightShopGmfnId,[\s\S]*?clanId: spotlightClanId \|\| undefined,[\s\S]*?productId: spotlightProductId \|\| undefined,[\s\S]*?block: spotlightProductBlock \|\| undefined,[\s\S]*?\}\)[\s\S]*?sourceShopWhatsApp: firstMeaningful\(miniSpotlight\?\.sourceShopWhatsApp\)[\s\S]*?shopTo,[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.spotlight\.phone-call"[\s\S]*?debugId="shop-gallery\.spotlight\.contact\.choose"/,
+  "Public Shop Spotlight must preserve broadcast source community/product/block truth in the computed shopTo path while exposing the current Contact-owner chooser instead of the retired Open/Explore redirect."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /shop-gallery\.open-spotlight-preview|function openSpotlightPreview\(\)|isCompact \? "Open" : "Explore"/,
+  "Public Shop Spotlight must not restore the retired public Open/Explore redirect action."
 );
 
 assertContains(

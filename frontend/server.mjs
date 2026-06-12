@@ -1,3 +1,5 @@
+/* global AbortSignal, Buffer, fetch, process, URL */
+
 import { createServer } from "node:http";
 import { createReadStream, existsSync, promises as fs } from "node:fs";
 import path from "node:path";
@@ -92,6 +94,7 @@ function firstText(...values) {
   return "";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function formatPrice(value, currency) {
   const amount = firstText(value);
   const unit = firstText(currency, "NGN").toUpperCase();
@@ -129,7 +132,6 @@ async function fetchShopMeta(gmfnId, productId) {
   const ownerId = firstText(data?.gmfn_id, gmfnId).toUpperCase();
   const marketplace = firstText(data?.community_name, shop?.shop_name, shop?.name, "GSN Marketplace");
   const productName = firstText(product?.name, product?.description, "Public shop item");
-  const price = product ? formatPrice(product?.price, product?.currency) : "";
   const title = product ? `${productName} | ${marketplace}` : `${marketplace} | GSN public shop`;
   const description = product
     ? "Trusted GSN shop item. Tap to open product."

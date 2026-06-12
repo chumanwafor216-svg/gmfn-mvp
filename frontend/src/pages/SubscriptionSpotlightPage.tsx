@@ -13,6 +13,7 @@ import {
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
 } from "../lib/api";
+import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
@@ -383,6 +384,30 @@ function actionGrid(isCompact: boolean, min = 160): React.CSSProperties {
   };
 }
 
+function paymentInstructionRowStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact
+      ? "minmax(0, 1fr)"
+      : "minmax(112px, 0.42fr) minmax(0, 0.58fr)",
+    gap: isCompact ? 4 : 10,
+    padding: "12px 14px",
+    borderBottom: `1px solid ${gmfnBrand.colors.line}`,
+  };
+}
+
+function paymentInstructionValueStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: gmfnBrand.colors.ink,
+    fontWeight: 900,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    fontSize: isCompact ? 14 : 13,
+    lineHeight: 1.28,
+  };
+}
+
 export default function SubscriptionSpotlightPage() {
   const [loading, setLoading] = useState(true);
   const [isCompact, setIsCompact] = useState(false);
@@ -673,8 +698,26 @@ export default function SubscriptionSpotlightPage() {
   }
 
   function copyPaymentDetails() {
-    const text = paymentLines.join("\n");
-    if (text) {
+    if (paymentLines.length > 0) {
+      const text = buildGsnPaymentInstructionPackage({
+        title: "GSN Subscription Spotlight Payment Instruction",
+        purpose: "Pay for the selected Subscription Spotlight credits with the exact generated payment code.",
+        reference: activePaymentReference,
+        memberName: firstTruthy(me?.display_name, me?.name, me?.email, "Shop owner"),
+        gsnId: firstTruthy(me?.gmfn_id, shop?.gmfn_id),
+        communityId: String(shopClanId || selectedClanId || ""),
+        routeName: "Subscription Spotlight",
+        amount: activePaymentAmount
+          ? formatMoney(activePaymentAmount, activePaymentCurrency)
+          : selectedLabel,
+        status: latestPayment ? firstTruthy(latestPayment.status, "Payment code ready") : "",
+        dueAt: safeDateTime(activePaymentDueAt) || `${paymentDueDays} days after generation`,
+        detailLines: [
+          `Shop: ${shopName}`,
+          `Selected credits: ${selectedCredits}`,
+          ...paymentLines,
+        ],
+      });
       safeCopy(text);
       showNotice("success", "Subscription Spotlight payment details copied.");
       return;
@@ -992,9 +1035,9 @@ export default function SubscriptionSpotlightPage() {
                     const [label, ...rest] = line.split(":");
                     const value = rest.join(":").trim();
                     return (
-                      <div key={line} style={{ display: "grid", gridTemplateColumns: "minmax(112px, 0.42fr) minmax(0, 0.58fr)", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${gmfnBrand.colors.line}` }}>
+                      <div key={line} style={paymentInstructionRowStyle(isCompact)}>
                         <div style={{ color: gmfnBrand.colors.inkSoft, fontWeight: 900, fontSize: 13 }}>{label}</div>
-                        <div style={{ color: gmfnBrand.colors.ink, fontWeight: 900, overflowWrap: "anywhere", fontSize: 13 }}>{value}</div>
+                        <div style={paymentInstructionValueStyle(isCompact)}>{value}</div>
                       </div>
                     );
                   })}

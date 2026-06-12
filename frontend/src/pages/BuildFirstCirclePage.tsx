@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -17,6 +18,7 @@ import {
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import * as firstCircle from "../lib/firstCircle";
+import { buildGsnInviteLinkPackage } from "../lib/gsnSnapshotPaper";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 
 type FirstCircleContact = {
@@ -846,17 +848,31 @@ export default function BuildFirstCirclePage() {
       gmfnId ? `My GSN ID: ${gmfnId}` : "",
     ].filter(Boolean);
 
-    return lines.join("\n\n");
-  }, [communityName, gmfnId, inviteLink]);
+    return buildGsnInviteLinkPackage({
+      senderName: memberName,
+      senderGsnId: gmfnId,
+      communityName,
+      inviteLink,
+      messageLines: lines,
+    });
+  }, [communityName, gmfnId, inviteLink, memberName]);
 
   const inviteBundle = useMemo(() => {
-    return inviteBundleText({
+    const rawBundle = inviteBundleText({
       draft,
       memberName,
       gmfnId,
       communityName,
     });
-  }, [draft, memberName, gmfnId, communityName]);
+
+    return buildGsnInviteLinkPackage({
+      senderName: memberName,
+      senderGsnId: gmfnId,
+      communityName,
+      inviteLink,
+      messageLines: [rawBundle],
+    });
+  }, [draft, memberName, gmfnId, communityName, inviteLink]);
 
   const readyCount = Number(progress.readyCount || 0);
   const targetCount = Number(progress.targetCount || 3);
@@ -1783,6 +1799,18 @@ export default function BuildFirstCirclePage() {
                   >
                     {firstCircleIconText("phone", "WhatsApp", 18)}
                   </PrimaryButton>
+                  <SocialTagShareButton
+                    target={{
+                      title: `Join ${communityName} on GSN`,
+                      message: joinInviteMessage,
+                      url: inviteLink,
+                    }}
+                    buttonLabel="Share"
+                    stableHeight={48}
+                    debugId="build-first-circle.tag-invite"
+                    style={compactButtonStyle(false)}
+                    onResult={showNotice}
+                  />
                 </div>
               </div>
               <GsnLegacyIcon

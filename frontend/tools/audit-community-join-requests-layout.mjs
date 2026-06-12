@@ -36,8 +36,8 @@ function assertNotContains(pattern, message) {
 }
 
 assertContains(
-  /function pageShell\(\)[\s\S]*?maxWidth: "100%"[\s\S]*?boxSizing: "border-box"[\s\S]*?overflowX: "hidden"/,
-  "Join Requests page shell must clip horizontal overflow at the route boundary."
+  /function pageShell\(\)[\s\S]*?maxWidth: "100%"[\s\S]*?margin: "0"[\s\S]*?padding: "0 clamp\(12px, 4vw, 20px\) 34px"[\s\S]*?boxSizing: "border-box"[\s\S]*?overflowX: "hidden"/,
+  "Join Requests page shell must stay inside the phone viewport without negative route margins."
 );
 
 assertContains(
@@ -46,8 +46,13 @@ assertContains(
 );
 
 assertContains(
-  /function navActionStyle[\s\S]*?width: "100%"[\s\S]*?minWidth: 0[\s\S]*?flexShrink: 1[\s\S]*?fontSize: 14/,
-  "Join Requests navigation buttons must keep compact full-width phone hitboxes."
+  /function navActionStyle[\s\S]*?width: "100%"[\s\S]*?minWidth: 0[\s\S]*?flexShrink: 1[\s\S]*?fontSize: 13[\s\S]*?whiteSpace: "normal"[\s\S]*?wordBreak: "normal"/,
+  "Join Requests navigation buttons must keep compact full-width phone hitboxes without clipped words."
+);
+
+assertContains(
+  /gridTemplateColumns: isCompact[\s\S]*?\? "minmax\(0, 1fr\) minmax\(0, 1fr\)"[\s\S]*?: "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?debugId="community-join-requests\.refresh"[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
+  "Join Requests top action row must give Refresh a full-width second row on phone."
 );
 
 assertContains(

@@ -6,6 +6,7 @@ import {
   recordDashboardAppUsage,
 } from "../lib/dashboardAppUsage";
 import { StableButton, StableCtaLink } from "../components/StableButton";
+import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
 import { routeWithCommunity } from "../lib/appRoutes";
@@ -25,6 +26,12 @@ type NavGroup = {
   label: string;
   hint?: string;
   items: NavLinkItem[];
+};
+
+type MobileDrawerGroup = {
+  title: string;
+  items: NavLinkItem[];
+  variant?: "main" | "tools" | "quick";
 };
 
 const MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX = 28;
@@ -1108,18 +1115,19 @@ function drawerPanel(open: boolean): React.CSSProperties {
     top: 0,
     left: 0,
     bottom: 0,
-    width: "min(94vw, 380px)",
-    maxWidth: 380,
-    padding: "12px 12px max(12px, env(safe-area-inset-bottom))",
+    width: "min(94vw, 390px)",
+    maxWidth: 390,
+    padding: "14px 14px max(14px, env(safe-area-inset-bottom))",
     background:
-      "linear-gradient(180deg, #10253B 0%, #163A5C 100%), radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent 35%)",
+      "radial-gradient(circle at 18% 0%, rgba(47,126,214,0.22), transparent 34%), linear-gradient(180deg, #061827 0%, #08233A 54%, #061827 100%)",
     color: "#FFFFFF",
     overflowY: "auto",
     transform: open ? "translateX(0)" : "translateX(-100%)",
     pointerEvents: open ? "auto" : "none",
     transition: "none",
     zIndex: 1300,
-    boxShadow: "12px 0 30px rgba(11,31,51,0.18)",
+    borderRight: "1px solid rgba(116,170,226,0.24)",
+    boxShadow: "18px 0 46px rgba(2,12,27,0.38)",
   };
 }
 
@@ -1135,23 +1143,26 @@ function drawerHeader(): React.CSSProperties {
 
 function overlayCloseButton(dark = false): React.CSSProperties {
   return {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
+    width: 46,
+    height: 46,
+    minWidth: 46,
+    minHeight: 46,
+    borderRadius: 18,
     border: dark
       ? "1px solid rgba(255,255,255,0.12)"
       : "1px solid rgba(11,31,51,0.10)",
     background: dark ? "rgba(255,255,255,0.08)" : "#FFFFFF",
     color: dark ? "#FFFFFF" : "#0B1F33",
-    fontSize: 18,
+    fontSize: 24,
+    fontWeight: 900,
     cursor: "pointer",
   };
 }
 
 function drawerSectionTitle(): React.CSSProperties {
   return {
-    margin: "10px 0 6px",
-    fontSize: 10,
+    margin: "14px 0 8px",
+    fontSize: 11,
     fontWeight: 800,
     letterSpacing: "0.1em",
     textTransform: "uppercase",
@@ -1163,22 +1174,25 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
   return {
     display: "flex",
     alignItems: "center",
-    justifyContent: "center",
-    height: 42,
-    minHeight: 42,
-    maxHeight: 42,
-    padding: "9px 10px",
-    borderRadius: 11,
+    justifyContent: "flex-start",
+    gap: 10,
+    height: 56,
+    minHeight: 56,
+    maxHeight: 56,
+    padding: "8px 10px",
+    borderRadius: 16,
     textDecoration: "none",
-    fontWeight: 800,
-    fontSize: 12.6,
+    fontWeight: 900,
+    fontSize: 13.6,
     lineHeight: 1.12,
-    textAlign: "center",
+    textAlign: "left",
     color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
-    background: active ? "#0B63D1" : "rgba(255,255,255,0.05)",
+    background: active
+      ? "linear-gradient(135deg, rgba(11,99,209,0.96) 0%, rgba(8,35,58,0.96) 100%)"
+      : "rgba(255,255,255,0.06)",
     border: active
-      ? "1px solid rgba(255,255,255,0.14)"
-      : "1px solid rgba(255,255,255,0.08)",
+      ? "1px solid rgba(116,170,226,0.52)"
+      : "1px solid rgba(255,255,255,0.11)",
     pointerEvents: "auto",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
@@ -1187,6 +1201,9 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
     wordBreak: "normal",
     hyphens: "none",
     textOverflow: "ellipsis",
+    boxShadow: active
+      ? "0 14px 28px rgba(11,99,209,0.24), inset 0 1px 0 rgba(255,255,255,0.14)"
+      : "inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -1194,9 +1211,78 @@ function drawerLinkGrid(single = false): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: single ? "1fr" : "repeat(2, minmax(0, 1fr))",
-    gap: 6,
+    gap: 8,
     alignItems: "stretch",
   };
+}
+
+function drawerToolRail(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 7,
+  };
+}
+
+function drawerToolLink(active = false, disabled = false): React.CSSProperties {
+  return {
+    ...drawerLink(active, disabled),
+    height: 48,
+    minHeight: 48,
+    maxHeight: 48,
+    borderRadius: 15,
+    padding: "7px 8px",
+    fontSize: 12.2,
+  };
+}
+
+function drawerIconTile(active = false): React.CSSProperties {
+  return {
+    width: 34,
+    height: 34,
+    minWidth: 34,
+    borderRadius: 13,
+    display: "grid",
+    placeItems: "center",
+    background: active
+      ? "rgba(255,255,255,0.13)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(232,243,255,0.96) 100%)",
+    boxShadow:
+      "0 10px 20px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.66)",
+    overflow: "hidden",
+  };
+}
+
+function drawerChevron(): React.CSSProperties {
+  return {
+    marginLeft: "auto",
+    color: "rgba(255,255,255,0.72)",
+    fontSize: 24,
+    lineHeight: 1,
+    fontWeight: 900,
+  };
+}
+
+function navIconForLabel(label: string): Gsn3DIconKey {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("dashboard")) return "public-globe";
+  if (normalized.includes("community")) return "community-building";
+  if (normalized.includes("marketplace")) return "market-stall";
+  if (normalized.includes("public shop")) return "shop-storefront";
+  if (normalized.includes("shop")) return "shop-storefront";
+  if (normalized.includes("finance") || normalized.includes("money")) {
+    return "finance-bank-building";
+  }
+  if (normalized.includes("loan") || normalized.includes("support")) {
+    return "repayment-schedule";
+  }
+  if (normalized.includes("trust")) return "trust-shield";
+  if (normalized.includes("identity") || normalized.includes("settings")) {
+    return "identity-card";
+  }
+  if (normalized.includes("notification")) return "records-folder";
+  if (normalized.includes("admin")) return "records-folder";
+  return "certificate-seal";
 }
 
 function actionsPanel(open: boolean): React.CSSProperties {
@@ -1749,14 +1835,13 @@ export default function AppLayout() {
     return items.filter((item) => !item.disabled || item.label === "Public Shop");
   }, [canUseAdminTools, myShopGalleryDisabled, myShopGalleryTo]);
 
-  const mobileDrawerGroups = useMemo<
-    { title: string; items: NavLinkItem[] }[]
-  >(() => {
+  const mobileDrawerGroups = useMemo<MobileDrawerGroup[]>(() => {
     if (taskMode) {
       return [
         {
           title: "Focused task",
           items: taskMode.actions,
+          variant: "main",
         },
       ];
     }
@@ -1765,26 +1850,32 @@ export default function AppLayout() {
       {
         title: "Main movement",
         items: primaryItems,
+        variant: "main",
       },
       {
-        title: "Shop tools",
+        title: "Tools & resources",
         items: commerceItems,
+        variant: "tools",
       },
       {
         title: "Finance tools",
         items: financeToolsItems,
+        variant: "tools",
       },
       {
         title: "Trust detail",
         items: trustPassportItems,
+        variant: "tools",
       },
       {
         title: "Identity & settings",
         items: identityItems,
+        variant: "tools",
       },
       {
-        title: "Loans & Support",
+        title: "Quick actions",
         items: loansItems,
+        variant: "quick",
       },
     ];
   }, [
@@ -1988,18 +2079,48 @@ export default function AppLayout() {
             </div>
 
             <div style={drawerBrandCard()}>
-              <div style={brandEyebrow()}>
-                {taskMode ? "Focused task" : "You are here"}
-              </div>
               <div
                 style={{
-                  marginTop: 5,
-                  fontSize: 19,
-                  fontWeight: 900,
-                  lineHeight: 1.12,
+                  display: "grid",
+                  gridTemplateColumns: "40px minmax(0, 1fr) auto",
+                  gap: 12,
+                  alignItems: "center",
                 }}
               >
-                {taskMode ? taskMode.title : routeMeta.page}
+                <span style={drawerIconTile(true)}>
+                  <GsnRealisticIcon
+                    name={navIconForLabel(taskMode ? taskMode.title : routeMeta.page)}
+                    size={34}
+                    decorative
+                  />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={brandEyebrow()}>
+                    {taskMode ? "Focused task" : "You are here"}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 5,
+                      fontSize: 20,
+                      fontWeight: 1000,
+                      lineHeight: 1.1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {taskMode ? taskMode.title : routeMeta.page}
+                  </div>
+                </div>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: 999,
+                    background: "#74AAE2",
+                    boxShadow: "0 0 0 6px rgba(116,170,226,0.14)",
+                  }}
+                />
               </div>
               {taskMode ? (
                 <div
@@ -2019,7 +2140,13 @@ export default function AppLayout() {
               <div key={group.title}>
                 <div style={drawerSectionTitle()}>{group.title}</div>
 
-                <div style={drawerLinkGrid(group.items.length === 1)}>
+                <div
+                  style={
+                    group.variant === "tools"
+                      ? drawerToolRail()
+                      : drawerLinkGrid(group.items.length === 1)
+                  }
+                >
                   {group.items.map((item) => (
                     <StableCtaLink
                       key={`${group.title}-${item.label}-${item.to}`}
@@ -2031,12 +2158,42 @@ export default function AppLayout() {
                       disabled={!!item.disabled}
                       onClick={() => closeDrawer()}
                       debugId={`app-layout.drawer.${group.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                      style={drawerLink(
-                        isItemActive(item, location.pathname, location.search),
-                        !!item.disabled
-                      )}
+                      style={
+                        group.variant === "tools"
+                          ? drawerToolLink(
+                              isItemActive(item, location.pathname, location.search),
+                              !!item.disabled
+                            )
+                          : drawerLink(
+                              isItemActive(item, location.pathname, location.search),
+                              !!item.disabled
+                            )
+                      }
                     >
-                      {item.label}
+                      <span
+                        aria-hidden="true"
+                        style={drawerIconTile(
+                          isItemActive(item, location.pathname, location.search)
+                        )}
+                      >
+                        <GsnRealisticIcon
+                          name={navIconForLabel(item.label)}
+                          size={group.variant === "tools" ? 30 : 34}
+                          decorative
+                        />
+                      </span>
+                      <span
+                        style={{
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                      <span aria-hidden="true" style={drawerChevron()}>
+                        &gt;
+                      </span>
                     </StableCtaLink>
                   ))}
                 </div>

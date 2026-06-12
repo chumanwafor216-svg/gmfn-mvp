@@ -23,6 +23,7 @@ ownership changes, or page-responsibility changes, also read:
 - `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`
 - `docs/GSN_MOBILE_UI_PROTOCOL.md`
 - `docs/GSN_PRODUCTION_POLISH_STANDARD.md`
+- `docs/APP_WIDE_AUDIT_PROTOCOL.md`
 
 For Marketplace page-composition work specifically, also read:
 
@@ -58,6 +59,11 @@ The GSN Production Polish Standard is the current authoritative quality gate for
 phone-ready route polish, 3D icon meaning, button stability, institutional proof
 surfaces, user-facing language, and the conditions that must pass before a
 screen or protocol-status item can be called complete.
+
+The App-Wide Audit Protocol is the current authoritative audit regime for
+checking each domain from entry through admin: route purpose, user-facing
+language, action honesty, empty-state truth, permission visibility, in-page
+return navigation, focused task behavior, action response, and regression cages.
 
 If that document conflicts with older provisional architecture notes, the
 canonical system skeleton wins until those notes are updated.

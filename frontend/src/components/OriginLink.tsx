@@ -114,9 +114,11 @@ export default function OriginLink(props: OriginLinkProps) {
       ? {
           ...(state as Record<string, unknown>),
           originPath: `${location.pathname}${location.search}${location.hash}`,
+          from: `${location.pathname}${location.search}${location.hash}`,
         }
       : {
           originPath: `${location.pathname}${location.search}${location.hash}`,
+          from: `${location.pathname}${location.search}${location.hash}`,
         };
 
   const linkDebugId =

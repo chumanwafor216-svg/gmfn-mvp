@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import PageTopNav from "../components/PageTopNav";
 import GSNBrandMark from "../components/GSNBrandMark";
 import {
@@ -2074,8 +2075,8 @@ export default function TrustScorePage() {
     setNotice({ tone: "success", text: successText });
   }
 
-  function copyTrustSnapshot() {
-    handleCopy(
+  const trustPassportPaper = useMemo(
+    () =>
       buildTrustPassportSnapshot({
         memberName,
         gmfnId,
@@ -2089,6 +2090,24 @@ export default function TrustScorePage() {
         nextStepLabel: nextStep.ctaLabel,
         verifyUrl,
       }),
+    [
+      cci.classText,
+      communityCode,
+      communityName,
+      currentBand,
+      currentScore,
+      gmfnId,
+      memberName,
+      nextStep.ctaLabel,
+      openTrust.classText,
+      trustSlipCode,
+      verifyUrl,
+    ]
+  );
+
+  function copyTrustSnapshot() {
+    handleCopy(
+      trustPassportPaper,
       "Trust snapshot copied.",
       "Trust snapshot is not available yet."
     );
@@ -3968,7 +3987,7 @@ export default function TrustScorePage() {
                   }}
                 >
                   {trustIconBadge("copy", isCompact ? 26 : 28, "navy")}
-                  Copy snapshot
+                  Copy text
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={() => openTrustRoute(routes.trustSlip)}
@@ -4044,6 +4063,23 @@ export default function TrustScorePage() {
                 </span>
                 <span style={statusPillStyle("Limited")}>Expires: {expiresText}</span>
               </div>
+              <GsnSnapshotPaperCard
+                paperText={trustPassportPaper}
+                compact={isCompact}
+                icon="shield"
+                maxBodyLines={isCompact ? 6 : undefined}
+                style={{ marginTop: 14 }}
+              />
+              <p
+                style={{
+                  ...helperText(),
+                  margin: "8px 0 0",
+                  fontSize: isCompact ? 12 : 13,
+                }}
+              >
+                Copy gives a short text summary. Use screenshot or print to share
+                the official GSN paper background.
+              </p>
             </div>
           </section>
 

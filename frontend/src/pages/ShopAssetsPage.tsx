@@ -17,6 +17,7 @@ import {
 } from "../lib/institutionalSurface";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnPublicShopLinkPackage } from "../lib/gsnSnapshotPaper";
 import { PAID_REPOST_HASH } from "../lib/ownerShopHandles";
 import {
   getMe,
@@ -1026,6 +1027,44 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     return `${marketplaceBasePath}${joiner}${params.toString()}#${PAID_REPOST_HASH}`;
   }
 
+  function buildPublicShopPackage(
+    link: string,
+    product?: ProductRecord | null,
+    blockNumber?: number
+  ): string {
+    if (!link) return "";
+
+    const visibleBlock =
+      blockNumber ||
+      Number(product?.public_block_number || product?.slot_number || 0);
+    const itemName = firstTruthy(
+      product?.name,
+      extractProductLabel(firstTruthy(product?.description)),
+      product ? "Public shop item" : ""
+    );
+
+    return buildGsnPublicShopLinkPackage({
+      shopName: firstTruthy(shopName, shop?.name, "My GSN Shop"),
+      ownerName: firstTruthy(shop?.owner_display_name, shop?.owner_name, me?.display_name),
+      gsnId: gmfnId,
+      communityName: firstTruthy(
+        shop?.marketplace_name,
+        shop?.community_name,
+        shop?.clan_name
+      ),
+      category: product ? "Shop Diaries public block" : "Public shop face",
+      shopLink: link,
+      blockLabel: visibleBlock > 0 ? `Block ${visibleBlock}` : "",
+      itemName,
+      messageLines: [
+        product
+          ? "This package opens the selected public Shop Diaries block."
+          : "This package opens the public shop face and visible Shop Diaries.",
+        "Private Vault items require a separate owner-issued link.",
+      ],
+    });
+  }
+
   const publicProducts = useMemo(
     () => products.filter((item) => isPublicGalleryProduct(item)),
     [products]
@@ -1734,8 +1773,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <SecondaryButton
                 onClick={() =>
                   copyText(
-                    shopLink,
-                    "Public shop poster link copied.",
+                    buildPublicShopPackage(shopLink),
+                    "Public shop package copied.",
                     "Public shop link is not ready yet. Refresh the shop identity, then try again."
                   )
                 }
@@ -2436,12 +2475,16 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     <SubtleButton
                       onClick={() =>
                         copyText(
-                          buildProductDeepLink(
-                            gmfnId,
-                            Number(selectedPublicProduct.id),
+                          buildPublicShopPackage(
+                            buildProductDeepLink(
+                              gmfnId,
+                              Number(selectedPublicProduct.id),
+                              selectedPublicSlot
+                            ),
+                            selectedPublicProduct,
                             selectedPublicSlot
                           ),
-                          "Public shop block poster link copied. It opens this block inside the Shop Diaries."
+                          "Public shop block package copied. It opens this block inside the Shop Diaries."
                         )
                       }
                       fullWidth
@@ -2736,8 +2779,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 <SubtleButton
                   onClick={() =>
                     copyText(
-                      shopLink,
-                      "Public shop poster link copied.",
+                      buildPublicShopPackage(shopLink),
+                      "Public shop package copied.",
                       "Public shop link is not ready yet. Refresh the shop identity, then try again."
                     )
                   }
@@ -3146,8 +3189,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                           return;
                         }
                         void copyText(
-                          productLink,
-                          "Public shop item poster link copied. It opens this item inside the Shop Diaries.",
+                          buildPublicShopPackage(
+                            productLink,
+                            item,
+                            publicSlotNumber > 0 ? publicSlotNumber : undefined
+                          ),
+                          "Public shop item package copied. It opens this item inside the Shop Diaries.",
                           "This item link is not ready yet. Refresh the shop identity, then try again."
                         );
                       }}

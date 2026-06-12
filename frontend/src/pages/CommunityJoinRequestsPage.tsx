@@ -91,8 +91,8 @@ function pageShell(): React.CSSProperties {
     minHeight: "100vh",
     width: "100%",
     maxWidth: "100%",
-    margin: "0 -20px -30px",
-    padding: "0 20px 34px",
+    margin: "0",
+    padding: "0 clamp(12px, 4vw, 20px) 34px",
     background:
       "radial-gradient(circle at 82% 6%, rgba(53,111,181,0.22) 0%, rgba(53,111,181,0) 32%), radial-gradient(circle at 4% 38%, rgba(64,112,169,0.16) 0%, rgba(64,112,169,0) 28%), linear-gradient(180deg, #031222 0%, #061B2D 36%, #08233A 100%)",
     boxSizing: "border-box",
@@ -218,8 +218,14 @@ function navActionStyle(kind: "light" | "blue" = "light"): React.CSSProperties {
     maxHeight: 58,
     borderRadius: 14,
     padding: "0 10px",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 1000,
+    lineHeight: 1.08,
+    whiteSpace: "normal",
+    overflow: "hidden",
+    textOverflow: "clip",
+    overflowWrap: "normal",
+    wordBreak: "normal",
     background: blue
       ? "linear-gradient(180deg, #2278F2 0%, #0D57C7 100%)"
       : "linear-gradient(180deg, #FFFFFF 0%, #F5F8FC 100%)",
@@ -769,10 +775,13 @@ export default function CommunityJoinRequestsPage() {
             align="stretch"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: 12,
+              gridTemplateColumns: isCompact
+                ? "minmax(0, 1fr) minmax(0, 1fr)"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: isCompact ? 10 : 12,
               minHeight: 0,
               width: "100%",
+              minWidth: 0,
             }}
           >
             <SecondaryButton
@@ -806,7 +815,10 @@ export default function CommunityJoinRequestsPage() {
               stableHeight={58}
               fullWidth
               debugId="community-join-requests.refresh"
-              style={navActionStyle("blue")}
+              style={{
+                ...navActionStyle("blue"),
+                gridColumn: isCompact ? "1 / -1" : undefined,
+              }}
             >
               {iconText("refresh", "Refresh")}
             </PrimaryButton>

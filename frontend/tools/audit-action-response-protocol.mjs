@@ -53,6 +53,40 @@ function assertNotContains(file, pattern, message) {
   }
 }
 
+function assertActionTagDoesNotDeclare(file, debugId, forbiddenPattern, message) {
+  const text = read(file);
+  const debugIndex = text.indexOf(`debugId="${debugId}"`);
+
+  if (debugIndex === -1) {
+    findings.push({
+      file,
+      line: 1,
+      message: `Critical action is missing debugId ${debugId}.`,
+      text: "Expected debugId was not found.",
+    });
+    return;
+  }
+
+  const start = text.lastIndexOf("<", debugIndex);
+  const afterDebug = text.slice(debugIndex);
+  const closeMatch = afterDebug.match(/\r?\n\s*\/?>/);
+  const end = closeMatch ? debugIndex + closeMatch.index + closeMatch[0].length : debugIndex + 320;
+  const actionTag = text.slice(start, end);
+
+  if (forbiddenPattern.test(actionTag)) {
+    findings.push({
+      file,
+      line: lineAt(text, debugIndex),
+      message,
+      text: "Forbidden response-protocol property was found on the action tag.",
+    });
+  }
+}
+
+function lineAt(source, index) {
+  return source.slice(0, index).split(/\r?\n/).length;
+}
+
 assertContains(
   "src/lib/actionResponseProtocol.ts",
   /buildActionBlockedMessage[\s\S]*?buildActionSuccessMessage/,
@@ -151,14 +185,21 @@ assertContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /async function copyVaultPaymentInstruction[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?const copiedReference = reference \? await safeCopy\(reference\)[\s\S]*?async function createViewingLink[\s\S]*?const copied = url \? await safeCopy\(url\)[\s\S]*?async function copySelectedBlockLink[\s\S]*?const copied = await safeCopy\(selectedBlockLinkUrl\)[\s\S]*?function openSelectedBlockLink[\s\S]*?const opened = window\.open[\s\S]*?browser blocked the private view window/,
-  "Vault Control inner buttons must answer missing links, blocked copy, generated-code copy, and blocked private-view windows."
+  /async function copyVaultPaymentInstruction[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?const copiedReference = reference \? await safeCopy\(reference\)[\s\S]*?async function createViewingLink[\s\S]*?const copied = url \? await safeCopy\(buildVaultInvitePackage\(url, link\)\)[\s\S]*?async function copySelectedBlockLink[\s\S]*?Create this block link before copying it\.[\s\S]*?const copied = await safeCopy\(buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)\)[\s\S]*?function openSelectedBlockLink[\s\S]*?Create this block link before opening the private view\.[\s\S]*?const opened = window\.open[\s\S]*?browser blocked the private view window/,
+  "Vault Control inner buttons must answer missing links, blocked copy, generated-code copy, branded Vault invite copies, and blocked private-view windows."
 );
 
-assertNotContains(
-  "src/pages/VaultControlPage.tsx",
-  /debugId="vault-control\.(?:copy-payment-details|link\.copy|link\.open-private-view)"[\s\S]{0,260}?disabled=\{(?:vaultPaymentTransferLines\.length === 0|!selectedBlockLinkUrl)\}/,
-  "Vault Control copy/open buttons must stay tappable so missing payment details or links can be explained."
+[
+  "vault-control.copy-payment-details",
+  "vault-control.link.copy",
+  "vault-control.link.open-private-view",
+].forEach((debugId) =>
+  assertActionTagDoesNotDeclare(
+    "src/pages/VaultControlPage.tsx",
+    debugId,
+    /disabled=\{(?:vaultPaymentTransferLines\.length === 0|!selectedBlockLinkUrl)\}/,
+    "Vault Control copy/open buttons must stay tappable so missing payment details or links can be explained."
+  )
 );
 
 assertContains(

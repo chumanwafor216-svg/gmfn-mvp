@@ -8807,62 +8807,14 @@ export default function DashboardPage() {
                 </div>
               <div
                 style={{
-                  marginTop: isPhone ? 12 : 14,
-                  display: "grid",
-                  gridTemplateColumns: isPhone
-                    ? "repeat(2, minmax(0, 1fr))"
-                    : "repeat(2, minmax(180px, 1fr))",
-                  gap: isPhone ? 8 : 10,
-                  maxWidth: isPhone ? undefined : 580,
+                  marginTop: isPhone ? 6 : 8,
+                  color: "#8A651E",
+                  fontSize: isPhone ? 12.5 : 13.5,
+                  fontWeight: 850,
+                  lineHeight: 1.25,
                 }}
               >
-                <span
-                  style={{
-                    ...badge(false),
-                    minHeight: isPhone ? 42 : 46,
-                    justifyContent: "center",
-                    padding: isPhone ? "8px 10px" : "9px 14px",
-                    border: "1px solid rgba(214,170,69,0.34)",
-                    background:
-                      "linear-gradient(180deg, #FFFFFF 0%, #FFF8E8 100%)",
-                    color: "#8A651E",
-                    boxShadow:
-                      "0 10px 20px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.92)",
-                    fontSize: isPhone ? 12.5 : 14,
-                    fontWeight: 950,
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 12,
-                      height: 12,
-                      borderRadius: 999,
-                      background: "#D6AA45",
-                      boxShadow: "0 0 0 4px rgba(214,170,69,0.16)",
-                    }}
-                  />
-                  {spotlightQueueTotal || spotlights.length} live / queued
-                </span>
-                <span
-                  style={{
-                    ...badge(false),
-                    minHeight: isPhone ? 42 : 46,
-                    justifyContent: "center",
-                    padding: isPhone ? "8px 10px" : "9px 14px",
-                    border: "1px solid rgba(15,59,116,0.12)",
-                    background:
-                      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
-                    color: "#07172C",
-                    boxShadow:
-                      "0 10px 20px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.92)",
-                    fontSize: isPhone ? 12.5 : 14,
-                    fontWeight: 950,
-                  }}
-                >
-                  <DashboardSignalIcon name="compass" size={isPhone ? 18 : 20} />
-                  Rotates every {SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL} seconds
-                </span>
+                Live community spotlight
               </div>
               </div>
             </div>
@@ -9082,14 +9034,16 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
-                  showAudioUnlock={Boolean(spotlightVideoCandidate)}
+                  showAudioUnlock={false}
                   audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
-                    top: isPhone ? 20 : 22,
-                    right: isPhone ? 20 : 22,
-                    minWidth: isPhone ? 52 : 56,
-                    width: isPhone ? 52 : 56,
-                    minHeight: isPhone ? 52 : 56,
+                    top: isPhone ? 12 : 18,
+                    right: isPhone ? 12 : 18,
+                    minWidth: isPhone ? 44 : 52,
+                    width: isPhone ? 44 : 52,
+                    minHeight: isPhone ? 44 : 52,
+                    height: isPhone ? 44 : 52,
+                    maxHeight: isPhone ? 44 : 52,
                     padding: 0,
                     borderRadius: 999,
                     fontSize: isPhone ? 18 : 20,
@@ -9128,29 +9082,6 @@ export default function DashboardPage() {
                       "linear-gradient(180deg, rgba(6,19,34,0.08) 0%, rgba(6,19,34,0.04) 38%, rgba(6,19,34,0.76) 100%)",
                   }}
                 />
-                {!spotlightVideoCandidate ? (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      position: "absolute",
-                      top: isPhone ? 20 : 22,
-                      right: isPhone ? 20 : 22,
-                      zIndex: 5,
-                      width: isPhone ? 58 : 64,
-                      height: isPhone ? 58 : 64,
-                      borderRadius: 999,
-                      display: "grid",
-                      placeItems: "center",
-                      border: "1px solid rgba(214,170,69,0.68)",
-                      background:
-                        "linear-gradient(180deg, rgba(7,23,44,0.96) 0%, rgba(8,35,58,0.94) 100%)",
-                      boxShadow:
-                        "0 16px 28px rgba(2,12,27,0.32), inset 0 1px 0 rgba(255,255,255,0.18)",
-                    }}
-                  >
-                    <GsnLegacyIcon name="megaphone" size={isPhone ? 38 : 42} />
-                  </span>
-                ) : null}
                 <div
                   style={{
                     position: "absolute",
@@ -9489,7 +9420,7 @@ export default function DashboardPage() {
                         lineHeight: 1.28,
                       }}
                     >
-                      Spotlight is active.
+                      {spotlightQueueTotal || spotlights.length} live or queued.
                     </div>
                   </div>
                   {!isPhone ? (
@@ -9550,7 +9481,9 @@ export default function DashboardPage() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gridTemplateColumns: isPhone
+                        ? "1fr"
+                        : "repeat(3, minmax(0, 1fr))",
                       gap: 8,
                     }}
                   >
@@ -9581,6 +9514,20 @@ export default function DashboardPage() {
                       }}
                     >
                       {spotlightExpiryStatus.chip}
+                    </div>
+                    <div
+                      style={{
+                        borderRadius: 14,
+                        border: "1px solid rgba(15,59,116,0.12)",
+                        background: "rgba(248,251,255,0.92)",
+                        padding: isPhone ? "9px 10px" : "10px 12px",
+                        color: "#0F3B74",
+                        fontSize: isPhone ? 11.3 : 12.5,
+                        fontWeight: 950,
+                        lineHeight: 1.25,
+                      }}
+                    >
+                      Rotates every {SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL} seconds.
                     </div>
                   </div>
                   <div
@@ -9719,7 +9666,7 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
-                  showAudioUnlock={Boolean(spotlightVideoCandidate)}
+                  showAudioUnlock={false}
                   audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
                     top: isPhone ? 14 : 16,
@@ -9727,6 +9674,8 @@ export default function DashboardPage() {
                     minWidth: isPhone ? 40 : 44,
                     width: isPhone ? 40 : 44,
                     minHeight: isPhone ? 40 : 44,
+                    height: isPhone ? 40 : 44,
+                    maxHeight: isPhone ? 40 : 44,
                     padding: 0,
                     borderRadius: 999,
                     fontSize: isPhone ? 18 : 20,

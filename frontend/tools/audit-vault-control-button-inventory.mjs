@@ -33,6 +33,7 @@ const expectedNativeFieldCount = 8;
 const expectedFileInputActionRoots = 2;
 const expectedMediaFrameInvocations = 2;
 const expectedSharedMediaAudioActionTemplates = 1;
+const expectedSocialTagActionTemplates = 1;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
   drawer: 6,
@@ -46,6 +47,7 @@ const expectedWholeRouteActionFamilies =
   expectedSourceActions.total +
   expectedFileInputActionRoots +
   expectedSharedMediaAudioActionTemplates +
+  expectedSocialTagActionTemplates +
   expectedMobileTaskShellActions;
 
 function lineAt(source, index) {
@@ -213,6 +215,7 @@ const expectedActionOrder = [
   "vault-control.selected-block.add",
   "vault-control.link.create-or-replace",
   "vault-control.link.copy",
+  "vault-control.link.social-share",
   "vault-control.link.open-private-view",
   "vault-control.link.extend",
   "vault-control.link.revoke",
@@ -333,6 +336,11 @@ assertVaultContains(
 );
 
 assertVaultContains(
+  /import SocialTagShareButton from "\.\.\/components\/SocialTagShareButton";[\s\S]*?function buildVaultSocialShareTarget\(\)[\s\S]*?buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)[\s\S]*?<SocialTagShareButton[\s\S]*?target=\{buildVaultSocialShareTarget\(\)\}[\s\S]*?disabled=\{!selectedBlockLinkUrl\}[\s\S]*?buttonLabel="Share block"[\s\S]*?debugId="vault-control\.link\.social-share"/,
+  "Vault Control private block social sharing must stay owner-issued, disabled until a private link exists, and use the shared Vault invite package."
+);
+
+assertVaultContains(
   /<SpotlightMediaFrame[\s\S]*?alt=\{firstTruthy\(selectedProduct\.name, `Vault block #\$\{selectedSlot\}`\)\}[\s\S]*?showAudioUnlock=\{Boolean\(selectedProduct\.video_url\)\}[\s\S]*?<SpotlightMediaFrame[\s\S]*?alt=\{firstTruthy\(productName, "Vault preview"\)\}[\s\S]*?showVideoControls[\s\S]*?showAudioUnlock/,
   "Vault Control must keep media frames for selected private block playback and editor preview playback."
 );
@@ -416,6 +424,7 @@ console.log(
     `${nativeFields.length} native fields (${expectedFileInputActionRoots} file-input action roots), ` +
     `${mediaFrameInvocationCount} media-frame invocation families, ` +
     `${expectedSharedMediaAudioActionTemplates} shared media audio action template, ` +
+    `${expectedSocialTagActionTemplates} social tag action template, ` +
     `${expectedMobileTaskShellActions} focused mobile app-shell controls ` +
     `(${expectedMobileTaskShellBreakdown.top} top, ${expectedMobileTaskShellBreakdown.drawer} drawer, ` +
     `${expectedMobileTaskShellBreakdown.pageTools} tools, ${expectedMobileTaskShellBreakdown.bottom} bottom), ` +

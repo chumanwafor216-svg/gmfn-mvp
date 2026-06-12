@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "./StableButton";
 import * as api from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnPublicShopLinkPackage } from "../lib/gsnSnapshotPaper";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   OWNER_SHOP_HANDLES,
@@ -647,7 +648,7 @@ export default function CommunityShopControlPanel({
     if (!shop) return "Community Home can still launch the owner shop desk while the shop record is loading.";
     return firstTruthy(
       shop.description,
-      "Use this owner desk to prepare the one shop here, then let Marketplace carry the live community-facing side."
+      "Prepare your one public shop here. Marketplace carries the live community-facing side."
     );
   }, [shop]);
 
@@ -660,11 +661,24 @@ export default function CommunityShopControlPanel({
       return;
     }
 
-    const copied = await api.safeCopy(publicShopLink);
+    const copied = await api.safeCopy(
+      buildGsnPublicShopLinkPackage({
+        shopName: shop?.shopName,
+        ownerName: shop?.ownerName,
+        gsnId: shop?.gmfnId,
+        communityName: shop?.communityName,
+        category: "Public shop face",
+        shopLink: publicShopLink,
+        messageLines: [
+          "This package opens the public shop face and visible Shop Diaries.",
+          "Private Vault items require a separate owner-issued link.",
+        ],
+      })
+    );
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
-        ? "Public shop link copied."
+        ? "Public shop package copied."
         : "Clipboard copy was blocked. Use Marketplace to refresh and copy the public shop link.",
     });
   }

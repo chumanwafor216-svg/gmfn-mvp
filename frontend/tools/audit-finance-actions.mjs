@@ -136,6 +136,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/WithdrawalInstructionsPage.tsx",
+  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?rail: true,[\s\S]*?\}[\s\S]*?function isPlaceholderRailValue\(value: any\): boolean \{[\s\S]*?to be assigned[\s\S]*?gsn settlement rail[\s\S]*?function settlementReady\(settlement: CommunityMoneySettlement \| null\): boolean \{[\s\S]*?hasBankAccount[\s\S]*?hasMobileMoney[\s\S]*?hasInternationalRail[\s\S]*?const communityRailReady = settlementReady\(communitySettlement\);[\s\S]*?\(\) => visibleSettlementLines\(communitySettlement\)/,
+  "Money Out community rail must stay collapsed by default and must not treat placeholder GSN settlement labels as real filled bank details."
+);
+
+assertNotContains(
+  "src/pages/WithdrawalInstructionsPage.tsx",
+  /communitySettlement\?\.bankName \|\|\s*communitySettlement\?\.accountName \|\|\s*communitySettlement\?\.accountNumber/,
+  "Money Out community rail readiness must not be based on placeholder bank/account labels alone."
+);
+
+assertContains(
   "src/pages/PaymentRailsPage.tsx",
   /debugId="payment-rails\.route\.money-in"[\s\S]*?debugId="payment-rails\.route\.money-out"[\s\S]*?debugId="payment-rails\.route\.readiness"[\s\S]*?debugId="payment-rails\.route\.workbench"/,
   "Payment Rails route actions must keep finance-route debug IDs."

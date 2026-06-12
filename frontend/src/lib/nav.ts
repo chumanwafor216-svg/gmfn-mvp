@@ -8,6 +8,7 @@ import { rememberPublishRecovery } from "./publishRecovery";
 
 export type OriginState = {
   from?: string;
+  originPath?: string;
 };
 
 export function currentPath(
@@ -24,7 +25,8 @@ export function isSafeInternalPath(value: string): boolean {
 export function originState(
   location: Pick<Location, "pathname" | "search" | "hash">
 ): OriginState {
-  return { from: currentPath(location) };
+  const path = currentPath(location);
+  return { from: path, originPath: path };
 }
 
 export function withOriginState(
@@ -34,6 +36,7 @@ export function withOriginState(
   return {
     ...(existing || {}),
     from: currentPath(location),
+    originPath: currentPath(location),
   };
 }
 
@@ -45,8 +48,10 @@ export function resolveBackTarget(
   const raw =
     location?.state &&
     typeof location.state === "object" &&
-    "from" in (location.state as any)
-      ? String((location.state as any).from || "").trim()
+    ("originPath" in (location.state as any) || "from" in (location.state as any))
+      ? String(
+          (location.state as any).originPath || (location.state as any).from || ""
+        ).trim()
       : "";
 
   if (raw && isSafeInternalPath(raw) && raw !== current) {

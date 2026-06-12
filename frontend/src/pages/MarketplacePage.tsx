@@ -3,6 +3,7 @@ import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
   normalizedJoinInviteUrl,
   personalizedJoinInviteUrl,
@@ -15,6 +16,11 @@ import {
 } from "../lib/ctaTargets";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { OWNER_SHOP_HASHES } from "../lib/ownerShopHandles";
+import {
+  buildGsnCommunityVerifyLinkPackage,
+  buildGsnInviteLinkPackage,
+  buildGsnPublicShopLinkPackage,
+} from "../lib/gsnSnapshotPaper";
 import {
   publicApiUrl,
   publicFrontendUrl,
@@ -1728,8 +1734,9 @@ function compactStatusPillStyle(primary = false): React.CSSProperties {
   return {
     ...badgeStyle(primary),
     maxWidth: "100%",
-    overflowWrap: "anywhere",
-    wordBreak: "break-word",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
   };
 }
 
@@ -1938,20 +1945,18 @@ function buildMaskedLinkLabel(
 
   const code = maskedLinkCode(url);
   const cleanedSubject = safeStr(subject) || "GSN";
+  const suffix = (label: string) => (code ? ` - ${label} ${code}` : "");
 
   if (kind === "join") {
-    return `Secure GSN join link for ${cleanedSubject}${code ? ` • code ${code}` : ""}`;
-  }
-
-  if (String(kind) === "marketplace") {
-    return `Community verification record for ${cleanedSubject}${code ? ` - ref ${code}` : ""}`;
+    return `Secure GSN join link for ${cleanedSubject}${suffix("code")}`;
   }
 
   if (kind === "marketplace") {
-    return `Public marketplace face for ${cleanedSubject}${code ? ` • ref ${code}` : ""}`;
+    return `Community verification record for ${cleanedSubject}${suffix("ref")}`;
   }
 
-  return `Public shop face${code ? ` • ref ${code}` : ""}`;
+  return `Public shop face${suffix("ref")}`;
+
 }
 
 function cleanMaskedLinkLabel(label: string): string {
@@ -1989,7 +1994,7 @@ function joinShareMessageCardStyle(isCompact: boolean): React.CSSProperties {
 
 function linkReserveTextStyle(): React.CSSProperties {
   return {
-    ...marketplaceLinkSummaryStyle(false),
+    ...marketplaceLinkSummaryStyle(true),
     height: 66,
     minHeight: 66,
     maxHeight: 66,
@@ -2016,6 +2021,7 @@ function marketplaceLinkSummaryStyle(isCompact: boolean): React.CSSProperties {
     overflow: "hidden",
     overflowWrap: "break-word",
     wordBreak: "normal",
+    hyphens: "none",
   };
 }
 
@@ -2246,39 +2252,6 @@ function marketplaceLinkMiniIconStyle(): React.CSSProperties {
   };
 }
 
-function buildGsnShareMessage(
-  kind: "join",
-  opts: {
-    memberName: string;
-    communityName: string;
-    marketplaceName?: string;
-    recipientName?: string;
-    personalNote?: string;
-    url: string;
-  }
-): string {
-  const sender = safeStr(opts.memberName) || "a known GSN member";
-  const community = safeStr(opts.communityName) || "this community";
-  const marketplace = safeStr(opts.marketplaceName);
-  const recipient = safeStr(opts.recipientName);
-  const personalNote = safeStr(opts.personalNote);
-  const url = safeStr(opts.url);
-
-  return [
-    recipient ? `Hello ${recipient},` : "Hello,",
-    "",
-    `${sender} from ${marketplace || community} is inviting you to begin the GSN join request for ${community}.`,
-    "This link lets you send your request back to the community for review. It is not automatic entry.",
-    personalNote ? `Personal note: ${personalNote}` : "",
-    "",
-    "GSN helps existing trust become visible, recordable, and useful.",
-    "Open secure join link:",
-    url,
-    "",
-    "Sent through GSN",
-  ].filter(Boolean).join("\n");
-}
-
 function buildGsnSharePreview(
   kind: "join",
   opts: {
@@ -2339,9 +2312,9 @@ function marketplaceInlineActionsStyle(
     marginTop: isCompact ? 8 : 12,
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "repeat(2, minmax(0, 1fr))"
+      ? "repeat(2, minmax(128px, 1fr))"
       : "repeat(auto-fit, minmax(168px, 1fr))",
-    gridAutoRows: isCompact ? "52px" : "58px",
+    gridAutoRows: isCompact ? "56px" : "58px",
     gap: 8,
     alignItems: "stretch",
     alignContent: "start",
@@ -2358,18 +2331,23 @@ function marketplaceInlineActionStyle(
   return {
     ...marketplaceActionStyle(kind, disabled),
     width: "100%",
-    height: _isCompact ? 52 : 58,
-    minHeight: _isCompact ? 52 : 58,
-    maxHeight: _isCompact ? 52 : 58,
-    padding: _isCompact ? "0 8px" : "0 11px",
+    minWidth: 0,
+    height: _isCompact ? 56 : 58,
+    minHeight: _isCompact ? 56 : 58,
+    maxHeight: _isCompact ? 56 : 58,
+    padding: _isCompact ? "0 10px" : "0 11px",
     pointerEvents: "auto",
     touchAction: "manipulation",
     overflowAnchor: "none",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     overflow: "hidden",
-    textOverflow: "ellipsis",
+    textOverflow: "clip",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
     transition: "none",
-    fontSize: _isCompact ? 13 : undefined,
+    fontSize: _isCompact ? 12.5 : undefined,
+    lineHeight: 1.08,
   };
 }
 
@@ -4367,8 +4345,20 @@ export default function MarketplacePage() {
         : freshLink);
     copyMarketplaceLink(
       link,
-      "Public shop poster link refreshed and copied.",
-      publicShopUnavailableText
+      "Public shop package refreshed and copied.",
+      publicShopUnavailableText,
+      buildGsnPublicShopLinkPackage({
+        shopName: firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop",
+        ownerName: memberName,
+        gsnId: publicShopOwnerId || currentGmfnId,
+        communityName: activeCommunityName,
+        category: "Public shop face",
+        shopLink: link,
+        messageLines: [
+          "This package opens the public shop face and visible Shop Diaries.",
+          "Private Vault items require a separate owner-issued link.",
+        ],
+      })
     );
   }
 
@@ -4385,7 +4375,18 @@ export default function MarketplacePage() {
         : freshLink);
     openMarketplaceEmail(
       shopEmailSubject,
-      ["Here is the public GSN shop face.", "", link].join("\n"),
+      buildGsnPublicShopLinkPackage({
+        shopName: firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop",
+        ownerName: memberName,
+        gsnId: publicShopOwnerId || currentGmfnId,
+        communityName: activeCommunityName,
+        category: "Public shop face",
+        shopLink: link,
+        messageLines: [
+          "This package opens the public shop face and visible Shop Diaries.",
+          "Private Vault items require a separate owner-issued link.",
+        ],
+      }),
       link,
       publicShopUnavailableText
     );
@@ -4784,22 +4785,28 @@ export default function MarketplacePage() {
     );
   }, [publicCommunityWorkspaceLink, activeCommunityName]);
 
-  const joinWhatsappMessage = useMemo(() => {
-    return buildGsnShareMessage("join", {
-      memberName,
-      communityName: activeJoinCommunityName,
-      marketplaceName: activeCommunityName,
-      recipientName: joinRecipientName,
-      personalNote: joinInviteNote,
-      url: personalizedInviteLink,
+  const joinInvitePackage = useMemo(() => {
+    if (!personalizedInviteLink) return "";
+    return buildGsnInviteLinkPackage({
+      senderName: memberName,
+      senderGsnId: currentGmfnId,
+      communityName: activeJoinCommunityName || activeCommunityName,
+      inviteLink: personalizedInviteLink,
+      messageLines: [
+        joinRecipientName ? `Recipient: ${joinRecipientName}` : "",
+        joinInviteNote ? `Personal note: ${joinInviteNote}` : "",
+        "This invitation opens a join request path. It is not automatic entry.",
+        "The community still reviews the request before membership is granted.",
+      ],
     });
   }, [
+    personalizedInviteLink,
     memberName,
+    currentGmfnId,
     activeJoinCommunityName,
     activeCommunityName,
     joinRecipientName,
     joinInviteNote,
-    personalizedInviteLink,
   ]);
 
   const joinWhatsappPreview = useMemo(() => {
@@ -4829,20 +4836,56 @@ export default function MarketplacePage() {
   }, [activeCommunityName]);
 
   const marketplaceEmailMessage = useMemo(() => {
-    return [
-      `Here is the public GSN community verification record for ${activeCommunityName}.`,
-      "",
-      publicCommunityWorkspaceLink,
-    ].join("\n");
-  }, [activeCommunityName, publicCommunityWorkspaceLink]);
+    if (!publicCommunityWorkspaceLink) return "";
+    return buildGsnCommunityVerifyLinkPackage({
+      communityName: activeCommunityName,
+      communityId: activeCommunityId ? String(activeCommunityId) : "",
+      status: publicCommunityWorkspaceLink ? "Ready" : "Pending",
+      publicRecord: "Community verification record",
+      relayAvailability: "Public verify link can be opened by the receiver.",
+      verifyLink: publicCommunityWorkspaceLink,
+    });
+  }, [activeCommunityName, activeCommunityId, publicCommunityWorkspaceLink]);
 
   const shopEmailSubject = useMemo(() => {
     return buildGsnEmailSubject("shop", activeCommunityName);
   }, [activeCommunityName]);
 
+  const publicShopSocialLink = useMemo(() => {
+    return (
+      publicShopPosterLink ||
+      (publicShopOwnerId || currentGmfnId
+        ? publicShopShareUrl({ gmfnId: publicShopOwnerId || currentGmfnId })
+        : publicShopViewLink)
+    );
+  }, [currentGmfnId, publicShopOwnerId, publicShopPosterLink, publicShopViewLink]);
+
+  const publicShopSocialPackage = useMemo(() => {
+    if (!publicShopSocialLink) return "";
+    return buildGsnPublicShopLinkPackage({
+      shopName: firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop",
+      ownerName: memberName,
+      gsnId: publicShopOwnerId || currentGmfnId,
+      communityName: activeCommunityName,
+      category: "Public shop face",
+      shopLink: publicShopSocialLink,
+      messageLines: [
+        "This package opens the public shop face and visible Shop Diaries.",
+        "Private Vault items require a separate owner-issued link.",
+      ],
+    });
+  }, [
+    activeCommunityName,
+    currentGmfnId,
+    memberName,
+    publicShopOwnerId,
+    publicShopRecord?.name,
+    publicShopSocialLink,
+  ]);
+
   const poolAmount = getPoolAmountText(poolInfo);
   const poolCurrency = getPoolCurrency(poolInfo);
-  const visiblePoolAmount = safeStr(moneySurface?.poolAmount || poolAmount || "—");
+  const visiblePoolAmount = safeStr(moneySurface?.poolAmount || poolAmount || "-");
   const visiblePoolCurrency = safeStr(
     moneySurface?.poolCurrency || poolCurrency || "NGN"
   );
@@ -4990,8 +5033,6 @@ export default function MarketplacePage() {
   }, [communityPackageItems]);
   const extraShopBlocksPackage =
     communityPackageByCode.get("extra_shop_blocks") || null;
-  const extraMembersPackage =
-    communityPackageByCode.get("extra_members") || null;
   const meetingPackage =
     communityPackageByCode.get("community_meeting_pack") || null;
   const roscaPackage = communityPackageByCode.get("rosca_cycle") || null;
@@ -5244,14 +5285,15 @@ export default function MarketplacePage() {
   async function copyMarketplaceLink(
     url: string,
     successText: string,
-    missingText: string
+    missingText: string,
+    packageText?: string
   ) {
     if (!url) {
       showNotice("error", missingText);
       return;
     }
 
-    const copied = await safeCopy(url);
+    const copied = await safeCopy(safeStr(packageText) || url);
     showNotice(
       copied ? "success" : "error",
       copied
@@ -7199,7 +7241,7 @@ export default function MarketplacePage() {
                           : "Admin prepares join link"}
                     </span>
                   </div>
-                  <div style={marketplaceLinkSummaryStyle(isCompact)}>
+                  <div style={linkReserveTextStyle()}>
                     <MarketplaceGlyph name={inviteLink ? "links" : "verify"} size={15} />
                     {inviteLink
                       ? personalizedInviteMaskedLabel
@@ -7255,8 +7297,9 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceLink(
                             personalizedInviteLink,
-                            "Join link copied.",
-                            marketplaceJoinLinkMissingMessage
+                            "GSN join invite package copied.",
+                            marketplaceJoinLinkMissingMessage,
+                            joinInvitePackage
                           );
                         });
                       }}
@@ -7269,7 +7312,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="copy" size={18} />
                       </span>
-                      Copy Join Link
+                      {isCompact ? "Copy Join" : "Copy Join Link"}
                     </StableButton>
                     {!isCompact ? (
                       <StableButton
@@ -7307,9 +7350,9 @@ export default function MarketplacePage() {
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceMessage(
-                              joinWhatsappMessage,
+                              joinInvitePackage,
                               personalizedInviteLink,
-                              "Join message copied.",
+                              "GSN join invite package copied.",
                               marketplaceJoinLinkMissingMessage
                             );
                           });
@@ -7333,7 +7376,7 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           openMarketplaceEmail(
                             joinEmailSubject,
-                            joinWhatsappMessage,
+                            joinInvitePackage,
                             personalizedInviteLink,
                             marketplaceJoinLinkMissingMessage
                           );
@@ -7348,7 +7391,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="email" size={18} />
                       </span>
-                      Email Join Link
+                      {isCompact ? "Email Join" : "Email Join Link"}
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.whatsapp"
@@ -7360,7 +7403,7 @@ export default function MarketplacePage() {
                             return;
                           }
                           openMarketplaceExternalLink(
-                            `https://wa.me/?text=${encodeURIComponent(joinWhatsappMessage)}`,
+                            `https://wa.me/?text=${encodeURIComponent(joinInvitePackage)}`,
                             marketplaceJoinLinkMissingMessage
                           );
                         });
@@ -7376,6 +7419,23 @@ export default function MarketplacePage() {
                       </span>
                       WhatsApp
                     </StableButton>
+                    <SocialTagShareButton
+                      target={{
+                        title: joinEmailSubject,
+                        message: joinInvitePackage,
+                        url: personalizedInviteLink,
+                      }}
+                      disabled={!inviteLink}
+                      buttonLabel="Share"
+                      stableHeight={58}
+                      debugId="marketplace.links.join.tag-social"
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        !inviteLink,
+                        isCompact
+                      )}
+                      onResult={showNotice}
+                    />
                   </div>
                   {!isCompact ? (
                     <div style={joinShareMessageCardStyle(isCompact)}>
@@ -7435,8 +7495,9 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceLink(
                             publicCommunityWorkspaceLink,
-                            "Community verification link copied.",
-                            "Community verification link is not ready yet."
+                            "GSN community verification package copied.",
+                            "Community verification link is not ready yet.",
+                            marketplaceEmailMessage
                           );
                         });
                       }}
@@ -7542,7 +7603,7 @@ export default function MarketplacePage() {
                         : "Needs refresh"}
                     </span>
                   </div>
-                  <div style={marketplaceLinkSummaryStyle(isCompact)}>
+                  <div style={linkReserveTextStyle()}>
                     <MarketplaceGlyph name="shop" size={15} />
                     {publicShopViewLink ? (
                       <StableCtaLink
@@ -7565,8 +7626,9 @@ export default function MarketplacePage() {
                           textDecoration: "underline",
                           textUnderlineOffset: 3,
                           touchAction: "manipulation",
-                          overflowWrap: "anywhere",
-                          wordBreak: "break-word",
+                          overflowWrap: "normal",
+                          wordBreak: "normal",
+                          hyphens: "none",
                           lineHeight: 1.2,
                         }}
                       >
@@ -7645,7 +7707,7 @@ export default function MarketplacePage() {
                           <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                             <MarketplaceGlyph name="copy" size={18} />
                           </span>
-                          Copy Shop Link
+                          {isCompact ? "Copy Shop" : "Copy Shop Link"}
                         </>
                       )}
                     </StableButton>
@@ -7677,8 +7739,25 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="email" size={18} />
                       </span>
-                      Email Link
+                      {isCompact ? "Email" : "Email Link"}
                     </StableButton>
+                    <SocialTagShareButton
+                      target={{
+                        title: shopEmailSubject,
+                        message: publicShopSocialPackage,
+                        url: publicShopSocialLink,
+                      }}
+                      disabled={publicShopActionsLocked || !publicShopSocialLink}
+                      buttonLabel="Share"
+                      stableHeight={58}
+                      debugId="marketplace.public-shop.tag-social"
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        publicShopActionsLocked || !publicShopSocialLink,
+                        isCompact
+                      )}
+                      onResult={showNotice}
+                    />
                     <StableButton
                       type="button"
                       debugId="marketplace.public-shop.open"
@@ -7707,7 +7786,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="open" size={18} />
                       </span>
-                      Open Shop Face
+                      {isCompact ? "Open Shop" : "Open Shop Face"}
                     </StableButton>
                   </div>
                 </div>
@@ -8351,7 +8430,7 @@ export default function MarketplacePage() {
                       marginTop: 12,
                       display: "grid",
                       gridTemplateColumns: isCompact
-                        ? "repeat(2, minmax(0, 1fr))"
+                        ? "1fr"
                         : "repeat(4, minmax(0, 1fr))",
                       gap: 8,
                     }}
@@ -8575,7 +8654,7 @@ export default function MarketplacePage() {
                       <div
                         key={row.key}
                         style={{
-                          minHeight: isCompact ? 92 : 112,
+                          minHeight: isCompact ? 86 : 112,
                           borderRadius: isCompact ? 16 : 18,
                           border: "1px solid rgba(16,37,59,0.09)",
                           background:
@@ -8585,15 +8664,15 @@ export default function MarketplacePage() {
                           boxSizing: "border-box",
                           display: "flex",
                           flexDirection: "column",
-                          justifyContent: "space-between",
-                          gap: 7,
+                          justifyContent: isCompact ? "center" : "space-between",
+                          gap: isCompact ? 5 : 7,
                           minWidth: 0,
                         }}
                       >
                         <span
                           style={{
                             color: "#07172C",
-                            fontSize: isCompact ? 13 : 15,
+                            fontSize: isCompact ? 14 : 15,
                             lineHeight: 1.08,
                             fontWeight: 950,
                           }}
@@ -8603,7 +8682,7 @@ export default function MarketplacePage() {
                         <span
                           style={{
                             color: "#0B5A34",
-                            fontSize: isCompact ? 15 : 18,
+                            fontSize: isCompact ? 16 : 18,
                             lineHeight: 1.1,
                             fontWeight: 950,
                           }}
@@ -8657,7 +8736,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="payment" size={18} />
                       </span>
-                      Open Packages
+                      {isCompact ? "Packages" : "Open Packages"}
                     </StableButton>
                     <StableCtaLink
                       to={routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, activeCommunityId)}
@@ -8672,7 +8751,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="spark" size={18} />
                       </span>
-                      Paid Spotlight
+                      {isCompact ? "Spotlight" : "Paid Spotlight"}
                     </StableCtaLink>
                   </div>
                 </div>
@@ -8713,7 +8792,7 @@ export default function MarketplacePage() {
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="control" size={18} />
                       </span>
-                      Open Control
+                      {isCompact ? "Control" : "Open Control"}
                     </StableButton>
                   </div>
                 </div>
@@ -8801,26 +8880,48 @@ export default function MarketplacePage() {
               ...innerCard("#FFFDF7"),
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "42px minmax(0, 1fr)"
+                ? "1fr"
                 : "46px minmax(0, 1fr) 190px",
               gap: isCompact ? 10 : 14,
               alignItems: "center",
               borderColor: "rgba(128,90,15,0.18)",
             }}
           >
-            <span
-              aria-hidden="true"
-              style={marketplaceOsIconStyle(
-                "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
-                true
-              )}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "42px minmax(0, 1fr)"
+                  : "46px minmax(0, 1fr)",
+                gap: isCompact ? 10 : 14,
+                alignItems: "center",
+                minWidth: 0,
+              }}
             >
-              <MarketplaceGlyph name="demand" size={24} />
-            </span>
-            <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>Demand Box</div>
-              <div style={{ marginTop: 5, ...helperText(), fontSize: 13 }}>
-                Post a local need or offer request for this marketplace.
+              <span
+                aria-hidden="true"
+                style={marketplaceOsIconStyle(
+                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                  true
+                )}
+              >
+                <MarketplaceGlyph name="demand" size={24} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel()}>Demand Box</div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    ...helperText(),
+                    fontSize: 13,
+                    lineHeight: 1.35,
+                    overflowWrap: "normal",
+                    wordBreak: "normal",
+                    hyphens: "none",
+                  }}
+                >
+                  Post a local need or offer request for this marketplace.
+                </div>
               </div>
             </div>
             <StableButton

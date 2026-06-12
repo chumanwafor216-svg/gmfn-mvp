@@ -1,3 +1,5 @@
+/* global caches, fetch, self, URL */
+
 const CACHE_VERSION = "gsn-pwa-shell-v8";
 const SHELL_ASSETS = [
   "/",

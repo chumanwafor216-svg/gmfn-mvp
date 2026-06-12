@@ -359,7 +359,11 @@ export default function WelcomePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <EntryActionButton type="button" onClick={openCreate}>
+                <EntryActionButton
+                  type="button"
+                  onClick={openCreate}
+                  debugId="welcome.single-create.begin"
+                >
                   Begin
                 </EntryActionButton>
               </div>
@@ -420,6 +424,7 @@ export default function WelcomePage() {
               <EntryActionButton
                 type="button"
                 onClick={openDashboard}
+                debugId="welcome.signed-in.dashboard"
                 style={{ width: "100%" }}
               >
                 Continue to my GSN
@@ -438,7 +443,11 @@ export default function WelcomePage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <EntryActionButton type="button" onClick={openJoin}>
+                <EntryActionButton
+                  type="button"
+                  onClick={openJoin}
+                  debugId="welcome.invite.open-join"
+                >
                   Open join path
                 </EntryActionButton>
               </div>
@@ -456,7 +465,11 @@ export default function WelcomePage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <EntryActionButton type="button" onClick={openActivation}>
+                <EntryActionButton
+                  type="button"
+                  onClick={openActivation}
+                  debugId="welcome.approved.open-activation"
+                >
                   Finish activation
                 </EntryActionButton>
               </div>
@@ -474,7 +487,11 @@ export default function WelcomePage() {
               </div>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <EntryActionButton type="button" onClick={openExisting}>
+                <EntryActionButton
+                  type="button"
+                  onClick={openExisting}
+                  debugId="welcome.existing.open-sign-in"
+                >
                   Open sign in
                 </EntryActionButton>
               </div>
@@ -516,6 +533,7 @@ export default function WelcomePage() {
                   <EntryActionButton
                     type="button"
                     onClick={openExisting}
+                    debugId="welcome.identity.sign-in"
                     style={{ width: "100%" }}
                   >
                     Sign in
@@ -548,6 +566,7 @@ export default function WelcomePage() {
                   <EntryActionButton
                     type="button"
                     onClick={() => setStep("choose_new_lane")}
+                    debugId="welcome.identity.sign-up"
                     style={{ width: "100%" }}
                   >
                     Sign up
@@ -599,7 +618,12 @@ export default function WelcomePage() {
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
-                    <EntryActionButton type="button" onClick={openCreate} style={{ width: "100%" }}>
+                    <EntryActionButton
+                      type="button"
+                      onClick={openCreate}
+                      debugId="welcome.new.start-community"
+                      style={{ width: "100%" }}
+                    >
                       Start community
                     </EntryActionButton>
                   </div>
@@ -628,7 +652,12 @@ export default function WelcomePage() {
                   </div>
 
                   <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
-                    <EntryActionButton type="button" onClick={openJoin} style={{ width: "100%" }}>
+                    <EntryActionButton
+                      type="button"
+                      onClick={openJoin}
+                      debugId="welcome.new.join-community"
+                      style={{ width: "100%" }}
+                    >
                       Join community
                     </EntryActionButton>
                   </div>

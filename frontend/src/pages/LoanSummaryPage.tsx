@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import PageTopNav from "../components/PageTopNav";
 import {
   PrimaryButton,
@@ -17,6 +18,7 @@ import {
 } from "../lib/institutionalSurface";
 import { brandClampLines } from "../styles/gmfnBrand";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
 import {
   decideLoanGuarantor,
   getAccessToken,
@@ -1148,43 +1150,44 @@ export default function LoanSummaryPage() {
 
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
-    safeCopy(`${origin}/app/trust-analytics?${p.toString()}`);
+    const auditLink = `${origin}/app/trust-analytics?${p.toString()}`;
+    safeCopy(
+      buildGsnSupportEvidencePackage({
+        title: "GSN Loan Audit Link",
+        purpose: "Review the trust analytics attached to this support item.",
+        reference: `loan-${summary.id}`,
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: communityLabel,
+        communityId: communityPublicId,
+        routeName: "Loan Summary",
+        loanId: summary.id,
+        amount: fmtMoney(n(summary.amount), currency),
+        status: safeStr(summary.status),
+        actionLink: auditLink,
+        detailLines: [
+          `Required guarantors: ${requiredCount}`,
+          `Approved guarantors: ${approvedCount}`,
+          `Pending guarantors: ${pendingGuarantors.length}`,
+          "This package points to the current trust analytics review route for the support item.",
+        ],
+      })
+    );
 
     setFeedback({
       tone: "success",
-      text: "Loan audit link copied.",
+      text: "Loan audit package copied.",
     });
   }
 
   function copyLoanSummary() {
-    if (!summary) return;
+    if (!loanSummaryPaper) return;
 
-    const lines = [
-      `Community: ${communityLabel}`,
-      `Community ID: ${communityPublicId}`,
-      `GSN ID: ${gmfnId}`,
-      `Member: ${memberName}`,
-      memberRole ? `Role: ${memberRole}` : "",
-      `Loan ID: ${summary.id}`,
-      `Status: ${safeStr(summary.status)}`,
-      `Amount: ${fmtMoney(n(summary.amount), currency)}`,
-      `Required guarantors: ${requiredCount}`,
-      `Approved guarantors: ${approvedCount}`,
-      `Pending guarantors: ${pendingGuarantors.length}`,
-      summary?.remaining_amount != null
-        ? `Remaining amount: ${fmtMoney(summary.remaining_amount, currency)}`
-        : "",
-      summary?.paid_total != null
-        ? `Paid total: ${fmtMoney(summary.paid_total, currency)}`
-        : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    safeCopy(lines);
+    safeCopy(loanSummaryPaper);
     setFeedback({
       tone: "success",
-      text: "Loan summary copied.",
+      text: "Loan summary snapshot copied.",
     });
   }
 
@@ -1199,6 +1202,48 @@ export default function LoanSummaryPage() {
     if (!summary) return "";
     return nextStepText(summary.status);
   }, [summary]);
+  const loanSummaryPaper = useMemo(() => {
+    if (!summary) return "";
+
+    return buildGsnSupportEvidencePackage({
+      title: "GSN Loan Summary Snapshot",
+      purpose: "Review current support status, guarantor state, and repayment evidence.",
+      reference: `loan-${summary.id}`,
+      memberName,
+      gsnId: gmfnId,
+      memberRole,
+      communityName: communityLabel,
+      communityId: communityPublicId,
+      routeName: "Loan Summary",
+      loanId: summary.id,
+      amount: fmtMoney(n(summary.amount), currency),
+      status: safeStr(summary.status),
+      detailLines: [
+        `Required guarantors: ${requiredCount}`,
+        `Approved guarantors: ${approvedCount}`,
+        `Pending guarantors: ${pendingGuarantors.length}`,
+        summary.remaining_amount != null
+          ? `Remaining amount: ${fmtMoney(summary.remaining_amount, currency)}`
+          : "",
+        summary.paid_total != null
+          ? `Paid total: ${fmtMoney(summary.paid_total, currency)}`
+          : "",
+        summaryNextStep ? `Next step: ${summaryNextStep}` : "",
+      ],
+    });
+  }, [
+    approvedCount,
+    communityLabel,
+    communityPublicId,
+    currency,
+    gmfnId,
+    memberName,
+    memberRole,
+    pendingGuarantors.length,
+    requiredCount,
+    summary,
+    summaryNextStep,
+  ]);
 
   if (!numericLoanId) {
     return (
@@ -1438,6 +1483,14 @@ export default function LoanSummaryPage() {
                 {actionText("copy", "Copy audit")}
               </SecondaryButton>
             </div>
+
+            <GsnSnapshotPaperCard
+              paperText={loanSummaryPaper}
+              compact={isCompact}
+              icon="document"
+              maxBodyLines={isCompact ? 6 : undefined}
+              style={{ marginTop: 14 }}
+            />
           </div>
 
           <div style={{ display: "grid", gap: 12 }}>

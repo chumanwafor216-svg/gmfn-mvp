@@ -6,6 +6,7 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import SocialTagShareButton from "../components/SocialTagShareButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   createVaultShopAccessLink,
@@ -24,6 +25,10 @@ import {
   type VaultLinkItem,
   type VaultShopStatus,
 } from "../lib/api";
+import {
+  buildGsnPaymentInstructionPackage,
+  buildGsnVaultInvitePackage,
+} from "../lib/gsnSnapshotPaper";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
 import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
@@ -802,6 +807,30 @@ function actionGrid(isCompact: boolean, min = 150): React.CSSProperties {
   };
 }
 
+function paymentInstructionRowStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact
+      ? "minmax(0, 1fr)"
+      : "minmax(120px, 0.42fr) minmax(0, 0.58fr)",
+    gap: isCompact ? 4 : 10,
+    padding: "12px 14px",
+    borderBottom: `1px solid ${gmfnBrand.colors.line}`,
+  };
+}
+
+function paymentInstructionValueStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: gmfnBrand.colors.ink,
+    fontWeight: 900,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    fontSize: isCompact ? 14 : 13,
+    lineHeight: 1.28,
+  };
+}
+
 function slotChoiceButton(selected: boolean): React.CSSProperties {
   return {
     ...brandActionButton(selected ? "primary" : "secondary"),
@@ -1086,6 +1115,28 @@ export default function VaultControlPage() {
   const selectedBlockLinkedAt = firstTruthy(selectedBlockPrimaryLink?.created_at);
   const selectedBlockLinkExpiresAt = firstTruthy(selectedBlockPrimaryLink?.expires_at);
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
+  function buildVaultInvitePackage(linkUrl: string, link?: VaultLinkItem | null): string {
+    return buildGsnVaultInvitePackage({
+      shopName,
+      gsnId: firstTruthy(me?.gmfn_id, shop?.gmfn_id),
+      blockLabel: `Vault block #${selectedSlot}`,
+      blockName: firstTruthy(selectedProduct?.name, `Vault block #${selectedSlot}`),
+      status: firstTruthy(link?.status, selectedBlockLinkStatus),
+      expiresAt: firstTruthy(link?.expires_at, selectedBlockLinkExpiresAt, "No expiry returned yet"),
+      vaultLink: linkUrl,
+    });
+  }
+  function buildVaultSocialShareTarget() {
+    const blockLabel = `Vault block #${selectedSlot}`;
+    const blockName = firstTruthy(selectedProduct?.name, blockLabel);
+    return {
+      title: `${blockLabel} - ${blockName}`,
+      message: selectedBlockLinkUrl
+        ? buildVaultInvitePackage(selectedBlockLinkUrl, selectedBlockPrimaryLink)
+        : "",
+      url: selectedBlockLinkUrl,
+    };
+  }
   const shopHeroImageUrl = resolveAssetSrc(shop?.image_url);
   const activeVaultPayment = vaultInstruction || latestVaultPayment;
   const vaultPaymentDueDays = Math.max(
@@ -1266,8 +1317,26 @@ export default function VaultControlPage() {
   }
 
   async function copyVaultPaymentInstruction() {
-    const text = vaultPaymentTransferLines.join("\n");
-    if (text) {
+    if (vaultPaymentTransferLines.length > 0) {
+      const text = buildGsnPaymentInstructionPackage({
+        title: "GSN Private Vault Payment Instruction",
+        purpose: "Pay for the selected private Vault slots with the exact generated payment code.",
+        reference: activeVaultPaymentReference,
+        memberName: firstTruthy(me?.display_name, me?.name, me?.email, "Shop owner"),
+        gsnId: firstTruthy(me?.gmfn_id, shop?.gmfn_id),
+        communityId: String(Number(shop?.clan_id || selectedClanId || 0) || ""),
+        routeName: "Private Vault",
+        amount: activeVaultPaymentAmount
+          ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency)
+          : selectedVaultPaymentLabel,
+        status: activeVaultPayment ? firstTruthy(activeVaultPayment.status, "Payment code ready") : "",
+        dueAt: safeDateTime(activeVaultPaymentDueAt) || `${vaultPaymentDueDays} days after generation`,
+        detailLines: [
+          `Shop: ${shopName}`,
+          `Selected slots: ${selectedVaultSlotCount}`,
+          ...vaultPaymentTransferLines,
+        ],
+      });
       const copied = await safeCopy(text);
       showNotice(
         copied ? "success" : "error",
@@ -1588,7 +1657,7 @@ export default function VaultControlPage() {
       });
       setVaultLinks((prev) => [link, ...prev]);
       const url = vaultLinkUrl(link);
-      const copied = url ? await safeCopy(url) : false;
+      const copied = url ? await safeCopy(buildVaultInvitePackage(url, link)) : false;
       showNotice(
         "success",
         url
@@ -1608,7 +1677,7 @@ export default function VaultControlPage() {
       return;
     }
 
-    const copied = await safeCopy(selectedBlockLinkUrl);
+    const copied = await safeCopy(buildVaultInvitePackage(selectedBlockLinkUrl, selectedBlockPrimaryLink));
     showNotice(
       copied ? "success" : "error",
       copied
@@ -1863,9 +1932,9 @@ export default function VaultControlPage() {
                     const [label, ...rest] = line.split(":");
                     const value = rest.join(":").trim();
                     return (
-                      <div key={line} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 0.42fr) minmax(0, 0.58fr)", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${gmfnBrand.colors.line}` }}>
+                      <div key={line} style={paymentInstructionRowStyle(isCompact)}>
                         <div style={{ color: gmfnBrand.colors.inkSoft, fontWeight: 900, fontSize: 13 }}>{label}</div>
-                        <div style={{ color: gmfnBrand.colors.ink, fontWeight: 900, overflowWrap: "anywhere", fontSize: 13 }}>{value}</div>
+                        <div style={paymentInstructionValueStyle(isCompact)}>{value}</div>
                       </div>
                     );
                   })}
@@ -2078,6 +2147,15 @@ export default function VaultControlPage() {
           >
             Copy block link
           </SubtleButton>
+          <SocialTagShareButton
+            target={buildVaultSocialShareTarget()}
+            disabled={!selectedBlockLinkUrl}
+            buttonLabel="Share block"
+            stableHeight={54}
+            debugId="vault-control.link.social-share"
+            onResult={(tone, text) => showNotice(tone, text)}
+            style={brandActionButton("secondary", !selectedBlockLinkUrl)}
+          />
           <SecondaryButton
             onClick={openSelectedBlockLink}
             style={brandActionButton("secondary", !selectedBlockLinkUrl)}

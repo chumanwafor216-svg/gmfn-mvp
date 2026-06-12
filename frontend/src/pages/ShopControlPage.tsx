@@ -33,6 +33,7 @@ import {
   prepareSpotlightVideoFile,
 } from "../lib/spotlightMediaPrep";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnVaultInvitePackage } from "../lib/gsnSnapshotPaper";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
@@ -1597,6 +1598,30 @@ export default function ShopControlPage() {
     return publicFrontendUrl(raw);
   }
 
+  function buildVaultViewingLinkPackage(
+    link: VaultLinkRecord | null | undefined
+  ): string {
+    const url = vaultLinkUrl(link);
+    if (!url) return "";
+
+    const linkedProductId = Number(link?.product_id || 0);
+    const product =
+      vaultProducts.find((item) => Number(item.id) === linkedProductId) ||
+      products.find((item) => Number(item.id) === linkedProductId) ||
+      vaultProducts[0] ||
+      null;
+
+    return buildGsnVaultInvitePackage({
+      shopName: firstTruthy(shopName, shop?.name, "GSN Private Vault"),
+      gsnId: firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id),
+      blockLabel: link?.id ? `Vault link #${link.id}` : "Vault viewing link",
+      blockName: firstTruthy(product?.name, product?.description, "Private Vault offer"),
+      status: firstTruthy(link?.status, "active"),
+      expiresAt: safeDateTime(link?.expires_at) || "No expiry set",
+      vaultLink: url,
+    });
+  }
+
   function vaultDefaultExpiry(): string {
     const next = new Date();
     next.setHours(next.getHours() + 72);
@@ -1625,8 +1650,8 @@ export default function ShopControlPage() {
       });
       setVaultLinks((prev) => [link as VaultLinkRecord, ...prev]);
       await copyText(
-        vaultLinkUrl(link as VaultLinkRecord),
-        "Vault viewing link for one private offer created and copied.",
+        buildVaultViewingLinkPackage(link as VaultLinkRecord),
+        "Vault viewing package for one private offer created and copied.",
         "shop-control-vault"
       );
     } catch (err: any) {
@@ -4450,7 +4475,11 @@ export default function ShopControlPage() {
                   <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
                     <SubtleButton
                       onClick={() =>
-                        copyText(vaultLinkUrl(item), "Vault viewing link copied.", "shop-control-vault")
+                        copyText(
+                          buildVaultViewingLinkPackage(item),
+                          "Vault viewing package copied.",
+                          "shop-control-vault"
+                        )
                       }
                       disabled={!vaultLinkUrl(item)}
                       fullWidth

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import PageTopNav from "../components/PageTopNav";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
@@ -21,6 +22,7 @@ import {
   setSelectedClanId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
 
 type FilterKey = "pending" | "approved" | "declined" | "all";
 
@@ -723,23 +725,45 @@ export default function GuarantorInboxPage() {
     }));
   }
 
-  function copyQueueSummary() {
-    const text = [
-      `Community: ${selectedCommunityLabel}`,
-      `Community ID: ${communityPublicId}`,
-      `Member: ${memberName}`,
-      `GSN ID: ${gmfnId}`,
-      memberRole ? `Role: ${memberRole}` : "",
-      `Pending: ${counts.pending}`,
-      `Approved: ${counts.approved}`,
-      `Declined: ${counts.declined}`,
-      `Visible: ${counts.all}`,
-      `Filter: ${filter}`,
+  const queuePaper = useMemo(
+    () =>
+      buildGsnSupportEvidencePackage({
+        title: "GSN Guarantor Queue Snapshot",
+        purpose: "Review the current guarantor decision queue for this member and community.",
+        reference: `guarantor-queue-${communityPublicId || selectedClanId || "current"}`,
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: selectedCommunityLabel,
+        communityId: communityPublicId,
+        routeName: "Guarantor Inbox",
+        status: filter,
+        detailLines: [
+          `Pending: ${counts.pending}`,
+          `Approved: ${counts.approved}`,
+          `Declined: ${counts.declined}`,
+          `Visible: ${counts.all}`,
+          `Filter: ${filter}`,
+          "This snapshot records the visible queue counts only. It does not expose private borrower files.",
+        ],
+      }),
+    [
+      communityPublicId,
+      counts.all,
+      counts.approved,
+      counts.declined,
+      counts.pending,
+      filter,
+      gmfnId,
+      memberName,
+      memberRole,
+      selectedClanId,
+      selectedCommunityLabel,
     ]
-      .filter(Boolean)
-      .join("\n");
+  );
 
-    safeCopy(text);
+  function copyQueueSummary() {
+    safeCopy(queuePaper);
   }
 
   async function handleDecision(row: InboxRow, status: "approved" | "declined") {
@@ -958,6 +982,14 @@ export default function GuarantorInboxPage() {
                 </div>
               </div>
             </div>
+
+            <GsnSnapshotPaperCard
+              paperText={queuePaper}
+              compact={isCompact}
+              icon="shield"
+              maxBodyLines={isCompact ? 6 : undefined}
+              style={{ marginTop: 14 }}
+            />
           </div>
 
           <div style={softCard("#FFFFFF")}>

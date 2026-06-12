@@ -21,6 +21,7 @@ import {
   safeCopy,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
 
 type NoticeTone = "success" | "error";
 type RepaymentMode = "full" | "part";
@@ -732,7 +733,9 @@ export default function RepaymentPage() {
     }
 
     const settlement = instruction?.settlement || {};
-    const text = [
+    const reference = firstTruthy(instruction?.reference_display, instruction?.reference);
+    const repaymentAmount = fmtMoney(instruction.amount || requestedRepaymentAmount, currency);
+    const lines = [
       `Community: ${communityLabel}`,
       `Community ID: ${communityCode}`,
       `GSN ID: ${gmfnId}`,
@@ -742,18 +745,30 @@ export default function RepaymentPage() {
       `Current step: ${routeState.step}`,
       `Repayment choice: ${repaymentMode === "full" ? "Full balance" : "Part payment"}`,
       `Outstanding amount: ${fmtMoney(outstandingAmount, currency)}`,
-      `Repayment amount: ${fmtMoney(instruction.amount || requestedRepaymentAmount, currency)}`,
-      firstTruthy(instruction?.reference_display, instruction?.reference)
-        ? `Reference: ${firstTruthy(instruction?.reference_display, instruction?.reference)}`
-        : "",
+      `Repayment amount: ${repaymentAmount}`,
+      reference ? `Reference: ${reference}` : "",
       settlement?.bankName ? `Bank: ${settlement.bankName}` : "",
       settlement?.accountName ? `Account name: ${settlement.accountName}` : "",
       settlement?.accountNumber ? `Account number: ${settlement.accountNumber}` : "",
       settlement?.sortCode ? `Sort code: ${settlement.sortCode}` : "",
       instruction?.due_at ? `Due at: ${safeDateTime(instruction.due_at)}` : "",
     ]
-      .filter(Boolean)
-      .join("\n");
+      .filter(Boolean);
+
+    const text = buildGsnPaymentInstructionPackage({
+      title: "GSN Loan Repayment Instruction",
+      purpose: "Repay the selected support item with the exact generated repayment reference.",
+      reference,
+      memberName,
+      gsnId: gmfnId,
+      communityName: communityLabel,
+      communityId: communityCode,
+      routeName: `Loan Repayment #${numericLoanId}`,
+      amount: repaymentAmount,
+      status: routeState.step,
+      dueAt: instruction?.due_at ? safeDateTime(instruction.due_at) : "",
+      detailLines: lines,
+    });
 
     safeCopy(text);
     setNotice({ tone: "success", text: "Repayment instruction copied." });

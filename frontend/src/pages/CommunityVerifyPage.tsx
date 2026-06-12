@@ -12,6 +12,7 @@ import {
   requestPublicCommunityVerificationConfirmation,
   safeCopy,
 } from "../lib/api";
+import { buildGsnCommunityVerifyLinkPackage } from "../lib/gsnSnapshotPaper";
 import { publicFrontendUrl } from "../lib/publicLinks";
 
 type CommunityVerifyRecord = {
@@ -241,10 +242,23 @@ export default function CommunityVerifyPage() {
   }, [notice]);
 
   async function copyLink() {
-    const copied = await safeCopy(publicLink);
+    const packageText = buildGsnCommunityVerifyLinkPackage({
+      communityName: firstTruthy(record?.community_name, "GSN community"),
+      communityId: firstTruthy(record?.community_code, record?.community_id, keyText),
+      status: labelize(record?.status),
+      publicRecord: firstTruthy(record?.public_record, "Verified in GSN"),
+      relayAvailability: firstTruthy(
+        record?.relay_availability,
+        record?.relay_available ? "Available" : "Not available"
+      ),
+      verifyLink: publicLink,
+    });
+    const copied = await safeCopy(packageText);
     setNotice({
       tone: copied ? "success" : "error",
-      text: copied ? "Community verification link copied." : "Copy failed. Use the browser address bar.",
+      text: copied
+        ? "GSN community verification package copied."
+        : "Copy failed. Use the browser address bar.",
     });
   }
 

@@ -6,6 +6,7 @@ import {
   SecondaryButton,
   SubtleButton,
 } from "./StableButton";
+import SocialTagShareButton from "./SocialTagShareButton";
 import {
   buildQrImageUrl,
   buildShareText,
@@ -97,6 +98,14 @@ export default function ShareButtons({
         >
           Copy text
         </SecondaryButton>
+
+        <SocialTagShareButton
+          target={{ ...target, url }}
+          buttonLabel="Share"
+          debugId="share-buttons.tag-social"
+          stableHeight={small ? 40 : undefined}
+          style={actionButtonStyle()}
+        />
 
         <SubtleButton
           onClick={() => setQrOpen(true)}

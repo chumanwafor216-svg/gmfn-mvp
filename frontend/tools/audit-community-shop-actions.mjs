@@ -107,7 +107,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /id: "owner-actions"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.joinRequests[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.shopGalleryTools[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.vaultControl[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.subscriptionSpotlight[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost[\s\S]*?id: "rosca"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?id: ownerShopHandle\("community-package"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.communityPackages[\s\S]*?id: "trusted-circle"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.buildFirstCircle[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /id: "owner-actions"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.joinRequests[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.shopGalleryTools[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.vaultControl[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.subscriptionSpotlight[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost[\s\S]*?id: "rosca"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?id: ownerShopHandle\("community-package"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.communityPackages[\s\S]*?id: "trusted-circle"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.buildFirstCircle[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact owner/tool rows must remain traceable and route to the deeper owner surfaces."
 );
 
@@ -173,13 +173,13 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.open-spotlight-preview"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"/,
-  "Public Shop visitor actions must keep traceable Share, Verify, WhatsApp, Explore, Spotlight WhatsApp, Vault request, and Vault copy controls."
+  /debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.spotlight\.phone-call"[\s\S]*?debugId="shop-gallery\.spotlight\.contact\.choose"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"/,
+  "Public Shop visitor actions must keep traceable Share, Verify, WhatsApp, Spotlight Chat/Call chooser, Vault request, and Vault copy controls."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /sourceShopWhatsApp[\s\S]*?source_shop_whatsapp_number[\s\S]*?buildWhatsAppChatUrl[\s\S]*?function contactSpotlightOwnerByWhatsApp\(\)[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp"/,
+  /sourceShopWhatsApp[\s\S]*?source_shop_whatsapp_number[\s\S]*?buildWhatsAppChatUrl[\s\S]*?function contactSpotlightOwnerByWhatsApp\(\)[\s\S]*?miniSpotlightView\.sourceShopWhatsApp[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"/,
   "Public Shop live Spotlight must attach WhatsApp contact to the rotating source shop, not only the current page shop."
 );
 

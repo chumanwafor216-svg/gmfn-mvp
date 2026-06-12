@@ -3075,10 +3075,10 @@ export default function CommunityHomePage() {
               title: ownerShopHandle("free-spotlight").label,
               detail: ownerShopHandle("free-spotlight").detail,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityHomeSection(
+                openSelectedCommunityRoute(
                   event,
-                  "community-home-spotlight-gears",
-                  "spotlight"
+                  routes.freeSpotlight,
+                  "Choose a community first, then open Free Spotlight."
                 ),
             },
             {

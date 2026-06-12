@@ -215,6 +215,8 @@ export default function PageTopNav(props: PageTopNavProps) {
   const currentPath = `${location.pathname}${location.search}${location.hash}`;
   const resolvedBackTo =
     originPath && originPath !== currentPath ? originPath : backTo || "";
+  const resolvedBackLabel =
+    backLabel || (originPath && originPath !== currentPath ? "Back" : "");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -231,7 +233,9 @@ export default function PageTopNav(props: PageTopNavProps) {
 
   const topLinks: NavItem[] = [
     homeTo && homeLabel ? { label: homeLabel, to: homeTo } : null,
-    resolvedBackTo && backLabel ? { label: backLabel, to: resolvedBackTo } : null,
+    resolvedBackTo && resolvedBackLabel
+      ? { label: resolvedBackLabel, to: resolvedBackTo }
+      : null,
   ]
     .filter(Boolean)
     .filter((item, index, items) => {

@@ -10,6 +10,10 @@ A screen is acceptable only if:
   not remain stacked into a long page above or below the new task.
 - It follows the Action Response Protocol: every meaningful action succeeds
   visibly, routes visibly, or explains why it cannot continue.
+- It follows `docs/APP_WIDE_AUDIT_PROTOCOL.md`: each page has a clear route
+  purpose, honest actions, truthful empty states, correct permission visibility,
+  in-page return navigation for deep tasks, and a regression cage for the
+  contract being polished.
 - On mobile, it follows `docs/GSN_MOBILE_UI_PROTOCOL.md`: one screen shows one
   decision, the current state, and the next action without scrolling whenever
   possible.
@@ -114,6 +118,20 @@ large operational pages must pass the guided-work-surface test:
 
 If a large work surface asks a non-technical user to decode many equal choices
 at once, it fails even if every individual button technically works.
+
+## In-Page Navigation Test
+
+When a user opens a lane, form, detail, record, chooser, or deep task, the page
+must provide an obvious way to step back, close the task, or return to the lane
+chooser without restarting the whole domain.
+
+Browser back alone is not enough for guided task surfaces.
+
+## Action Response Test
+
+Every meaningful action must speak back to the user. A save, copy, share,
+submit, transfer, request, or completion must show a visible success,
+destination, or blocker response and lead the user to the next safe step.
 
 ## Dashboard Test
 

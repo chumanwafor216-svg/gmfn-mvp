@@ -131,7 +131,7 @@ if (!recordsLinksSection.text) {
     /debugId="marketplace\.links\.package-spotlight"/,
     /6\. Owner Controls/,
     /Manage your shop & settings/,
-    /Open Control/,
+    /\{isCompact \? "Control" : "Open Control"\}/,
     /<MarketplaceGlyph name="join"/,
     /<MarketplaceGlyph name="verify"/,
     /<MarketplaceGlyph name="shop"/,
@@ -168,8 +168,13 @@ if (!recordsLinksSection.text) {
 }
 
 assertContains(
-  /function marketplaceLinkSummaryStyle\(isCompact: boolean\)[\s\S]*?overflowWrap: "break-word"[\s\S]*?function marketplaceLinkHeroStyle[\s\S]*?gridTemplateColumns: isCompact \? "58px minmax\(0, 1fr\)"[\s\S]*?minHeight: isCompact \? 82 : 126[\s\S]*?function marketplaceLinkRowHeaderStyle[\s\S]*?\? "44px minmax\(0, 1fr\)"[\s\S]*?function marketplaceLinkRowStatusStyle[\s\S]*?gridColumn: isCompact \? "2 \/ 3" : undefined[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"/,
-  "Link Center compact protocol must keep masked summaries, smaller phone hero geometry, two-column mobile headers, and shorter two-column phone action groups."
+  /function marketplaceLinkSummaryStyle\(isCompact: boolean\)[\s\S]*?overflowWrap: "break-word"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?function marketplaceLinkHeroStyle[\s\S]*?gridTemplateColumns: isCompact \? "58px minmax\(0, 1fr\)"[\s\S]*?minHeight: isCompact \? 82 : 126[\s\S]*?function marketplaceLinkRowHeaderStyle[\s\S]*?\? "44px minmax\(0, 1fr\)"[\s\S]*?function marketplaceLinkRowStatusStyle[\s\S]*?gridColumn: isCompact \? "2 \/ 3" : undefined[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?\? "repeat\(2, minmax\(128px, 1fr\)\)"[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"/,
+  "Link Center compact protocol must keep masked summaries, smaller phone hero geometry, two-column mobile headers, and readable 56px phone action groups."
+);
+
+assertContains(
+  /debugId="marketplace\.public-shop\.visible-link"[\s\S]*?\{publicShopViewLink\}[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "repeat\(4, minmax\(0, 1fr\)\)"/,
+  "Link Center must show the full public shop domain while stacking Community Package cards as readable one-column records on phone."
 );
 
 if (findings.length > 0) {

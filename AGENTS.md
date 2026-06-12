@@ -10,7 +10,7 @@ Before changing code, read these files in this order:
 2. `docs/PROJECT_PROTOCOL.md`
 3. `docs/FREEZE_POLICY.md`
 4. `docs/HANDOFF_NOTES.md`
-5. for UX work, also read `docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, and `docs/UX_ACCEPTANCE_CHECKLIST.md`
+5. for UX work, also read `docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, `docs/UX_ACCEPTANCE_CHECKLIST.md`, and `docs/APP_WIDE_AUDIT_PROTOCOL.md`
 6. backend and frontend files directly related to the requested route or screen
 
 Do not start coding from assumptions. Inspect the code first.

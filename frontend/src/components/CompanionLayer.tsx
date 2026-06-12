@@ -39,32 +39,34 @@ function readLocalCompanionSettings(): Partial<CompanionSettings> {
 }
 
 function toastCard(priority: CompanionToastPayload["priority"]): React.CSSProperties {
+  const base: React.CSSProperties = {
+    borderRadius: 18,
+    boxShadow: "0 16px 34px rgba(15,23,42,0.14)",
+    padding: 14,
+    maxHeight: "min(62vh, 430px)",
+    overflowY: "auto",
+  };
+
   if (priority === "urgent") {
     return {
-      borderRadius: 18,
+      ...base,
       background: "#FFF5F5",
       border: "1px solid rgba(239,68,68,0.18)",
-      boxShadow: "0 16px 34px rgba(15,23,42,0.14)",
-      padding: 14,
     };
   }
 
   if (priority === "important") {
     return {
-      borderRadius: 18,
+      ...base,
       background: "#FFFBEF",
       border: "1px solid rgba(245,158,11,0.18)",
-      boxShadow: "0 16px 34px rgba(15,23,42,0.14)",
-      padding: 14,
     };
   }
 
   return {
-    borderRadius: 18,
+    ...base,
     background: "#F8FBFF",
     border: "1px solid rgba(11,31,51,0.10)",
-    boxShadow: "0 16px 34px rgba(15,23,42,0.14)",
-    padding: 14,
   };
 }
 
@@ -341,10 +343,10 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
     <div
       style={{
         position: "fixed",
-        top: 16,
-        right: 16,
+        top: 12,
+        right: 12,
         zIndex: 80,
-        width: "min(92vw, 380px)",
+        width: "min(88vw, 350px)",
         display: "grid",
         gap: 10,
         pointerEvents: "none",
@@ -383,7 +385,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
                 style={{
                   marginTop: 6,
                   color: "#0B1F33",
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: 900,
                   lineHeight: 1.35,
                 }}
@@ -409,7 +411,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
               marginTop: 8,
               color: "#5F7287",
               fontSize: 14,
-              lineHeight: 1.7,
+              lineHeight: 1.45,
             }}
           >
             {toast.detail}

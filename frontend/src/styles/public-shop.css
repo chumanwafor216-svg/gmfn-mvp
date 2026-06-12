@@ -1,8 +1,9 @@
 .public-shop-shell {
   min-height: 100vh;
   background: var(--page-bg);
-  color: white;
+  color: var(--page-text, var(--gsn-text-main));
   font-family: var(--font-main);
+  overflow-x: hidden;
 }
 
 .public-shop-inner {

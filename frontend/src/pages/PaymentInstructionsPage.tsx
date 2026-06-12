@@ -7,6 +7,7 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
 import {
   createPoolDepositInstruction,
   getCommunityMoneySurface,
@@ -1051,7 +1052,7 @@ export default function PaymentInstructionsPage() {
       return;
     }
 
-    const text = [
+    const lines = [
       `Community: ${communityLabel}`,
       `Community ID: ${publicCommunityCode}`,
       `GSN ID: ${currentGmfnId || "Awaiting issue"}`,
@@ -1079,8 +1080,23 @@ export default function PaymentInstructionsPage() {
         : "",
       instruction.detail ? `Instruction: ${instruction.detail}` : "",
     ]
-      .filter(Boolean)
-      .join("\n");
+      .filter(Boolean);
+
+    const text = buildGsnPaymentInstructionPackage({
+      title: "GSN Money In Payment Instruction",
+      purpose: "Pay into the selected community money route with the exact generated reference.",
+      reference: firstTruthy(instruction.reference),
+      memberName,
+      gsnId: currentGmfnId,
+      communityName: communityLabel,
+      communityId: publicCommunityCode,
+      routeName: "Money In",
+      amount: formattedInputAmount
+        ? `${formattedInputAmount} ${instruction.currency}`
+        : "",
+      status: inferredResult.step,
+      detailLines: lines,
+    });
 
     copyText(text);
 

@@ -26,20 +26,22 @@ const findings = [];
 
 const expectedPageSourceActions = {
   PrimaryButton: 8,
-  SecondaryButton: 12,
+  SecondaryButton: 11,
   StableCtaLink: 3,
-  total: 23,
+  total: 22,
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 7;
 const expectedInstallPromptActions = 1;
 const expectedMediaFrameInvocations = 2;
 const expectedSharedMediaAudioActionTemplates = 1;
+const expectedSocialTagActionTemplates = 2;
 const expectedWholeRouteActionFamilies =
   expectedPageSourceActions.total +
   expectedSignedInShortcutCount +
   expectedInstallPromptActions +
-  expectedSharedMediaAudioActionTemplates;
+  expectedSharedMediaAudioActionTemplates +
+  expectedSocialTagActionTemplates;
 
 function lineAt(source, index) {
   return source.slice(0, index).split(/\r?\n/).length;
@@ -72,6 +74,17 @@ function assertFileContains(
 
 function assertContains(pattern, message, text = "Expected pattern was not found.") {
   assertFileContains(shopGalleryFile, shopGallerySource, pattern, message, text);
+}
+
+function assertNotContains(pattern, message) {
+  const match = shopGallerySource.match(pattern);
+  if (!match) return;
+  findings.push({
+    file: shopGalleryFile,
+    line: lineAt(shopGallerySource, match.index || 0),
+    message,
+    text: match[0].replace(/\s+/g, " ").slice(0, 260),
+  });
 }
 
 const actionPattern =
@@ -169,8 +182,9 @@ const expectedActionOrder = [
   "shop-gallery.verify-shop.open-community-record",
   "shop-gallery.owner-contact.whatsapp-chat",
   "shop-gallery.owner-contact.phone-call",
-  "shop-gallery.open-spotlight-preview",
-  "shop-gallery.spotlight.whatsapp",
+  "shop-gallery.spotlight.whatsapp-chat",
+  "shop-gallery.spotlight.phone-call",
+  "shop-gallery.spotlight.contact.choose",
   "shop-gallery.ask-vault-access",
   "shop-gallery.copy-vault-shop-link",
   "shop-gallery.reconnect-owner-shop",
@@ -179,7 +193,7 @@ const expectedActionOrder = [
   "shop-gallery.empty-ask-vault-access",
   "shop-gallery.empty-copy-shop-link",
   "shop-gallery.product.${productOpenId}.toggle",
-  "shop-gallery.product.${productOpenId}.share",
+  "shop-gallery.product.${productOpenId}.owner-share",
   "shop-gallery.product.${productOpenId}.paid-placement",
   "shop-gallery.product.${productOpenId}.contact",
   "shop-gallery.toggle-all-products",
@@ -239,7 +253,7 @@ assertContains(
 assertFileContains(
   ownerSurfaceNavFile,
   ownerSurfaceNavSource,
-  /links\.map\(\(link\) => \([\s\S]*?<StableCtaLink[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{link\.debugId\}/,
+  /links\.map\(\(link\) => \([\s\S]*?<StableCtaLink[\s\S]*?stableHeight=\{compact \? 38 : 52\}[\s\S]*?debugId=\{link\.debugId\}/,
   "OwnerOnlySurfaceNav links must keep fixed-height stable route buttons."
 );
 
@@ -294,13 +308,33 @@ assertContains(
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 52 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?stableHeight=\{isCompact \? 52 : 54\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 52 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
-  "Public Shop signboard Share, Verify, and WhatsApp buttons must keep fixed phone geometry."
+  /gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
+  "Public Shop signboard Share, Verify, and WhatsApp controls must keep fixed phone geometry."
 );
 
 assertContains(
-  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?width: diaryActionWidth[\s\S]*?maxWidth: diaryActionWidth[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
-  "Public Shop product action dock must keep one always-available open/close control and reveal Share, Paid Repost, and Contact only inside the opened diary card."
+  /id="public-shop-owner-contact-panel"[\s\S]*?padding: isCompact \? "8px" : "12px"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"minmax\(0, 0\.78fr\) minmax\(0, 1\.22fr\)"[\s\S]*?Contact owner[\s\S]*?WhatsApp[\s\S]*?Choose chat or call\.[\s\S]*?stableHeight=\{isCompact \? 40 : 48\}[\s\S]*?debugId="shop-gallery\.owner-contact\.whatsapp-chat"[\s\S]*?<span>Chat<\/span>[\s\S]*?stableHeight=\{isCompact \? 40 : 48\}[\s\S]*?debugId="shop-gallery\.owner-contact\.phone-call"[\s\S]*?<span>Call<\/span>/,
+  "Public Shop owner contact panel must stay a compact chooser opened from the single WhatsApp surface button."
+);
+
+assertNotContains(
+  /<span>WhatsApp chat<\/span>|<span>Call phone<\/span>|Pick chat or a direct call\./,
+  "Public Shop must not expose the old busy contact-panel labels; the main surface stays one WhatsApp button and the opened chooser stays Chat/Call."
+);
+
+assertContains(
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?<span>Chat<\/span>[\s\S]*?debugId="shop-gallery\.spotlight\.phone-call"[\s\S]*?<span>Call<\/span>[\s\S]*?debugId="shop-gallery\.spotlight\.contact\.choose"[\s\S]*?WhatsApp/,
+  "Public Shop Spotlight must use one WhatsApp contact handle that opens Chat/Call for the active Spotlight owner."
+);
+
+assertNotContains(
+  /shop-gallery\.open-spotlight-preview|debugId="shop-gallery\.spotlight\.whatsapp"|isCompact \? "Open" : "Explore"/,
+  "Public Shop Spotlight must not show the old Open/Explore redirect action; Spotlight visitors should contact the active media owner instead."
+);
+
+assertContains(
+  /debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?width: diaryActionWidth[\s\S]*?maxWidth: diaryActionWidth[\s\S]*?showBlockPlacementAction \? \([\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  "Public Shop product action dock must keep one always-available open/close control, hide block social sharing from visitors, and reveal owner Share, Paid Repost, and Contact only inside the opened diary card."
 );
 
 assertContains(
@@ -311,6 +345,16 @@ assertContains(
 assertContains(
   /className="public-shop-section public-shop-spotlight"[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)/,
   "Public Shop Spotlight must keep polished white brand framing instead of cream/brown framing."
+);
+
+assertContains(
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? 172 : undefined[\s\S]*?minHeight: isCompact \? 172 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"minmax\(0, 7fr\) minmax\(0, 3fr\)"[\s\S]*?gridColumn: isCompact \? "2" : "1"[\s\S]*?WebkitLineClamp: isCompact \? 3 : 3[\s\S]*?stableHeight=\{isCompact \? 27 : 52\}[\s\S]*?gridColumn: isCompact \? "1" : "2"[\s\S]*?minHeight: isCompact \? 162 : 178/,
+  "Public Shop Spotlight phone layout must keep a short card, media in the dominant 70% left rail, and compact information/actions in the 30% right rail, without covering the media."
+);
+
+assertContains(
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"linear-gradient\(135deg, #061827 0%, #082A4C 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"minmax\(0, 7fr\) minmax\(0, 3fr\)"/,
+  "Public Shop Spotlight compact card must stay split instead of returning to a full-media text-overlay card."
 );
 
 assertContains(
@@ -355,5 +399,6 @@ console.log(
     `${expectedInstallPromptActions} install prompt action, ` +
     `${expectedMediaFrameInvocations} media-frame invocation families, ` +
     `${expectedSharedMediaAudioActionTemplates} shared audio action template, ` +
+    `${expectedSocialTagActionTemplates} social tag action template, ` +
     `${expectedWholeRouteActionFamilies} whole-route action template families total.`
 );

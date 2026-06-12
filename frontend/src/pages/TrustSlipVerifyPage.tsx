@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
+import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -565,7 +566,7 @@ export default function TrustSlipVerifyPage() {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+        gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
         gap: isCompact ? 8 : 12,
       }}
     >
@@ -659,6 +660,32 @@ export default function TrustSlipVerifyPage() {
           {labelWithIcon("trust-shield", "Request current TrustSlip")}
         </SecondaryButton>
       )}
+      <SocialTagShareButton
+        target={{
+          title: "TrustSlip Verify",
+          message: buildTrustSlipVerifySnapshot({
+            holderName,
+            gmfnId,
+            communityLabel,
+            trustSlipCode: resolvedCode || "Not available",
+            visibleBand,
+            visibleScore: visibleScore === null ? "-" : String(Math.round(visibleScore)),
+            verificationStatus: banner.title,
+            issuedAt: issuedAtLabel,
+            expiresAt: expiresAtLabel,
+            verifyUrl,
+          }),
+          url: verifyUrl,
+        }}
+        disabled={!verifyUrl}
+        buttonLabel="Share"
+        stableHeight={isCompact ? 52 : 58}
+        fullWidth={isCompact}
+        minWidth={isCompact ? undefined : 132}
+        debugId="trust-slip-verify.public.tag-social"
+        style={{ borderRadius: 12, fontWeight: 1000 }}
+        onResult={showNotice}
+      />
       <div style={{ display: "none" }}>
         <SecondaryButton
           type="button"

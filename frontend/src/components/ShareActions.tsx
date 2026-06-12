@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import { CardActionRow, PrimaryButton, SecondaryButton } from "./StableButton";
 import { safeCopy } from "../lib/api";
+import SocialTagShareButton from "./SocialTagShareButton";
 
 /**
  * ShareActions - unified share block (Copy / WhatsApp)
@@ -83,6 +84,13 @@ export default function ShareActions(props: ShareActionsProps) {
         >
           {whatsappLabel}
         </SecondaryButton>
+
+        <SocialTagShareButton
+          target={{ title, message: cleanText, url: cleanUrl }}
+          disabled={!canShare}
+          buttonLabel="Share"
+          debugId="share-actions.tag-social"
+        />
       </CardActionRow>
 
       <div style={smallNoteStyle()}>

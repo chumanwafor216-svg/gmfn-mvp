@@ -33,7 +33,7 @@ assertContains(
 );
 
 assertContains(
-  /type PayoutForm = \{[\s\S]*?sort_code: string;[\s\S]*?\};[\s\S]*?function normalizeSortCode[\s\S]*?function buildPayoutNote\(form: PayoutForm\)[\s\S]*?UK Sort code:[\s\S]*?function buildPayoutSummary\(form: PayoutForm\): string[\s\S]*?UK Sort Code:/,
+  /type PayoutForm = \{[\s\S]*?sort_code: string;[\s\S]*?\};[\s\S]*?function normalizeSortCode[\s\S]*?function buildPayoutNote\(form: PayoutForm\)[\s\S]*?UK Sort code:[\s\S]*?function buildPayoutSummary\([\s\S]*?form: PayoutForm[\s\S]*?\): string[\s\S]*?UK Sort Code:[\s\S]*?buildGsnPaymentInstructionPackage[\s\S]*?detailLines: lines/,
   "Payout Details must keep UK sort code in state, note payload, and copied summary until a dedicated backend field exists."
 );
 

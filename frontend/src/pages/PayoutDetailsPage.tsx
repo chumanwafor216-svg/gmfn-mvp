@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -13,6 +14,7 @@ import {
   safeCopy,
   updateWithdrawalDestination,
 } from "../lib/api";
+import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
 
 type CommunityLite = {
   id?: number;
@@ -366,16 +368,36 @@ function removeLocalPayout(): void {
   window.localStorage.removeItem(LOCAL_PAYOUT_KEY);
 }
 
-function buildPayoutSummary(form: PayoutForm): string {
-  return [
-    "GSN Payout Details",
+function buildPayoutSummary(
+  form: PayoutForm,
+  context: {
+    memberName?: string;
+    gsnId?: string;
+    communityName?: string;
+    communityId?: string | number;
+    status?: string;
+  } = {}
+): string {
+  const lines = [
     `Account Name: ${safeStr(form.account_name || "-")}`,
     `Account Number / Wallet: ${safeStr(form.account_number || "-")}`,
     `Bank / Wallet Provider: ${safeStr(form.bank_name || "-")}`,
     `UK Sort Code: ${safeStr(normalizeSortCode(form.sort_code) || "-")}`,
     `Country: ${safeStr(form.country || "-")}`,
     `Currency: ${safeStr(form.currency || "-")}`,
-  ].join("\n");
+  ];
+
+  return buildGsnPaymentInstructionPackage({
+    title: "GSN Payout Details Snapshot",
+    purpose: "Review the payout destination saved for approved withdrawals.",
+    memberName: context.memberName,
+    gsnId: context.gsnId,
+    communityName: context.communityName,
+    communityId: safeStr(context.communityId),
+    routeName: "Payout Details",
+    status: context.status,
+    detailLines: lines,
+  });
 }
 
 function getCommunityName(clan: CommunityLite | null): string {
@@ -528,6 +550,22 @@ export default function PayoutDetailsPage() {
   const needsUkSortCode = isUkPayout(form);
   const requiredFieldCount = needsUkSortCode ? 6 : 5;
   const isReady = completionCount >= requiredFieldCount;
+  const payoutPaperContext = useMemo(
+    () => ({
+      memberName: safeStr(
+        me?.display_name || me?.name || me?.first_name || me?.email || "Member"
+      ),
+      gsnId: safeStr(me?.gmfn_id || ""),
+      communityName: selectedCommunityLabel,
+      communityId: selectedClanId || "",
+      status: isReady ? "Ready for withdrawal flow" : "Needs completion",
+    }),
+    [isReady, me, selectedClanId, selectedCommunityLabel]
+  );
+  const payoutSummaryPaper = useMemo(
+    () => buildPayoutSummary(form, payoutPaperContext),
+    [form, payoutPaperContext]
+  );
 
   const nextStep = useMemo<NextStepState>(() => {
     if (!selectedClanId) {
@@ -636,7 +674,7 @@ export default function PayoutDetailsPage() {
   }
 
   function copySummary() {
-    safeCopy(buildPayoutSummary(form));
+    safeCopy(payoutSummaryPaper);
     setProofFeedback(null);
     setErr("");
     setMsg("Payout summary copied.");
@@ -1028,16 +1066,13 @@ export default function PayoutDetailsPage() {
           }}
         >
           <div style={lightSectionLabel()}>Stored summary</div>
-          <div
-            style={{
-              marginTop: 10,
-              color: "#4A5F78",
-              lineHeight: 1.45,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {buildPayoutSummary(form)}
-          </div>
+          <GsnSnapshotPaperCard
+            paperText={payoutSummaryPaper}
+            compact={isCompact}
+            icon="bank"
+            maxBodyLines={isCompact ? 6 : undefined}
+            style={{ marginTop: 12 }}
+          />
         </div>
       </section>
 

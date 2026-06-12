@@ -85,6 +85,12 @@ Each accepted item should record:
 - The GSN institutional PDF shell exists in source for the known evidence and
   report generators, including generated time, reference, watermark/header/footer,
   and the "not a bank guarantee" limitation.
+- Copy/snapshot text packages still need the same institutional GSN treatment
+  before they are accepted as customer-facing proof: clear `GSN Snapshot` title,
+  GSN mark or watermark, official frame, holder/community context, generated
+  time or reference, and a limitation/currentness note.
+- The working route/page inventory for this proof-surface rollout is
+  `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md`.
 - Several web routes have received route-local polish, icon, button, and
   language passes.
 - The evidence pack is still partial until accepted screenshots/PDFs are
