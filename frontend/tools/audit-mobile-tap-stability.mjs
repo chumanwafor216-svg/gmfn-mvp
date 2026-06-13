@@ -702,12 +702,12 @@ const communityHomePath = join(sourceRoot, "pages", "CommunityHomePage.tsx");
 const communityHomeSource = readFileSync(communityHomePath, "utf8");
 
 const communityHomeButtonChecks = [
-  {
-    label:
-      "Community Home quick action tiles must keep fixed height so labels cannot shake on mobile",
-    pattern:
-      /function communityQuickActionButton\([\s\S]*?height: isCompact \? 96 : 100,[\s\S]*?minHeight: isCompact \? 96 : 100,[\s\S]*?maxHeight: isCompact \? 96 : 100,[\s\S]*?overflow: "hidden"/,
-  },
+    {
+      label:
+        "Community Home quick action tiles must keep fixed height so labels cannot shake on mobile",
+      pattern:
+        /function communityQuickActionButton\([\s\S]*?height: isCompact \? 58 : 100,[\s\S]*?minHeight: isCompact \? 58 : 100,[\s\S]*?maxHeight: isCompact \? 58 : 100,[\s\S]*?overflow: "hidden"[\s\S]*?function communityQuickActionIcon\([\s\S]*?width: 25,[\s\S]*?height: 25,/,
+    },
   {
     label:
       "Community Home tool rows must stay height-locked for mobile tap stability",

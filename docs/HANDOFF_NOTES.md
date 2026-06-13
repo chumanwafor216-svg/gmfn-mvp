@@ -1,3 +1,47 @@
+### Community Home phone rail stabilization (2026-06-13)
+
+- Trigger:
+  - robust phone geometry scan showed Community Home quick actions overlapped
+    the authenticated bottom rail:
+    - `community-home.next-action.create-community` at `764-860`;
+    - `community-home.next-action.join-community` at `764-860`;
+    - bottom rail at `793-835`.
+  - after compacting quick actions, `Your Communities` header then sat at
+    `822-894`, still half-covered by the rail.
+- Changed locally:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - compact quick actions now use a three-column phone grid;
+    - compact quick-action tiles are fixed at `58px` high instead of `96px`;
+    - compact quick-action icons use a smaller route-local `25px` helper while
+      the larger `communityActionIcon()` row geometry stays intact;
+    - the Communities section has phone-only top spacing so its header starts
+      below the rail instead of half under it.
+  - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - updated the quick-action geometry guard to the new compact pattern.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - updated the protected umbrella guard for the same compact quick-action
+      geometry.
+- Verification:
+  - Passed `npm --prefix frontend run audit:community-home-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local phone viewport for `/app/community?community=3` showed:
+    - bottom rail at `793-835`;
+    - quick actions at `660-718` and `724-782`;
+    - `Your Communities` header at `862-934`;
+    - no route-local overlap.
+- Unabated truth:
+  - the quick-action labels are tighter on phone now; this is the tradeoff that
+    keeps all five first actions visible without a rail collision;
+  - the Communities header now requires a small scroll, but is no longer
+    half-tappable under the rail;
+  - no push or Render deploy was done for this local continuation batch.
+
 ### Dashboard app launcher rail-safe spacing (2026-06-13)
 
 - Trigger:

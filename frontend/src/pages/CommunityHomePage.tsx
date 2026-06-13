@@ -733,13 +733,13 @@ function communityQuickActionButton(
   return {
     ...communityActionStyle("secondary"),
     width: "100%",
-    height: isCompact ? 96 : 100,
-    minHeight: isCompact ? 96 : 100,
-    maxHeight: isCompact ? 96 : 100,
+    height: isCompact ? 58 : 100,
+    minHeight: isCompact ? 58 : 100,
+    maxHeight: isCompact ? 58 : 100,
     justifyContent: "center",
     alignItems: "center",
-    gap: 7,
-    padding: isCompact ? "10px 11px" : "11px 8px",
+    gap: isCompact ? 3 : 7,
+    padding: isCompact ? "5px 6px" : "11px 8px",
     textAlign: "center",
     flexDirection: "column",
     background: primary
@@ -750,6 +750,24 @@ function communityQuickActionButton(
       ? "1px solid rgba(13,95,168,0.16)"
       : "1px solid rgba(16,37,59,0.10)",
     overflow: "hidden",
+  };
+}
+
+function communityQuickActionIcon(
+  primary = false,
+  isCompact = false
+): React.CSSProperties {
+  return {
+    ...communityActionIcon(primary),
+    ...(isCompact
+      ? {
+          width: 25,
+          height: 25,
+          borderRadius: 10,
+          boxShadow:
+            "0 6px 12px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+        }
+      : {}),
   };
 }
 
@@ -2794,9 +2812,9 @@ export default function CommunityHomePage() {
               style={{
                 display: "grid",
                 gridTemplateColumns: isCompact
-                  ? "repeat(2, minmax(0, 1fr))"
+                  ? "repeat(3, minmax(0, 1fr))"
                   : "repeat(5, minmax(0, 1fr))",
-                gap: isCompact ? 8 : 12,
+                gap: isCompact ? 6 : 12,
                 alignItems: "stretch",
               }}
             >
@@ -2827,7 +2845,7 @@ export default function CommunityHomePage() {
                   icon: "join-person-plus",
                   title: "Grow circle",
                 },
-              ].map((item, index) => (
+              ].map((item) => (
                 <StableButton
                   key={item.id}
                   type="button"
@@ -2835,20 +2853,23 @@ export default function CommunityHomePage() {
                   onClick={(event) => openCommunityNextAction(event, item.id)}
                   style={{
                     ...communityQuickActionButton(Boolean(item.primary), isCompact),
-                    gridColumn:
-                      isCompact && index === 4 ? "1 / -1" : undefined,
                   }}
                 >
-                  <span style={communityActionIcon(Boolean(item.primary))}>
-                    {communityIconGlyph(item.icon as CommunityIconMark, 22)}
+                  <span
+                    style={communityQuickActionIcon(
+                      Boolean(item.primary),
+                      isCompact
+                    )}
+                  >
+                    {communityIconGlyph(item.icon as CommunityIconMark, isCompact ? 16 : 22)}
                   </span>
                   <span style={{ minWidth: 0 }}>
                     <span
                       style={{
                         ...brandClampLines(2),
-                        fontSize: isCompact ? 13.5 : 14,
+                        fontSize: isCompact ? 10.5 : 14,
                         fontWeight: 940,
-                        lineHeight: isCompact ? 1.18 : 1.15,
+                        lineHeight: isCompact ? 1.05 : 1.15,
                         whiteSpace: "normal",
                         wordBreak: "normal",
                       }}
@@ -3491,6 +3512,7 @@ export default function CommunityHomePage() {
         style={{
           ...communityBlockCard("raised"),
           order: 20,
+          marginTop: isCompact ? 40 : undefined,
           position: "relative",
           zIndex: 30,
         }}

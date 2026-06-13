@@ -340,7 +340,7 @@ assertContains(
 );
 
 assertContains(
-  /function communityQuickActionButton\([\s\S]*?height: isCompact \? 96 : 100[\s\S]*?minHeight: isCompact \? 96 : 100[\s\S]*?maxHeight: isCompact \? 96 : 100[\s\S]*?overflow: "hidden"/,
+  /function communityQuickActionButton\([\s\S]*?height: isCompact \? 58 : 100[\s\S]*?minHeight: isCompact \? 58 : 100[\s\S]*?maxHeight: isCompact \? 58 : 100[\s\S]*?overflow: "hidden"[\s\S]*?function communityQuickActionIcon\([\s\S]*?width: 25,[\s\S]*?height: 25,[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
   "Community Home front quick-action buttons must keep fixed phone geometry."
 );
 
