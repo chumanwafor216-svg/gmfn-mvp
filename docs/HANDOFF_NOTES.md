@@ -1,3 +1,37 @@
+### Shop Assets compact front-action stabilization (2026-06-13)
+
+- Trigger:
+  - continued phone bottom-stabilization after Vault Control;
+  - local phone geometry showed Shop Assets had three front workbench actions,
+    but `shop-assets.copy-public-link` sat at `768-824` while the bottom rail
+    started at `793`, causing the last action to overlap the rail.
+- Changed locally:
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - added a route-local `workbenchActionGrid()` for the top owner workbench
+      only;
+    - on compact screens, the first two workbench actions now share a two-column
+      row;
+    - `Copy public link` now spans the second row above the bottom rail;
+    - deeper signboard/product/posting owner grids still use the original
+      one-column compact layout.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-assets-slots`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local phone viewport for `/app/shop-assets?community=3` showed:
+    - bottom rail at `793-835`;
+    - `Back to Shop Control` at `632-688`;
+    - `Open public shop` at `632-688`;
+    - `Copy public link` at `696-752`.
+- Unabated truth:
+  - this fixes the known Shop Assets rail overlap only; it does not claim every
+    deeper Shop Assets product editor action is now first-viewport optimized;
+  - no push or Render deploy was done for this local continuation batch.
+
 ### Vault Control compact first-task stabilization (2026-06-13)
 
 - Trigger:

@@ -261,6 +261,16 @@ function ownerActionGrid(isCompact: boolean): React.CSSProperties {
   };
 }
 
+function workbenchActionGrid(isCompact: boolean): React.CSSProperties {
+  return {
+    ...ownerActionGrid(isCompact),
+    gridTemplateColumns: isCompact
+      ? "repeat(2, minmax(0, 1fr))"
+      : "repeat(auto-fit, minmax(148px, 1fr))",
+    gap: isCompact ? 8 : 10,
+  };
+}
+
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
@@ -1749,7 +1759,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div
               style={{
                 marginTop: 16,
-                ...ownerActionGrid(isCompact),
+                ...workbenchActionGrid(isCompact),
               }}
             >
               <StableCtaLink
@@ -1780,6 +1790,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 }
                 fullWidth
                 stableHeight={isCompact ? 56 : 48}
+                style={isCompact ? { gridColumn: "1 / -1" } : undefined}
                 debugId="shop-assets.copy-public-link"
               >
                 Copy public link
