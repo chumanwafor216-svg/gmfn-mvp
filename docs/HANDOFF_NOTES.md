@@ -1,3 +1,43 @@
+### Deploy attempt for GSN wording batch (2026-06-13)
+
+- Trigger:
+  - product owner said to continue and deploy whenever necessary;
+  - latest pushed batch included frontend wording plus backend visible
+    trust/verification wording, so a manual deploy attempt was warranted.
+- Commit deployed/attempted:
+  - `53354231dc6ba6f9c2983c59378a03aafbce9c6d`
+    (`Use GSN wording on trust verification surfaces`).
+- GitHub Actions:
+  - manually dispatched `.github/workflows/render-deploy.yml` with
+    `deploy_api=true`;
+  - run id: `27463665409`;
+  - run conclusion: `failure`.
+- Frontend deploy result:
+  - frontend deploy hook was accepted;
+  - Render returned frontend deploy id `dep-d8mim6jtqb8s73c509q0`;
+  - live `https://gmfn-frontend.onrender.com` now references
+    `assets/index-3KKqQGtj.js`;
+  - live lazy chunk `assets/JoinEntryPage-Bx0yamXz.js` contains
+    `GSN member`, confirming the latest frontend wording reached Render.
+- Backend deploy result:
+  - backend deploy did not run;
+  - workflow failed because `RENDER_API_KEY` is still empty in GitHub Actions;
+  - the workflow correctly refused the legacy `RENDER_API_DEPLOY_HOOK_URL`
+    fallback for backend-impacting deploys.
+- Live API verification:
+  - `npm run audit:live-api-identity-routes` still fails against
+    `https://gmfn-api.onrender.com`;
+  - live API is still missing the signed-in identity routes and withdrawal
+    sort-code fields;
+  - live public community verification still exposes stale protected terms such
+    as `hidden_by_design`, member phone categories, sponsor details, disputes,
+    private relay contacts, and internal trust history.
+- Unabated truth:
+  - the latest frontend wording is live;
+  - the backend wording and QR/API privacy fixes are still not live until
+    `gmfn-api` is manually deployed from Render or GitHub secrets
+    `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured.
+
 ### GSN wording for standalone trust/verification surfaces (2026-06-13)
 
 - Trigger:
