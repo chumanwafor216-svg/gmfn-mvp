@@ -42,6 +42,45 @@
   - production phone browser chrome should still be checked after publish,
     because native mobile browser toolbars can differ from headless viewport
     emulation.
+- Deployment follow-up:
+  - pushed to `main` at `7419fab8ffb9796ab4c2ec9d34acffc0a3bfcfb4`;
+  - GitHub `Backend Tests` passed for the push;
+  - manually triggered `Trigger Render Deploy` run `27468154028` with API deploy
+    disabled;
+  - Render accepted the frontend deploy hook and returned
+    `dep-d8mlmsurnols73cpkpp0`;
+  - live `https://gmfn-frontend.onrender.com/` served
+    `/assets/index-D8CYw0Qj.js`;
+  - live bundle checks confirmed `100dvh`, main scroll behavior, and
+    `data-gmfn-bottom-nav` are present.
+
+### Shop Assets mobile rail active-state polish (2026-06-13)
+
+- Trigger:
+  - after the bottom rail was moved into the visible phone viewport, a broader
+    signed-in mobile route scan found `/app/shop-assets` showed the shared
+    bottom rail but no active bottom item;
+  - the mobile top bar also fell back to the generic `Workspace` title.
+- Changed locally:
+  - `frontend/src/layout/AppLayout.tsx`
+    - `Public Shop` bottom item now matches internal shop workspace routes:
+      `/app/shop-assets`, `/app/shop-gallery*`, and `/app/shop/me`;
+    - `/app/shop-assets` now reports route meta as `Shop tools` /
+      `Shop Assets`.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - added a guard so the Public Shop bottom item continues to stay active on
+      internal shop workspace routes.
+- Verification:
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Local signed-in phone route probe confirmed `/app/shop-assets` now shows
+    header `Menu SHOP TOOLS Shop Assets Tools`, active bottom item
+    `Public Shop`, and rail geometry `top: 785`, `bottom: 844`.
+- Unabated truth:
+  - this is a navigation-state polish fix, not a deeper Shop Assets redesign;
+  - `Public Shop` remains the current bottom label, even though this route is an
+    internal shop workspace route.
 
 ### Entry phone compactness polish for Cover and Join (2026-06-13)
 

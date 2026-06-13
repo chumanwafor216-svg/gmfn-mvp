@@ -197,7 +197,11 @@ function makeShopGalleryItem(
     label: "Public Shop",
     to: myShopGalleryTo,
     disabled,
-    match: (pathname) => pathname.startsWith("/shop/"),
+    match: (pathname) =>
+      pathname.startsWith("/shop/") ||
+      pathname === "/app/shop-assets" ||
+      pathname.startsWith("/app/shop-gallery") ||
+      pathname === "/app/shop/me",
   };
 }
 
@@ -459,6 +463,13 @@ function getSpecialRouteMeta(
     return {
       section: "Focused task",
       page: "Shop Control",
+    };
+  }
+
+  if (pathname === "/app/shop-assets") {
+    return {
+      section: "Shop tools",
+      page: "Shop Assets",
     };
   }
 

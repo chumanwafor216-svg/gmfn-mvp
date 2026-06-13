@@ -894,6 +894,12 @@ const appShellChecks = [
   },
   {
     label:
+      "Mobile Public Shop bottom item must stay active on internal shop workspace routes",
+    pattern:
+      /function makeShopGalleryItem\([\s\S]*?label: "Public Shop"[\s\S]*?pathname\.startsWith\("\/shop\/"\)[\s\S]*?pathname === "\/app\/shop-assets"[\s\S]*?pathname\.startsWith\("\/app\/shop-gallery"\)[\s\S]*?pathname === "\/app\/shop\/me"[\s\S]*?if \(pathname === "\/app\/shop-assets"\)[\s\S]*?section: "Shop tools"[\s\S]*?page: "Shop Assets"/,
+  },
+  {
+    label:
       "Closed mobile drawer must disable pointer events so transformed fixed layers cannot intercept taps",
     pattern:
       /function drawerPanel\(open: boolean\): React\.CSSProperties[\s\S]*?transform: open \? "translateX\(0\)" : "translateX\(-100%\)",[\s\S]*?pointerEvents: open \? "auto" : "none",/,
