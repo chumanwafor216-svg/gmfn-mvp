@@ -23,6 +23,17 @@
   - this is backend code, so it should be pushed/deployed only with the next
     intentional backend publish batch.
 
+### Additional route guard checks after backend cleanup (2026-06-13)
+
+- Verification:
+  - Passed `npm --prefix frontend run audit:vault-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:inner-navigation-origin`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+- Unabated truth:
+  - these checks add confidence around Vault Control, source-aware back
+    behavior, and mobile tap handling;
+  - they are source/script guards, not a substitute for a fresh phone review.
+
 ### Full lint and backend suite validation checkpoint (2026-06-13)
 
 - Trigger:
