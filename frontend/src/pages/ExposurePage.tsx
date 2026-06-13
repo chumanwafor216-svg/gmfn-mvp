@@ -77,7 +77,7 @@ function parseMeta(e: TrustEventRow): any {
 }
 
 function timeAgo(iso?: string): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   const ms = Date.now() - d.getTime();
   const mins = Math.floor(ms / 60000);
@@ -181,7 +181,7 @@ export default function ExposurePage() {
   }, [rows]);
 
   function displayUserLabel(userId?: number) {
-    if (!userId) return "—";
+    if (!userId) return "-";
     const email = userEmailById.get(Number(userId));
     return email ? `${email} (id:${userId})` : `id:${userId}`;
   }
@@ -335,9 +335,9 @@ export default function ExposurePage() {
       >
         <div style={{ fontWeight: 700 }}>Overdue detector status</div>
         <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>
-          Last run: <b>{lastRunAt ? new Date(lastRunAt).toLocaleString() : "—"}</b> · scanned:{" "}
-          <b>{lastScanned ?? "—"}</b> · matched: <b>{lastMatched ?? "—"}</b> · defaulted:{" "}
-          <b>{lastDefaulted ?? "—"}</b>
+          Last run: <b>{lastRunAt ? new Date(lastRunAt).toLocaleString() : "-"}</b> | scanned:{" "}
+          <b>{lastScanned ?? "-"}</b> | matched: <b>{lastMatched ?? "-"}</b> | defaulted:{" "}
+          <b>{lastDefaulted ?? "-"}</b>
         </div>
       </div>
 
@@ -346,7 +346,7 @@ export default function ExposurePage() {
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <div style={{ fontSize: 12, color: "#6b7280" }}>Clan ID</div>
+            <div style={{ fontSize: 12, color: "#6b7280" }}>Community ID</div>
             <input
               type="number"
               value={clanId}
@@ -416,8 +416,8 @@ export default function ExposurePage() {
         </div>
 
         <div style={{ marginTop: 10, fontSize: 12, color: "#6b7280" }}>
-          Totals: <b>Pool</b> {formatMoney(totals.pool, "NGN")} · <b>Exposure</b>{" "}
-          {formatMoney(totals.exposure, "NGN")} · <b>Available</b>{" "}
+          Totals: <b>Pool</b> {formatMoney(totals.pool, "NGN")} | <b>Exposure</b>{" "}
+          {formatMoney(totals.exposure, "NGN")} | <b>Available</b>{" "}
           {formatMoney(totals.available, "NGN")}
         </div>
       </div>
@@ -462,7 +462,7 @@ export default function ExposurePage() {
                       <div style={{ fontSize: 12, color: "#6b7280" }}>id: {uid}</div>
                     </td>
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
-                      {r.role ?? "—"}
+                      {r.role ?? "-"}
                     </td>
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3", textAlign: "right" }}>
                       {formatMoney(n(r.personal_pool_balance), "NGN")}
@@ -474,7 +474,7 @@ export default function ExposurePage() {
                       {formatMoney(n(r.available), "NGN")}
                     </td>
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3", textAlign: "right" }}>
-                      {Number.isFinite(cci) ? <b>{cci}</b> : "—"}
+                      {Number.isFinite(cci) ? <b>{cci}</b> : "-"}
                     </td>
                   </tr>
                 );
@@ -517,7 +517,7 @@ export default function ExposurePage() {
               {defaultedEvents.map((e, i) => {
                 const meta = parseMeta(e) || {};
                 const reason = meta.reason ?? "loan_defaulted";
-                const daysPastDue = meta.days_past_due ?? "—";
+                const daysPastDue = meta.days_past_due ?? "-";
 
                 const actorId = e.actor_user_id;
                 const borrowerId = e.subject_user_id;
@@ -525,7 +525,7 @@ export default function ExposurePage() {
                 return (
                   <tr key={i}>
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
-                      {e.created_at ? new Date(e.created_at).toLocaleString() : "—"}
+                      {e.created_at ? new Date(e.created_at).toLocaleString() : "-"}
                     </td>
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
                       {timeAgo(e.created_at)}
@@ -542,7 +542,7 @@ export default function ExposurePage() {
                           #{e.loan_id}
                         </StableCtaLink>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
 
@@ -557,7 +557,7 @@ export default function ExposurePage() {
                           {displayUserLabel(borrowerId)}
                         </StableCtaLink>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
 

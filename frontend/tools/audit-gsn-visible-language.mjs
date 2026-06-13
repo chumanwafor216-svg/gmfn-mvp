@@ -10,6 +10,7 @@ const repoRoot = join(frontendRoot, "..");
 const files = [
   "frontend/src/pages/JoinEntryPage.tsx",
   "frontend/src/pages/BuildFirstCirclePage.tsx",
+  "frontend/src/pages/ExposurePage.tsx",
   "frontend/src/pages/ExposureAdminPage.tsx",
   "frontend/src/pages/TrustCommandCentrePage.tsx",
   "frontend/src/components/TrustGraphEdgeList.tsx",
@@ -103,6 +104,7 @@ const forbidden = [
   "Cross-Clan Integrity",
   "cross-clan graph integrity",
   "a clan admin; ordinary",
+  "Clan ID",
   "No custodial funds are held by GMFN",
   "Clan liquidity index",
   "Dev Clan",
@@ -110,6 +112,8 @@ const forbidden = [
 
 const forbiddenByFile = [
   ["frontend/src/pages/ShopGalleryPage.tsx", 'label: "GMFN ID"'],
+  ["frontend/src/pages/ExposurePage.tsx", "—"],
+  ["frontend/src/pages/ExposurePage.tsx", "·"],
 ];
 
 const required = [
@@ -146,6 +150,7 @@ const required = [
   ["gmfn_backend/app/api/routes/marketplace.py", "Spotlight capacity reached for community"],
   ["gmfn_backend/app/api/routes/public_config.py", '"app_name": "GSN"'],
   ["frontend/src/pages/BuildFirstCirclePage.tsx", "Hi! I am inviting you to join me on GSN."],
+  ["frontend/src/pages/ExposurePage.tsx", "Community ID"],
   ["frontend/src/pages/ExposureAdminPage.tsx", "community-admin exposure summary"],
   ["frontend/src/pages/TrustCommandCentrePage.tsx", "Confirm community-admin exposure access"],
   ["frontend/src/pages/TrustCommandCentrePage.tsx", "Community admin page"],

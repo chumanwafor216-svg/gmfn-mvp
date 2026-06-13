@@ -1,3 +1,27 @@
+### Exposure page community label/rendering cleanup (2026-06-13)
+
+- Trigger:
+  - continued visible-language and phone-polish sweep;
+  - string-literal scan found `frontend/src/pages/ExposurePage.tsx` still
+    rendering `Clan ID` and non-ASCII fallback/separator characters.
+- Changed locally:
+  - `frontend/src/pages/ExposurePage.tsx`
+    - changed the admin input label from `Clan ID` to `Community ID`;
+    - replaced em-dash fallbacks with `-`;
+    - replaced middle-dot separators in status/totals rows with `|`.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - added `ExposurePage` to the visible-language guard;
+    - added guards for the old `Clan ID` label and the cleaned separator
+      characters on this page.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs src\pages\ExposurePage.tsx`.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this is a frontend-visible polish change only;
+  - the underlying storage key and API contract still use `clan_id` /
+    selected-clan internals.
+
 ### CCI/protocol readiness community wording cleanup (2026-06-13)
 
 - Trigger:
