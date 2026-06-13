@@ -1637,7 +1637,7 @@ export default function TrustCommandCentrePage() {
                 </div>
 
                 <div style={statTile()}>
-                  <div>{sectionLabelWithIcon("wallet", "Clan liquidity")}</div>
+                  <div>{sectionLabelWithIcon("wallet", "Community liquidity")}</div>
                   <div style={commandStatValueStyle()}>
                     {formatNumber(liquidity?.lockedTotal || 0)} locked
                   </div>

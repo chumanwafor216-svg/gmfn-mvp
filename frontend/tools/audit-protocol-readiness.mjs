@@ -71,6 +71,18 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/TrustCommandCentrePage.tsx",
+  /Community liquidity/,
+  "Trust Command Centre must use current GSN community language for liquidity, not older clan wording."
+);
+
+assertNotContains(
+  "frontend/src/pages/TrustCommandCentrePage.tsx",
+  /Clan liquidity/,
+  "Trust Command Centre must not expose older clan wording in the visible liquidity card."
+);
+
+assertContains(
+  "frontend/src/pages/TrustCommandCentrePage.tsx",
   /Needs proof: \{Number\(executiveReading\.pilotReadiness\?\.partial_count[\s\S]*?Needs proof\{" "\}\s*\{Number\(executiveReading\.pilotReadiness\?\.partial_count/,
   "Trust Command Centre must translate protocol partial counts into user-facing Needs proof language."
 );

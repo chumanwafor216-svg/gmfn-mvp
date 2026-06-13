@@ -1,3 +1,29 @@
+### Trust Command Centre community wording cleanup (2026-06-13)
+
+- Trigger:
+  - product owner said to keep moving after the backend deploy workflow was
+    hardened;
+  - next useful lane was protocol/readiness truth and user-facing language.
+- Changed locally:
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - changed the visible readiness stat label from `Clan liquidity` to
+      `Community liquidity` so the Trust Command Centre uses the current GSN
+      surface language.
+  - `frontend/tools/audit-protocol-readiness.mjs`
+    - now requires `Community liquidity`;
+    - now rejects `Clan liquidity` in the Trust Command Centre.
+- Verification:
+  - Passed `npm run audit:protocol-readiness`.
+  - Passed `npm exec -- eslint src\pages\TrustCommandCentrePage.tsx tools\audit-protocol-readiness.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this is a small user-facing wording cleanup, not a broader report-contract
+    rename;
+  - existing `GSN Clan Exposure Report` wording remains a separate historical
+    evidence/report contract and was not changed in this pass.
+
 ### Backend deploy workflow now requires exact Render API deploys (2026-06-13)
 
 - Trigger:
