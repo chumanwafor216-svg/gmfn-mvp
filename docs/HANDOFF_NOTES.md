@@ -1,3 +1,48 @@
+### Controlled publish for repayment + share polish completed (2026-06-13)
+
+- Trigger:
+  - product owner said `continue` after the verified local public-shop/social
+    sharing polish.
+- Published commits:
+  - `1a74be9 Clarify repayment evidence amounts`;
+  - `2bf9c8b070bcb880754344f077a7a4f081450d7e Polish public shop social
+    sharing`.
+- GitHub:
+  - pushed `main` from `2b08dcc` to `2bf9c8b`;
+  - local `main` then matched `origin/main`.
+- Render:
+  - manually dispatched `.github/workflows/render-deploy.yml` with
+    `deploy_api=false`;
+  - GitHub Actions run `27461466771` completed successfully;
+  - workflow checked out commit
+    `2bf9c8b070bcb880754344f077a7a4f081450d7e`;
+  - Render accepted the frontend deploy hook and returned deploy id
+    `dep-d8mh591o3t8c73bqatt0`;
+  - backend deploy was intentionally skipped because the batch did not touch
+    `gmfn_backend/**`.
+- Live checks:
+  - `https://gmfn-frontend.onrender.com/?deploy_check=2bf9c8b` returned the new
+    static share metadata:
+    - `og:title` = `GSN Trusted Link`;
+    - main JS bundle = `assets/index-B6tlh5Ok.js`;
+  - `https://gmfn-frontend.onrender.com/gsn-share-poster.png?deploy_check=2bf9c8b`
+    returned `200`, `Content-Length: 96904`, and `last-modified: Sat, 13 Jun
+    2026 08:20:37 UTC`;
+  - `https://gmfn-api.onrender.com/health` returned
+    `{"ok":true,"dev_mode":false}`.
+- Devil's advocate / do not overclaim:
+  - Render accepted and served the new static frontend/share-poster assets;
+  - the first uncached root header check still showed an older cached
+    `last-modified`, so cache-busted checks are the stronger proof here;
+  - the live `/shop/GMFN-U-63655DE6?product_id=48&block=2` check still returned
+    the generic static `GSN Trusted Link` metadata, not the product-specific
+    `GSN Shop Item` / product title metadata from `frontend/server.mjs`;
+  - that means the user-facing share preview is improved, but live Render is
+    not currently proving product-specific Open Graph injection for public shop
+    routes;
+  - Facebook, X, and LinkedIn may also keep old preview caches until they
+    rescrape the link.
+
 ### Public shop/social sharing polish fixed locally (2026-06-13)
 
 - Trigger:
@@ -52,9 +97,9 @@
   - it does not force Facebook, X, or LinkedIn to immediately clear cached
     previews for URLs they already scraped;
   - final proof still needs a deployed version and a fresh phone share test;
-  - branch remains ahead of `origin/main`; the repayment slice and this sharing
-    polish are local unpublished work until the owner approves a controlled
-    push/deploy.
+  - this slice was later published in GitHub/Render run `27461466771`, with the
+    caveat recorded above that live product-specific shop OG metadata is not
+    currently proven.
 
 ### Controlled push and frontend Render deploy completed (2026-06-13)
 
