@@ -1,3 +1,44 @@
+### Marketplace mobile link/action containment (2026-06-13)
+
+- Trigger:
+  - owner phone screenshots showed `/app/marketplace` link-desk cards
+    clipping right-side controls and text on mobile, including Join, Verify,
+    Shop Face, Paid Repost, and Community Packages.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - constrained Marketplace link rows, row headers, inline action grids,
+      and inline action buttons to `width/maxWidth: 100%` with `minWidth: 0`;
+    - changed compact inline actions from fixed `minmax(128px, 1fr)` columns
+      to `minmax(0, 1fr)` so two phone buttons shrink inside the card instead
+      of pushing past the right edge;
+    - clamped link-row titles/subtitles to protect the card geometry;
+    - stacked Community Package detail records to one column on compact
+      phones, matching the existing audit intent and avoiding tiny clipped
+      package cards.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - updated Marketplace guardrails to require the new contained compact
+      action geometry.
+  - `frontend/tools/audit-button-stability.mjs`
+    - aligned the Shop Gallery audit with the current Vault-request action id.
+- Verification:
+  - `npm run build` passed from `frontend/`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run audit:community-shop-actions` passed.
+- Unabated truth:
+  - this is a containment/mobile stabilization fix, not a redesign;
+  - local app responded at `http://127.0.0.1:5199/app/marketplace`, but a
+    fresh headless Chrome screenshot/overflow measurement could not be
+    completed because sandboxed Chrome launch was blocked;
+  - after deploy, the owner should still do one real-phone pass over the same
+    Marketplace link desk areas before calling bottom stabilization finished.
+
 ### Vault request link scoped away from public shop copy (2026-06-13)
 
 - Trigger:

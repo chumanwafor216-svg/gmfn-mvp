@@ -617,7 +617,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Marketplace inline action grids must not create page-local stacking layers around mobile buttons",
     pattern:
-      /function marketplaceInlineActionsStyle\([\s\S]*?display: "grid",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(128px, 1fr\)\)"[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 56 : 58[\s\S]*?maxHeight: _isCompact \? 56 : 58[\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?whiteSpace: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?transition: "none",/,
+      /function marketplaceInlineActionsStyle\([\s\S]*?width: "100%"[\s\S]*?maxWidth: "100%"[\s\S]*?minWidth: 0[\s\S]*?boxSizing: "border-box"[\s\S]*?display: "grid",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"[\s\S]*?justifyItems: "stretch"[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?maxWidth: "100%"[\s\S]*?boxSizing: "border-box"[\s\S]*?height: _isCompact \? 56 : 58[\s\S]*?maxHeight: _isCompact \? 56 : 58[\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?whiteSpace: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?transition: "none",/,
   },
   {
     label:

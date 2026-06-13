@@ -694,7 +694,7 @@ assertContains(
 );
 
 assertContains(
-  /function marketplaceInlineActionsStyle[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(128px, 1fr\)\)"[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 56 : 58[\s\S]*?minHeight: _isCompact \? 56 : 58[\s\S]*?maxHeight: _isCompact \? 56 : 58[\s\S]*?whiteSpace: "normal"[\s\S]*?wordBreak: "normal"/,
+  /function marketplaceInlineActionsStyle[\s\S]*?width: "100%"[\s\S]*?maxWidth: "100%"[\s\S]*?minWidth: 0[\s\S]*?boxSizing: "border-box"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"[\s\S]*?justifyItems: "stretch"[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?maxWidth: "100%"[\s\S]*?boxSizing: "border-box"[\s\S]*?height: _isCompact \? 56 : 58[\s\S]*?minHeight: _isCompact \? 56 : 58[\s\S]*?maxHeight: _isCompact \? 56 : 58[\s\S]*?whiteSpace: "normal"[\s\S]*?wordBreak: "normal"/,
   "Marketplace inline/link-desk buttons must keep stable readable phone geometry: 56px phone rows, 58px desktop rows, and whole-word wrapping."
 );
 

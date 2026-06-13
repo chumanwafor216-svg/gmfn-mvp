@@ -2117,6 +2117,10 @@ function marketplaceLinkHeroPillStyle(): React.CSSProperties {
 
 function marketplaceLinkRowStyle(isCompact: boolean, expanded = false): React.CSSProperties {
   return {
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
     borderRadius: isCompact ? 20 : 22,
     border: expanded
       ? "1.5px solid rgba(27,102,210,0.45)"
@@ -2138,6 +2142,10 @@ function marketplaceLinkRowStyle(isCompact: boolean, expanded = false): React.CS
 
 function marketplaceLinkRowHeaderStyle(isCompact: boolean): React.CSSProperties {
   return {
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
     display: "grid",
     gridTemplateColumns: isCompact
       ? "44px minmax(0, 1fr)"
@@ -2145,7 +2153,7 @@ function marketplaceLinkRowHeaderStyle(isCompact: boolean): React.CSSProperties 
     gridTemplateRows: isCompact ? "auto auto" : undefined,
     gap: isCompact ? 8 : 14,
     alignItems: "center",
-    minWidth: 0,
+    overflow: "hidden",
   };
 }
 
@@ -2181,10 +2189,15 @@ function marketplaceLinkRowIconStyle(
 function marketplaceLinkRowTitleStyle(isCompact: boolean): React.CSSProperties {
   return {
     minWidth: 0,
+    maxWidth: "100%",
     color: "#07172C",
     fontSize: isCompact ? 17 : 23,
     lineHeight: 1.08,
     fontWeight: 950,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
     overflowWrap: "break-word",
     wordBreak: "normal",
     hyphens: "none",
@@ -2193,11 +2206,17 @@ function marketplaceLinkRowTitleStyle(isCompact: boolean): React.CSSProperties {
 
 function marketplaceLinkRowSubStyle(isCompact: boolean): React.CSSProperties {
   return {
+    minWidth: 0,
+    maxWidth: "100%",
     marginTop: 3,
     color: "#516579",
     fontSize: isCompact ? 12 : 15,
     lineHeight: 1.18,
     fontWeight: 760,
+    display: "-webkit-box",
+    WebkitLineClamp: isCompact ? 2 : 3,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
     overflowWrap: "break-word",
     wordBreak: "normal",
     hyphens: "none",
@@ -2310,15 +2329,21 @@ function marketplaceInlineActionsStyle(
   isCompact: boolean
 ): React.CSSProperties {
   return {
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
     marginTop: isCompact ? 8 : 12,
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "repeat(2, minmax(128px, 1fr))"
+      ? "repeat(2, minmax(0, 1fr))"
       : "repeat(auto-fit, minmax(168px, 1fr))",
     gridAutoRows: isCompact ? "56px" : "58px",
     gap: 8,
     alignItems: "stretch",
     alignContent: "start",
+    justifyItems: "stretch",
+    overflow: "hidden",
     overflowAnchor: "none",
     transition: "none",
   };
@@ -2332,7 +2357,9 @@ function marketplaceInlineActionStyle(
   return {
     ...marketplaceActionStyle(kind, disabled),
     width: "100%",
+    maxWidth: "100%",
     minWidth: 0,
+    boxSizing: "border-box",
     height: _isCompact ? 56 : 58,
     minHeight: _isCompact ? 56 : 58,
     maxHeight: _isCompact ? 56 : 58,
@@ -8666,11 +8693,16 @@ export default function MarketplacePage() {
                   </div>
                   <div
                     style={{
+                      width: "100%",
+                      maxWidth: "100%",
+                      minWidth: 0,
+                      boxSizing: "border-box",
                       display: "grid",
                       gridTemplateColumns: isCompact
-                        ? "repeat(2, minmax(0, 1fr))"
+                        ? "1fr"
                         : "repeat(4, minmax(0, 1fr))",
                       gap: 8,
+                      overflow: "hidden",
                     }}
                   >
                     {communityPackageRows.map((row) => (
@@ -8690,10 +8722,18 @@ export default function MarketplacePage() {
                           justifyContent: isCompact ? "center" : "space-between",
                           gap: isCompact ? 5 : 7,
                           minWidth: 0,
+                          maxWidth: "100%",
+                          overflow: "hidden",
                         }}
                       >
                         <span
                           style={{
+                            minWidth: 0,
+                            maxWidth: "100%",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
                             color: "#07172C",
                             fontSize: isCompact ? 14 : 15,
                             lineHeight: 1.08,
@@ -8704,6 +8744,12 @@ export default function MarketplacePage() {
                         </span>
                         <span
                           style={{
+                            minWidth: 0,
+                            maxWidth: "100%",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
                             color: "#0B5A34",
                             fontSize: isCompact ? 16 : 18,
                             lineHeight: 1.1,
@@ -8726,6 +8772,7 @@ export default function MarketplacePage() {
                         <span
                           style={{
                             alignSelf: "flex-start",
+                            maxWidth: "100%",
                             borderRadius: 999,
                             padding: "4px 7px",
                             background: "#FFF7DE",
@@ -8733,6 +8780,9 @@ export default function MarketplacePage() {
                             fontSize: 10.5,
                             fontWeight: 950,
                             lineHeight: 1,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
                           }}
                         >
                           {row.status}
