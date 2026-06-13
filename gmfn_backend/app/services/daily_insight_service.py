@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 
@@ -25,7 +25,7 @@ INSIGHTS: List[str] = [
 
 
 def _today_seed() -> int:
-    today = datetime.utcnow().strftime("%Y-%m-%d")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     h = hashlib.sha256(today.encode()).hexdigest()
     return int(h[:8], 16)
 
@@ -35,7 +35,7 @@ def get_daily_market_wisdom() -> Dict[str, str]:
     idx = seed % len(INSIGHTS)
 
     return {
-        "date": datetime.utcnow().strftime("%Y-%m-%d"),
+        "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "text": INSIGHTS[idx],
         "source": "GSN Market Wisdom",
     }

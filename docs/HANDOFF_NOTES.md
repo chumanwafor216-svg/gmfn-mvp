@@ -1,3 +1,30 @@
+### Narrow UTC timestamp cleanup for reports and daily insight (2026-06-13)
+
+- Trigger:
+  - follow-up scan found a few remaining naive `datetime.utcnow()` calls in
+    report filename/manifest generation and daily insight date selection;
+  - those are low-risk timestamp-output helpers compared with money ledger
+    event storage.
+- Changed locally:
+  - `gmfn_backend/app/services/daily_insight_service.py`
+    - daily Market Wisdom seed/date now uses `datetime.now(timezone.utc)`.
+  - `gmfn_backend/app/api/routes/reports.py`
+    - added `_now_utc()`, `_utc_file_stamp()`, and `_utc_iso_z()` helpers;
+    - governance/evidence ZIP filename stamps keep the same
+      `YYYYMMDD-HHMMSS` shape;
+    - evidence-pack `generated_at` now emits a proper UTC `Z` timestamp.
+- Verification:
+  - Passed `python -m py_compile gmfn_backend\app\services\daily_insight_service.py gmfn_backend\app\api\routes\reports.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py --basetemp=.pytest_tmp`: `7 passed`.
+  - Passed full backend suite with warnings treated as errors:
+    `python -W error::DeprecationWarning -m pytest -q gmfn_backend\tests --basetemp=.pytest_tmp`: `246 passed`.
+  - Removed generated `.pytest_tmp` and `test_uploads` directories after the
+    run.
+- Unabated truth:
+  - this intentionally does not change `pool_service.py` ledger event
+    timestamps or admin behaviour metric comparisons; those touch money/admin
+    behavior and need a dedicated money-time audit before changing.
+
 ### Backend test deprecation warnings removed (2026-06-13)
 
 - Trigger:

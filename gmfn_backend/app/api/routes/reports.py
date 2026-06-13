@@ -5,7 +5,7 @@ from io import BytesIO, StringIO
 import csv
 import json
 import zipfile
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,6 +30,18 @@ from app.services.trust_score_service import compute_trust_score_explained
 from app.services.reports_service import build_loan_trust_report_pdf, build_clan_exposure_report_pdf
 
 router = APIRouter(prefix="/reports", tags=["reports"])
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _utc_file_stamp() -> str:
+    return _now_utc().strftime("%Y%m%d-%H%M%S")
+
+
+def _utc_iso_z() -> str:
+    return _now_utc().isoformat().replace("+00:00", "Z")
 
 
 def _csv_bytes(rows: List[List[Any]]) -> bytes:
@@ -355,7 +367,7 @@ def download_clan_governance_pack(
         clan_exposure_rows=exposure_rows,
     )
 
-    ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    ts = _utc_file_stamp()
     zip_buf = BytesIO()
     with zipfile.ZipFile(zip_buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
         z.writestr(f"community-{clan_id}-exposure.csv", exposure_csv)
@@ -555,7 +567,7 @@ def download_loan_evidence_pack_zip(
         "loan_id": int(loan.id),
         "clan_id": int(loan.clan_id),
         "borrower_user_id": int(loan.borrower_user_id),
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": _utc_iso_z(),
         "files": [
             "manifest.json",
             "trustslip_snapshot.json",
@@ -590,7 +602,7 @@ def download_loan_evidence_pack_zip(
         "- README.txt\n"
     )
 
-    ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    ts = _utc_file_stamp()
     zip_buf = BytesIO()
     with zipfile.ZipFile(zip_buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest.json", json.dumps(manifest, indent=2, default=str))
