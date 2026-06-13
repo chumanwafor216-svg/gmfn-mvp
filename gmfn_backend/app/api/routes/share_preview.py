@@ -422,10 +422,10 @@ def _draw_share_card_png(
     font_label = _font(20, bold=True)
     font_badge = _font(25, bold=True)
     font_trusted = _font(24, bold=True)
-    font_price = _font(34, bold=True)
-    font_title = _font(74, bold=True)
-    font_market = _font(42, bold=True)
-    font_trust = _font(30, bold=True)
+    font_price = _font(32, bold=True)
+    font_title = _font(60, bold=True)
+    font_market = _font(36, bold=True)
+    font_trust = _font(27, bold=True)
     font_chip = _font(24, bold=True)
     font_cta = _font(28, bold=True)
 
@@ -442,35 +442,35 @@ def _draw_share_card_png(
         payload["product_line"],
         draw=draw,
         font=font_title,
-        max_width=720,
+        max_width=690,
         max_lines=2,
     )
-    after_title = _draw_lines(draw, product_lines, x=96, y=198, font=font_title, fill="#FFFFFF", gap=8)
+    after_title = _draw_lines(draw, product_lines, x=96, y=186, font=font_title, fill="#FFFFFF", gap=8)
 
     market_lines = _png_text_lines(
         payload["shop_name"],
         draw=draw,
         font=font_market,
-        max_width=700,
+        max_width=680,
         max_lines=2,
     )
-    after_market = _draw_lines(draw, market_lines, x=100, y=after_title + 8, font=font_market, fill="#D8E7F5", gap=5)
+    after_market = _draw_lines(draw, market_lines, x=100, y=after_title + 10, font=font_market, fill="#D8E7F5", gap=5)
 
     trust_lines = _png_text_lines(
         payload.get("trust_line", "Trusted product - Tap to open shop"),
         draw=draw,
         font=font_trust,
-        max_width=720,
+        max_width=680,
         max_lines=1,
     )
-    _draw_lines(draw, trust_lines, x=100, y=after_market + 22, font=font_trust, fill="#F2CF77", gap=0)
+    _draw_lines(draw, trust_lines, x=100, y=after_market + 20, font=font_trust, fill="#F2CF77", gap=0)
 
     cta_center = (936, 326)
-    draw.ellipse((872, 262, 1000, 390), fill="#D6AA45")
-    draw.line((908, 326, 958, 326), fill="#07172C", width=11)
-    draw.line((942, 306, 964, 326, 942, 346), fill="#07172C", width=11, joint="curve")
-    draw.ellipse((908, 292, 922, 306), fill="#07172C")
-    draw.line((915, 306, 915, 350), fill="#07172C", width=8)
+    draw.ellipse((882, 272, 990, 380), fill="#D6AA45")
+    draw.line((916, 326, 954, 326), fill="#07172C", width=9)
+    draw.line((940, 310, 960, 326, 940, 342), fill="#07172C", width=9, joint="curve")
+    draw.ellipse((914, 298, 926, 310), fill="#07172C")
+    draw.line((920, 310, 920, 348), fill="#07172C", width=7)
     cta_text = "TAP TO OPEN"
     cta_width = _text_width(draw, cta_text, font_cta)
     draw.text((cta_center[0] - cta_width / 2, 410), cta_text, font=font_cta, fill="#FFFFFF")

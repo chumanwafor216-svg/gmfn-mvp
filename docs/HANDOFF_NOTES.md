@@ -1,3 +1,34 @@
+### Backend public shop card visual tuning (2026-06-13)
+
+- Trigger:
+  - continued after the frontend copy-link and fallback poster fixes;
+  - product owner phone screenshots showed shared previews still needed to look
+    calmer and less cropped on mobile social surfaces;
+  - the backend-generated `/share/shop/{gmfn_id}/card.png` item card was
+    functional but visually loud: oversized product title, strong price chip,
+    and a large right-side action mark competed inside the preview.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/share_preview.py`
+    - reduced the public shop PNG title, shop-name, trust-line, and price type
+      sizes;
+    - moved the title slightly upward and narrowed text measure so product/shop
+      copy stays inside a safer mobile crop area;
+    - reduced the gold action-circle drawing and icon stroke weight so it reads
+      as a cue instead of taking over the card.
+- Verification:
+  - Passed `python -m py_compile gmfn_backend\app\api\routes\share_preview.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_share_preview.py`.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - this is a backend PNG layout polish only; it does not change public shop
+    metadata, frontend copy actions, or social-platform scraper cache state;
+  - if Facebook, LinkedIn, or WhatsApp already cached an older card for a URL,
+    those platforms may continue showing the older image until their cache is
+    refreshed or the URL query changes;
+  - the API Render service is expected to auto-deploy from `main`, but the repo
+    still does not have confirmed Render API workflow secrets for an exact
+    programmatic API deploy trigger.
+
 ### Static fallback share poster made crop-safe (2026-06-13)
 
 - Trigger:
