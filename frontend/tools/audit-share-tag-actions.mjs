@@ -40,7 +40,17 @@ function assertNotContains(file, pattern, message) {
 
 [
   ["src/lib/share.ts", /normalizeSocialHandle/, "Social handle cleanup must stay shared."],
+  [
+    "src/lib/share.ts",
+    /socialMessage\?: string;[\s\S]*buildCompactSocialShareText[\s\S]*platform === "x" \? \(includeUrl \? 260 : 210\) : 520/,
+    "Social share helpers must keep short channel captions so X/LinkedIn/etc. do not receive headed-paper packages.",
+  ],
   ["src/lib/share.ts", /buildXIntentShareUrl/, "X intent share URL helper is missing."],
+  [
+    "src/lib/share.ts",
+    /params\.set\("text", text\)[\s\S]*params\.set\("url", url\)/,
+    "X sharing must pass the URL separately from the short caption to avoid overlong compose text.",
+  ],
   ["src/lib/share.ts", /buildFacebookShareUrl/, "Facebook share URL helper is missing."],
   ["src/lib/share.ts", /buildLinkedInShareUrl/, "LinkedIn share URL helper is missing."],
   [
@@ -136,8 +146,8 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /<SocialTagShareButton[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
-    "Public Shop Share must open the social chooser while WhatsApp stays separate.",
+    /<SocialTagShareButton[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Trusted public shop\. Open the shop link\.[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
+    "Public Shop Share must open the social chooser with a short social caption while WhatsApp/formal copy stay separate.",
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
@@ -146,8 +156,8 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /showBlockPlacementAction \? \([\s\S]*<SocialTagShareButton[\s\S]*target=\{buildProductSocialShareTarget\(product\)\}[\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
-    "Shop Diary block social sharing must stay owner-only and use the shared social chooser.",
+    /const socialMessage = \[[\s\S]*Open \$\{blockLabel\} on GSN\.[\s\S]*message: buildPublicShopPackage\(productUrl, \[message\]\),[\s\S]*socialMessage,[\s\S]*showBlockPlacementAction \? \([\s\S]*<SocialTagShareButton[\s\S]*target=\{buildProductSocialShareTarget\(product\)\}[\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
+    "Shop Diary block social sharing must stay owner-only and use a short social caption in the shared chooser.",
   ],
   [
     "src/pages/VaultControlPage.tsx",

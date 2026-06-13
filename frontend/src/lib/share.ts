@@ -10,6 +10,7 @@ export type ShareTarget = {
   title: string;           // short label shown to user
   url: string;             // absolute URL preferred
   message?: string;        // optional extra message
+  socialMessage?: string;  // shorter caption for public social apps
 };
 
 export type SocialSharePlatform =
@@ -40,6 +41,92 @@ export function buildShareText(target: ShareTarget): string {
   return `${title}\n${url}`;
 }
 
+function compactText(value: unknown): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function trimAtWord(value: string, maxLength: number): string {
+  const text = compactText(value);
+  if (text.length <= maxLength) return text;
+
+  const sliced = text.slice(0, Math.max(0, maxLength - 3)).trimEnd();
+  const wordBoundary = sliced.lastIndexOf(" ");
+  const candidate = wordBoundary > 48 ? sliced.slice(0, wordBoundary) : sliced;
+  return `${candidate.trimEnd()}...`;
+}
+
+function stripUrls(value: string): string {
+  return value.replace(/https?:\/\/\S+/gi, "").replace(/\s+/g, " ").trim();
+}
+
+function paperLineValue(line: string): string {
+  return line.replace(/^[^:]{1,42}:\s*/, "").trim();
+}
+
+function compactPaperMessage(value: string): string {
+  const lines = value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter(
+      (line) =>
+        !/^GLOBAL SUPPORT NETWORK/i.test(line) &&
+        !/^Official GSN headed paper/i.test(line) &&
+        !/^Generated \(UTC\):/i.test(line) &&
+        !/^Reference:/i.test(line) &&
+        !/^GSN record context/i.test(line) &&
+        !/^Record details/i.test(line) &&
+        !/^Verification \/ action link:/i.test(line) &&
+        !/^Privacy:/i.test(line) &&
+        !/^Limitation:/i.test(line) &&
+        !/^Footer:/i.test(line)
+    );
+
+  const itemLine = lines.find((line) => /^Item \/ update:/i.test(line));
+  const blockLine = lines.find((line) => /^Public block:/i.test(line));
+  const shopLine = lines.find((line) => /^Shop:/i.test(line));
+  const purposeLine = lines.find((line) => /^Purpose:/i.test(line));
+
+  const pieces = [
+    itemLine ? paperLineValue(itemLine) : "",
+    blockLine ? paperLineValue(blockLine) : "",
+    shopLine ? `from ${paperLineValue(shopLine)}` : "",
+  ].filter(Boolean);
+
+  if (pieces.length) return compactText(pieces.join(" "));
+  return compactText(purposeLine ? paperLineValue(purposeLine) : "Open this trusted GSN link.");
+}
+
+function socialMessageForTarget(target: ShareTarget): string {
+  const direct = compactText(target.socialMessage);
+  if (direct) return stripUrls(direct);
+
+  const raw = String(target.message || "").trim();
+  if (!raw) return "";
+
+  if (/GLOBAL SUPPORT NETWORK|Official GSN headed paper/i.test(raw)) {
+    return compactPaperMessage(raw);
+  }
+
+  return stripUrls(raw);
+}
+
+function buildCompactSocialShareText(
+  target: ShareTarget,
+  handle: string,
+  platform: SocialSharePlatform,
+  includeUrl: boolean
+): string {
+  const cleanHandle = normalizeSocialHandle(handle);
+  const tag = cleanHandle && platform !== "facebook" ? `@${cleanHandle}` : "";
+  const title = trimAtWord(String(target.title || "GSN").trim(), 82);
+  const url = normalizeUrl(target.url);
+  const message = trimAtWord(socialMessageForTarget(target), 148);
+  const lines = [tag, title, message, includeUrl ? url : ""].filter(Boolean);
+  const limit = platform === "x" ? (includeUrl ? 260 : 210) : 520;
+  return trimAtWord(lines.join("\n"), limit);
+}
+
 export function normalizeSocialHandle(value: unknown): string {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
@@ -59,14 +146,22 @@ export function buildSocialShareText(
   handle = "",
   platform: SocialSharePlatform = "copy"
 ): string {
+  if (platform !== "copy") {
+    return buildCompactSocialShareText(target, handle, platform, true);
+  }
+
   const cleanHandle = normalizeSocialHandle(handle);
-  const tag = cleanHandle && platform !== "facebook" ? `@${cleanHandle}\n` : "";
+  const tag = cleanHandle ? `@${cleanHandle}\n` : "";
   return `${tag}${buildShareText(target)}`.trim();
 }
 
 export function buildXIntentShareUrl(target: ShareTarget, handle = ""): string {
-  const text = buildSocialShareText(target, handle, "x");
-  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  const text = buildCompactSocialShareText(target, handle, "x", false);
+  const url = normalizeUrl(target.url);
+  const params = new URLSearchParams();
+  if (text) params.set("text", text);
+  if (url) params.set("url", url);
+  return `https://twitter.com/intent/tweet?${params.toString()}`;
 }
 
 export function buildFacebookShareUrl(target: ShareTarget): string {

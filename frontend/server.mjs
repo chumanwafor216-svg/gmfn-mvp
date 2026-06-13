@@ -114,7 +114,33 @@ function selectedProduct(products, productId) {
   return { product: products[0] || null, block: products[0] ? 1 : 0 };
 }
 
-async function fetchShopMeta(gmfnId, productId) {
+function positiveInteger(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) && number > 0 ? Math.floor(number) : 0;
+}
+
+function shopMetaHash(productId, block) {
+  if (!productId) return "#shop-diaries";
+  const blockNumber = positiveInteger(block) || 1;
+  return `#shop-block-${blockNumber}`;
+}
+
+function fallbackShopMeta(gmfnId, productId, block) {
+  const ownerId = firstText(gmfnId, "GSN").toUpperCase();
+  const hasProduct = Boolean(productId);
+  const search = hasProduct ? `?product_id=${encodeURIComponent(String(productId))}` : "";
+
+  return {
+    title: hasProduct ? "GSN Shop Item" : "GSN Public Shop",
+    description: hasProduct
+      ? "Open this trusted GSN shop item and check the public shop details."
+      : "Open this trusted GSN public shop link and check the shop details.",
+    imageUrl: frontendUrl("/gsn-share-poster.png"),
+    targetUrl: frontendUrl(`/shop/${encodeURIComponent(ownerId)}`, search, shopMetaHash(productId, block)),
+  };
+}
+
+async function fetchShopMeta(gmfnId, productId, blockParam) {
   const url = new URL(apiUrl(`/marketplace/public/shop/${encodeURIComponent(gmfnId)}`));
   if (productId) url.searchParams.set("product_id", productId);
   url.searchParams.set("product_limit", "100");
@@ -136,13 +162,15 @@ async function fetchShopMeta(gmfnId, productId) {
   const description = product
     ? "Trusted GSN shop item. Tap to open product."
     : "Trusted GSN shop. Tap to open shop.";
-  const targetHash = product ? `#shop-block-${block || 1}` : "#shop-diaries";
+  const requestedBlock = positiveInteger(blockParam);
+  const targetBlock = requestedBlock || block || 1;
+  const targetHash = product ? shopMetaHash(product.id, targetBlock) : "#shop-diaries";
   const targetSearch = product ? `?product_id=${encodeURIComponent(String(product.id))}` : "";
   const targetUrl = frontendUrl(`/shop/${encodeURIComponent(ownerId)}`, targetSearch, targetHash);
   const imageUrl = frontendUrl(
     `/shop/${encodeURIComponent(ownerId)}/share-card.png`,
     product
-      ? `?product_id=${encodeURIComponent(String(product.id))}&block=${encodeURIComponent(String(block || 1))}`
+      ? `?product_id=${encodeURIComponent(String(product.id))}&block=${encodeURIComponent(String(targetBlock))}`
       : ""
   );
 
@@ -244,10 +272,24 @@ async function indexHtmlWithMeta(meta) {
 }
 
 async function serveShopHtml(res, gmfnId, searchParams) {
+  let meta = fallbackShopMeta(
+    gmfnId,
+    searchParams.get("product_id") || "",
+    searchParams.get("block") || ""
+  );
+
   try {
-    const html = await indexHtmlWithMeta(
-      await fetchShopMeta(gmfnId, searchParams.get("product_id") || "")
+    meta = await fetchShopMeta(
+      gmfnId,
+      searchParams.get("product_id") || "",
+      searchParams.get("block") || ""
     );
+  } catch {
+    // Keep social previews shop-shaped even when the public API lookup times out.
+  }
+
+  try {
+    const html = await indexHtmlWithMeta(meta);
     send(res, 200, html, "text/html; charset=utf-8", {
       "Cache-Control": "public, max-age=300",
     });

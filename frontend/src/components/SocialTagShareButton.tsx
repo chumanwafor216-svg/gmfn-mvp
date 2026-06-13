@@ -111,6 +111,7 @@ export default function SocialTagShareButton({
     () => ({
       title: String(target.title || "GSN").trim(),
       message: String(target.message || "").trim(),
+      socialMessage: String(target.socialMessage || "").trim(),
       url: normalizeUrl(target.url),
     }),
     [target]
@@ -201,16 +202,21 @@ export default function SocialTagShareButton({
     );
   }
 
-  function openLinkedIn() {
+  async function openLinkedIn() {
     if (!canShare) {
       report("error", "Share link is not ready yet.");
       return;
     }
     const opened = openExternal(buildLinkedInShareUrl(cleanTarget));
+    const copied = opened
+      ? await copyToClipboard(buildSocialShareText(cleanTarget, shareName, "linkedin"))
+      : false;
     report(
       opened ? "success" : "error",
       opened
-        ? "LinkedIn share opened. Add any mention there before posting."
+        ? copied
+          ? "LinkedIn share opened. Short caption copied; paste it before posting."
+          : "LinkedIn share opened. Add a short note there before posting."
         : "LinkedIn could not open. Copy the text instead."
     );
   }
@@ -315,7 +321,9 @@ export default function SocialTagShareButton({
               </SecondaryButton>
               <SecondaryButton
                 type="button"
-                onClick={openLinkedIn}
+                onClick={() => {
+                  void openLinkedIn();
+                }}
                 stableHeight={46}
                 debugId="social-tag-share.linkedin"
                 style={shareButtonStyle}

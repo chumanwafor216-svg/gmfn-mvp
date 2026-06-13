@@ -2419,11 +2419,20 @@ export default function ShopGalleryPage() {
       effectiveShop?.ownerName,
       "this public shop"
     );
-    const message = `${blockLabel}\n${text}\n${product.priceText}\nFrom ${shopContext}.\nOpen this public shop block directly.`;
+    const priceText = firstMeaningful(product.priceText);
+    const message = `${blockLabel}\n${text}\n${priceText}\nFrom ${shopContext}.\nOpen this public shop block directly.`;
+    const socialMessage = [
+      `${productTitle} in ${shopContext}.`,
+      priceText ? `Price: ${priceText}.` : "",
+      `Open ${blockLabel} on GSN.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     return {
       title,
       message: buildPublicShopPackage(productUrl, [message]),
+      socialMessage,
       url: productUrl,
     };
   }
@@ -3082,6 +3091,11 @@ export default function ShopGalleryPage() {
                 message: buildPublicShopPackage(absoluteShopShareLink, [
                   "Trusted marketplace. Real people. Real value.",
                 ]),
+                socialMessage: `${firstMeaningful(
+                  effectiveShop?.shopName,
+                  effectiveShop?.ownerName,
+                  "GSN public shop"
+                )} on GSN. Trusted public shop. Open the shop link.`,
                 url: absoluteShopShareLink,
               }}
               disabled={shopLoadFailed || !absoluteShopShareLink}

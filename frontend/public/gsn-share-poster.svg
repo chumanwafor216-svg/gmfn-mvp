@@ -2,34 +2,37 @@
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#061827"/>
-      <stop offset="58%" stop-color="#08233A"/>
+      <stop offset="56%" stop-color="#08233A"/>
       <stop offset="100%" stop-color="#0B2D4A"/>
     </linearGradient>
     <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#FFE28A"/>
-      <stop offset="65%" stop-color="#D6AA45"/>
+      <stop offset="68%" stop-color="#D6AA45"/>
       <stop offset="100%" stop-color="#B78321"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.28"/>
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.26"/>
     </filter>
   </defs>
   <rect width="1200" height="630" fill="#F7FAFF"/>
-  <rect x="42" y="42" width="1116" height="546" rx="42" fill="url(#bg)" filter="url(#shadow)"/>
-  <circle cx="992" cy="130" r="120" fill="#FFFFFF" opacity="0.05"/>
-  <circle cx="1044" cy="500" r="156" fill="#D6AA45" opacity="0.08"/>
-  <rect x="94" y="88" width="168" height="62" rx="31" fill="#FFFFFF" opacity="0.10"/>
-  <text x="130" y="129" fill="#F2CF77" font-size="26" font-weight="950" font-family="Arial, sans-serif">GSN</text>
-  <text x="284" y="127" fill="#D8E7F5" font-size="20" font-weight="900" letter-spacing="4" font-family="Arial, sans-serif">GLOBAL SUPPORT NETWORK</text>
-  <rect x="94" y="178" width="90" height="90" rx="26" fill="#FFFFFF" opacity="0.10" stroke="#D6AA45" stroke-opacity="0.55" stroke-width="3"/>
-  <path d="M139 205 L166 217 V236 C166 253 154 265 139 270 C124 265 112 253 112 236 V217 Z" fill="none" stroke="#F2CF77" stroke-width="7" stroke-linejoin="round"/>
-  <path d="M126 238 L136 248 L154 225" fill="none" stroke="#F2CF77" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="214" y="224" fill="#FFFFFF" font-size="52" font-weight="950" font-family="Arial, sans-serif">GSN Public Link</text>
-  <text x="94" y="336" fill="#F2CF77" font-size="22" font-weight="950" letter-spacing="3" font-family="Arial, sans-serif">TRUSTED ACCESS ROUTE</text>
-  <text x="94" y="398" fill="#FFFFFF" font-size="36" font-weight="950" font-family="Arial, sans-serif">Community, shop, and trust routes</text>
-  <text x="94" y="452" fill="#D8E7F5" font-size="25" font-weight="750" font-family="Arial, sans-serif">Open the trusted GSN route and continue from there.</text>
-  <rect x="94" y="520" width="1012" height="44" rx="22" fill="#FFFFFF" opacity="0.12"/>
-  <text x="124" y="549" fill="#F8FBFF" font-size="20" font-weight="850" font-family="Arial, sans-serif">gmfn-frontend.onrender.com</text>
-  <rect x="910" y="305" width="196" height="76" rx="38" fill="url(#gold)"/>
-  <text x="948" y="354" fill="#07172C" font-size="24" font-weight="950" font-family="Arial, sans-serif">OPEN GSN</text>
+  <rect x="54" y="44" width="1092" height="542" rx="44" fill="url(#bg)" filter="url(#shadow)"/>
+  <circle cx="988" cy="126" r="112" fill="#FFFFFF" opacity="0.055"/>
+  <circle cx="1018" cy="496" r="148" fill="#D6AA45" opacity="0.09"/>
+  <circle cx="206" cy="500" r="148" fill="#FFFFFF" opacity="0.04"/>
+
+  <rect x="392" y="82" width="416" height="56" rx="28" fill="#FFFFFF" opacity="0.1"/>
+  <text x="600" y="118" text-anchor="middle" fill="#F2CF77" font-size="25" font-weight="950" letter-spacing="3" font-family="Arial, sans-serif">GLOBAL SUPPORT NETWORK</text>
+
+  <rect x="526" y="166" width="148" height="148" rx="42" fill="#FFFFFF" opacity="0.12" stroke="#D6AA45" stroke-opacity="0.6" stroke-width="4"/>
+  <path d="M600 198 L644 217 V249 C644 280 624 302 600 310 C576 302 556 280 556 249 V217 Z" fill="none" stroke="#F2CF77" stroke-width="9" stroke-linejoin="round"/>
+  <path d="M579 250 L596 267 L625 230" fill="none" stroke="#F2CF77" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="600" y="390" text-anchor="middle" fill="#FFFFFF" font-size="64" font-weight="950" font-family="Arial, sans-serif">GSN Trusted Link</text>
+  <text x="600" y="440" text-anchor="middle" fill="#D8E7F5" font-size="28" font-weight="850" font-family="Arial, sans-serif">Open a public shop, community route, or trust check</text>
+
+  <rect x="324" y="486" width="552" height="58" rx="29" fill="#FFFFFF" opacity="0.13"/>
+  <text x="600" y="524" text-anchor="middle" fill="#F8FBFF" font-size="24" font-weight="900" font-family="Arial, sans-serif">gmfn-frontend.onrender.com</text>
+
+  <rect x="878" y="282" width="144" height="58" rx="29" fill="url(#gold)"/>
+  <text x="950" y="320" text-anchor="middle" fill="#07172C" font-size="21" font-weight="950" font-family="Arial, sans-serif">OPEN</text>
 </svg>

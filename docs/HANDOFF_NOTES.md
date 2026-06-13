@@ -1,3 +1,61 @@
+### Public shop/social sharing polish fixed locally (2026-06-13)
+
+- Trigger:
+  - product owner shared phone screenshots showing bad public-shop sharing:
+    Facebook cropped the preview poster, X received a huge headed-paper package
+    and showed a negative character count, and LinkedIn showed a raw long URL.
+- Changed locally, not pushed:
+  - `frontend/src/lib/share.ts`
+    - added `socialMessage` to share targets;
+    - kept full headed-paper packages for ordinary copy/WhatsApp-style use;
+    - added compact social-caption generation for X, LinkedIn, Instagram,
+      TikTok, and other social chooser paths;
+    - changed X intent links to pass the URL separately from the short text so
+      the compose box is not flooded by the long URL/package body.
+  - `frontend/src/components/SocialTagShareButton.tsx`
+    - preserves the short social caption on normalized targets;
+    - LinkedIn now opens the share URL and copies the short caption so the user
+      can paste a clean note before posting.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - public shop share and owner product-block share now provide short social
+      captions while keeping the formal GSN shop package for copy.
+  - `frontend/server.mjs`
+    - public-shop Open Graph metadata now keeps a shop-shaped fallback when the
+      public API lookup fails or times out;
+    - product share metadata now respects the `block` query when building the
+      hash and preview-card URL.
+  - `frontend/index.html`
+    - static fallback metadata now says `GSN Trusted Link` with public shop,
+      community, and trust-check wording.
+  - `frontend/public/gsn-share-poster.svg`
+  - `frontend/public/gsn-share-poster.png`
+    - replaced the generic poster with a center-safe layout so phone/social
+      crops do not cut the main title, subtitle, or domain.
+  - `frontend/tools/audit-share-tag-actions.mjs`
+    - added guards for short social captions and X separate URL handling.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated the static fallback metadata guard and added a server fallback
+      metadata guard.
+- Verification:
+  - `npm run audit:share-tag-actions` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:community-shop-actions` passed;
+  - `npm run audit:shop-gallery-button-inventory` passed;
+  - `npm exec -- eslint src\lib\share.ts src\components\SocialTagShareButton.tsx src\pages\ShopGalleryPage.tsx tools\audit-share-tag-actions.mjs tools\audit-link-contracts.mjs`
+    passed;
+  - `npm exec -- tsc -b --pretty false` passed;
+  - `npm run audit:protected-button-freeze` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run build` passed.
+- Devil's advocate / remaining truth:
+  - this fixes the source message generation and fallback preview asset;
+  - it does not force Facebook, X, or LinkedIn to immediately clear cached
+    previews for URLs they already scraped;
+  - final proof still needs a deployed version and a fresh phone share test;
+  - branch remains ahead of `origin/main`; the repayment slice and this sharing
+    polish are local unpublished work until the owner approves a controlled
+    push/deploy.
+
 ### Controlled push and frontend Render deploy completed (2026-06-13)
 
 - Trigger:
