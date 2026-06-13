@@ -1,4 +1,4 @@
-### Backend social-preview URLs for shop sharing (2026-06-13)
+### Backend social-preview URLs for shop sharing deployed (2026-06-13)
 
 - Trigger:
   - product owner shared phone screenshots where Facebook cropped the preview
@@ -12,7 +12,7 @@
   - the backend already exposes scraper-friendly shop preview routes at
     `/share/shop/{gmfn_id}` plus card image routes, so social apps should receive
     that backend URL while users continue opening the frontend shop URL.
-- Changed locally:
+- Changed, committed, pushed, and deployed:
   - `frontend/src/lib/publicLinks.ts`
     - added `publicShopSocialPreviewPath` and `publicShopSocialPreviewUrl`,
       pointing to the backend `/share/shop/{gmfn_id}` route with optional
@@ -34,6 +34,17 @@
   - `frontend/tools/audit-link-contracts.mjs`
     - added guards so social sharing cannot silently regress back to scraping
       the static frontend shop URL.
+- Publish:
+  - committed as `5d04c5e4896bbd7cd40686b2dd8ea87d61bca950`
+    (`Route shop social shares through preview URLs`);
+  - pushed `main` from `05cb860` to `5d04c5e`;
+  - manually dispatched `.github/workflows/render-deploy.yml` with
+    `deploy_api=false`;
+  - GitHub Actions run `27461767775` completed successfully;
+  - Render accepted the frontend deploy hook and returned deploy id
+    `dep-d8mhbtbtqb8s73c3fvdg`;
+  - backend deploy was intentionally skipped because this fix uses the existing
+    backend `/share/shop/{gmfn_id}` route and did not touch `gmfn_backend/**`.
 - Verification:
   - Passed `npm run audit:share-tag-actions`.
   - Passed `npm run audit:link-contracts`.
@@ -47,6 +58,15 @@
   - Passed `npm run build` from `frontend`; generated bundle
     `assets/index-CGXRsTrb.js`.
   - Confirmed the built production bundle contains `/share/shop/`.
+  - Live cache-busted frontend root served new bundle
+    `assets/index-DKQKZqx2.js`.
+  - Confirmed the live main bundle contains `/share/shop/`.
+  - Confirmed the live SocialTagShareButton chunk contains `socialUrl` and the
+    Facebook, LinkedIn, and X share handlers.
+  - Confirmed live backend preview
+    `https://gmfn-api.onrender.com/share/shop/GMFN-U-63655DE6?product_id=48&block=2`
+    returns OG metadata and redirects to
+    `https://gmfn-frontend.onrender.com/shop/GMFN-U-63655DE6?product_id=48#shop-block-2`.
 - Unabated truth / do not overclaim:
   - this fixes what URL the social buttons give to Facebook, X, and LinkedIn;
   - it does not make the static frontend `/shop/...` route magically dynamic;
