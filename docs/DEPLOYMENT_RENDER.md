@@ -100,8 +100,9 @@ GitHub repository secrets:
     hook
 - `RENDER_API_DEPLOY_HOOK_URL`
   - Render deploy hook URL for `gmfn-api`
-  - optional for frontend-only changes
-  - used as a fallback when the Render API key/service path is unavailable
+  - legacy only; do not use it for backend-impacting deploys during the pilot
+    because the hook has accepted requests while `gmfn-api` continued serving
+    stale backend code
 
 The active `gmfn-frontend` Render service should track `main`. A temporary
 workflow mirror to `feature/vault-shops` was used during pilot recovery when
@@ -142,9 +143,13 @@ serving an older backend build or the wrong Render service/branch. Do not ask
 the pilot phone to retest identity completion or public community QR privacy
 until the live contract check passes.
 
-If this happens, prefer the Render API path for the next deploy because it sends
+Backend-impacting deploys now require the Render API path. Configure
+`RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` so the workflow sends
 `commitId` with the exact GitHub SHA. A hook-accepted message is only a request
 receipt; it does not prove that the live API is running the new backend code.
+If those secrets are missing, deploy `gmfn-api` manually from the Render
+dashboard and run `npm --prefix frontend run audit:live-api-identity-routes`
+before asking for phone retesting.
 
 ## 4.2 Active pilot deploy protocol
 

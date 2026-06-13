@@ -1,3 +1,40 @@
+### Backend deploy workflow now requires exact Render API deploys (2026-06-13)
+
+- Trigger:
+  - after the main schedule audit sweep, the only confirmed red blocker was the
+    live `gmfn-api` service serving stale backend code;
+  - GitHub Actions run `27462281001` showed `RENDER_API_KEY` and
+    `RENDER_API_SERVICE_ID` were empty, so the workflow fell back to
+    `RENDER_API_DEPLOY_HOOK_URL`;
+  - the hook returned API deploy id `dep-d8mhnjcm0tmc73d5e05g`, but live
+    OpenAPI still lacked commits already present on `main`.
+- Confirmed stale boundary:
+  - live `/openapi.json` has `/entry/phone/start` and
+    `/entry/phone/confirm`, but not `/entry/signed-in/phone/start` or
+    `/entry/signed-in/phone/confirm`;
+  - live `WithdrawalDestinationIn` has only
+    `destination_name, bank_name, account_number, phone_number, country,
+    currency, note`, not `sort_code` or `bank_sort_code`;
+  - live `/verify/community/GSN-C-000001` still exposes the old
+    `hidden_by_design` protected-category inventory.
+- Changed, committed, and pushed:
+  - `.github/workflows/render-deploy.yml`
+    - backend-impacting deploys now fail fast if `RENDER_API_KEY` is missing;
+    - if `RENDER_API_KEY` exists but `gmfn-api` cannot be resolved, the
+      workflow now fails and asks for `RENDER_API_SERVICE_ID`;
+    - removed the trusted backend fallback to `RENDER_API_DEPLOY_HOOK_URL`;
+    - frontend deploy hook behavior is unchanged.
+  - `docs/DEPLOYMENT_RENDER.md`
+    - documents that backend deploys now require the Render API exact-commit
+      path and that the old API deploy hook is legacy-only for this pilot.
+- Unabated truth:
+  - this does not itself deploy the backend;
+  - it prevents future backend deploy attempts from falsely looking useful when
+    they only hit a hook that may be wired to stale code;
+  - the next production fix is operational: configure GitHub secrets
+    `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID`, or manually deploy
+    `gmfn-api` from the Render dashboard and then run the live API audit.
+
 ### Main schedule audit sweep checkpoint (2026-06-13)
 
 - Trigger:
