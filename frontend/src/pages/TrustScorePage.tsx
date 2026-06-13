@@ -2864,7 +2864,7 @@ export default function TrustScorePage() {
           <div
             data-trust-passport-identity-evidence-meter="true"
             style={{
-              marginTop: isCompact ? 10 : 14,
+              marginTop: isCompact ? 86 : 14,
               borderRadius: isCompact ? 16 : 18,
               border: "1px solid rgba(216,227,238,0.78)",
               background:
@@ -2931,6 +2931,7 @@ export default function TrustScorePage() {
                 fontSize: isCompact ? 11 : 12,
                 fontWeight: 1000,
                 whiteSpace: "nowrap",
+                alignSelf: isCompact ? "start" : "center",
               }}
               debugId="trust-score.identity-evidence-meter.toggle"
             >

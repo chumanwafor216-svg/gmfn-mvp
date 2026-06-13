@@ -171,7 +171,7 @@ assertContains(
 );
 
 assertContains(
-  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?identityEvidenceOpen \?/,
+  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?marginTop: isCompact \? 86 : 14[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?alignSelf: isCompact \? "start" : "center"[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?identityEvidenceOpen \?/,
   "Trust Passport identity evidence meter must stay collapsed behind a stable Open/Hide toggle so the snapshot remains portable."
 );
 

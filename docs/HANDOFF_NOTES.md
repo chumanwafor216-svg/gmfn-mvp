@@ -1,3 +1,40 @@
+### Trust Passport identity evidence rail stabilization (2026-06-13)
+
+- Trigger:
+  - robust phone geometry scan showed the Trust Passport identity evidence
+    toggle overlapped the authenticated bottom rail:
+    - `trust-score.identity-evidence-meter.toggle` at `786-834`;
+    - bottom rail at `793-835`.
+- Changed locally:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - the compact identity evidence meter now has phone-only rail clearance
+      before the card;
+    - the Open/Hide toggle aligns to the top of its grid cell on phone instead
+      of sitting vertically centered near the rail.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - `frontend/tools/audit-trust-passport-front-package.mjs`
+    - added guards for the phone rail clearance and compact toggle alignment.
+- Verification:
+  - Passed robust local phone scan for `/app/trust?community=3`:
+    - bottom rail at `793-835`;
+    - `trust-score.identity-evidence-meter.toggle` at `841-889`;
+    - no route-local overlap.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+- Unabated truth:
+  - the evidence meter now starts just below the initial phone rail, so users
+    may need a small scroll to open it;
+  - this is safer than leaving an interactive control half-covered and falsely
+    available above the rail;
+  - no push or Render deploy was done for this local continuation batch.
+
 ### Finance phone rail stabilization (2026-06-13)
 
 - Trigger:
