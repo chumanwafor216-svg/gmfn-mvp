@@ -1,3 +1,28 @@
+### Demand Box compact copy width fix (2026-06-13)
+
+- Trigger:
+  - owner phone screenshot showed the Marketplace Demand Box teaser copy
+    collapsing into stacked word fragments such as `requ / est` and
+    `mark / etpla / ce`.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - made the compact Demand Box teaser card explicitly full-width;
+    - removed the icon from the compact text grid flow by positioning it as a
+      right-side badge;
+    - kept the title/copy block as full-width text with normal word breaking.
+  - `frontend/tools/audit-marketplace-demand-box-lane.mjs`
+    - added a guard for the compact Demand Box readable geometry.
+- Verification:
+  - `npm run audit:marketplace-demand-box-lane` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this fixes the visible text squeeze; it does not redesign the Trade &
+    Shops lane;
+  - a real-phone pass after deploy is still needed because this class of
+    defect is visual and browser-specific.
+
 ### Marketplace mobile link/action containment (2026-06-13)
 
 - Trigger:

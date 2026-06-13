@@ -8951,33 +8951,65 @@ export default function MarketplacePage() {
             style={{
               marginTop: 12,
               ...innerCard("#FFFDF7"),
+              width: "100%",
+              maxWidth: "100%",
+              minWidth: 0,
+              boxSizing: "border-box",
               display: isCompact ? "block" : "grid",
               gridTemplateColumns: isCompact ? undefined : "46px minmax(0, 1fr) 190px",
               gap: isCompact ? 10 : 14,
               alignItems: "center",
               borderColor: "rgba(128,90,15,0.18)",
               padding: isCompact ? 12 : undefined,
+              overflow: "hidden",
+              position: "relative",
             }}
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "34px minmax(0, 1fr)" : "46px minmax(0, 1fr)",
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
+                display: isCompact ? "block" : "grid",
+                gridTemplateColumns: isCompact ? undefined : "46px minmax(0, 1fr)",
                 gap: isCompact ? 10 : 14,
                 alignItems: "start",
-                minWidth: 0,
+                paddingRight: isCompact ? 62 : undefined,
               }}
             >
               <span
                 aria-hidden="true"
-                style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
-                  true
-                )}
+                style={{
+                  ...marketplaceOsIconStyle(
+                    "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                    true
+                  ),
+                  ...(isCompact
+                    ? {
+                        position: "absolute",
+                        right: 18,
+                        top: 58,
+                        width: 48,
+                        height: 48,
+                        minWidth: 48,
+                        maxWidth: 48,
+                        minHeight: 48,
+                        maxHeight: 48,
+                      }
+                    : null),
+                }}
               >
                 <MarketplaceGlyph name="demand" size={24} />
               </span>
-              <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  width: "100%",
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  boxSizing: "border-box",
+                }}
+              >
                 <div style={sectionLabel()}>Demand Box</div>
                 <div
                   style={{
@@ -8985,6 +9017,8 @@ export default function MarketplacePage() {
                     ...helperText(),
                     fontSize: 13,
                     lineHeight: 1.35,
+                    maxWidth: "100%",
+                    display: "block",
                     overflowWrap: "break-word",
                     wordBreak: "normal",
                     hyphens: "none",

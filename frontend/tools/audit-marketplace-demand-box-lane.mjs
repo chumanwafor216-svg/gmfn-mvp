@@ -68,6 +68,7 @@ if (!trustedTradeSection.text) {
     /debugId="marketplace\.members\.demand-box"/,
     /onClick=\{\(event\) => openMarketplaceCta\(event, "demandBox"\)\}/,
     /Demand Box/,
+    /innerCard\("#FFFDF7"\)[\s\S]*?width: "100%"[\s\S]*?maxWidth: "100%"[\s\S]*?minWidth: 0[\s\S]*?display: isCompact \? "block" : "grid"[\s\S]*?overflow: "hidden"[\s\S]*?position: "relative"[\s\S]*?paddingRight: isCompact \? 62 : undefined[\s\S]*?position: "absolute"[\s\S]*?right: 18[\s\S]*?top: 58[\s\S]*?display: "block"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"/,
   ].forEach((pattern) => {
     if (!pattern.test(trustedTradeSection.text)) {
       addFinding(
