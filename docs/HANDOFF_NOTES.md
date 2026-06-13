@@ -1,3 +1,36 @@
+### Static fallback share poster made crop-safe (2026-06-13)
+
+- Trigger:
+  - continued after the public copy-link fixes;
+  - product owner phone screenshots showed social previews could still look
+    cropped or too busy even when copy text was trimmed;
+  - the generic `gsn-share-poster.png` fallback still used a wide
+    `GSN Trusted Link` headline and side `OPEN` badge, which can crop badly in
+    Facebook/LinkedIn style cards.
+- Changed locally:
+  - `frontend/public/gsn-share-poster.svg`
+    - replaced the wide headline with centered `GSN` plus
+      `Trusted public link`;
+    - removed the side `OPEN` badge;
+    - kept all important text in the center safe area.
+  - `frontend/public/gsn-share-poster.png`
+    - regenerated the PNG fallback at `1200x630`;
+    - reduced file size from 96,904 bytes to 37,800 bytes.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - added guards that the SVG fallback keeps centered crop-safe text and does
+      not restore the old wide headline or side `OPEN` badge.
+- Verification:
+  - Visually inspected the regenerated PNG.
+  - Confirmed PNG dimensions are `(1200, 630)` and RGB.
+  - Passed `npm run audit:link-contracts`.
+  - Passed `npm exec -- eslint tools\audit-link-contracts.mjs`.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this improves the generic fallback Open Graph/Twitter poster only;
+  - backend-generated product-specific share cards still use their existing
+    layout and may need a separate pass if phone review shows item cards are
+    also too loud.
+
 ### Public Shop plain copy action trimmed (2026-06-13)
 
 - Trigger:

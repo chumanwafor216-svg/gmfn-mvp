@@ -530,6 +530,18 @@ assertContains(
 );
 
 assertContains(
+  "public/gsn-share-poster.svg",
+  /<text x="600" y="382"[\s\S]*>GSN<\/text>[\s\S]*Trusted public link[\s\S]*Open the verified shop, community route, or trust check\.[\s\S]*gmfn-frontend\.onrender\.com/,
+  "The static fallback share poster must keep important text centered and crop-safe for social preview cards."
+);
+
+assertNotContains(
+  "public/gsn-share-poster.svg",
+  /GSN Trusted Link|x="950"[\s\S]*>OPEN<\/text>/,
+  "The static fallback share poster must not restore the old wide headline or side OPEN badge that crop badly in social cards."
+);
+
+assertContains(
   "server.mjs",
   /function joinInviteMeta\(searchParams, pathname, search\)[\s\S]*?GSN Community Invitation[\s\S]*?invites you to request access[\s\S]*?gsn-community-invitation-poster\.png[\s\S]*?serveJoinInviteHtml[\s\S]*?\/\(\?:start\\\/join\|join\|get-invite\|join\\\/community\)/,
   "The frontend server must serve route-specific WhatsApp/Open Graph metadata for community join invite links, so they do not preview as public shops."
