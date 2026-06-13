@@ -52353,3 +52353,9 @@ GSN-branded invite composer and invite-entry continuity.
   - the evidence pack is local and ignored by Git; it is prepared for owner
     review, not accepted as final pilot proof;
   - no backend, auth, app-shell, or Render configuration files were changed.
+  - pushed to `main` at commit `261b08e`;
+  - GitHub Actions run `27475567323` completed successfully and Render
+    accepted the frontend deploy hook for `261b08e`, returning deploy id
+    `dep-d8mq7kkvikkc73c6eobg`;
+  - API deploy was intentionally skipped (`deploy_api=false`), because no
+    backend files changed.
