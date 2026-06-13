@@ -132,7 +132,7 @@ export default function LoanDecisionPanel({
       </div>
 
       <div className="rounded-xl border p-4">
-        <div className="mb-2 text-sm font-semibold text-slate-700">Clan Context</div>
+        <div className="mb-2 text-sm font-semibold text-slate-700">Community Context</div>
         <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
           <div className="rounded-xl bg-slate-50 p-3">
             <div className="text-slate-500">Members</div>
@@ -163,7 +163,7 @@ export default function LoanDecisionPanel({
               </span>
             ))
           ) : (
-            <span className="text-sm text-slate-500">No clan risk flags</span>
+            <span className="text-sm text-slate-500">No community risk flags</span>
           )}
         </div>
       </div>

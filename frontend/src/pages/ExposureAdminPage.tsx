@@ -606,7 +606,7 @@ export default function ExposureAdminPage() {
         level: "medium" as const,
         title: "Exposure summary is not available here yet.",
         detail:
-          "The current community did not return the clan-admin exposure summary. Confirm the selected community and clan-admin access before treating this page as the full concentration view.",
+          "The current community did not return the community-admin exposure summary. Confirm the selected community and community-admin access before treating this page as the full concentration view.",
       };
     }
 

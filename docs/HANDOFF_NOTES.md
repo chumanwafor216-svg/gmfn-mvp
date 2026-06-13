@@ -1,3 +1,34 @@
+### Admin/loan panel visible community wording cleanup (2026-06-13)
+
+- Trigger:
+  - continued visible-language sweep after the TrustGraph cleanup;
+  - targeted scan found frontend/admin-facing strings still showing `GSN
+    (GMFN)`, `clan-admin`, `Clan Context`, and `No clan risk flags`.
+- Changed locally:
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+    - changed the default invite preview from `GSN (GMFN)` to `GSN`.
+  - `frontend/src/pages/ExposureAdminPage.tsx`
+    - changed exposure warning copy from `clan-admin` to `community-admin`.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - changed visible role/page labels from `clan admin` / `Clan-admin page`
+      to `community admin` / `Community admin page`;
+    - changed pilot worksheet placeholder and exposure helper copy to
+      community wording.
+  - `frontend/src/components/LoanDecisionPanel.tsx`
+    - changed `Clan Context` to `Community Context`;
+    - changed `No clan risk flags` to `No community risk flags`.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - extended the guard across these frontend pages/components.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs src\pages\BuildFirstCirclePage.tsx src\pages\ExposureAdminPage.tsx src\pages\TrustCommandCentrePage.tsx src\components\LoanDecisionPanel.tsx`.
+  - Passed `npm run build`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - this is frontend-visible copy cleanup only;
+  - internal `clan` variable names, route contracts, and `X-Clan-Id` headers
+    remain untouched.
+
 ### TrustGraph community wording cleanup (2026-06-13)
 
 - Trigger:

@@ -918,14 +918,14 @@ export default function TrustCommandCentrePage() {
     }
 
     if (safeStr(clanRole).toLowerCase() === "admin") {
-      return "clan admin";
+      return "community admin";
     }
 
     return firstTruthy(platformRole, clanRole, "admin-led");
   }, [currentClan, me]);
 
   const isPlatformAdmin = roleLabel === "platform admin";
-  const isClanAdmin = roleLabel === "clan admin";
+  const isClanAdmin = roleLabel === "community admin";
 
   const systemOk = Boolean(executiveReading.systemHealth?.ok);
   const protocolStage = firstTruthy(executiveReading.protocolStatus?.stage, "unknown");
@@ -1231,7 +1231,7 @@ export default function TrustCommandCentrePage() {
 
     if (selectedClanId > 0 && executiveReading.exposureError) {
       return {
-        title: "Confirm clan-admin exposure access",
+        title: "Confirm community-admin exposure access",
         detail: "Exposure summary could not be loaded for the current community. Verify the active community context and admin access before relying on exposure pressure.",
         to: routes.exposure,
         cta: "Open Exposure",
@@ -1460,7 +1460,7 @@ export default function TrustCommandCentrePage() {
                 isPlatformAdmin
                   ? "Platform admin page"
                   : isClanAdmin
-                    ? "Clan-admin page"
+                    ? "Community admin page"
                     : "Admin-led page"
               )}
             </div>
@@ -1759,7 +1759,7 @@ export default function TrustCommandCentrePage() {
                     <textarea
                       value={pilotWorksheet.targetRoles}
                       onChange={(e) => updatePilotField("targetRoles", e.target.value)}
-                      placeholder="Example: ordinary member, clan admin, platform admin"
+                      placeholder="Example: ordinary member, community admin, platform admin"
                       style={{ marginTop: 8, ...inputField(true) }}
                     />
                   </div>
@@ -2222,7 +2222,7 @@ export default function TrustCommandCentrePage() {
                   ? `Pool ${formatNumber(exposureTotals.pool)} | Available ${formatNumber(
                       exposureTotals.available
                     )}`
-                  : "Choose a community to load clan-specific exposure totals."}
+                  : "Choose a community to load community-specific exposure totals."}
               </div>
             </div>
 

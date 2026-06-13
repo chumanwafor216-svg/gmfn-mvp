@@ -1243,7 +1243,7 @@ export default function BuildFirstCirclePage() {
   const messagePreview =
     readyContacts.length > 0
       ? inviteBundle
-      : "Hi! I am inviting you to join me on GSN (GMFN).\nLet us build trust and grow together.";
+      : "Hi! I am inviting you to join me on GSN.\nLet us build trust and grow together.";
   const showLegacyFirstCirclePanels = false;
 
   if (loading) {
