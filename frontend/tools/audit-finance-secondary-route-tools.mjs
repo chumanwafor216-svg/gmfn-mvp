@@ -82,13 +82,13 @@ assertContains(
 
 assertContains(
   "finance",
-  /FinanceSectionLabel icon="signal" color="#0B4EA2"[\s\S]*?Other finance lanes[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 88 : 76\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
+  /FinanceSectionLabel icon="signal" color="#0B4EA2"[\s\S]*?Other finance lanes[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?style=\{financeMiniToolButtonStyle\(isCompact\)\}/,
   "Finance secondary route tools must keep compact two-up phone geometry and fixed-height mini buttons."
 );
 
 assertContains(
   "finance",
-  /function financeMiniToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 88;[\s\S]*?const desktopHeight = 76;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden"[\s\S]*?brandClampLines\(2\)[\s\S]*?brandSingleLine\(\)/,
+  /function financeMiniToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 78;[\s\S]*?const desktopHeight = 76;[\s\S]*?height: isCompact \? compactHeight : desktopHeight,[\s\S]*?maxHeight: isCompact \? compactHeight : desktopHeight,[\s\S]*?overflow: "hidden"[\s\S]*?brandClampLines\(2\)[\s\S]*?brandSingleLine\(\)/,
   "Finance mini-tool style must keep fixed heights, hidden overflow, and clamped labels."
 );
 

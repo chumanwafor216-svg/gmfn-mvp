@@ -1,3 +1,45 @@
+### Source audit sweep after phone rail batch (2026-06-13)
+
+- Follow-up after the phone rail publish checkpoint:
+  - repo was clean at `42fcc86`;
+  - broad source audits passed:
+    - `audit:gsn-visible-language`;
+    - `audit:protocol-readiness`;
+    - `audit:proof-surfaces`;
+    - `audit:link-contracts`;
+    - `audit:action-response-protocol`;
+    - `audit:inner-navigation-origin`;
+    - `audit:icon-protocol`.
+  - Marketplace, Finance, Trust Passport, Shop/Public Shop, Loans, payout,
+    Demand Box, and Admin focused audits passed after the guard correction
+    below.
+- Corrected locally:
+  - `frontend/tools/audit-finance-secondary-route-tools.mjs`
+    - updated the expected compact Finance mini-tool height from stale `88px`
+      to the current measured/caged `78px` contract.
+- Verification:
+  - Passed `npm --prefix frontend run audit:finance-secondary-route-tools`.
+  - Passed adjacent Finance audits:
+    - `audit:finance-button-inventory`;
+    - `audit:finance-front-package`;
+    - `audit:finance-lane-map`;
+    - `audit:finance-money-movement-lanes`;
+    - `audit:finance-money-summary-lane`;
+    - `audit:finance-records-events-lane`;
+    - `audit:finance-signals-readiness-lane`.
+  - Passed protected/shared audits:
+    - `audit:button-stability`;
+    - `audit:protected-button-freeze`.
+- Dynamic interaction-scan note:
+  - the previous Playwright page context reset during a broad click scan;
+  - standalone Playwright could not relaunch because the local browser binary
+    is not installed in this environment;
+  - no product-code conclusion was drawn from that failed tool path.
+- Unabated truth:
+  - this pass improved the audit cage, not the live UI;
+  - the current source-audit suite is clean across the audited domains, but
+    this still does not replace manual phone review of deeper expanded panels.
+
 ### Publish checkpoint: phone rail stabilization batch (2026-06-13)
 
 - Pushed `main` from `11047f0` to `9651ce5` after the authenticated phone
