@@ -1,3 +1,38 @@
+### Button and lane validation checkpoint before final phone pass (2026-06-13)
+
+- Trigger:
+  - product owner confirmed the package is improving but asked to keep going
+    before the final bottom/button stabilization pass;
+  - current priority is to finish the scheduled stabilization work without
+    pretending the package is frozen.
+- Verification:
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-lines`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed Marketplace lane audits:
+    - `audit:marketplace-money-pool-lane`;
+    - `audit:marketplace-rosca-lane`;
+    - `audit:marketplace-support-lane`;
+    - `audit:marketplace-trusted-trade-lane`;
+    - `audit:marketplace-records-links-lane`;
+    - `audit:marketplace-more-tools-lane`;
+    - `audit:marketplace-demand-box-lane`;
+    - `audit:marketplace-front-package`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run audit:finance-front-package`.
+  - Passed `npm --prefix frontend run audit:finance-lane-map`.
+  - Passed `npm --prefix frontend run audit:shop-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Unabated truth:
+  - this means the source-level button contracts and lane cages are currently
+    clean for the checked areas;
+  - it does not mean the phone experience is finished;
+  - the final bottom/button stabilization phase still needs real phone review
+    for tap feel, browser chrome overlap, perceived crowding, and visual
+    calmness before calling the package ready for controlled and public tests.
+
 ### Narrow UTC timestamp cleanup for reports and daily insight (2026-06-13)
 
 - Trigger:
