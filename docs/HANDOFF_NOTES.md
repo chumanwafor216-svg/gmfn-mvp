@@ -1,3 +1,47 @@
+### Finance mobile first-action compactness polish (2026-06-13)
+
+- Trigger:
+  - continued the final phone/bottom stabilization pass after the shared
+    authenticated bottom rail was restored;
+  - local signed-in phone review showed Finance had a stable bottom rail, but
+    the first real money action was still partly trapped under the rail because
+    the opening summary package was too tall.
+- Changed locally:
+  - `frontend/src/pages/FinancePage.tsx`
+    - tightened the compact Finance hero copy, spacing, stats, and badge rail;
+    - hid the decorative bank tile on compact screens;
+    - made the summary stats a horizontal compact row instead of a taller grid;
+    - removed the compact helper line above the money-lane tools so the first
+      action appears earlier;
+    - reduced compact main finance tool height from `124` to `104`;
+    - reduced compact mini-tool height from `88` to `78`.
+  - `frontend/tools/audit-finance-actions.mjs`
+  - `frontend/tools/audit-finance-button-inventory.mjs`
+  - `frontend/tools/audit-finance-front-package.mjs`
+    - updated Finance guards to lock the new compact button heights.
+- Verification:
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run audit:finance-front-package`.
+  - Passed `npm --prefix frontend run audit:finance-lane-map`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local Edge DevTools phone viewport after dismissing the companion overlay
+    showed `financeFile.height: 324`, `chooseTop: 625`, first money action
+    `top: 653`, `bottom: 757`, bottom rail `top: 785`, `bottom: 844`, and
+    active bottom label `Finance`.
+- Unabated truth:
+  - this improves the Finance first viewport; it does not make Finance a
+    finished phone-perfect screen;
+  - the identity companion overlay can still cover Finance on first load for
+    under-evidenced sessions, so companion/modal density remains a separate
+    phone stabilization risk;
+  - no physical phone screenshot was saved for this pass, but a local headless
+    Edge phone viewport was checked with live geometry.
+
 ### Authenticated mobile bottom-rail viewport stabilization (2026-06-13)
 
 - Trigger:

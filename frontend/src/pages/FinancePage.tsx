@@ -603,7 +603,7 @@ function FinanceSectionLabel({
 }
 
 function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
-  const compactHeight = 124;
+  const compactHeight = 104;
   const desktopHeight = 132;
 
   return {
@@ -629,7 +629,7 @@ function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
 }
 
 function financeMiniToolButtonStyle(isCompact: boolean): React.CSSProperties {
-  const compactHeight = 88;
+  const compactHeight = 78;
   const desktopHeight = 76;
 
   return {
@@ -1688,7 +1688,7 @@ export default function FinancePage() {
         id="finance-file"
         style={{
           borderRadius: 28,
-          padding: isCompact ? 18 : 24,
+          padding: isCompact ? 14 : 24,
           border: "1px solid rgba(214,170,69,0.32)",
           background:
             "linear-gradient(145deg, #07172C 0%, #092642 62%, #03101F 100%)",
@@ -1702,7 +1702,7 @@ export default function FinancePage() {
           style={{
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "minmax(0,1fr) 120px",
-            gap: 18,
+            gap: isCompact ? 10 : 18,
             alignItems: "start",
           }}
         >
@@ -1713,21 +1713,21 @@ export default function FinancePage() {
             <h1
               style={{
                 margin: "12px 0 0",
-                fontSize: isCompact ? 31 : 44,
-                lineHeight: 1.04,
+                fontSize: isCompact ? 25 : 44,
+                lineHeight: isCompact ? 1.08 : 1.04,
                 fontWeight: 950,
                 letterSpacing: 0,
-                maxWidth: 620,
+                maxWidth: isCompact ? 340 : 620,
               }}
             >
               Your community finances. Clear. Secure. Together.
             </h1>
             <p
               style={{
-                margin: "14px 0 0",
+                margin: isCompact ? "9px 0 0" : "14px 0 0",
                 color: "#D8E7F5",
-                fontSize: isCompact ? 15 : 17,
-                lineHeight: 1.65,
+                fontSize: isCompact ? 14 : 17,
+                lineHeight: isCompact ? 1.42 : 1.65,
                 maxWidth: 560,
               }}
             >
@@ -1736,10 +1736,13 @@ export default function FinancePage() {
             </p>
             <div
               style={{
-                marginTop: 16,
+                marginTop: isCompact ? 10 : 16,
                 display: "flex",
                 gap: 8,
-                flexWrap: "wrap",
+                flexWrap: isCompact ? "nowrap" : "wrap",
+                overflowX: isCompact ? "auto" : undefined,
+                paddingBottom: isCompact ? 2 : undefined,
+                WebkitOverflowScrolling: isCompact ? "touch" : undefined,
               }}
             >
               <span
@@ -1748,6 +1751,7 @@ export default function FinancePage() {
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
+                  flex: isCompact ? "0 0 auto" : undefined,
                 }}
               >
                 {communityLabel}
@@ -1758,6 +1762,7 @@ export default function FinancePage() {
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
+                  flex: isCompact ? "0 0 auto" : undefined,
                 }}
               >
                 GSN ID: {gmfnId}
@@ -1768,6 +1773,7 @@ export default function FinancePage() {
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
+                  flex: isCompact ? "0 0 auto" : undefined,
                 }}
               >
                 Community code: {publicCommunityCode}
@@ -1779,6 +1785,7 @@ export default function FinancePage() {
                     color: "#F8FBFF",
                     background: "rgba(255,255,255,0.12)",
                     border: "1px solid rgba(255,255,255,0.14)",
+                    flex: isCompact ? "0 0 auto" : undefined,
                   }}
                 >
                   Money code: {poolReference}
@@ -1790,6 +1797,7 @@ export default function FinancePage() {
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
+                  flex: isCompact ? "0 0 auto" : undefined,
                 }}
               >
                 Your role: {memberRole}
@@ -1801,11 +1809,11 @@ export default function FinancePage() {
             aria-hidden="true"
             style={{
               justifySelf: isCompact ? "start" : "end",
-              width: isCompact ? 84 : 108,
-              height: isCompact ? 84 : 108,
-              borderRadius: 28,
+              width: isCompact ? 68 : 108,
+              height: isCompact ? 68 : 108,
+              borderRadius: isCompact ? 22 : 28,
               border: "2px solid rgba(214,170,69,0.62)",
-              display: "flex",
+              display: isCompact ? "none" : "flex",
               alignItems: "center",
               justifyContent: "center",
               background:
@@ -1821,12 +1829,17 @@ export default function FinancePage() {
 
         <div
           style={{
-            marginTop: 22,
+            marginTop: isCompact ? 12 : 22,
             display: "grid",
             gridTemplateColumns: isCompact
-              ? "repeat(2, minmax(0, 1fr))"
+              ? "none"
               : "repeat(4, minmax(0, 1fr))",
+            gridAutoFlow: isCompact ? "column" : undefined,
+            gridAutoColumns: isCompact ? "minmax(132px, 1fr)" : undefined,
             gap: 12,
+            overflowX: isCompact ? "auto" : undefined,
+            paddingBottom: isCompact ? 2 : undefined,
+            WebkitOverflowScrolling: isCompact ? "touch" : undefined,
           }}
         >
           {[
@@ -1858,9 +1871,9 @@ export default function FinancePage() {
             <div
               key={item.label}
               style={{
-                minHeight: 124,
+                minHeight: isCompact ? 82 : 124,
                 borderRadius: 18,
-                padding: isCompact ? 12 : 16,
+                padding: isCompact ? 10 : 16,
                 border: "1px solid rgba(255,255,255,0.14)",
                 background: "rgba(255,255,255,0.06)",
                 display: "grid",
@@ -1895,7 +1908,7 @@ export default function FinancePage() {
               >
                 {item.value}
               </div>
-              <div style={{ color: "#D8E7F5", fontSize: 13, fontWeight: 800 }}>
+              <div style={{ color: "#D8E7F5", fontSize: isCompact ? 12 : 13, fontWeight: 800 }}>
                 {item.note}
               </div>
             </div>
@@ -1903,14 +1916,27 @@ export default function FinancePage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        style={{
+          ...pageCard("#FFFFFF"),
+          padding: isCompact ? 14 : 20,
+        }}
+      >
         <div style={sectionLabel()}>Choose what you need now</div>
-        <div style={{ marginTop: 8, ...helperText() }}>
-          Open one finance lane at a time. Keep the current money task focused.
+        <div
+          style={{
+            marginTop: 8,
+            ...helperText(),
+            display: isCompact ? "none" : undefined,
+          }}
+        >
+          {isCompact
+            ? "Open one finance lane. Keep the money task focused."
+            : "Open one finance lane at a time. Keep the current money task focused."}
         </div>
         <div
           style={{
-            marginTop: 16,
+            marginTop: isCompact ? 12 : 16,
             display: "grid",
             gridTemplateColumns: isCompact
               ? "repeat(2, minmax(0, 1fr))"
@@ -1960,7 +1986,7 @@ export default function FinancePage() {
               key={item.id}
               onClick={item.action}
               fullWidth
-              stableHeight={isCompact ? 124 : 132}
+              stableHeight={isCompact ? 104 : 132}
               debugId={`finance.tool.${item.id}`}
               style={financeToolButtonStyle(isCompact)}
             >
@@ -2059,7 +2085,7 @@ export default function FinancePage() {
                 key={tool.label}
                 onClick={tool.action}
                 fullWidth
-                stableHeight={isCompact ? 88 : 76}
+                stableHeight={isCompact ? 78 : 76}
                 debugId={`finance.mini-tool.${tool.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                 style={financeMiniToolButtonStyle(isCompact)}
               >
