@@ -29,6 +29,33 @@
   - WhatsApp/formal owner package paths can still include longer GSN headed-paper
     context by design.
 
+### Public Shop / QR copy fixes frontend deploy verified live (2026-06-13)
+
+- Action:
+  - committed and pushed `2b838dc` (`Trim public shop copy link`) to `main`;
+  - manually ran GitHub Actions workflow `Trigger Render Deploy` with
+    `deploy_api=false`;
+  - workflow run:
+    `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/27465699645`;
+  - Render frontend deploy hook returned deploy id `dep-d8mk2kbtqb8s73c6kbug`.
+- Verification:
+  - GitHub Actions run completed successfully;
+  - workflow log says it triggered `gmfn-frontend` at
+    `2b838dc88b9e0ea5a118ec513b809e1886e5434f`;
+  - workflow log says `gmfn-frontend deploy hook accepted the request`;
+  - workflow log says `Backend deploy needed: false`;
+  - public `https://gmfn-frontend.onrender.com` HTML changed to
+    `assets/index-BUPwbjCh.js`;
+  - live route chunks referenced by that bundle were checked directly:
+    - `ShopGalleryPage-Csq80PPi.js` contains `Public shop link copied.` and
+      does not contain `Public shop poster link copied.`;
+    - `CommunityVerifyPage-Bm0e4k7N.js` contains
+      `GSN community verification link copied.` and does not contain
+      `GSN community verification package copied.`.
+- Unabated truth:
+  - this verifies the frontend content for the copy-link fixes is live;
+  - backend/API was intentionally not redeployed.
+
 ### Public community QR copy action trimmed (2026-06-13)
 
 - Trigger:
