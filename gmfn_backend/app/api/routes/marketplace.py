@@ -366,7 +366,7 @@ def _resolve_clan_id(
             .first()
         )
         if not membership or getattr(membership, "clan_id", None) is None:
-            raise HTTPException(status_code=400, detail="No active clan selected")
+            raise HTTPException(status_code=400, detail="No active community selected")
         return int(membership.clan_id)
 
     membership = (
@@ -3141,7 +3141,7 @@ def create_marketplace_broadcast(
         )
     )
     if not target_clan_ids:
-        raise HTTPException(status_code=400, detail="No active clan memberships found")
+        raise HTTPException(status_code=400, detail="No active community memberships found")
 
     current_time = _now_utc()
 
@@ -3187,7 +3187,7 @@ def create_marketplace_broadcast(
             if active_count >= max_allowed:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Spotlight capacity reached for clan {clan_id}. Wait for an active spotlight to expire.",
+                    detail=f"Spotlight capacity reached for community {clan_id}. Wait for an active spotlight to expire.",
                 )
 
     created_at = _now_utc()

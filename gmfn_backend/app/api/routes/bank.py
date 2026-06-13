@@ -489,7 +489,7 @@ def create_expected_loan_repayment(
         raise HTTPException(status_code=404, detail="Loan not found")
 
     if int(getattr(loan, "clan_id", 0) or 0) != int(clan.id):
-        raise HTTPException(status_code=403, detail="Loan not in selected clan")
+        raise HTTPException(status_code=403, detail="Loan not in selected community")
 
     is_platform_admin = (getattr(current_user, "role", "") or "").lower() == "admin"
     is_clan_admin = (getattr(membership, "role", "") or "").lower() == "admin"

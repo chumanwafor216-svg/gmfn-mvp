@@ -1,3 +1,48 @@
+### Community wording for remaining admin/member visible labels (2026-06-13)
+
+- Trigger:
+  - continuing after the loan proof-surface wording batch;
+  - targeted scan found small remaining user/admin-visible `clan` labels in
+    member add, payment expectation, marketplace spotlight, and TrustGraph edge
+    surfaces.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - changed duplicate member error from `User already in clan` to
+      `User already in community`.
+  - `gmfn_backend/app/api/routes/bank.py`
+    - changed expected loan repayment context error from `Loan not in selected
+      clan` to `Loan not in selected community`.
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - changed active-context errors from `No active clan selected` and
+      `No active clan memberships found` to community wording;
+    - changed Spotlight capacity wording from `clan {id}` to
+      `community {id}`.
+  - `frontend/src/components/TrustGraphEdgeList.tsx`
+    - changed visible admin graph copy from `clan structure` to
+      `community structure`;
+    - changed the edge context label from `Clan` to `Community`;
+    - replaced visible em-dash fallbacks with ASCII `-` to avoid bad rendering
+      in plain text/tool output.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - extended the guard to cover these remaining visible phrases.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs src\components\TrustGraphEdgeList.tsx`.
+  - Passed `npm run build`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_clan_members.py gmfn_backend\tests\test_clan_pool.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_spotlight_subscription_pricing.py gmfn_backend\tests\test_marketplace_requests.py`.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py`
+    ran 16 tests successfully, then hit the pre-existing Windows pytest
+    `tmp_path` permission setup failure on 5 tests under
+    `C:\Users\chukwuma pc\AppData\Local\Temp\pytest-of-chukwuma pc`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - this is visible language and placeholder rendering cleanup only;
+  - internal fields such as `clan_id`, headers such as `X-Clan-Id`, and route
+    contracts remain unchanged;
+  - backend deploy is still blocked until Render API credentials or a manual
+    gmfn-api deploy are handled.
+
 ### Community wording for loan and proof permission surfaces (2026-06-13)
 
 - Trigger:

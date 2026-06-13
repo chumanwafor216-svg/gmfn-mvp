@@ -2897,7 +2897,7 @@ def add_member(
         .first()
     )
     if exists:
-        raise HTTPException(status_code=409, detail="User already in clan")
+        raise HTTPException(status_code=409, detail="User already in community")
 
     _assert_community_member_capacity_available(db, clan_id=int(clan_id))
 

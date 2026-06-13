@@ -7,7 +7,7 @@ function safeStr(x: any): string {
 }
 
 function fmtDate(iso?: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return safeStr(iso);
   return d.toLocaleString();
@@ -77,7 +77,7 @@ export default function TrustGraphEdgeList(props: {
         <div>
           <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>TrustGraph Edges</div>
           <div style={{ marginTop: 4, fontSize: 12, color: "#64748b" }}>
-            Relationship edges derived from invites, loans, repayments, merchant releases, and clan structure.
+            Relationship edges derived from invites, loans, repayments, merchant releases, and community structure.
           </div>
         </div>
 
@@ -177,7 +177,7 @@ export default function TrustGraphEdgeList(props: {
                     User #{safeStr(e.target_user_id)}
                   </div>
                   <div style={{ marginTop: 2, fontSize: 12, color: "#475569" }}>
-                    {safeStr(e.target_gmfn_id || "—")}
+                    {safeStr(e.target_gmfn_id || "-")}
                   </div>
                 </div>
               </div>
@@ -192,12 +192,12 @@ export default function TrustGraphEdgeList(props: {
                 className="gmfn-tg-edge-grid-4"
               >
                 <div>
-                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Clan</div>
-                  <div style={{ fontWeight: 900 }}>{safeStr(e.clan_id ?? "—")}</div>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Community</div>
+                  <div style={{ fontWeight: 900 }}>{safeStr(e.clan_id ?? "-")}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Loan</div>
-                  <div style={{ fontWeight: 900 }}>{safeStr(e.loan_id ?? "—")}</div>
+                  <div style={{ fontWeight: 900 }}>{safeStr(e.loan_id ?? "-")}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>First seen</div>
