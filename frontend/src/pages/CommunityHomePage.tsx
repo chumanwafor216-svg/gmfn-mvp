@@ -3034,7 +3034,13 @@ export default function CommunityHomePage() {
 
       {!spotlightGuidanceSuspendedView ? (
       <>
-      <section style={{ ...communityBlockCard("raised"), order: 30 }}>
+      <section
+        style={{
+          ...communityBlockCard("raised"),
+          order: 30,
+          marginTop: isCompact ? 104 : undefined,
+        }}
+      >
         <div
           style={{
             display: "grid",

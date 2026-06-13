@@ -1919,6 +1919,7 @@ export default function FinancePage() {
       <section
         style={{
           ...pageCard("#FFFFFF"),
+          marginTop: isCompact ? 28 : undefined,
           padding: isCompact ? 14 : 20,
         }}
       >

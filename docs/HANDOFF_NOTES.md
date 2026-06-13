@@ -52032,3 +52032,42 @@ GSN-branded invite composer and invite-entry continuity.
   - exact reference-only copy actions remain raw by design because bank/payment
     paste fields need the exact code, not a paragraph;
   - no push or Render deploy was done.
+
+### Phone rail clearance pass for Community, Finance, Dashboard (2026-06-13)
+
+- Trigger:
+  - focused phone browser scan found bottom navigation hit-zone collisions on
+    three authenticated surfaces after the broader source audits were clean;
+  - hit-testing confirmed taps in the overlap zones went to bottom-nav items
+    instead of the intended route actions.
+- Changed locally, not pushed yet:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - added phone-only clearance before the compact Owner Actions row group so
+      expanded Community Home rows no longer sit half under the bottom rail.
+  - `frontend/src/pages/FinancePage.tsx`
+    - added phone-only clearance before the secondary finance tool group so
+      Money Out and Payout Details are below the rail until the user scrolls.
+  - `frontend/src/pages/DashboardPage.tsx`
+    - increased the phone-only gap before the app launcher toggle so it no
+      longer lands partly inside the rail hit zone.
+  - `frontend/tools/audit-dashboard-phone-buttons.mjs`
+    - updated the Dashboard guard to protect the new app launcher clearance.
+- Verification:
+  - Focused Playwright phone hit-test after the patch:
+    - Community `community-home.tool.free-spotlight`: top 854, rail 785-844,
+      no overlap.
+    - Finance `finance.mini-tool.money-out`: top 854, rail 785-844, no overlap.
+    - Dashboard `dashboard.apps.toggle`: top 858, rail 785-844, no overlap.
+  - Passed `npm --prefix frontend run audit:dashboard-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:community-home-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:finance-secondary-route-tools`.
+  - Passed `npm --prefix frontend run audit:dashboard-actions`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `npm --prefix frontend run build`.
+- Unabated truth:
+  - this does not claim the whole app is finished; it closes the confirmed
+    phone rail collisions from this focused scan only;
+  - Dashboard Market Wisdom was not restyled or restructured;
+  - no Render deploy has been claimed for this local pass yet.
