@@ -1767,30 +1767,47 @@ export default function JoinEntryPage() {
                   </span>
                 ) : null}
               </div>
-              <div
-                style={{
-                  fontWeight: 1000,
-                  color: "#0B1F33",
-                  fontSize: 15,
-                }}
-              >
-                {joinEntryIconText("document", "Invitation letter", 22)}
-              </div>
+              {isCompact ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#35516B",
+                    lineHeight: 1.65,
+                    fontSize: 15,
+                  }}
+                >
+                  {inviterLabel} is inviting you to request access to{" "}
+                  {resolvedCommunityName || "this GSN community"}. Your request
+                  still goes back to the community for review.
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      fontWeight: 1000,
+                      color: "#0B1F33",
+                      fontSize: 15,
+                    }}
+                  >
+                    {joinEntryIconText("document", "Invitation letter", 22)}
+                  </div>
 
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#35516B",
-                  lineHeight: 1.82,
-                  fontSize: 15,
-                  display: "grid",
-                  gap: 10,
-                }}
-              >
-                {inviteLetter.map((line, index) => (
-                  <div key={`${line}-${index}`}>{line}</div>
-                ))}
-              </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#35516B",
+                      lineHeight: 1.82,
+                      fontSize: 15,
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
+                    {inviteLetter.map((line, index) => (
+                      <div key={`${line}-${index}`}>{line}</div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

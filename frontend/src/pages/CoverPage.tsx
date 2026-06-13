@@ -1343,44 +1343,47 @@ function GSNSplashArtwork() {
 
           <text
             x="332"
-            y="92"
+            y="78"
             textAnchor="middle"
             fill="rgba(1,9,22,0.62)"
-            fontSize="38"
+            fontSize="30"
             fontWeight="850"
-            letterSpacing="1.2"
+            letterSpacing="0.8"
             fontFamily="Arial, Helvetica, sans-serif"
           >
-            Global Support Network
+            <tspan x="332" dy="0">Global Support</tspan>
+            <tspan x="332" dy="32">Network</tspan>
           </text>
 
           <text
             x="330"
-            y="88"
+            y="74"
             textAnchor="middle"
             fill="url(#titleEmbossFill)"
             stroke="rgba(238,246,255,0.24)"
             strokeWidth="0.7"
             filter="url(#titleEmbossShadow)"
-            fontSize="38"
+            fontSize="30"
             fontWeight="850"
-            letterSpacing="1.2"
+            letterSpacing="0.8"
             fontFamily="Arial, Helvetica, sans-serif"
           >
-            Global Support Network
+            <tspan x="330" dy="0">Global Support</tspan>
+            <tspan x="330" dy="32">Network</tspan>
           </text>
 
           <text
             x="330"
-            y="86.5"
+            y="72.5"
             textAnchor="middle"
             fill="rgba(255,255,255,0.16)"
-            fontSize="38"
+            fontSize="30"
             fontWeight="850"
-            letterSpacing="1.2"
+            letterSpacing="0.8"
             fontFamily="Arial, Helvetica, sans-serif"
           >
-            Global Support Network
+            <tspan x="330" dy="0">Global Support</tspan>
+            <tspan x="330" dy="32">Network</tspan>
           </text>
 
           <path

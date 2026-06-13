@@ -1,3 +1,37 @@
+### Entry phone compactness polish for Cover and Join (2026-06-13)
+
+- Trigger:
+  - continued the phone-surface stabilization pass after Login improved;
+  - local phone captures showed the Cover artwork brand line clipping and the
+    Join invitation letter pushing the actual request form too far down on
+    compact screens.
+- Changed locally:
+  - `frontend/src/pages/CoverPage.tsx`
+    - split the decorative `Global Support Network` artwork title into
+      two centered SVG lines so it no longer clips on narrow phone captures.
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - kept the full invitation letter on wider screens;
+    - replaced it on compact screens with a short, plain-language summary that
+      still explains the request goes back to the community for review.
+- Verification:
+  - Passed `npm --prefix frontend run audit:entry-flow-polish`.
+  - Passed `npm --prefix frontend run audit:entry-copy-response`.
+  - Passed `npm --prefix frontend run audit:member-entry-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Captured local headless Edge phone-sized screenshots under
+    `C:\tmp\gmfn-phone-shots-entry\`; `cover-after.png` and `join-after.png`
+    show the targeted phone issues improved.
+- Unabated truth:
+  - this is a contained visual/compactness fix, not a full entry redesign;
+  - the authenticated bottom navigation and deeper signed-in phone surfaces
+    still need a real signed-in phone session before final package capture.
+
 ### Login phone compactness polish (2026-06-13)
 
 - Trigger:
