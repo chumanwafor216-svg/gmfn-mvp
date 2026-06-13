@@ -141,12 +141,13 @@ function supportBtn(): React.CSSProperties {
   return {
     ...secondaryBtn(),
     width: "100%",
-    minHeight: 44,
-    height: 44,
-    maxHeight: 44,
+    minHeight: 52,
+    height: 52,
+    maxHeight: 52,
     borderRadius: 15,
-    padding: "0 12px",
+    padding: "7px 12px",
     fontSize: 13.5,
+    lineHeight: 1.12,
     justifySelf: "stretch",
     boxShadow:
       "0 8px 18px rgba(0,8,18,0.15), inset 0 1px 0 rgba(255,255,255,0.12)",
@@ -186,6 +187,10 @@ function loginIconText(
         justifyContent: "center",
         gap: 8,
         minWidth: 0,
+        maxWidth: "100%",
+        width: "100%",
+        lineHeight: 1.12,
+        whiteSpace: "normal",
       }}
     >
       <GsnLegacyIcon
@@ -194,7 +199,18 @@ function loginIconText(
         decorative
         style={{ display: "inline-grid", flex: "0 0 auto" }}
       />
-      <span style={{ minWidth: 0 }}>{label}</span>
+      <span
+        style={{
+          minWidth: 0,
+          maxWidth: "100%",
+          overflowWrap: "normal",
+          textAlign: "center",
+          whiteSpace: "normal",
+          wordBreak: "normal",
+        }}
+      >
+        {label}
+      </span>
     </span>
   );
 }
@@ -1104,7 +1120,7 @@ export default function LoginPage() {
                 debugId="login.activate-approved"
                 style={supportBtn()}
               >
-                {loginIconText("join-person-plus", "Already approved? Activate membership", 24)}
+                {loginIconText("join-person-plus", "Activate membership", 24)}
               </SecondaryButton>
             </div>
             </div>
@@ -1159,7 +1175,7 @@ export default function LoginPage() {
                   wordBreak: "normal",
                 }}
               >
-                Your identity and community data stay protected.
+                Your identity stays protected.
               </div>
               <div
                 style={{

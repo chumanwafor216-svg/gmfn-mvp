@@ -220,7 +220,7 @@ export default function GsnInstallPrompt({
           <p id={describedBy} style={helperTextStyle(tone, compact)}>
             {isIos
               ? "On iPhone, add GSN through Safari's Share button."
-              : "Put a GSN icon on the phone screen so it does not get lost."}
+              : "Put a GSN icon on your phone screen."}
           </p>
         </div>
       </div>

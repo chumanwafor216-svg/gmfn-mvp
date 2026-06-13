@@ -1,3 +1,44 @@
+### Login phone compactness polish (2026-06-13)
+
+- Trigger:
+  - final phone/bottom stabilization pass began with local unauthenticated
+    route screenshots;
+  - protected `/app/*` routes correctly redirected to Sign In without a member
+    session, but the Sign In surface showed long labels that could clip or feel
+    tense in narrow captures.
+- Changed locally:
+  - `frontend/src/pages/LoginPage.tsx`
+    - Login support buttons now keep a 52px stable touch-safe height;
+    - icon+text button helper now constrains label width and allows safe
+      wrapping;
+    - shortened the visible approved-member CTA to `Activate membership`;
+    - shortened the security reassurance to `Your identity stays protected.`
+  - `frontend/src/components/GsnInstallPrompt.tsx`
+    - shortened the login install helper to
+      `Put a GSN icon on your phone screen.`
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the Login icon/action guard to protect the shorter activation
+      label instead of forcing the old long label back.
+- Verification:
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:entry-flow-polish`.
+  - Passed `npm --prefix frontend run audit:member-entry-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run lint`.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Captured local headless Edge phone-sized Login screenshots under
+    `C:\tmp\gmfn-phone-shots\`; the corrected CSS-width capture shows the
+    trimmed first-viewport labels fitting cleanly.
+- Unabated truth:
+  - this improves a real entry-surface tension found during local visual
+    probing;
+  - because unauthenticated protected routes redirect to Login, deeper
+    Dashboard/Marketplace/Finance bottom-rail phone review still needs a real
+    signed-in phone session or a preserved browser session.
+
 ### Broad local source validation before phone-bottom pass (2026-06-13)
 
 - Trigger:
