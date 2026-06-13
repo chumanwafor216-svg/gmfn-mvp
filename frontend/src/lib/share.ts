@@ -34,12 +34,12 @@ export function buildWhatsAppUrl(text: string): string {
 
 export function buildShareText(target: ShareTarget): string {
   const title = String(target.title || "GSN").trim();
-  const url = normalizeUrl(target.url);
+  const url = normalizeUrl(target.socialUrl || target.url);
   const extra = String(target.message || "").trim();
 
-  // Humane compact message for WhatsApp
-  if (extra) return `${title}\n${extra}\n${url}`;
-  return `${title}\n${url}`;
+  // Put the scraper-friendly URL before package copy so WhatsApp previews the
+  // route-specific card instead of the generic frontend shell.
+  return [title, url, extra].filter(Boolean).join("\n");
 }
 
 function compactText(value: unknown): string {

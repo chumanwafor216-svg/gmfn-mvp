@@ -1,3 +1,42 @@
+### WhatsApp shop preview URL ordering fix (2026-06-13)
+
+- Trigger:
+  - owner phone screenshots showed WhatsApp still rendering the generic
+    `GSN Trusted Link` frontend preview after sharing a public shop message.
+- Confirmed root cause:
+  - backend already exposes shop-specific preview pages at `/share/shop/...`;
+  - public shop share targets already pass that preview as `socialUrl`;
+  - `buildShareText()` still placed the long package copy, including the
+    ordinary frontend shop URL, before the preview URL, so WhatsApp could
+    scrape the generic frontend app shell first.
+- Changed:
+  - `frontend/src/lib/share.ts`
+    - `buildShareText()` now uses `target.socialUrl || target.url`;
+    - the URL is placed before long package copy so WhatsApp/social copy sees
+      the scraper-friendly backend preview first.
+  - `frontend/tools/audit-share-tag-actions.mjs`
+    - added a guard for the social-preview-first WhatsApp/copy-message
+      contract.
+- Verification:
+  - `npm run audit:share-tag-actions` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:marketplace-front-package` passed.
+  - `npm run audit:marketplace-demand-box-lane` passed.
+  - `npm run audit:shop-gallery-button-inventory` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run audit:shop-assets-slots` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this fixes newly generated share text so chat apps are given the
+    route-specific preview URL first;
+  - it does not change already-sent WhatsApp messages or clear WhatsApp's
+    external preview cache;
+  - ordinary `Copy link` actions still copy the frontend public shop URL.
+
 ### Phone spacing and overflow trim pass (2026-06-13)
 
 - Trigger:

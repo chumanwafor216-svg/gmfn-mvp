@@ -45,6 +45,11 @@ function assertNotContains(file, pattern, message) {
     /socialMessage\?: string;[\s\S]*socialUrl\?: string;[\s\S]*buildCompactSocialShareText[\s\S]*normalizeUrl\(target\.socialUrl \|\| target\.url\)[\s\S]*platform === "x" \? \(includeUrl \? 260 : 210\) : 520/,
     "Social share helpers must keep short channel captions so X/LinkedIn/etc. do not receive headed-paper packages.",
   ],
+  [
+    "src/lib/share.ts",
+    /export function buildShareText[\s\S]*const url = normalizeUrl\(target\.socialUrl \|\| target\.url\);[\s\S]*return \[title, url, extra\]\.filter\(Boolean\)\.join\("\\n"\);/,
+    "WhatsApp/copy-message text must put the backend social-preview URL before long package copy so chat apps scrape the route-specific card.",
+  ],
   ["src/lib/share.ts", /buildXIntentShareUrl/, "X intent share URL helper is missing."],
   [
     "src/lib/share.ts",
