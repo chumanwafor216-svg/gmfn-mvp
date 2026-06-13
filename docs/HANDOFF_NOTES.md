@@ -1,3 +1,55 @@
+### Public community QR copy action trimmed (2026-06-13)
+
+- Trigger:
+  - product owner reported the QR visitor experience still felt like it showed
+    more than a visitor should need;
+  - the public community verification page was already trimmed visually, but
+    its `Copy link` action still copied a full headed-paper text package.
+- Changed locally:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - changed `Copy link` to copy only the public verification URL;
+    - updated success copy to `GSN community verification link copied.`;
+    - removed the page import of `buildGsnCommunityVerifyLinkPackage`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added a regression guard requiring `safeCopy(publicLink)`;
+    - extended the forbidden public-page inventory guard to reject the long
+      headed-paper package helper on this QR visitor page.
+- Verification:
+  - Passed `npm run audit:trust-actions`.
+  - Passed `npm run audit:link-contracts`.
+  - Passed `npm exec -- eslint src\pages\CommunityVerifyPage.tsx tools\audit-trust-actions.mjs`.
+  - Passed `npm run build`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings for the
+    touched frontend files only.
+- Unabated truth:
+  - this trims the visitor copy action, not the backend verification payload;
+  - the marketplace owner-side email package can still use the longer headed
+    paper helper intentionally.
+
+### Frontend-only Render deploy hook accepted (2026-06-13)
+
+- Trigger:
+  - frontend static site `gmfn-frontend` has Render Auto-Deploy off;
+  - after the latest pushed frontend-visible polish work, the controlled path was
+    to trigger the frontend hook without touching the API service.
+- Action:
+  - ran GitHub Actions workflow `Trigger Render Deploy` manually on `main` with
+    `deploy_api=false`;
+  - workflow run:
+    `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/27465450344`;
+  - commit used by the workflow:
+    `9cff8394ebece27b4b811f6e839a79416ad296e4`
+    (`Record verified Render API main deploy`);
+  - Render frontend deploy hook returned deploy id `dep-d8mjt8rbc2fs73e2osp0`.
+- Verification:
+  - GitHub Actions run completed successfully;
+  - workflow log says `gmfn-frontend deploy hook accepted the request`;
+  - workflow log says `Backend deploy needed: false`.
+- Unabated truth:
+  - this confirms Render accepted a frontend deploy request;
+  - it does not by itself prove the Render static-site build finished live;
+  - backend was intentionally not redeployed by this workflow run.
+
 ### Render API branch correction and live deploy verified (2026-06-13)
 
 - Trigger:

@@ -317,6 +317,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /async function copyLink\(\) \{[\s\S]*?safeCopy\(publicLink\)[\s\S]*?GSN community verification link copied\./,
+  "CommunityVerifyPage Copy link must copy only the public verification URL, not a long headed-paper package for QR visitors."
+);
+
+assertContains(
   "src/lib/api.ts",
   /requestPublicCommunityVerificationConfirmation[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}\/confirmation-request/,
   "CommunityVerifyPage request confirmation must call the controlled public verification relay endpoint."
@@ -336,8 +342,8 @@ assertContains(
 
 assertNotContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /active_member_count|instant_pulse_available|public_policy|plain_language|hidden_by_design|Show publicly|Keep protected|Full member list|Raw member phone numbers|Member phone numbers|Sponsor details|Internal disputes|Private relay contacts|Internal trust history|Save PDF/,
-  "CommunityVerifyPage must not render private-ish community confirmation internals, protected-category inventories, or dossier-style public export actions."
+  /active_member_count|instant_pulse_available|public_policy|plain_language|hidden_by_design|Show publicly|Keep protected|Full member list|Raw member phone numbers|Member phone numbers|Sponsor details|Internal disputes|Private relay contacts|Internal trust history|Save PDF|buildGsnCommunityVerifyLinkPackage/,
+  "CommunityVerifyPage must not render private-ish community confirmation internals, protected-category inventories, dossier-style public export actions, or long copy packages."
 );
 
 assertFunctionNotContains(
