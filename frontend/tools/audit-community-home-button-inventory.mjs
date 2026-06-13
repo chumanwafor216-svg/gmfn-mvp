@@ -194,7 +194,7 @@ const nextActionGuideItemCount = countIdsInBlock(
   "NextActionGuide item manifest"
 );
 const frontQuickActionCount = countIdsInBlock(
-  /\{\[\s*\{[\s\S]*?id: "choose-community"[\s\S]*?\]\.map\(\(item, index\) => \(/,
+  /\{\[\s*\{[\s\S]*?id: "choose-community"[\s\S]*?\]\.map\(\(item(?:, index)?\) => \(/,
   "front quick-action grid"
 );
 const spotlightGuidedActionCount = countIdsInBlock(
@@ -253,7 +253,7 @@ assertContains(
 );
 
 assertContains(
-  /\{\[\s*\{[\s\S]*?id: "choose-community"[\s\S]*?id: "marketplace"[\s\S]*?id: "create-community"[\s\S]*?id: "join-community"[\s\S]*?id: "circle"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
+  /\{\[\s*\{[\s\S]*?id: "choose-community"[\s\S]*?id: "marketplace"[\s\S]*?id: "create-community"[\s\S]*?id: "join-community"[\s\S]*?id: "circle"[\s\S]*?\]\.map\(\(item(?:, index)?\) => \([\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
   "Community Home front quick-action grid must keep exactly the five front buttons before deeper tools."
 );
 

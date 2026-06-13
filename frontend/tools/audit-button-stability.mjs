@@ -820,7 +820,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/FinancePage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?stableHeight=\{isCompact \? 104 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?debugId="finance\.view-signals"[\s\S]*?debugId="finance\.toggle-overview"[\s\S]*?debugId="finance\.open-loans"[\s\S]*?debugId="finance\.toggle-events"/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?stableHeight=\{isCompact \? 52 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?debugId="finance\.view-signals"[\s\S]*?debugId="finance\.toggle-overview"[\s\S]*?debugId="finance\.open-loans"[\s\S]*?debugId="finance\.toggle-events"/,
   "Finance page must use shared stable CTA primitives and shared CTA resolution for tool cards, collapse controls, and support route actions."
 );
 

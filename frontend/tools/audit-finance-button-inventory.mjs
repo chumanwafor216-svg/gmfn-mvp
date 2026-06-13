@@ -134,8 +134,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?width: isCompact \? 50 : 64[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?FinanceGlyph name=\{item\.icon\} size=\{isCompact \? 34 : 44\}/,
-  "Finance main tool icons must sit on larger light embossed tiles, not heavy colored disks."
+  /debugId=\{`finance\.tool\.\$\{item\.id\}`\}[\s\S]*?width: isCompact \? 22 : 64[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?FinanceGlyph name=\{item\.icon\} size=\{isCompact \? 15 : 44\}/,
+  "Finance main tool icons must stay on compact light embossed phone tiles, not heavy colored disks."
 );
 
 assertContains(
@@ -144,7 +144,7 @@ assertContains(
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 104 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
+  /stableHeight=\{isCompact \? 52 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
   "Finance main tools must keep tightened fixed phone geometry."
 );
 

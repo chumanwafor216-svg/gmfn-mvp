@@ -603,7 +603,7 @@ function FinanceSectionLabel({
 }
 
 function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
-  const compactHeight = 104;
+  const compactHeight = 52;
   const desktopHeight = 132;
 
   return {
@@ -618,10 +618,10 @@ function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
       "0 14px 30px rgba(7,23,44,0.09), inset 0 1px 0 rgba(255,255,255,0.85)",
     color: "#07172C",
     display: "grid",
-    gap: isCompact ? 7 : 10,
+    gap: isCompact ? 3 : 10,
     justifyItems: "center",
     alignContent: "center",
-    padding: isCompact ? "13px 10px" : 16,
+    padding: isCompact ? "5px 6px" : 16,
     textAlign: "center",
     minWidth: 0,
     overflow: "hidden",
@@ -1942,6 +1942,7 @@ export default function FinancePage() {
               ? "repeat(2, minmax(0, 1fr))"
               : "repeat(4, minmax(0, 1fr))",
             gap: 12,
+            rowGap: isCompact ? 4 : 12,
           }}
         >
           {[
@@ -1986,15 +1987,15 @@ export default function FinancePage() {
               key={item.id}
               onClick={item.action}
               fullWidth
-              stableHeight={isCompact ? 104 : 132}
+              stableHeight={isCompact ? 52 : 132}
               debugId={`finance.tool.${item.id}`}
               style={financeToolButtonStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={{
-                  width: isCompact ? 50 : 64,
-                  height: isCompact ? 50 : 64,
+                  width: isCompact ? 22 : 64,
+                  height: isCompact ? 22 : 64,
                   borderRadius: 999,
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.86) 100%)",
@@ -2008,14 +2009,14 @@ export default function FinancePage() {
                     "0 12px 24px rgba(7,23,44,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
                 }}
               >
-                <FinanceGlyph name={item.icon} size={isCompact ? 34 : 44} />
+                <FinanceGlyph name={item.icon} size={isCompact ? 15 : 44} />
               </span>
               <span
                 style={{
-                  ...brandClampLines(2),
-                  fontSize: isCompact ? 14 : 15,
+                  ...(isCompact ? brandSingleLine() : brandClampLines(2)),
+                  fontSize: isCompact ? 11.5 : 15,
                   fontWeight: 950,
-                  lineHeight: 1.12,
+                  lineHeight: isCompact ? 1.05 : 1.12,
                 }}
               >
                 {item.label}
@@ -2023,6 +2024,7 @@ export default function FinancePage() {
               <span
                 style={{
                   ...brandClampLines(2),
+                  display: isCompact ? "none" : undefined,
                   color: "#52697F",
                   fontSize: isCompact ? 11 : 12,
                   fontWeight: 750,

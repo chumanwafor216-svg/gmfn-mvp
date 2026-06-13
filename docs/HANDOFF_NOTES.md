@@ -1,3 +1,52 @@
+### Finance phone rail stabilization (2026-06-13)
+
+- Trigger:
+  - robust phone geometry scan showed the Finance first-action grid overlapped
+    the authenticated bottom rail:
+    - `finance.tool.bank-accounts` at `799-903`;
+    - `finance.tool.export-data` at `799-903`;
+    - bottom rail at `793-835`.
+- Changed locally:
+  - `frontend/src/pages/FinancePage.tsx`
+    - compact main Finance tool tiles are fixed at `52px` high instead of
+      `104px`;
+    - compact icon marks are smaller light embossed marks;
+    - compact labels use one-line clamping and hidden detail text so two rows
+      fit above the bottom rail;
+    - desktop Finance tile height remains `132px`.
+  - `frontend/tools/audit-finance-actions.mjs`
+  - `frontend/tools/audit-finance-button-inventory.mjs`
+  - `frontend/tools/audit-finance-front-package.mjs`
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated Finance compact geometry guards from `104px` to `52px`.
+  - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - tightened the quick-action grid regex to accept the actual
+      `.map((item) => ...)` shape; without this, the protected freeze wrapper
+      over-counted later Community Home manifests as front quick actions.
+- Verification:
+  - Passed robust local phone scan for `/app/finance?community=3`:
+    - bottom rail at `793-835`;
+    - first Finance row at `683-735`;
+    - second Finance row at `739-791`;
+    - no route-local overlap.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run audit:finance-front-package`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+- Unabated truth:
+  - the Finance first-action buttons are intentionally compact on phone now;
+    this preserves all four first actions above the rail but leaves less room
+    for icon drama and helper detail;
+  - this is a route-local phone geometry fix, not a redesign of the Finance
+    information architecture;
+  - no push or Render deploy was done for this local continuation batch.
+
 ### Community Home phone rail stabilization (2026-06-13)
 
 - Trigger:
