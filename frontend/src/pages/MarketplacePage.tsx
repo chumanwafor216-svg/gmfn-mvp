@@ -2641,15 +2641,15 @@ function marketplaceOsRowStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceFrontLaneCardStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...marketplaceOsRowStyle(isCompact),
-    minHeight: isCompact ? 108 : 116,
-    height: isCompact ? 108 : "auto",
-    maxHeight: isCompact ? 108 : "none",
+    minHeight: isCompact ? 76 : 116,
+    height: isCompact ? 76 : "auto",
+    maxHeight: isCompact ? 76 : "none",
     borderRadius: isCompact ? 20 : 22,
     gridTemplateColumns: isCompact
-      ? "44px minmax(0, 1fr) 16px"
+      ? "36px minmax(0, 1fr) 16px"
       : "64px minmax(0, 1fr) 20px",
-    padding: isCompact ? 10 : 16,
-    gap: isCompact ? 8 : 16,
+    padding: isCompact ? 7 : 16,
+    gap: isCompact ? 6 : 16,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(250,253,255,0.98) 100%)",
   };
@@ -2661,9 +2661,9 @@ function marketplaceFrontLaneIconStyle(
 ): React.CSSProperties {
   return {
     ...marketplaceOsRowIconStyle(bg, isCompact),
-    width: isCompact ? 44 : 64,
-    height: isCompact ? 44 : 64,
-    borderRadius: isCompact ? 14 : 20,
+    width: isCompact ? 36 : 64,
+    height: isCompact ? 36 : 64,
+    borderRadius: isCompact ? 12 : 20,
   };
 }
 
@@ -2687,8 +2687,8 @@ function marketplaceFrontTagStyle(
     borderRadius: 999,
     background,
     color,
-    padding: isCompact ? "5px 8px" : "6px 10px",
-    fontSize: isCompact ? 11 : 12,
+    padding: isCompact ? "4px 7px" : "6px 10px",
+    fontSize: isCompact ? 10 : 12,
     fontWeight: 950,
     lineHeight: 1.15,
     whiteSpace: "nowrap",
@@ -2749,7 +2749,7 @@ function marketplaceOsRowTitleStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsRowDetailStyle(isCompact: boolean): React.CSSProperties {
   return {
     minWidth: 0,
-    display: "-webkit-box",
+    display: isCompact ? "none" : "-webkit-box",
     WebkitLineClamp: isCompact ? 3 : 2,
     WebkitBoxOrient: "vertical",
     overflow: "hidden",
@@ -5885,7 +5885,7 @@ export default function MarketplacePage() {
           <div
             style={{
               display: "grid",
-              gap: isCompact ? 10 : 12,
+              gap: isCompact ? 5 : 12,
             }}
           >
             <StableButton

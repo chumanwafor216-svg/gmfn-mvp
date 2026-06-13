@@ -1,3 +1,40 @@
+### Marketplace compact lane rail stabilization (2026-06-13)
+
+- Trigger:
+  - after Shop Assets was stabilized, the phone sweep showed Marketplace front
+    lanes still pushed route-local actions into the authenticated bottom rail;
+  - `Link Center` sat at `783-891` while the bottom rail started at `793`, and
+    `More / Community Tools` also overlapped the rail after the first compact
+    pass.
+- Changed locally:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - compact front lane rows are now `76px` on phone instead of `108px`;
+    - compact front lane icons, padding, tags, and inter-row spacing are tighter;
+    - secondary description lines are hidden on compact front lanes, leaving the
+      lane title and tags visible;
+    - desktop lane geometry remains unchanged.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the Marketplace stability guard to protect the new compact lane
+      geometry instead of the old `108px` phone rows.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-front-package`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local phone viewport for `/app/marketplace?community=3` showed:
+    - bottom rail at `793-835`;
+    - `Link Center` at `635-711`;
+    - `More / Community Tools` at `716-792`.
+- Unabated truth:
+  - this intentionally makes phone Marketplace front lanes more compressed;
+    the visible phone tradeoff is less explanatory text in exchange for no
+    first-viewport rail collision;
+  - no push or Render deploy was done for this local continuation batch.
+
 ### Shop Assets compact front-action stabilization (2026-06-13)
 
 - Trigger:
