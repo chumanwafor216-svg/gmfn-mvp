@@ -1,3 +1,26 @@
+### Publish checkpoint: phone rail stabilization batch (2026-06-13)
+
+- Pushed `main` from `11047f0` to `9651ce5` after the authenticated phone
+  rail sweep passed.
+- Triggered `.github/workflows/render-deploy.yml` manually with
+  `deploy_api=false`.
+- GitHub Actions run:
+  - `27472456417`
+  - workflow: `Trigger Render Deploy`
+  - result: success
+  - head SHA: `9651ce5b77bf231fce6c835138f0d36405fdbcbd`
+- Render frontend deploy hook accepted the request and returned:
+  - `dep-d8mob3gg4nts73fp6es0`
+- API deploy was not triggered:
+  - workflow log reported `Backend deploy needed: false`.
+- Unabated truth:
+  - this confirms Render accepted the frontend deploy request;
+  - this does not by itself prove the static site finished building/live
+    serving the new assets in the Render dashboard;
+  - the previous per-fix handoff entries said no push/deploy because that was
+    true when those local checkpoints were created; this entry supersedes that
+    for the batch as a whole.
+
 ### Authenticated phone rail sweep clean (2026-06-13)
 
 - Fresh robust phone sweep after the Community Home, Finance, Trust Passport,
