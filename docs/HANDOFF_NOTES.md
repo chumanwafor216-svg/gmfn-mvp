@@ -1,3 +1,35 @@
+### Deploy attempt for remaining public-label wording batch (2026-06-13)
+
+- Trigger:
+  - product owner said to continue and deploy whenever necessary;
+  - commit `08dd6884c8654279694820dada62b0807e905ed8` touched both frontend
+    visible labels and backend visible API/PDF strings.
+- GitHub Actions:
+  - manually dispatched `.github/workflows/render-deploy.yml` with
+    `deploy_api=true`;
+  - run id: `27463909674`;
+  - run conclusion: `failure`.
+- Frontend deploy result:
+  - frontend deploy hook accepted the request;
+  - Render returned frontend deploy id `dep-d8mirjrbc2fs73e1mog0`;
+  - live `https://gmfn-frontend.onrender.com` moved to
+    `assets/index-Byl7tSDF.js`;
+  - live Shop Gallery chunk `assets/ShopGalleryPage-2-h1JCY6.js` contains
+    `GSN ID` and no `GMFN ID` label text.
+- Backend deploy result:
+  - backend deploy did not run;
+  - workflow failed at `Require exact API deploy credentials`;
+  - `RENDER_API_KEY` is still empty and `RENDER_API_SERVICE_ID` is still empty
+    in the workflow environment;
+  - the workflow again refused to trust the older `RENDER_API_DEPLOY_HOOK_URL`
+    for backend-impacting deploys because earlier hook requests left live API
+    stale.
+- Unabated truth:
+  - frontend wording from `08dd688` is live on Render;
+  - backend wording from `08dd688` is pushed to GitHub but is not deployed to
+    `gmfn-api` until Render API credentials are configured or gmfn-api is
+    manually deployed from Render.
+
 ### GSN wording for remaining public labels (2026-06-13)
 
 - Trigger:
