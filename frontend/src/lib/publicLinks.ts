@@ -1,6 +1,7 @@
 const DEFAULT_PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com";
 const DEFAULT_PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com";
 export const PUBLIC_SHOP_DIARIES_ANCHOR = "shop-diaries";
+export const PUBLIC_SHOP_VAULT_ANCHOR = "private-vault";
 const SUSPENDED_PUBLIC_FRONTEND_HOSTS = new Set(["frontend.onrender.com"]);
 
 function cleanText(value: unknown): string {
@@ -374,6 +375,16 @@ export function publicShopSocialPreviewUrl(params: {
   block?: string | number | null;
 }): string {
   const path = publicShopSocialPreviewPath(params);
+  return path ? publicApiUrl(path) : "";
+}
+
+export function publicVaultRequestPreviewPath(params: { gmfnId: string }): string {
+  const ownerId = cleanText(params.gmfnId);
+  return ownerId ? `/share/vault-request/${encodeURIComponent(ownerId)}` : "";
+}
+
+export function publicVaultRequestPreviewUrl(params: { gmfnId: string }): string {
+  const path = publicVaultRequestPreviewPath(params);
   return path ? publicApiUrl(path) : "";
 }
 

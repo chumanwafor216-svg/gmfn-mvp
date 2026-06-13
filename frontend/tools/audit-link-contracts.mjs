@@ -862,8 +862,20 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /async function askForVaultAccess\(\)[\s\S]*?const ownerId = firstMeaningful\(effectiveShop\?\.gmfnId, gmfnId\);[\s\S]*?const vaultRequestPreviewLink = firstMeaningful\([\s\S]*?publicShopSocialPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?absoluteShopShareLink,[\s\S]*?absoluteShopLink[\s\S]*?const requestText = \[[\s\S]*?request a private Vault access link[\s\S]*?vaultRequestPreviewLink,[\s\S]*?selected offers you do not show on the public page[\s\S]*?openOwnerWhatsAppChat\([\s\S]*?requestText[\s\S]*?const copied = await safeCopy\(requestText\);/,
-  "Public Shop Vault access requests must include a safe branded public shop preview URL in the WhatsApp/copy text while keeping the private Vault link owner-issued."
+  /const absoluteVaultRequestPreviewLink = useMemo\(\(\) => \{[\s\S]*?publicVaultRequestPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyVaultRequestLink\(\)[\s\S]*?safeCopy\(absoluteVaultRequestPreviewLink\)[\s\S]*?Vault request link copied\.[\s\S]*?async function askForVaultAccess\(\)[\s\S]*?if \(!absoluteVaultRequestPreviewLink\)[\s\S]*?const requestText = \[[\s\S]*?request a private Vault access link[\s\S]*?absoluteVaultRequestPreviewLink,[\s\S]*?selected offers you do not show on the public page[\s\S]*?openOwnerWhatsAppChat\([\s\S]*?requestText[\s\S]*?const copied = await safeCopy\(requestText\);[\s\S]*?id=\{PUBLIC_SHOP_VAULT_ANCHOR\}[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"/,
+  "Public Shop Vault access requests must use the Vault-request preview URL and Vault copy handler, not the general public shop link."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /async function askForVaultAccess\(\)[\s\S]*?publicShopSocialPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?absoluteShopShareLink[\s\S]*?absoluteShopLink/,
+  "Vault access requests must not fall back to public shop preview/root links."
+);
+
+assertContains(
+  "src/lib/publicLinks.ts",
+  /export const PUBLIC_SHOP_VAULT_ANCHOR = "private-vault";[\s\S]*?export function publicVaultRequestPreviewPath\(params: \{ gmfnId: string \}\): string \{[\s\S]*?`\/share\/vault-request\/\$\{encodeURIComponent\(ownerId\)\}`[\s\S]*?export function publicVaultRequestPreviewUrl\(params: \{ gmfnId: string \}\): string \{[\s\S]*?publicApiUrl\(path\)/,
+  "Public link helpers must expose a dedicated Vault request preview route separate from public shop sharing."
 );
 
 assertContains(

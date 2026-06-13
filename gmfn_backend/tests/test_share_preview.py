@@ -97,3 +97,30 @@ def test_share_shop_card_svg_remains_as_fallback(client, monkeypatch):
     assert "Ada Trust Shop" in res.text
     assert "TAP TO OPEN" in res.text
     assert "pilot.gsn.example/shop" not in res.text
+
+
+def test_vault_request_preview_is_vault_scoped(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
+    _seed_public_shop()
+
+    res = client.get("/share/vault-request/GMFN-U-SHARE")
+
+    assert res.status_code == 200
+    assert "Ada Trust Shop | GSN Private Vault" in res.text
+    assert "Request owner-issued access to selected private Vault offers." in res.text
+    assert "https://api.gsn.example/share/vault-request/GMFN-U-SHARE/card.png" in res.text
+    assert "https://pilot.gsn.example/shop/GMFN-U-SHARE#private-vault" in res.text
+    assert "/share/shop/GMFN-U-SHARE" not in res.text
+
+
+def test_vault_request_card_png_uses_vault_branding(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+
+    res = client.get("/share/vault-request/GMFN-U-SHARE/card.png")
+
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("image/png")
+    assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(res.content) > 10_000

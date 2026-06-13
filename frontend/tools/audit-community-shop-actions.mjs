@@ -173,8 +173,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.spotlight\.phone-call"[\s\S]*?debugId="shop-gallery\.spotlight\.contact\.choose"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"/,
-  "Public Shop visitor actions must keep traceable Share, Verify, WhatsApp, Spotlight Chat/Call chooser, Vault request, and Vault copy controls."
+  /debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?debugId="shop-gallery\.spotlight\.phone-call"[\s\S]*?debugId="shop-gallery\.spotlight\.contact\.choose"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"/,
+  "Public Shop visitor actions must keep traceable Share, Verify, WhatsApp, Spotlight Chat/Call chooser, Vault request, and Vault-request copy controls."
 );
 
 assertContains(

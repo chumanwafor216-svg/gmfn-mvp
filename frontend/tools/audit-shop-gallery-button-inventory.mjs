@@ -186,7 +186,7 @@ const expectedActionOrder = [
   "shop-gallery.spotlight.phone-call",
   "shop-gallery.spotlight.contact.choose",
   "shop-gallery.ask-vault-access",
-  "shop-gallery.copy-vault-shop-link",
+  "shop-gallery.copy-vault-request-link",
   "shop-gallery.reconnect-owner-shop",
   "shop-gallery.sign-in-reconnect-shop",
   "shop-gallery.open-marketplace-refresh",

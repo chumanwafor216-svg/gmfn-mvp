@@ -1,3 +1,50 @@
+### Vault request link scoped away from public shop copy (2026-06-13)
+
+- Trigger:
+  - owner correctly challenged the previous branded Vault-request fix because
+    it reused the public shop preview URL; the Vault action should not copy or
+    imply the whole public shop page.
+- Changed:
+  - `gmfn_backend/app/api/routes/share_preview.py`
+    - added `/share/vault-request/{gmfn_id}` as a branded Open Graph/Twitter
+      preview page for Vault requests;
+    - added `/share/vault-request/{gmfn_id}/card.png` with `PRIVATE VAULT`
+      card wording;
+    - the preview routes users to `/shop/{gmfn_id}#private-vault`, not the
+      Shop Diaries/public-shop root.
+  - `frontend/src/lib/publicLinks.ts`
+    - added `PUBLIC_SHOP_VAULT_ANCHOR` and
+      `publicVaultRequestPreviewUrl()`.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - `Ask Vault` now uses only the Vault-request preview link;
+    - removed the fallback to public-shop preview/root links from Vault
+      requests;
+    - changed the Vault advert secondary action from `Copy shop link` to
+      `Copy Vault request`, wired to a new Vault-specific copy handler.
+  - frontend audit guards were updated so the old public-shop fallback and old
+    `copy-vault-shop-link` contract cannot return unnoticed.
+  - `gmfn_backend/tests/test_share_preview.py`
+    - added tests for the Vault-request preview page and PNG card.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\share_preview.py`
+    passed.
+  - `python -m pytest -q gmfn_backend\tests\test_share_preview.py` passed
+    with 5 tests.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:share-tag-actions` passed.
+  - `npm run audit:shop-gallery-button-inventory` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this creates a safe branded Vault-request link, not the real private
+    `/vault/:token` link;
+  - only the owner-created private Vault link can open a selected private
+    block/offer;
+  - the request preview still lands on the public shop page anchor because
+    visitors need a safe public place to start the request, but it no longer
+    advertises or copies the public shop root as the Vault link.
+
 ### Branded Vault access request messages (2026-06-13)
 
 - Trigger:

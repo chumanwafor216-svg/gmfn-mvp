@@ -171,6 +171,12 @@ def _shop_frontend_url(
     return f"{base}{path}"
 
 
+def _vault_request_frontend_url(gmfn_id: str) -> str:
+    base = _public_frontend_origin()
+    path = f"/shop/{quote(_safe_str(gmfn_id), safe='')}#private-vault"
+    return f"{base}{path}"
+
+
 def _share_card_url(
     request: Request,
     gmfn_id: str,
@@ -188,6 +194,12 @@ def _share_card_url(
     return f"{base}{path}{'?' + '&'.join(query) if query else ''}"
 
 
+def _vault_request_card_url(request: Request, gmfn_id: str) -> str:
+    base = _public_api_origin(request)
+    path = f"/share/vault-request/{quote(_safe_str(gmfn_id), safe='')}/card.png"
+    return f"{base}{path}"
+
+
 def _share_page_url(
     request: Request,
     gmfn_id: str,
@@ -203,6 +215,12 @@ def _share_page_url(
     if block:
         query.append(f"block={quote(str(block), safe='')}")
     return f"{base}{path}{'?' + '&'.join(query) if query else ''}"
+
+
+def _vault_request_page_url(request: Request, gmfn_id: str) -> str:
+    base = _public_api_origin(request)
+    path = f"/share/vault-request/{quote(_safe_str(gmfn_id), safe='')}"
+    return f"{base}{path}"
 
 
 def _money_text(product: Optional[MarketplaceProduct]) -> str:
@@ -267,6 +285,21 @@ def _preview_payload(
         "description": description,
         "price": _money_text(product),
     }
+
+
+def _vault_request_payload(db: Session, *, gmfn_id: str) -> dict[str, str]:
+    payload = _preview_payload(db, gmfn_id=gmfn_id, product_id=None)
+    shop_name = payload["shop_name"]
+    payload.update(
+        {
+            "product_line": "Private Vault request",
+            "trust_line": "Owner-issued private link only",
+            "title": f"{shop_name} | GSN Private Vault",
+            "description": "Request owner-issued access to selected private Vault offers.",
+            "price": "",
+        }
+    )
+    return payload
 
 
 def _svg_text_lines(text: str, *, max_chars: int, max_lines: int) -> list[str]:
@@ -387,6 +420,8 @@ def _draw_share_card_png(
     *,
     target_url: str,
     block: Optional[int],
+    eyebrow: str = "TRUSTED SHOP",
+    block_label_override: str = "",
 ) -> bytes:
     image = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), "#F7FAFF")
     draw = ImageDraw.Draw(image)
@@ -430,7 +465,7 @@ def _draw_share_card_png(
     font_cta = _font(28, bold=True)
 
     draw.text((130, 100), "GSN", font=font_badge, fill="#D6AA45")
-    draw.text((272, 100), "TRUSTED SHOP", font=font_trusted, fill="#F7FAFF")
+    draw.text((272, 100), eyebrow, font=font_trusted, fill="#F7FAFF")
 
     price = payload["price"]
     if price:
@@ -475,7 +510,7 @@ def _draw_share_card_png(
     cta_width = _text_width(draw, cta_text, font_cta)
     draw.text((cta_center[0] - cta_width / 2, 410), cta_text, font=font_cta, fill="#FFFFFF")
 
-    block_label = f"Block {int(block)}" if block else "Public shop"
+    block_label = block_label_override or (f"Block {int(block)}" if block else "Public shop")
     chip_y = 502
     block_width = int(_text_width(draw, block_label, font_chip)) + 62
     block_right = 94 + max(146, block_width)
@@ -490,6 +525,85 @@ def _draw_share_card_png(
     out = BytesIO()
     image.convert("RGB").save(out, format="PNG", optimize=True)
     return out.getvalue()
+
+
+@router.get("/vault-request/{gmfn_id}", response_class=HTMLResponse)
+def public_vault_request_share_preview(
+    gmfn_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    payload = _vault_request_payload(db, gmfn_id=gmfn_id)
+    target_url = _vault_request_frontend_url(payload["gmfn_id"])
+    share_url = _vault_request_page_url(request, payload["gmfn_id"])
+    image_url = _vault_request_card_url(request, payload["gmfn_id"])
+    title = escape(payload["title"])
+    description = escape(payload["description"])
+    target = escape(target_url, quote=True)
+
+    html = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content="{description}" />
+    <link rel="canonical" href="{escape(share_url, quote=True)}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Global Support Network" />
+    <meta property="og:title" content="{title}" />
+    <meta property="og:description" content="{description}" />
+    <meta property="og:url" content="{escape(share_url, quote=True)}" />
+    <meta property="og:image" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:secure_url" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GSN Private Vault request poster" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{title}" />
+    <meta name="twitter:description" content="{description}" />
+    <meta name="twitter:image" content="{escape(image_url, quote=True)}" />
+    <meta http-equiv="refresh" content="1;url={target}" />
+    <style>
+      body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: #061827; color: #fff; font-family: Arial, sans-serif; }}
+      main {{ max-width: 620px; margin: 24px; padding: 28px; border-radius: 28px; background: #fff; color: #07172C; }}
+      a {{ color: #0B4EA2; font-weight: 800; }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Opening the GSN Private Vault request...</p>
+      <p><a href="{target}">Open Vault request now</a></p>
+    </main>
+  </body>
+</html>"""
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@router.get("/vault-request/{gmfn_id}/card.png")
+def public_vault_request_share_card_png(
+    gmfn_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Response:
+    payload = _vault_request_payload(db, gmfn_id=gmfn_id)
+    target_url = _vault_request_frontend_url(payload["gmfn_id"])
+    png = _draw_share_card_png(
+        payload,
+        target_url=target_url,
+        block=None,
+        eyebrow="PRIVATE VAULT",
+        block_label_override="Vault request",
+    )
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 
 @router.get("/shop/{gmfn_id}", response_class=HTMLResponse)

@@ -21,12 +21,14 @@ import {
 } from "../lib/api";
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
+  PUBLIC_SHOP_VAULT_ANCHOR,
   publicFrontendUrl,
   publicShopPath,
   publicShopSharePath,
   publicShopShareUrl,
   publicShopSocialPreviewUrl,
   publicShopUrl,
+  publicVaultRequestPreviewUrl,
 } from "../lib/publicLinks";
 import { buildGsnPublicShopLinkPackage } from "../lib/gsnSnapshotPaper";
 import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
@@ -2130,6 +2132,11 @@ export default function ShopGalleryPage() {
     return ownerId ? publicShopShareUrl({ gmfnId: ownerId }) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
+  const absoluteVaultRequestPreviewLink = useMemo(() => {
+    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    return ownerId ? publicVaultRequestPreviewUrl({ gmfnId: ownerId }) : "";
+  }, [effectiveShop?.gmfnId, gmfnId]);
+
   const shopRootPath = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
     return ownerId ? publicShopPath(ownerId) : "";
@@ -2396,6 +2403,29 @@ export default function ShopGalleryPage() {
     });
   }
 
+  async function copyVaultRequestLink() {
+    if (shopLoadFailed) {
+      setNotice({
+        tone: "error",
+        text: "This Vault request link is not active yet. Ask the owner to refresh the shop link from Marketplace before copying it.",
+      });
+      return;
+    }
+
+    if (!absoluteVaultRequestPreviewLink) {
+      setNotice({ tone: "error", text: "Vault request link is not ready yet." });
+      return;
+    }
+
+    const copied = await safeCopy(absoluteVaultRequestPreviewLink);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "Vault request link copied."
+        : "Clipboard copy was blocked. Ask the owner for a private Vault link.",
+    });
+  }
+
   function buildProductSocialShareTarget(product: ShopProduct) {
     const blockLabel = publicShopBlockLabel(product);
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
@@ -2612,16 +2642,18 @@ export default function ShopGalleryPage() {
       effectiveShop?.ownerName,
       "this shop"
     );
-    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
-    const vaultRequestPreviewLink = firstMeaningful(
-      ownerId ? publicShopSocialPreviewUrl({ gmfnId: ownerId }) : "",
-      absoluteShopShareLink,
-      absoluteShopLink
-    );
+
+    if (!absoluteVaultRequestPreviewLink) {
+      setNotice({
+        tone: "error",
+        text: "Vault request link is not ready yet. Ask the owner directly for a private Vault link.",
+      });
+      return;
+    }
 
     const requestText = [
       `Hello, I would like to request a private Vault access link for ${shopTitle}.`,
-      vaultRequestPreviewLink,
+      absoluteVaultRequestPreviewLink,
       "Please share any selected offers you do not show on the public page.",
     ].filter(Boolean).join("\n");
 
@@ -4360,6 +4392,7 @@ export default function ShopGalleryPage() {
           </section>
 
           <section
+            id={PUBLIC_SHOP_VAULT_ANCHOR}
             className="public-shop-section public-shop-vault-ad"
             style={{
               position: "relative",
@@ -4442,10 +4475,10 @@ export default function ShopGalleryPage() {
                   {isCompact ? "Ask Vault" : "Ask for Vault access"}
                 </PrimaryButton>
                 <SecondaryButton
-                  onClick={copyShopLink}
+                  onClick={copyVaultRequestLink}
                   minWidth={0}
                   stableHeight={isCompact ? 52 : 48}
-                  debugId="shop-gallery.copy-vault-shop-link"
+                  debugId="shop-gallery.copy-vault-request-link"
                   style={{
                     ...secondaryBtn(false),
                     minHeight: isCompact ? 52 : 48,
@@ -4457,7 +4490,7 @@ export default function ShopGalleryPage() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  Copy shop link
+                  {isCompact ? "Copy Vault" : "Copy Vault request"}
                 </SecondaryButton>
               </div>
             </div>
