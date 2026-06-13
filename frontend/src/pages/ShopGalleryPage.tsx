@@ -2612,8 +2612,18 @@ export default function ShopGalleryPage() {
       effectiveShop?.ownerName,
       "this shop"
     );
+    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    const vaultRequestPreviewLink = firstMeaningful(
+      ownerId ? publicShopSocialPreviewUrl({ gmfnId: ownerId }) : "",
+      absoluteShopShareLink,
+      absoluteShopLink
+    );
 
-    const requestText = `Hello, I would like to request a private Vault access link for ${shopTitle}. Please share any selected offers you do not show on the public page.`;
+    const requestText = [
+      `Hello, I would like to request a private Vault access link for ${shopTitle}.`,
+      vaultRequestPreviewLink,
+      "Please share any selected offers you do not show on the public page.",
+    ].filter(Boolean).join("\n");
 
     if (
       openOwnerWhatsAppChat(
@@ -2638,7 +2648,7 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    const copied = await safeCopy(`${requestText}\n${absoluteShopLink}`);
+    const copied = await safeCopy(requestText);
     setNotice({
       tone: copied ? "success" : "error",
       text: copied

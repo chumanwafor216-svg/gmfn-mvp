@@ -861,6 +861,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /async function askForVaultAccess\(\)[\s\S]*?const ownerId = firstMeaningful\(effectiveShop\?\.gmfnId, gmfnId\);[\s\S]*?const vaultRequestPreviewLink = firstMeaningful\([\s\S]*?publicShopSocialPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?absoluteShopShareLink,[\s\S]*?absoluteShopLink[\s\S]*?const requestText = \[[\s\S]*?request a private Vault access link[\s\S]*?vaultRequestPreviewLink,[\s\S]*?selected offers you do not show on the public page[\s\S]*?openOwnerWhatsAppChat\([\s\S]*?requestText[\s\S]*?const copied = await safeCopy\(requestText\);/,
+  "Public Shop Vault access requests must include a safe branded public shop preview URL in the WhatsApp/copy text while keeping the private Vault link owner-issued."
+);
+
+assertContains(
   "server.mjs",
   /const publicFrontendOrigin[\s\S]*?gmfn-frontend\.onrender\.com[\s\S]*?function metaTags\(meta\)[\s\S]*?og:image[\s\S]*?og:url[\s\S]*?twitter:card[\s\S]*?async function serveShopHtml[\s\S]*?async function serveShareCardProxy/,
   "The frontend server must inject route-specific Open Graph tags for public shop routes and proxy the shop preview image through the frontend domain for WhatsApp."

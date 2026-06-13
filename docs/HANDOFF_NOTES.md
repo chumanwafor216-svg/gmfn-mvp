@@ -1,3 +1,36 @@
+### Branded Vault access request messages (2026-06-13)
+
+- Trigger:
+  - owner WhatsApp screenshot showed the private Vault access request being
+    sent as a plain text bubble, while the desired behavior is the branded
+    `GSN Trusted Link` preview card.
+- Changed:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - `askForVaultAccess()` now inserts the safe public shop social preview
+      URL into the WhatsApp/copy message before the final request sentence;
+    - the preview URL prefers `/share/shop/{gmfnId}` and falls back to the
+      public shop share/root link;
+    - fallback clipboard copy now copies the exact same branded-preview-ready
+      message that WhatsApp receives.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - added a guard that Vault access requests must include a safe branded
+      public shop preview URL while keeping the private Vault link
+      owner-issued.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:share-tag-actions` passed.
+  - `npm run audit:shop-gallery-button-inventory` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this only affects fresh Vault request messages generated after deploy;
+  - already-sent WhatsApp bubbles and WhatsApp's preview cache will not
+    rewrite themselves;
+  - the private Vault access link remains something the owner sends back
+    intentionally, not something the public requester exposes or receives
+    automatically.
+
 ### WhatsApp shop preview URL ordering fix (2026-06-13)
 
 - Trigger:
