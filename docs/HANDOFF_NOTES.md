@@ -1,3 +1,26 @@
+### Render API branch correction and live deploy verified (2026-06-13)
+
+- Trigger:
+  - product owner reported the API service was still live on old commit
+    `22aeb87` (`Rescue Community Home taps from app shell`);
+  - inspection showed `gmfn-api` Render service was connected to
+    `feature/vault-shops` while the active pilot/deploy branch is `main`.
+- Corrected by product owner in Render:
+  - `gmfn-api` service `srv-d7h2c8ugvqtc73eshtd0` branch changed from
+    `feature/vault-shops` to `main`;
+  - manual API deploy completed live for commit
+    `a31a53e` (`Use ASCII fallbacks on public TrustSlip routes`).
+- Verification:
+  - Passed `npm run audit:live-api-identity-routes`.
+  - GitHub `Backend Tests` are green for latest pushed backend-impacting
+    commits through `a31a53e`.
+- Unabated truth:
+  - the API is no longer stuck on `22aeb87`;
+  - Render deploy workflow still lacks `RENDER_API_KEY` /
+    `RENDER_API_SERVICE_ID`, so exact automated backend deploys remain blocked;
+  - manual Render deploy from `main` is the current trusted API deploy path
+    until those secrets are configured.
+
 ### Public TrustSlip route ASCII fallback cleanup (2026-06-13)
 
 - Trigger:
