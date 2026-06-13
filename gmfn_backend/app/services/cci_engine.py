@@ -44,7 +44,7 @@ def compute_cci_from_graph(graph: Dict[str, Any]) -> Dict[str, Any]:
     Phase 3 CCI engine.
 
     This does NOT replace TrustScore.
-    It computes a graph-derived Cross-Clan Integrity (CCI) score for internal/admin use.
+    It computes a graph-derived Cross-Community Integrity (CCI) score for internal/admin use.
     """
 
     summary = graph.get("summary") or {}
@@ -161,7 +161,7 @@ def compute_cci_from_graph(graph: Dict[str, Any]) -> Dict[str, Any]:
             "inbound_edges": inbound_edges,
             "outbound_edges": outbound_edges,
         },
-        "note": "CCI is cross-clan graph integrity, not a replacement for TrustScore or TrustSlip.",
+        "note": "CCI is cross-community graph consistency, not a replacement for TrustScore or TrustSlip.",
     }
 
     return {

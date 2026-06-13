@@ -1,3 +1,35 @@
+### CCI/protocol readiness community wording cleanup (2026-06-13)
+
+- Trigger:
+  - continued visible-language sweep after the admin panel cleanup;
+  - targeted scan found backend-returned/admin-visible wording still saying
+    `Cross-Clan Integrity`, `cross-clan graph integrity`, and `clan admin`.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/pilot_readiness.py`
+    - changed guarantor-flow readiness guidance from `clan admin` to
+      `community admin`.
+  - `gmfn_backend/app/services/cci_engine.py`
+    - changed the CCI explanatory note to `cross-community graph
+      consistency`;
+    - updated the implementation docstring to Cross-Community wording.
+  - `gmfn_backend/app/services/cci_service.py`
+    - updated the implementation docstring to Cross-Community wording.
+  - `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+    - changed the generated PDF scoring block subtitle from
+      `Cross-Clan Integrity` to `Cross-Community Integrity`.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - extended the guard to cover these backend-returned/document strings.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs`.
+  - Passed `python -m py_compile gmfn_backend\app\api\routes\pilot_readiness.py gmfn_backend\app\services\cci_engine.py gmfn_backend\app\services\cci_service.py gmfn_backend\app\services\trust_timeline_pdf_service.py`.
+  - Passed `git diff --check`; it printed the existing LF-to-CRLF warning for
+    the audit script only.
+- Unabated truth:
+  - this keeps the CCI acronym and scoring contracts unchanged;
+  - it only changes explanatory wording and generated-document wording.
+
 ### Admin/loan panel visible community wording cleanup (2026-06-13)
 
 - Trigger:

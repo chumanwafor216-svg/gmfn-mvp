@@ -259,7 +259,7 @@ def _draw_scoring_block(
         c,
         y,
         "2. Trust, CCI & TrustSlip Summary",
-        "High-level integrity summary derived from TrustEvents, trust scoring, Cross-Clan Integrity, and current support context.",
+        "High-level integrity summary derived from TrustEvents, trust scoring, Cross-Community Integrity, and current support context.",
     )
 
     col_gap = 8 * mm

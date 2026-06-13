@@ -223,7 +223,7 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
                 "Service tests cover guarantor approval, auto-approval when enough pledged support is present, and release of locked exposure.",
                 "Repayment proof now covers guarantor exposure release after full repayment, and earnings tests show rewards stay pending until the loan is repaid.",
                 "Frontend support surfaces show fit suggestions, selected guarantors, line-by-line decisions, and guarantor earnings routes.",
-                "Guarantor invite permission is locked to the borrower who owns the loan or a clan admin; ordinary non-borrower members are forbidden.",
+                "Guarantor invite permission is locked to the borrower who owns the loan or a community admin; ordinary non-borrower members are forbidden.",
                 "Guarantor Earnings now tells users that earned value is a visible record, not an automatic payout.",
             ],
             remaining=[

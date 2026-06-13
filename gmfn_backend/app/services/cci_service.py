@@ -25,7 +25,7 @@ def _clamp(value: Decimal, min_v: Decimal, max_v: Decimal) -> Decimal:
 
 def compute_cci_from_summary(summary: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Deterministic Cross-Clan Integrity (CCI) score derived from TrustGraph summary.
+    Deterministic Cross-Community Integrity (CCI) score derived from TrustGraph summary.
     Pure calculation only. No DB reads/writes.
     """
 
