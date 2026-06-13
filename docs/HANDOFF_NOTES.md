@@ -1,3 +1,55 @@
+### Broad local source validation before phone-bottom pass (2026-06-13)
+
+- Trigger:
+  - after the button/lane checkpoint passed, continued the main schedule into
+    app-wide route, language, response, proof, finance, trust, loan, admin, and
+    tap-stability cages.
+- Verification:
+  - Passed broad polish gates:
+    - `audit:action-response-protocol`;
+    - `audit:gsn-visible-language`;
+    - `audit:icon-protocol`;
+    - `audit:protocol-readiness`;
+    - `audit:route-fallthrough`;
+    - `audit:inner-navigation-origin`;
+    - `audit:button-stability`;
+    - `audit:tap-stability`.
+  - Passed entry gates:
+    - `audit:entry-auth`;
+    - `audit:entry-flow-polish`.
+  - Passed trust/proof/loan/admin gates:
+    - `audit:trust-actions`;
+    - `audit:proof-surfaces`;
+    - `audit:loans-actions`;
+    - `audit:admin-ops-actions`;
+    - `audit:payout-details-protocol`;
+    - `audit:demand-box-front-package`.
+  - Passed Finance lane gates:
+    - `audit:finance-actions`;
+    - `audit:finance-banking-rails-lane`;
+    - `audit:finance-money-movement-lanes`;
+    - `audit:finance-money-summary-lane`;
+    - `audit:finance-records-events-lane`;
+    - `audit:finance-secondary-route-tools`;
+    - `audit:finance-signals-readiness-lane`.
+  - Passed Trust Passport lane gates:
+    - `audit:trust-passport-lane-map`;
+    - `audit:trust-passport-button-inventory`;
+    - `audit:trust-passport-community-confirmation-lane`;
+    - `audit:trust-passport-evidence-story-lane`;
+    - `audit:trust-passport-finance-discipline-lane`;
+    - `audit:trust-passport-repair-lane`.
+  - Passed `npm --prefix frontend run lint`.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM` while Vite started esbuild, then passed with approved
+    escalation.
+- Unabated truth:
+  - the local source/package gates are very clean right now;
+  - this still is not a freeze and does not replace real phone testing;
+  - the next honest phase is the final phone-bottom/button stabilization pass:
+    check browser chrome overlap, bottom rail spacing, tap feel, crowded action
+    stacks, and first-viewport calmness on the actual phone.
+
 ### Button and lane validation checkpoint before final phone pass (2026-06-13)
 
 - Trigger:
