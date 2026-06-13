@@ -52211,7 +52211,7 @@ GSN-branded invite composer and invite-entry continuity.
   - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
     - `community-confirmation-policy.copy` sat at top `758`, bottom `810`
       against the bottom rail band `785-844`.
-- Changed locally, not pushed yet:
+- Changed, pushed, and frontend deploy triggered:
   - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
     - kept the policy Refresh and Copy summary controls compact on phone so
       they sit side by side above the bottom rail instead of stacking into it.
@@ -52233,3 +52233,9 @@ GSN-branded invite composer and invite-entry continuity.
     under expected admin access, not live backend data correctness;
   - no global navigation, app shell, auth, backend, or Render settings were
     changed.
+  - pushed to `main` at commit `dcbdd2e`;
+  - GitHub Actions run `27474472314` completed successfully and Render
+    accepted the frontend deploy hook for `dcbdd2e`, returning deploy id
+    `dep-d8mpi7btqb8s73cd9v80`;
+  - API deploy was intentionally skipped (`deploy_api=false`), because no
+    backend files changed.
