@@ -52093,7 +52093,7 @@ GSN-branded invite composer and invite-entry continuity.
   - `frontend/src/pages/NotificationsPage.tsx`
     - `notifications.focus.primary` sat at top `825`, bottom `879` against the
       same rail band, leaving the first focus action partially unsafe.
-- Changed locally, not pushed yet:
+- Changed, pushed, and frontend deploy triggered:
   - `frontend/src/pages/CCIReadingPage.tsx`
     - added phone-only clearance before the CCI explanation action row.
   - `frontend/src/pages/NotificationsPage.tsx`
@@ -52141,7 +52141,7 @@ GSN-branded invite composer and invite-entry continuity.
   - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
     - `community-confirmation-inbox.refresh` sat at top `827`, bottom `879`,
       with taps in the overlap hitting `app-layout.bottom-nav.marketplace`.
-- Changed locally, not pushed yet:
+- Changed, pushed, and frontend deploy triggered:
   - `frontend/src/pages/LoanWorkbenchPage.tsx`
     - increased phone-only clearance before the main workbench action grid.
   - `frontend/src/pages/TrustScorePage.tsx`
@@ -52175,4 +52175,9 @@ GSN-branded invite composer and invite-entry continuity.
   - several secondary actions now begin just below the first phone viewport,
     which is an intentional tap-safety tradeoff until the later bottom
     stabilization phase revisits page density more deeply;
-  - no Render deploy has been claimed for this local batch yet.
+  - pushed to `main` at commit `a8cf022`;
+  - GitHub Actions run `27474179068` completed successfully and Render
+    accepted the frontend deploy hook for `a8cf022`, returning deploy id
+    `dep-d8mpch0g4nts73fq5hrg`;
+  - API deploy was intentionally skipped (`deploy_api=false`), because no
+    backend files changed.
