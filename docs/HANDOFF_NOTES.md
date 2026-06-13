@@ -1,3 +1,29 @@
+### Full lint and backend suite validation checkpoint (2026-06-13)
+
+- Trigger:
+  - continued after the proof-surface audit guard was aligned with trimmed
+    public copy links;
+  - older handoff notes said full frontend lint had previously failed in
+    unrelated files, so the current truth needed to be checked instead of
+    relying on stale notes.
+- Verification:
+  - Passed `npm --prefix frontend run lint`.
+  - Initial full backend test attempts inside the sandbox failed with Windows
+    `PermissionError` while pytest tried to create or clean temp directories
+    under `%TEMP%`, `C:\tmp`, and then `.pytest_tmp`; those were environment
+    permission failures, not assertion failures.
+  - Re-ran outside the sandbox with repo-local temp path:
+    `python -m pytest -q gmfn_backend\tests --basetemp=.pytest_tmp`.
+  - Full backend suite passed: `246 passed, 54 warnings`.
+  - Removed generated `.pytest_tmp` and `test_uploads` directories after
+    verifying their resolved paths were inside the repo.
+- Unabated truth:
+  - the current frontend lint risk recorded in older notes is no longer true;
+  - the full backend suite is green in an unsandboxed run;
+  - warnings remain, mainly SQLAlchemy sqlite datetime adapter deprecations and
+    one Pydantic v2 `__fields_set__` deprecation in marketplace code, but they
+    are warnings rather than failing behavior.
+
 ### Proof-surface audit aligned with trimmed public copy links (2026-06-13)
 
 - Trigger:
