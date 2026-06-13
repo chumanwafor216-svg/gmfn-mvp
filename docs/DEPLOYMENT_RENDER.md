@@ -119,9 +119,11 @@ or Render API deploy request was accepted, or Render auto-deploy is confirmed in
 the Render dashboard.
 
 Backend-impacting deploys also run a live API identity-contract check against
-`https://gmfn-api.onrender.com/openapi.json`. The check must find the signed-in
-identity routes used by Trust Passport / Identity Integrity and the GB sort-code
-fields used by payout details:
+`https://gmfn-api.onrender.com/openapi.json` and a public community verification
+payload check against `/verify/community/GSN-C-000001`. The check must find the
+signed-in identity routes used by Trust Passport / Identity Integrity, the GB
+sort-code fields used by payout details, and a trimmed public community
+verification response that does not expose protected-category inventory:
 
 - `/entry/signed-in/phone/start`
 - `/entry/signed-in/phone/confirm`
@@ -130,11 +132,15 @@ fields used by payout details:
 - `/withdrawal-destinations/me`
 - `WithdrawalDestinationIn.sort_code`
 - `WithdrawalDestinationIn.bank_sort_code`
+- no `hidden_by_design` field or protected-category terms such as full member
+  lists, raw phone numbers, sponsor details, internal disputes, private relay
+  contacts, or internal trust history in the public community verification
+  response
 
 If the deploy hook is accepted but this check fails, the API service is still
 serving an older backend build or the wrong Render service/branch. Do not ask
-the pilot phone to retest identity completion until the live contract check
-passes.
+the pilot phone to retest identity completion or public community QR privacy
+until the live contract check passes.
 
 If this happens, prefer the Render API path for the next deploy because it sends
 `commitId` with the exact GitHub SHA. A hook-accepted message is only a request

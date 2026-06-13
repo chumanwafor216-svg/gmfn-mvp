@@ -14,6 +14,17 @@ const requiredPaths = [
 ];
 
 const requiredWithdrawalFields = ["sort_code", "bank_sort_code"];
+const DEFAULT_COMMUNITY_KEY = "GSN-C-000001";
+const protectedCommunityVerificationTerms = [
+  "hidden_by_design",
+  "full member list",
+  "raw member phone numbers",
+  "member phone numbers",
+  "sponsor details",
+  "internal disputes",
+  "private relay contacts",
+  "internal trust history",
+];
 
 function argValue(name, fallback) {
   const direct = process.argv.find((arg) => arg.startsWith(`${name}=`));
@@ -29,18 +40,22 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchOpenApi(apiUrl) {
+async function fetchJson(apiUrl, path) {
   const base = String(apiUrl || DEFAULT_API_URL).replace(/\/+$/, "");
-  const res = await fetch(`${base}/openapi.json`, {
+  const res = await fetch(`${base}${path}`, {
     cache: "no-store",
     headers: { accept: "application/json" },
   });
 
   if (!res.ok) {
-    throw new Error(`OpenAPI returned HTTP ${res.status}`);
+    throw new Error(`${path} returned HTTP ${res.status}`);
   }
 
   return res.json();
+}
+
+async function fetchOpenApi(apiUrl) {
+  return fetchJson(apiUrl, "/openapi.json");
 }
 
 function schemaHasWithdrawalFields(openapi) {
@@ -58,8 +73,22 @@ function missingIdentityContracts(openapi) {
   return { missingPaths, missingWithdrawalFields };
 }
 
+async function exposedPublicCommunityVerificationTerms(apiUrl, communityKey) {
+  const encodedKey = encodeURIComponent(communityKey || DEFAULT_COMMUNITY_KEY);
+  const payload = await fetchJson(apiUrl, `/verify/community/${encodedKey}`);
+  const serialized = JSON.stringify(payload).toLowerCase();
+
+  return protectedCommunityVerificationTerms.filter((term) =>
+    serialized.includes(term)
+  );
+}
+
 async function main() {
   const apiUrl = argValue("--url", process.env.GMFN_LIVE_API_URL || DEFAULT_API_URL);
+  const communityKey = argValue(
+    "--community-key",
+    process.env.GMFN_LIVE_COMMUNITY_VERIFY_KEY || DEFAULT_COMMUNITY_KEY
+  );
   const attempts = Math.max(1, Number(argValue("--attempts", "1")) || 1);
   const delayMs = Math.max(0, Number(argValue("--delay-ms", "15000")) || 0);
 
@@ -69,10 +98,16 @@ async function main() {
     try {
       const openapi = await fetchOpenApi(apiUrl);
       const { missingPaths, missingWithdrawalFields } = missingIdentityContracts(openapi);
+      const exposedCommunityTerms =
+        await exposedPublicCommunityVerificationTerms(apiUrl, communityKey);
 
-      if (!missingPaths.length && !missingWithdrawalFields.length) {
+      if (
+        !missingPaths.length &&
+        !missingWithdrawalFields.length &&
+        !exposedCommunityTerms.length
+      ) {
         console.log(
-          `Live API identity contracts are present on ${apiUrl} after attempt ${attempt}/${attempts}.`
+          `Live API identity and public verification contracts are present on ${apiUrl} after attempt ${attempt}/${attempts}.`
         );
         return;
       }
@@ -81,6 +116,9 @@ async function main() {
         missingPaths.length ? `missing paths: ${missingPaths.join(", ")}` : "",
         missingWithdrawalFields.length
           ? `WithdrawalDestinationIn missing fields: ${missingWithdrawalFields.join(", ")}`
+          : "",
+        exposedCommunityTerms.length
+          ? `public community verification exposes protected terms: ${exposedCommunityTerms.join(", ")}`
           : "",
       ]
         .filter(Boolean)
@@ -98,7 +136,7 @@ async function main() {
   }
 
   console.error(
-    `Live API identity contracts are not ready on ${apiUrl}: ${lastFailure}`
+    `Live API identity/public verification contracts are not ready on ${apiUrl}: ${lastFailure}`
   );
   process.exit(1);
 }

@@ -1,3 +1,44 @@
+### Live API deploy audit now catches QR privacy drift (2026-06-13)
+
+- Trigger:
+  - product owner confirmed the frontend Render deploy for `ce71d8b` is live
+    and said to surge forward;
+  - after that, the local repo audits were green, but the live API still served
+    the stale public community verification payload with `hidden_by_design`.
+- Changed locally, not pushed:
+  - `frontend/tools/audit-live-api-identity-routes.mjs`
+    - still checks the live OpenAPI identity paths and withdrawal sort-code
+      fields;
+    - now also calls `/verify/community/GSN-C-000001`;
+    - fails if the public community verification payload contains
+      `hidden_by_design` or protected-category terms such as full member list,
+      raw/member phone numbers, sponsor details, internal disputes, private
+      relay contacts, or internal trust history.
+  - `docs/DEPLOYMENT_RENDER.md`
+    - documents that backend-impacting deploys must also prove the public
+      community verification payload is trimmed before calling QR privacy live
+      on the API.
+- Verification:
+  - Passed `npm exec -- eslint tools\audit-live-api-identity-routes.mjs`.
+  - Expected failure: `npm run audit:live-api-identity-routes` still fails
+    against `https://gmfn-api.onrender.com` because the live API is stale and
+    exposes:
+    - missing identity routes
+      `/entry/signed-in/phone/start`, `/entry/signed-in/phone/confirm`,
+      `/entry/signed-in/official-id/record`,
+      `/entry/signed-in/identity-photo/record`;
+    - missing `WithdrawalDestinationIn.sort_code` and `bank_sort_code`;
+    - public community verification protected terms including
+      `hidden_by_design`, full member list, raw/member phone numbers, sponsor
+      details, internal disputes, private relay contacts, and internal trust
+      history.
+- Unabated truth:
+  - this does not fix the live API by itself;
+  - it makes the deploy gate more honest so future API deploy checks cannot
+    pass while the public QR API still exposes the protected-category inventory;
+  - frontend QR privacy remains live, but direct API callers still see stale
+    data until `gmfn-api` actually rolls to the pushed backend commit.
+
 ### Public community QR verification privacy trim pushed; API deploy still stale (2026-06-13)
 
 - Trigger:
