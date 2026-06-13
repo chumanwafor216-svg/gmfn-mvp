@@ -1,4 +1,4 @@
-### Public community QR verification privacy trim (2026-06-13)
+### Public community QR verification privacy trim pushed; API deploy still stale (2026-06-13)
 
 - Trigger:
   - product owner shared phone screenshots showing the QR destination at
@@ -7,7 +7,7 @@
     inventory of protected categories (`member list`, phone numbers, sponsor
     details, disputes, relay contacts, trust history), which teaches outsiders
     too much about the private system.
-- Changed locally, not pushed:
+- Changed, committed, and pushed:
   - `gmfn_backend/app/services/community_confirmation_service.py`
     - removed `hidden_by_design` from the public
       `public_community_verification` response;
@@ -35,6 +35,37 @@
     - now rejects `Save PDF` on this public visitor QR surface.
   - `gmfn_backend/tests/test_community_confirmation_relay.py`
     - asserts the public verification API does not return `hidden_by_design`.
+- Publish / deploy attempt:
+  - committed and pushed as `ce71d8b4ee55449610ed22298891edcf2ac6113d`
+    (`Trim public community verification details`);
+  - manually dispatched `.github/workflows/render-deploy.yml` with
+    `deploy_api=true`;
+  - GitHub Actions run `27462281001` checked out `ce71d8b`;
+  - Render accepted the frontend deploy hook and returned frontend deploy id
+    `dep-d8mhnj0js32c73cms050`;
+  - Render accepted the API deploy hook and returned API deploy id
+    `dep-d8mhnjcm0tmc73d5e05g`;
+  - the workflow still failed at `Verify live API identity contracts` because
+    live OpenAPI is missing older identity routes
+    `/entry/signed-in/phone/start`, `/entry/signed-in/phone/confirm`,
+    `/entry/signed-in/official-id/record`,
+    `/entry/signed-in/identity-photo/record`, plus
+    `WithdrawalDestinationIn.sort_code` and `bank_sort_code`.
+- Live checks:
+  - frontend root served `assets/index-hnFAYdhP.js`;
+  - frontend Community Verify chunk
+    `assets/CommunityVerifyPage-9lHrz4Un.js` contains:
+    - `Public QR check for community identity only`;
+    - `This QR page confirms the community record only`;
+    - `Request confirmation`;
+    - `Copy link`;
+  - the same live chunk does not contain `Save PDF`, `Show publicly`, or
+    `Keep protected`;
+  - `https://gmfn-api.onrender.com/health` returned
+    `{"ok":true,"dev_mode":false}`;
+  - `https://gmfn-api.onrender.com/verify/community/GSN-C-000001` still returns
+    `hidden_by_design`, even after roughly seven minutes of polling, so the
+    live API is still stale for this backend change despite the hook acceptance.
 - Verification:
   - Passed `npm run audit:trust-actions`.
   - Passed `npm exec -- eslint src\pages\CommunityVerifyPage.tsx tools\audit-trust-actions.mjs`.
@@ -44,10 +75,15 @@
   - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
 - Unabated truth:
   - this removes the visible protected-category map from both the public page
-    and public API response;
+    and public API response in the committed code;
   - it also reduces the visible visitor page, but the page still needs owner
     phone review before calling it fully screenshot-polished;
-  - no push or Render deploy has been done for this fix.
+  - the frontend part is live;
+  - the backend part is pushed but not proven live because the public API still
+    returns `hidden_by_design`;
+  - deploy hook acceptance is not proof that `gmfn-api` is serving the new
+    backend code; Render API credentials or dashboard inspection are needed to
+    confirm why `gmfn-api` did not roll to `ce71d8b`.
 
 ### Backend social-preview URLs for shop sharing deployed (2026-06-13)
 
