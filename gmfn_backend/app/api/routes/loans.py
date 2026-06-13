@@ -655,7 +655,7 @@ def trustslip_preview(
     )
 
     return {
-        "title": "GMFN TrustSlip Preview (MVP)",
+        "title": "GSN TrustSlip Preview (MVP)",
         "borrower_user_id": int(loan.borrower_user_id),
         "clan_id": int(loan.clan_id),
         "clan_name": getattr(clan, "name", None) if clan else None,

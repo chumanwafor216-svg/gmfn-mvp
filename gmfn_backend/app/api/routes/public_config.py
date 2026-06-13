@@ -31,7 +31,7 @@ def public_config():
     )
 
     return {
-        "app_name": "GMFN",
+        "app_name": "GSN",
         "product_name": "Global Support Network",
         "protocol_name": "Trust Infrastructure Protocol",
         "supports_bank_transfer": bank_transfer_ready,

@@ -2981,7 +2981,7 @@ export default function ShopGalleryPage() {
                 }}
               >
                 {[
-                  { icon: "id" as ShopIconName, label: "GMFN ID", value: shopGmfnText || "Not ready" },
+                  { icon: "id" as ShopIconName, label: "GSN ID", value: shopGmfnText || "Not ready" },
                   { icon: "community" as ShopIconName, label: "Homeland", value: shopLocationText },
                 ].map((row, rowIndex) => (
                   <div
@@ -3036,7 +3036,7 @@ export default function ShopGalleryPage() {
                       <span style={{ color: "#6F7F91" }}>
                         {row.label === "Homeland"
                           ? "Community"
-                          : row.label === "GMFN ID"
+                          : row.label === "GSN ID"
                           ? "GSN Global ID"
                           : row.label}
                         :

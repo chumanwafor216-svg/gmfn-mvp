@@ -37,5 +37,5 @@ def get_daily_market_wisdom() -> Dict[str, str]:
     return {
         "date": datetime.utcnow().strftime("%Y-%m-%d"),
         "text": INSIGHTS[idx],
-        "source": "GMFN Market Wisdom",
+        "source": "GSN Market Wisdom",
     }

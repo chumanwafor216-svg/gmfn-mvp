@@ -2169,7 +2169,7 @@ def join_landing_page(
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>Join GMFN Community</title>
+<title>Join GSN Community</title>
 <style>
 body {{ font-family: Arial, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 16px; }}
 .box {{ border: 1px solid #ddd; border-radius: 10px; padding: 18px; }}
@@ -2179,7 +2179,7 @@ body {{ font-family: Arial, sans-serif; max-width: 760px; margin: 40px auto; pad
 </style>
 </head>
 <body>
-<h2>Join a GMFN Community</h2>
+<h2>Join a GSN Community</h2>
 <div class="box">
 <div class="badge">{status_text}</div>
 <div class="kv">

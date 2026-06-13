@@ -250,7 +250,7 @@ def _resolve_repost_target_clan(db: Session, payload: Any) -> Clan:
     if clan is None:
         raise HTTPException(
             status_code=404,
-            detail="Target community not found. Use the community ID, for example GMFN-C-000008.",
+            detail="Target community not found. Use the community ID, for example GSN-C-000008.",
         )
 
     status = _safe_str(getattr(clan, "status", None)).lower()
@@ -1134,7 +1134,7 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         clan_display_name = (
             _safe_str(getattr(clan, "marketplace_name", None))
             or _safe_str(getattr(clan, "name", None))
-            or f"Clan {int(clan.id)}"
+            or f"Community {int(clan.id)}"
         )
 
     shop_display_name = None

@@ -1,3 +1,50 @@
+### GSN wording for remaining public labels (2026-06-13)
+
+- Trigger:
+  - continuing the main cleanup after the frontend deploy was restored;
+  - targeted scan found a few remaining public labels and API response strings
+    still using old GMFN/clan wording.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - changed invite/join landing title and heading from `Join GMFN Community`
+      / `Join a GMFN Community` to `Join GSN Community` /
+      `Join a GSN Community`.
+  - `gmfn_backend/app/api/routes/loans.py`
+    - changed TrustSlip preview title from `GMFN TrustSlip Preview (MVP)` to
+      `GSN TrustSlip Preview (MVP)`.
+  - `gmfn_backend/app/services/daily_insight_service.py`
+    - changed daily insight source from `GMFN Market Wisdom` to
+      `GSN Market Wisdom`.
+  - `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+    - changed the PDF identity/evidence subtitle to say
+      `GSN trust infrastructure`.
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - changed a visible target-community error example from
+      `GMFN-C-000008` to `GSN-C-000008`;
+    - changed a fallback public display name from `Clan {id}` to
+      `Community {id}`.
+  - `gmfn_backend/app/api/routes/public_config.py`
+    - changed public config `app_name` from `GMFN` to `GSN`.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - changed the public shop identity row label from `GMFN ID` to `GSN ID`
+      while leaving the underlying technical value unchanged.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - extended the visible-language guard for the added surfaces;
+    - added a file-specific guard for the old Shop Gallery `GMFN ID` label
+      instead of banning every internal/comment mention of `GMFN ID`.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs src\pages\ShopGalleryPage.tsx`.
+  - Passed `npm run audit:shop-gallery-button-inventory`.
+  - Passed `npm run build`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_protocol_readiness_status.py`.
+- Unabated truth:
+  - this is visible wording only;
+  - internal contracts such as `gmfn_id`, database fields, and historical
+    technical ID prefixes were not renamed;
+  - backend changes will still not be live on Render until `gmfn-api` deploys
+    from a valid Render API key/service id or an out-of-band manual deploy.
+
 ### Deploy attempt for GSN wording batch (2026-06-13)
 
 - Trigger:

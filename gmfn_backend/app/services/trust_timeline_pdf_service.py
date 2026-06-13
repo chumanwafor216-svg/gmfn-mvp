@@ -227,7 +227,7 @@ def _draw_identity_block(c: canvas.Canvas, y: float, user: Optional[User], trust
         c,
         y,
         "1. Identity & Evidence Context",
-        "Permanent member identity and export alignment context used across GMFN trust infrastructure.",
+        "Permanent member identity and export alignment context used across GSN trust infrastructure.",
     )
 
     col_gap = 10 * mm

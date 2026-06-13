@@ -9,14 +9,17 @@ const repoRoot = join(frontendRoot, "..");
 
 const files = [
   "frontend/src/pages/JoinEntryPage.tsx",
+  "frontend/src/pages/ShopGalleryPage.tsx",
   "gmfn_backend/app/api/routes/analytics_liquidity.py",
   "gmfn_backend/app/api/routes/auth.py",
   "gmfn_backend/app/api/routes/cci.py",
   "gmfn_backend/app/api/routes/clans.py",
   "gmfn_backend/app/api/routes/courier_confirm.py",
+  "gmfn_backend/app/api/routes/loans.py",
   "gmfn_backend/app/api/routes/loans_bulk.py",
   "gmfn_backend/app/api/routes/marketplace.py",
   "gmfn_backend/app/api/routes/merchant_risk.py",
+  "gmfn_backend/app/api/routes/public_config.py",
   "gmfn_backend/app/api/routes/reports.py",
   "gmfn_backend/app/api/routes/share.py",
   "gmfn_backend/app/api/routes/trust_evidence_pack.py",
@@ -25,9 +28,11 @@ const files = [
   "gmfn_backend/app/core/clan_auth.py",
   "gmfn_backend/app/routers/clans.py",
   "gmfn_backend/app/services/clans_service.py",
+  "gmfn_backend/app/services/daily_insight_service.py",
   "gmfn_backend/app/services/identity_service.py",
   "gmfn_backend/app/services/invites_service.py",
   "gmfn_backend/app/services/marketplace_service.py",
+  "gmfn_backend/app/services/trust_timeline_pdf_service.py",
 ];
 
 const forbidden = [
@@ -50,9 +55,20 @@ const forbidden = [
   "GMFN is non-custodial",
   "Clan admin or platform admin only",
   "GMFN_EvidencePack",
+  "Join GMFN Community",
+  "Join a GMFN Community",
+  "GMFN TrustSlip Preview",
+  "GMFN Market Wisdom",
+  "GMFN trust infrastructure",
+  "for example GMFN-C-000008",
+  "Clan {int(clan.id)}",
   "No custodial funds are held by GMFN",
   "Clan liquidity index",
   "Dev Clan",
+];
+
+const forbiddenByFile = [
+  ["frontend/src/pages/ShopGalleryPage.tsx", 'label: "GMFN ID"'],
 ];
 
 const required = [
@@ -60,7 +76,11 @@ const required = [
   ["gmfn_backend/app/api/routes/clans.py", "Community not found"],
   ["gmfn_backend/app/api/routes/clans.py", "A GSN member"],
   ["gmfn_backend/app/api/routes/clans.py", "You can now activate your GSN account."],
+  ["gmfn_backend/app/api/routes/clans.py", "Join GSN Community"],
   ["gmfn_backend/app/core/clan_auth.py", "Community admin role required"],
+  ["gmfn_backend/app/api/routes/loans.py", "GSN TrustSlip Preview"],
+  ["gmfn_backend/app/services/daily_insight_service.py", "GSN Market Wisdom"],
+  ["gmfn_backend/app/services/trust_timeline_pdf_service.py", "GSN trust infrastructure"],
   ["gmfn_backend/app/api/routes/share.py", "GSN Loan Audit"],
   ["gmfn_backend/app/api/routes/courier_confirm.py", "GSN does not guarantee courier performance."],
   ["gmfn_backend/app/api/routes/merchant_risk.py", "GSN is non-custodial"],
@@ -70,7 +90,11 @@ const required = [
   ["gmfn_backend/app/api/routes/trust_slips_verify_ui.py", "GSN Verification"],
   ["gmfn_backend/app/api/routes/trust_slips_verify_ui.py", "GSN does not guarantee delivery performance."],
   ["gmfn_backend/app/api/routes/analytics_liquidity.py", "No custodial funds are held by GSN"],
+  ["gmfn_backend/app/api/routes/marketplace.py", "for example GSN-C-000008"],
+  ["gmfn_backend/app/api/routes/marketplace.py", "Community {int(clan.id)}"],
+  ["gmfn_backend/app/api/routes/public_config.py", '"app_name": "GSN"'],
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
+  ["frontend/src/pages/ShopGalleryPage.tsx", "GSN ID"],
 ];
 
 const findings = [];
@@ -85,6 +109,13 @@ for (const file of files) {
     if (text.includes(phrase)) {
       findings.push(`${file}: forbidden visible phrase "${phrase}"`);
     }
+  }
+}
+
+for (const [file, phrase] of forbiddenByFile) {
+  const text = read(file);
+  if (text.includes(phrase)) {
+    findings.push(`${file}: forbidden visible phrase "${phrase}"`);
   }
 }
 
