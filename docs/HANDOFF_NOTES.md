@@ -1,3 +1,42 @@
+### Vault Control compact first-task stabilization (2026-06-13)
+
+- Trigger:
+  - after finance/payment subroutes were stabilized, a phone scan showed
+    Vault Control did not expose the authenticated bottom rail, but its first
+    real Vault controls still started too low in the first viewport;
+  - the route has a strict action-inventory audit, so adding duplicate front
+    actions would have been higher risk than compacting the existing flow.
+- Changed locally:
+  - `frontend/src/pages/VaultControlPage.tsx`
+    - hides the decorative Vault glass/door frame on compact screens;
+    - compacts the slot chooser from two columns to three columns on phone;
+    - hides the pricing explainer card on compact while keeping the essential
+      slot copy;
+    - changes the existing slot button style to support a compact `52px`
+      phone height;
+    - moves the existing `vault-control.confirm-quote` action directly below
+      the slot chooser so the user can choose slots and agree to the exact
+      quote in the first viewport.
+- Verification:
+  - Passed `npm --prefix frontend run audit:vault-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local Edge phone viewport showed:
+    - Vault slot buttons 1-3 at `586-638`;
+    - Vault slot buttons 4-6 at `646-698`;
+    - existing `Agree` quote action at `708-760`.
+- Unabated truth:
+  - this fixes the first Vault task controls without changing the audited
+    action inventory;
+  - the payment-code generation button remains deeper because it should only
+    follow quote confirmation;
+  - Vault still needs real-device tap-through later because its focused-task
+    shell intentionally differs from normal authenticated bottom-rail routes.
+
 ### Finance/payment subroute front-control stabilization (2026-06-13)
 
 - Trigger:

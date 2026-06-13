@@ -831,17 +831,17 @@ function paymentInstructionValueStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function slotChoiceButton(selected: boolean): React.CSSProperties {
+function slotChoiceButton(selected: boolean, compact = false): React.CSSProperties {
   return {
     ...brandActionButton(selected ? "primary" : "secondary"),
-    minHeight: 68,
+    minHeight: compact ? 52 : 68,
     width: "100%",
-    borderRadius: 18,
+    borderRadius: compact ? 14 : 18,
     display: "grid",
     alignContent: "center",
     justifyItems: "center",
     gap: 3,
-    padding: "12px 8px",
+    padding: compact ? "8px 6px" : "12px 8px",
     position: "relative",
     zIndex: 2,
     touchAction: "manipulation",
@@ -1773,41 +1773,43 @@ export default function VaultControlPage() {
               <span style={vaultHeroBadge(false)}>One block at a time</span>
             </div>
           </div>
-          <div style={vaultGlassFrame()}>
-            {shopHeroImageUrl ? (
-              <img
-                src={shopHeroImageUrl}
-                alt=""
+          {isCompact ? null : (
+            <div style={vaultGlassFrame()}>
+              {shopHeroImageUrl ? (
+                <img
+                  src={shopHeroImageUrl}
+                  alt=""
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    opacity: 0.28,
+                    filter: "saturate(0.85) contrast(1.08)",
+                  }}
+                />
+              ) : null}
+              <div
                 aria-hidden="true"
                 style={{
                   position: "absolute",
                   inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  opacity: 0.28,
-                  filter: "saturate(0.85) contrast(1.08)",
+                  background:
+                    "linear-gradient(120deg, rgba(5,17,31,0.72), rgba(9,27,46,0.34) 45%, rgba(5,17,31,0.80))",
                 }}
               />
-            ) : null}
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                inset: 0,
-                background:
-                  "linear-gradient(120deg, rgba(5,17,31,0.72), rgba(9,27,46,0.34) 45%, rgba(5,17,31,0.80))",
-              }}
-            />
-            <VaultDoorVisual />
-            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(circle at 50% 20%, rgba(255,255,255,0.14), transparent 34%), linear-gradient(180deg, transparent 0%, rgba(8,27,45,0.52) 100%)" }} />
-            <div style={{ position: "absolute", left: 22, right: 22, bottom: 22, color: "#FFFFFF", fontWeight: 950, fontSize: 24, textAlign: "center" }}>
-              <div style={{ color: "#F3D06A", fontSize: 11, fontWeight: 950, letterSpacing: 1.2, textTransform: "uppercase" }}>
-                Shop signboard protected
+              <VaultDoorVisual />
+              <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(circle at 50% 20%, rgba(255,255,255,0.14), transparent 34%), linear-gradient(180deg, transparent 0%, rgba(8,27,45,0.52) 100%)" }} />
+              <div style={{ position: "absolute", left: 22, right: 22, bottom: 22, color: "#FFFFFF", fontWeight: 950, fontSize: 24, textAlign: "center" }}>
+                <div style={{ color: "#F3D06A", fontSize: 11, fontWeight: 950, letterSpacing: 1.2, textTransform: "uppercase" }}>
+                  Shop signboard protected
+                </div>
+                <div style={{ color: "#FFFFFF", fontWeight: 950, fontSize: 24, textShadow: "0 2px 14px rgba(0,0,0,0.42)" }}>Private Vault</div>
               </div>
-              <div style={{ color: "#FFFFFF", fontWeight: 950, fontSize: 24, textShadow: "0 2px 14px rgba(0,0,0,0.42)" }}>Private Vault</div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -1822,16 +1824,27 @@ export default function VaultControlPage() {
             }}
           >
             <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div>
-            <div style={{ marginTop: 12, color: gmfnBrand.colors.inkSoft, fontSize: 16, lineHeight: 1.55 }}>
+            <div style={{ marginTop: isCompact ? 8 : 12, color: gmfnBrand.colors.inkSoft, fontSize: isCompact ? 14 : 16, lineHeight: 1.45 }}>
               Choose the number of Vault blocks you want. Paid blocks are private positions.
             </div>
-            <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
-              <div style={{ ...sectionLabel(), color: "#8A640E" }}>Pricing rule</div>
-              <div style={{ marginTop: 6, fontWeight: 900, lineHeight: 1.45 }}>
-                1-5 slots are GBP 1 each. The full 6-slot private track is GBP 5.
+            {!isCompact ? (
+              <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
+                <div style={{ ...sectionLabel(), color: "#8A640E" }}>Pricing rule</div>
+                <div style={{ marginTop: 6, fontWeight: 900, lineHeight: 1.45 }}>
+                  1-5 slots are GBP 1 each. The full 6-slot private track is GBP 5.
+                </div>
               </div>
-            </div>
-            <div role="radiogroup" aria-label="Slots to activate" style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+            ) : null}
+            <div
+              role="radiogroup"
+              aria-label="Slots to activate"
+              style={{
+                marginTop: isCompact ? 10 : 14,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))",
+                gap: isCompact ? 8 : 12,
+              }}
+            >
               {[1, 2, 3, 4, 5, 6].map((slot) => {
                 const selected = Number(paymentSlots) === slot;
                 return (
@@ -1844,7 +1857,7 @@ export default function VaultControlPage() {
                       setPaymentSlots(slot);
                       setConfirmedPaymentQuoteKey("");
                     }}
-                    style={slotChoiceButton(selected)}
+                    style={slotChoiceButton(selected, isCompact)}
                     debugId={`vault-control.payment-slot.${slot}`}
                   >
                     <span>{slot}</span>
@@ -1853,6 +1866,21 @@ export default function VaultControlPage() {
                 );
               })}
             </div>
+            <PrimaryButton
+              onClick={() => {
+                setConfirmedPaymentQuoteKey(selectedVaultQuoteKey);
+                showNotice("success", `Vault quote confirmed: ${selectedVaultAgreementText}.`);
+              }}
+              style={{
+                ...brandActionButton("primary"),
+                marginTop: isCompact ? 10 : 18,
+                minHeight: isCompact ? 52 : 62,
+                width: "100%",
+              }}
+              debugId="vault-control.confirm-quote"
+            >
+              Agree: {selectedVaultAgreementText}
+            </PrimaryButton>
           </div>
           <div
             style={{
@@ -1874,16 +1902,6 @@ export default function VaultControlPage() {
             <div style={{ marginTop: 14, ...helperText() }}>
               Confirm this quote first. GSN will generate the payment code against this exact slot count and amount, then the bank rail can cross-check the code and amount before Vault opens.
             </div>
-            <PrimaryButton
-              onClick={() => {
-                setConfirmedPaymentQuoteKey(selectedVaultQuoteKey);
-                showNotice("success", `Vault quote confirmed: ${selectedVaultAgreementText}.`);
-              }}
-              style={{ ...brandActionButton("primary"), marginTop: 18, minHeight: 62, width: "100%" }}
-              debugId="vault-control.confirm-quote"
-            >
-              Agree: {selectedVaultAgreementText}
-            </PrimaryButton>
             {!activeVaultPayment ? (
               <SecondaryButton
                 onClick={() => {
