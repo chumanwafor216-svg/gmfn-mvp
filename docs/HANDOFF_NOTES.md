@@ -1,3 +1,29 @@
+### Public TrustSlip route ASCII fallback cleanup (2026-06-13)
+
+- Trigger:
+  - continued visitor-facing polish sweep after the public invite route cleanup;
+  - public TrustSlip verify/API routes still used em-dash missing-value
+    fallbacks.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/trust_slips_verify_ui.py`
+    - changed public related-loan fallback from em dash to `-`.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - changed public community/band fallbacks from em dash to `-`;
+    - aligned the CCI blank-check sentinel with `-`.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - added file-specific guards for those public TrustSlip route fallbacks.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `python -m py_compile gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\api\routes\trust_slips_verify_ui.py`.
+  - Passed targeted `rg` scan for em dash in the touched TrustSlip route files.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs`.
+  - Passed `git diff --check`; it printed the existing LF-to-CRLF warning for
+    the audit script only.
+- Unabated truth:
+  - this is public-route display fallback cleanup only;
+  - TrustSlip scoring, expiry, and merchant verification logic are unchanged.
+
 ### Public invite route ASCII status cleanup (2026-06-13)
 
 - Trigger:

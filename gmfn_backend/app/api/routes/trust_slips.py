@@ -793,7 +793,7 @@ def verify_trust_slip_public(
         or merchant_summary.get("clan_name")
         or full_summary.get("clan_name")
         or full_summary.get("community")
-        or "—"
+        or "-"
     )
 
     band = (
@@ -801,7 +801,7 @@ def verify_trust_slip_public(
         or merchant_summary.get("band")
         or full_summary.get("trust_band")
         or full_summary.get("band")
-        or "—"
+        or "-"
     )
 
     merchant_view_out = {
@@ -1264,7 +1264,7 @@ def trust_slip_verify_page(
         )
 
     cci_row = ""
-    if merchant_summary.get("cci_score") not in (None, "", "—"):
+    if merchant_summary.get("cci_score") not in (None, "", "-"):
         cci_band = _safe_str(merchant_summary.get("cci_band"), "")
         band_part = f" ({_band_with_label(cci_band)})" if cci_band else ""
         cci_value = f"{_safe_str(merchant_summary.get('cci_score'))}{band_part}"

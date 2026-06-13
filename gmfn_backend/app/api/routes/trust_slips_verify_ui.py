@@ -142,7 +142,7 @@ def verify_trust_slip_ui(token: str, db: Session = Depends(get_db)):
         </div>
         <div style="flex:1;min-width:240px">
           <div class="k">Related loan</div>
-          <div class="v">{prog.get("loan_id") or "—"}</div>
+          <div class="v">{prog.get("loan_id") or "-"}</div>
         </div>
       </div>
 

@@ -37,6 +37,7 @@ const files = [
   "gmfn_backend/app/api/routes/reports.py",
   "gmfn_backend/app/api/routes/share.py",
   "gmfn_backend/app/api/routes/trust_evidence_pack.py",
+  "gmfn_backend/app/api/routes/trust_slips.py",
   "gmfn_backend/app/api/routes/trust_score.py",
   "gmfn_backend/app/api/routes/trust_slips_verify_ui.py",
   "gmfn_backend/app/core/clan_auth.py",
@@ -129,6 +130,8 @@ const forbiddenByFile = [
   ["gmfn_backend/app/api/routes/clans.py", "—"],
   ["gmfn_backend/app/api/routes/clans.py", "❌"],
   ["gmfn_backend/app/api/routes/clans.py", "✅"],
+  ["gmfn_backend/app/api/routes/trust_slips.py", "—"],
+  ["gmfn_backend/app/api/routes/trust_slips_verify_ui.py", "—"],
 ];
 
 const required = [
