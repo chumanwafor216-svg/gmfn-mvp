@@ -1190,7 +1190,7 @@ def _build_activation_package(
             "",
             "Once activation is completed, you will be able to enter your workspace properly.",
             "",
-            "— Sent via GSN",
+            "- Sent via GSN",
         ]
     )
 
@@ -2108,21 +2108,21 @@ def join_landing_page(
     safe_code = (code or "").strip()
     clan = db.query(Clan).filter(Clan.invite_code == safe_code).first()
 
-    clan_name = "—"
-    community_code = "—"
-    expires_text = "—"
-    usage_text = "—"
-    remaining_text = "—"
+    clan_name = "-"
+    community_code = "-"
+    expires_text = "-"
+    usage_text = "-"
+    remaining_text = "-"
     status_text = ""
     status_color = "#666"
 
     now = datetime.now(timezone.utc)
 
     if not clan:
-        status_text = "Invalid invite code ❌"
+        status_text = "Invalid invite code"
         status_color = "#b00"
     else:
-        clan_name = getattr(clan, "name", "—")
+        clan_name = getattr(clan, "name", "-")
         community_code = _community_code(clan.id)
 
         expires_at = _effective_invite_expires_at(
@@ -2155,13 +2155,13 @@ def join_landing_page(
             used_up = True
 
         if expired:
-            status_text = "Invite expired ❌"
+            status_text = "Invite expired"
             status_color = "#b00"
         elif used_up:
-            status_text = "Invite used up ❌"
+            status_text = "Invite used up"
             status_color = "#b00"
         else:
-            status_text = "Invite valid ✅"
+            status_text = "Invite valid"
             status_color = "#0a7"
 
     return f"""

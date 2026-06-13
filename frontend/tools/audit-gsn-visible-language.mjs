@@ -126,6 +126,9 @@ const forbiddenByFile = [
   ["frontend/src/components/TrustGraphEdgeList.tsx", "—"],
   ["frontend/src/pages/TrustGraphAdminPage.tsx", "—"],
   ["frontend/src/pages/TrustGraphAdminPage.tsx", "·"],
+  ["gmfn_backend/app/api/routes/clans.py", "—"],
+  ["gmfn_backend/app/api/routes/clans.py", "❌"],
+  ["gmfn_backend/app/api/routes/clans.py", "✅"],
 ];
 
 const required = [

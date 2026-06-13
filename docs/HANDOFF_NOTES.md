@@ -1,3 +1,30 @@
+### Public invite route ASCII status cleanup (2026-06-13)
+
+- Trigger:
+  - continued visitor-facing polish sweep;
+  - backend public invite/join route still used em-dash placeholders and
+    emoji status markers in copied invite text / public invite HTML.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - changed copied invite footer from em dash to `- Sent via GSN`;
+    - changed public join-page placeholders from em dash to `-`;
+    - removed invalid/expired/used-up/valid status emojis from public invite
+      status text.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - added file-specific guards for those public invite symbols.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_join_requests.py`.
+  - Passed `python -m py_compile gmfn_backend\app\api\routes\clans.py`.
+  - Passed targeted `rg` scan for the cleaned symbols in `clans.py`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs`.
+  - Passed `git diff --check`; it printed the existing LF-to-CRLF warning for
+    the audit script only.
+- Unabated truth:
+  - this changes public/copy text only;
+  - invite validity logic, request routing, and community-code behavior remain
+    unchanged.
+
 ### Small component ASCII fallback cleanup (2026-06-13)
 
 - Trigger:
