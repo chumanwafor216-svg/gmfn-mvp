@@ -52308,3 +52308,48 @@ GSN-branded invite composer and invite-entry continuity.
     `dep-d8mptp3sq97s739q53fg`;
   - API deploy was intentionally skipped (`deploy_api=false`), because no
     backend files changed.
+
+### Finance first-viewport containment and demo evidence pack (2026-06-13)
+
+- Trigger:
+  - the pilot evidence capture showed the Finance first viewport reading as
+    clipped on a 390x844 phone screenshot because the identity chips and
+    overview metric cards were using horizontal compact scrolling.
+- Changed:
+  - `frontend/src/pages/FinancePage.tsx`
+    - compact Finance identity chips now wrap inside the card instead of
+      scrolling sideways;
+    - long chip values use `overflowWrap: "anywhere"` and `minWidth: 0` so
+      GSN/community/money codes stay inside the surface;
+    - compact overview metric cards now use a stable two-column grid instead
+      of a horizontal scroller;
+    - empty/unknown community role now falls back to `Member`, avoiding the
+      unfinished-looking `Your role:` chip.
+  - `.gitignore`
+    - added `pilot_evidence_pack/` so local screenshots and review artifacts
+      do not get committed by accident.
+- Local evidence:
+  - created ignored local folder `pilot_evidence_pack/` with phone screenshots
+    for entry, community, marketplace, shop control, finance, loans/repayment,
+    trust passport, public verification, and admin readiness.
+  - first public screenshot pass was contaminated by auth state and was
+    replaced with a clean no-auth public capture.
+  - `pilot_evidence_pack/00_index.md` and
+    `pilot_evidence_pack/00_review_status.md` document that this is a demo
+    capture pack, not final accepted evidence.
+- Verification:
+  - `npm run build` passed from `frontend/`.
+  - recaptured `pilot_evidence_pack/05_finance/01_finance.png` after the fix.
+  - Playwright verification for `/app/finance?community=3` on a 390x844 phone
+    viewport reported `scrollWidth: 390`, `clientWidth: 390`,
+    `textHasMember: true`, and `hasCompanion: false`.
+- Unabated truth:
+  - the Finance first viewport is cleaner and no longer horizontally clipped in
+    the verified phone capture;
+  - the local TrustSlip public verification screenshot is not valid evidence
+    yet because the Vite dev server proxies `/trust-slips/*` directly to the
+    backend, so it captured backend JSON for an invalid demo code rather than
+    the React public verification page;
+  - the evidence pack is local and ignored by Git; it is prepared for owner
+    review, not accepted as final pilot proof;
+  - no backend, auth, app-shell, or Render configuration files were changed.

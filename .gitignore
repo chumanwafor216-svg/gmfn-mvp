@@ -21,6 +21,7 @@ scripts/
 
 # Quarantine / local stores
 _QUARANTINE_STORE/
+pilot_evidence_pack/
 
 # Runtime and build noise
 _runtime_logs/

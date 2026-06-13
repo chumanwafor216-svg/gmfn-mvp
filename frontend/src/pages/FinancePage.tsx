@@ -880,7 +880,7 @@ function communityRole(currentClan: any): string {
       currentClan?.member_role,
       currentClan?.membership_role,
       currentClan?.participant_role
-    ) || ""
+    ) || "Member"
   );
 }
 
@@ -1739,10 +1739,8 @@ export default function FinancePage() {
                 marginTop: isCompact ? 10 : 16,
                 display: "flex",
                 gap: 8,
-                flexWrap: isCompact ? "nowrap" : "wrap",
-                overflowX: isCompact ? "auto" : undefined,
+                flexWrap: "wrap",
                 paddingBottom: isCompact ? 2 : undefined,
-                WebkitOverflowScrolling: isCompact ? "touch" : undefined,
               }}
             >
               <span
@@ -1751,7 +1749,9 @@ export default function FinancePage() {
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
-                  flex: isCompact ? "0 0 auto" : undefined,
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  overflowWrap: "anywhere",
                 }}
               >
                 {communityLabel}
@@ -1762,7 +1762,9 @@ export default function FinancePage() {
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
-                  flex: isCompact ? "0 0 auto" : undefined,
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  overflowWrap: "anywhere",
                 }}
               >
                 GSN ID: {gmfnId}
@@ -1773,7 +1775,9 @@ export default function FinancePage() {
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
-                  flex: isCompact ? "0 0 auto" : undefined,
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  overflowWrap: "anywhere",
                 }}
               >
                 Community code: {publicCommunityCode}
@@ -1785,7 +1789,9 @@ export default function FinancePage() {
                     color: "#F8FBFF",
                     background: "rgba(255,255,255,0.12)",
                     border: "1px solid rgba(255,255,255,0.14)",
-                    flex: isCompact ? "0 0 auto" : undefined,
+                    maxWidth: "100%",
+                    minWidth: 0,
+                    overflowWrap: "anywhere",
                   }}
                 >
                   Money code: {poolReference}
@@ -1797,7 +1803,9 @@ export default function FinancePage() {
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
-                  flex: isCompact ? "0 0 auto" : undefined,
+                  maxWidth: "100%",
+                  minWidth: 0,
+                  overflowWrap: "anywhere",
                 }}
               >
                 Your role: {memberRole}
@@ -1832,14 +1840,10 @@ export default function FinancePage() {
             marginTop: isCompact ? 12 : 22,
             display: "grid",
             gridTemplateColumns: isCompact
-              ? "none"
+              ? "repeat(2, minmax(0, 1fr))"
               : "repeat(4, minmax(0, 1fr))",
-            gridAutoFlow: isCompact ? "column" : undefined,
-            gridAutoColumns: isCompact ? "minmax(132px, 1fr)" : undefined,
             gap: 12,
-            overflowX: isCompact ? "auto" : undefined,
             paddingBottom: isCompact ? 2 : undefined,
-            WebkitOverflowScrolling: isCompact ? "touch" : undefined,
           }}
         >
           {[
@@ -1879,6 +1883,7 @@ export default function FinancePage() {
                 display: "grid",
                 alignContent: "space-between",
                 gap: 8,
+                minWidth: 0,
               }}
             >
               <div
@@ -1891,10 +1896,14 @@ export default function FinancePage() {
                   fontSize: 11,
                   fontWeight: 950,
                   textTransform: "uppercase",
+                  minWidth: 0,
+                  textAlign: "center",
                 }}
               >
                 <FinanceGlyph name={item.icon} size={17} />
-                <span>{item.label}</span>
+                <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                  {item.label}
+                </span>
               </div>
               <div
                 style={{
