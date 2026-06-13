@@ -1,3 +1,23 @@
+### Live API identity and public verification audit now passes (2026-06-13)
+
+- Trigger:
+  - after `d162a7e` deployed through Render API auto-deploy, the previous
+    live-API blocker needed to be rechecked;
+  - earlier runs failed because the live API was stale, missing signed-in
+    identity routes, missing withdrawal sort-code fields, and exposing old
+    public community verification protected-category inventory.
+- Verification:
+  - Passed `npm --prefix frontend run audit:live-api-identity-routes` against
+    `https://gmfn-api.onrender.com`.
+  - Tool output:
+    `Live API identity and public verification contracts are present on https://gmfn-api.onrender.com after attempt 1/1.`
+- Unabated truth:
+  - this clears the previously recorded stale-live-API blocker for identity
+    routes, withdrawal destination schema, and public QR/community verification
+    privacy;
+  - this is still a contract audit, not a full manual phone walkthrough of
+    every identity, withdrawal, or public verification screen.
+
 ### Backend public shop card deploy verified live (2026-06-13)
 
 - Action:
