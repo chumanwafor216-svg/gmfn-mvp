@@ -71,6 +71,11 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/components/SocialTagShareButton.tsx",
+    /useState<\{ tone: NoticeTone; text: string \} \| null>\(null\)[\s\S]*setLocalNotice\(\{ tone, text \}\)[\s\S]*color: localNotice\.tone === "success" \? "#12633F" : "#9F1239"/,
+    "Social share chooser must render success and error feedback with different local tones.",
+  ],
+  [
+    "src/components/SocialTagShareButton.tsx",
     /Handle or name, if needed[\s\S]*placeholder="@handle or name"/,
     "Social share UI must keep one simple optional handle/name field.",
   ],

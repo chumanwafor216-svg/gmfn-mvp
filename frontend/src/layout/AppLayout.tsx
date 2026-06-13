@@ -321,7 +321,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     return {
       title: "Demand Box",
       hint:
-        "Task focus is active. Finish the demand step first, then return to the wider workspace.",
+        "Post or finish this need first. You can return to Marketplace when you are done.",
       actions: [
         makeCommunityItem(),
         makeMarketplaceItem(),
@@ -334,7 +334,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     return {
       title: "First Circle",
       hint:
-        "Task focus is active. Add trusted people, then return to the wider workspace.",
+        "Add trusted people first. You can return to Community Home when you are done.",
       actions: [
         makeCommunityItem(),
         { label: "Notifications", to: "/app/notifications" },
@@ -347,7 +347,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     return {
       title: "Shop Control",
       hint:
-        "Task focus is active. Finish the shop update first, then return to the wider workspace.",
+        "Finish this shop update first. You can return to Marketplace when you are done.",
       actions: [
         makeCommunityItem(),
         makeMarketplaceItem(),
@@ -360,7 +360,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     return {
       title: "Vault Control",
       hint:
-        "Task focus is active. Finish the private Vault setup first, then return to the wider workspace.",
+        "Finish the private Vault setup first. You can return to Shop Control when you are done.",
       actions: [
         makeShopControlItem(),
         makeCommunityItem(),
@@ -374,7 +374,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     return {
       title: "Subscription Spotlight",
       hint:
-        "Task focus is active. Finish the paid spotlight payment or publish step first.",
+        "Finish the paid Spotlight payment or publish step first.",
       actions: [
         makeShopControlItem(),
         makeCommunityItem(),
@@ -397,9 +397,9 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     pathname === "/app/withdrawal-instructions"
   ) {
     return {
-      title: "Loans & Support task",
+      title: "Loans & Support",
       hint:
-        "Task focus is active. The app reduces other movement until this money or support step is finished or intentionally left.",
+        "Finish this money or support step first, or leave it intentionally before moving on.",
       actions: [
         makeMarketplaceItem(),
         makeCommunityItem(),
@@ -415,7 +415,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     return {
       title: "Join Requests",
       hint:
-        "Task focus is active. Finish this community decision step before returning to the wider workspace.",
+        "Finish this community decision first. You can return to Community Home when you are done.",
       actions: [
         makeCommunityItem(),
         makeMarketplaceItem(),
@@ -2255,7 +2255,7 @@ export default function AppLayout() {
             >
               <div>
                 <div style={actionsTitle()}>
-                  {taskMode ? "Task actions" : "Page tools"}
+                  {taskMode ? "Current action" : "Page tools"}
                 </div>
                 <div
                   style={{
@@ -2289,8 +2289,8 @@ export default function AppLayout() {
               }}
             >
               {taskMode
-                ? "This task is in focus. Finish it first or leave it intentionally before moving elsewhere."
-                : "These actions relate to the page you are currently using while the main routes stay cleaner."}
+                ? "Finish this step first, or choose where you want to go next."
+                : "These actions belong to the page you are using now."}
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

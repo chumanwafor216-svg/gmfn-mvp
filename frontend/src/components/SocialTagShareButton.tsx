@@ -105,7 +105,7 @@ export default function SocialTagShareButton({
 }: SocialTagShareButtonProps) {
   const [open, setOpen] = useState(false);
   const [shareName, setShareName] = useState("");
-  const [localNotice, setLocalNotice] = useState("");
+  const [localNotice, setLocalNotice] = useState<{ tone: NoticeTone; text: string } | null>(null);
 
   const cleanTarget = useMemo<ShareTarget>(
     () => ({
@@ -120,7 +120,7 @@ export default function SocialTagShareButton({
   const canShare = Boolean(cleanTarget.url) && !disabled;
 
   function report(tone: NoticeTone, text: string) {
-    setLocalNotice(text);
+    setLocalNotice({ tone, text });
     onResult?.(tone, text);
   }
 
@@ -426,12 +426,12 @@ export default function SocialTagShareButton({
               <div
                 style={{
                   marginTop: 12,
-                  color: "#12633F",
+                  color: localNotice.tone === "success" ? "#12633F" : "#9F1239",
                   fontSize: 13,
                   fontWeight: 900,
                 }}
               >
-                {localNotice}
+                {localNotice.text}
               </div>
             ) : null}
           </div>

@@ -1,3 +1,53 @@
+### App-wide protocol tightening slice 1 (2026-06-13)
+
+- Trigger:
+  - owner asked to re-check the infrastructure/protocol app-wide, with focus on
+    buttons, watermarks, missing/weak icons, builder-facing language, feedback,
+    branding, wrong-sized blocks, and phone drag feel.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - changed the Marketplace Demand Box glyph from the Spotlight megaphone to
+      the marketplace/trade icon so Demand Box no longer visually reads as
+      Spotlight publicity.
+  - `frontend/src/layout/AppLayout.tsx`
+    - replaced app-shell task-mode copy such as `Task focus is active` with
+      plain user-facing guidance;
+    - renamed the mobile tools drawer task heading from `Task actions` to
+      `Current action`;
+    - removed the builder-style `main routes stay cleaner` sentence from the
+      page tools drawer.
+  - `frontend/src/components/SocialTagShareButton.tsx`
+    - local share-modal feedback now preserves tone, so failed share/copy
+      feedback renders as an error instead of green success text.
+  - `frontend/tools/audit-marketplace-demand-box-lane.mjs`
+    - added a guard that Demand Box must use a trade/request icon rather than
+      the Spotlight megaphone.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - added `AppLayout` to the visible-language cage and banned the task-mode
+      builder phrases that leaked into the shell.
+  - `frontend/tools/audit-share-tag-actions.mjs`
+    - added a guard for success/error-toned local share feedback.
+- Verification:
+  - `npm run audit:marketplace-demand-box-lane` passed.
+  - `npm run audit:gsn-visible-language` passed.
+  - `npm run audit:marketplace-front-package` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:share-tag-actions` passed.
+  - `npm run audit:icon-protocol` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-button-lines` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is the first small stabilization slice, not a final all-app polish
+    closeout;
+  - source guards are green, but phone review still decides whether blocks feel
+    premium and whether drag/tap feel is good;
+  - no backend, auth, schemas, deployment settings, route targets, or shared
+    mobile tap-guard behavior changed.
+
 ### Demand Box icon placement correction (2026-06-13)
 
 - Trigger:

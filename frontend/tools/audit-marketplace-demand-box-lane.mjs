@@ -37,11 +37,23 @@ const intentItemsBlock =
   source.match(/const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem\[\] = \[[\s\S]*?\n\];/)?.[0] ||
   "";
 
+const iconMapBlock =
+  source.match(/const MARKETPLACE_GLYPH_ICON_MAP = \{[\s\S]*?\n\} satisfies Record<MarketplaceGlyphName, GsnIconName>;/)?.[0] ||
+  "";
+
 if (!/id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/.test(intentItemsBlock)) {
   addFinding(
     source.indexOf(intentItemsBlock),
     "Demand Box must stay searchable from More but hidden from the visible More button grid.",
     intentItemsBlock
+  );
+}
+
+if (!/demand: "marketplace"/.test(iconMapBlock)) {
+  addFinding(
+    source.indexOf(iconMapBlock),
+    "Demand Box must use a trade/request icon, not the Spotlight megaphone.",
+    iconMapBlock
   );
 }
 

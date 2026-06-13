@@ -2857,7 +2857,7 @@ const MARKETPLACE_GLYPH_ICON_MAP = {
   control: "vault",
   copy: "copy",
   cycle: "refresh",
-  demand: "megaphone",
+  demand: "marketplace",
   email: "phone",
   eye: "eye",
   heart: "shield",

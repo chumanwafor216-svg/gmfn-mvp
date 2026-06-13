@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = join(frontendRoot, "..");
 
 const files = [
+  "frontend/src/layout/AppLayout.tsx",
   "frontend/src/pages/JoinEntryPage.tsx",
   "frontend/src/pages/BuildFirstCirclePage.tsx",
   "frontend/src/pages/ExposurePage.tsx",
@@ -113,6 +114,10 @@ const forbidden = [
   "No custodial funds are held by GMFN",
   "Clan liquidity index",
   "Dev Clan",
+  "Task focus is active",
+  "Loans & Support task",
+  "This task is in focus",
+  "main routes stay cleaner",
 ];
 
 const forbiddenByFile = [
