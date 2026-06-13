@@ -800,9 +800,11 @@ function desktopShell(): React.CSSProperties {
 function mobileShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
+    height: "100dvh",
     background: gmfnBrand.gradients.pageWash,
     display: "flex",
     flexDirection: "column",
+    overflow: "hidden",
   };
 }
 
@@ -990,6 +992,9 @@ function mainContent(
         : `16px 16px ${mobileBottomPadding}`
       : "24px 28px 34px",
     overflowX: "hidden",
+    overflowY: isMobile ? "auto" : undefined,
+    WebkitOverflowScrolling: isMobile ? "touch" : undefined,
+    overscrollBehaviorY: isMobile ? "contain" : undefined,
     flex: isMobile ? "1 1 auto" : undefined,
   };
 }

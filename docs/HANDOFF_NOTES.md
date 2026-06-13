@@ -1,3 +1,48 @@
+### Authenticated mobile bottom-rail viewport stabilization (2026-06-13)
+
+- Trigger:
+  - continued the final phone/bottom stabilization pass after entry screens
+    improved;
+  - a signed-in local probe with `admin@test.com` / local dev credentials showed
+    the bottom rail was stable but sitting at the bottom of the document, not
+    inside the visible phone viewport on long authenticated routes.
+- Changed locally:
+  - `frontend/src/layout/AppLayout.tsx`
+    - mobile app shell now owns the visible viewport height with `100dvh`;
+    - mobile shell hides outer document overflow;
+    - authenticated `<main>` becomes the vertical scroll container, keeping the
+      bottom rail visible as the last shell row instead of a far-down document
+      element.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - added a guard that requires viewport-height mobile shell behavior and
+      scrollable main content so the rail cannot regress to document-bottom
+      placement.
+- Verification:
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Signed-in local DevTools phone geometry before the fix showed the bottom
+    rail at document-bottom positions such as `top: 2215` on Dashboard,
+    `top: 3529` on Finance, outside the 844px viewport.
+  - Signed-in local DevTools phone geometry after the fix showed the rail
+    consistently visible at `top: 785`, `bottom: 844` on Dashboard, Community,
+    Marketplace, Finance, and Trust; `<main>` held the page scroll.
+  - Visual screenshots were checked from ignored local files under
+    `test_uploads/signedin-phone-shots/`; Dashboard and Finance show the rail
+    visible with the active item readable and content stopping above it.
+- Unabated truth:
+  - this was a real shell-level issue, not just cosmetic polish;
+  - the rail is still intentionally horizontally scrollable, so neighboring
+    inactive items may be partially off-screen while the active item is kept
+    visible;
+  - production phone browser chrome should still be checked after publish,
+    because native mobile browser toolbars can differ from headless viewport
+    emulation.
+
 ### Entry phone compactness polish for Cover and Join (2026-06-13)
 
 - Trigger:

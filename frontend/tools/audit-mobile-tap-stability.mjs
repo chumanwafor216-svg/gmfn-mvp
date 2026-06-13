@@ -870,6 +870,12 @@ const appShellChecks = [
   },
   {
     label:
+      "Mobile app shell must keep the bottom rail in the visible viewport while main content scrolls",
+    pattern:
+      /function mobileShell\(\): React\.CSSProperties[\s\S]*?height: "100dvh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "contain" : undefined/,
+  },
+  {
+    label:
       "Mobile overlays must not animate into a visible-but-tap-through closing state",
     pattern:
       /function overlayBackdrop\([\s\S]*?transition: "none"[\s\S]*?function drawerPanel\([\s\S]*?transition: "none"[\s\S]*?function actionsPanel\([\s\S]*?transition: "none"/,
