@@ -1,3 +1,100 @@
+### Main schedule audit sweep checkpoint (2026-06-13)
+
+- Trigger:
+  - product owner said to continue with the main target and major work schedule
+    until it is finished.
+- Work schedule followed:
+  - confirmed the current app-wide order from the project docs:
+    entry/inflow, Dashboard, Community Home, Marketplace, Shop/Public Shop/Shop
+    Control, Finance, Trust Passport/TrustSlip/verification, Loans/repayment/
+    support, admin/operations;
+  - did not make speculative UX edits where existing route and lane cages were
+    already green.
+- Local audit sweep passed:
+  - Entry / inflow:
+    - `npm run audit:entry-auth`
+    - `npm run audit:member-entry-actions`
+    - `npm run audit:entry-flow-polish`
+    - `npm run audit:entry-copy-response`
+  - Protected first-band:
+    - `npm run audit:protected-button-freeze`
+    - `npm run audit:dashboard-actions`
+    - `npm run audit:dashboard-button-inventory`
+    - `npm run audit:community-home-button-inventory`
+  - Marketplace:
+    - `npm run audit:marketplace-actions`
+    - `npm run audit:marketplace-button-inventory`
+    - `npm run audit:marketplace-button-lines`
+    - `npm run audit:marketplace-front-package`
+    - `npm run audit:marketplace-money-pool-lane`
+    - `npm run audit:marketplace-rosca-lane`
+    - `npm run audit:marketplace-support-lane`
+    - `npm run audit:marketplace-trusted-trade-lane`
+    - `npm run audit:marketplace-records-links-lane`
+    - `npm run audit:marketplace-more-tools-lane`
+    - `npm run audit:marketplace-trust-pill`
+    - `npm run audit:marketplace-demand-box-lane`
+  - Shop / Public Shop / Shop Control:
+    - `npm run audit:community-shop-actions`
+    - `npm run audit:shop-control-button-inventory`
+    - `npm run audit:shop-gallery-button-inventory`
+    - `npm run audit:shop-assets-slots`
+  - Finance:
+    - `npm run audit:finance-actions`
+    - `npm run audit:finance-front-package`
+    - `npm run audit:finance-lane-map`
+    - `npm run audit:finance-button-inventory`
+    - `npm run audit:finance-money-summary-lane`
+    - `npm run audit:finance-money-movement-lanes`
+    - `npm run audit:finance-banking-rails-lane`
+    - `npm run audit:finance-records-events-lane`
+    - `npm run audit:finance-signals-readiness-lane`
+    - `npm run audit:finance-secondary-route-tools`
+    - `npm run audit:payout-details-protocol`
+    - `npm run audit:payment-instruction-phone-rows`
+  - Trust / verification:
+    - `npm run audit:trust-actions`
+    - `npm run audit:trust-passport-front-package`
+    - `npm run audit:trust-passport-button-inventory`
+    - `npm run audit:trust-passport-lane-map`
+    - `npm run audit:trust-passport-evidence-story-lane`
+    - `npm run audit:trust-passport-repair-lane`
+    - `npm run audit:trust-passport-finance-discipline-lane`
+    - `npm run audit:trust-passport-community-confirmation-lane`
+  - Loans / proof / identity / demand:
+    - `npm run audit:loans-actions`
+    - `npm run audit:proof-surfaces`
+    - `npm run audit:identity-integrity-front-package`
+    - `npm run audit:demand-box-front-package`
+  - Cross-domain and admin:
+    - `npm run audit:route-fallthrough`
+    - `npm run audit:spotlight-controls`
+    - `npm run audit:spotlight-quota`
+    - `npm run audit:action-surfaces`
+    - `npm run audit:admin-ops-actions`
+    - `npm run audit:community-join-requests-layout`
+    - `npm run audit:notifications-button-inventory`
+    - `npm run audit:global-action-debugids`
+    - `npm run audit:global-raw-action-elements`
+    - final `npm run audit:protected-button-freeze`
+  - Build / type / backend focused proof:
+    - `npm exec -- tsc -b --pretty false`
+    - `npm run build`
+    - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py`
+- Expected external failure:
+  - `npm run audit:live-api-identity-routes` still fails against
+    `https://gmfn-api.onrender.com`;
+  - failure confirms the live API is stale and still missing identity routes,
+    missing withdrawal sort-code fields, and exposing the old public community
+    verification protected-category inventory.
+- Unabated truth:
+  - local code/audit readiness across the main guarded frontend schedule is
+    green;
+  - this does not prove final phone feel; product-owner phone review remains
+    the real visual acceptance gate;
+  - the main unresolved blocker is not a local code failure found by this sweep,
+    but the Render API service not serving the pushed backend code.
+
 ### Live API deploy audit now catches QR privacy drift (2026-06-13)
 
 - Trigger:
