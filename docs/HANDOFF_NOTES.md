@@ -1,3 +1,44 @@
+### Marketplace mobile front-desk compactness stabilization (2026-06-13)
+
+- Trigger:
+  - continued the final phone/bottom stabilization pass after Trust Passport
+    lane selector compacting;
+  - local Edge phone viewport showed Marketplace front-desk lane cards too
+    tall: `Trade & Shops` was partly under the bottom rail and
+    `Support & Loans` started below the first viewport.
+- Changed locally:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - fixed compact grouped-lane card height to `108px`;
+    - reduced compact grouped-lane icon box from `58/52px` to `44px`;
+    - reduced compact lane glyph size to `26px`;
+    - made compact front-card tags one fixed horizontal row with smaller
+      padding/text so pill wrapping cannot stretch the cards into the bottom
+      rail.
+  - `frontend/tools/audit-marketplace-actions.mjs`
+    - updated the Marketplace action guard to require the compact `108px`
+      front-card geometry and compact no-wrap tag row.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:marketplace-front-package`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-lines`.
+  - Passed Marketplace lane audits for Money Pool, ROSCA, Support Requests,
+    Trusted Trade, Records & Links, and More / Community Tools.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local Edge phone viewport after the change showed the four primary
+    Marketplace lanes at `311-419`, `429-537`, `547-655`, and `665-773`, all
+    above the bottom rail `top: 785`.
+- Unabated truth:
+  - this fixes the Marketplace first-viewport lane-card/rail collision;
+  - it intentionally truncates some compact tag text with ellipsis on phone,
+    trading less label detail for a calmer usable front desk;
+  - deeper Marketplace lane bodies still need real-device tap review before
+    the overall package should be considered frozen.
+
 ### Trust Passport mobile lane selector stabilization (2026-06-13)
 
 - Trigger:

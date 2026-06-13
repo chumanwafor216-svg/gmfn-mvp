@@ -2641,15 +2641,15 @@ function marketplaceOsRowStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceFrontLaneCardStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...marketplaceOsRowStyle(isCompact),
-    minHeight: isCompact ? 126 : 116,
-    height: "auto",
-    maxHeight: "none",
+    minHeight: isCompact ? 108 : 116,
+    height: isCompact ? 108 : "auto",
+    maxHeight: isCompact ? 108 : "none",
     borderRadius: isCompact ? 20 : 22,
     gridTemplateColumns: isCompact
-      ? "58px minmax(0, 1fr) 18px"
+      ? "44px minmax(0, 1fr) 16px"
       : "64px minmax(0, 1fr) 20px",
-    padding: isCompact ? 14 : 16,
-    gap: isCompact ? 12 : 16,
+    padding: isCompact ? 10 : 16,
+    gap: isCompact ? 8 : 16,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(250,253,255,0.98) 100%)",
   };
@@ -2661,32 +2661,34 @@ function marketplaceFrontLaneIconStyle(
 ): React.CSSProperties {
   return {
     ...marketplaceOsRowIconStyle(bg, isCompact),
-    width: isCompact ? 58 : 64,
-    height: isCompact ? 58 : 64,
-    borderRadius: isCompact ? 18 : 20,
+    width: isCompact ? 44 : 64,
+    height: isCompact ? 44 : 64,
+    borderRadius: isCompact ? 14 : 20,
   };
 }
 
-function marketplaceFrontTagRowStyle(): React.CSSProperties {
+function marketplaceFrontTagRowStyle(isCompact = false): React.CSSProperties {
   return {
     display: "flex",
-    gap: 7,
-    flexWrap: "wrap",
+    gap: isCompact ? 5 : 7,
+    flexWrap: isCompact ? "nowrap" : "wrap",
     alignItems: "center",
     minWidth: 0,
+    overflow: isCompact ? "hidden" : undefined,
   };
 }
 
 function marketplaceFrontTagStyle(
   color: string,
-  background: string
+  background: string,
+  isCompact = false
 ): React.CSSProperties {
   return {
     borderRadius: 999,
     background,
     color,
-    padding: "6px 10px",
-    fontSize: 12,
+    padding: isCompact ? "5px 8px" : "6px 10px",
+    fontSize: isCompact ? 11 : 12,
     fontWeight: 950,
     lineHeight: 1.15,
     whiteSpace: "nowrap",
@@ -5902,7 +5904,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="pool" size={isCompact ? 30 : 34} />
+                <MarketplaceGlyph name="pool" size={isCompact ? 26 : 34} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -5911,19 +5913,19 @@ export default function MarketplacePage() {
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Pool, money in/out, and banking.
                 </span>
-                <span style={marketplaceFrontTagRowStyle()}>
+                <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
-                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE")}
+                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
                     Money In
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE")}
+                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
                     Money Out
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE")}
+                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
                     Banking Rails
                   </span>
@@ -5950,7 +5952,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="rosca" size={isCompact ? 30 : 34} />
+                <MarketplaceGlyph name="rosca" size={isCompact ? 26 : 34} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -5959,19 +5961,19 @@ export default function MarketplacePage() {
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Member savings circle for this community.
                 </span>
-                <span style={marketplaceFrontTagRowStyle()}>
+                <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
-                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6")}
+                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6", isCompact)}
                   >
                     Yearly Service
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6")}
+                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6", isCompact)}
                   >
                     Member Cycle
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6")}
+                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6", isCompact)}
                   >
                     Payout Record
                   </span>
@@ -6002,7 +6004,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="trade" size={isCompact ? 30 : 34} />
+                <MarketplaceGlyph name="trade" size={isCompact ? 26 : 34} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -6011,19 +6013,19 @@ export default function MarketplacePage() {
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Shops, offers, and visible trade.
                 </span>
-                <span style={marketplaceFrontTagRowStyle()}>
+                <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
-                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8")}
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
                   >
                     Trusted Trade
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8")}
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
                   >
                     Demand Box
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8")}
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
                   >
                     Public Shops
                   </span>
@@ -6054,7 +6056,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="support" size={isCompact ? 30 : 34} />
+                <MarketplaceGlyph name="support" size={isCompact ? 26 : 34} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -6063,14 +6065,14 @@ export default function MarketplacePage() {
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Get help and manage loans.
                 </span>
-                <span style={marketplaceFrontTagRowStyle()}>
+                <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
-                    style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8")}
+                    style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}
                   >
                     Support Requests
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8")}
+                    style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}
                   >
                     Loan Process
                   </span>
@@ -6097,7 +6099,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="links" size={isCompact ? 30 : 34} />
+                <MarketplaceGlyph name="links" size={isCompact ? 26 : 34} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -6106,29 +6108,29 @@ export default function MarketplacePage() {
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Share, verify, shop, repost.
                 </span>
-                <span style={marketplaceFrontTagRowStyle()}>
+                <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
-                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
                   >
                     Join
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
                   >
                     Verify
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
                   >
                     Shop Face
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
                   >
                     Paid Repost
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
                   >
                     Packages
                   </span>
@@ -6153,7 +6155,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="spark" size={isCompact ? 30 : 34} />
+                <MarketplaceGlyph name="spark" size={isCompact ? 26 : 34} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -6162,24 +6164,24 @@ export default function MarketplacePage() {
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Trust, ID, proof, messages, and route help.
                 </span>
-                <span style={marketplaceFrontTagRowStyle()}>
+                <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
-                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
                   >
                     Trust
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
                   >
                     Identity
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
                   >
                     TrustSlip
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
                   >
                     Messages
                   </span>
