@@ -1,3 +1,38 @@
+### Identity Integrity task switcher rail stabilization (2026-06-13)
+
+- Trigger:
+  - robust phone geometry scan showed the Identity proof-task selector
+    overlapped the authenticated bottom rail:
+    - `identity-integrity.task.community` at `802-856`;
+    - `identity-integrity.task.phone` at `802-856`;
+    - bottom rail at `793-835`.
+- Changed locally:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - the compact proof-task switcher now starts below the initial bottom rail
+      as the next scroll step instead of beginning half under the rail.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+  - `frontend/tools/audit-button-stability.mjs`
+    - added guards for the phone rail clearance before the task switcher.
+- Verification:
+  - Passed robust local phone scan for `/app/identity?community=3`:
+    - bottom rail at `793-835`;
+    - copy actions at `676-790`;
+    - first task row at `842-896`;
+    - no route-local overlap.
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+- Unabated truth:
+  - the proof-task selector now requires a small scroll from the initial phone
+    viewport;
+  - this keeps the copy actions visible and prevents the proof tasks from
+    presenting as half-available under the rail;
+  - no push or Render deploy was done for this local continuation batch.
+
 ### Trust Passport identity evidence rail stabilization (2026-06-13)
 
 - Trigger:

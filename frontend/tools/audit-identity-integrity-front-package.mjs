@@ -91,7 +91,7 @@ assertContains(
 );
 
 assertContains(
-  /data-identity-integrity-task-switcher="true"[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}/,
+  /data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 52 : 16[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}/,
   "Identity Integrity must keep the proof tasks as compact SVG-led selectors, not a long exposed explanation stack."
 );
 
