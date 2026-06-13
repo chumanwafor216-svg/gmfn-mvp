@@ -8988,14 +8988,14 @@ export default function MarketplacePage() {
                   ...(isCompact
                     ? {
                         position: "absolute",
-                        right: 18,
-                        top: 58,
-                        width: 48,
-                        height: 48,
-                        minWidth: 48,
-                        maxWidth: 48,
-                        minHeight: 48,
-                        maxHeight: 48,
+                        right: 16,
+                        top: 18,
+                        width: 46,
+                        height: 46,
+                        minWidth: 46,
+                        maxWidth: 46,
+                        minHeight: 46,
+                        maxHeight: 46,
                       }
                     : null),
                 }}

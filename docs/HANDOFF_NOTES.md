@@ -1,3 +1,25 @@
+### Demand Box icon placement correction (2026-06-13)
+
+- Trigger:
+  - owner phone screenshot showed the Demand Box icon badge overlapping the
+    `Demand Box` CTA after the copy-width fix.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - moved the compact Demand Box badge from `top: 58` to `top: 18`;
+    - reduced the badge from 48px to 46px so it sits as a top-right support
+      sign instead of touching the button.
+  - `frontend/tools/audit-marketplace-demand-box-lane.mjs`
+    - updated the Demand Box geometry guard to require the safer top-right
+      badge placement.
+- Verification:
+  - `npm run audit:marketplace-demand-box-lane` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is a small icon-placement correction over the previous Demand Box
+    patch; a real phone refresh is still the final judge.
+
 ### Demand Box compact copy width fix (2026-06-13)
 
 - Trigger:
