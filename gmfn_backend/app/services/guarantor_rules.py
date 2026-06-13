@@ -21,7 +21,7 @@ def require_clan_member(db: Session, clan_id: int, user_id: int) -> ClanMembersh
     if not membership:
         raise HTTPException(
             status_code=400,
-            detail="Guarantor must be a clan member",
+            detail="Guarantor must be a community member",
         )
 
     return membership

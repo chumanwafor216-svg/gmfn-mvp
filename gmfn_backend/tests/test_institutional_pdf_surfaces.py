@@ -31,6 +31,10 @@ def test_simple_evidence_pdfs_use_gsn_institutional_shell():
         assert "Official evidence summary" in text
         assert "GMFN Evidence Pack" not in text
 
+    loan_text = read_service("app/services/loan_evidence_pack_pdf_service.py")
+    assert 'kv("Community", clan_name or "-")' in loan_text
+    assert 'kv("Clan"' not in loan_text
+
 
 def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     text = read_service("app/services/trust_slip_evidence_pdf_service.py")
@@ -63,6 +67,8 @@ def test_report_pdfs_use_gsn_institutional_shells():
     assert "safe_pdf_text" in text
     assert "Official evidence summary" in text
     assert "Official exposure summary" in text
+    assert 'p("Community", f"{getattr(clan, \'name\', None) or \'-\'} (ID: {getattr(loan, \'clan_id\', \'-\')})")' in text
+    assert 'p("Clan"' not in text
     assert text.count("GSN loan trust report - controlled community trust record.") == 2
     assert text.count("GSN community exposure report - controlled community trust record.") == 2
     assert "GMFN Loan Trust Report" not in text

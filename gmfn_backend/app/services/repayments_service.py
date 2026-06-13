@@ -40,7 +40,7 @@ def _require_clan_member(db: Session, *, clan_id: int, user_id: int) -> ClanMemb
         .first()
     )
     if not m:
-        raise HTTPException(status_code=403, detail="Not allowed (not in clan)")
+        raise HTTPException(status_code=403, detail="Not allowed (not in community)")
     return m
 
 
@@ -83,7 +83,7 @@ def create_repayment(
     is_admin = (getattr(m, "role", "") or "").lower() == "admin"
     is_borrower = borrower_user_id == _uid(payer)
     if not (is_admin or is_borrower):
-        raise HTTPException(status_code=403, detail="Only borrower or clan admin can repay")
+        raise HTTPException(status_code=403, detail="Only borrower or community admin can repay")
 
     status = (getattr(loan, "status", "") or "").lower().strip()
     if status in {"repaid", "cancelled", "defaulted"}:

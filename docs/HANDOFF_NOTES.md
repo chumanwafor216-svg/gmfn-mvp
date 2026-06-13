@@ -1,3 +1,53 @@
+### Community wording for loan and proof permission surfaces (2026-06-13)
+
+- Trigger:
+  - continuing the main GSN/community language cleanup after the remaining
+    public-label batch;
+  - targeted scan found old visible `Clan` wording in loan permission errors,
+    repayment permission errors, guarantor validation, and generated loan proof
+    PDF identity rows.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/loans.py`
+    - changed loan route errors from `Clan admin privileges required`,
+      `wrong clan context`, `clan admin`, to `Community admin privileges
+      required`, `wrong community context`, and `community admin`.
+  - `gmfn_backend/app/api/routes/exposure_admin.py`
+    - changed the exposure-admin permission error to `Community admin
+      privileges required`.
+  - `gmfn_backend/app/services/repayments_service.py`
+    - changed repayment permission errors from `not in clan` and `clan admin`
+      to community-facing wording.
+  - `gmfn_backend/app/services/guarantor_rules.py`
+    - changed guarantor validation from `clan member` to `community member`.
+  - `gmfn_backend/app/services/loan_evidence_pack_pdf_service.py`
+    - changed the visible PDF identity row from `Clan` to `Community`.
+  - `gmfn_backend/app/services/reports_service.py`
+    - changed the visible loan trust report identity row from `Clan` to
+      `Community`.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - extended the visible-language guard to cover these loan/repayment/
+      guarantor permission strings.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs` and
+    `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added proof-surface guards so generated loan PDFs and loan trust reports
+      keep `Community` labels instead of `Clan`.
+  - `gmfn_backend/tests/test_guarantor_invite_list.py`
+    - updated the forbidden-message assertion to the new community wording.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm run audit:proof-surfaces`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_guarantor_invite_list.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_repayment_completion_service.py gmfn_backend\tests\test_loan_pool_event_truth.py gmfn_backend\tests\test_loan_hardening_service.py gmfn_backend\tests\test_guarantor_decision.py`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - this is still a visible wording/proof-surface cleanup only;
+  - internal route names, schema fields, headers, IDs, and model names still
+    use `clan`/`gmfn` for compatibility;
+  - this routine continuation batch is ready locally, but should be pushed with
+    the next owner-approved publish batch under the active pipeline
+    conservation protocol.
+
 ### Deploy attempt for remaining public-label wording batch (2026-06-13)
 
 - Trigger:

@@ -52,7 +52,7 @@ def _require_clan_admin(membership: ClanMembership) -> None:
     if (membership.role or "").lower() != "admin":
         raise HTTPException(
             status_code=403,
-            detail="Clan admin privileges required",
+            detail="Community admin privileges required",
         )
 
 
@@ -60,7 +60,7 @@ def _require_same_clan(loan: Loan, clan_id: int) -> None:
     if int(loan.clan_id) != int(clan_id):
         raise HTTPException(
             status_code=403,
-            detail="Not allowed (wrong clan context)",
+            detail="Not allowed (wrong community context)",
         )
 
 
@@ -302,7 +302,7 @@ def create_loan_guarantor(
     if not (is_owner or is_admin):
         raise HTTPException(
             status_code=403,
-            detail="Only the borrower or clan admin can add guarantors",
+            detail="Only the borrower or community admin can add guarantors",
         )
 
     guarantor = add_loan_guarantor(
@@ -445,7 +445,7 @@ def decide_loan_guarantor(
     if (not is_guarantor) and (not is_admin):
         raise HTTPException(
             status_code=403,
-            detail="Only the guarantor or a clan admin can decide",
+            detail="Only the guarantor or a community admin can decide",
         )
 
     if int(loan.borrower_user_id) == _uid(current_user) and not is_guarantor:

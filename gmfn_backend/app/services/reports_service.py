@@ -215,7 +215,7 @@ def build_loan_trust_report_pdf(
     guarantors_required = int(getattr(loan, "guarantors_required", 0) or 0)
 
     p("Loan ID", str(getattr(loan, "id", "-")))
-    p("Clan", f"{getattr(clan, 'name', None) or '-'} (ID: {getattr(loan, 'clan_id', '-')})")
+    p("Community", f"{getattr(clan, 'name', None) or '-'} (ID: {getattr(loan, 'clan_id', '-')})")
     p("Borrower", borrower_email)
     p("Status", str(getattr(loan, "status", "-")))
     p("Amount", f"{_fmt_money(amount)} {getattr(loan, 'currency', '')}")

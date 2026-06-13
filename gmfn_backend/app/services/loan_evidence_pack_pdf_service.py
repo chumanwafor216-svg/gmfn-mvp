@@ -229,7 +229,7 @@ def build_loan_evidence_pack_pdf(
     line("Official evidence summary", size=14, gap=20, bold=True)
     kv("Generated", ts)
     kv("Loan ID", str(loan_id))
-    kv("Clan", clan_name or "-")
+    kv("Community", clan_name or "-")
     kv("Borrower", borrower_email or (str(borrower_user_id) if borrower_user_id is not None else "-"))
     kv("Redaction", "ON (masked emails)" if redact else "OFF (full emails)")
     line("")

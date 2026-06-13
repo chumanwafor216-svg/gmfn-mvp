@@ -26,7 +26,7 @@ def _require_clan_admin(db: Session, *, clan_id: int, current_user: User) -> Non
         .first()
     )
     if not m or m.role != "admin":
-        raise HTTPException(status_code=403, detail="Clan admin privileges required")
+        raise HTTPException(status_code=403, detail="Community admin privileges required")
 
 
 def _D(x: Any) -> Decimal:

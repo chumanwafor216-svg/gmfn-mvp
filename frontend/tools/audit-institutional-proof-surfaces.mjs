@@ -213,13 +213,28 @@ assertContains(
 );
 assertContains(
   "reports",
+  /p\("Community", f"\{getattr\(clan, 'name', None\) or '-'\} \(ID: \{getattr\(loan, 'clan_id', '-'\)\}\)"\)/,
+  "Loan trust report identity rows must label the route context as Community, not Clan."
+);
+assertContains(
+  "reports",
   /Community Exposure Summary[\s\S]*?GSN community exposure report - controlled community trust record\./,
   "Community exposure reports must use current GSN community-facing summary and footer wording."
 );
 assertNotContains(
   "reports",
-  /GSN Clan Exposure Report|Clan Exposure Table|Clan Exposure Summary|Clan Exposure Ratio|clan exposure report/,
+  /GSN Clan Exposure Report|Clan Exposure Table|Clan Exposure Summary|Clan Exposure Ratio|p\("Clan"|clan exposure report/,
   "Community exposure reports must not expose older clan wording."
+);
+assertContains(
+  "loanEvidencePack",
+  /kv\("Community", clan_name or "-"\)/,
+  "Loan evidence pack PDFs must label the route context as Community, not Clan."
+);
+assertNotContains(
+  "loanEvidencePack",
+  /kv\("Clan"/,
+  "Loan evidence pack PDFs must not expose older Clan labels."
 );
 assertContains(
   "reportsRoute",
