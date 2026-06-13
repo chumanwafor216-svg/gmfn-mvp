@@ -151,6 +151,11 @@ assertContains(
 );
 
 assertContains(
+  /gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?gap: isCompact \? 8 : 10[\s\S]*?trustPassportLanes\.map\(\(lane\) =>[\s\S]*?stableHeight=\{isCompact \? 58 : 66\}[\s\S]*?debugId=\{`trust-score\.lane\.\$\{lane\.key\}`\}[\s\S]*?fontSize: isCompact \? 11\.5 : 14[\s\S]*?<GsnLegacyIcon name=\{lane\.icon\} size=\{isCompact \? 24 : 32\} decorative/,
+  "Trust Passport lane selector must stay compact enough on phone for all six lanes to clear the bottom rail."
+);
+
+assertContains(
   /gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport shareable tools must keep shorter fixed phone heights while preserving the larger desktop paper controls."
 );

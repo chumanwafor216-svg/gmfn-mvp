@@ -1,3 +1,43 @@
+### Trust Passport mobile lane selector stabilization (2026-06-13)
+
+- Trigger:
+  - continued the final phone/bottom stabilization pass after Finance first
+    action compacting;
+  - local Edge phone viewport showed the sixth Trust Passport lane
+    (`Repair or Next Step`) bottoming at `829`, behind the authenticated bottom
+    rail that starts at `785`.
+- Changed locally:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changed the compact Trust Passport lane selector from one tall column to
+      a two-column grid;
+    - reduced compact lane button height from `62` to `58`;
+    - tightened compact lane icon size, gap, font size, line height, and padding
+      while keeping all six approved lane labels and debug IDs.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - added a guard that requires the compact two-column lane selector,
+      `58px` phone lane height, and smaller compact icon/text geometry.
+- Verification:
+  - Passed `npm --prefix frontend run audit:trust-passport-lane-map`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed Trust Passport lane audits for Community Confirmation, Evidence
+    Story, Finance Discipline, and Repair.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local Edge phone viewport after the change showed the sixth lane bottom at
+    `595`, safely above the bottom rail `top: 785`; the Identity Overview
+    begins in the same first viewport.
+- Unabated truth:
+  - this fixes the lane selector overlap and improves the first Trust Passport
+    viewport;
+  - it does not certify every deeper Trust Passport lane body on a physical
+    phone;
+  - bottom browser chrome still needs final real-device review before calling
+    the package frozen for wider testing.
+
 ### Finance mobile first-action compactness polish (2026-06-13)
 
 - Trigger:

@@ -2687,10 +2687,10 @@ export default function TrustScorePage() {
             style={{
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "1fr"
+                ? "repeat(2, minmax(0, 1fr))"
                 : "repeat(3, minmax(0, 1fr))",
-              gap: 10,
-              marginTop: 12,
+              gap: isCompact ? 8 : 10,
+              marginTop: isCompact ? 10 : 12,
             }}
           >
             {trustPassportLanes.map((lane) => {
@@ -2700,11 +2700,12 @@ export default function TrustScorePage() {
                   key={lane.key}
                   onClick={() => setActiveTrustPassportLane(lane.key)}
                   fullWidth
-                  stableHeight={isCompact ? 62 : 66}
+                  stableHeight={isCompact ? 58 : 66}
                   debugId={`trust-score.lane.${lane.key}`}
                   style={{
                     justifyContent: "flex-start",
-                    borderRadius: 12,
+                    gap: isCompact ? 6 : 8,
+                    borderRadius: isCompact ? 11 : 12,
                     border: isActive
                       ? "1px solid rgba(11,99,209,0.36)"
                       : "1px solid rgba(216,227,238,0.9)",
@@ -2713,12 +2714,13 @@ export default function TrustScorePage() {
                       ? "0 8px 20px rgba(11,99,209,0.12)"
                       : "none",
                     color: "#07172C",
-                    fontSize: isCompact ? 13 : 14,
+                    fontSize: isCompact ? 11.5 : 14,
                     fontWeight: 1000,
-                    paddingInline: 12,
+                    lineHeight: isCompact ? 1.05 : 1.15,
+                    paddingInline: isCompact ? 8 : 12,
                   }}
                 >
-                  <GsnLegacyIcon name={lane.icon} size={isCompact ? 28 : 32} decorative />
+                  <GsnLegacyIcon name={lane.icon} size={isCompact ? 24 : 32} decorative />
                   {lane.label}
                 </SecondaryButton>
               );
