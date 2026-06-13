@@ -26,6 +26,27 @@
   - the marketplace owner-side email package can still use the longer headed
     paper helper intentionally.
 
+### Public community QR copy frontend deploy requested (2026-06-13)
+
+- Action:
+  - committed and pushed `fb98838` (`Trim public community QR copy`) to `main`;
+  - manually ran GitHub Actions workflow `Trigger Render Deploy` with
+    `deploy_api=false`;
+  - workflow run:
+    `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/27465554925`;
+  - Render frontend deploy hook returned deploy id `dep-d8mjvfcvikkc73bv485g`.
+- Verification:
+  - GitHub Actions run completed successfully;
+  - workflow log says it triggered `gmfn-frontend` at
+    `fb988389f8d7ffb84648befa8989b35da57f3718`;
+  - workflow log says `gmfn-frontend deploy hook accepted the request`;
+  - workflow log says `Backend deploy needed: false`.
+- Unabated truth:
+  - this proves the frontend deploy hook accepted the request;
+  - it does not prove the Render static build finished live unless Render shows
+    the deploy as live;
+  - backend/API was intentionally not redeployed for this frontend-only fix.
+
 ### Frontend-only Render deploy hook accepted (2026-06-13)
 
 - Trigger:
