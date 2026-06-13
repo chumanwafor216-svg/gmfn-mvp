@@ -1394,6 +1394,96 @@ export default function PaymentInstructionsPage() {
       </section>
 
       <section style={moneyInWhitePanel(12)}>
+        <div style={moneyInInputShell()}>
+          <input
+            value={amountInput}
+            onChange={(e) => {
+              setAmountInput(e.target.value);
+              setInstruction(null);
+              setPaymentConfirmed(false);
+              setPaymentConfirmedAt(null);
+            }}
+            disabled={generatingInstruction}
+            placeholder="Enter amount"
+            inputMode="decimal"
+            aria-label="Front payment amount"
+            style={{
+              border: 0,
+              outline: "none",
+              background: "transparent",
+              minHeight: 52,
+              padding: "0 14px",
+              fontSize: 17,
+              color: "#07172C",
+              fontWeight: 750,
+              minWidth: 0,
+            }}
+          />
+          <select
+            value={selectedCurrency}
+            onChange={(e) => handleCurrencyChange(e.target.value)}
+            disabled={generatingInstruction}
+            aria-label="Front payment currency"
+            style={{
+              marginRight: 8,
+              minHeight: 40,
+              borderRadius: 12,
+              border: "1px solid rgba(11,31,51,0.12)",
+              color: "#07172C",
+              fontWeight: 1000,
+              fontSize: 15,
+              background: "#F8FBFF",
+              padding: "0 8px",
+              outline: "none",
+              cursor: generatingInstruction ? "not-allowed" : "pointer",
+            }}
+          >
+            {MONEY_IN_CURRENCY_OPTIONS.map((item) => (
+              <option key={`front-${item.code}`} value={item.code}>
+                {item.code}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div
+          style={{
+            marginTop: 10,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr 1fr" : "minmax(0, 1fr) minmax(0, 0.78fr)",
+            gap: 10,
+            alignItems: "stretch",
+          }}
+        >
+          <PrimaryButton
+            onClick={() => void handleGenerateInstruction()}
+            disabled={generatingInstruction}
+            debugId="money-in.front-generate-instruction"
+            stableHeight={52}
+            fullWidth
+            style={moneyInActionButtonStyle("primary", generatingInstruction)}
+          >
+            {moneyInActionText("document", generatingInstruction ? "Generating" : "Generate")}
+          </PrimaryButton>
+
+          <SecondaryButton
+            onClick={() => void handleRefreshRoute()}
+            disabled={generatingInstruction || refreshingRoute}
+            debugId="money-in.front-refresh-route"
+            stableHeight={52}
+            fullWidth
+            style={moneyInActionButtonStyle(
+              "secondary",
+              generatingInstruction || refreshingRoute
+            )}
+          >
+            {moneyInActionText("refresh", refreshingRoute ? "Refreshing" : "Refresh")}
+          </SecondaryButton>
+        </div>
+
+      </section>
+
+      <section style={moneyInWhitePanel(12)}>
         <div
           style={{
             display: "grid",

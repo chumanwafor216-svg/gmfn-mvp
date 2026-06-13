@@ -849,6 +849,84 @@ export default function PaymentRailsPage() {
               Use <span style={{ fontWeight: 1000 }}>Next routes</span> when
               you are ready to continue.
             </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              <StableCtaLink
+                to={routes.moneyIn}
+                debugId="payment-rails.front-money-in"
+                stableHeight={isCompact ? 58 : 100}
+                fullWidth
+                style={{
+                  ...routeTileStyle(true),
+                  minHeight: isCompact ? 58 : 100,
+                  height: isCompact ? 58 : 100,
+                  maxHeight: isCompact ? 58 : 100,
+                  padding: isCompact ? "10px 12px" : 16,
+                  justifyContent: "center",
+                }}
+              >
+                {isCompact ? (
+                  <span style={{ color: "#0B1F33", fontSize: 13, fontWeight: 1000, textAlign: "center" }}>
+                    Money In
+                  </span>
+                ) : (
+                  routeTileHeading("wallet", "Money In")
+                )}
+              </StableCtaLink>
+
+              <StableCtaLink
+                to={routes.moneyOut}
+                debugId="payment-rails.front-money-out"
+                stableHeight={isCompact ? 58 : 100}
+                fullWidth
+                style={{
+                  ...routeTileStyle(false),
+                  minHeight: isCompact ? 58 : 100,
+                  height: isCompact ? 58 : 100,
+                  maxHeight: isCompact ? 58 : 100,
+                  padding: isCompact ? "10px 12px" : 16,
+                  justifyContent: "center",
+                }}
+              >
+                {isCompact ? (
+                  <span style={{ color: "#0B1F33", fontSize: 13, fontWeight: 1000, textAlign: "center" }}>
+                    Money Out
+                  </span>
+                ) : (
+                  routeTileHeading("bank", "Money Out")
+                )}
+              </StableCtaLink>
+
+              <StableCtaLink
+                to={routes.loanReadiness}
+                debugId="payment-rails.front-readiness"
+                stableHeight={isCompact ? 58 : 100}
+                fullWidth
+                style={{
+                  ...routeTileStyle(false),
+                  minHeight: isCompact ? 58 : 100,
+                  height: isCompact ? 58 : 100,
+                  maxHeight: isCompact ? 58 : 100,
+                  padding: isCompact ? "10px 12px" : 16,
+                  justifyContent: "center",
+                }}
+              >
+                {isCompact ? (
+                  <span style={{ color: "#0B1F33", fontSize: 13, fontWeight: 1000, textAlign: "center" }}>
+                    Readiness
+                  </span>
+                ) : (
+                  routeTileHeading("shield", "Readiness")
+                )}
+              </StableCtaLink>
+            </div>
           </div>
 
           <div

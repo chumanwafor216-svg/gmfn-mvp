@@ -1,3 +1,57 @@
+### Finance/payment subroute front-control stabilization (2026-06-13)
+
+- Trigger:
+  - continued phone bottom-stabilization after the remaining Loans/support
+    routes were fixed;
+  - local Edge phone geometry showed Money In, Money Out, Payment Rails, and
+    Payout Details still had no real task/continuation controls above the
+    authenticated bottom rail.
+- Changed locally:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - adds a compact front amount/currency row plus `Generate` and `Refresh`
+      controls before the lower instruction builder;
+    - leaves `Reset` in the deeper task area instead of making it a
+      first-screen primary action.
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - moves the safe path action, `Copy summary`, and `Reset` into a front
+      action cluster before the large Money Out hero;
+    - preserves the deeper decision/action section unchanged.
+  - `frontend/src/pages/PaymentRailsPage.tsx`
+    - adds compact first-viewport continuation links for `Money In`,
+      `Money Out`, and `Readiness`;
+    - keeps the full read-only rail intelligence and full route card section
+      below.
+  - `frontend/src/pages/PayoutDetailsPage.tsx`
+    - hides the decorative wallet icon on compact screens;
+    - adds front `Save details` and `Copy summary` controls in the destination
+      hero;
+    - keeps `Clear local` in the lower form actions because it is not a
+      first-screen primary task.
+  - `frontend/tools/audit-finance-actions.mjs`
+    - added guards for the new front finance/payment controls.
+- Verification:
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local Edge phone viewport showed front controls above the bottom nav
+    (`rail 793-835`):
+    - Money In front amount/currency: `618-670`; Generate/Refresh: `681-733`.
+    - Money Out front actions: `468-644`.
+    - Payment Rails front route links: `645-703`.
+    - Payout Details front Save/Copy: `717-769`.
+- Unabated truth:
+  - this fixes the first-action/continuation-before-rail problem on these four
+    finance/payment routes;
+  - Money Out's direct path can still be disabled in the local state when
+    amount, rail, or payout prerequisites are not ready, which is correct;
+  - Vault Control still needs a separate phone pass because its scan did not
+    show the authenticated bottom rail in the same way and it has a different
+    owner/shop-control risk profile.
+
 ### Remaining support-route front-control stabilization (2026-06-13)
 
 - Trigger:

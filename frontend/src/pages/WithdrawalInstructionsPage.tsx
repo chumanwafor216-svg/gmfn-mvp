@@ -1593,6 +1593,82 @@ export default function WithdrawalInstructionsPage() {
         </div>
       </div>
 
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+          gap: 10,
+        }}
+      >
+        {!effectiveAvailableKnown ? (
+          <PrimaryButton
+            disabled
+            debugId="money-out.front-awaiting-pool"
+            stableHeight={52}
+            fullWidth
+            style={moneyOutActionButtonStyle("primary", true)}
+          >
+            Awaiting
+          </PrimaryButton>
+        ) : !requiresSupport ? (
+          <PrimaryButton
+            onClick={() => void handleDirectWithdrawal()}
+            disabled={
+              submittingWithdrawal ||
+              requestedAmount <= 0 ||
+              !communityRailReady ||
+              !payoutReady
+            }
+            debugId="money-out.front-continue-direct"
+            stableHeight={52}
+            fullWidth
+            style={moneyOutActionButtonStyle(
+              "primary",
+              submittingWithdrawal ||
+                requestedAmount <= 0 ||
+                !communityRailReady ||
+                !payoutReady
+            )}
+          >
+            {submittingWithdrawal ? "Submitting..." : "Check path"}
+          </PrimaryButton>
+        ) : (
+          <PrimaryButton
+            onClick={handleContinueToSupportPath}
+            disabled={requestedAmount <= 0 || !communityRailReady || !payoutReady}
+            debugId="money-out.front-open-support"
+            stableHeight={52}
+            fullWidth
+            style={moneyOutActionButtonStyle(
+              "primary",
+              requestedAmount <= 0 || !communityRailReady || !payoutReady
+            )}
+          >
+            Open support
+          </PrimaryButton>
+        )}
+
+        <SecondaryButton
+          onClick={handleCopyWithdrawalSummary}
+          debugId="money-out.front-copy-summary"
+          stableHeight={52}
+          fullWidth
+          style={moneyOutActionButtonStyle("secondary")}
+        >
+          Copy summary
+        </SecondaryButton>
+
+        <SubtleButton
+          onClick={handleResetTask}
+          stableHeight={52}
+          debugId="money-out.front-reset-task"
+          fullWidth
+          style={moneyOutActionButtonStyle("soft")}
+        >
+          Reset
+        </SubtleButton>
+      </div>
+
       <section
         style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
@@ -1725,6 +1801,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
           ))}
         </div>
+
       </section>
 
       <section style={pageCard("#FFFFFF")}>

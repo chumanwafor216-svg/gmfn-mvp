@@ -706,7 +706,7 @@ export default function PayoutDetailsPage() {
             alignItems: "start",
           }}
         >
-          <IconBadge name="wallet" tone="gold" size={24} />
+          {isCompact ? null : <IconBadge name="wallet" tone="gold" size={24} />}
           <div>
             <div style={sectionLabel()}>Payout destination</div>
 
@@ -758,6 +758,40 @@ export default function PayoutDetailsPage() {
               <span style={badge(false)}>
                 <GsnLegacyIcon name="shield" size={24} /> No money moves here
               </span>
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(2, minmax(0, max-content))",
+                gap: 10,
+                alignItems: "center",
+              }}
+            >
+              <PrimaryButton
+                onClick={() => {
+                  void savePayout();
+                }}
+                debugId="payout-details.front-save"
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 148}
+                stableHeight={52}
+                style={payoutPrimaryButtonStyle(false)}
+              >
+                {actionText("check", "Save details")}
+              </PrimaryButton>
+
+              <SecondaryButton
+                onClick={copySummary}
+                debugId="payout-details.front-copy-summary"
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 150}
+                stableHeight={52}
+                style={payoutSecondaryButtonStyle(false)}
+              >
+                {actionText("copy", "Copy summary")}
+              </SecondaryButton>
             </div>
           </div>
 

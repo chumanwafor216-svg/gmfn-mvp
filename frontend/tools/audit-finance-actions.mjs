@@ -107,7 +107,7 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /debugId="money-in\.generate-instruction"[\s\S]*?debugId="money-in\.refresh-route"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?debugId="money-in\.confirm-paid"/,
+  /debugId="money-in\.front-generate-instruction"[\s\S]*?debugId="money-in\.front-refresh-route"[\s\S]*?debugId="money-in\.generate-instruction"[\s\S]*?debugId="money-in\.refresh-route"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?debugId="money-in\.confirm-paid"/,
   "Money In core instruction actions must remain traceable."
 );
 
@@ -131,7 +131,7 @@ assertContains(
 
 assertContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
-  /debugId="money-out\.continue-direct"[\s\S]*?debugId="money-out\.open-support"[\s\S]*?debugId="money-out\.copy-summary"[\s\S]*?debugId="money-out\.route\.finance"/,
+  /debugId="money-out\.front-awaiting-pool"[\s\S]*?debugId="money-out\.front-continue-direct"[\s\S]*?debugId="money-out\.front-open-support"[\s\S]*?debugId="money-out\.front-copy-summary"[\s\S]*?debugId="money-out\.front-reset-task"[\s\S]*?debugId="money-out\.continue-direct"[\s\S]*?debugId="money-out\.open-support"[\s\S]*?debugId="money-out\.copy-summary"[\s\S]*?debugId="money-out\.route\.finance"/,
   "Money Out core withdrawal and follow-on route actions must remain traceable."
 );
 
@@ -149,7 +149,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/PaymentRailsPage.tsx",
-  /debugId="payment-rails\.route\.money-in"[\s\S]*?debugId="payment-rails\.route\.money-out"[\s\S]*?debugId="payment-rails\.route\.readiness"[\s\S]*?debugId="payment-rails\.route\.workbench"/,
+  /debugId="payment-rails\.front-money-in"[\s\S]*?debugId="payment-rails\.front-money-out"[\s\S]*?debugId="payment-rails\.front-readiness"[\s\S]*?debugId="payment-rails\.route\.money-in"[\s\S]*?debugId="payment-rails\.route\.money-out"[\s\S]*?debugId="payment-rails\.route\.readiness"[\s\S]*?debugId="payment-rails\.route\.workbench"/,
   "Payment Rails route actions must keep finance-route debug IDs."
 );
 
@@ -167,7 +167,7 @@ assertContains(
 
 assertContains(
   "src/pages/PayoutDetailsPage.tsx",
-  /debugId="payout-details\.save"[\s\S]*?debugId="payout-details\.copy-summary"[\s\S]*?debugId="payout-details\.clear-local"[\s\S]*?debugId="payout-details\.open-money-out"[\s\S]*?debugId="payout-details\.open-loans"/,
+  /debugId="payout-details\.front-save"[\s\S]*?debugId="payout-details\.front-copy-summary"[\s\S]*?debugId="payout-details\.save"[\s\S]*?debugId="payout-details\.copy-summary"[\s\S]*?debugId="payout-details\.clear-local"[\s\S]*?debugId="payout-details\.open-money-out"[\s\S]*?debugId="payout-details\.open-loans"/,
   "Payout Details save/copy/clear/follow-on actions must remain traceable."
 );
 
