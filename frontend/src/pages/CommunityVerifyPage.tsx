@@ -448,8 +448,8 @@ export default function CommunityVerifyPage() {
                     {communityName}
                   </h2>
                   <p style={{ ...helperText(), color: "#1F3145", maxWidth: 720 }}>
-                    This QR page confirms the community record only. It does not open member
-                    records, contact details, or private trust history.
+                    This QR page confirms that the community exists in GSN. It does not
+                    expose member records or direct contacts.
                   </p>
                   <div
                     style={{
@@ -493,25 +493,33 @@ export default function CommunityVerifyPage() {
                   <div
                     style={{
                       borderRadius: 18,
-                      background: "#061827",
-                      color: "#FFFFFF",
-                      padding: 14,
+                      background:
+                        "linear-gradient(180deg, rgba(234,247,238,0.96) 0%, rgba(246,252,248,0.98) 100%)",
+                      color: "#07172C",
+                      border: "1px solid rgba(46,155,98,0.18)",
+                      padding: 12,
                       display: "grid",
-                      gap: 6,
+                      gap: 8,
                     }}
                   >
-                    <h2 style={{ margin: 0, color: "#F2C766", fontSize: 18, fontWeight: 1000 }}>
-                      Privacy protection
+                    <h2 style={{ margin: 0, color: "#166534", fontSize: 17, fontWeight: 1000 }}>
+                      Public limits
                     </h2>
-                    <p style={{ ...helperText(), color: "#FFFFFF" }}>
-                      Public viewers see the community record only. Confirmation requests go
-                      through GSN controlled relay.
+                    <p style={{ ...helperText(), color: "#1F3145" }}>
+                      Visitors see identity, public status, and relay availability only.
+                      Confirmation still uses a controlled request.
                     </p>
                   </div>
                   <SecondaryButton
                     debugId="community-verify.refresh"
                     stableHeight={52}
                     onClick={() => void loadRecord()}
+                    style={{
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(8,35,58,0.16)",
+                      color: "#07172C",
+                      boxShadow: "0 10px 22px rgba(6,24,39,0.08)",
+                    }}
                   >
                     {communityVerifyIconBadge("records-folder", 36, "navy")}
                     Refresh
@@ -520,7 +528,7 @@ export default function CommunityVerifyPage() {
               </>
             ) : null}
           </div>
-          <TrustPaperSecurityFooter text="Community-first verification: public community record, private member details protected." />
+          <TrustPaperSecurityFooter text="Community-first verification. Public status only." />
         </article>
       </div>
     </div>

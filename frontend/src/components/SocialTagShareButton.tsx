@@ -42,9 +42,9 @@ const overlayStyle: React.CSSProperties = {
 };
 
 const modalStyle: React.CSSProperties = {
-  width: 390,
+  width: 360,
   maxWidth: "96vw",
-  maxHeight: "88vh",
+  maxHeight: "82vh",
   overflowY: "auto",
   borderRadius: 16,
   border: "1px solid rgba(203, 213, 225, 0.92)",
@@ -71,7 +71,7 @@ const inputStyle: React.CSSProperties = {
 const noteStyle: React.CSSProperties = {
   marginTop: 8,
   color: "#475569",
-  fontSize: 13,
+  fontSize: 12.5,
   lineHeight: 1.38,
   fontWeight: 700,
 };
@@ -276,30 +276,42 @@ export default function SocialTagShareButton({
             </div>
 
             <div style={noteStyle}>
-              WhatsApp stays separate. For these apps, GSN prepares the message;
-              you still review and post it yourself. It cannot guarantee delivery.
+              GSN prepares the message. You still review and post it yourself.
+              It cannot guarantee delivery.
             </div>
 
-            <label style={{ display: "block", marginTop: 12 }}>
-              <span
+            <details style={{ marginTop: 10 }}>
+              <summary
                 style={{
-                  display: "block",
-                  marginBottom: 5,
-                  color: "#334155",
-                  fontSize: 12,
+                  cursor: "pointer",
+                  color: "#173750",
+                  fontSize: 13,
                   fontWeight: 1000,
                 }}
               >
-                Handle or name, if needed
-              </span>
-              <input
-                value={shareName}
-                onChange={(event) => setShareName(event.target.value)}
-                placeholder="@handle or name"
-                aria-label="Handle or name"
-                style={inputStyle}
-              />
-            </label>
+                Add handle or name
+              </summary>
+              <label style={{ display: "block", marginTop: 8 }}>
+                <span
+                  style={{
+                    display: "block",
+                    marginBottom: 5,
+                    color: "#334155",
+                    fontSize: 12,
+                    fontWeight: 1000,
+                  }}
+                >
+                  Handle or name, if needed
+                </span>
+                <input
+                  value={shareName}
+                  onChange={(event) => setShareName(event.target.value)}
+                  placeholder="@handle or name"
+                  aria-label="Handle or name"
+                  style={inputStyle}
+                />
+              </label>
+            </details>
 
             <CardActionRow
               minHeight={46}
@@ -343,48 +355,72 @@ export default function SocialTagShareButton({
               <SecondaryButton
                 type="button"
                 onClick={() => {
-                  void copyPreparedText("instagram");
-                }}
-                stableHeight={46}
-                debugId="social-tag-share.instagram-copy"
-                style={shareButtonStyle}
-              >
-                Instagram
-              </SecondaryButton>
-              <SecondaryButton
-                type="button"
-                onClick={() => {
-                  void copyPreparedText("tiktok");
-                }}
-                stableHeight={46}
-                debugId="social-tag-share.tiktok-copy"
-                style={shareButtonStyle}
-              >
-                TikTok
-              </SecondaryButton>
-              <SecondaryButton
-                type="button"
-                onClick={() => {
-                  void copyAllPreparedText();
-                }}
-                stableHeight={46}
-                debugId="social-tag-share.copy-all"
-                style={shareButtonStyle}
-              >
-                Copy all text
-              </SecondaryButton>
-              <SecondaryButton
-                type="button"
-                onClick={() => {
                   void copyPreparedText("copy");
                 }}
                 stableHeight={46}
                 debugId="social-tag-share.copy-text"
                 style={shareButtonStyle}
               >
-                Copy text
+                Copy message
               </SecondaryButton>
             </CardActionRow>
+
+            <details style={{ marginTop: 10 }}>
+              <summary
+                style={{
+                  cursor: "pointer",
+                  color: "#475569",
+                  fontSize: 12.5,
+                  fontWeight: 900,
+                }}
+              >
+                More copy options
+              </summary>
+              <CardActionRow
+                minHeight={42}
+                align="stretch"
+                style={{
+                  marginTop: 8,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    void copyPreparedText("instagram");
+                  }}
+                  stableHeight={42}
+                  debugId="social-tag-share.instagram-copy"
+                  style={shareButtonStyle}
+                >
+                  Instagram
+                </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    void copyPreparedText("tiktok");
+                  }}
+                  stableHeight={42}
+                  debugId="social-tag-share.tiktok-copy"
+                  style={shareButtonStyle}
+                >
+                  TikTok
+                </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    void copyAllPreparedText();
+                  }}
+                  stableHeight={42}
+                  debugId="social-tag-share.copy-all"
+                  style={{ ...shareButtonStyle, gridColumn: "1 / -1" }}
+                >
+                  Copy all variants
+                </SecondaryButton>
+              </CardActionRow>
+            </details>
 
             {localNotice ? (
               <div

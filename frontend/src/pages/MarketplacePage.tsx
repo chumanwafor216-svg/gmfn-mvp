@@ -8901,23 +8901,20 @@ export default function MarketplacePage() {
             style={{
               marginTop: 12,
               ...innerCard("#FFFDF7"),
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "46px minmax(0, 1fr) 190px",
+              display: isCompact ? "block" : "grid",
+              gridTemplateColumns: isCompact ? undefined : "46px minmax(0, 1fr) 190px",
               gap: isCompact ? 10 : 14,
               alignItems: "center",
               borderColor: "rgba(128,90,15,0.18)",
+              padding: isCompact ? 12 : undefined,
             }}
           >
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "42px minmax(0, 1fr)"
-                  : "46px minmax(0, 1fr)",
+                gridTemplateColumns: isCompact ? "34px minmax(0, 1fr)" : "46px minmax(0, 1fr)",
                 gap: isCompact ? 10 : 14,
-                alignItems: "center",
+                alignItems: "start",
                 minWidth: 0,
               }}
             >
@@ -8938,7 +8935,7 @@ export default function MarketplacePage() {
                     ...helperText(),
                     fontSize: 13,
                     lineHeight: 1.35,
-                    overflowWrap: "normal",
+                    overflowWrap: "break-word",
                     wordBreak: "normal",
                     hyphens: "none",
                   }}
@@ -8958,6 +8955,7 @@ export default function MarketplacePage() {
                   isCompact
                 ),
                 gridColumn: isCompact ? "1 / -1" : undefined,
+                marginTop: isCompact ? 10 : undefined,
               }}
             >
               Demand Box
@@ -9002,7 +9000,7 @@ export default function MarketplacePage() {
                     display: "grid",
                     gridTemplateColumns: row.shopTo
                       ? isCompact
-                        ? "38px minmax(0, 1fr) 98px"
+                        ? "38px minmax(0, 1fr)"
                         : "42px minmax(0, 1fr) 130px"
                       : isCompact
                       ? "38px minmax(0, 1fr)"
@@ -9060,10 +9058,27 @@ export default function MarketplacePage() {
                         minWidth: 0,
                       }}
                     >
-                      <span style={stableStatusPillStyle(Boolean(row.gmfnId))}>
+                      <span
+                        style={{
+                          ...stableStatusPillStyle(Boolean(row.gmfnId)),
+                          height: "auto",
+                          maxHeight: "none",
+                          minHeight: 30,
+                          whiteSpace: "normal",
+                          overflowWrap: "anywhere",
+                        }}
+                      >
                         {row.gmfnId ? displayGsnLabel(row.gmfnId) : "ID pending"}
                       </span>
-                      <span style={stableStatusPillStyle(Boolean(row.shopTo))}>
+                      <span
+                        style={{
+                          ...stableStatusPillStyle(Boolean(row.shopTo)),
+                          height: "auto",
+                          maxHeight: "none",
+                          minHeight: 30,
+                          whiteSpace: "normal",
+                        }}
+                      >
                         {row.shopTo ? "Shop visible" : "No shop yet"}
                       </span>
                     </div>
@@ -9074,11 +9089,14 @@ export default function MarketplacePage() {
                       debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.shop`}
                       to={row.shopTo}
                       stableHeight={52}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        false,
-                        isCompact
-                      )}
+                      style={{
+                        ...marketplaceInlineActionStyle(
+                          "secondary",
+                          false,
+                          isCompact
+                        ),
+                        gridColumn: isCompact ? "1 / -1" : undefined,
+                      }}
                     >
                       Open shop
                     </StableCtaLink>
@@ -9134,7 +9152,7 @@ export default function MarketplacePage() {
                         display: "grid",
                         gridTemplateColumns: row.shopTo
                           ? isCompact
-                            ? "38px minmax(0, 1fr) 98px"
+                            ? "38px minmax(0, 1fr)"
                             : "42px minmax(0, 1fr) 130px"
                           : isCompact
                           ? "38px minmax(0, 1fr)"
@@ -9192,10 +9210,27 @@ export default function MarketplacePage() {
                             minWidth: 0,
                           }}
                         >
-                          <span style={stableStatusPillStyle(Boolean(row.gmfnId))}>
+                          <span
+                            style={{
+                              ...stableStatusPillStyle(Boolean(row.gmfnId)),
+                              height: "auto",
+                              maxHeight: "none",
+                              minHeight: 30,
+                              whiteSpace: "normal",
+                              overflowWrap: "anywhere",
+                            }}
+                          >
                             {row.gmfnId ? displayGsnLabel(row.gmfnId) : "ID pending"}
                           </span>
-                          <span style={stableStatusPillStyle(Boolean(row.shopTo))}>
+                          <span
+                            style={{
+                              ...stableStatusPillStyle(Boolean(row.shopTo)),
+                              height: "auto",
+                              maxHeight: "none",
+                              minHeight: 30,
+                              whiteSpace: "normal",
+                            }}
+                          >
                             {row.shopTo ? "Shop visible" : "No shop yet"}
                           </span>
                         </div>
@@ -9206,11 +9241,14 @@ export default function MarketplacePage() {
                           debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.shop`}
                           to={row.shopTo}
                           stableHeight={52}
-                          style={marketplaceInlineActionStyle(
-                            "secondary",
-                            false,
-                            isCompact
-                          )}
+                          style={{
+                            ...marketplaceInlineActionStyle(
+                              "secondary",
+                              false,
+                              isCompact
+                            ),
+                            gridColumn: isCompact ? "1 / -1" : undefined,
+                          }}
                         >
                           Open shop
                         </StableCtaLink>

@@ -1,3 +1,48 @@
+### Public/mobile proof surface trim pass (2026-06-13)
+
+- Trigger:
+  - owner phone screenshots showed public verification and trust/marketplace
+    surfaces still exposing too much wording or collapsing poorly on mobile.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - public QR/verification copy now states only that the community exists in
+      GSN and does not expose member records or direct contacts;
+    - the privacy panel is reduced to a compact "Public limits" note;
+    - refresh button contrast is strengthened on the public page.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport paper snapshot now requires both an issued GSN ID and
+      TrustSlip code before rendering the official paper card;
+    - if proof values are missing, the page shows a plain "Snapshot not ready"
+      card and blocks copying the placeholder snapshot.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - compact Demand Box card no longer uses the desktop grid shell, reducing
+      the tall empty-phone-card effect;
+    - compact visible-member rows now put `Open shop` on its own row and allow
+      GSN/status pills to wrap instead of forcing a tiny third column.
+  - `frontend/src/components/SocialTagShareButton.tsx`
+    - share sheet first view is narrower and shorter;
+    - optional handle/name and extra copy variants are behind disclosure rows;
+    - primary choices stay X, LinkedIn, Facebook, and Copy message while
+      Instagram/TikTok/copy-all remain available under more options.
+- Verification:
+  - `npm run build` passed from `frontend/`.
+  - Passed `npm run audit:share-tag-actions`.
+  - Passed `npm run audit:marketplace-front-package`.
+  - Passed `npm run audit:marketplace-demand-box-lane`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:trust-passport-front-package`.
+  - Passed `npm run audit:proof-surfaces`.
+- Unabated truth:
+  - this pass fixes the specific public-risk and mobile-grid issues visible in
+    the supplied screenshots;
+  - it does not claim final acceptance for every expanded route state;
+  - `CreateEntryPage.tsx` was intentionally not touched because the entry
+    screen is caged/frozen and the current issue there is visual heaviness, not
+    a public-data or broken-layout failure;
+  - no backend, auth, route contract, schema, app-shell, or Render setting was
+    changed.
+
 ### Whole-app source audit baseline clean (2026-06-13)
 
 - After `adbe15e`, completed the remaining source audit cage:

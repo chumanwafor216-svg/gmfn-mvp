@@ -2075,6 +2075,17 @@ export default function TrustScorePage() {
     setNotice({ tone: "success", text: successText });
   }
 
+  const trustPassportSnapshotReady = useMemo(() => {
+    const id = safeStr(gmfnId).toLowerCase();
+    return Boolean(
+      trustSlipCode &&
+        gmfnId &&
+        id !== "awaiting issue" &&
+        id !== "-" &&
+        id !== "pending"
+    );
+  }, [gmfnId, trustSlipCode]);
+
   const trustPassportPaper = useMemo(
     () =>
       buildTrustPassportSnapshot({
@@ -2106,6 +2117,13 @@ export default function TrustScorePage() {
   );
 
   function copyTrustSnapshot() {
+    if (!trustPassportSnapshotReady) {
+      setNotice({
+        tone: "error",
+        text: "Trust Passport snapshot is not ready yet. Issue the GSN ID and TrustSlip first.",
+      });
+      return;
+    }
     handleCopy(
       trustPassportPaper,
       "Trust snapshot copied.",
@@ -4067,23 +4085,86 @@ export default function TrustScorePage() {
                 </span>
                 <span style={statusPillStyle("Limited")}>Expires: {expiresText}</span>
               </div>
-              <GsnSnapshotPaperCard
-                paperText={trustPassportPaper}
-                compact={isCompact}
-                icon="shield"
-                maxBodyLines={isCompact ? 6 : undefined}
-                style={{ marginTop: 14 }}
-              />
-              <p
-                style={{
-                  ...helperText(),
-                  margin: "8px 0 0",
-                  fontSize: isCompact ? 12 : 13,
-                }}
-              >
-                Copy gives a short text summary. Use screenshot or print to share
-                the official GSN paper background.
-              </p>
+              {trustPassportSnapshotReady ? (
+                <>
+                  <GsnSnapshotPaperCard
+                    paperText={trustPassportPaper}
+                    compact={isCompact}
+                    icon="shield"
+                    maxBodyLines={isCompact ? 6 : undefined}
+                    style={{ marginTop: 14 }}
+                  />
+                  <p
+                    style={{
+                      ...helperText(),
+                      margin: "8px 0 0",
+                      fontSize: isCompact ? 12 : 13,
+                    }}
+                  >
+                    Copy gives a short text summary. Use screenshot or print to share
+                    the official GSN paper background.
+                  </p>
+                </>
+              ) : (
+                <div
+                  style={{
+                    ...innerCard("#FFFDF7"),
+                    marginTop: 14,
+                    border: "1px solid rgba(245,158,11,0.20)",
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "42px minmax(0, 1fr)",
+                      gap: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    {trustIconBadge("document", 34, "amber")}
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          color: "#92400E",
+                          fontSize: 13,
+                          fontWeight: 1000,
+                          textTransform: "uppercase",
+                          letterSpacing: 0,
+                        }}
+                      >
+                        Snapshot not ready
+                      </div>
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: isCompact ? 17 : 19,
+                          fontWeight: 1000,
+                          lineHeight: 1.18,
+                          marginTop: 3,
+                        }}
+                      >
+                        Finish the GSN ID and TrustSlip before sharing.
+                      </div>
+                    </div>
+                  </div>
+                  <p style={{ ...helperText(), margin: 0 }}>
+                    A public-looking paper should not show placeholders like
+                    Awaiting issue or a blank TrustSlip code.
+                  </p>
+                  <SecondaryButton
+                    onClick={() => openTrustRoute(routes.trustSlip)}
+                    fullWidth
+                    stableHeight={isCompact ? 50 : 52}
+                    debugId="trust-score.snapshot-open-trust-slip"
+                    style={{ borderRadius: 12, fontWeight: 950 }}
+                  >
+                    {trustIconBadge("document", 28, "navy")}
+                    Open TrustSlip
+                  </SecondaryButton>
+                </div>
+              )}
             </div>
           </section>
 
