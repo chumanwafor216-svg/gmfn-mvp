@@ -2387,15 +2387,11 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    const copied = await safeCopy(
-      buildPublicShopPackage(absoluteShopShareLink, [
-        "Trusted marketplace. Real people. Real value.",
-      ])
-    );
+    const copied = await safeCopy(absoluteShopShareLink);
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
-        ? "Public shop poster link copied."
+        ? "Public shop link copied."
         : "Clipboard copy was blocked. Use Share, or copy the page address from your browser.",
     });
   }

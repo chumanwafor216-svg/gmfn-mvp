@@ -1,3 +1,34 @@
+### Public Shop plain copy action trimmed (2026-06-13)
+
+- Trigger:
+  - continued from phone sharing screenshots where social/post surfaces were
+    getting too much text;
+  - the social chooser already keeps short platform captions and backend
+    preview URLs, but Public Shop `copyShopLink` still copied a full
+    headed-paper package while the UI text says link.
+- Changed locally:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - changed Public Shop copy action to copy only `absoluteShopShareLink`;
+    - changed success copy from `Public shop poster link copied.` to
+      `Public shop link copied.`;
+    - left formal package generation in place for owner-prepared/share-package
+      paths where it is intentional.
+  - `frontend/tools/audit-share-tag-actions.mjs`
+    - added a guard that Public Shop plain copy uses `safeCopy(absoluteShopShareLink)`.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated the old contract from canonical package copy to canonical URL-only
+      copy for the public visitor copy action.
+- Verification:
+  - Passed `npm run audit:share-tag-actions`.
+  - Passed `npm run audit:link-contracts`.
+  - Passed `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-share-tag-actions.mjs tools\audit-link-contracts.mjs`.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this fixes the plain copy button; it does not change social scraper metadata,
+    Open Graph images, or backend preview-card generation;
+  - WhatsApp/formal owner package paths can still include longer GSN headed-paper
+    context by design.
+
 ### Public community QR copy action trimmed (2026-06-13)
 
 - Trigger:

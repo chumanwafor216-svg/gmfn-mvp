@@ -151,6 +151,11 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
+    /async function copyShopLink\(\)[\s\S]*safeCopy\(absoluteShopShareLink\)[\s\S]*Public shop link copied\./,
+    "Public Shop plain Copy link action must copy only the URL, not the long headed-paper package.",
+  ],
+  [
+    "src/pages/ShopGalleryPage.tsx",
     /const diaryOpenActionCount = showBlockPlacementAction \? 4 : 2;/,
     "Shop Diary blocks must reserve the block social share slot for owners only.",
   ],
