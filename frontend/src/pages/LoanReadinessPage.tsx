@@ -1168,7 +1168,7 @@ export default function LoanReadinessPage() {
                 overflow: "hidden",
                 background: "linear-gradient(180deg, rgba(16,36,58,0.88) 0%, rgba(38,82,124,0.96) 100%)",
                 boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
-                display: "flex",
+                display: isCompact ? "none" : "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -1240,6 +1240,38 @@ export default function LoanReadinessPage() {
                 <span style={badge(false)}>Money Out support link</span>
               ) : null}
             </div>
+
+            <StableCtaLink
+              to={recommendedNext.ctaTo}
+              debugId="loan-readiness.front-next"
+              stableHeight={isCompact ? 58 : 72}
+              fullWidth
+              minWidth={isCompact ? undefined : 260}
+              style={{
+                ...routeTileStyle(true),
+                marginTop: 14,
+                height: isCompact ? 58 : 72,
+                minHeight: isCompact ? 58 : 72,
+                maxHeight: isCompact ? 58 : 72,
+                justifyContent: "center",
+                padding: isCompact ? "10px 12px" : "12px 14px",
+              }}
+            >
+              <div
+                style={{
+                  ...routeTileTitleStyle(),
+                  fontSize: isCompact ? 15 : 16,
+                  lineHeight: 1.2,
+                }}
+              >
+                {loanReadinessRouteHeading("navigation", recommendedNext.ctaLabel)}
+              </div>
+              {!isCompact ? (
+                <div style={{ ...routeTileDetailStyle(), marginTop: 6 }}>
+                  {recommendedNext.title}
+                </div>
+              ) : null}
+            </StableCtaLink>
           </div>
 
           <div

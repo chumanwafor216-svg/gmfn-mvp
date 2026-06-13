@@ -1,3 +1,52 @@
+### Loans subroute first-action stabilization (2026-06-13)
+
+- Trigger:
+  - after adding the Loans hero CTA, a phone-geometry scan of Loans subroutes
+    showed Readiness, Suggestions, Guarantor Inbox, and Guarantor Earnings had
+    only breadcrumb/escape controls above the authenticated bottom rail;
+  - their recommended next-route actions were buried after long status/proof
+    content, often thousands of pixels below the first viewport.
+- Changed locally:
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+    - hides the decorative community image on compact screens;
+    - adds `debugId="loan-readiness.front-next"` as a fixed-height recommended
+      front CTA before the deeper readiness sections.
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+    - hides the decorative community image on compact screens;
+    - adds `debugId="loan-suggestions.front-next"` as a fixed-height
+      recommended front CTA before the deeper fit sections.
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+    - adds `debugId="guarantor-inbox.front-next"` before the queue stats,
+      proof snapshot, filters, and deep route list.
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+    - adds `debugId="guarantor-earnings.front-next"` before payout-truth,
+      proof snapshot, totals, and deep route list.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - added guards for all four first-viewport front CTAs and the compact
+      image suppression on Readiness/Suggestions.
+- Verification:
+  - Passed `npm --prefix frontend run audit:loans-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local Edge phone viewport showed first recommended actions above the
+    bottom rail:
+    - Loan Readiness: `686-744`, rail `785-844`.
+    - Loan Suggestions: `641-699`, rail `785-844`.
+    - Guarantor Inbox: `616-674`, rail `785-844`.
+    - Guarantor Earnings: `580-638`, rail `785-844`.
+- Unabated truth:
+  - this fixes the no-real-action-first-screen problem on these four support
+    subroutes;
+  - it does not finish Loan Workbench, Loan Summary, Repayment, or Revenue
+    Allocation phone polish;
+  - the proof/snapshot cards are still long below the first viewport and should
+    be reviewed later for screenshot packaging, but they no longer block the
+    first next action.
+
 ### Loans mobile first-action stabilization (2026-06-13)
 
 - Trigger:

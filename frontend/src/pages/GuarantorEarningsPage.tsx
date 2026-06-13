@@ -850,6 +850,39 @@ export default function GuarantorEarningsPage() {
               instead of leaving it buried under the wider support flow.
             </div>
 
+            <StableCtaLink
+              to={nextStep.ctaTo}
+              debugId="guarantor-earnings.front-next"
+              stableHeight={isCompact ? 58 : 72}
+              fullWidth
+              minWidth={isCompact ? undefined : 260}
+              style={{
+                ...routeTileStyle(true),
+                marginTop: 14,
+                height: isCompact ? 58 : 72,
+                minHeight: isCompact ? 58 : 72,
+                maxHeight: isCompact ? 58 : 72,
+                justifyContent: "center",
+                padding: isCompact ? "10px 12px" : "12px 14px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#F8FBFF",
+                  fontWeight: 900,
+                  fontSize: isCompact ? 15 : 16,
+                  lineHeight: 1.2,
+                }}
+              >
+                {guarantorEarningsRouteHeading("navigation", nextStep.ctaLabel)}
+              </div>
+              {!isCompact ? (
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                  {nextStep.title}
+                </div>
+              ) : null}
+            </StableCtaLink>
+
             <div
               style={{
                 marginTop: 14,

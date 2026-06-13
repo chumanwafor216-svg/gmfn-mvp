@@ -227,6 +227,30 @@ if (
 });
 
 assertContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /display: isCompact \? "none" : "flex"[\s\S]*?debugId="loan-readiness\.front-next"[\s\S]*?stableHeight=\{isCompact \? 58 : 72\}[\s\S]*?height: isCompact \? 58 : 72,[\s\S]*?maxHeight: isCompact \? 58 : 72,[\s\S]*?loanReadinessRouteHeading\("navigation", recommendedNext\.ctaLabel\)/,
+  "Loan Readiness must keep a compact first-viewport recommended next action and hide the decorative community image on phone."
+);
+
+assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /display: isCompact \? "none" : "flex"[\s\S]*?debugId="loan-suggestions\.front-next"[\s\S]*?stableHeight=\{isCompact \? 58 : 72\}[\s\S]*?height: isCompact \? 58 : 72,[\s\S]*?maxHeight: isCompact \? 58 : 72,[\s\S]*?loanSuggestionsRouteHeading\("navigation", nextRoute\.ctaLabel\)/,
+  "Loan Suggestions must keep a compact first-viewport recommended next action and hide the decorative community image on phone."
+);
+
+assertContains(
+  "src/pages/GuarantorInboxPage.tsx",
+  /debugId="guarantor-inbox\.front-next"[\s\S]*?stableHeight=\{isCompact \? 58 : 72\}[\s\S]*?height: isCompact \? 58 : 72,[\s\S]*?maxHeight: isCompact \? 58 : 72,[\s\S]*?guarantorInboxRouteHeading\("navigation", nextStep\.ctaLabel\)/,
+  "Guarantor Inbox must keep a compact first-viewport recommended next action before the proof snapshot and deeper queue sections."
+);
+
+assertContains(
+  "src/pages/GuarantorEarningsPage.tsx",
+  /debugId="guarantor-earnings\.front-next"[\s\S]*?stableHeight=\{isCompact \? 58 : 72\}[\s\S]*?height: isCompact \? 58 : 72,[\s\S]*?maxHeight: isCompact \? 58 : 72,[\s\S]*?guarantorEarningsRouteHeading\("navigation", nextStep\.ctaLabel\)/,
+  "Guarantor Earnings must keep a compact first-viewport recommended next action before payout truth, proof snapshot, and deeper earnings sections."
+);
+
+assertContains(
   "src/pages/LoanSummaryPage.tsx",
   /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false\): React\.CSSProperties \{[\s\S]*?height: 104,[\s\S]*?maxHeight: 104,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTileTitleStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?function routeTileDetailStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="loan-summary\.route\.workbench"[\s\S]*?stableHeight=\{104\}/,
   "Loan Summary route cards must keep fixed phone-safe heights, stableHeight props, and clamped title/detail text."

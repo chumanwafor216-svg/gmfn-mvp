@@ -867,6 +867,42 @@ export default function GuarantorInboxPage() {
               instead of leaving the person inside a loose queue.
             </div>
 
+            <StableCtaLink
+              to={nextStep.ctaTo}
+              debugId="guarantor-inbox.front-next"
+              stableHeight={isCompact ? 58 : 72}
+              fullWidth
+              minWidth={isCompact ? undefined : 260}
+              style={{
+                ...guarantorInboxRouteTileStyle(true),
+                display: "flex",
+                textDecoration: "none",
+                marginTop: 14,
+                height: isCompact ? 58 : 72,
+                minHeight: isCompact ? 58 : 72,
+                maxHeight: isCompact ? 58 : 72,
+                justifyContent: "center",
+                padding: isCompact ? "10px 12px" : "12px 14px",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  color: "#F8FBFF",
+                  fontWeight: 900,
+                  fontSize: isCompact ? 15 : 16,
+                  lineHeight: 1.2,
+                }}
+              >
+                {guarantorInboxRouteHeading("navigation", nextStep.ctaLabel)}
+              </div>
+              {!isCompact ? (
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                  {nextStep.title}
+                </div>
+              ) : null}
+            </StableCtaLink>
+
             <div
               style={{
                 marginTop: 14,
