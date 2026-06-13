@@ -52040,7 +52040,7 @@ GSN-branded invite composer and invite-entry continuity.
     three authenticated surfaces after the broader source audits were clean;
   - hit-testing confirmed taps in the overlap zones went to bottom-nav items
     instead of the intended route actions.
-- Changed locally, not pushed yet:
+- Changed, pushed, and frontend deploy triggered:
   - `frontend/src/pages/CommunityHomePage.tsx`
     - added phone-only clearance before the compact Owner Actions row group so
       expanded Community Home rows no longer sit half under the bottom rail.
@@ -52070,4 +52070,9 @@ GSN-branded invite composer and invite-entry continuity.
   - this does not claim the whole app is finished; it closes the confirmed
     phone rail collisions from this focused scan only;
   - Dashboard Market Wisdom was not restyled or restructured;
-  - no Render deploy has been claimed for this local pass yet.
+  - pushed to `main` at commit `6182394`;
+  - GitHub Actions run `27473441763` completed successfully and Render
+    accepted the frontend deploy hook for `6182394`, returning deploy id
+    `dep-d8mou3kvikkc73c4vi4g`;
+  - API deploy was intentionally skipped (`deploy_api=false`), because no
+    backend files changed.
