@@ -1,3 +1,35 @@
+### Authenticated phone rail sweep clean (2026-06-13)
+
+- Fresh robust phone sweep after the Community Home, Finance, Trust Passport,
+  and Identity Integrity rail fixes showed no route-local bottom-rail overlaps
+  on:
+  - `/app/dashboard?community=3`
+  - `/app/community?community=3`
+  - `/app/marketplace?community=3`
+  - `/app/shop-assets?community=3`
+  - `/app/finance?community=3`
+  - `/app/money-in?community=3`
+  - `/app/money-out?community=3`
+  - `/app/payment-rails?community=3`
+  - `/app/payout-details?community=3`
+  - `/app/loans?community=3`
+  - `/app/loan-readiness?community=3`
+  - `/app/loan-suggestions?community=3`
+  - `/app/loan-workbench?community=3`
+  - `/app/revenue-allocation?community=3`
+  - `/app/trust?community=3`
+  - `/app/identity?community=3`
+- Redirect observations during the sweep:
+  - `/app/shop?community=3` redirected to `/app/shop-control?community=3`;
+  - `/app/vault?community=3` redirected to `/app/dashboard?community=3`;
+  - these were scan observations only, not changed in this batch.
+- Unabated truth:
+  - this proves the measured first-viewport tap collisions are gone for the
+    scanned authenticated set;
+  - it does not prove every deep expanded panel, every data state, or every
+    external mobile browser chrome combination is perfect;
+  - no push or Render deploy was done for this local continuation batch.
+
 ### Identity Integrity task switcher rail stabilization (2026-06-13)
 
 - Trigger:
