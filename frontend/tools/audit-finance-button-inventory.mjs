@@ -144,7 +144,7 @@ assertContains(
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 52 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
+  /stableHeight=\{isCompact \? 48 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
   "Finance main tools must keep tightened fixed phone geometry."
 );
 

@@ -603,7 +603,7 @@ function FinanceSectionLabel({
 }
 
 function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
-  const compactHeight = 52;
+  const compactHeight = 48;
   const desktopHeight = 132;
 
   return {
@@ -1988,7 +1988,7 @@ export default function FinancePage() {
               key={item.id}
               onClick={item.action}
               fullWidth
-              stableHeight={isCompact ? 52 : 132}
+              stableHeight={isCompact ? 48 : 132}
               debugId={`finance.tool.${item.id}`}
               style={financeToolButtonStyle(isCompact)}
             >

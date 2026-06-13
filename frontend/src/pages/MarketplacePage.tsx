@@ -2655,6 +2655,18 @@ function marketplaceFrontLaneCardStyle(isCompact: boolean): React.CSSProperties 
   };
 }
 
+function marketplaceFrontCompactCardStyle(isCompact: boolean): React.CSSProperties {
+  const compactHeight = 68;
+
+  return {
+    ...marketplaceFrontLaneCardStyle(isCompact),
+    minHeight: isCompact ? compactHeight : 116,
+    height: isCompact ? compactHeight : "auto",
+    maxHeight: isCompact ? compactHeight : "none",
+    padding: isCompact ? 6 : 16,
+  };
+}
+
 function marketplaceFrontLaneIconStyle(
   bg: string,
   isCompact = false
@@ -6146,7 +6158,7 @@ export default function MarketplacePage() {
               debugId="marketplace.extra-tools.toggle"
               onClick={toggleIntentGuide}
               aria-expanded={intentGuideOpen}
-              style={marketplaceFrontLaneCardStyle(isCompact)}
+              style={marketplaceFrontCompactCardStyle(isCompact)}
             >
               <span
                 aria-hidden="true"

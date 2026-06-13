@@ -52239,3 +52239,66 @@ GSN-branded invite composer and invite-entry continuity.
     `dep-d8mpi7btqb8s73cd9v80`;
   - API deploy was intentionally skipped (`deploy_api=false`), because no
     backend files changed.
+
+### Final broad phone rail sweep for Marketplace and Finance (2026-06-13)
+
+- Trigger:
+  - the comprehensive phone sweep after the previous rail passes found only
+    two initial-state surfaces still brushing the bottom rail:
+    Marketplace `marketplace.extra-tools.toggle` and Finance
+    `finance.tool.bank-accounts` / `finance.tool.export-data`.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added a compact phone-only front-lane style for the final More /
+      Community Tools card so it ends above the bottom rail instead of touching
+      the rail edge.
+  - `frontend/src/pages/FinancePage.tsx`
+    - tightened the four main compact finance tool cards from `52px` to `48px`
+      so the second row clears the rail while staying inside the accepted
+      mobile button-height range.
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-marketplace-actions.mjs`
+  - `frontend/tools/audit-finance-actions.mjs`
+  - `frontend/tools/audit-finance-button-inventory.mjs`
+  - `frontend/tools/audit-finance-front-package.mjs`
+    - updated the source guards to protect the new safer phone geometry.
+- Verification:
+  - Focused Playwright phone hit-test after the patch:
+    - Marketplace `marketplace.extra-tools.toggle`: top `716`, bottom `784`,
+      rail `793-835`, no overlap.
+    - Finance `finance.tool.bank-accounts`: top `733`, bottom `781`, rail
+      `793-835`, no overlap.
+    - Finance `finance.tool.export-data`: top `733`, bottom `781`, rail
+      `793-835`, no overlap.
+  - Full Playwright phone sweep after the patch:
+    - `13` public/pre-auth/public-proof routes scanned, `publicWithBottomNav:
+      []`.
+    - `45` authenticated/admin routes scanned, `authRisky: []`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:marketplace-front-package`.
+  - Passed `npm --prefix frontend run audit:marketplace-more-tools-lane`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run audit:finance-front-package`.
+  - Passed `npm --prefix frontend run audit:finance-lane-map`.
+  - Passed `npm --prefix frontend run audit:finance-banking-rails-lane`.
+  - Passed `npm --prefix frontend run audit:finance-records-events-lane`.
+  - Passed `npm --prefix frontend run audit:finance-secondary-route-tools`.
+  - Passed `npm --prefix frontend run audit:finance-money-summary-lane`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:action-response-protocol`.
+  - Passed `npm --prefix frontend run lint`.
+  - `npm --prefix frontend run build` first failed inside the Windows sandbox
+    with Vite/esbuild `spawn EPERM`; rerunning the same build elevated passed.
+- Unabated truth:
+  - this is the cleanest current evidence that the bottom-rail stabilization
+    pass is complete for the scanned initial phone states;
+  - it does not prove every possible expanded panel, scrolled position, live
+    backend data shape, or post-click state in the whole app;
+  - admin routes were scanned with mocked auth/API responses, so this verifies
+    layout/tap geometry under expected admin access, not live backend data
+    correctness;
+  - no global navigation, app shell, auth, backend, or Render settings were
+    changed.

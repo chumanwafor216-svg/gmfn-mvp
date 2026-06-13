@@ -326,13 +326,13 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceFrontLaneCardStyle[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\)[\s\S]*?minHeight: isCompact \? 108 : 116[\s\S]*?height: isCompact \? 108 : "auto"[\s\S]*?maxHeight: isCompact \? 108 : "none"[\s\S]*?44px minmax\(0, 1fr\) 16px[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 44 : 64[\s\S]*?height: isCompact \? 44 : 64/,
+  /function marketplaceFrontLaneCardStyle[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\)[\s\S]*?minHeight: isCompact \? 76 : 116[\s\S]*?height: isCompact \? 76 : "auto"[\s\S]*?maxHeight: isCompact \? 76 : "none"[\s\S]*?36px minmax\(0, 1fr\) 16px[\s\S]*?function marketplaceFrontCompactCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 68;[\s\S]*?\.\.\.marketplaceFrontLaneCardStyle\(isCompact\),[\s\S]*?height: isCompact \? compactHeight : "auto"[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 36 : 64[\s\S]*?height: isCompact \? 36 : 64/,
   "Marketplace front grouped-lane cards must keep stable icon and row geometry."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceFrontTagRowStyle\(isCompact = false\)[\s\S]*?flexWrap: isCompact \? "nowrap" : "wrap"[\s\S]*?overflow: isCompact \? "hidden" : undefined[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?padding: isCompact \? "5px 8px" : "6px 10px"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
+  /function marketplaceFrontTagRowStyle\(isCompact = false\)[\s\S]*?flexWrap: isCompact \? "nowrap" : "wrap"[\s\S]*?overflow: isCompact \? "hidden" : undefined[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?padding: isCompact \? "4px 7px" : "6px 10px"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
   "Marketplace lane text must stay clamped with stable row arrows."
 );
 

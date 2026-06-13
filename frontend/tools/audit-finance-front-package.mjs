@@ -146,7 +146,7 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /stableHeight=\{isCompact \? 52 : 132\}[\s\S]*?financeToolButtonStyle\(isCompact\)[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?financeMiniToolButtonStyle\(isCompact\)/,
+  /stableHeight=\{isCompact \? 48 : 132\}[\s\S]*?financeToolButtonStyle\(isCompact\)[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?financeMiniToolButtonStyle\(isCompact\)/,
   "Finance front and secondary tool buttons must keep fixed phone-safe geometry."
 );
 
