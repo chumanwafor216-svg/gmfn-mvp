@@ -1304,7 +1304,7 @@ function CommunityConfirmationInboxPage() {
               Answer from personal knowledge only. No pressure, no guesswork.
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: isCompact ? 24 : 0 }}>
             <SecondaryButton
               type="button"
               onClick={() => void loadInbox()}

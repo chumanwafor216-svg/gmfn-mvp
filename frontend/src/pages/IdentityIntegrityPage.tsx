@@ -2217,7 +2217,7 @@ export default function IdentityIntegrityPage() {
           ))}
         </div>
 
-        <CardActionRow minHeight={52} style={{ marginTop: 12 }}>
+        <CardActionRow minHeight={52} style={{ marginTop: isCompact ? 4 : 12 }}>
           <PrimaryButton
             onClick={copyGmfnId}
             disabled={!gmfnId || gmfnId === "Pending"}
@@ -2251,7 +2251,7 @@ export default function IdentityIntegrityPage() {
         <div
           data-identity-integrity-task-switcher="true"
           style={{
-            marginTop: isCompact ? 52 : 16,
+            marginTop: isCompact ? 70 : 16,
             display: "grid",
             gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
             gap: 8,

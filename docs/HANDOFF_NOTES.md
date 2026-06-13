@@ -52119,3 +52119,60 @@ GSN-branded invite composer and invite-entry continuity.
     user may scroll slightly to reach those secondary actions;
   - no global navigation, app shell, auth, backend, or Render settings were
     changed.
+
+### Phone rail clearance pass for remaining trust/support routes (2026-06-13)
+
+- Trigger:
+  - after the CCI Reading and Action Inbox fix, the 15-route phone batch was
+    rerun against stable `data-cta-id` action roots;
+  - four additional route-local controls were still touching the bottom rail.
+- Confirmed before the fix:
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+    - `loan-workbench.refresh` sat at top `820`, bottom `872`, with taps in
+      the overlap hitting `app-layout.bottom-nav.loans`.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - `trust-score.identity-evidence-meter.toggle` sat at top `817`, bottom
+      `865`, inside the rail band.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - `identity-integrity.copy-snapshot` brushed the rail at bottom `790`;
+    - `identity-integrity.task.phone` and
+      `identity-integrity.task.community` started at top `842`, too close to
+      the rail bottom.
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - `community-confirmation-inbox.refresh` sat at top `827`, bottom `879`,
+      with taps in the overlap hitting `app-layout.bottom-nav.marketplace`.
+- Changed locally, not pushed yet:
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+    - increased phone-only clearance before the main workbench action grid.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - added phone-only clearance on the Identity evidence toggle.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - moved the identity copy row slightly above the rail and pushed the task
+      switcher below the rail on phone.
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - added phone-only clearance before the response-rule action buttons.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the Identity & Integrity source guard to protect the new
+      phone-safe task-switcher clearance.
+- Verification:
+  - Focused Playwright phone hit-test after the patch:
+    - Loan Workbench `loan-workbench.refresh`: top `852`, no overlap.
+    - Trust Passport `trust-score.identity-evidence-meter.toggle`: top `849`,
+      no overlap.
+    - Identity `identity-integrity.copy-snapshot`: bottom `782`, above rail
+      top `785`.
+    - Identity task buttons: top `852`, no overlap.
+    - Community Confirmation Inbox `community-confirmation-inbox.refresh`:
+      top `851`, no overlap.
+  - Full 15-route phone batch after the patch reported `risky: []`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:action-response-protocol`.
+- Unabated truth:
+  - this clears the scanned 15-route trust/support/notification rail batch, not
+    every possible route state in the whole app;
+  - several secondary actions now begin just below the first phone viewport,
+    which is an intentional tap-safety tradeoff until the later bottom
+    stabilization phase revisits page density more deeply;
+  - no Render deploy has been claimed for this local batch yet.

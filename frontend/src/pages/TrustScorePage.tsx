@@ -2932,6 +2932,7 @@ export default function TrustScorePage() {
                 fontWeight: 1000,
                 whiteSpace: "nowrap",
                 alignSelf: isCompact ? "start" : "center",
+                marginTop: isCompact ? 32 : 0,
               }}
               debugId="trust-score.identity-evidence-meter.toggle"
             >

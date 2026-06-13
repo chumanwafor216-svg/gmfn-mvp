@@ -1414,7 +1414,7 @@ export default function LoanWorkbenchPage() {
 
             <div
               style={{
-                marginTop: 12,
+                marginTop: isCompact ? 44 : 12,
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
                 gap: 10,
