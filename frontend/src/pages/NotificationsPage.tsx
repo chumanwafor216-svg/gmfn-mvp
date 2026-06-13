@@ -1463,7 +1463,7 @@ export default function NotificationsPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gap: 10, marginTop: isPhone ? 26 : 0 }}>
                 <PrimaryButton
                   onClick={() => void handlePrimaryNoticeAction(focusNotice)}
                   stableHeight={54}

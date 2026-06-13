@@ -414,7 +414,7 @@ export default function CCIReadingPage() {
             <div style={{ marginTop: 10, ...helperText() }}>
               {loading ? "Loading the consistency reading..." : cci.whyText}
             </div>
-            <CardActionRow minHeight={isCompact ? 52 : 48} style={{ marginTop: 16 }}>
+            <CardActionRow minHeight={isCompact ? 52 : 48} style={{ marginTop: isCompact ? 60 : 16 }}>
               <StableCtaLink
                 to={routes.identity}
                 stableHeight={isCompact ? 52 : 48}

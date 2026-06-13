@@ -52076,3 +52076,46 @@ GSN-branded invite composer and invite-entry continuity.
     `dep-d8mou3kvikkc73c4vi4g`;
   - API deploy was intentionally skipped (`deploy_api=false`), because no
     backend files changed.
+
+### Phone rail clearance pass for CCI Reading and Action Inbox (2026-06-13)
+
+- Trigger:
+  - broad authenticated phone hit-testing found two remaining route-local
+    bottom-rail collisions after the Community, Finance, and Dashboard pass;
+  - the first pass also surfaced false positives from hidden mobile drawer
+    controls, so the verifier was tightened to ignore hidden/offscreen drawer
+    roots and to query stable actions by `data-cta-id`.
+- Confirmed before the fix:
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - `cci-reading.identity` sat at top `804`, bottom `856` against a rail
+      band around `785-844`, so a visible action edge could be caught by the
+      bottom navigation.
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - `notifications.focus.primary` sat at top `825`, bottom `879` against the
+      same rail band, leaving the first focus action partially unsafe.
+- Changed locally, not pushed yet:
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - added phone-only clearance before the CCI explanation action row.
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - added phone-only clearance before the focus notice action stack.
+- Verification:
+  - Focused Playwright phone hit-test after the patch:
+    - CCI `cci-reading.identity`: top `873`, bottom `925`, bottom-nav button
+      bottom `835`, no overlap.
+    - Notifications `notifications.focus.primary`: top `873`, bottom `927`,
+      bottom-nav button bottom `835`, no overlap.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:notifications-button-inventory`.
+  - Passed `npm --prefix frontend run audit:action-response-protocol`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - `npm --prefix frontend run build` first failed inside the Windows sandbox
+    with Vite/esbuild `spawn EPERM`; rerunning the same build with elevated
+    execution passed.
+- Unabated truth:
+  - this is a narrow tap-safety fix, not a full route redesign;
+  - the action buttons now begin below the first phone viewport, which is safer
+    than exposing a half-tappable control under the rail, but it also means a
+    user may scroll slightly to reach those secondary actions;
+  - no global navigation, app shell, auth, backend, or Render settings were
+    changed.
