@@ -113,7 +113,7 @@ def dev_bootstrap_clan(
 ):
     now = datetime.now(timezone.utc)
     suffix = secrets.token_hex(3)
-    name = f"Dev Clan {now.strftime('%Y%m%d-%H%M%S')}-{suffix}"
+    name = f"Dev Community {now.strftime('%Y%m%d-%H%M%S')}-{suffix}"
 
     clan = Clan(
         name=name,
@@ -267,7 +267,7 @@ def _invite_preview_payload(
 def _require_clan_admin(clan_ctx: tuple) -> tuple:
     clan, membership, current_user = clan_ctx
     if (membership.role or "").lower() != "admin":
-        raise HTTPException(status_code=403, detail="Clan admin only")
+        raise HTTPException(status_code=403, detail="Community admin only")
     return clan, membership, current_user
 
 
@@ -284,7 +284,7 @@ def _resolve_target_clan_membership(
         clan = db.get(Clan, int(clan_id))
 
     if not clan or _is_default_clan_name(getattr(clan, "name", None)):
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     membership = (
         db.query(ClanMembership)
@@ -346,15 +346,15 @@ def _optional_current_user(
 
 def _member_display(user: Optional[User]) -> str:
     if not user:
-        return "A GMFN member"
+        return "A GSN member"
     return _safe_str(
         getattr(user, "display_name", None)
         or getattr(user, "name", None)
         or getattr(user, "full_name", None)
         or getattr(user, "gmfn_id", None)
         or getattr(user, "email", None)
-        or "A GMFN member",
-        "A GMFN member",
+        or "A GSN member",
+        "A GSN member",
     )
 
 
@@ -1266,7 +1266,7 @@ def _approve_join_request(
 
     clan = db.get(Clan, int(join_request.clan_id))
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     if not _safe_str(getattr(clan, "community_code", None)):
         clan.community_code = f"GMFN-C-{int(clan.id):06d}"
@@ -1364,7 +1364,7 @@ def _approve_join_request(
             user_id=int(applicant.id),
             kind="approval_success",
             title="You were approved",
-            message="You can now activate your GMFN account.",
+            message="You can now activate your GSN account.",
             action_url=_safe_str(activation.get("activation_path"), "/activate-membership"),
             action_label="Activate now",
         )
@@ -1433,7 +1433,7 @@ def _reject_join_request(
 
     clan = db.get(Clan, int(join_request.clan_id))
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     if not _safe_str(getattr(clan, "community_code", None)):
         clan.community_code = f"GMFN-C-{int(clan.id):06d}"
@@ -1499,7 +1499,7 @@ def create_clan(
 
     existing = db.query(Clan).filter(Clan.name == payload.name).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Clan name already exists")
+        raise HTTPException(status_code=400, detail="Community name already exists")
 
     now = datetime.now(timezone.utc)
 
@@ -1551,9 +1551,9 @@ def join_clan(
 ):
     clan = db.get(Clan, clan_id)
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
     if _is_default_clan_name(getattr(clan, "name", None)):
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     current_user = _ensure_user_gmfn_id(db, current_user)
 
@@ -1660,7 +1660,7 @@ def leave_clan(
         .first()
     )
     if not m:
-        raise HTTPException(status_code=404, detail="You are not a member of this clan")
+        raise HTTPException(status_code=404, detail="You are not a member of this community")
 
     if (m.role or "").lower() == "admin" and _is_last_admin(db, clan_id=clan_id):
         raise HTTPException(
@@ -1682,9 +1682,9 @@ def select_clan(
 ):
     clan = db.get(Clan, clan_id)
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
     if _is_default_clan_name(getattr(clan, "name", None)):
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     membership = _is_active_membership(
         db,

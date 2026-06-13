@@ -36,7 +36,7 @@ def test_patch_member_pool_balance_non_admin_forbidden_contract(
     data = r.json()
     assert "detail" in data
     assert isinstance(data["detail"], str)
-    assert "Clan admin" in data["detail"]
+    assert "Community admin" in data["detail"]
 
 
 def test_patch_member_pool_balance_membership_not_found_contract(

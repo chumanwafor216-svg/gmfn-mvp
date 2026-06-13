@@ -149,7 +149,7 @@ def create_clan_invite(
 ) -> ClanInvite:
     clan = db.get(Clan, clan_id)
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     _require_member_or_admin(db, clan_id=clan_id, user=created_by_user)
     _rate_limit_create_invite(int(created_by_user.id), int(clan_id), limit=20, window_seconds=3600)
@@ -194,7 +194,7 @@ def create_clan_invite(
 def list_clan_invites(db: Session, *, clan_id: int, user: User) -> list[ClanInvite]:
     clan = db.get(Clan, clan_id)
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     _require_member_or_admin(db, clan_id=clan_id, user=user)
 
@@ -213,7 +213,7 @@ def preview_invite(db: Session, *, code: str) -> dict:
 
     clan = db.get(Clan, invite.clan_id)
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     return {
         "code": invite.code,
@@ -288,7 +288,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
 
     clan = db.get(Clan, invite.clan_id)
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     existing = (
         db.query(ClanMembership)

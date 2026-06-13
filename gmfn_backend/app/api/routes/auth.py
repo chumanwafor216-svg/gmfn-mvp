@@ -249,7 +249,7 @@ def _create_founder_clan(
 ) -> tuple[Clan, str]:
     existing = db.query(Clan).filter(Clan.name == clan_name).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Clan name already exists")
+        raise HTTPException(status_code=400, detail="Community name already exists")
 
     now = datetime.now(timezone.utc)
     invite_code = secrets.token_urlsafe(16)

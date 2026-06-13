@@ -73,6 +73,7 @@
     "audit:global-raw-action-elements": "node tools/audit-global-raw-action-elements.mjs",
     "audit:icon-protocol": "node tools/audit-icon-protocol.mjs",
     "audit:inner-navigation-origin": "node tools/audit-inner-navigation-origin.mjs",
+    "audit:gsn-visible-language": "node tools/audit-gsn-visible-language.mjs",
     "audit:protocol-readiness": "node tools/audit-protocol-readiness.mjs",
     "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",

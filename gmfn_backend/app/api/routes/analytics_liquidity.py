@@ -27,7 +27,7 @@ def clan_liquidity(
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ) -> Dict[str, Any]:
     """
-    Clan liquidity index (simple deterministic aggregate).
+    Community liquidity index (simple deterministic aggregate).
     """
     clan, membership, current_user = clan_ctx
 
@@ -56,5 +56,5 @@ def clan_liquidity(
         "pledged_total": str(pledged_total),
         "locked_total": str(locked_total),
         "released_total": str(released_total),
-        "note": "Liquidity is informational. No custodial funds are held by GMFN.",
+        "note": "Liquidity is informational. No custodial funds are held by GSN.",
     }

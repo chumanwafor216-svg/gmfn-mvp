@@ -58,5 +58,5 @@ def get_loan_audit_links(
         "clan_id": int(loan.clan_id),
         "pdf_url": pdf_url,
         "csv_url": csv_url,
-        "copy_text": f"GMFN Loan Audit (Loan #{loan_id})\nPDF: {pdf_url}\nCSV: {csv_url}",
+        "copy_text": f"GSN Loan Audit (Loan #{loan_id})\nPDF: {pdf_url}\nCSV: {csv_url}",
     }

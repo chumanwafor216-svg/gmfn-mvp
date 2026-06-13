@@ -23,7 +23,7 @@ def bulk_approve_pending_guarantors(
     clan, membership, current_user = clan_ctx
 
     if membership.role != "admin":
-        raise HTTPException(status_code=403, detail="Clan admin only")
+        raise HTTPException(status_code=403, detail="Community admin only")
 
     loan = db.get(Loan, loan_id)
     if not loan:
@@ -91,7 +91,7 @@ def bulk_decline_pending_guarantors(
     clan, membership, current_user = clan_ctx
 
     if membership.role != "admin":
-        raise HTTPException(status_code=403, detail="Clan admin only")
+        raise HTTPException(status_code=403, detail="Community admin only")
 
     loan = db.get(Loan, loan_id)
     if not loan:

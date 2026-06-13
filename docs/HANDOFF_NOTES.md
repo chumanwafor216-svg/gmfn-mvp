@@ -1,3 +1,68 @@
+### GSN visible backend/entry message cleanup (2026-06-13)
+
+- Trigger:
+  - after generated reports and download filenames were moved to
+    GSN/community wording, a targeted scan found older visible `Clan`/`GMFN`
+    phrases in route errors, copy payloads, and one entry fallback.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/clans.py`,
+    `gmfn_backend/app/services/clans_service.py`,
+    `gmfn_backend/app/services/invites_service.py`,
+    `gmfn_backend/app/core/clan_auth.py`, and
+    `gmfn_backend/app/routers/clans.py`
+    - changed user-facing errors such as `Clan not found`,
+      `Clan admin only`, `Clan admin role required`, `Clan access required`,
+      and `Clan name already exists` to community-facing wording.
+  - `gmfn_backend/app/api/routes/marketplace.py`,
+    `gmfn_backend/app/services/marketplace_service.py`, and
+    `gmfn_backend/app/api/routes/cci.py`
+    - changed visible membership errors from `this clan` to
+      `this community`.
+  - `gmfn_backend/app/api/routes/analytics_liquidity.py`
+    - changed visible note to `No custodial funds are held by GSN` and doc
+      wording to `Community liquidity index`.
+  - `gmfn_backend/app/api/routes/share.py`
+    - changed share copy from `GMFN Loan Audit` to `GSN Loan Audit`.
+  - `gmfn_backend/app/services/identity_service.py`
+    - changed the visible risk description from another `GMFN account` to
+      another `GSN account`.
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - changed the join-entry fallback surname from `GMFN member` to
+      `GSN member`.
+  - `frontend/tools/audit-gsn-visible-language.mjs` and
+    `frontend/package.json`
+    - added `npm run audit:gsn-visible-language`, a narrow guard for the old
+      visible phrases cleaned in this pass.
+  - `gmfn_backend/tests/test_clan_pool.py`
+    - updated the non-admin forbidden-contract expectation to
+      `Community admin`.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs src\pages\JoinEntryPage.tsx`.
+  - Passed `npm run audit:protocol-readiness`.
+  - Passed entry audits:
+    - `npm run audit:entry-auth`;
+    - `npm run audit:member-entry-actions`;
+    - `npm run audit:entry-flow-polish`;
+    - `npm run audit:entry-copy-response`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_clan_pool.py gmfn_backend\tests\test_clan_members.py gmfn_backend\tests\test_join_requests.py gmfn_backend\tests\test_protocol_readiness_status.py`.
+- Verification limitation:
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py`
+    could not complete the five tests that use pytest `tmp_path`;
+  - the failure was `PermissionError: [WinError 5] Access is denied` for the
+    pytest temp root under both the default Windows temp folder and a
+    workspace-local `--basetemp`;
+  - the same run executed the non-`tmp_path` marketplace tests before the temp
+    setup failures, and there was no visible-language assertion failure from
+    the changed copy.
+- Unabated truth:
+  - internal route paths, headers, fields, model names, and Python function
+    names still use `clan` for compatibility;
+  - this pass changes visible text and guarded copy only, not backend contract
+    names or schema fields.
+
 ### GSN filenames for analytics evidence downloads (2026-06-13)
 
 - Trigger:

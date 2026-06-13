@@ -1458,7 +1458,7 @@ export default function JoinEntryPage() {
       const res = await submitJoinRequest({
         invite_code: safeInviteCode,
         first_name: firstPart,
-        surname: restParts.join(" ") || "GMFN member",
+        surname: restParts.join(" ") || "GSN member",
         phone_e164: cleanText(currentMember?.phone_e164 || "") || undefined,
         country: "Existing GSN identity",
       });

@@ -102,9 +102,9 @@ def require_clan_admin(*, clan_id: int, db: Session, current_user: User) -> Clan
         .first()
     )
     if membership is None:
-        raise HTTPException(status_code=403, detail="Clan admin role required")
+        raise HTTPException(status_code=403, detail="Community admin role required")
     if (membership.role or "").lower() != "admin":
-        raise HTTPException(status_code=403, detail="Clan admin role required")
+        raise HTTPException(status_code=403, detail="Community admin role required")
     return membership
 
 
@@ -123,7 +123,7 @@ def get_current_clan_membership(
     if x_clan_id is not None:
         clan = db.get(Clan, x_clan_id)
         if not clan:
-            raise HTTPException(status_code=404, detail="Clan not found")
+            raise HTTPException(status_code=404, detail="Community not found")
     else:
         visible_clans = list_visible_user_clans(db=db, user=current_user)
         if not visible_clans:

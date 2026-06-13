@@ -274,7 +274,7 @@ def detect_identity_overlap(
             user_id=int(user_id),
             signal_type="device_fingerprint_overlap",
             severity=6,
-            description="Device fingerprint overlaps with another GMFN account.",
+            description="Device fingerprint overlaps with another GSN account.",
             meta={
                 "matched_user_id": int(other_user_id),
                 "fingerprint_hash": str(fingerprint_hash),

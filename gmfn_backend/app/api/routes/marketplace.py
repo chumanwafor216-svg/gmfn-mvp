@@ -381,7 +381,7 @@ def _resolve_clan_id(
     if not membership and not _is_admin(current_user):
         raise HTTPException(
             status_code=403,
-            detail="You are not an active member of this clan",
+            detail="You are not an active member of this community",
         )
 
     return int(candidate)
@@ -405,7 +405,7 @@ def _require_active_membership(
     if not membership:
         raise HTTPException(
             status_code=403,
-            detail="You are not an active member of this clan",
+            detail="You are not an active member of this community",
         )
     return membership
 

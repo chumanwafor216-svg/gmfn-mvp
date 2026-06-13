@@ -56,7 +56,7 @@ def get_user_cci_score_admin(
         .first()
     )
     if not m:
-        raise HTTPException(status_code=400, detail="User is not a member of this clan")
+        raise HTTPException(status_code=400, detail="User is not a member of this community")
 
     res = compute_cci_score(
         db,

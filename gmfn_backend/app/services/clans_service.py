@@ -32,10 +32,10 @@ def create_clan(
     name: str,
     description: Optional[str] = None,
 ) -> Clan:
-    # Prevent duplicate clan names (simple rule; can be relaxed later)
+    # Prevent duplicate community names (simple rule; can be relaxed later)
     existing = db.query(Clan).filter(Clan.name == name).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Clan name already exists")
+        raise HTTPException(status_code=400, detail="Community name already exists")
 
     now = datetime.now(timezone.utc)
 
@@ -87,7 +87,7 @@ def list_my_clans(db: Session, *, user: User) -> list[Clan]:
 def join_clan(db: Session, *, user: User, clan_id: int) -> ClanMembership:
     clan = db.get(Clan, clan_id)
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     existing = (
         db.query(ClanMembership)
@@ -98,7 +98,7 @@ def join_clan(db: Session, *, user: User, clan_id: int) -> ClanMembership:
         .first()
     )
     if existing:
-        raise HTTPException(status_code=400, detail="Already a member of this clan")
+        raise HTTPException(status_code=400, detail="Already a member of this community")
 
     membership = ClanMembership(
         clan_id=clan_id,
@@ -122,7 +122,7 @@ def leave_clan(db: Session, *, user: User, clan_id: int) -> None:
         .first()
     )
     if not membership:
-        raise HTTPException(status_code=404, detail="You are not a member of this clan")
+        raise HTTPException(status_code=404, detail="You are not a member of this community")
 
     if (membership.role or "").lower() == "admin" and _is_last_admin(db, clan_id=clan_id):
         raise HTTPException(status_code=400, detail="Cannot leave: you are the last admin")

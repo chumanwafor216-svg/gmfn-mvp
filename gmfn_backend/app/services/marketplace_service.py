@@ -31,7 +31,7 @@ def _require_active_clan_membership(
         .first()
     )
     if not membership:
-        raise ValueError("User is not an active member of this clan.")
+        raise ValueError("User is not an active member of this community.")
     return membership
 
 

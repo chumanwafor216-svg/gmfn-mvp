@@ -16,13 +16,13 @@ def list_clan_members(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    # basic access check: must be a member of clan
+    # basic access check: must be a member of the community
     membership = db.query(ClanMembership).filter(
         ClanMembership.clan_id == clan_id,
         ClanMembership.user_id == current_user.id,
     ).first()
     if not membership:
-        raise HTTPException(status_code=403, detail="Clan access required")
+        raise HTTPException(status_code=403, detail="Community access required")
 
     return (
         db.query(ClanMembership)
@@ -43,7 +43,7 @@ def add_clan_member(
 
     clan = db.query(Clan).filter(Clan.id == clan_id).first()
     if not clan:
-        raise HTTPException(status_code=404, detail="Clan not found")
+        raise HTTPException(status_code=404, detail="Community not found")
 
     row = ClanMembership(
         clan_id=clan_id,
