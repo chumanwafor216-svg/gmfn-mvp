@@ -1,3 +1,38 @@
+### GSN filenames for analytics evidence downloads (2026-06-13)
+
+- Trigger:
+  - after the community wording report cleanup was pushed, a follow-up scan
+    found older attachment filenames in the analytics evidence export route.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/analytics.py`
+    - changed recent invite joins CSV filename from
+      `clan_{clan_id}_recent_invite_joins.csv` to
+      `gsn-community-{clan_id}-recent-invite-joins.csv`;
+    - changed trust events CSV filename from
+      `clan_{clan_id}_trust_events.csv` to
+      `gsn-community-{clan_id}-trust-events.csv`;
+    - changed community evidence PDF filename from
+      `GMFN_clan_{clan_id}_evidence_pack.pdf` to
+      `gsn-community-{clan_id}-evidence-pack.pdf`;
+    - changed loan evidence PDF filename from
+      `GMFN_loan_{loan_id}_evidence_pack.pdf` to
+      `gsn-loan-{loan_id}-evidence-pack.pdf`.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now requires the GSN/community/loan attachment names in the analytics
+      evidence route;
+    - now rejects the older GMFN/clan attachment names.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added a focused source check for the analytics evidence download
+      filenames.
+- Verification:
+  - Passed `npm run audit:proof-surfaces`.
+  - Passed `npm exec -- eslint tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+- Unabated truth:
+  - route paths still include `/clans/{clan_id}` for backend compatibility;
+  - this pass changes only downloadable artifact filenames, not API route
+    contracts or models.
+
 ### GSN community wording for generated evidence packs (2026-06-13)
 
 - Trigger:

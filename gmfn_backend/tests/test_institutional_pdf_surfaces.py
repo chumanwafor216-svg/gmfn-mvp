@@ -83,3 +83,16 @@ def test_governance_pack_uses_gsn_community_language():
     assert "Clan ID:" not in text
     assert "Clan Name:" not in text
     assert "gmfn-clan-{clan_id}-governance-pack" not in text
+
+
+def test_analytics_evidence_downloads_use_gsn_filenames():
+    text = read_service("app/api/routes/analytics.py")
+
+    assert "gsn-community-{clan_id}-recent-invite-joins.csv" in text
+    assert "gsn-community-{clan_id}-trust-events.csv" in text
+    assert "gsn-community-{clan_id}-evidence-pack.pdf" in text
+    assert "gsn-loan-{loan_id}-evidence-pack.pdf" in text
+    assert "GMFN_clan_{clan_id}_evidence_pack.pdf" not in text
+    assert "GMFN_loan_{loan_id}_evidence_pack.pdf" not in text
+    assert "clan_{clan_id}_recent_invite_joins.csv" not in text
+    assert "clan_{clan_id}_trust_events.csv" not in text

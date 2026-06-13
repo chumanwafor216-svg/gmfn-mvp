@@ -74,7 +74,9 @@ def export_recent_invite_joins_csv(
     return Response(
         content=csv_text,
         media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="clan_{clan_id}_recent_invite_joins.csv"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="gsn-community-{clan_id}-recent-invite-joins.csv"'
+        },
     )
 
 
@@ -92,7 +94,7 @@ def export_trust_events_csv(
     return Response(
         content=csv_text,
         media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="clan_{clan_id}_trust_events.csv"'},
+        headers={"Content-Disposition": f'attachment; filename="gsn-community-{clan_id}-trust-events.csv"'},
     )
 
 
@@ -107,7 +109,7 @@ def evidence_pack_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="GMFN_clan_{clan_id}_evidence_pack.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="gsn-community-{clan_id}-evidence-pack.pdf"'},
     )
 
 
@@ -123,5 +125,5 @@ def loan_evidence_pack_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="GMFN_loan_{loan_id}_evidence_pack.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="gsn-loan-{loan_id}-evidence-pack.pdf"'},
     )

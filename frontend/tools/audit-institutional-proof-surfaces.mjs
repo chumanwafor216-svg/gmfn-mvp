@@ -18,6 +18,7 @@ const files = {
   trustTimelinePdf: "gmfn_backend/app/services/trust_timeline_pdf_service.py",
   reports: "gmfn_backend/app/services/reports_service.py",
   reportsRoute: "gmfn_backend/app/api/routes/reports.py",
+  analyticsRoute: "gmfn_backend/app/api/routes/analytics.py",
   publicPaper: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   privateEvidence: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
@@ -239,6 +240,16 @@ assertNotContains(
   "reportsRoute",
   /GMFN Loan Evidence Pack|Clan ID: \{loan\.clan_id\}/,
   "Loan evidence ZIP README must not expose older GMFN/clan wording."
+);
+assertContains(
+  "analyticsRoute",
+  /gsn-community-\{clan_id\}-recent-invite-joins\.csv[\s\S]*?gsn-community-\{clan_id\}-trust-events\.csv[\s\S]*?gsn-community-\{clan_id\}-evidence-pack\.pdf[\s\S]*?gsn-loan-\{loan_id\}-evidence-pack\.pdf/,
+  "Analytics evidence download filenames must use GSN community-facing wording."
+);
+assertNotContains(
+  "analyticsRoute",
+  /GMFN_clan_\{clan_id\}_evidence_pack\.pdf|GMFN_loan_\{loan_id\}_evidence_pack\.pdf|clan_\{clan_id\}_recent_invite_joins\.csv|clan_\{clan_id\}_trust_events\.csv/,
+  "Analytics evidence download filenames must not expose older GMFN/clan wording."
 );
 
 for (const key of pdfServices) {
