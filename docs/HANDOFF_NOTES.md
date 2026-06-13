@@ -1,3 +1,31 @@
+### Backend public shop card deploy verified live (2026-06-13)
+
+- Action:
+  - committed and pushed `d162a7e` (`Tune backend shop share card`) to `main`;
+  - GitHub Actions `Backend Tests` run completed successfully:
+    `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/27466122862`;
+  - Render API auto-deploy from `main` picked up the backend change after the
+    push; no manual API deploy hook was used.
+- Verification:
+  - fetched live
+    `https://gmfn-api.onrender.com/share/shop/GMFN-U-63655DE6/card.png?product_id=4&block=2`
+    with cache-busting query after the deploy window;
+  - old live image hash was
+    `DBA8263EFBC39F1F48FF226751F0B512760982648CCE04376C1E18DB672647C6`;
+  - new live image hash is
+    `6691507DAA6E74B1EAE5AA29B3CCCFB58DFAA2EB0B543E18304897426C5D1F81`;
+  - new live image is `(1200, 630)`, RGB, `43,041` bytes;
+  - visually inspected the live card and confirmed the product title, shop
+    name, trust line, and CTA are calmer than the previous card.
+- Unabated truth:
+  - this confirms the API card generator is live for the tested shop/product
+    URL;
+  - it does not guarantee social platforms will immediately refresh old cached
+    previews;
+  - the right-side `TAP TO OPEN` text is readable but still sits near the faint
+    shield watermark, so a future micro-pass could make that CTA area even
+    cleaner if phone screenshots still show crowding.
+
 ### Backend public shop card visual tuning (2026-06-13)
 
 - Trigger:
