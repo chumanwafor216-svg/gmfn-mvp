@@ -1,3 +1,36 @@
+### Small component ASCII fallback cleanup (2026-06-13)
+
+- Trigger:
+  - continued phone-polish sweep after the ExposurePage cleanup;
+  - string-literal scan found small reusable components and TrustGraph admin
+    surfaces using em dash, en dash, middle dot, or circled-info fallback
+    characters for missing values/tooltips.
+- Changed locally:
+  - `frontend/src/components/GuarantorLeaderboard.tsx`
+    - replaced missing user/score fallbacks with `-`.
+  - `frontend/src/components/LoanSuggestionsPanel.tsx`
+    - replaced missing GSN/GMFN id fallback with `-`.
+  - `frontend/src/components/TrustBadge.tsx`
+    - replaced missing band fallback with `-`;
+    - changed tooltip band ranges to ASCII hyphens;
+    - changed the circled-info glyph to plain `i`.
+  - `frontend/src/components/TrustGraphEdgeList.tsx`
+    - replaced missing source id fallback with `-`.
+  - `frontend/src/pages/TrustGraphAdminPage.tsx`
+    - replaced selected-node middle-dot separator with `|`;
+    - replaced missing score/band fallbacks with `-`.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - added file-specific guards for these fallback/rendering characters.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs src\components\GuarantorLeaderboard.tsx src\components\LoanSuggestionsPanel.tsx src\components\TrustBadge.tsx src\components\TrustGraphEdgeList.tsx src\pages\TrustGraphAdminPage.tsx`.
+  - Passed targeted `rg` scan for the cleaned characters in the touched files.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this is display fallback/rendering polish only;
+  - larger dashboard/identity pages still contain some em-dash fallbacks and
+    should be handled separately because parts of the dashboard are frozen.
+
 ### Exposure page community label/rendering cleanup (2026-06-13)
 
 - Trigger:

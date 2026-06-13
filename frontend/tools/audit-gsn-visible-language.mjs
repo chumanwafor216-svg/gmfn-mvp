@@ -13,6 +13,10 @@ const files = [
   "frontend/src/pages/ExposurePage.tsx",
   "frontend/src/pages/ExposureAdminPage.tsx",
   "frontend/src/pages/TrustCommandCentrePage.tsx",
+  "frontend/src/pages/TrustGraphAdminPage.tsx",
+  "frontend/src/components/GuarantorLeaderboard.tsx",
+  "frontend/src/components/LoanSuggestionsPanel.tsx",
+  "frontend/src/components/TrustBadge.tsx",
   "frontend/src/components/TrustGraphEdgeList.tsx",
   "frontend/src/components/TrustGraphSummaryCard.tsx",
   "frontend/src/components/LoanDecisionPanel.tsx",
@@ -114,6 +118,14 @@ const forbiddenByFile = [
   ["frontend/src/pages/ShopGalleryPage.tsx", 'label: "GMFN ID"'],
   ["frontend/src/pages/ExposurePage.tsx", "—"],
   ["frontend/src/pages/ExposurePage.tsx", "·"],
+  ["frontend/src/components/GuarantorLeaderboard.tsx", "—"],
+  ["frontend/src/components/LoanSuggestionsPanel.tsx", "—"],
+  ["frontend/src/components/TrustBadge.tsx", "—"],
+  ["frontend/src/components/TrustBadge.tsx", "–"],
+  ["frontend/src/components/TrustBadge.tsx", "ⓘ"],
+  ["frontend/src/components/TrustGraphEdgeList.tsx", "—"],
+  ["frontend/src/pages/TrustGraphAdminPage.tsx", "—"],
+  ["frontend/src/pages/TrustGraphAdminPage.tsx", "·"],
 ];
 
 const required = [

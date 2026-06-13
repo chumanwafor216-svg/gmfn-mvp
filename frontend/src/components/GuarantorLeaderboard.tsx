@@ -58,10 +58,10 @@ export function GuarantorLeaderboard(props: { clanId: number }) {
             {items.map((row, idx) => (
               <tr key={idx}>
                 <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                  {(row as any).name ?? (row as any).email ?? (row as any).user_id ?? "—"}
+                  {(row as any).name ?? (row as any).email ?? (row as any).user_id ?? "-"}
                 </td>
                 <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                  {(row as any).score ?? (row as any).trust_score ?? "—"}
+                  {(row as any).score ?? (row as any).trust_score ?? "-"}
                 </td>
                 <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
                   {(row as any).notes ?? (row as any).reason ?? ""}

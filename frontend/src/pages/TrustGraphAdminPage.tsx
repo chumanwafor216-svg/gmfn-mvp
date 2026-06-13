@@ -213,7 +213,7 @@ export default function TrustGraphAdminPage() {
                   {safeStr(graph.gmfn_id || "Pending")}
                 </div>
                 <div style={{ marginTop: 8, color: "#475569", fontSize: 14 }}>
-                  User #{safeStr(graph.user_id)} · {safeStr(graph.email || "No email")}
+                  User #{safeStr(graph.user_id)} | {safeStr(graph.email || "No email")}
                 </div>
                 <div style={{ marginTop: 8, color: "#64748b", fontSize: 12 }}>
                   Phone status: <b>{fmtBool(graph.phone_verified)}</b>
@@ -237,7 +237,7 @@ export default function TrustGraphAdminPage() {
                 >
                   <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Trust score</div>
                   <div style={{ marginTop: 6, fontSize: 22, fontWeight: 1000 }}>
-                    {safeStr(graph.trust_score ?? "—")}
+                    {safeStr(graph.trust_score ?? "-")}
                   </div>
                 </div>
 
@@ -251,7 +251,7 @@ export default function TrustGraphAdminPage() {
                 >
                   <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Trust band</div>
                   <div style={{ marginTop: 6, fontSize: 22, fontWeight: 1000 }}>
-                    {safeStr(graph.trust_band ?? "—")}
+                    {safeStr(graph.trust_band ?? "-")}
                   </div>
                 </div>
               </div>

@@ -5,7 +5,7 @@ export default function TrustBadge({
   score: number;
   band?: string | null;
 }) {
-  const b = band ?? "—";
+  const b = band ?? "-";
 
   const bg =
     b === "A"
@@ -22,7 +22,7 @@ export default function TrustBadge({
     `Trust band + score (explainable)\n` +
     `Band: ${b}\n` +
     `Score: ${score}/100\n\n` +
-    `Bands: A=80–100, B=60–79, C=30–59, D=0–29\n` +
+    `Bands: A=80-100, B=60-79, C=30-59, D=0-29\n` +
     `Computed from logged actions (TrustEvents): invites, guarantor actions, repayments, participation.\n` +
     `Not a black box; see breakdown on the Trust page.`;
 
@@ -43,7 +43,7 @@ export default function TrustBadge({
       }}
     >
       {b} ({score})
-      <span style={{ fontSize: 12, opacity: 0.7 }}>ⓘ</span>
+      <span style={{ fontSize: 12, opacity: 0.7 }}>i</span>
     </span>
   );
 }

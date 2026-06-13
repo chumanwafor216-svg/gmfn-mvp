@@ -167,7 +167,7 @@ export default function TrustGraphEdgeList(props: {
                     User #{safeStr(e.source_user_id)}
                   </div>
                   <div style={{ marginTop: 2, fontSize: 12, color: "#475569" }}>
-                    {safeStr(e.source_gmfn_id || "—")}
+                    {safeStr(e.source_gmfn_id || "-")}
                   </div>
                 </div>
 
