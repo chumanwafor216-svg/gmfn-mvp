@@ -904,6 +904,39 @@ export default function RepaymentPage() {
             Outstanding: {fmtMoney(outstandingAmount, currency)}
           </span>
         </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
+            gap: 10,
+          }}
+        >
+          <PrimaryButton
+            type="button"
+            onClick={() => void handleGenerateInstruction()}
+            disabled={generatingInstruction || !canRepay}
+            busy={generatingInstruction}
+            busyLabel="Generating..."
+            fullWidth
+            stableHeight={isCompact ? 52 : 54}
+            debugId="repayment.front-generate-instruction"
+          >
+            {actionText("repaymentSchedule", "Generate")}
+          </PrimaryButton>
+
+          <SecondaryButton
+            type="button"
+            onClick={handleCopyReference}
+            disabled={generatingInstruction || !instruction}
+            fullWidth
+            stableHeight={isCompact ? 52 : 54}
+            debugId="repayment.front-copy-reference"
+          >
+            {actionText("copy", "Copy reference")}
+          </SecondaryButton>
+        </div>
       </div>
 
       <section style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}>

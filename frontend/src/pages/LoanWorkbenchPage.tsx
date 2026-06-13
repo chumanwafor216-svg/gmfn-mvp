@@ -1253,7 +1253,7 @@ export default function LoanWorkbenchPage() {
             alignItems: "start",
           }}
         >
-          <div>
+          <div style={{ display: isCompact ? "none" : "block" }}>
             <div
               style={{
                 width: "100%",
@@ -1331,6 +1331,61 @@ export default function LoanWorkbenchPage() {
               {cameFromWithdrawalSupport ? (
                 <span style={badge(false)}>Money Out support handoff</span>
               ) : null}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
+                gap: 10,
+              }}
+            >
+              <SecondaryButton
+                onClick={() => handleRefresh()}
+                disabled={refreshing}
+                busy={refreshing}
+                busyLabel="Refreshing"
+                fullWidth
+                stableHeight={isCompact ? 50 : 52}
+                debugId="loan-workbench.front-refresh"
+                style={{
+                  border: "1px solid rgba(121,149,190,0.20)",
+                  background:
+                    "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+                  color: refreshing ? "#94A3B8" : "#E6EEF8",
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                  transition: "none",
+                }}
+              >
+                {actionText("refresh", refreshing ? "Refreshing" : "Refresh")}
+              </SecondaryButton>
+
+              <SubtleButton
+                onClick={() =>
+                  handleCopy(
+                    selectedLoanId ? String(selectedLoanId) : "",
+                    "Loan ID copied.",
+                    "Loan ID is not ready yet."
+                  )
+                }
+                disabled={!selectedLoanId}
+                fullWidth
+                stableHeight={isCompact ? 50 : 52}
+                debugId="loan-workbench.front-copy-loan-id"
+                style={{
+                  border: "1px solid rgba(121,149,190,0.20)",
+                  background:
+                    "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+                  color: !selectedLoanId ? "#94A3B8" : "#E6EEF8",
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                  transition: "none",
+                }}
+              >
+                {actionText("copy", "Copy ID")}
+              </SubtleButton>
             </div>
           </div>
 

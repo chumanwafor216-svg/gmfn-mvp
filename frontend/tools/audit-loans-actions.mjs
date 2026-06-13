@@ -251,9 +251,27 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoanWorkbenchPage.tsx",
+  /display: isCompact \? "none" : "block"[\s\S]*?stableHeight=\{isCompact \? 50 : 52\}[\s\S]*?debugId="loan-workbench\.front-refresh"[\s\S]*?stableHeight=\{isCompact \? 50 : 52\}[\s\S]*?debugId="loan-workbench\.front-copy-loan-id"[\s\S]*?debugId="loan-workbench\.refresh"[\s\S]*?debugId="loan-workbench\.copy-loan-id"/,
+  "Loan Workbench must keep compact front Refresh and Copy ID actions while preserving the deeper work-item controls."
+);
+
+assertContains(
   "src/pages/LoanSummaryPage.tsx",
-  /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false\): React\.CSSProperties \{[\s\S]*?height: 104,[\s\S]*?maxHeight: 104,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTileTitleStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?function routeTileDetailStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="loan-summary\.route\.workbench"[\s\S]*?stableHeight=\{104\}/,
-  "Loan Summary route cards must keep fixed phone-safe heights, stableHeight props, and clamped title/detail text."
+  /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false\): React\.CSSProperties \{[\s\S]*?height: 104,[\s\S]*?maxHeight: 104,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTileTitleStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?function routeTileDetailStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?display: isCompact \? "none" : "block"[\s\S]*?debugId="loan-summary\.copy-summary"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-summary\.copy-audit-link"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-summary\.route\.workbench"[\s\S]*?stableHeight=\{104\}/,
+  "Loan Summary must hide the compact decorative image, keep copy actions in the hero, and keep fixed phone-safe route cards."
+);
+
+assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /stableHeight=\{isCompact \? 52 : 54\}[\s\S]*?debugId="repayment\.front-generate-instruction"[\s\S]*?stableHeight=\{isCompact \? 52 : 54\}[\s\S]*?debugId="repayment\.front-copy-reference"[\s\S]*?debugId="repayment\.generate-instruction"[\s\S]*?debugId="repayment\.copy-reference"/,
+  "Repayment must keep Generate and Copy Reference available in the first active-process card while preserving the deeper instruction controls."
+);
+
+assertContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-load"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-copy-summary"[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?debugId="revenue-allocation\.copy-summary"/,
+  "Revenue Allocation must keep Load and Copy Summary available before the stats grid while preserving the deeper current-action card."
 );
 
 assertContains(

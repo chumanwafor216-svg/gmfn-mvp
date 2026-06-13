@@ -1370,7 +1370,7 @@ export default function LoanSummaryPage() {
             alignItems: "start",
           }}
         >
-          <div>
+          <div style={{ display: isCompact ? "none" : "block" }}>
             <div
               style={{
                 width: "100%",

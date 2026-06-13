@@ -1,3 +1,55 @@
+### Remaining support-route front-control stabilization (2026-06-13)
+
+- Trigger:
+  - continued the Loans/support phone pass after Readiness, Suggestions,
+    Guarantor Inbox, and Guarantor Earnings were stabilized;
+  - local phone geometry showed Loan Workbench, Loan Summary, Repayment, and
+    Revenue Allocation still placed their first useful operational controls
+    below the authenticated bottom rail or too close to it.
+- Changed locally:
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+    - hides the decorative community image on compact screens;
+    - adds front `Refresh` and `Copy ID` actions with
+      `loan-workbench.front-refresh` and
+      `loan-workbench.front-copy-loan-id`, while preserving the deeper
+      work-item controls.
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - hides the decorative community image on compact screens so the existing
+      `Copy summary` and `Copy audit` controls land in the first phone
+      viewport.
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - adds front `Generate` and `Copy reference` controls in the active
+      repayment process card, while preserving the deeper instruction controls.
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+    - adds front `Load` and `Copy summary` controls before the stats grid,
+      while preserving the deeper current-action card.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - added guards for the new first-viewport controls and the compact image
+      suppression.
+- Verification:
+  - Passed `npm --prefix frontend run audit:loans-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local Edge phone viewport showed front controls above the bottom nav
+    (`rail 793-835`):
+    - Loan Workbench front actions: `592-702`.
+    - Loan Summary copy actions: `663-777`.
+    - Repayment front actions: `554-606`.
+    - Revenue Allocation front actions: `489-603`.
+- Unabated truth:
+  - this fixes the first-action-before-rail problem on these four remaining
+    support routes;
+  - Repayment front actions can still be disabled when the loaded support item
+    is not in a repayable state, which is correct state behavior rather than a
+    layout failure;
+  - these routes still have long deeper evidence/details below the first
+    viewport, so the final bottom-stabilization review should still include
+    tap-through checks before calling the support package frozen.
+
 ### Loans subroute first-action stabilization (2026-06-13)
 
 - Trigger:

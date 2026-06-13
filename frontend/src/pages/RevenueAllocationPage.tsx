@@ -802,6 +802,41 @@ export default function RevenueAllocationPage() {
               style={{
                 marginTop: 14,
                 display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
+                gap: 10,
+              }}
+            >
+              <PrimaryButton
+                type="button"
+                onClick={() => void load()}
+                disabled={busy}
+                busy={busy}
+                busyLabel="Loading"
+                fullWidth
+                stableHeight={52}
+                debugId="revenue-allocation.front-load"
+                style={primaryBtn(busy)}
+              >
+                {actionText("refresh", busy ? "Loading" : "Load")}
+              </PrimaryButton>
+
+              <SecondaryButton
+                type="button"
+                onClick={copySummary}
+                disabled={!allocation}
+                fullWidth
+                stableHeight={52}
+                debugId="revenue-allocation.front-copy-summary"
+                style={secondaryBtn(!allocation)}
+              >
+                {actionText("copy", "Copy summary")}
+              </SecondaryButton>
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(142px, 1fr))",
                 gap: 10,
               }}
