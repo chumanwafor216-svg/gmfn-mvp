@@ -17,6 +17,7 @@ const files = {
   trustSlipPdf: "gmfn_backend/app/services/trust_slip_evidence_pdf_service.py",
   trustTimelinePdf: "gmfn_backend/app/services/trust_timeline_pdf_service.py",
   reports: "gmfn_backend/app/services/reports_service.py",
+  reportsRoute: "gmfn_backend/app/api/routes/reports.py",
   publicPaper: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   privateEvidence: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
@@ -199,11 +200,52 @@ assertContains(
   "TrustSlip PDF must draw the official watermark and footer on every page."
 );
 
+assertContains(
+  "reports",
+  /GSN Community Exposure Report/,
+  "Community exposure reports must use the current GSN community-facing title."
+);
+assertContains(
+  "reports",
+  /Community Exposure Table/,
+  "Loan trust report exposure tables must use community-facing wording."
+);
+assertContains(
+  "reports",
+  /Community Exposure Summary[\s\S]*?GSN community exposure report - controlled community trust record\./,
+  "Community exposure reports must use current GSN community-facing summary and footer wording."
+);
+assertNotContains(
+  "reports",
+  /GSN Clan Exposure Report|Clan Exposure Table|Clan Exposure Summary|Clan Exposure Ratio|clan exposure report/,
+  "Community exposure reports must not expose older clan wording."
+);
+assertContains(
+  "reportsRoute",
+  /GSN Community Governance Pack[\s\S]*?Community ID:[\s\S]*?Community Name:[\s\S]*?gsn-community-\{clan_id\}-governance-pack/,
+  "Governance ZIP README and filename must use GSN community-facing wording."
+);
+assertNotContains(
+  "reportsRoute",
+  /GMFN Clan Governance Pack|Clan ID:|Clan Name:|gmfn-clan-\{clan_id\}-governance-pack|clan-\{clan_id\}-exposure\.(?:csv|pdf)/,
+  "Governance ZIP artifacts must not expose older GMFN/clan wording."
+);
+assertContains(
+  "reportsRoute",
+  /GSN Loan Evidence Pack[\s\S]*?Community ID: \{loan\.clan_id\}/,
+  "Loan evidence ZIP README must use GSN community-facing wording."
+);
+assertNotContains(
+  "reportsRoute",
+  /GMFN Loan Evidence Pack|Clan ID: \{loan\.clan_id\}/,
+  "Loan evidence ZIP README must not expose older GMFN/clan wording."
+);
+
 for (const key of pdfServices) {
   assertNotContains(
     key,
-    /GMFN Evidence Pack|GMFN TrustSlip Evidence Snapshot|GMFN Trust Timeline Evidence Report|GMFN Loan Trust Report|GMFN Clan Exposure Report/g,
-    "Official PDF paper titles must use the user-facing GSN brand, not GMFN."
+    /GMFN Evidence Pack|GMFN TrustSlip Evidence Snapshot|GMFN Trust Timeline Evidence Report|GMFN Loan Trust Report|GMFN Clan Exposure Report|GSN Clan Exposure Report/g,
+    "Official PDF paper titles must use the user-facing GSN brand and community language."
   );
   assertNotContains(
     key,

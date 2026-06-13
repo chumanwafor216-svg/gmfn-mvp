@@ -57,13 +57,29 @@ def test_report_pdfs_use_gsn_institutional_shells():
     text = read_service("app/services/reports_service.py")
 
     assert "GSN Loan Trust Report" in text
-    assert "GSN Clan Exposure Report" in text
+    assert "GSN Community Exposure Report" in text
     assert "draw_institutional_header" in text
     assert "draw_institutional_footer" in text
     assert "safe_pdf_text" in text
     assert "Official evidence summary" in text
     assert "Official exposure summary" in text
     assert text.count("GSN loan trust report - controlled community trust record.") == 2
-    assert text.count("GSN clan exposure report - controlled community trust record.") == 2
+    assert text.count("GSN community exposure report - controlled community trust record.") == 2
     assert "GMFN Loan Trust Report" not in text
     assert "GMFN Clan Exposure Report" not in text
+    assert "GSN Clan Exposure Report" not in text
+
+
+def test_governance_pack_uses_gsn_community_language():
+    text = read_service("app/api/routes/reports.py")
+
+    assert "GSN Community Governance Pack" in text
+    assert "Community ID:" in text
+    assert "Community Name:" in text
+    assert "GSN Loan Evidence Pack" in text
+    assert "gsn-community-{clan_id}-governance-pack" in text
+    assert "GMFN Clan Governance Pack" not in text
+    assert "GMFN Loan Evidence Pack" not in text
+    assert "Clan ID:" not in text
+    assert "Clan Name:" not in text
+    assert "gmfn-clan-{clan_id}-governance-pack" not in text

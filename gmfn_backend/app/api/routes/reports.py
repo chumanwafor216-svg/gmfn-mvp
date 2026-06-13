@@ -291,7 +291,7 @@ def download_clan_exposure_csv(
         out.append([r.get("user_id"), r.get("email"), r.get("pool_balance"), r.get("exposure"), r.get("available")])
 
     data_bytes = _csv_bytes(out)
-    filename = f"gmfn-clan-{clan_id}-exposure.csv"
+    filename = f"gsn-community-{clan_id}-exposure.csv"
     return StreamingResponse(
         BytesIO(data_bytes),
         media_type="text/csv",
@@ -317,7 +317,7 @@ def download_clan_exposure_pdf(
         clan_exposure_rows=rows,
     )
 
-    filename = f"gmfn-clan-{clan_id}-exposure.pdf"
+    filename = f"gsn-community-{clan_id}-exposure.pdf"
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
@@ -358,19 +358,19 @@ def download_clan_governance_pack(
     ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     zip_buf = BytesIO()
     with zipfile.ZipFile(zip_buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
-        z.writestr(f"clan-{clan_id}-exposure.csv", exposure_csv)
-        z.writestr(f"clan-{clan_id}-members.csv", members_csv)
-        z.writestr(f"clan-{clan_id}-loans.csv", loans_csv)
-        z.writestr(f"clan-{clan_id}-exposure.pdf", exposure_pdf)
+        z.writestr(f"community-{clan_id}-exposure.csv", exposure_csv)
+        z.writestr(f"community-{clan_id}-members.csv", members_csv)
+        z.writestr(f"community-{clan_id}-loans.csv", loans_csv)
+        z.writestr(f"community-{clan_id}-exposure.pdf", exposure_pdf)
         z.writestr(
             "README.txt",
-            f"GMFN Clan Governance Pack\n"
-            f"Clan ID: {clan_id}\n"
-            f"Clan Name: {clan_name or '—'}\n"
+            f"GSN Community Governance Pack\n"
+            f"Community ID: {clan_id}\n"
+            f"Community Name: {clan_name or '-'}\n"
             f"Generated: {ts} UTC\n",
         )
 
-    filename = f"gmfn-clan-{clan_id}-governance-pack-{ts}.zip"
+    filename = f"gsn-community-{clan_id}-governance-pack-{ts}.zip"
     return StreamingResponse(
         BytesIO(zip_buf.getvalue()),
         media_type="application/zip",
@@ -579,9 +579,9 @@ def download_loan_evidence_pack_zip(
     }
 
     readme = (
-        "GMFN Loan Evidence Pack\n"
+        "GSN Loan Evidence Pack\n"
         f"Loan ID: {loan.id}\n"
-        f"Clan ID: {loan.clan_id}\n"
+        f"Community ID: {loan.clan_id}\n"
         "Contents:\n"
         "- manifest.json\n"
         "- trustslip_snapshot.json\n"

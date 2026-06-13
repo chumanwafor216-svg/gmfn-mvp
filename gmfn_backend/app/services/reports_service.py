@@ -370,7 +370,7 @@ def build_loan_trust_report_pdf(
     line()
 
     ensure_space()
-    h2("Clan Exposure Table (Pool vs Exposure)")
+    h2("Community Exposure Table (Pool vs Exposure)")
 
     c.setFont("Helvetica-Bold", 9)
     c.drawString(left, y, "Member")
@@ -459,25 +459,25 @@ def build_clan_exposure_report_pdf(
         c,
         width,
         height,
-        title="GSN Clan Exposure Report",
+        title="GSN Community Exposure Report",
         subtitle="Community pool, exposure, and available support capacity evidence.",
         generated_at=generated_at,
-        reference=f"Clan {clan_id}",
+        reference=f"Community {clan_id}",
     )
 
     def ensure_space(min_y: float = 30 * mm) -> None:
         nonlocal y
         if y < min_y:
-            draw_institutional_footer(c, width, "GSN clan exposure report - controlled community trust record.")
+            draw_institutional_footer(c, width, "GSN community exposure report - controlled community trust record.")
             c.showPage()
             y = draw_institutional_header(
                 c,
                 width,
                 height,
-                title="GSN Clan Exposure Report",
+                title="GSN Community Exposure Report",
                 subtitle="Community pool, exposure, and available support capacity evidence.",
                 generated_at=generated_at,
-                reference=f"Clan {clan_id}",
+                reference=f"Community {clan_id}",
             )
 
     def h1(text: str) -> None:
@@ -501,11 +501,11 @@ def build_clan_exposure_report_pdf(
     h1("Official exposure summary")
     line()
 
-    h2("Clan")
+    h2("Community")
     c.setFont("Helvetica", 10)
-    c.drawString(left, y, f"Clan ID: {clan_id}")
+    c.drawString(left, y, f"Community ID: {clan_id}")
     y -= 5 * mm
-    c.drawString(left, y, f"Clan Name: {clan_name or '-'}")
+    c.drawString(left, y, f"Community Name: {clan_name or '-'}")
     y -= 7 * mm
     line()
 
@@ -545,7 +545,7 @@ def build_clan_exposure_report_pdf(
     line()
 
     ensure_space()
-    h2("Clan Exposure Summary")
+    h2("Community Exposure Summary")
     c.setFont("Helvetica", 10)
     c.drawString(left, y, f"Total Pool: {_fmt_money(total_pool)}")
     y -= 5 * mm
@@ -561,18 +561,18 @@ def build_clan_exposure_report_pdf(
         except Exception:
             exposure_ratio = Decimal("0.00")
 
-    c.drawString(left, y, f"Clan Exposure Ratio: {exposure_ratio:.2f}")
+    c.drawString(left, y, f"Community Exposure Ratio: {exposure_ratio:.2f}")
     y -= 7 * mm
     line()
 
     ensure_space()
     c.setFont("Helvetica-Oblique", 8)
-    c.drawString(left, y, "Exposure = approved/locked guarantor pressure visible across the clan evidence surface.")
+    c.drawString(left, y, "Exposure = approved/locked guarantor pressure visible across the community evidence surface.")
     y -= 5 * mm
     c.drawString(left, y, "Available = current remaining support capacity after existing exposure.")
     y -= 5 * mm
 
-    draw_institutional_footer(c, width, "GSN clan exposure report - controlled community trust record.")
+    draw_institutional_footer(c, width, "GSN community exposure report - controlled community trust record.")
     c.showPage()
     c.save()
     return bio.getvalue()

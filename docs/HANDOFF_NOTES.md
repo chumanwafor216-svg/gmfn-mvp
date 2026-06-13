@@ -1,3 +1,56 @@
+### GSN community wording for generated evidence packs (2026-06-13)
+
+- Trigger:
+  - product owner said to keep moving after the live QR/privacy deploy and
+    main schedule sweep;
+  - next visible proof-surface gap was older GMFN/clan wording inside generated
+    report and ZIP evidence artifacts.
+- Changed locally:
+  - `gmfn_backend/app/services/reports_service.py`
+    - renamed visible exposure report paper from `GSN Clan Exposure Report` to
+      `GSN Community Exposure Report`;
+    - changed visible sections and footer text from clan exposure wording to
+      community exposure wording;
+    - changed loan trust report exposure table heading to
+      `Community Exposure Table (Pool vs Exposure)`.
+  - `gmfn_backend/app/services/evidence_pack_pdf_service.py`
+    - changed community evidence PDF references and identity lines from
+      `Clan`/`Clan ID`/`Clan Name` to `Community`/`Community ID`/
+      `Community Name`.
+  - `gmfn_backend/app/api/routes/reports.py`
+    - changed standalone exposure download filenames from `gmfn-clan...` to
+      `gsn-community...`;
+    - changed governance ZIP inner filenames from `clan...` to `community...`;
+    - changed governance ZIP README from `GMFN Clan Governance Pack` to
+      `GSN Community Governance Pack`;
+    - changed loan evidence ZIP README from `GMFN Loan Evidence Pack` and
+      `Clan ID` to `GSN Loan Evidence Pack` and `Community ID`.
+  - `gmfn_backend/app/api/routes/pilot_readiness.py` and
+    `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - changed visible checklist/readiness wording from `Clan Exposure` to
+      `Community Exposure`.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now requires the community-facing exposure/governance/loan evidence
+      wording;
+    - rejects the older GMFN/clan wording in these generated proof surfaces.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - now protects the community-facing report, governance pack, and loan
+      evidence pack wording.
+- Verification:
+  - Passed `npm run audit:proof-surfaces`.
+  - Passed `npm exec -- eslint tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
+  - Passed `npm run audit:protocol-readiness`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py`.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - internal Python function names, route names, and model fields still use
+    `clan` for compatibility with the existing backend contract;
+  - this is a visible generated-artifact wording cleanup, not a schema or API
+    route rename;
+  - older historical handoff entries may still mention the former wording
+    because they record what happened at that time.
+
 ### Trust Command Centre community wording cleanup (2026-06-13)
 
 - Trigger:

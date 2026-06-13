@@ -80,7 +80,7 @@ EVIDENCE_PACK_CHECKLIST_ITEMS: list[dict[str, str]] = [
     {
         "key": "evidence_pdfs",
         "area": "Evidence PDFs",
-        "required_proof": "Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Clan Exposure",
+        "required_proof": "Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Community Exposure",
         "status": "not_captured",
         "acceptance_rule": "Generated PDF opens visually with GSN title, watermark/header/footer, generated time, and limitation statement.",
     },
@@ -303,7 +303,7 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             complete=[
                 "Public TrustSlip Verify and TrustSlip proof paper have institutional visual treatment.",
                 "GSN PDF shells now share official header, watermark, footer, generated time, and limitation language.",
-                "Older Trust Timeline, Loan Trust Report, and Clan Exposure Report PDFs now use the same GSN institutional shell.",
+                "Older Trust Timeline, Loan Trust Report, and Community Exposure Report PDFs now use the same GSN institutional shell.",
             ],
             remaining=[
                 "Run phone screenshot review for TrustSlip Verify, Trust Passport, and public proof surfaces.",
@@ -334,7 +334,7 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             why_it_matters="A pilot needs a dignified package of screenshots, PDFs, route proof, and limitations that an outside reader can respect.",
             complete=[
                 "Institutional PDF header, watermark, footer, and limitation shells are in place for key generated reports.",
-                "Trust Timeline, Loan Trust Report, Clan Exposure Report, Trust Passport, and TrustSlip proof surfaces have official GSN treatment.",
+                "Trust Timeline, Loan Trust Report, Community Exposure Report, Trust Passport, and TrustSlip proof surfaces have official GSN treatment.",
                 "Evidence-pack meta and zip routes now share the same GSN package contract and are owned by the active evidence-pack route module.",
                 "The current source-level PDF shell pass covers the known evidence/report generators.",
                 "A pilot evidence-pack checklist now defines required screenshots, PDFs, acceptance rules, and local folder shape.",

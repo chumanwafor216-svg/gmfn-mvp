@@ -75,7 +75,7 @@ def build_clan_evidence_pack_pdf(
         title="GSN Community Evidence Pack",
         subtitle="Invite growth, community entry, and trust audit evidence.",
         generated_at=ts,
-        reference=f"Clan {clan_id}",
+        reference=f"Community {clan_id}",
     )
 
     def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
@@ -90,15 +90,15 @@ def build_clan_evidence_pack_pdf(
                 title="GSN Community Evidence Pack",
                 subtitle="Invite growth, community entry, and trust audit evidence.",
                 generated_at=ts,
-                reference=f"Clan {clan_id}",
+                reference=f"Community {clan_id}",
             )
         c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
         c.drawString(56, y, safe_pdf_text(text))
         y -= gap
 
     line("Official evidence summary", size=14, gap=20, bold=True)
-    line(f"Clan ID: {clan_id}", bold=True)
-    line(f"Clan Name: {clan_name or '-'}", bold=True)
+    line(f"Community ID: {clan_id}", bold=True)
+    line(f"Community Name: {clan_name or '-'}", bold=True)
     line(f"Generated: {ts}")
     line("")
 
