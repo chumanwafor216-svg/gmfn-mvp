@@ -83,7 +83,7 @@ def courier_confirm_ui(token: str):
         <button onclick="sendStage('delivered')">Delivered</button>
 
         <div class="note" id="msg"></div>
-        <div class="note"><b>Disclaimer:</b> GMFN records trade events for transparency. GMFN does not guarantee courier performance.</div>
+        <div class="note"><b>Disclaimer:</b> GSN records trade events for transparency. GSN does not guarantee courier performance.</div>
       </div>
     </div>
   </div>

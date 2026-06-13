@@ -54,7 +54,7 @@ def _ensure_clan_admin_or_platform_admin(db: Session, *, current_user: User, cla
     is_clan_admin = bool(m) and (getattr(m, "role", "") or "").lower() == "admin"
 
     if not (is_platform_admin or is_clan_admin):
-        raise HTTPException(status_code=403, detail="Clan admin or platform admin only")
+        raise HTTPException(status_code=403, detail="Community admin or platform admin only")
 
 
 def _ensure_can_view_loan_report(db: Session, *, current_user: User, loan: Loan) -> None:

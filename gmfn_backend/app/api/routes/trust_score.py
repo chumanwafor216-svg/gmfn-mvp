@@ -143,7 +143,7 @@ def get_my_trust_score_explained(
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
     """
-    Explained trust score for the current user, scoped to the current clan (X-Clan-Id).
+    Explained trust score for the current user, scoped to the current community (X-Clan-Id).
     """
     clan, membership, current_user = clan_ctx
     user_id = int(current_user.id)
@@ -178,7 +178,7 @@ def get_my_trust_score_explained(
         "last_events": [_as_event_row(te) for te in reversed(last_events)],
         "notes": [
             "Score is rule-based, not ML.",
-            "This endpoint is clan-scoped using X-Clan-Id.",
+            "This endpoint is community-scoped using X-Clan-Id.",
             "Use include_global_events=true to also include clan_id=NULL events.",
         ],
     }
@@ -193,15 +193,15 @@ def get_user_trust_score_explained_admin(
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
     """
-    Clan-admin or platform-admin: explained trust score for any user,
-    scoped to current clan (X-Clan-Id).
+    Community-admin or platform-admin: explained trust score for any user,
+    scoped to current community (X-Clan-Id).
     """
     clan, membership, current_user = clan_ctx
 
     is_platform_admin = (getattr(current_user, "role", "") or "").lower() == "admin"
     is_clan_admin = (getattr(membership, "role", "") or "").lower() == "admin"
     if not (is_platform_admin or is_clan_admin):
-        raise HTTPException(status_code=403, detail="Clan admin or platform admin only")
+        raise HTTPException(status_code=403, detail="Community admin or platform admin only")
 
     target = db.get(User, int(user_id))
     if not target:
@@ -236,6 +236,6 @@ def get_user_trust_score_explained_admin(
         "last_events": [_as_event_row(te) for te in reversed(last_events)],
         "notes": [
             "Score is rule-based, not ML.",
-            "This endpoint is clan-scoped using X-Clan-Id.",
+            "This endpoint is community-scoped using X-Clan-Id.",
         ],
     }

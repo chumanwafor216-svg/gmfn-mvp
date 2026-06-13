@@ -1,3 +1,42 @@
+### GSN wording for standalone trust/verification surfaces (2026-06-13)
+
+- Trigger:
+  - after the visible backend/entry message cleanup, the next targeted scan
+    found older GMFN/clan wording in standalone verification HTML, merchant
+    risk copy, report/trust-score admin errors, and an evidence ZIP filename.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/trust_slips_verify_ui.py`
+    - changed standalone verification page title/header from
+      `GMFN Verification` to `GSN Verification`;
+    - changed the delivery-performance disclaimer from `GMFN does not
+      guarantee...` to `GSN does not guarantee...`.
+  - `gmfn_backend/app/api/routes/courier_confirm.py`
+    - changed the courier-confirmation disclaimer from `GMFN records... GMFN
+      does not guarantee...` to `GSN records... GSN does not guarantee...`.
+  - `gmfn_backend/app/api/routes/merchant_risk.py`
+    - changed `GMFN is non-custodial` to `GSN is non-custodial`.
+  - `gmfn_backend/app/api/routes/reports.py` and
+    `gmfn_backend/app/api/routes/trust_score.py`
+    - changed visible permission errors from `Clan admin or platform admin
+      only` to `Community admin or platform admin only`;
+    - changed trust-score visible notes/docs from `clan-scoped` to
+      `community-scoped` while preserving `X-Clan-Id` as the technical header.
+  - `gmfn_backend/app/api/routes/trust_evidence_pack.py`
+    - changed the evidence ZIP attachment filename from
+      `GMFN_EvidencePack_...zip` to `GSN-EvidencePack-...zip`.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - extended the visible-language guard to cover these standalone trust and
+      verification surfaces.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_protocol_readiness_status.py`.
+- Unabated truth:
+  - `X-Clan-Id` remains visible in developer-facing notes because it is the
+    current technical header contract;
+  - this pass changes user-facing wording and filenames only, not route paths
+    or backend schema names.
+
 ### GSN visible backend/entry message cleanup (2026-06-13)
 
 - Trigger:

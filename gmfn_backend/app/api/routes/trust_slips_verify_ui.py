@@ -76,7 +76,7 @@ def verify_trust_slip_ui(token: str, db: Session = Depends(get_db)):
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>GMFN Verification</title>
+  <title>GSN Verification</title>
   <style>
     body {{
       margin:0;
@@ -110,7 +110,7 @@ def verify_trust_slip_ui(token: str, db: Session = Depends(get_db)):
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:baseline">
         <div>
-          <div style="font-size:22px;font-weight:1000">GMFN Verification</div>
+          <div style="font-size:22px;font-weight:1000">GSN Verification</div>
           <div class="muted">This is a community-backed integrity view. No auto-debit. Not a bank guarantee.</div>
         </div>
         <div class="pill">Verified</div>
@@ -154,7 +154,7 @@ def verify_trust_slip_ui(token: str, db: Session = Depends(get_db)):
       </div>
 
       <div class="muted" style="margin-top:12px">
-        <b>Disclaimer:</b> Shipment updates may be self-reported by merchant/courier/borrower. GMFN does not guarantee delivery performance.
+        <b>Disclaimer:</b> Shipment updates may be self-reported by merchant/courier/borrower. GSN does not guarantee delivery performance.
       </div>
     </div>
   </div>

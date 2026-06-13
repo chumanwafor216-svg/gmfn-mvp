@@ -33,7 +33,7 @@ def evidence_pack_zip(
 ):
     zip_bytes, meta = build_trust_evidence_pack_zip_with_meta(db, user_id=int(current_user.id))
 
-    filename = f"GMFN_EvidencePack_{meta.get('pack_id','pack')}.zip"
+    filename = f"GSN-EvidencePack-{meta.get('pack_id','pack')}.zip"
 
     return StreamingResponse(
         iter([zip_bytes]),
