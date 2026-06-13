@@ -31,6 +31,31 @@
     layout and may need a separate pass if phone review shows item cards are
     also too loud.
 
+### Static fallback share poster deploy verified live (2026-06-13)
+
+- Action:
+  - committed and pushed `9727662` (`Make fallback share poster crop safe`) to
+    `main`;
+  - manually ran GitHub Actions workflow `Trigger Render Deploy` with
+    `deploy_api=false`;
+  - workflow run:
+    `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/27465972754`;
+  - Render frontend deploy hook returned deploy id `dep-d8mk8hjbc2fs73e33rb0`.
+- Verification:
+  - GitHub Actions run completed successfully;
+  - workflow log says it triggered `gmfn-frontend` at
+    `972766260106ac87f2bb6e1bdc5e447ca3aca03a`;
+  - workflow log says `gmfn-frontend deploy hook accepted the request`;
+  - workflow log says `Backend deploy needed: false`;
+  - live `https://gmfn-frontend.onrender.com/gsn-share-poster.png` fetched with
+    cache-busting query returned `(1200, 630)`, RGB, `37,800` bytes;
+  - visually inspected the live poster and confirmed it matches the centered
+    crop-safe version.
+- Unabated truth:
+  - this verifies the generic fallback poster is live;
+  - it does not refresh social-platform scraper caches that already stored an
+    older preview image.
+
 ### Public Shop plain copy action trimmed (2026-06-13)
 
 - Trigger:
