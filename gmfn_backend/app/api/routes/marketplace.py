@@ -736,6 +736,13 @@ def _clear_shop_image_value(shop: MarketplaceShop) -> bool:
     return changed
 
 
+def _provided_model_fields(payload: Any) -> set[str]:
+    fields = getattr(payload, "model_fields_set", None)
+    if fields is None:
+        fields = getattr(payload, "__fields_set__", set())
+    return set(fields or set())
+
+
 def _shop_owner_can_manage(
     *,
     current_user: User,
@@ -1835,7 +1842,7 @@ def update_marketplace_shop(
         clan_id=resolved_clan_id,
     )
 
-    provided = set(payload.__fields_set__ or set())
+    provided = _provided_model_fields(payload)
     changed = False
 
     if "name" in provided and payload.name is not None:
@@ -2218,7 +2225,7 @@ def update_marketplace_product(
         clan_id=int(product.clan_id),
     )
 
-    provided = set(payload.__fields_set__ or set())
+    provided = _provided_model_fields(payload)
     changed = False
     removed_reposts = 0
 

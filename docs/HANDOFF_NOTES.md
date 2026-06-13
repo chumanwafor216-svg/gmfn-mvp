@@ -1,3 +1,28 @@
+### Marketplace Pydantic field-set deprecation cleanup (2026-06-13)
+
+- Trigger:
+  - full backend suite passed but reported two Pydantic v2 deprecation warnings
+    from `gmfn_backend/app/api/routes/marketplace.py`;
+  - both came from update handlers reading `payload.__fields_set__`.
+- Changed locally:
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - added `_provided_model_fields(payload)`;
+    - shop and product update handlers now read `payload.model_fields_set`
+      first and only fall back to `__fields_set__` for older model objects.
+- Verification:
+  - Passed `python -m py_compile gmfn_backend\app\api\routes\marketplace.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp=.pytest_tmp`: `21 passed`.
+  - Passed `python -m pytest -q gmfn_backend\tests --basetemp=.pytest_tmp`: `246 passed, 52 warnings`.
+  - Removed generated `.pytest_tmp` and `test_uploads` directories after the
+    run.
+- Unabated truth:
+  - this removes the Pydantic deprecation warning found during the full backend
+    suite;
+  - remaining warnings are SQLAlchemy sqlite datetime adapter deprecations from
+    tests, not this marketplace route;
+  - this is backend code, so it should be pushed/deployed only with the next
+    intentional backend publish batch.
+
 ### Full lint and backend suite validation checkpoint (2026-06-13)
 
 - Trigger:
