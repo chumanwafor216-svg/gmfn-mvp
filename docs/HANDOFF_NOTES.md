@@ -1,3 +1,31 @@
+### TrustGraph community wording cleanup (2026-06-13)
+
+- Trigger:
+  - continued visible-language sweep after the remaining admin/member wording
+    batch;
+  - quoted-string scan found TrustGraph summary/card/node labels still saying
+    `cross-clan`, `Active clans`, and `Clan {id}`.
+- Changed locally:
+  - `frontend/src/components/TrustGraphSummaryCard.tsx`
+    - changed summary copy to `cross-community trust structure`;
+    - changed the metric label from `Active clans` to `Active communities`.
+  - `gmfn_backend/app/services/trust_graph_service.py`
+    - changed generated node display labels from `Clan {id}` to
+      `Community {id}`;
+    - kept `node_type="clan"` and `clan_id` unchanged as internal contracts.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - extended the guard to keep these TrustGraph labels on community wording.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm exec -- eslint tools\audit-gsn-visible-language.mjs src\components\TrustGraphEdgeList.tsx src\components\TrustGraphSummaryCard.tsx`.
+  - Passed `npm run build`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - no dedicated backend TrustGraph pytest file was found during this batch;
+  - this is visible display wording only, not a trust graph data-contract change;
+  - backend deploy remains blocked until Render API credentials or a manual
+    gmfn-api deploy are handled.
+
 ### Community wording for remaining admin/member visible labels (2026-06-13)
 
 - Trigger:

@@ -300,7 +300,7 @@ def _make_clan_node(clan_id: int) -> Dict[str, Any]:
         "node_type": "clan",
         "node_id": _clan_node_id(int(clan_id)),
         "clan_id": int(clan_id),
-        "display_label": f"Clan {int(clan_id)}",
+        "display_label": f"Community {int(clan_id)}",
         "created_at": None,
     }
 

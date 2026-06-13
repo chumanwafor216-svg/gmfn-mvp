@@ -10,6 +10,7 @@ const repoRoot = join(frontendRoot, "..");
 const files = [
   "frontend/src/pages/JoinEntryPage.tsx",
   "frontend/src/components/TrustGraphEdgeList.tsx",
+  "frontend/src/components/TrustGraphSummaryCard.tsx",
   "frontend/src/pages/ShopGalleryPage.tsx",
   "gmfn_backend/app/api/routes/analytics_liquidity.py",
   "gmfn_backend/app/api/routes/auth.py",
@@ -37,6 +38,7 @@ const files = [
   "gmfn_backend/app/services/invites_service.py",
   "gmfn_backend/app/services/marketplace_service.py",
   "gmfn_backend/app/services/repayments_service.py",
+  "gmfn_backend/app/services/trust_graph_service.py",
   "gmfn_backend/app/services/trust_timeline_pdf_service.py",
 ];
 
@@ -80,6 +82,9 @@ const forbidden = [
   "No active clan memberships found",
   "Spotlight capacity reached for clan",
   "clan structure",
+  "Active clans",
+  "cross-clan trust structure",
+  'display_label": f"Clan',
   "No custodial funds are held by GMFN",
   "Clan liquidity index",
   "Dev Clan",
@@ -105,6 +110,7 @@ const required = [
   ["gmfn_backend/app/services/guarantor_rules.py", "Guarantor must be a community member"],
   ["gmfn_backend/app/services/repayments_service.py", "Only borrower or community admin can repay"],
   ["gmfn_backend/app/services/daily_insight_service.py", "GSN Market Wisdom"],
+  ["gmfn_backend/app/services/trust_graph_service.py", 'display_label": f"Community'],
   ["gmfn_backend/app/services/trust_timeline_pdf_service.py", "GSN trust infrastructure"],
   ["gmfn_backend/app/api/routes/share.py", "GSN Loan Audit"],
   ["gmfn_backend/app/api/routes/courier_confirm.py", "GSN does not guarantee courier performance."],
@@ -123,6 +129,8 @@ const required = [
   ["gmfn_backend/app/api/routes/public_config.py", '"app_name": "GSN"'],
   ["frontend/src/components/TrustGraphEdgeList.tsx", "community structure"],
   ["frontend/src/components/TrustGraphEdgeList.tsx", ">Community</div>"],
+  ["frontend/src/components/TrustGraphSummaryCard.tsx", "cross-community trust structure"],
+  ["frontend/src/components/TrustGraphSummaryCard.tsx", "Active communities"],
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
   ["frontend/src/pages/ShopGalleryPage.tsx", "GSN ID"],
 ];

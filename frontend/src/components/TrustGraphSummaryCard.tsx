@@ -43,7 +43,7 @@ export default function TrustGraphSummaryCard(props: {
         <div>
           <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>TrustGraph Summary</div>
           <div style={{ marginTop: 4, fontSize: 12, color: "#64748b" }}>
-            Internal command-centre analysis of cross-clan trust structure.
+            Internal command-centre analysis of cross-community trust structure.
           </div>
         </div>
 
@@ -64,7 +64,7 @@ export default function TrustGraphSummaryCard(props: {
         }}
         className="gmfn-tg-grid-4"
       >
-        {statLabel("Active clans", summary.active_clan_count)}
+        {statLabel("Active communities", summary.active_clan_count)}
         {statLabel("Sponsors", summary.sponsor_count)}
         {statLabel("Counterparties", summary.unique_counterparties)}
         {statLabel("Inbound edges", summary.inbound_trust_edges)}
