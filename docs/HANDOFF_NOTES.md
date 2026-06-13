@@ -1,3 +1,54 @@
+### Public community QR verification privacy trim (2026-06-13)
+
+- Trigger:
+  - product owner shared phone screenshots showing the QR destination at
+    `/verify/community/:communityKey` exposed too much to visitors;
+  - the page did not leak raw private data, but it did expose an unnecessary
+    inventory of protected categories (`member list`, phone numbers, sponsor
+    details, disputes, relay contacts, trust history), which teaches outsiders
+    too much about the private system.
+- Changed locally, not pushed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - removed `hidden_by_design` from the public
+      `public_community_verification` response;
+    - the public API still returns community name, ID/code, status, public
+      record state, member-confirmation route, relay availability, and request
+      availability.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - removed the `Show publicly` and `Keep protected` visitor-facing inventory
+      cards;
+    - changed the page into a compact visitor proof card: community name, four
+      public fact tiles, one primary `Request confirmation` action, quieter
+      `Copy link`, and a small `Refresh` action;
+    - removed the visible `Save PDF` action from this public QR surface so a
+      visitor is not encouraged to treat the community lookup like a full
+      dossier;
+    - shortened the privacy copy so the public QR page confirms only the
+      community record and says private member records are outside public
+      verification.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - changed the Community Verify guard from requiring public/protected lists
+      to requiring only the compact public verification record, a single
+      primary confirmation action, `Copy link`, and compact privacy protection;
+    - now rejects `hidden_by_design` and protected-category inventory wording in
+      both the public page and backend public-verification function;
+    - now rejects `Save PDF` on this public visitor QR surface.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - asserts the public verification API does not return `hidden_by_design`.
+- Verification:
+  - Passed `npm run audit:trust-actions`.
+  - Passed `npm exec -- eslint src\pages\CommunityVerifyPage.tsx tools\audit-trust-actions.mjs`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; it printed existing LF-to-CRLF warnings only.
+- Unabated truth:
+  - this removes the visible protected-category map from both the public page
+    and public API response;
+  - it also reduces the visible visitor page, but the page still needs owner
+    phone review before calling it fully screenshot-polished;
+  - no push or Render deploy has been done for this fix.
+
 ### Backend social-preview URLs for shop sharing deployed (2026-06-13)
 
 - Trigger:

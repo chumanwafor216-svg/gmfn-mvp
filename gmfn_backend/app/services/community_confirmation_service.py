@@ -3872,14 +3872,6 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         "relay_available": relay_available,
         "relay_availability": "Available" if relay_available else "Not available",
         "request_confirmation_available": relay_available,
-        "hidden_by_design": [
-            "full member list",
-            "raw member phone numbers",
-            "sponsor details",
-            "internal disputes",
-            "private relay contacts",
-            "internal trust history",
-        ],
     }
 
 

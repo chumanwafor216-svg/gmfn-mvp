@@ -306,8 +306,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Community Verification[\s\S]*?Community name[\s\S]*?Community ID[\s\S]*?Public record[\s\S]*?Member confirmation[\s\S]*?Relay availability[\s\S]*?Request confirmation[\s\S]*?Show publicly[\s\S]*?Keep protected/,
-  "CommunityVerifyPage must present a public whitelist record with protected details separated from visible fields."
+  /Community Verification[\s\S]*?Public QR check for community identity only[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Public record[\s\S]*?Relay[\s\S]*?Request confirmation[\s\S]*?Copy link[\s\S]*?Privacy protection/,
+  "CommunityVerifyPage must present a compact public verification record, one primary confirmation action, and a privacy boundary."
 );
 
 assertContains(
@@ -336,15 +336,15 @@ assertContains(
 
 assertNotContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /active_member_count|instant_pulse_available|public_policy|plain_language/,
-  "CommunityVerifyPage must not render private-ish community confirmation internals on the public verification page."
+  /active_member_count|instant_pulse_available|public_policy|plain_language|hidden_by_design|Show publicly|Keep protected|Full member list|Raw member phone numbers|Member phone numbers|Sponsor details|Internal disputes|Private relay contacts|Internal trust history|Save PDF/,
+  "CommunityVerifyPage must not render private-ish community confirmation internals, protected-category inventories, or dossier-style public export actions."
 );
 
 assertFunctionNotContains(
   "../gmfn_backend/app/services/community_confirmation_service.py",
   "public_community_verification",
-  /active_member_count|contactable_reference_count|instant_pulse_available|public_policy|plain_language|phone_e164|sponsor_signal_count/,
-  "public_community_verification must return only whitelisted public community fields."
+  /active_member_count|contactable_reference_count|instant_pulse_available|public_policy|plain_language|phone_e164|sponsor_signal_count|hidden_by_design|full member list|raw member phone numbers|sponsor details|internal disputes|private relay contacts|internal trust history/,
+  "public_community_verification must return only whitelisted public community fields and no protected-category inventory."
 );
 
 assertContains(

@@ -25,7 +25,6 @@ type CommunityVerifyRecord = {
   public_record?: string | null;
   member_confirmation?: string | null;
   request_confirmation_available?: boolean | null;
-  hidden_by_design?: string[] | null;
 };
 
 type Notice = {
@@ -120,7 +119,6 @@ function normalizeRecord(raw: any): CommunityVerifyRecord {
     public_record: firstTruthy(src.public_record),
     member_confirmation: firstTruthy(src.member_confirmation),
     request_confirmation_available: Boolean(src.request_confirmation_available),
-    hidden_by_design: Array.isArray(src.hidden_by_design) ? src.hidden_by_design : [],
   };
 }
 
@@ -262,10 +260,6 @@ export default function CommunityVerifyPage() {
     });
   }
 
-  function printPage() {
-    if (typeof window !== "undefined") window.print();
-  }
-
   const communityName = firstTruthy(record?.community_name, "GSN community");
   const status = safeStr(record?.status).toLowerCase() || "unknown";
   const active = status === "active";
@@ -275,10 +269,6 @@ export default function CommunityVerifyPage() {
     relayAvailable ? "Available" : "Not available"
   );
   const publicRecord = firstTruthy(record?.public_record, "Verified in GSN");
-  const memberConfirmation = firstTruthy(
-    record?.member_confirmation,
-    "By controlled request only"
-  );
   const requestConfirmationAvailable = Boolean(record?.request_confirmation_available);
 
   async function requestConfirmation() {
@@ -368,8 +358,8 @@ export default function CommunityVerifyPage() {
                   style={{
                     margin: 0,
                     color: "#061827",
-                    fontSize: "clamp(30px, 7vw, 54px)",
-                    lineHeight: 0.98,
+                    fontSize: "clamp(28px, 6vw, 44px)",
+                    lineHeight: 1.02,
                     fontWeight: 1000,
                     letterSpacing: 0,
                   }}
@@ -377,7 +367,7 @@ export default function CommunityVerifyPage() {
                   {loading ? "Checking community" : "Community Verification"}
                 </h1>
                 <p style={{ ...helperText(), maxWidth: 680 }}>
-                  This page confirms the community exists in GSN. Private member details remain protected.
+                  Public QR check for community identity only.
                 </p>
               </div>
               <div
@@ -439,7 +429,7 @@ export default function CommunityVerifyPage() {
                   style={{
                     ...sectionCard("#F8FBFF"),
                     display: "grid",
-                    gap: 14,
+                    gap: 12,
                   }}
                 >
                   <TrustPaperWatermark
@@ -467,55 +457,38 @@ export default function CommunityVerifyPage() {
                     </span>
                   </div>
                   <h2 style={{ ...sectionTitle(), fontSize: "clamp(26px, 6vw, 44px)" }}>
-                    Verify this community before you rely on it.
+                    {communityName}
                   </h2>
                   <p style={{ ...helperText(), color: "#1F3145", maxWidth: 720 }}>
-                    This page confirms the community exists in GSN. Member lists, phone numbers,
-                    sponsor details, and private trust history stay protected.
+                    This QR page confirms the community record only. It does not open member
+                    records, contact details, or private trust history.
                   </p>
-                </section>
-
-                <section
-                  style={{
-                    ...sectionCard("#FFFFFF"),
-                    padding: 0,
-                  }}
-                >
-                  <div style={{ display: "grid", gap: 0 }}>
-                    <InfoRow icon="community-building" label="Community name" value={communityName} />
-                    <InfoRow
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                      gap: 10,
+                    }}
+                  >
+                    <InfoTile
                       icon="records-folder"
                       label="Community ID"
                       value={firstTruthy(record.community_code, record.community_id)}
                     />
-                    <InfoRow icon="trust-shield" label="Status" value={labelize(record.status)} />
-                    <InfoRow icon="public-globe" label="Public record" value={publicRecord} />
-                    <InfoRow icon="join-person-plus" label="Member confirmation" value={memberConfirmation} />
-                    <InfoRow icon="phone-contact" label="Relay availability" value={relayAvailability} />
+                    <InfoTile icon="trust-shield" label="Status" value={labelize(record.status)} />
+                    <InfoTile icon="public-globe" label="Public record" value={publicRecord} />
+                    <InfoTile icon="phone-contact" label="Relay" value={relayAvailability} />
                   </div>
-                </section>
-
-                <section style={sectionCard("#FFFFFF")}>
-                  <h2 style={sectionTitle()}>Use this record</h2>
                   <div
                     style={{
                       display: "grid",
                       gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
                       gap: 12,
-                      marginTop: 14,
                     }}
                   >
-                    <SecondaryButton debugId="community-verify.copy-link" stableHeight={64} onClick={() => void copyLink()}>
-                      {communityVerifyIconBadge("public-globe", 42, "navy")}
-                      Copy verification link
-                    </SecondaryButton>
-                    <SecondaryButton debugId="community-verify.print" stableHeight={64} onClick={printPage}>
-                      {communityVerifyIconBadge("records-folder", 42, "navy")}
-                      Save PDF
-                    </SecondaryButton>
                     <PrimaryButton
                       debugId="community-verify.request-confirmation"
-                      stableHeight={64}
+                      stableHeight={58}
                       busy={requestingConfirmation}
                       busyLabel="Sending request"
                       disabled={!requestConfirmationAvailable || requestingConfirmation}
@@ -524,61 +497,36 @@ export default function CommunityVerifyPage() {
                       {communityVerifyIconBadge("trust-shield", 42, "blue")}
                       Request confirmation
                     </PrimaryButton>
+                    <SecondaryButton debugId="community-verify.copy-link" stableHeight={58} onClick={() => void copyLink()}>
+                      {communityVerifyIconBadge("public-globe", 38, "navy")}
+                      Copy link
+                    </SecondaryButton>
                   </div>
-                </section>
-
-                <section
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                    gap: 14,
-                  }}
-                >
-                  <VisibilityCard
-                    tone="show"
-                    title="Show publicly"
-                    items={[
-                      "Community name",
-                      "Community ID",
-                      "Public status",
-                      "Public verification state",
-                      "Controlled request availability",
-                    ]}
-                  />
-                  <VisibilityCard
-                    tone="protect"
-                    title="Keep protected"
-                    items={
-                      record.hidden_by_design?.length
-                        ? record.hidden_by_design.map(labelize)
-                        : [
-                            "Full member list",
-                            "Member phone numbers",
-                            "Sponsor details",
-                            "Private disputes",
-                            "Private relay contacts",
-                            "Private trust history",
-                          ]
-                    }
-                  />
-                </section>
-
-                <section style={sectionCard("#061827")}>
-                  <TrustPaperWatermark name="shield" color="#D6AA45" size={150} opacity={0.09} />
-                  <h2 style={{ ...sectionTitle(), color: "#F2C766" }}>Privacy protection</h2>
-                  <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                    <ProgramRule text="Public viewers see only the fields needed to verify the community." />
-                    <ProgramRule text="Protected member details stay private unless the viewer is authorized." />
-                    <ProgramRule text="Confirmation requests use controlled relay, not direct contact exposure." />
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      background: "#061827",
+                      color: "#FFFFFF",
+                      padding: 14,
+                      display: "grid",
+                      gap: 6,
+                    }}
+                  >
+                    <h2 style={{ margin: 0, color: "#F2C766", fontSize: 18, fontWeight: 1000 }}>
+                      Privacy protection
+                    </h2>
+                    <p style={{ ...helperText(), color: "#FFFFFF" }}>
+                      Public viewers see the community record only. Confirmation requests go
+                      through GSN controlled relay.
+                    </p>
                   </div>
                   <SecondaryButton
                     debugId="community-verify.refresh"
-                    stableHeight={56}
+                    stableHeight={52}
                     onClick={() => void loadRecord()}
-                    style={{ marginTop: 16, color: "#FFFFFF", borderColor: "rgba(242,199,102,0.45)" }}
                   >
-                    {communityVerifyIconBadge("records-folder", 40, "amber")}
-                    Refresh public record
+                    {communityVerifyIconBadge("records-folder", 36, "navy")}
+                    Refresh
                   </SecondaryButton>
                 </section>
               </>
@@ -591,7 +539,7 @@ export default function CommunityVerifyPage() {
   );
 }
 
-function InfoRow({
+function InfoTile({
   icon,
   label,
   value,
@@ -603,86 +551,25 @@ function InfoRow({
   return (
     <div
       style={{
+        minHeight: 92,
+        borderRadius: 18,
+        background: "#FFFFFF",
+        border: "1px solid rgba(8,35,58,0.10)",
+        padding: 12,
         display: "grid",
-        gridTemplateColumns: "46px minmax(110px, 0.75fr) minmax(0, 1fr)",
-        gap: 12,
-        alignItems: "start",
-        borderBottom: "1px solid rgba(8,35,58,0.1)",
-        padding: "13px 16px",
+        gap: 8,
+        alignContent: "start",
       }}
     >
-      {communityVerifyIconBadge(icon, 40)}
-      <span style={{ color: "#617085", fontWeight: 900, lineHeight: 1.28 }}>{label}</span>
-      <strong style={{ color: "#07172C", fontWeight: 1000, lineHeight: 1.28 }}>{value}</strong>
-    </div>
-  );
-}
-
-function VisibilityCard({
-  tone,
-  title,
-  items,
-}: {
-  tone: "show" | "protect";
-  title: string;
-  items: string[];
-}) {
-  const show = tone === "show";
-  return (
-    <div style={sectionCard(show ? "#ECFDF3" : "#FFF7E6")}>
-      <h2
-        style={{
-          margin: 0,
-          display: "flex",
-          alignItems: "center",
-          gap: 9,
-          color: show ? "#166534" : "#92400E",
-          fontSize: 18,
-          fontWeight: 1000,
-          textTransform: "uppercase",
-          letterSpacing: 0.8,
-        }}
-      >
-        {communityVerifyIconBadge(show ? "public-globe" : "vault-safe", 40, show ? "green" : "amber")}
-        {title}
-      </h2>
-      <div style={{ display: "grid", gap: 9, marginTop: 14 }}>
-        {items.map((item) => (
-          <span
-            key={item}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              color: "#1F3145",
-              fontWeight: 900,
-              lineHeight: 1.25,
-            }}
-          >
-            {communityVerifyIconBadge(show ? "trust-shield" : "vault-safe", 36, show ? "green" : "amber")}
-            {item}
-          </span>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {communityVerifyIconBadge(icon, 34)}
+        <span style={{ color: "#617085", fontSize: 13, fontWeight: 900, lineHeight: 1.2 }}>
+          {label}
+        </span>
       </div>
+      <strong style={{ color: "#07172C", fontSize: 17, fontWeight: 1000, lineHeight: 1.2 }}>
+        {value}
+      </strong>
     </div>
-  );
-}
-
-function ProgramRule({ text }: { text: string }) {
-  return (
-    <span
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 10,
-        color: "#FFFFFF",
-        fontSize: 14,
-        fontWeight: 850,
-        lineHeight: 1.35,
-      }}
-    >
-      {communityVerifyIconBadge("trust-shield", 36, "amber")}
-      {text}
-    </span>
   );
 }

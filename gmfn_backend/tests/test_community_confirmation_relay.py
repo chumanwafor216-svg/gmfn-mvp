@@ -502,6 +502,7 @@ def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: 
         assert "sponsor_signal_count" not in data
         assert "plain_language" not in data
         assert "description" not in data
+        assert "hidden_by_design" not in data
 
 
 def test_public_community_verify_accepts_trustslip_fallback_for_uncoded_clan(client: TestClient):
@@ -566,6 +567,7 @@ def test_public_community_verify_degrades_when_confirmation_schema_missing(
     assert data["request_confirmation_available"] is False
     assert "plain_language" not in data
     assert "active_member_count" not in data
+    assert "hidden_by_design" not in data
     assert "community_confirmation_policies" not in response.text
     assert "SELECT" not in response.text
 
