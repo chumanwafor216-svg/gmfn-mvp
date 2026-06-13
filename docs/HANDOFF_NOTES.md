@@ -52181,3 +52181,55 @@ GSN-branded invite composer and invite-entry continuity.
     `dep-d8mpch0g4nts73fq5hrg`;
   - API deploy was intentionally skipped (`deploy_api=false`), because no
     backend files changed.
+
+### Phone rail clearance pass for remaining/admin routes (2026-06-13)
+
+- Trigger:
+  - after the trust/support batch was clean, a second authenticated phone scan
+    covered remaining operational and admin/oversight routes;
+  - admin routes were scanned with mocked Playwright auth/API responses so the
+    scanner inspected the admin UI instead of the login redirect.
+- Routes scanned:
+  - `/app/demand-box`
+  - `/app/open-trust-reading`
+  - `/app/trust-slip/verify`
+  - `/app/community-confirmations/policy`
+  - `/app/loan-summary/1`
+  - `/app/payment/loans/1`
+  - `/app/my-gmfn-and-i`
+  - `/app/command-center`
+  - `/app/command-center/bank-console`
+  - `/app/command-center/revenue-allocation`
+  - `/app/command-center/exposure`
+  - `/app/command-center/trust-analytics`
+  - `/app/command-center/trust-events`
+  - `/app/command-center/identity-risk`
+  - `/app/command-center/incomplete-loans`
+  - `/app/command-center/system-operations`
+  - `/app/command-center/trust-graph`
+- Confirmed before the fix:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - `community-confirmation-policy.copy` sat at top `758`, bottom `810`
+      against the bottom rail band `785-844`.
+- Changed locally, not pushed yet:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - kept the policy Refresh and Copy summary controls compact on phone so
+      they sit side by side above the bottom rail instead of stacking into it.
+- Verification:
+  - Focused Playwright phone hit-test after the patch:
+    - `community-confirmation-policy.refresh`: top `722`, bottom `774`.
+    - `community-confirmation-policy.copy`: top `722`, bottom `774`.
+    - bottom rail top remained `785`, so both controls are above the rail.
+  - Full 17-route remaining/admin phone batch after the patch reported
+    `risky: []`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:action-response-protocol`.
+  - Passed `npm --prefix frontend run audit:admin-ops-actions`.
+- Unabated truth:
+  - this scan verifies the initial/rendered states for these 17 routes, not
+    every expanded admin state after deep interaction;
+  - the admin scan used mocked API responses, so it proves layout/tap geometry
+    under expected admin access, not live backend data correctness;
+  - no global navigation, app shell, auth, backend, or Render settings were
+    changed.

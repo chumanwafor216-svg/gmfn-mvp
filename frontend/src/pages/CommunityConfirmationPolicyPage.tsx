@@ -524,14 +524,14 @@ function CommunityConfirmationPolicyPage() {
               Turn request routing and quick answers on or off.
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: isCompact ? 24 : 0 }}>
             <SecondaryButton
               type="button"
               onClick={() => void loadPolicy()}
               busy={loading}
               busyLabel="Refreshing..."
               stableHeight={52}
-              fullWidth={isCompact}
+              fullWidth={false}
               minWidth={120}
               debugId="community-confirmation-policy.refresh"
             >
@@ -544,7 +544,7 @@ function CommunityConfirmationPolicyPage() {
                 setNotice({ tone: "success", text: "Relay policy summary copied." });
               }}
               stableHeight={52}
-              fullWidth={isCompact}
+              fullWidth={false}
               minWidth={120}
               debugId="community-confirmation-policy.copy"
             >
