@@ -53,8 +53,8 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /Finance overview[\s\S]*?Your community finances\. Clear\. Secure\. Together\.[\s\S]*?money coming in, money going out, payment checks, and support[\s\S]*?GSN ID:[\s\S]*?Community code:/,
-  "Finance hero must keep a plain cumulative finance summary with member and community context."
+  /Finance overview[\s\S]*?isCompact[\s\S]*?"Community finance"[\s\S]*?"Your community finances\. Clear\. Secure\. Together\."[\s\S]*?"Money in, money out, checks, and support records\."[\s\S]*?"See money coming in, money going out, payment checks, and support records in one calm place\."[\s\S]*?GSN ID:[\s\S]*?Community code:/,
+  "Finance hero must keep a plain cumulative finance summary with phone-safe compact copy and full desktop context."
 );
 
 assertContains(

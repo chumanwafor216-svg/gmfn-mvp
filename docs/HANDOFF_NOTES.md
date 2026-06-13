@@ -1,3 +1,50 @@
+### Finance and Trust phone-copy tightening slice (2026-06-13)
+
+- Trigger:
+  - owner asked to keep going through the app-wide protocol/polish pass after
+    phone screenshots showed clipped Finance text, Trust Passport meter squeeze,
+    and lingering official-surface polish concerns.
+- Changed:
+  - `frontend/src/pages/FinancePage.tsx`
+    - mobile Finance hero now uses the shorter title `Community finance`;
+    - mobile Finance helper copy is shortened to avoid clipping while desktop
+      keeps the full brand sentence.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport identity evidence meter uses shorter mobile label/status
+      copy (`Evidence`, `{score}% ready`);
+    - mobile meter detail is shortened while desktop keeps the full
+      recorded-vs-verified explanation;
+    - role count separator changed to ASCII `/` so official surfaces do not
+      risk encoding scars.
+  - `frontend/tools/audit-finance-front-package.mjs`
+    - updated to require phone-safe Finance hero copy and full desktop context.
+  - `frontend/tools/audit-trust-passport-front-package.mjs`
+    - updated to require both compact phone wording and full Trust Passport
+      recorded-vs-verified wording.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - accepted the current not-ready TrustSlip recovery action into the stable
+      source-action inventory and updated the evidence-meter geometry guard.
+- Verification:
+  - `npm run audit:finance-front-package` passed.
+  - `npm run audit:finance-button-inventory` passed.
+  - `npm run audit:finance-lane-map` passed.
+  - `npm run audit:trust-passport-front-package` passed.
+  - `npm run audit:trust-passport-button-inventory` passed.
+  - `npm run audit:trust-passport-lane-map` passed.
+  - `npm run audit:gsn-visible-language` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:icon-protocol` passed.
+  - `npm run audit:marketplace-demand-box-lane` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is a phone-copy/layout-pressure slice, not the full final freeze;
+  - source guards cannot prove drag feel or exact phone screenshot composition;
+  - the next likely pass should use the owner's refreshed phone screenshots to
+    judge Marketplace block height, bottom rail feel, and any remaining
+    watermark collisions.
+
 ### App-wide protocol tightening slice 1 (2026-06-13)
 
 - Trigger:

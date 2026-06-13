@@ -1721,7 +1721,9 @@ export default function FinancePage() {
                 overflowWrap: "break-word",
               }}
             >
-              Your community finances. Clear. Secure. Together.
+              {isCompact
+                ? "Community finance"
+                : "Your community finances. Clear. Secure. Together."}
             </h1>
             <p
               style={{
@@ -1733,8 +1735,9 @@ export default function FinancePage() {
                 overflowWrap: "break-word",
               }}
             >
-              See money coming in, money going out, payment checks, and support
-              records in one calm place.
+              {isCompact
+                ? "Money in, money out, checks, and support records."
+                : "See money coming in, money going out, payment checks, and support records in one calm place."}
             </p>
             <div
               style={{

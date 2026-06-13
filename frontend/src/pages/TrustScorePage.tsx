@@ -649,6 +649,7 @@ function statusPillStyle(status: string): React.CSSProperties {
     display: "inline-flex",
     justifyContent: "center",
     alignItems: "center",
+    maxWidth: "100%",
     minHeight: 26,
     borderRadius: 8,
     padding: "4px 10px",
@@ -678,6 +679,9 @@ function statusPillStyle(status: string): React.CSSProperties {
             : "rgba(100,116,139,0.14)"
     }`,
     textAlign: "center",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   };
 }
 
@@ -1676,7 +1680,7 @@ export default function TrustScorePage() {
     return Array.from(counts.entries())
       .filter(([, count]) => count > 0)
       .map(([label, count]) => `${label} ${count}`)
-      .join(" · ");
+      .join(" / ");
   }, [
     communityFootprint,
     trustSlipSummary?.community_role_counts,
@@ -2922,10 +2926,12 @@ export default function TrustScorePage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Identity evidence
+                  {isCompact ? "Evidence" : "Identity evidence"}
                 </span>
                 <span style={statusPillStyle(identityEvidence.label)}>
-                  {identityEvidence.score}% | {identityEvidence.label}
+                  {isCompact
+                    ? `${identityEvidence.score}% ready`
+                    : `${identityEvidence.score}% | ${identityEvidence.label}`}
                 </span>
               </div>
               <div
@@ -2936,7 +2942,9 @@ export default function TrustScorePage() {
                   fontWeight: 850,
                 }}
               >
-                Recorded evidence raises readiness. Verified evidence raises confidence.
+                {isCompact
+                  ? "Recorded helps. Verified builds confidence."
+                  : "Recorded evidence raises readiness. Verified evidence raises confidence."}
               </div>
             </div>
             <SubtleButton

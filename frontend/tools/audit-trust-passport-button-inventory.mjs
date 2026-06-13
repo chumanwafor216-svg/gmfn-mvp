@@ -59,7 +59,7 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 13;
+const expectedSourceActions = 14;
 const expectedRenderedActions = 22;
 
 if (actions.length !== expectedSourceActions) {
@@ -113,6 +113,7 @@ const expectedOrder = [
   "trust-score.verify",
   "trust-score.review-care",
   "trust-score.export",
+  "trust-score.snapshot-open-trust-slip",
 ];
 
 let cursor = -1;
@@ -171,7 +172,7 @@ assertContains(
 );
 
 assertContains(
-  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?marginTop: isCompact \? 86 : 14[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?alignSelf: isCompact \? "start" : "center"[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?identityEvidenceOpen \?/,
+  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?marginTop: isCompact \? 12 : 14[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?isCompact[\s\S]*?`\$\{identityEvidence\.score\}% ready`[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?alignSelf: "center"[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?identityEvidenceOpen \?/,
   "Trust Passport identity evidence meter must stay collapsed behind a stable Open/Hide toggle so the snapshot remains portable."
 );
 
