@@ -149,6 +149,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /expected_total_amount\?: string \| number \| null;[\s\S]*?expected_remaining_amount\?: string \| number \| null;[\s\S]*?const repaymentChoiceLabel[\s\S]*?const selectedRepaymentAmountText[\s\S]*?Choice: \{repaymentChoiceLabel\}[\s\S]*?Selected: \{selectedRepaymentAmountText\}[\s\S]*?Outstanding: \{fmtMoney\(outstandingAmount, currency\)\}[\s\S]*?Selected payment amount[\s\S]*?Full balance tracking[\s\S]*?Expected total:[\s\S]*?Expected still left:[\s\S]*?For part payments, this keeps the full loan balance visible until reconciliation closes it/,
+  "Repayment page must make the selected payment amount, outstanding balance, expected total, and expected remaining balance visible for pilot evidence screenshots."
+);
+
+assertContains(
   "src/lib/api.ts",
   /export async function createRepaymentClaim[\s\S]*?\/loans\/\$\{encodeURIComponent\(String\(loanId\)\)\}\/repayment-claim[\s\S]*?payment_reference: String\(payload\.payment_reference \|\| ""\)\.trim\(\)/,
   "Frontend API must expose the borrower repayment-claim endpoint used by RepaymentPage."

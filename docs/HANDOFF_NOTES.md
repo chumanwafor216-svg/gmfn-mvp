@@ -1,3 +1,85 @@
+### Controlled push and frontend Render deploy completed (2026-06-13)
+
+- Trigger:
+  - product owner said Render had been restored and asked for the professional
+    controlled path instead of automatic pushing.
+- Pre-push verification:
+  - local backend health passed at `http://127.0.0.1:8012/health`;
+  - local frontend was restored on `0.0.0.0:5190`;
+  - phone-facing local URL was `http://192.168.1.13:5190/`;
+  - `npm run audit:protected-button-freeze` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run build` passed;
+  - `git status -sb` was clean and exactly one commit ahead before pushing.
+- Published commit:
+  - branch: `main`;
+  - commit: `2b08dcc4172597dd8f6ac1d37fd8b6aceec502c0`;
+  - message: `Checkpoint GSN proof and audit polish batch`;
+  - push result: `main` is now synced with `origin/main`.
+- Render:
+  - manually dispatched `.github/workflows/render-deploy.yml` with
+    `deploy_api=false`;
+  - GitHub Actions run `27460854788` completed successfully;
+  - Render accepted the frontend deploy hook and returned deploy id
+    `dep-d8mgnsgjs32c73clmh80`;
+  - backend deploy was intentionally skipped because the checkpoint did not
+    touch `gmfn_backend/**`.
+- Live checks:
+  - `https://gmfn-frontend.onrender.com/` returned `200`;
+  - live frontend response showed `last-modified:
+    Sat, 13 Jun 2026 07:52:06 UTC`;
+  - `https://gmfn-api.onrender.com/health` returned
+    `{"ok":true,"dev_mode":false}`.
+- Devil's advocate / do not overclaim:
+  - the local production build main bundle was `assets/index-1HLcXR8g.js`;
+  - the live frontend HTML reported `assets/index-COx4fu8t.js`;
+  - that can happen because Render builds in its own environment, but it means
+    we should not claim byte-for-byte local/live bundle identity from the hash
+    alone;
+  - the hard deploy proof is the checked-out commit in GitHub Actions, the
+    accepted Render deploy id, and the fresh live `last-modified` timestamp;
+  - final phone acceptance is still needed.
+
+### Repayment evidence-readiness clarity slice (2026-06-13)
+
+- Trigger:
+  - after the controlled push/deploy, product owner asked to continue the work
+    plan;
+  - next unfinished proof item is repayment evidence capture: selected amount,
+    outstanding amount, part-payment truth, expected-payment visibility, and
+    final reconciliation state.
+- Changed locally, not pushed:
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - added `expected_total_amount` and `expected_remaining_amount` to the
+      generated loan repayment instruction shape;
+    - added first-surface chips for repayment choice, selected amount, and
+      outstanding amount so the route is easier to screenshot and review;
+    - renamed the generated instruction amount display to `Selected payment
+      amount`;
+    - added `Full balance tracking` lines for backend-provided expected total
+      and expected remaining amount;
+    - added the same full-balance tracking context into copied repayment
+      instruction packages and borrower repayment-claim notes when available.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - added a guard requiring the repayment screen to keep selected amount,
+      outstanding balance, expected total, and expected remaining balance
+      visible for pilot evidence screenshots.
+- Verification:
+  - `npm run audit:loans-actions` passed;
+  - `npm exec -- eslint src\pages\RepaymentPage.tsx tools\audit-loans-actions.mjs`
+    passed;
+  - `npm run audit:protected-button-freeze` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm exec -- tsc -b --pretty false` passed;
+  - `npm run build` passed.
+- Devil's advocate / remaining truth:
+  - this improves route-local repayment evidence clarity only;
+  - it does not change repayment math, bank reconciliation, admin confirmation,
+    guarantor release, Trust events, overdue/missed handling, reversal behavior,
+    or dated installment scheduling;
+  - the evidence pack still remains partial until a real phone/local UI proof
+    screenshot is captured and accepted.
+
 ### Local checkpoint saved, awaiting publish decision (2026-06-12)
 
 - Trigger:

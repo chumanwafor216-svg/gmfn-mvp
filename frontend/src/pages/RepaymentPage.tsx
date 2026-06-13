@@ -33,6 +33,8 @@ type LoanInstruction = {
   reference_normalized?: string | null;
   loan_id?: number;
   amount?: string | number | null;
+  expected_total_amount?: string | number | null;
+  expected_remaining_amount?: string | number | null;
   currency?: string | null;
   due_at?: string | null;
   settlement?: {
@@ -540,6 +542,21 @@ export default function RepaymentPage() {
     currentExpectedPayment?.bank_event_id
   );
 
+  const repaymentChoiceLabel =
+    repaymentMode === "full" ? "Full balance" : "Part payment";
+  const selectedRepaymentAmountText =
+    repaymentMode === "part" && requestedRepaymentAmount <= 0
+      ? "Enter amount"
+      : fmtMoney(requestedRepaymentAmount, currency);
+  const instructionExpectedTotalText = firstTruthy(
+    instruction?.expected_total_amount,
+    currentExpectedPayment?.amount
+  );
+  const instructionExpectedRemainingText = firstTruthy(
+    instruction?.expected_remaining_amount,
+    currentExpectedPayment?.remaining_amount
+  );
+
   const routeState = useMemo(() => {
     if (!numericLoanId || !summary) {
       return {
@@ -688,9 +705,17 @@ export default function RepaymentPage() {
       const claim = await createRepaymentClaim(numericLoanId, {
         payment_reference: reference,
         note: [
-          `Repayment choice: ${repaymentMode === "full" ? "Full balance" : "Part payment"}`,
+          `Repayment choice: ${repaymentChoiceLabel}`,
           `Amount declared: ${amountText}`,
-        ].join(" | "),
+          instructionExpectedTotalText
+            ? `Full balance tracked: ${fmtMoney(instructionExpectedTotalText, currency)}`
+            : "",
+          instructionExpectedRemainingText
+            ? `Expected balance still tracked: ${fmtMoney(instructionExpectedRemainingText, currency)}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" | "),
       });
 
       setPaymentConfirmedAt(new Date().toISOString());
@@ -743,9 +768,15 @@ export default function RepaymentPage() {
       memberRole ? `Role: ${memberRole}` : "",
       `Loan ID: ${numericLoanId}`,
       `Current step: ${routeState.step}`,
-      `Repayment choice: ${repaymentMode === "full" ? "Full balance" : "Part payment"}`,
+      `Repayment choice: ${repaymentChoiceLabel}`,
       `Outstanding amount: ${fmtMoney(outstandingAmount, currency)}`,
       `Repayment amount: ${repaymentAmount}`,
+      instructionExpectedTotalText
+        ? `Full balance tracked: ${fmtMoney(instructionExpectedTotalText, currency)}`
+        : "",
+      instructionExpectedRemainingText
+        ? `Expected balance still tracked: ${fmtMoney(instructionExpectedRemainingText, currency)}`
+        : "",
       reference ? `Reference: ${reference}` : "",
       settlement?.bankName ? `Bank: ${settlement.bankName}` : "",
       settlement?.accountName ? `Account name: ${settlement.accountName}` : "",
@@ -854,6 +885,24 @@ export default function RepaymentPage() {
           {generatingInstruction
             ? "GSN is generating the repayment instruction now."
             : routeState.detail}
+        </div>
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(138px, 1fr))",
+            gap: 8,
+          }}
+        >
+          <span style={{ ...badge(false), background: "rgba(255,255,255,0.72)", color: "#0B1F33" }}>
+            Choice: {repaymentChoiceLabel}
+          </span>
+          <span style={{ ...badge(false), background: "rgba(255,255,255,0.72)", color: "#0B1F33" }}>
+            Selected: {selectedRepaymentAmountText}
+          </span>
+          <span style={{ ...badge(false), background: "rgba(255,255,255,0.72)", color: "#0B1F33" }}>
+            Outstanding: {fmtMoney(outstandingAmount, currency)}
+          </span>
         </div>
       </div>
 
@@ -1103,11 +1152,32 @@ export default function RepaymentPage() {
               ) : (
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>Repayment amount</div>
+                    <div style={sectionLabel()}>Selected payment amount</div>
                     <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 18 }}>
                       {fmtMoney(instruction.amount || requestedRepaymentAmount, currency)}
                     </div>
                   </div>
+
+                  {instructionExpectedTotalText || instructionExpectedRemainingText ? (
+                    <div style={innerCard("#FFFFFF")}>
+                      <div style={sectionLabel()}>Full balance tracking</div>
+                      <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                        {instructionExpectedTotalText ? (
+                          <div style={helperText()}>
+                            Expected total: {fmtMoney(instructionExpectedTotalText, currency)}
+                          </div>
+                        ) : null}
+                        {instructionExpectedRemainingText ? (
+                          <div style={helperText()}>
+                            Expected still left: {fmtMoney(instructionExpectedRemainingText, currency)}
+                          </div>
+                        ) : null}
+                        <div style={{ ...helperText(), color: "#D7E3F1", fontSize: 13 }}>
+                          For part payments, this keeps the full loan balance visible until reconciliation closes it.
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div style={innerCard("#FFFFFF")}>
                     <div style={sectionLabel()}>Reference</div>
