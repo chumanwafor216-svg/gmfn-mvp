@@ -114,7 +114,7 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
-      /order: 20,[\s\S]*?marginTop: isPhone \? 112 : undefined,[\s\S]*?debugId="dashboard\.apps\.toggle"/,
+      /order: 20,[\s\S]*?marginTop: isPhone \? [0-9]+ : undefined,[\s\S]*?debugId="dashboard\.apps\.toggle"/,
     message:
       "Dashboard app launcher section must stay below the initial phone rail instead of landing half-covered by bottom navigation.",
   },

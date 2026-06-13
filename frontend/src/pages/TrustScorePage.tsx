@@ -2882,7 +2882,7 @@ export default function TrustScorePage() {
           <div
             data-trust-passport-identity-evidence-meter="true"
             style={{
-              marginTop: isCompact ? 86 : 14,
+              marginTop: isCompact ? 12 : 14,
               borderRadius: isCompact ? 16 : 18,
               border: "1px solid rgba(216,227,238,0.78)",
               background:
@@ -2890,7 +2890,7 @@ export default function TrustScorePage() {
               padding: isCompact ? 9 : 12,
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "36px minmax(0, 1fr) auto"
+                ? "36px minmax(0, 1fr)"
                 : "44px minmax(0, 1fr) auto",
               gap: isCompact ? 9 : 12,
               alignItems: "center",
@@ -2908,6 +2908,7 @@ export default function TrustScorePage() {
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: 8,
+                  flexWrap: "wrap",
                 }}
               >
                 <span
@@ -2949,8 +2950,10 @@ export default function TrustScorePage() {
                 fontSize: isCompact ? 11 : 12,
                 fontWeight: 1000,
                 whiteSpace: "nowrap",
-                alignSelf: isCompact ? "start" : "center",
-                marginTop: isCompact ? 32 : 0,
+                alignSelf: "center",
+                gridColumn: isCompact ? "1 / -1" : undefined,
+                justifySelf: isCompact ? "stretch" : undefined,
+                marginTop: 0,
               }}
               debugId="trust-score.identity-evidence-meter.toggle"
             >

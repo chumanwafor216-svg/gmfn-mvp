@@ -1713,11 +1713,12 @@ export default function FinancePage() {
             <h1
               style={{
                 margin: "12px 0 0",
-                fontSize: isCompact ? 25 : 44,
+                fontSize: isCompact ? 22 : 44,
                 lineHeight: isCompact ? 1.08 : 1.04,
                 fontWeight: 950,
                 letterSpacing: 0,
-                maxWidth: isCompact ? 340 : 620,
+                maxWidth: isCompact ? "100%" : 620,
+                overflowWrap: "break-word",
               }}
             >
               Your community finances. Clear. Secure. Together.
@@ -1726,9 +1727,10 @@ export default function FinancePage() {
               style={{
                 margin: isCompact ? "9px 0 0" : "14px 0 0",
                 color: "#D8E7F5",
-                fontSize: isCompact ? 14 : 17,
-                lineHeight: isCompact ? 1.42 : 1.65,
-                maxWidth: 560,
+                fontSize: isCompact ? 13 : 17,
+                lineHeight: isCompact ? 1.36 : 1.65,
+                maxWidth: isCompact ? "100%" : 560,
+                overflowWrap: "break-word",
               }}
             >
               See money coming in, money going out, payment checks, and support
@@ -1751,7 +1753,8 @@ export default function FinancePage() {
                   border: "1px solid rgba(255,255,255,0.14)",
                   maxWidth: "100%",
                   minWidth: 0,
-                  overflowWrap: "anywhere",
+                  flex: isCompact ? "1 1 100%" : undefined,
+                  overflowWrap: "break-word",
                 }}
               >
                 {communityLabel}
@@ -1764,7 +1767,8 @@ export default function FinancePage() {
                   border: "1px solid rgba(255,255,255,0.14)",
                   maxWidth: "100%",
                   minWidth: 0,
-                  overflowWrap: "anywhere",
+                  flex: isCompact ? "1 1 100%" : undefined,
+                  overflowWrap: "break-word",
                 }}
               >
                 GSN ID: {gmfnId}
@@ -1777,7 +1781,8 @@ export default function FinancePage() {
                   border: "1px solid rgba(255,255,255,0.14)",
                   maxWidth: "100%",
                   minWidth: 0,
-                  overflowWrap: "anywhere",
+                  flex: isCompact ? "1 1 100%" : undefined,
+                  overflowWrap: "break-word",
                 }}
               >
                 Community code: {publicCommunityCode}
@@ -1791,7 +1796,8 @@ export default function FinancePage() {
                     border: "1px solid rgba(255,255,255,0.14)",
                     maxWidth: "100%",
                     minWidth: 0,
-                    overflowWrap: "anywhere",
+                    flex: isCompact ? "1 1 100%" : undefined,
+                    overflowWrap: "break-word",
                   }}
                 >
                   Money code: {poolReference}
@@ -1805,7 +1811,8 @@ export default function FinancePage() {
                   border: "1px solid rgba(255,255,255,0.14)",
                   maxWidth: "100%",
                   minWidth: 0,
-                  overflowWrap: "anywhere",
+                  flex: isCompact ? "1 1 100%" : undefined,
+                  overflowWrap: "break-word",
                 }}
               >
                 Your role: {memberRole}
@@ -1901,7 +1908,7 @@ export default function FinancePage() {
                 }}
               >
                 <FinanceGlyph name={item.icon} size={17} />
-                <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                <span style={{ minWidth: 0, overflowWrap: "break-word" }}>
                   {item.label}
                 </span>
               </div>

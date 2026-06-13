@@ -1,3 +1,54 @@
+### Phone spacing and overflow trim pass (2026-06-13)
+
+- Trigger:
+  - owner phone screenshots showed remaining first-viewport polish issues on
+    Finance, Trust Passport, Dashboard, and Community Home after the proof
+    surface trim pass.
+- Changed:
+  - `frontend/src/pages/FinancePage.tsx`
+    - compact Finance hero headline is slightly smaller and constrained to the
+      card width;
+    - compact finance identity chips stack full-width instead of competing in
+      one row and clipping at the right edge;
+    - finance chip wrapping uses softer `break-word` handling to satisfy the
+      finance button inventory rule.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - compact Identity Overview evidence meter no longer has an 86px forced
+      top gap;
+    - compact evidence meter button now drops to its own row instead of
+      overlapping the evidence label/status text.
+  - `frontend/src/pages/DashboardPage.tsx`
+    - phone app launcher spacing after the Global ID card was reduced from a
+      hard 112px spacer to a normal 18px gap.
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - phone spacing before `Your Communities` and `Owner Actions` was reduced
+      so the page no longer creates large empty bands between compact cards.
+  - `frontend/tools/audit-dashboard-phone-buttons.mjs`
+    - dashboard audit now protects the presence of a phone offset without
+      freezing the old excessive 112px value.
+  - `frontend/tools/audit-trust-passport-front-package.mjs`
+    - Trust Passport audit now protects the identity evidence meter contract
+      without freezing the old broken 86px compact margin or overlapping
+      button alignment.
+- Verification:
+  - `npm run build` passed from `frontend/`.
+  - Passed `npm run audit:finance-front-package`.
+  - Passed `npm run audit:finance-button-inventory`.
+  - Passed `npm run audit:trust-passport-front-package`.
+  - Passed `npm run audit:dashboard-phone-buttons`.
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:community-home-phone-buttons`.
+  - Passed `npm run audit:community-home-button-inventory`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:tap-stability`.
+- Unabated truth:
+  - this pass addresses the visible clipping and dead-space issues from the
+    supplied phone screenshots;
+  - it does not complete the bottom navigation rail stabilization, which still
+    deserves its own app-shell pass;
+  - no backend, auth, schema, route contract, or Render setting was changed.
+
 ### Public/mobile proof surface trim pass (2026-06-13)
 
 - Trigger:

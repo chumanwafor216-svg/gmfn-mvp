@@ -3038,7 +3038,7 @@ export default function CommunityHomePage() {
         style={{
           ...communityBlockCard("raised"),
           order: 30,
-          marginTop: isCompact ? 104 : undefined,
+          marginTop: isCompact ? 16 : undefined,
         }}
       >
         <div
@@ -3518,7 +3518,7 @@ export default function CommunityHomePage() {
         style={{
           ...communityBlockCard("raised"),
           order: 20,
-          marginTop: isCompact ? 40 : undefined,
+          marginTop: isCompact ? 14 : undefined,
           position: "relative",
           zIndex: 30,
         }}
