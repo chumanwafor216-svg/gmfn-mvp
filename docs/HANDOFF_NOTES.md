@@ -1,3 +1,43 @@
+### Proof-surface audit aligned with trimmed public copy links (2026-06-13)
+
+- Trigger:
+  - continued the main schedule sweep after live API audit clearance;
+  - `npm --prefix frontend run audit:proof-surfaces` failed because the proof
+    audit still expected public Community Verification and public Shop Gallery
+    plain copy buttons to copy long branded proof packages;
+  - that expectation contradicted the latest phone-evidence fix: QR/public
+    visitors need short public URLs, while long headed-paper packages belong to
+    owner/share-package paths.
+- Changed locally:
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - Community Verification guard now requires `safeCopy(publicLink)` and the
+      short `GSN community verification link copied.` success copy;
+    - Public Shop guard now requires `safeCopy(absoluteShopShareLink)` and
+      `Public shop link copied.`;
+    - Marketplace, Shop Assets, Community Shop Control, Vault, payment, loan,
+      guarantor, and Trust Passport branded package guards remain in place.
+- Verification:
+  - Passed `npm --prefix frontend run audit:proof-surfaces`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm --prefix frontend run audit:share-tag-actions`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm exec -- eslint tools\audit-institutional-proof-surfaces.mjs`
+    from `frontend`.
+  - Passed the current main-schedule audit sweep through entry, protected
+    shell, Dashboard, Community Home, Marketplace, Shop/Public Shop/Shop
+    Control, Finance, Trust, Loans/proof, route fallthrough, Spotlight,
+    admin/operations, community join requests, notifications, button
+    stability, raw-action, debug-id, icon, visible-language, readiness, and
+    action-response cages.
+  - Passed `npm --prefix frontend run build`.
+  - Passed `git diff --check` with the repo's normal LF-to-CRLF warning only.
+- Unabated truth:
+  - this fixes a guardrail contradiction, not a runtime user-facing screen;
+  - it keeps the latest privacy/share decision caged: public visitor copy stays
+    short, formal packages remain available where the owner intentionally
+    prepares them;
+  - scripts are green, but this still does not replace phone screenshot review.
+
 ### Live API identity and public verification audit now passes (2026-06-13)
 
 - Trigger:

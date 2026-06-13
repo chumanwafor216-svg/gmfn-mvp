@@ -420,8 +420,8 @@ assertNotContains(
 );
 assertContains(
   "communityVerify",
-  /buildGsnCommunityVerifyLinkPackage[\s\S]*?safeCopy\(packageText\)/,
-  "Community verification copied links must leave as branded GSN verification packages, not raw URLs."
+  /copyLink[\s\S]*?safeCopy\(publicLink\)[\s\S]*?GSN community verification link copied\./,
+  "Public Community Verification Copy link must copy only the public verification URL, not a long headed-paper package for QR visitors."
 );
 assertContains(
   "firstCircle",
@@ -445,8 +445,8 @@ assertContains(
 );
 assertContains(
   "publicShop",
-  /buildGsnPublicShopLinkPackage[\s\S]*?function buildPublicShopPackage[\s\S]*?safeCopy\(\s*buildPublicShopPackage/,
-  "Public shop copied links must use the branded GSN public shop package."
+  /function copyShopLink[\s\S]*?safeCopy\(absoluteShopShareLink\)[\s\S]*?Public shop link copied\./,
+  "Public Shop plain Copy link must copy only the public shop URL; branded packages belong to owner/share-package paths."
 );
 assertContains(
   "shopAssets",
