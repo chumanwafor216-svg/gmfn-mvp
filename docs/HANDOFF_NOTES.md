@@ -1,3 +1,33 @@
+### Whole-app source audit baseline clean (2026-06-13)
+
+- After `adbe15e`, completed the remaining source audit cage:
+  - Entry and route recovery:
+    - `audit:entry-auth`;
+    - `audit:member-entry-actions`;
+    - `audit:entry-flow-polish`;
+    - `audit:entry-copy-response`;
+    - `audit:route-fallthrough`.
+  - Dashboard / Community / Notifications:
+    - `audit:dashboard-actions`;
+    - `audit:dashboard-button-inventory`;
+    - `audit:community-home-button-inventory`;
+    - `audit:community-home-phone-buttons`;
+    - `audit:community-join-requests-layout`;
+    - `audit:notifications-button-inventory`.
+  - Global action hygiene:
+    - `audit:tap-stability`;
+    - `audit:global-action-debugids`;
+    - `audit:global-raw-action-elements`;
+    - `audit:protected-button-freeze`.
+- Result:
+  - all listed audits passed locally.
+- Unabated truth:
+  - this is a strong source-level baseline across the current audit cage;
+  - it does not prove every visual expanded state in a real mobile browser;
+  - the next best practical phase is manual phone review of expanded panels and
+    data-state variants, or restoring a local Playwright browser binary so
+    dynamic click scans can run again.
+
 ### Source audit sweep after phone rail batch (2026-06-13)
 
 - Follow-up after the phone rail publish checkpoint:
