@@ -999,6 +999,12 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/publicLinks.ts",
+  /export function publicShopSocialPreviewPath\(params: \{[\s\S]*?\/share\/shop\/\$\{encodeURIComponent\(ownerId\)\}\$\{suffix\}[\s\S]*?export function publicShopSocialPreviewUrl\(params: \{[\s\S]*?return path \? publicApiUrl\(path\) : "";/,
+  "Public Shop social-preview URLs must point social scrapers at the backend /share/shop route while normal app navigation stays on the frontend shop route."
+);
+
+assertContains(
   "src/components/OwnerOnlySurfaceNav.tsx",
   /ariaLabel = "Owner surface navigation"[\s\S]*?hasSignedInSession[\s\S]*?getAccessToken\(\)[\s\S]*?setHasSignedInSession\(Boolean\(token\)\)[\s\S]*?meRes\?\.gmfn_id[\s\S]*?meRes\?\.member_global_id[\s\S]*?hasSignedInSession[\s\S]*?requireOwnerMatch[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
   "Owner surface navigation must remain hidden from public visitors, while allowing public-shop member navigation to opt out of owner matching for signed-in users."

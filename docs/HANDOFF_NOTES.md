@@ -1,3 +1,62 @@
+### Backend social-preview URLs for shop sharing (2026-06-13)
+
+- Trigger:
+  - product owner shared phone screenshots where Facebook cropped the preview
+    badly, X/LinkedIn received raw or overlong text, and the live static shop
+    route still scraped generic `GSN Trusted Link` metadata after the previous
+    share polish deploy.
+- Root cause:
+  - the live Render frontend is a Static Site publishing `frontend/dist`, so
+    arbitrary `/shop/...` requests cannot run `frontend/server.mjs` dynamic Open
+    Graph injection;
+  - the backend already exposes scraper-friendly shop preview routes at
+    `/share/shop/{gmfn_id}` plus card image routes, so social apps should receive
+    that backend URL while users continue opening the frontend shop URL.
+- Changed locally:
+  - `frontend/src/lib/publicLinks.ts`
+    - added `publicShopSocialPreviewPath` and `publicShopSocialPreviewUrl`,
+      pointing to the backend `/share/shop/{gmfn_id}` route with optional
+      `product_id` and `block` query parameters.
+  - `frontend/src/lib/share.ts`
+    - added optional `socialUrl` to `ShareTarget`;
+    - Facebook, LinkedIn, X intent URLs, and compact social copy now use
+      `socialUrl || url`, while regular full share text still uses the normal
+      user-facing URL.
+  - `frontend/src/components/SocialTagShareButton.tsx`
+    - preserves the normalized `socialUrl` on targets.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - public shop Share and owner product-block Share now send social apps the
+      backend preview URL and keep the frontend shop URL for app navigation and
+      formal package copy.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - public-shop social sharing now includes the backend social-preview URL.
+  - `frontend/tools/audit-share-tag-actions.mjs`
+  - `frontend/tools/audit-link-contracts.mjs`
+    - added guards so social sharing cannot silently regress back to scraping
+      the static frontend shop URL.
+- Verification:
+  - Passed `npm run audit:share-tag-actions`.
+  - Passed `npm run audit:link-contracts`.
+  - Passed `npm exec -- tsc -b --pretty false`.
+  - Passed focused ESLint for the changed frontend files and audit guards.
+  - Passed `npm run audit:community-shop-actions`.
+  - Passed `npm run audit:shop-gallery-button-inventory`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run build` from `frontend`; generated bundle
+    `assets/index-CGXRsTrb.js`.
+  - Confirmed the built production bundle contains `/share/shop/`.
+- Unabated truth / do not overclaim:
+  - this fixes what URL the social buttons give to Facebook, X, and LinkedIn;
+  - it does not make the static frontend `/shop/...` route magically dynamic;
+  - live backend preview for
+    `/share/shop/GMFN-U-63655DE6?product_id=48&block=2` returned shop-level
+    metadata (`Ardent Ebony Uplift LTD | GSN public shop`) during diagnosis,
+    not a product-48-specific title, likely because that product is not public
+    or active in the live backend data;
+  - social platforms can still cache old previews until their scraper refreshes.
+
 ### Controlled publish for repayment + share polish completed (2026-06-13)
 
 - Trigger:

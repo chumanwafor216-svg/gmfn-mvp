@@ -28,6 +28,7 @@ import {
   publicShopPath,
   publicShopSharePath,
   publicShopShareUrl,
+  publicShopSocialPreviewUrl,
   publicShopUrl,
 } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -4860,6 +4861,12 @@ export default function MarketplacePage() {
     );
   }, [currentGmfnId, publicShopOwnerId, publicShopPosterLink, publicShopViewLink]);
 
+  const publicShopSocialPreviewLink = useMemo(() => {
+    return publicShopOwnerId || currentGmfnId
+      ? publicShopSocialPreviewUrl({ gmfnId: publicShopOwnerId || currentGmfnId })
+      : "";
+  }, [currentGmfnId, publicShopOwnerId]);
+
   const publicShopSocialPackage = useMemo(() => {
     if (!publicShopSocialLink) return "";
     return buildGsnPublicShopLinkPackage({
@@ -7745,6 +7752,8 @@ export default function MarketplacePage() {
                       target={{
                         title: shopEmailSubject,
                         message: publicShopSocialPackage,
+                        socialMessage: `${firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop"} on GSN. Trusted public shop. Open the shop link.`,
+                        socialUrl: publicShopSocialPreviewLink,
                         url: publicShopSocialLink,
                       }}
                       disabled={publicShopActionsLocked || !publicShopSocialLink}

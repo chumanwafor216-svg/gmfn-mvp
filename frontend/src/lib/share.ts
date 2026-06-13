@@ -11,6 +11,7 @@ export type ShareTarget = {
   url: string;             // absolute URL preferred
   message?: string;        // optional extra message
   socialMessage?: string;  // shorter caption for public social apps
+  socialUrl?: string;      // scraper-friendly URL for public social apps
 };
 
 export type SocialSharePlatform =
@@ -120,7 +121,7 @@ function buildCompactSocialShareText(
   const cleanHandle = normalizeSocialHandle(handle);
   const tag = cleanHandle && platform !== "facebook" ? `@${cleanHandle}` : "";
   const title = trimAtWord(String(target.title || "GSN").trim(), 82);
-  const url = normalizeUrl(target.url);
+  const url = normalizeUrl(target.socialUrl || target.url);
   const message = trimAtWord(socialMessageForTarget(target), 148);
   const lines = [tag, title, message, includeUrl ? url : ""].filter(Boolean);
   const limit = platform === "x" ? (includeUrl ? 260 : 210) : 520;
@@ -157,7 +158,7 @@ export function buildSocialShareText(
 
 export function buildXIntentShareUrl(target: ShareTarget, handle = ""): string {
   const text = buildCompactSocialShareText(target, handle, "x", false);
-  const url = normalizeUrl(target.url);
+  const url = normalizeUrl(target.socialUrl || target.url);
   const params = new URLSearchParams();
   if (text) params.set("text", text);
   if (url) params.set("url", url);
@@ -165,14 +166,14 @@ export function buildXIntentShareUrl(target: ShareTarget, handle = ""): string {
 }
 
 export function buildFacebookShareUrl(target: ShareTarget): string {
-  const url = normalizeUrl(target.url);
+  const url = normalizeUrl(target.socialUrl || target.url);
   return url
     ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
     : "";
 }
 
 export function buildLinkedInShareUrl(target: ShareTarget): string {
-  const url = normalizeUrl(target.url);
+  const url = normalizeUrl(target.socialUrl || target.url);
   return url
     ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
     : "";

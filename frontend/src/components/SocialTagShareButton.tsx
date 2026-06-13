@@ -112,6 +112,7 @@ export default function SocialTagShareButton({
       title: String(target.title || "GSN").trim(),
       message: String(target.message || "").trim(),
       socialMessage: String(target.socialMessage || "").trim(),
+      socialUrl: normalizeUrl(target.socialUrl || ""),
       url: normalizeUrl(target.url),
     }),
     [target]

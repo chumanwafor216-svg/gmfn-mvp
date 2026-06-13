@@ -25,6 +25,7 @@ import {
   publicShopPath,
   publicShopSharePath,
   publicShopShareUrl,
+  publicShopSocialPreviewUrl,
   publicShopUrl,
 } from "../lib/publicLinks";
 import { buildGsnPublicShopLinkPackage } from "../lib/gsnSnapshotPaper";
@@ -2407,6 +2408,11 @@ export default function ShopGalleryPage() {
       productId: product.id,
       block: product.slotNumber,
     });
+    const productSocialUrl = publicShopSocialPreviewUrl({
+      gmfnId: ownerId,
+      productId: product.id,
+      block: product.slotNumber,
+    });
     const productTitle = productDisplayTitle(product);
     const title = `${blockLabel} - ${productTitle}`;
     const text = firstMeaningful(
@@ -2433,6 +2439,7 @@ export default function ShopGalleryPage() {
       title,
       message: buildPublicShopPackage(productUrl, [message]),
       socialMessage,
+      socialUrl: productSocialUrl,
       url: productUrl,
     };
   }
@@ -3096,6 +3103,11 @@ export default function ShopGalleryPage() {
                   effectiveShop?.ownerName,
                   "GSN public shop"
                 )} on GSN. Trusted public shop. Open the shop link.`,
+                socialUrl: firstMeaningful(effectiveShop?.gmfnId, gmfnId)
+                  ? publicShopSocialPreviewUrl({
+                      gmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
+                    })
+                  : "",
                 url: absoluteShopShareLink,
               }}
               disabled={shopLoadFailed || !absoluteShopShareLink}
