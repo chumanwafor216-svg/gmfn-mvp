@@ -1,3 +1,43 @@
+### Loans mobile first-action stabilization (2026-06-13)
+
+- Trigger:
+  - continued the Loans / support portion of the final phone/bottom
+    stabilization pass after Marketplace;
+  - local Edge phone viewport showed the Loans route had polished status and
+    summary content, but the first real support action was too low in the route
+    compared with the authenticated bottom rail.
+- Changed locally:
+  - `frontend/src/pages/LoansPage.tsx`
+    - added a fixed-height hero CTA with `debugId="loans.hero.start-support"`
+      so `Start Support Request` appears in the first phone viewport before
+      the deeper route grid;
+    - kept the existing route-grid `Start Support Request` action in place for
+      users who scroll into the full support module list.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - added a guard requiring the hero Start Support CTA, fixed compact
+      `58px` height, and traceable debug ID.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the broad button-stability cage to match the already-verified
+      compact Finance and Marketplace phone geometry.
+- Verification:
+  - Passed `npm --prefix frontend run audit:loans-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local Edge phone viewport showed the new hero support CTA at `top: 546`,
+    `bottom: 604`, `height: 58`, safely above the bottom rail at `top: 785`,
+    `bottom: 844`.
+- Unabated truth:
+  - this fixes the first-action problem for Loans in the local phone viewport;
+  - the saved local dev session still had the page Tools drawer open during
+    probing, so a clean physical-phone pass should still confirm the normal
+    drawer-closed presentation;
+  - the route remains tall below the first viewport, so deeper Loans bodies
+    still need tap review before calling the Loans package frozen.
+
 ### Marketplace mobile front-desk compactness stabilization (2026-06-13)
 
 - Trigger:

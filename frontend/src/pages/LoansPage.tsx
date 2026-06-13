@@ -802,6 +802,31 @@ export default function LoansPage() {
                 Pending guarantor requests: {guarantorInbox.length}
               </span>
             </div>
+
+            <StableCtaLink
+              to={routes.startSupport}
+              debugId="loans.hero.start-support"
+              stableHeight={isCompact ? 58 : 68}
+              fullWidth={isCompact}
+              minWidth={isCompact ? undefined : 260}
+              style={{
+                ...routeTileStyle(true, isCompact),
+                marginTop: isCompact ? 12 : 18,
+                maxWidth: isCompact ? "100%" : 360,
+                height: isCompact ? 58 : 68,
+                minHeight: isCompact ? 58 : 68,
+                maxHeight: isCompact ? 58 : 68,
+                border: "1px solid rgba(255,255,255,0.48)",
+              }}
+            >
+              {routeIcon("spark", true, isCompact)}
+              <div>
+                <div style={routeTitleStyle(isCompact)}>Start Support Request</div>
+                <div style={routeHelperStyle(isCompact)}>
+                  Begin or continue the borrower-side flow.
+                </div>
+              </div>
+            </StableCtaLink>
           </div>
           <div
             style={{

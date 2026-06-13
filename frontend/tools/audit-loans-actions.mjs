@@ -104,6 +104,12 @@ assertContains(
 
 assertContains(
   "src/pages/LoansPage.tsx",
+  /debugId="loans\.hero\.start-support"[\s\S]*?stableHeight=\{isCompact \? 58 : 68\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?height: isCompact \? 58 : 68,[\s\S]*?minHeight: isCompact \? 58 : 68,[\s\S]*?maxHeight: isCompact \? 58 : 68,[\s\S]*?Start Support Request/,
+  "Loans first phone viewport must expose a fixed-height Start Support Request CTA in the hero before the user reaches the deeper route grid."
+);
+
+assertContains(
+  "src/pages/LoansPage.tsx",
   /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false, compact = false\): React\.CSSProperties \{[\s\S]*?height: compact \? 66 : 88,[\s\S]*?maxHeight: compact \? 66 : 88,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTitleStyle\(compact = false\): React\.CSSProperties \{[\s\S]*?brandSingleLine\(\)[\s\S]*?function routeHelperStyle\(compact = false\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)/,
   "Loans overview route labels must keep fixed phone-safe heights and clamped text so they cannot turn labels into one-letter columns or overlap route cards."
 );
