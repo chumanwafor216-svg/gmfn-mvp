@@ -1,3 +1,33 @@
+### Backend test deprecation warnings removed (2026-06-13)
+
+- Trigger:
+  - after the marketplace Pydantic cleanup, the full backend suite still showed
+    SQLAlchemy/sqlite datetime adapter deprecation warnings from test raw-SQL
+    inserts;
+  - treating warnings as noise would leave future Python/sqlite upgrades
+    riskier than necessary.
+- Changed locally:
+  - `gmfn_backend/tests/conftest.py`
+    - registers an explicit sqlite adapter for Python `datetime` during tests;
+    - uses `value.isoformat(" ")` to preserve the old SQLite-friendly
+      space-separated timestamp shape instead of changing entitlement/date
+      comparisons.
+- Verification:
+  - First tried `value.isoformat()` and rejected it because the full suite found
+    a real regression in extra-shop-block entitlement date comparisons.
+  - Passed
+    `python -W error::DeprecationWarning -m pytest -q gmfn_backend\tests\test_community_meetings.py --basetemp=.pytest_tmp`.
+  - Passed the exact entitlement regression check:
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_public_gallery_extra_shop_block_entitlement_expands_slot_limit --basetemp=.pytest_tmp`.
+  - Passed full backend suite with warnings treated as errors:
+    `python -W error::DeprecationWarning -m pytest -q gmfn_backend\tests --basetemp=.pytest_tmp`: `246 passed`.
+  - Removed generated `.pytest_tmp` and `test_uploads` directories after the
+    run.
+- Unabated truth:
+  - the backend suite now passes even when `DeprecationWarning` is treated as an
+    error;
+  - this is test infrastructure only, not a production runtime change.
+
 ### Marketplace Pydantic field-set deprecation cleanup (2026-06-13)
 
 - Trigger:
@@ -13,13 +43,15 @@
   - Passed `python -m py_compile gmfn_backend\app\api\routes\marketplace.py`.
   - Passed `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp=.pytest_tmp`: `21 passed`.
   - Passed `python -m pytest -q gmfn_backend\tests --basetemp=.pytest_tmp`: `246 passed, 52 warnings`.
+  - Superseded by the later backend test deprecation checkpoint, which passes
+    the full suite with `DeprecationWarning` treated as an error.
   - Removed generated `.pytest_tmp` and `test_uploads` directories after the
     run.
 - Unabated truth:
   - this removes the Pydantic deprecation warning found during the full backend
     suite;
-  - remaining warnings are SQLAlchemy sqlite datetime adapter deprecations from
-    tests, not this marketplace route;
+  - the remaining warnings noted in this checkpoint were test sqlite datetime
+    adapter warnings and were removed by the later test-infrastructure cleanup;
   - this is backend code, so it should be pushed/deployed only with the next
     intentional backend publish batch.
 
@@ -51,14 +83,15 @@
   - Re-ran outside the sandbox with repo-local temp path:
     `python -m pytest -q gmfn_backend\tests --basetemp=.pytest_tmp`.
   - Full backend suite passed: `246 passed, 54 warnings`.
+  - Superseded by the later backend test deprecation checkpoint, which passes
+    the full suite with `DeprecationWarning` treated as an error.
   - Removed generated `.pytest_tmp` and `test_uploads` directories after
     verifying their resolved paths were inside the repo.
 - Unabated truth:
   - the current frontend lint risk recorded in older notes is no longer true;
   - the full backend suite is green in an unsandboxed run;
-  - warnings remain, mainly SQLAlchemy sqlite datetime adapter deprecations and
-    one Pydantic v2 `__fields_set__` deprecation in marketplace code, but they
-    are warnings rather than failing behavior.
+  - the warnings recorded here were real at this checkpoint but are no longer
+    current after the marketplace Pydantic and test sqlite adapter cleanups.
 
 ### Proof-surface audit aligned with trimmed public copy links (2026-06-13)
 

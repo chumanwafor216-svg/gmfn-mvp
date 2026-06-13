@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import os
+import sqlite3
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
@@ -22,6 +24,8 @@ db_url = f"sqlite:///{db_path.as_posix()}"
 
 os.environ["DATABASE_URL"] = db_url
 os.environ["PYTEST_RUNNING"] = "1"
+
+sqlite3.register_adapter(datetime, lambda value: value.isoformat(" "))
 
 if db_path.exists():
     try:
