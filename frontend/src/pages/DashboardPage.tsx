@@ -8544,6 +8544,7 @@ export default function DashboardPage() {
             "linear-gradient(180deg, #FFFDF6 0%, #F8FBFF 48%, #EEF6FF 100%)"
           ),
           order: 20,
+          marginTop: isPhone ? 56 : undefined,
           border: "1px solid rgba(214,170,69,0.24)",
           borderRadius: isPhone ? 20 : 24,
           padding: isPhone ? 14 : 18,

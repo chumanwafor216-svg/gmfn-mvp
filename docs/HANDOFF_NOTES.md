@@ -1,3 +1,37 @@
+### Dashboard app launcher rail-safe spacing (2026-06-13)
+
+- Trigger:
+  - wider authenticated phone scan after Marketplace showed
+    `dashboard.apps.toggle` at `788-862` while the bottom rail was `793-835`;
+  - this was a Dashboard geometry issue, but not the frozen Market Wisdom
+    presentation/interaction area.
+- Changed locally:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - adds phone-only top spacing before the app launcher section so the
+      `What do you want to do next?` accordion starts below the initial bottom
+      rail instead of half under it.
+  - `frontend/tools/audit-dashboard-phone-buttons.mjs`
+    - adds guards for the traceable app launcher toggle and its phone rail-safe
+      spacing.
+- Verification:
+  - Passed `npm --prefix frontend run audit:dashboard-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:dashboard-actions`.
+  - Passed `npm --prefix frontend run audit:dashboard-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint`.
+  - Passed `git diff --check` with only normal CRLF working-copy warnings.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `spawn EPERM`, then passed with approved escalation.
+  - Local phone viewport for `/app/dashboard?community=3` showed:
+    - bottom rail at `793-835`;
+    - `dashboard.apps.toggle` at `844-918`.
+- Unabated truth:
+  - this fixes the half-covered tap target by moving it just below the initial
+    viewport; the user now needs a small scroll to tap it;
+  - this does not compress or restyle the Dashboard passport or Market Wisdom
+    surfaces;
+  - no push or Render deploy was done for this local continuation batch.
+
 ### Marketplace compact lane rail stabilization (2026-06-13)
 
 - Trigger:

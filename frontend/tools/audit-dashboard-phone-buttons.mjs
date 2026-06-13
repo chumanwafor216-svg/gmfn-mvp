@@ -108,6 +108,18 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
+      /debugId="dashboard\.apps\.toggle"[\s\S]*?style=\{dashboardAccordionButtonStyle\(/,
+    message:
+      "Dashboard app launcher toggle must remain a traceable stable accordion action.",
+  },
+  {
+    pattern:
+      /order: 20,[\s\S]*?marginTop: isPhone \? 56 : undefined,[\s\S]*?debugId="dashboard\.apps\.toggle"/,
+    message:
+      "Dashboard app launcher section must stay below the initial phone rail instead of landing half-covered by bottom navigation.",
+  },
+  {
+    pattern:
       /<SpotlightMediaFrame[\s\S]*?showVideoControls=\{false\}[\s\S]*?autoPlayVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?mutedVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?loopVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?showAudioUnlock=\{false\}[\s\S]*?maxVideoSeconds=\{SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS\}/,
     message:
       "Dashboard Spotlight primary media preview must not expose a dead-looking speaker/audio control.",
