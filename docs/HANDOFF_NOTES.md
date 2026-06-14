@@ -1,3 +1,43 @@
+### Welcome and Marketplace button jump tightening (2026-06-14)
+
+- Trigger:
+  - owner reported that some buttons felt like they were landing in the wrong
+    place, especially around Welcome, and that Marketplace invite-link sharing
+    kept jumping while trying to send/copy the link.
+- Changed:
+  - `frontend/src/components/EntryControls.tsx`
+    - entry/welcome action buttons no longer use `overflowWrap: anywhere`;
+    - button text now keeps normal word boundaries, disables hyphenation, and
+      hides overflow inside the fixed stable button height so labels do not
+      resize or split under the finger.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace section landing now scrolls once after React has opened the
+      selected body and then clears the pending scroll marker;
+    - removed the long delayed re-scroll passes that could continue nudging the
+      page for several seconds after Link Center opened, which made invite
+      copy/share feel jumpy.
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-marketplace-actions.mjs`
+    - updated source guards so future audits protect the calmer one-settle
+      Marketplace landing behavior instead of forcing the old repeated scrolls.
+- Verification:
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this removes the obvious source-level jump in Marketplace Link Center: the
+    old scheduled scroll retries. It does not prove every real-phone tap is
+    perfect until the owner tests on the actual device/browser where the issue
+    was seen;
+  - Welcome route targets were not changed because the source handlers already
+    route to the correct create/join/sign-in paths. This slice tightens the
+    button geometry and text wrapping rather than changing flow logic.
+
 ### Member invite quota removal and vote-reason records (2026-06-14)
 
 - Trigger:

@@ -211,8 +211,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /import \{[\s\S]*?marketplaceSectionStyle[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\} from "\.\.\/lib\/marketplaceActionStability";[\s\S]*?scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\[80, 180, 360, 720, 1200, 1800\]\.forEach[\s\S]*?marketplaceSectionStyle\(\)/,
-  "Marketplace section buttons must use the shared Marketplace landing helper with repeated phone-safe landing passes and section scroll margins."
+  /import \{[\s\S]*?marketplaceSectionStyle[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\} from "\.\.\/lib\/marketplaceActionStability";[\s\S]*?scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?scrollToMarketplaceSection\(sectionId\)[\s\S]*?pendingMarketplaceSectionRef\.current = ""[\s\S]*?marketplaceSectionStyle\(\)/,
+  "Marketplace section buttons must use the shared Marketplace landing helper, settle once after React commit, clear pending scroll, and keep section scroll margins."
 );
 
 assertNotContains(

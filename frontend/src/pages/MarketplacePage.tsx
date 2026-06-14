@@ -4024,24 +4024,10 @@ export default function MarketplacePage() {
         scrollFrameRef.current = window.requestAnimationFrame(() => {
           scrollFrameRef.current = null;
           scrollToMarketplaceSection(sectionId);
-        });
-      });
-
-      [80, 180, 360, 720, 1200, 1800].forEach((delay, index) => {
-        const timeoutId = window.setTimeout(() => {
-          scrollToMarketplaceSection(sectionId, index + 1);
-        }, delay);
-        scrollTimeoutRefs.current.push(timeoutId);
-      });
-
-      [2400, 3200].forEach((delay, index) => {
-        const timeoutId = window.setTimeout(() => {
-          scrollToMarketplaceSection(sectionId, index + 7);
-          if (index === 1 && pendingMarketplaceSectionRef.current === sectionId) {
+          if (pendingMarketplaceSectionRef.current === sectionId) {
             pendingMarketplaceSectionRef.current = "";
           }
-        }, delay);
-        scrollTimeoutRefs.current.push(timeoutId);
+        });
       });
     },
     [cancelMarketplaceSectionScroll, scrollToMarketplaceSection]
