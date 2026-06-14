@@ -37,6 +37,12 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   lines.push(
     `${inviter} is inviting you to request access to ${communityName}.`
   );
+  lines.push(
+    "This follows what trusted people already do: we know one another, help where we can, encourage each other, and stand with real relationships."
+  );
+  lines.push(
+    "GSN helps carry that relationship record beyond one place, so your community identity can support safer business, support, and opportunity wherever it is accepted."
+  );
 
   if (marketplaceName) {
     lines.push(`Community market: ${marketplaceName}.`);
@@ -51,7 +57,7 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   }
 
   lines.push(
-    "Complete the form below if you want to continue. Entry is not automatic; your request goes back to the community for review."
+    "If you are interested, continue to the request form. Entry is not automatic; the community still reviews and votes before membership is granted."
   );
 
   return lines;
@@ -70,12 +76,14 @@ export function buildJoinInviteDoorwayMessage(
   return [
     receiver ? `Hello ${receiver},` : "Hello,",
     "",
-    `You are invited to request access to ${communityName} on GSN.`,
+    `${cleanText(args.inviter) || "A known GSN member"} is inviting you to request access to ${communityName} on GSN.`,
+    "This is relationship-based. It carries the kind of help, encouragement, and real-life support trusted people already give each other into a safer community record.",
+    "GSN helps that record travel beyond one place, so one trusted identity can support safer business and support wherever it is accepted.",
     marketplaceName ? `Community market: ${marketplaceName}.` : "",
     customMessage ? `Message: ${customMessage}` : "",
     expiresAt ? `This invitation remains open until ${safeDateTime(expiresAt)}.` : "",
     "",
-    "Click here to open the request form:",
+    "If you are interested, open the invitation here:",
     inviteLink,
     "",
     "Entry is not automatic. The community reviews your request first.",

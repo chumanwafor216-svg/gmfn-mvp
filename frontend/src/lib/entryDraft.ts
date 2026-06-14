@@ -29,6 +29,7 @@ export type CreateEntryDraft = {
 };
 
 export type JoinEntryDraft = {
+  existingGsnId?: string;
   firstName?: string;
   surname?: string;
   phone?: string;
@@ -36,6 +37,7 @@ export type JoinEntryDraft = {
   workCategory?: string;
   workDetail?: string;
   note?: string;
+  inviteAcknowledged?: boolean;
   formOpen?: boolean;
   updatedAt?: number;
 };
@@ -271,6 +273,7 @@ export function readJoinEntryDraft(
     let updatedAt = Number(parsed?.updatedAt || 0);
     const hasLegacyUsefulDraft = Boolean(
       safeStr(parsed?.firstName || parsed?.first_name) ||
+        safeStr(parsed?.existingGsnId || parsed?.existing_gsn_id) ||
         safeStr(parsed?.surname) ||
         safeStr(parsed?.phone) ||
         safeStr(parsed?.country) ||
@@ -284,6 +287,7 @@ export function readJoinEntryDraft(
     if (!isFreshDraft(updatedAt, key)) return null;
 
     return {
+      existingGsnId: safeStr(parsed?.existingGsnId || parsed?.existing_gsn_id),
       firstName: safeStr(parsed?.firstName || parsed?.first_name),
       surname: safeStr(parsed?.surname),
       phone: safeStr(parsed?.phone),
@@ -291,6 +295,10 @@ export function readJoinEntryDraft(
       workCategory: safeStr(parsed?.workCategory || parsed?.work_category),
       workDetail: safeStr(parsed?.workDetail || parsed?.work_detail),
       note: safeStr(parsed?.note),
+      inviteAcknowledged:
+        typeof parsed?.inviteAcknowledged === "boolean"
+          ? parsed.inviteAcknowledged
+          : undefined,
       formOpen: typeof parsed?.formOpen === "boolean" ? parsed.formOpen : undefined,
       updatedAt,
     };
@@ -306,6 +314,7 @@ export function saveJoinEntryDraft(
   draft: JoinEntryDraft
 ): void {
   const safeDraft: JoinEntryDraft = {
+    existingGsnId: safeStr(draft.existingGsnId),
     firstName: safeStr(draft.firstName),
     surname: safeStr(draft.surname),
     phone: safeStr(draft.phone),
@@ -313,17 +322,20 @@ export function saveJoinEntryDraft(
     workCategory: safeStr(draft.workCategory),
     workDetail: safeStr(draft.workDetail),
     note: safeStr(draft.note),
+    inviteAcknowledged: Boolean(draft.inviteAcknowledged),
     formOpen: Boolean(draft.formOpen),
     updatedAt: Date.now(),
   };
 
   const hasUsefulDraft = Boolean(
-    safeDraft.firstName ||
+    safeDraft.existingGsnId ||
+      safeDraft.firstName ||
       safeDraft.surname ||
       safeDraft.phone ||
       safeDraft.country ||
       safeDraft.workCategory ||
       safeDraft.workDetail ||
+      safeDraft.inviteAcknowledged ||
       safeDraft.note
   );
 

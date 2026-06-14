@@ -105,6 +105,8 @@ export default function SocialTagShareButton({
 }: SocialTagShareButtonProps) {
   const [open, setOpen] = useState(false);
   const [shareName, setShareName] = useState("");
+  const [handleOpen, setHandleOpen] = useState(false);
+  const [moreCopyOpen, setMoreCopyOpen] = useState(false);
   const [localNotice, setLocalNotice] = useState<{ tone: NoticeTone; text: string } | null>(null);
 
   const cleanTarget = useMemo<ShareTarget>(
@@ -280,17 +282,24 @@ export default function SocialTagShareButton({
               It cannot guarantee delivery.
             </div>
 
-            <details style={{ marginTop: 10 }}>
-              <summary
+            <div style={{ marginTop: 10 }}>
+              <SubtleButton
+                type="button"
+                onClick={() => setHandleOpen((current) => !current)}
+                stableHeight={38}
+                minWidth="100%"
+                debugId="social-tag-share.handle-toggle"
                 style={{
-                  cursor: "pointer",
+                  justifyContent: "flex-start",
                   color: "#173750",
                   fontSize: 13,
                   fontWeight: 1000,
+                  paddingInline: 10,
                 }}
               >
-                Add handle or name
-              </summary>
+                {handleOpen ? "Hide handle or name" : "Add handle or name"}
+              </SubtleButton>
+              {handleOpen ? (
               <label style={{ display: "block", marginTop: 8 }}>
                 <span
                   style={{
@@ -311,7 +320,8 @@ export default function SocialTagShareButton({
                   style={inputStyle}
                 />
               </label>
-            </details>
+              ) : null}
+            </div>
 
             <CardActionRow
               minHeight={46}
@@ -365,17 +375,24 @@ export default function SocialTagShareButton({
               </SecondaryButton>
             </CardActionRow>
 
-            <details style={{ marginTop: 10 }}>
-              <summary
+            <div style={{ marginTop: 10 }}>
+              <SubtleButton
+                type="button"
+                onClick={() => setMoreCopyOpen((current) => !current)}
+                stableHeight={38}
+                minWidth="100%"
+                debugId="social-tag-share.more-copy-toggle"
                 style={{
-                  cursor: "pointer",
+                  justifyContent: "flex-start",
                   color: "#475569",
                   fontSize: 12.5,
                   fontWeight: 900,
+                  paddingInline: 10,
                 }}
               >
-                More copy options
-              </summary>
+                {moreCopyOpen ? "Hide copy options" : "More copy options"}
+              </SubtleButton>
+              {moreCopyOpen ? (
               <CardActionRow
                 minHeight={42}
                 align="stretch"
@@ -420,7 +437,8 @@ export default function SocialTagShareButton({
                   Copy all variants
                 </SecondaryButton>
               </CardActionRow>
-            </details>
+              ) : null}
+            </div>
 
             {localNotice ? (
               <div

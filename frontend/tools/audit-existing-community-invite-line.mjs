@@ -85,8 +85,26 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showInviteLauncher && canUseNewMemberForm[\s\S]*?Use GSN ID[\s\S]*?New request[\s\S]*?formOpen && canOpenForm && canUseNewMemberForm[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Submit request/,
-  "A ready existing-community invite must expose the new-member form path with basic request fields and submit action."
+  /showInviteLauncher && canUseNewMemberForm[\s\S]*?Use one GSN identity[\s\S]*?Existing GSN number[\s\S]*?Sign in to reuse[\s\S]*?No GSN ID[\s\S]*?formOpen && canOpenForm && canUseNewMemberForm && !hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Submit request/,
+  "A ready existing-community invite must ask for existing GSN identity first, block duplicate manual submission when it is present, and still expose the new-member request form path."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /inviteAcknowledged[\s\S]*?debugId="join-entry\.acknowledge-invite"[\s\S]*?Continue[\s\S]*?\{inviteAcknowledged \? \([\s\S]*?Join request form/,
+  "Existing-community invites must show the invitation first and only open the request area after the invite is acknowledged."
+);
+
+assertContains(
+  "frontend/src/lib/joinInviteMessaging.ts",
+  /This follows what trusted people already do[\s\S]*?GSN helps carry that relationship record beyond one place[\s\S]*?If you are interested, continue to the request form/,
+  "Existing-community invite message must keep the relationship-based explanation before the request form."
+);
+
+assertContains(
+  "frontend/src/pages/LoginPage.tsx",
+  /const inviteGsnId =[\s\S]*?searchParams\.get\("gsn_id"\)[\s\S]*?searchParams\.get\("gmfn_id"\)[\s\S]*?useState\(founderEmail \|\| inviteGsnId \|\| ""\)[\s\S]*?Phone number, email, or GSN number/,
+  "Sign-in must accept and prefill the existing GSN number carried from an invite."
 );
 
 assertContains(

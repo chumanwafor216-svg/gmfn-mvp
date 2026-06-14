@@ -116,12 +116,18 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
 
 function loginPathForExistingIdentity(
   currentSearch: string,
-  inviteCode: string
+  inviteCode: string,
+  existingGsnId = ""
 ): string {
   const merged = new URLSearchParams(currentSearch);
   const safeInviteCode = cleanText(inviteCode);
+  const safeExistingGsnId = cleanText(existingGsnId).toUpperCase();
   if (safeInviteCode && !merged.has("invite_code")) {
     merged.set("invite_code", safeInviteCode);
+  }
+  if (safeExistingGsnId) {
+    merged.set("gsn_id", safeExistingGsnId);
+    merged.set("gmfn_id", safeExistingGsnId);
   }
 
   const query = merged.toString();
@@ -839,10 +845,16 @@ export default function JoinEntryPage() {
   );
   const [workDetail, setWorkDetail] = useState(() => restoredJoinDraft?.workDetail || "");
   const [note, setNote] = useState(() => restoredJoinDraft?.note || "");
+  const [existingGsnId, setExistingGsnId] = useState(
+    () => restoredJoinDraft?.existingGsnId || ""
+  );
+  const [identityNoteOpen, setIdentityNoteOpen] = useState(false);
+  const [inviteAcknowledged, setInviteAcknowledged] = useState<boolean>(() =>
+    Boolean(restoredJoinDraft?.inviteAcknowledged)
+  );
   const [formOpen, setFormOpen] = useState<boolean>(() => {
     if (typeof restoredJoinDraft?.formOpen === "boolean") return restoredJoinDraft.formOpen;
-    if (typeof window === "undefined") return true;
-    return window.innerWidth > 980;
+    return false;
   });
   const [invitePreview, setInvitePreview] = useState<any>(null);
   const [inviteChecking, setInviteChecking] = useState(false);
@@ -993,11 +1005,14 @@ export default function JoinEntryPage() {
     currentMemberChecked && hasStoredSession && !usingExistingIdentity;
   const canUseNewMemberForm =
     currentMemberChecked && !usingExistingIdentity;
+  const hasExistingGsnClaim = Boolean(cleanText(existingGsnId));
 
   const canSubmit =
     !!effectiveInviteCode &&
     !inviteBlocked &&
     !inviteChecking &&
+    inviteAcknowledged &&
+    !hasExistingGsnClaim &&
     !!cleanText(firstName) &&
     !!cleanText(surname) &&
     !!cleanText(phone) &&
@@ -1010,10 +1025,14 @@ export default function JoinEntryPage() {
   const signInConflictCta = useMemo(
     () =>
       resolveCtaTarget("login", {
-        explicitTo: loginPathForExistingIdentity(location.search, inviteCode),
+        explicitTo: loginPathForExistingIdentity(
+          location.search,
+          inviteCode,
+          existingGsnId
+        ),
         debugId: "join-entry.sign-in-conflict",
       }),
-    [inviteCode, location.search]
+    [existingGsnId, inviteCode, location.search]
   );
   const welcomeCta = useMemo(
     () =>
@@ -1194,6 +1213,7 @@ export default function JoinEntryPage() {
     if (!inviteCode) return;
 
     saveJoinEntryDraft(inviteCode, communityCode, {
+      existingGsnId,
       firstName,
       surname,
       phone,
@@ -1201,25 +1221,23 @@ export default function JoinEntryPage() {
       workCategory,
       workDetail,
       note,
+      inviteAcknowledged,
       formOpen,
     });
   }, [
     country,
     communityCode,
+    existingGsnId,
     firstName,
     formOpen,
     inviteCode,
+    inviteAcknowledged,
     note,
     phone,
     surname,
     workCategory,
     workDetail,
   ]);
-
-  useEffect(() => {
-    if (!inviteReady || !canOpenForm || success) return;
-    setFormOpen(true);
-  }, [inviteReady, canOpenForm, success]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1559,6 +1577,7 @@ export default function JoinEntryPage() {
 
   function startFreshJoinDraft() {
     clearJoinEntryDraft(inviteCode, communityCode);
+    setExistingGsnId("");
     setFirstName("");
     setSurname("");
     setPhone("");
@@ -1566,6 +1585,7 @@ export default function JoinEntryPage() {
     setWorkCategory("");
     setWorkDetail("");
     setNote("");
+    setInviteAcknowledged(true);
     setFormOpen(true);
     setJoinResumeNotice(null);
     setErr(null);
@@ -1667,7 +1687,7 @@ export default function JoinEntryPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "0.95fr 1.05fr",
+            gridTemplateColumns: isCompact || !inviteAcknowledged ? "1fr" : "0.95fr 1.05fr",
             gap: 18,
           }}
         >
@@ -1777,11 +1797,13 @@ export default function JoinEntryPage() {
                     color: "#35516B",
                     lineHeight: 1.65,
                     fontSize: 15,
+                    display: "grid",
+                    gap: 8,
                   }}
                 >
-                  {inviterLabel} is inviting you to request access to{" "}
-                  {resolvedCommunityName || "this GSN community"}. Your request
-                  still goes back to the community for review.
+                  {inviteLetter.map((line, index) => (
+                    <div key={`${line}-${index}`}>{line}</div>
+                  ))}
                 </div>
               ) : (
                 <>
@@ -1811,9 +1833,35 @@ export default function JoinEntryPage() {
                   </div>
                 </>
               )}
+
+              {!inviteAcknowledged ? (
+                <div style={{ marginTop: 18 }}>
+                  <PrimaryButton
+                    type="button"
+                    disabled={!canOpenForm}
+                    onClick={() => {
+                      if (!canOpenForm) return;
+                      setInviteAcknowledged(true);
+                      setFormOpen(false);
+                    }}
+                    debugId="join-entry.acknowledge-invite"
+                    stableHeight={52}
+                    style={{
+                      ...entryChoiceActionStyle("primary"),
+                      width: "min(100%, 420px)",
+                    }}
+                  >
+                    {joinEntryIconText(
+                      "navigation",
+                      inviteChecking ? "Checking invite..." : "Continue"
+                    )}
+                  </PrimaryButton>
+                </div>
+              ) : null}
             </div>
           </div>
 
+          {inviteAcknowledged ? (
           <div style={pageCard()}>
             <div style={labelText()}>
               {joinEntryIconText("join-person-plus", "Join request form", 22)}
@@ -1971,49 +2019,61 @@ export default function JoinEntryPage() {
                 style={{
                   ...innerCard("#FFFFFF"),
                   marginTop: 14,
-                  display: "flex",
-                  justifyContent: "space-between",
+                  display: "grid",
                   gap: 12,
-                  alignItems: "center",
-                  flexWrap: "wrap",
                 }}
               >
-                <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+                <div>
                   <div style={{ ...labelText(), marginBottom: 4 }}>
-                    {joinEntryIconText("navigation", "Choose how you are joining", 22)}
+                    {joinEntryIconText("id", "Use one GSN identity", 22)}
                   </div>
                   <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
-                    If you already have a GSN ID, sign in first so this invite
-                    adds only a community membership. If you are new to GSN,
-                    open the request form.
+                    If you already have a GSN number, enter it here first. GSN
+                    should reuse one identity across communities, so your
+                    business and trust record do not split into two separate
+                    online identities.
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    ...entryActionGrid(isCompact),
-                    marginTop: 0,
-                    flex: "1 1 360px",
-                    maxWidth: isCompact ? "100%" : 430,
-                    width: isCompact ? "100%" : undefined,
-                  }}
-                >
-                  <StableCtaLink
-                    to={ctaPath(signInConflictCta)}
-                    kind="secondary"
-                    debugId="join-entry.already-have-gmfn"
-                    stableHeight={52}
-                    style={entryChoiceActionStyle("secondary")}
-                  >
-                    {joinEntryIconText("id", "Use GSN ID")}
-                  </StableCtaLink>
+                <div>
+                  <div style={labelText()}>Existing GSN number</div>
+                  <input
+                    value={existingGsnId}
+                    onChange={(event) => setExistingGsnId(event.target.value)}
+                    placeholder="Example: GMFN-U-..."
+                    autoComplete="off"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
 
+                {identityNoteOpen ? (
+                  <div style={{ ...noticeStyle("info"), marginTop: 0 }}>
+                    One person should not carry two GSN identities. If you
+                    already have a GSN number, reuse it for this community
+                    request. That keeps your trust history, business identity,
+                    and community record together. GSN will not create another
+                    identity after the existing one is verified.
+                  </div>
+                ) : null}
+
+                <div style={entryActionGrid(isCompact)}>
+                  {hasExistingGsnClaim ? (
+                    <StableCtaLink
+                      to={ctaPath(signInConflictCta)}
+                      kind="secondary"
+                      debugId="join-entry.already-have-gsn"
+                      stableHeight={52}
+                      style={entryChoiceActionStyle("secondary")}
+                    >
+                      {joinEntryIconText("id", "Sign in to reuse")}
+                    </StableCtaLink>
+                  ) : (
                   <SecondaryButton
                     type="button"
                     disabled={!canOpenForm}
                     onClick={() => {
                       if (!canOpenForm) return;
-                      setFormOpen((prev) => !prev);
+                      setFormOpen(true);
                     }}
                     debugId="join-entry.toggle-new-member-request-form"
                     stableHeight={52}
@@ -2024,12 +2084,40 @@ export default function JoinEntryPage() {
                     }}
                   >
                     {joinEntryIconText(
-                      formOpen ? "lock" : "join-person-plus",
+                      "join-person-plus",
                       inviteChecking
                         ? "Checking"
                         : formOpen
-                        ? "Hide form"
-                        : "New request"
+                        ? "Form open"
+                        : "No GSN ID"
+                    )}
+                  </SecondaryButton>
+                  )}
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      if (hasExistingGsnClaim) {
+                        setExistingGsnId("");
+                        setFormOpen(false);
+                        return;
+                      }
+                      setIdentityNoteOpen((prev) => !prev);
+                    }}
+                    debugId={
+                      hasExistingGsnClaim
+                        ? "join-entry.clear-existing-gsn"
+                        : "join-entry.identity-note-toggle"
+                    }
+                    stableHeight={52}
+                    style={entryChoiceActionStyle("secondary")}
+                  >
+                    {joinEntryIconText(
+                      hasExistingGsnClaim ? "refresh" : "eye",
+                      hasExistingGsnClaim
+                        ? "Clear GSN ID"
+                        : identityNoteOpen
+                        ? "Hide note"
+                        : "Why it matters"
                     )}
                   </SecondaryButton>
                 </div>
@@ -2165,7 +2253,7 @@ export default function JoinEntryPage() {
               </div>
             ) : null}
 
-            {formOpen && canOpenForm && canUseNewMemberForm ? (
+            {formOpen && canOpenForm && canUseNewMemberForm && !hasExistingGsnClaim ? (
             <form onSubmit={onSubmit}>
               <div
                 style={{
@@ -2317,6 +2405,7 @@ export default function JoinEntryPage() {
             </form>
             ) : null}
           </div>
+          ) : null}
         </div>
 
         <div

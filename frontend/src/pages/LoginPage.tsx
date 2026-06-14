@@ -400,6 +400,9 @@ export default function LoginPage() {
 
   const founderContext = routeState.create_entry || {};
   const founderEmail = safeStr(founderContext.email || "");
+  const inviteGsnId =
+    safeStr(searchParams.get("gsn_id")) ||
+    safeStr(searchParams.get("gmfn_id"));
   const founderCommunityName = safeStr(founderContext.clan_name || "");
   const forceLogin = searchParams.get("force") === "1";
 
@@ -423,7 +426,7 @@ export default function LoginPage() {
     return window.innerWidth <= 920;
   });
 
-  const [email, setEmail] = useState(founderEmail || "");
+  const [email, setEmail] = useState(founderEmail || inviteGsnId || "");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -1002,7 +1005,7 @@ export default function LoginPage() {
                     letterSpacing: 0.2,
                   }}
                 >
-                  Phone number or email
+                  Phone number, email, or GSN number
                 </div>
                 <div
                   style={{
@@ -1028,7 +1031,7 @@ export default function LoginPage() {
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your phone number or email"
+                    placeholder="Enter phone, email, or GSN number"
                     autoComplete="username"
                     style={{
                       ...inputStyle(),

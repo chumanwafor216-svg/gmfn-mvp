@@ -1,3 +1,67 @@
+### Existing-community invite protocol and action-surface cage tightened (2026-06-14)
+
+- Trigger:
+  - owner clarified that an existing-community invite must behave as a simple
+    relationship invitation, not as a long exposed official-paper document:
+    invite message first, one link, continue only if interested, then ask for
+    any existing GSN/GSM identity before showing a new-member request form.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - relationship invite copy now frames GSN as carrying existing real-life
+      help, encouragement, and support into a portable community record;
+    - WhatsApp/share doorway text uses one invitation link and avoids repeated
+      letterhead-style blocks.
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - invite page now shows the invitation first with a `Continue` action;
+    - the request area opens only after acknowledgement;
+    - the first post-continue lane asks for an existing GSN number;
+    - when an existing GSN number is entered, manual duplicate submission is
+      hidden and the user is sent to Sign In to reuse the verified identity;
+    - the manual join request form remains available only after `No GSN ID`.
+  - `frontend/src/pages/LoginPage.tsx`
+    - Sign In now accepts and pre-fills a `gsn_id` / `gmfn_id` carried from the
+      invite path, while backend login still performs the real verification.
+  - `frontend/src/lib/entryDraft.ts`
+    - join drafts now preserve existing GSN ID and invitation acknowledgement.
+  - `frontend/src/components/SocialTagShareButton.tsx`
+    - raw `<summary>` disclosure action surfaces were replaced with stable
+      button toggles so shared share dialogs no longer breach the app-wide
+      action-surface audit.
+  - Audits updated:
+    - `frontend/tools/audit-existing-community-invite-line.mjs`;
+    - `frontend/tools/audit-entry-auth-contracts.mjs`;
+    - `frontend/tools/audit-button-stability.mjs`.
+- Verification:
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-lines`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:marketplace-front-package`.
+  - Passed `npm --prefix frontend run audit:marketplace-records-links-lane`.
+  - Passed `npm --prefix frontend run audit:marketplace-more-tools-lane`.
+  - Passed `npm --prefix frontend run audit:marketplace-touch-blockers`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:action-surfaces`.
+  - Passed `npm --prefix frontend run audit:route-fallthrough`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed targeted ESLint for Join Entry, Login, invite/draft libs, social
+    share, and the changed audit scripts.
+  - `npm --prefix frontend run build` hit the known Windows sandbox
+    `esbuild spawn EPERM`; rerunning the same build elevated passed.
+- Unabated truth:
+  - this slice protects the front-end invite journey and prevents a user who
+    types an existing GSN number from continuing into a duplicate manual form;
+  - it does not yet implement a full backend identity-risk engine for bank,
+    date-of-birth, birthplace, name similarity, device, or cross-signal
+    matching in existing-community join requests;
+  - a typed GSN ID is currently a sign-in hint and must be verified by login;
+    it is not a public auto-fill key for private identity details.
+
 ### Marketplace Join receiver field wrong-route tap guard corrected (2026-06-14)
 
 - Trigger:
