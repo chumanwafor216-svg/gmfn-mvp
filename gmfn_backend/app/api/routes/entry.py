@@ -42,8 +42,15 @@ class EntryPhoneStartIn(BaseModel):
     phone_e164: str = Field(..., min_length=8, max_length=32)
     email: Optional[EmailStr] = None
     country: Optional[str] = Field(default=None, max_length=64)
+    date_of_birth: Optional[str] = Field(default=None, max_length=32)
+    birth_country: Optional[str] = Field(default=None, max_length=64)
+    birth_place: Optional[str] = Field(default=None, max_length=160)
+    country_of_origin: Optional[str] = Field(default=None, max_length=64)
+    residential_area: Optional[str] = Field(default=None, max_length=160)
     browser_locale: Optional[str] = Field(default=None, max_length=32)
     browser_timezone: Optional[str] = Field(default=None, max_length=64)
+    client_fingerprint: Optional[str] = Field(default=None, max_length=160)
+    device_label: Optional[str] = Field(default=None, max_length=160)
 
 
 class EntryPhoneStartOut(BaseModel):
@@ -133,6 +140,11 @@ class CreateEntryIn(BaseModel):
     phone_e164: Optional[str] = Field(default=None, min_length=8, max_length=32)
     email: Optional[EmailStr] = None
     country: Optional[str] = Field(default=None, max_length=64)
+    date_of_birth: Optional[str] = Field(default=None, max_length=32)
+    birth_country: Optional[str] = Field(default=None, max_length=64)
+    birth_place: Optional[str] = Field(default=None, max_length=160)
+    country_of_origin: Optional[str] = Field(default=None, max_length=64)
+    residential_area: Optional[str] = Field(default=None, max_length=160)
     password: Optional[str] = Field(default=None, min_length=6, max_length=128)
     confirm_password: Optional[str] = Field(default=None, min_length=6, max_length=128)
     clan_name: str = Field(..., min_length=2, max_length=80)
@@ -306,7 +318,42 @@ def _release_abandoned_pending_identity(
     return True
 
 
-def _normalize_phone(phone: str) -> str:
+PHONE_DIAL_CODES_BY_COUNTRY = {
+    "NG": "+234",
+    "GH": "+233",
+    "KE": "+254",
+    "UG": "+256",
+    "TZ": "+255",
+    "ZA": "+27",
+    "GB": "+44",
+    "IE": "+353",
+    "US": "+1",
+    "CA": "+1",
+    "DE": "+49",
+    "FR": "+33",
+    "IT": "+39",
+    "NL": "+31",
+    "PT": "+351",
+    "ES": "+34",
+    "AU": "+61",
+    "IN": "+91",
+    "RW": "+250",
+}
+
+
+def _dial_code_for_country_hint(country_hint: object) -> Optional[str]:
+    country = _normalize_country_hint(country_hint)
+    if not country:
+        return None
+    return PHONE_DIAL_CODES_BY_COUNTRY.get(country)
+
+
+def _normalize_phone(
+    phone: str,
+    *,
+    country_hint: object = None,
+    allow_legacy_local: bool = False,
+) -> str:
     raw = _clean_text(phone)
     if not raw:
         raise HTTPException(status_code=400, detail="Phone number is required")
@@ -315,7 +362,26 @@ def _normalize_phone(phone: str) -> str:
     if compact.startswith("00"):
         compact = f"+{compact[2:]}"
     elif compact and not compact.startswith("+"):
-        compact = f"+{compact}"
+        if not compact.isdigit():
+            raise HTTPException(
+                status_code=400,
+                detail="Phone number can contain only digits after the country code",
+            )
+
+        dial_code = _dial_code_for_country_hint(country_hint)
+        if compact.startswith("0"):
+            if not dial_code and not allow_legacy_local:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Phone number must include country code, for example +234..., or select the phone country first",
+                )
+            compact = f"{dial_code}{compact[1:]}" if dial_code else f"+{compact}"
+        elif dial_code and compact.startswith(dial_code[1:]):
+            compact = f"+{compact}"
+        elif dial_code == "+1" and len(compact) == 10:
+            compact = f"+1{compact}"
+        else:
+            compact = f"+{compact}"
 
     if not compact.startswith("+") or len(compact) < 8:
         raise HTTPException(
@@ -330,6 +396,30 @@ def _normalize_phone(phone: str) -> str:
         )
 
     return compact
+
+
+def _phone_identity_candidates(phone_e164: str) -> list[str]:
+    """Return canonical and legacy malformed variants for duplicate checks."""
+
+    phone = _clean_text(phone_e164)
+    if not phone:
+        return []
+
+    candidates = {phone}
+    for dial_code in PHONE_DIAL_CODES_BY_COUNTRY.values():
+        if dial_code == "+1":
+            continue
+        if phone.startswith(dial_code) and len(phone) > len(dial_code):
+            candidates.add(f"+0{phone[len(dial_code):]}")
+
+    return sorted(candidates)
+
+
+def _find_user_by_phone_identity(db: Session, phone_e164: str) -> Optional[User]:
+    candidates = _phone_identity_candidates(phone_e164)
+    if not candidates:
+        return None
+    return db.query(User).filter(User.phone_e164.in_(candidates)).first()
 
 
 def _now() -> datetime:
@@ -602,6 +692,475 @@ def _normalize_account_number(value: object) -> str:
     return raw
 
 
+def _identity_match_key(value: object) -> str:
+    return "".join(ch for ch in _clean_text(value, upper=True) if ch.isalnum())
+
+
+def _normalize_date_of_birth(value: object) -> str:
+    raw = _clean_text(value)
+    if not raw:
+        return ""
+    try:
+        parsed = datetime.strptime(raw[:10], "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Date of birth must use YYYY-MM-DD format",
+        )
+
+    today = _now().date()
+    if parsed > today:
+        raise HTTPException(status_code=400, detail="Date of birth cannot be in the future")
+    if today.year - parsed.year > 130:
+        raise HTTPException(status_code=400, detail="Date of birth is outside the supported range")
+    return parsed.isoformat()
+
+
+def _normalize_client_fingerprint(value: object) -> str:
+    key = _identity_match_key(value)
+    return key[:120]
+
+
+def _date_of_birth_match_key(value: object) -> str:
+    try:
+        return _normalize_date_of_birth(value)
+    except HTTPException:
+        return ""
+
+
+def _json_object(raw: object) -> dict:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(str(raw))
+    except Exception:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _identity_profile_payload_key(payload: dict) -> tuple[str, str, str, str, str, str, str, str]:
+    return (
+        _identity_match_key(payload.get("display_name")),
+        _date_of_birth_match_key(payload.get("date_of_birth")),
+        _normalize_country_hint(payload.get("country")) or _identity_match_key(payload.get("country")),
+        _normalize_client_fingerprint(payload.get("client_fingerprint")),
+        _normalize_country_hint(payload.get("birth_country"))
+        or _identity_match_key(payload.get("birth_country")),
+        _identity_match_key(payload.get("birth_place")),
+        _normalize_country_hint(payload.get("country_of_origin"))
+        or _identity_match_key(payload.get("country_of_origin")),
+        _identity_match_key(payload.get("residential_area")),
+    )
+
+
+def _identity_profile_payload_for_entry(
+    *,
+    display_name: object,
+    phone_e164: object,
+    email: object,
+    country: object,
+    date_of_birth: object,
+    birth_country: object,
+    birth_place: object,
+    country_of_origin: object,
+    residential_area: object,
+    browser_locale: object,
+    browser_timezone: object,
+    client_fingerprint: object,
+    device_label: object,
+) -> dict:
+    return {
+        "display_name": _clean_text(display_name),
+        "display_name_key": _identity_match_key(display_name),
+        "phone_e164": _clean_text(phone_e164),
+        "email": _clean_text(email).lower() or None,
+        "country": _clean_text(country) or None,
+        "country_key": _normalize_country_hint(country) or None,
+        "date_of_birth": _normalize_date_of_birth(date_of_birth) or None,
+        "birth_country": _clean_text(birth_country) or None,
+        "birth_country_key": _normalize_country_hint(birth_country) or None,
+        "birth_place": _clean_text(birth_place)[:160] or None,
+        "birth_place_key": _identity_match_key(birth_place) or None,
+        "country_of_origin": _clean_text(country_of_origin) or None,
+        "country_of_origin_key": _normalize_country_hint(country_of_origin) or None,
+        "residential_area": _clean_text(residential_area)[:160] or None,
+        "residential_area_key": _identity_match_key(residential_area) or None,
+        "browser_locale": _clean_text(browser_locale) or None,
+        "browser_timezone": _clean_text(browser_timezone) or None,
+        "client_fingerprint": _normalize_client_fingerprint(client_fingerprint) or None,
+        "device_label": _clean_text(device_label)[:160] or None,
+    }
+
+
+def _upsert_entry_identity_profile_check(
+    db: Session,
+    *,
+    verification: EntryPhoneVerification,
+    date_of_birth: object,
+    birth_country: object,
+    birth_place: object,
+    country_of_origin: object,
+    residential_area: object,
+    client_fingerprint: object,
+    device_label: object,
+) -> None:
+    profile_payload = _identity_profile_payload_for_entry(
+        display_name=verification.display_name,
+        phone_e164=verification.phone_e164,
+        email=verification.email,
+        country=verification.phone_country_hint or verification.locale_country_hint,
+        date_of_birth=date_of_birth,
+        birth_country=birth_country,
+        birth_place=birth_place,
+        country_of_origin=country_of_origin,
+        residential_area=residential_area,
+        browser_locale=verification.browser_locale,
+        browser_timezone=verification.browser_timezone,
+        client_fingerprint=client_fingerprint,
+        device_label=device_label,
+    )
+
+    check = (
+        db.query(IdentityVerificationCheck)
+        .filter(
+            IdentityVerificationCheck.entry_phone_verification_id == int(verification.id),
+            IdentityVerificationCheck.verification_type == "identity_profile",
+        )
+        .order_by(IdentityVerificationCheck.id.asc())
+        .first()
+    )
+    if check is not None:
+        previous = _json_object(check.submitted_payload_json)
+        for key in (
+            "date_of_birth",
+            "birth_country",
+            "birth_country_key",
+            "birth_place",
+            "birth_place_key",
+            "country_of_origin",
+            "country_of_origin_key",
+            "residential_area",
+            "residential_area_key",
+            "client_fingerprint",
+            "device_label",
+        ):
+            if not profile_payload.get(key) and previous.get(key):
+                profile_payload[key] = previous.get(key)
+
+    if not profile_payload.get("date_of_birth") and not profile_payload.get("client_fingerprint"):
+        return
+
+    if check is None:
+        check = IdentityVerificationCheck(
+            entry_phone_verification_id=int(verification.id),
+            verification_type="identity_profile",
+            region_code=profile_payload.get("country_key"),
+            provider_key="entry.profile_and_device",
+            status="recorded",
+            subject_reference=profile_payload.get("display_name"),
+            confidence_score=20,
+            explanation=(
+                "Registration profile and device-continuity evidence was recorded for identity-risk review. "
+                "This is not external identity verification."
+            ),
+        )
+
+    check.region_code = profile_payload.get("country_key")
+    check.subject_reference = profile_payload.get("display_name")
+    check.submitted_payload_json = json.dumps(profile_payload, sort_keys=True)
+    check.normalized_identity_json = json.dumps(
+        {
+            "display_name_key": profile_payload.get("display_name_key"),
+            "date_of_birth": profile_payload.get("date_of_birth"),
+            "country_key": profile_payload.get("country_key"),
+            "birth_country_key": profile_payload.get("birth_country_key"),
+            "birth_place_key": profile_payload.get("birth_place_key"),
+            "country_of_origin_key": profile_payload.get("country_of_origin_key"),
+            "residential_area_key": profile_payload.get("residential_area_key"),
+            "client_fingerprint": profile_payload.get("client_fingerprint"),
+        },
+        sort_keys=True,
+    )
+    db.add(check)
+
+
+def _entry_identity_match_error(
+    *,
+    user: User,
+    signal: str,
+    evidence_label: str,
+) -> HTTPException:
+    gmfn_id = _clean_text(getattr(user, "gmfn_id", ""), upper=True)
+    return HTTPException(
+        status_code=409,
+        detail={
+            "code": "entry_identity_match_review_required",
+            "message": (
+                f"This {evidence_label} is already attached to an existing GSN identity. "
+                "Sign in with that identity or ask the community helper to review it before starting a second GSN ID."
+            ),
+            "signal": signal,
+            "next_action": "sign_in_or_identity_review",
+            "next_action_label": "Sign in or review identity",
+            "gmfn_id": gmfn_id or None,
+        },
+    )
+
+
+def _find_existing_user_by_bank_destination(
+    db: Session,
+    *,
+    account_number: object,
+    bank_name: object,
+    country: object,
+) -> Optional[User]:
+    account_key = _identity_match_key(account_number)
+    if not account_key:
+        return None
+    country_key = _normalize_country_hint(country)
+    bank_key = _identity_match_key(bank_name)
+
+    rows = (
+        db.query(UserPayoutDestination, User)
+        .join(User, User.id == UserPayoutDestination.user_id)
+        .filter(UserPayoutDestination.account_number.isnot(None))
+        .all()
+    )
+    for payout, user in rows:
+        if _identity_match_key(getattr(payout, "account_number", None)) != account_key:
+            continue
+        existing_country = _normalize_country_hint(getattr(payout, "country", None))
+        if country_key and existing_country and country_key != existing_country:
+            continue
+        existing_bank = _identity_match_key(getattr(payout, "bank_name", None))
+        if bank_key and existing_bank and bank_key != existing_bank:
+            continue
+        return user
+
+    return None
+
+
+def _official_id_payload_key_from_values(
+    *,
+    document_type: object,
+    document_reference: object,
+    country: object,
+) -> tuple[str, str, str]:
+    return (
+        _identity_match_key(document_type),
+        _identity_match_key(document_reference),
+        _normalize_country_hint(country) or _identity_match_key(country),
+    )
+
+
+def _official_id_payload_key(payload: dict) -> tuple[str, str, str]:
+    return _official_id_payload_key_from_values(
+        document_type=payload.get("document_type"),
+        document_reference=payload.get("document_reference"),
+        country=payload.get("country"),
+    )
+
+
+def _find_existing_user_by_official_id_checks(
+    db: Session,
+    *,
+    checks: list[IdentityVerificationCheck],
+) -> Optional[User]:
+    candidate_keys = {
+        _official_id_payload_key(_json_object(check.submitted_payload_json))
+        for check in checks
+        if _clean_text(check.verification_type).lower() == "official_id"
+    }
+    candidate_keys = {
+        key for key in candidate_keys if key[0] and key[1]
+    }
+    if not candidate_keys:
+        return None
+
+    existing_checks = (
+        db.query(IdentityVerificationCheck, User)
+        .join(User, User.id == IdentityVerificationCheck.user_id)
+        .filter(
+            IdentityVerificationCheck.verification_type == "official_id",
+            IdentityVerificationCheck.user_id.isnot(None),
+        )
+        .all()
+    )
+
+    for existing_check, user in existing_checks:
+        existing_key = _official_id_payload_key(
+            _json_object(existing_check.submitted_payload_json)
+        )
+        if not existing_key[0] or not existing_key[1]:
+            continue
+        for candidate_key in candidate_keys:
+            same_document = existing_key[0] == candidate_key[0]
+            same_reference = existing_key[1] == candidate_key[1]
+            same_country = (
+                not existing_key[2]
+                or not candidate_key[2]
+                or existing_key[2] == candidate_key[2]
+            )
+            if same_document and same_reference and same_country:
+                return user
+
+    return None
+
+
+def _find_existing_user_by_identity_profile_checks(
+    db: Session,
+    *,
+    checks: list[IdentityVerificationCheck],
+) -> tuple[Optional[User], str]:
+    candidate_keys = {
+        _identity_profile_payload_key(_json_object(check.submitted_payload_json))
+        for check in checks
+        if _clean_text(check.verification_type).lower() == "identity_profile"
+    }
+    candidate_keys = {
+        key for key in candidate_keys if key[1] and any(key[index] for index in (0, 3, 4, 5, 6, 7))
+    }
+    if not candidate_keys:
+        return None, ""
+
+    existing_checks = (
+        db.query(IdentityVerificationCheck, User)
+        .join(User, User.id == IdentityVerificationCheck.user_id)
+        .filter(
+            IdentityVerificationCheck.verification_type == "identity_profile",
+            IdentityVerificationCheck.user_id.isnot(None),
+        )
+        .all()
+    )
+
+    for existing_check, user in existing_checks:
+        existing_key = _identity_profile_payload_key(
+            _json_object(existing_check.submitted_payload_json)
+        )
+        (
+            existing_name,
+            existing_dob,
+            existing_country,
+            existing_fingerprint,
+            existing_birth_country,
+            existing_birth_place,
+            existing_origin_country,
+            existing_residential_area,
+        ) = existing_key
+        if not existing_dob:
+            continue
+
+        for candidate_key in candidate_keys:
+            (
+                name_key,
+                dob_key,
+                country_key,
+                fingerprint_key,
+                birth_country_key,
+                birth_place_key,
+                origin_country_key,
+                residential_area_key,
+            ) = candidate_key
+            if not dob_key or dob_key != existing_dob:
+                continue
+
+            same_country = (
+                not existing_country
+                or not country_key
+                or existing_country == country_key
+            )
+
+            if (
+                fingerprint_key
+                and existing_fingerprint
+                and fingerprint_key == existing_fingerprint
+                and (name_key == existing_name or same_country)
+            ):
+                return user, "device_profile_dob_match"
+
+            score = 40
+            matched_signals = ["date_of_birth"]
+
+            if name_key and existing_name and name_key == existing_name:
+                score += 25
+                matched_signals.append("name")
+            if same_country:
+                score += 5
+                matched_signals.append("residence_country")
+            if (
+                birth_country_key
+                and existing_birth_country
+                and birth_country_key == existing_birth_country
+            ):
+                score += 10
+                matched_signals.append("birth_country")
+            if birth_place_key and existing_birth_place and birth_place_key == existing_birth_place:
+                score += 20
+                matched_signals.append("birth_place")
+            if (
+                origin_country_key
+                and existing_origin_country
+                and origin_country_key == existing_origin_country
+            ):
+                score += 10
+                matched_signals.append("country_of_origin")
+            if (
+                residential_area_key
+                and existing_residential_area
+                and residential_area_key == existing_residential_area
+            ):
+                score += 15
+                matched_signals.append("residential_area")
+
+            if score >= 80 and len(matched_signals) >= 3:
+                return user, "profile_composite_match"
+
+    return None, ""
+
+
+def _raise_if_entry_identity_matches_existing_user(
+    db: Session,
+    *,
+    verification: EntryPhoneVerification,
+    verification_checks: list[IdentityVerificationCheck],
+) -> None:
+    if verification.bank_details_recorded_at is not None:
+        bank_match = _find_existing_user_by_bank_destination(
+            db,
+            account_number=verification.bank_account_number,
+            bank_name=verification.bank_name,
+            country=verification.bank_country,
+        )
+        if bank_match is not None:
+            raise _entry_identity_match_error(
+                user=bank_match,
+                signal="bank_destination_exact_match",
+                evidence_label="bank or wallet destination",
+            )
+
+    official_id_match = _find_existing_user_by_official_id_checks(
+        db,
+        checks=verification_checks,
+    )
+    if official_id_match is not None:
+        raise _entry_identity_match_error(
+            user=official_id_match,
+            signal="official_id_exact_match",
+            evidence_label="official ID evidence",
+        )
+
+    profile_match, profile_signal = _find_existing_user_by_identity_profile_checks(
+        db,
+        checks=verification_checks,
+    )
+    if profile_match is not None:
+        raise _entry_identity_match_error(
+            user=profile_match,
+            signal=profile_signal,
+            evidence_label="registration identity profile",
+        )
+
+
 def _bank_status_note(region_status: Optional[str]) -> tuple[str, str]:
     if region_status == "matched":
         return (
@@ -683,7 +1242,7 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
     if not display_name:
         raise HTTPException(status_code=400, detail="Street name or nickname is required")
 
-    phone_e164 = _normalize_phone(payload.phone_e164)
+    phone_e164 = _normalize_phone(payload.phone_e164, country_hint=payload.country)
     email = _clean_text(payload.email).lower() or None
     browser_locale = _clean_text(payload.browser_locale) or None
     browser_timezone = _clean_text(payload.browser_timezone) or None
@@ -691,7 +1250,7 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
     phone_country_hint = _infer_phone_country(phone_e164)
     locale_country_hint = declared_country or _infer_locale_country(browser_locale)
 
-    phone_clash = db.query(User).filter(User.phone_e164 == phone_e164).first()
+    phone_clash = _find_user_by_phone_identity(db, phone_e164)
     if phone_clash:
         released = _release_abandoned_pending_identity(
             db=db,
@@ -726,6 +1285,17 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         if browser_timezone:
             resumable.browser_timezone = browser_timezone
 
+        _upsert_entry_identity_profile_check(
+            db,
+            verification=resumable,
+            date_of_birth=payload.date_of_birth,
+            birth_country=payload.birth_country,
+            birth_place=payload.birth_place,
+            country_of_origin=payload.country_of_origin,
+            residential_area=payload.residential_area,
+            client_fingerprint=payload.client_fingerprint,
+            device_label=payload.device_label,
+        )
         resumable.expires_at = _now() + timedelta(
             minutes=_entry_phone_session_minutes(preview_enabled=preview_enabled)
         )
@@ -772,6 +1342,18 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
     db.add(verification)
     db.commit()
     db.refresh(verification)
+    _upsert_entry_identity_profile_check(
+        db,
+        verification=verification,
+        date_of_birth=payload.date_of_birth,
+        birth_country=payload.birth_country,
+        birth_place=payload.birth_place,
+        country_of_origin=payload.country_of_origin,
+        residential_area=payload.residential_area,
+        client_fingerprint=payload.client_fingerprint,
+        device_label=payload.device_label,
+    )
+    db.commit()
 
     return {
         "ok": True,
@@ -848,14 +1430,16 @@ def resume_entry_phone_verification(
     The caller must already know the phone number tied to the local draft.
     """
 
-    phone_e164 = _normalize_phone(payload.phone_e164)
+    phone_e164 = _normalize_phone(payload.phone_e164, allow_legacy_local=True)
     row = (
         db.query(EntryPhoneVerification)
         .filter(EntryPhoneVerification.id == int(payload.verification_id))
         .first()
     )
 
-    if not row or _normalize_phone(row.phone_e164) != phone_e164:
+    if not row or phone_e164 not in _phone_identity_candidates(
+        _normalize_phone(row.phone_e164, allow_legacy_local=True)
+    ):
         return {
             "ok": False,
             "verification_id": int(payload.verification_id),
@@ -938,7 +1522,10 @@ def save_entry_bank_details(
     row.bank_account_name = _clean_text(payload.destination_name)
     row.bank_name = _clean_text(payload.bank_name)
     row.bank_account_number = _normalize_account_number(payload.account_number)
-    row.bank_phone_number = _normalize_phone(payload.phone_number or row.phone_e164)
+    row.bank_phone_number = _normalize_phone(
+        payload.phone_number or row.phone_e164,
+        country_hint=payload.country or row.bank_country or row.phone_country_hint,
+    )
     row.bank_country = bank_country
     row.bank_currency = _clean_text(payload.currency, upper=True) or "NGN"
     row.bank_note = _clean_text(payload.note) or None
@@ -1038,6 +1625,13 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     if _verification_expired(verification):
         raise HTTPException(status_code=400, detail="Verified phone session has expired")
 
+    clan_name = _clean_text(payload.clan_name)
+    if _find_existing_clan_by_entry_name(db, clan_name):
+        raise HTTPException(
+            status_code=409,
+            detail=_entry_community_name_taken_detail(clan_name),
+        )
+
     registration_only = _entry_phone_registration_only_enabled()
     if verification.verified_at is None and not registration_only:
         raise HTTPException(status_code=400, detail="Phone verification must be completed first")
@@ -1057,7 +1651,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
 
     invite = _validate_founder_invite(db, create_code) if create_code else None
 
-    phone_clash = db.query(User).filter(User.phone_e164 == phone_e164).first()
+    phone_clash = _find_user_by_phone_identity(db, phone_e164)
     if phone_clash:
         released = _release_abandoned_pending_identity(
             db=db,
@@ -1089,12 +1683,31 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             field_label="email",
         )
 
-    clan_name = _clean_text(payload.clan_name)
-    if _find_existing_clan_by_entry_name(db, clan_name):
-        raise HTTPException(
-            status_code=409,
-            detail=_entry_community_name_taken_detail(clan_name),
+    if payload.date_of_birth:
+        _upsert_entry_identity_profile_check(
+            db,
+            verification=verification,
+            date_of_birth=payload.date_of_birth,
+            birth_country=payload.birth_country,
+            birth_place=payload.birth_place,
+            country_of_origin=payload.country_of_origin,
+            residential_area=payload.residential_area,
+            client_fingerprint=None,
+            device_label=None,
         )
+        db.commit()
+
+    verification_checks = (
+        db.query(IdentityVerificationCheck)
+        .filter(IdentityVerificationCheck.entry_phone_verification_id == int(verification.id))
+        .order_by(IdentityVerificationCheck.created_at.asc(), IdentityVerificationCheck.id.asc())
+        .all()
+    )
+    _raise_if_entry_identity_matches_existing_user(
+        db,
+        verification=verification,
+        verification_checks=verification_checks,
+    )
 
     user = User(
         email=email,
@@ -1144,7 +1757,11 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             destination_name=_clean_text(verification.bank_account_name) or display_name,
             bank_name=_clean_text(verification.bank_name),
             account_number=_normalize_account_number(verification.bank_account_number),
-            phone_number=_normalize_phone(verification.bank_phone_number or phone_e164) or None,
+            phone_number=_normalize_phone(
+                verification.bank_phone_number or phone_e164,
+                country_hint=verification.bank_country or verification.phone_country_hint,
+            )
+            or None,
             country=_clean_text(verification.bank_country) or None,
             currency=_clean_text(verification.bank_currency, upper=True) or "NGN",
             note=_clean_text(verification.bank_note) or None,
@@ -1157,13 +1774,6 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             verified_at=None,
         )
         db.add(payout)
-
-    verification_checks = (
-        db.query(IdentityVerificationCheck)
-        .filter(IdentityVerificationCheck.entry_phone_verification_id == int(verification.id))
-        .order_by(IdentityVerificationCheck.created_at.asc(), IdentityVerificationCheck.id.asc())
-        .all()
-    )
 
     verification_summary_lines: list[str] = []
     identity_photo_url: Optional[str] = None

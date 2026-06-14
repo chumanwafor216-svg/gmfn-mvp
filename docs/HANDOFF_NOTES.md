@@ -1,3 +1,280 @@
+### Member invite quota removal and vote-reason records (2026-06-14)
+
+- Trigger:
+  - owner confirmed the invite quota/admin-refresh bottleneck should be removed;
+  - any active community member should be able to invite people they know, while
+    admission still passes through community voting;
+  - owner also asked that voters record a short reason when they approve,
+    reject, or stay neutral, so the community chronicle can later show who stood
+    for a person and who did not know enough.
+- Changed:
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+    - invite evidence now offers preset relationship-source choices such as
+      blood/family, school days, marketplace/trade, work, neighbourhood,
+      faith/association, cooperative/savings, friendship, and known through a
+      trusted person;
+    - relationship source and known duration are now required before a trusted
+      invite is created/shared.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `/clans/{clan_id}/invite` no longer requires admin role; active community
+      members may create invite links;
+    - creating a fresh invite no longer retires older live invites, so one
+      member's fresh link does not break another member's already-shared link;
+    - `/clans/{clan_id}/invite-link` now auto-prepares a shareable link for a
+      member when no live link exists, instead of returning `admin_required`;
+    - invite `max_uses` is treated as no quota in invite preview/status/join
+      request paths, while expired/revoked links still stay blocked;
+    - join-request votes now accept `approve`, `reject`, and `neutral`;
+    - votes require `reason_code` and may carry `reason_text`;
+    - each vote writes a `join_request.vote_recorded` trust event with the vote,
+      reason, voter, applicant, inviter, and join request id;
+    - join-request payloads now include `neutrals`.
+  - `gmfn_backend/app/services/invites_service.py`
+    - new invite rows store `max_uses=0` as the internal unlimited marker
+      because the current database column is non-null and defaults to `1`;
+    - public/API metadata returns `max_uses: null` for invite records so the UI
+      and trust events read as unlimited/no quota.
+  - `gmfn_backend/app/api/routes/invites.py`
+    - invite create/list responses now expose `max_uses: null`.
+  - `frontend/src/lib/api.ts`
+    - vote APIs now accept `approve | reject | neutral` with reason metadata.
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+    - Join Requests now shows neutral vote counts;
+    - each pending request includes a vote selector, reason selector, and
+      Approve / Neutral / Reject actions;
+    - reason options are short one-sentence presets so reviewers do not have to
+      invent wording.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - updated old admin-required/quota tests to the new member-invite contract;
+    - added neutral-vote coverage proving a neutral reason is recorded without
+      approving or rejecting the request.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\app\services\invites_service.py gmfn_backend\app\api\routes\invites.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py` passed
+    with 48 tests.
+  - `npm run build` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed.
+- Unabated truth:
+  - this removes the practical invite quota and admin-only refresh bottleneck
+    from the main `/clans/{clan_id}/invite` and invite-link flow, but it does
+    not remove anti-abuse rate limiting inside the invite service;
+  - because `clan_invites.max_uses` is currently non-null with default `1`, the
+    no-migration implementation stores `0` internally to mean unlimited and
+    normalizes API output to `null`;
+  - admission is still controlled by community voting. Unlimited invites do not
+    mean automatic membership;
+  - vote reasons are recorded in the trust-event chronicle, not in new vote-row
+    columns. That avoids a schema migration, but a future UI that wants to show
+    full per-voter reason history may need to read/filter those trust events.
+
+### First Circle trusted-invite evidence (2026-06-14)
+
+- Trigger:
+  - owner decided not to build a separate identity/verdict engine yet;
+  - owner asked to strengthen the existing First Circle and invite-link flow so
+    the inviter explains how they know the person, how long they have known the
+    person, and why GSN asks for this, while keeping the flow light enough for
+    real users.
+- Changed:
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`
+    - Invite focus now shows a short `Why GSN asks` explanation before share
+      actions;
+    - invite focus now asks for relationship type, known duration, confidence
+      basis, and a short relationship note;
+    - copy/share/WhatsApp/email/Facebook invite actions now create a fresh
+      trusted invite first, then share the link whose backend trust event carries
+      the relationship evidence;
+    - backend payload intentionally sends relationship summary/counts, not
+      invitee phone numbers, bank details, or exact addresses.
+  - `frontend/src/lib/api.ts`
+    - `createClanInvite` now accepts optional `relationship_evidence` while
+      remaining compatible with existing callers.
+  - `gmfn_backend/app/schemas/invites.py`
+    - added `ClanInviteRelationshipEvidence` with bounded optional fields.
+  - `gmfn_backend/app/services/invites_service.py`
+    - invite creation now sanitizes optional relationship evidence and records
+      it inside `TrustEventType.INVITE_CREATED` metadata;
+    - added a privacy note to the trust-event metadata to keep the evidence
+      purpose clear.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `/clans/{clan_id}/invite` now accepts an optional JSON body containing
+      relationship evidence without changing existing query params.
+  - `gmfn_backend/app/api/routes/invites.py`
+    - `/invites/clans/{clan_id}` now passes optional relationship evidence into
+      the shared invite service.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage proving relationship evidence is written into the
+      `invite_created` trust event.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\invites_service.py gmfn_backend\app\api\routes\clans.py gmfn_backend\app\api\routes\invites.py gmfn_backend\app\schemas\invites.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py -k "invite_route or invite_link"` passed with 3 tests.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is not a new trust/verdict engine. It is a practical enhancement to
+    the existing invite chronicle so every real shared invite can carry a
+    relationship statement;
+  - First Circle still fetches an existing/current invite link for status on
+    page load. The stronger relationship evidence is attached when the user
+    actually copies or shares from the invite focus;
+  - non-admin members still cannot create a fresh invite if no community admin
+    has prepared invite capacity/link policy. They can read/share an existing
+    link, but a future member-share evidence endpoint may be needed if the
+    owner wants every non-admin share to record relationship evidence too;
+  - relationship evidence is self-declared. It improves trust transparency and
+    community accountability, but it is not proof by itself.
+
+### Duplicate GSN ID guard and public-shop owner shortcut tightening (2026-06-14)
+
+- Trigger:
+  - owner reported a serious identity-continuity flaw: creating a new
+    community with the same personal details could issue a new GSN/GMFN ID
+    instead of linking the person to the existing identity;
+  - owner also reported that when viewing another member's Shop Diaries/public
+    shop, Community Home / Marketplace / Finance-style shortcut controls were
+    visible and felt like access to that other member's shop controls.
+  - owner then asked to strengthen registration identity collection because the
+    current intake was too scanty and did not ask for date of birth or collect
+    enough continuity signals to connect multiple-phone attempts.
+  - owner then asked for region-aware identity narrowing for Nigeria, West
+    Africa, Africa, and MENA contexts where common names can collide, so the
+    system should reduce admin workload by collecting birthplace/origin/residence
+    signals without treating weak coincidences as final proof.
+- Confirmed root cause / risk:
+  - backend `entry._normalize_phone()` previously converted a local number such
+    as `080...` into malformed `+080...` when the frontend did not send a
+    plus-prefixed number, so the unique `users.phone_e164` guard could miss the
+    same Nigerian number already stored as `+23480...`;
+  - public-shop shortcut strip was intentionally configured with
+    `requireOwnerMatch={false}`, so any signed-in member could see the shortcut
+    rail while viewing another member's public shop. That matched an older doc
+    note but conflicted with the owner's current permission expectation.
+- Changed:
+  - `gmfn_backend/app/api/routes/entry.py`
+    - phone normalization now uses selected/declared country to canonicalize
+      local phone numbers into E.164-like values, e.g. Nigeria `080...` becomes
+      `+23480...`;
+    - ambiguous local phone numbers without a country are rejected instead of
+      being stored as `+0...`;
+    - duplicate-phone checks now search canonical and legacy malformed variants
+      so a previous bad `+080...` record can still block a new `+23480...`
+      duplicate identity;
+    - resume flow allows legacy local comparison only for reopening old drafts,
+      not for creating fresh identities;
+    - create-entry now performs an identity-evidence hold before issuing a new
+      user/GSN ID when the entry's bank or wallet destination exactly matches an
+      existing user's payout destination;
+    - create-entry also compares recorded official-ID evidence against existing
+      official-ID checks and returns a structured `409` review response instead
+      of creating a second GSN ID on an exact document match;
+    - phone-start and create-entry now accept `date_of_birth` and store it as an
+      `identity_profile` verification evidence check without requiring a schema
+      migration;
+    - phone-start now records a browser-local device continuity key and compact
+      device label as identity-risk evidence, not as provider verification;
+    - create-entry blocks a second GSN ID when recorded profile evidence matches
+      an existing user's profile by same normalized name + DOB + compatible
+      country, or by same device continuity key + DOB + supporting country/name
+      signal;
+    - identity profile evidence now includes coarse region-aware signals:
+      `birth_country`, `birth_place`, `country_of_origin`, and
+      `residential_area`;
+    - profile duplicate matching now uses a weighted score. Same name + DOB
+      alone is no longer enough to auto-hold a duplicate; birthplace, origin,
+      residence, or device continuity must push the match into a stronger
+      composite signal;
+    - the duplicate community-name recovery response still runs before the OTP
+      completion check, preserving the founder recovery flow.
+  - `gmfn_backend/tests/test_entry_create.py`
+    - added coverage for local-number canonical duplicate blocking, legacy
+      malformed duplicate blocking, rejecting local numbers without a country,
+      blocking a second identity with a reused bank/wallet destination, blocking
+      a second identity with reused official-ID evidence, recording DOB/device
+      profile evidence, blocking same name + DOB profile duplicates, blocking
+      same device + DOB profile duplicates, and preserving duplicate
+      community-name recovery ordering;
+    - added coverage that same name + DOB alone is allowed when region-profile
+      signals are absent, while composite birthplace/origin/residence matches
+      are blocked.
+  - `frontend/src/lib/api.ts`
+    - create-entry phone-start now sends `date_of_birth`, browser locale/timezone,
+      a browser-local entry device continuity key, plus coarse birth/origin/
+      residence profile fields.
+  - `frontend/src/lib/entryDraft.ts`
+    - create-entry drafts now preserve date of birth with the rest of the
+      temporary details;
+    - drafts also preserve birth country, place of birth, country of origin, and
+      current town/area.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - public shop shortcut rail now says `Owner shop shortcuts` and requires
+      the signed-in GSN ID to match the viewed shop owner before rendering.
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - existing-identity prompt now says `Already have a GSN ID? Sign in first`
+      and explains that one person should keep one GSN ID across every
+      community;
+    - fresh create-community visits now stop at that existing-ID question first:
+      the user must either sign in with the old GSN number or consciously
+      confirm they do not have one before the details/community form is exposed;
+    - Details now asks for date of birth and requires it before continuing into
+      phone/community registration;
+    - Details now also asks for birth country, place of birth, country of
+      origin, and current town/area, using coarse location signals rather than
+      exact address collection.
+  - `frontend/tools/audit-link-contracts.mjs`
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated guards so the owner-only shortcut rule cannot quietly regress to
+      signed-in-member visibility.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\entry.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_entry_create.py` passed
+    with 36 tests.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:shop-gallery-button-inventory` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+  - After the first-gate correction, `npm run audit:entry-auth`,
+    `npm run audit:member-entry-actions`, `npm run audit:protected-button-freeze`,
+    `python -m pytest -q gmfn_backend\tests\test_entry_create.py`,
+    `python -m pytest -q gmfn_backend\tests\test_join_requests.py`, and
+    `npm run build` all passed.
+- Unabated truth:
+  - this prevents the clearest new duplicate paths: same phone in different
+    formatting, exact reused bank/wallet destination, and exact reused official
+    ID evidence. It does not automatically merge already-created duplicate
+    users/GSN IDs in a live database;
+  - the first create-community screen now asks about an existing GSN ID before
+    the form opens, but that is still a user-declared front-door choice. The
+    backend duplicate holds remain necessary because a person can still claim
+    they do not have an old number;
+  - bank account numbers and official-ID values are now treated as creation-time
+    identity risk signals, not permanent hard uniqueness keys. A future
+    identity-review/admin merge flow is still needed to safely reconcile
+    duplicates already issued and to handle legitimate shared-bank edge cases;
+  - fuzzy matching is still not implemented. Different spelling, a different
+    phone number, different bank details, or no official-ID evidence can still
+    pass unless provider verification or a future identity risk engine links the
+    person through stronger signals;
+  - date of birth is useful for reducing duplicate identities, but people can
+    lie. Device continuity can help connect repeat attempts from the same
+    browser, but it can be cleared, spoofed, shared by a family, or missing on a
+    new phone. Treat it as review evidence, not truth;
+  - birthplace, country of origin, and current town/area are strong narrowing
+    signals for common-name regions, but they are self-declared until provider
+    or document verification exists. They reduce admin burden; they do not
+    eliminate fraud;
+  - exact address, ethnicity, religion, family secrets, or other high-risk
+    identifiers were intentionally not added in this slice. They may create
+    trust, privacy, and discrimination risks out of proportion to their pilot
+    value;
+  - there is still no admin merge/review workflow that can safely link, reject,
+    or merge suspected duplicates after a hold. That remains the next necessary
+    identity-integrity feature.
+  - the correct multi-community path remains: existing person signs in, then
+    creates or joins communities under the same existing GSN identity.
+
 ### Finance and Trust phone-copy tightening slice (2026-06-13)
 
 - Trigger:

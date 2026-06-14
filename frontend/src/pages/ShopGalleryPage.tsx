@@ -2750,11 +2750,11 @@ export default function ShopGalleryPage() {
       <OwnerOnlySurfaceNav
         ownerGmfnId={shopOwnerGmfnId}
         compact={isCompact}
-        label="Public Shop shortcuts"
-        ariaLabel="Public Shop signed-in shortcuts"
+        label="Owner shop shortcuts"
+        ariaLabel="Public Shop owner shortcuts"
         links={memberSurfaceLinks}
         refreshKey={shopReconnectRetryKey}
-        requireOwnerMatch={false}
+        requireOwnerMatch={true}
       />
 
       <GsnInstallPrompt

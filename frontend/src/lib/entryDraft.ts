@@ -10,6 +10,11 @@ export type CreateEntryDraft = {
   phone?: string;
   email?: string;
   country?: string;
+  dateOfBirth?: string;
+  birthCountry?: string;
+  birthPlace?: string;
+  countryOfOrigin?: string;
+  residentialArea?: string;
   createCode?: string;
   step?: CreateEntryStep;
   openPanel?: CreateEntryPanel;
@@ -145,6 +150,11 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
       safeStr(parsed?.phone) ||
       safeStr(parsed?.email) ||
       safeStr(parsed?.country) ||
+      safeStr(parsed?.dateOfBirth) ||
+      safeStr(parsed?.birthCountry) ||
+      safeStr(parsed?.birthPlace) ||
+      safeStr(parsed?.countryOfOrigin) ||
+      safeStr(parsed?.residentialArea) ||
       Number(parsed?.verificationId || 0) > 0 ||
         parsed?.phoneVerificationProof ||
         parsed?.bankRecordProof ||
@@ -166,6 +176,11 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
       phone: safeStr(parsed?.phone),
       email: safeStr(parsed?.email),
       country: safeStr(parsed?.country),
+      dateOfBirth: safeStr(parsed?.dateOfBirth),
+      birthCountry: safeStr(parsed?.birthCountry),
+      birthPlace: safeStr(parsed?.birthPlace),
+      countryOfOrigin: safeStr(parsed?.countryOfOrigin),
+      residentialArea: safeStr(parsed?.residentialArea),
       createCode: safeStr(parsed?.createCode),
       step,
       openPanel,
@@ -195,6 +210,11 @@ export function saveCreateEntryDraft(
     phone: safeStr(draft.phone),
     email: safeStr(draft.email),
     country: safeStr(draft.country),
+    dateOfBirth: safeStr(draft.dateOfBirth),
+    birthCountry: safeStr(draft.birthCountry),
+    birthPlace: safeStr(draft.birthPlace),
+    countryOfOrigin: safeStr(draft.countryOfOrigin),
+    residentialArea: safeStr(draft.residentialArea),
     createCode: safeStr(draft.createCode || createCode || ""),
     step: isValidStep(draft.step) ? draft.step : "details",
     openPanel: isValidPanel(draft.openPanel) ? draft.openPanel : null,
@@ -215,6 +235,11 @@ export function saveCreateEntryDraft(
       safeDraft.phone ||
       safeDraft.email ||
       safeDraft.country ||
+      safeDraft.dateOfBirth ||
+      safeDraft.birthCountry ||
+      safeDraft.birthPlace ||
+      safeDraft.countryOfOrigin ||
+      safeDraft.residentialArea ||
       safeDraft.verificationId ||
       safeDraft.phoneVerificationProof ||
       safeDraft.bankRecordProof ||

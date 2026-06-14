@@ -4,7 +4,7 @@ import os
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import quote, urlparse
 
 from fastapi import HTTPException, Request
@@ -139,6 +139,46 @@ def api_join_link(request: Request, code: str) -> str:
     return str(request.base_url).rstrip("/") + f"/invites/share/{code}"
 
 
+def _clean_invite_relationship_evidence(raw: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
+    if not isinstance(raw, dict):
+        return None
+
+    def clean_text(key: str, *, limit: int) -> Optional[str]:
+        value = str(raw.get(key) or "").strip()
+        if not value:
+            return None
+        return value[:limit]
+
+    def clean_count(key: str) -> Optional[int]:
+        try:
+            value = int(raw.get(key))
+        except (TypeError, ValueError):
+            return None
+        return max(0, min(value, 1000))
+
+    evidence = {
+        "evidence_source": clean_text("evidence_source", limit=80),
+        "invitation_context": clean_text("invitation_context", limit=80),
+        "relationship_type": clean_text("relationship_type", limit=80),
+        "known_duration": clean_text("known_duration", limit=80),
+        "confidence_level": clean_text("confidence_level", limit=40),
+        "relationship_context": clean_text("relationship_context", limit=500),
+        "first_circle_role": clean_text("first_circle_role", limit=80),
+        "first_circle_ready_count": clean_count("first_circle_ready_count"),
+        "first_circle_selected_count": clean_count("first_circle_selected_count"),
+    }
+
+    cleaned = {key: value for key, value in evidence.items() if value is not None}
+    if not cleaned:
+        return None
+
+    cleaned["privacy_note"] = (
+        "Relationship evidence records why this invite was issued. "
+        "It should not contain private phone numbers, bank details, or exact addresses."
+    )
+    return cleaned
+
+
 def create_clan_invite(
     db: Session,
     *,
@@ -146,6 +186,7 @@ def create_clan_invite(
     created_by_user: User,
     expires_at: Optional[datetime] = None,
     max_uses: Optional[int] = None,
+    relationship_evidence: Optional[dict[str, Any]] = None,
 ) -> ClanInvite:
     clan = db.get(Clan, clan_id)
     if not clan:
@@ -161,7 +202,7 @@ def create_clan_invite(
         created_by_user_id=created_by_user.id,
         code=secrets.token_urlsafe(10),
         expires_at=safe_expires_at,
-        max_uses=max_uses,
+        max_uses=0,
         uses=0,
         is_active=True,
         revoked_at=None,
@@ -172,6 +213,22 @@ def create_clan_invite(
     db.commit()
     db.refresh(invite)
 
+    trust_meta = {
+        "reason": "invite_created",
+        "invite_code": invite.code,
+        "max_uses": None,
+        "expires_at": invite.expires_at.isoformat() if invite.expires_at else None,
+    }
+    clean_relationship_evidence = _clean_invite_relationship_evidence(
+        relationship_evidence
+    )
+    if clean_relationship_evidence:
+        trust_meta["relationship_evidence"] = clean_relationship_evidence
+        trust_meta["trust_record_note"] = (
+            "This invite was created with a relationship statement so GSN can "
+            "show that access came through a known community connection."
+        )
+
     log_trust_event(
         db,
         event_type=TrustEventType.INVITE_CREATED,
@@ -180,12 +237,7 @@ def create_clan_invite(
         guarantor_id=None,
         actor_user_id=int(created_by_user.id),
         subject_user_id=int(created_by_user.id),
-        meta={
-            "reason": "invite_created",
-            "invite_code": invite.code,
-            "max_uses": invite.max_uses,
-            "expires_at": invite.expires_at.isoformat() if invite.expires_at else None,
-        },
+        meta=trust_meta,
     )
 
     return invite
@@ -221,7 +273,7 @@ def preview_invite(db: Session, *, code: str) -> dict:
         "clan_name": clan.name,
         "is_active": invite.is_active,
         "uses": invite.uses or 0,
-        "max_uses": invite.max_uses,
+        "max_uses": None,
         "expires_at": invite.expires_at,
         "revoked_at": invite.revoked_at,
     }
@@ -253,7 +305,7 @@ def revoke_invite(db: Session, *, code: str, user: User) -> ClanInvite:
             "note": f"Invite {invite.code} was revoked.",
             "invite_code": invite.code,
             "uses": invite.uses,
-            "max_uses": invite.max_uses,
+            "max_uses": None,
         },
     )
 
@@ -280,11 +332,6 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
     expires_at = _effective_invite_expires_at(invite)
     if expires_at is not None and expires_at <= now:
         raise HTTPException(status_code=400, detail="Invite expired")
-
-    if invite.max_uses is not None and (invite.uses or 0) >= invite.max_uses:
-        invite.is_active = False
-        db.commit()
-        raise HTTPException(status_code=409, detail="Invite usage limit reached")
 
     clan = db.get(Clan, invite.clan_id)
     if not clan:
@@ -319,8 +366,6 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
     db.add(membership)
 
     invite.uses = (invite.uses or 0) + 1
-    if invite.max_uses is not None and invite.uses >= invite.max_uses:
-        invite.is_active = False
 
     try:
         db.commit()
@@ -361,7 +406,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
             "invited_by_user_id": inviter_id,
             "invite_id": int(invite.id),
             "uses_after": invite.uses,
-            "max_uses": invite.max_uses,
+            "max_uses": None,
         },
     )
 
@@ -385,7 +430,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
                 "clan_id": int(clan.id),
                 "invite_id": int(invite.id),
                 "uses_after": invite.uses,
-                "max_uses": invite.max_uses,
+                "max_uses": None,
             },
         )
 
@@ -398,7 +443,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
                 "invite_code": invite.code,
                 "invite_id": int(invite.id),
                 "uses_after": invite.uses,
-                "max_uses": invite.max_uses,
+                "max_uses": None,
                 "reason": "invite_accepted",
             },
         )

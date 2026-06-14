@@ -10,11 +10,13 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import {
+  createClanInvite,
   getClanInviteLink,
   getCurrentClan,
   getMe,
   getSelectedClanId,
   safeCopy,
+  type ClanInviteRelationshipEvidencePayload,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import * as firstCircle from "../lib/firstCircle";
@@ -46,6 +48,13 @@ type ManualFormState = {
   selected: boolean;
 };
 
+type InviteEvidenceFormState = {
+  relationshipType: string;
+  knownDuration: string;
+  confidenceLevel: string;
+  relationshipContext: string;
+};
+
 type QuickPersonRow = {
   value: string;
 };
@@ -71,6 +80,31 @@ const ROLE_OPTIONS = firstCircle.FIRST_CIRCLE_ROLE_OPTIONS.map(
 const COMMON_RELATIONSHIPS = firstCircle.FIRST_CIRCLE_RELATIONSHIP_OPTIONS.map(
   (option) => option.value
 );
+
+const INVITE_RELATIONSHIP_SOURCE_OPTIONS = [
+  { value: "blood_or_family", label: "Blood or family relation" },
+  { value: "school_days", label: "School days" },
+  { value: "marketplace_trade", label: "Marketplace or trade" },
+  { value: "work_or_colleague", label: "Work or colleague" },
+  { value: "neighbourhood", label: "Neighbour or area" },
+  { value: "faith_or_association", label: "Faith group or association" },
+  { value: "cooperative_or_savings", label: "Cooperative or savings group" },
+  { value: "friendship", label: "Friendship" },
+  { value: "known_through_trusted_person", label: "Known through someone trusted" },
+];
+
+const KNOWN_DURATION_OPTIONS = [
+  { value: "under_6_months", label: "Under 6 months" },
+  { value: "6_to_24_months", label: "6 months to 2 years" },
+  { value: "2_to_5_years", label: "2 to 5 years" },
+  { value: "over_5_years", label: "Over 5 years" },
+];
+
+const CONFIDENCE_OPTIONS = [
+  { value: "known_directly", label: "I know this person directly" },
+  { value: "known_through_family_or_group", label: "Known through family or group" },
+  { value: "known_through_trade", label: "Known through trade or service" },
+];
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -453,6 +487,15 @@ function defaultManualForm(): ManualFormState {
   };
 }
 
+function defaultInviteEvidenceForm(): InviteEvidenceFormState {
+  return {
+    relationshipType: "",
+    knownDuration: "",
+    confidenceLevel: "known_directly",
+    relationshipContext: "",
+  };
+}
+
 function makeId(): string {
   try {
     if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -686,6 +729,9 @@ export default function BuildFirstCirclePage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [draft, setDraft] = useState<FirstCircleDraft>(defaultDraft());
   const [manualForm, setManualForm] = useState<ManualFormState>(defaultManualForm());
+  const [inviteEvidence, setInviteEvidence] = useState<InviteEvidenceFormState>(
+    defaultInviteEvidenceForm()
+  );
   const [quickRows, setQuickRows] = useState<QuickPersonRow[]>(defaultQuickRows());
   const [pickingContacts, setPickingContacts] = useState(false);
   const [focusedAction, setFocusedAction] = useState<FocusedAction>(null);
@@ -840,11 +886,23 @@ export default function BuildFirstCirclePage() {
     );
   }, [draft.contacts]);
 
-  const joinInviteMessage = useMemo(() => {
+  const selectedCount = useMemo(() => {
+    return draft.contacts.filter((item) => item.selected).length;
+  }, [draft.contacts]);
+
+  const defaultEvidenceRelationship = useMemo(() => {
+    return (
+      safeStr(inviteEvidence.relationshipType) ||
+      ""
+    );
+  }, [inviteEvidence.relationshipType]);
+
+  function buildJoinInviteMessageForLink(link: string): string {
     const lines = [
       `Hello, I am building my trusted first circle on GSN for ${communityName}.`,
+      "GSN asks how people are known so the trust record can show that this invite came through a real relationship.",
       "If you already know me and this community, use this invite link to request to join.",
-      inviteLink,
+      link,
       gmfnId ? `My GSN ID: ${gmfnId}` : "",
     ].filter(Boolean);
 
@@ -852,12 +910,16 @@ export default function BuildFirstCirclePage() {
       senderName: memberName,
       senderGsnId: gmfnId,
       communityName,
-      inviteLink,
+      inviteLink: link,
       messageLines: lines,
     });
+  }
+
+  const joinInviteMessage = useMemo(() => {
+    return buildJoinInviteMessageForLink(inviteLink);
   }, [communityName, gmfnId, inviteLink, memberName]);
 
-  const inviteBundle = useMemo(() => {
+  function buildInviteBundleForLink(link: string): string {
     const rawBundle = inviteBundleText({
       draft,
       memberName,
@@ -869,9 +931,13 @@ export default function BuildFirstCirclePage() {
       senderName: memberName,
       senderGsnId: gmfnId,
       communityName,
-      inviteLink,
+      inviteLink: link,
       messageLines: [rawBundle],
     });
+  }
+
+  const inviteBundle = useMemo(() => {
+    return buildInviteBundleForLink(inviteLink);
   }, [draft, memberName, gmfnId, communityName, inviteLink]);
 
   const readyCount = Number(progress.readyCount || 0);
@@ -1105,28 +1171,94 @@ export default function BuildFirstCirclePage() {
     });
   }
 
+  function activeClanId(): number {
+    return Number(firstTruthy(currentClan?.id, currentClan?.clan_id, selectedClanId));
+  }
+
+  function buildRelationshipEvidencePayload(): ClanInviteRelationshipEvidencePayload {
+    const relationshipContext =
+      safeStr(inviteEvidence.relationshipContext) ||
+      safeStr(readyContacts[0]?.note) ||
+      "This invite is being shared through my First Circle, with people I already know in real life.";
+
+    return {
+      evidence_source: "first_circle",
+      invitation_context: "trusted_community_invite",
+      relationship_type: defaultEvidenceRelationship,
+      known_duration: safeStr(inviteEvidence.knownDuration) || "not_stated",
+      confidence_level: safeStr(inviteEvidence.confidenceLevel) || "known_directly",
+      relationship_context: relationshipContext,
+      first_circle_role: safeStr(draft.memberRole) || null,
+      first_circle_ready_count: readyContacts.length,
+      first_circle_selected_count: selectedCount,
+    };
+  }
+
+  async function prepareTrustedInviteLink(): Promise<string> {
+    const clanId = activeClanId();
+    if (!clanId) {
+      showNotice("error", "Select a community before creating an invite.");
+      return "";
+    }
+
+    if (!safeStr(inviteEvidence.relationshipType)) {
+      showNotice("error", "Choose how you know the person before creating the invite.");
+      return "";
+    }
+
+    if (!safeStr(inviteEvidence.knownDuration)) {
+      showNotice("error", "Choose how long you have known the person before creating the invite.");
+      return "";
+    }
+
+    setInviteLoading(true);
+    try {
+      const out = await createClanInvite(clanId, {
+        relationship_evidence: buildRelationshipEvidencePayload(),
+      });
+      const nextLink = normalizedJoinInviteUrl(out);
+      if (!nextLink) {
+        showNotice("error", "Invite link is not ready yet.");
+        return "";
+      }
+
+      setInviteLink(nextLink);
+      return nextLink;
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) ||
+          "GSN could not prepare the trusted invite yet. Please try again."
+      );
+      return "";
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
   async function copyInviteBundle() {
     if (readyContacts.length === 0) {
       showNotice("error", "No ready invite message is available yet.");
       return;
     }
 
-    const copied = await safeCopy(inviteBundle);
+    const trustedLink = await prepareTrustedInviteLink();
+    if (!trustedLink) return;
+
+    const copied = await safeCopy(buildInviteBundleForLink(trustedLink));
     showNotice(
       copied ? "success" : "error",
       copied
-        ? "Invite message copied."
+        ? "Trusted invite message copied."
         : "Copy did not complete. Select the message and copy it manually."
     );
   }
 
   async function copyJoinInvite() {
-    if (!inviteLink) {
-      showNotice("error", "Invite link is not ready yet.");
-      return;
-    }
+    const trustedLink = await prepareTrustedInviteLink();
+    if (!trustedLink) return;
 
-    const copied = await safeCopy(joinInviteMessage);
+    const copied = await safeCopy(buildJoinInviteMessageForLink(trustedLink));
     if (!copied) {
       showNotice(
         "error",
@@ -1140,18 +1272,18 @@ export default function BuildFirstCirclePage() {
   }
 
   async function shareJoinInvite() {
-    if (!inviteLink) {
-      showNotice("error", "Invite link is not ready yet.");
-      return;
-    }
+    const trustedLink = await prepareTrustedInviteLink();
+    if (!trustedLink) return;
+
+    const trustedMessage = buildJoinInviteMessageForLink(trustedLink);
 
     const navAny = navigator as any;
     if (navAny?.share) {
       try {
         await navAny.share({
           title: `Join ${communityName} on GSN`,
-          text: joinInviteMessage,
-          url: inviteLink,
+          text: trustedMessage,
+          url: trustedLink,
         });
         setFocusedAction(null);
         showNotice("success", "Invite share opened.");
@@ -1161,17 +1293,23 @@ export default function BuildFirstCirclePage() {
       }
     }
 
-    await copyJoinInvite();
+    const copied = await safeCopy(trustedMessage);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? "Trusted invite message copied."
+        : "Copy did not complete. Select the invite message and copy it manually."
+    );
   }
 
-  function openWhatsAppInvite() {
-    if (!inviteLink) {
-      showNotice("error", "Invite link is not ready yet.");
-      return;
-    }
+  async function openWhatsAppInvite() {
+    const trustedLink = await prepareTrustedInviteLink();
+    if (!trustedLink) return;
 
     const opened = window.open(
-      `https://wa.me/?text=${encodeURIComponent(joinInviteMessage)}`,
+      `https://wa.me/?text=${encodeURIComponent(
+        buildJoinInviteMessageForLink(trustedLink)
+      )}`,
       "_blank",
       "noopener,noreferrer"
     );
@@ -1183,28 +1321,26 @@ export default function BuildFirstCirclePage() {
     showNotice("success", "WhatsApp invite opened.");
   }
 
-  function openEmailInvite() {
-    if (!inviteLink) {
-      showNotice("error", "Invite link is not ready yet.");
-      return;
-    }
+  async function openEmailInvite() {
+    const trustedLink = await prepareTrustedInviteLink();
+    if (!trustedLink) return;
 
     const subject = `Join ${communityName} on GSN`;
     showNotice("success", "Opening email invite now.");
     setFocusedAction(null);
     window.location.href = `mailto:?subject=${encodeURIComponent(
       subject
-    )}&body=${encodeURIComponent(joinInviteMessage)}`;
+    )}&body=${encodeURIComponent(buildJoinInviteMessageForLink(trustedLink))}`;
   }
 
-  function openFacebookInvite() {
-    if (!inviteLink) {
-      showNotice("error", "Invite link is not ready yet.");
-      return;
-    }
+  async function openFacebookInvite() {
+    const trustedLink = await prepareTrustedInviteLink();
+    if (!trustedLink) return;
 
     const opened = window.open(
-      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteLink)}`,
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+        trustedLink
+      )}`,
       "_blank",
       "noopener,noreferrer"
     );
@@ -2011,6 +2147,117 @@ export default function BuildFirstCirclePage() {
           </div>
         </div>
 
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 0.95fr) minmax(0, 1.05fr)",
+            gap: 12,
+            alignItems: "start",
+          }}
+        >
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>Why GSN asks</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Every invite becomes part of the community trust record. GSN keeps
+              a short note on how you know the person so outsiders can see that
+              access came through a real relationship, not a random link.
+            </div>
+          </div>
+
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>Relationship evidence</div>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                gap: 10,
+              }}
+            >
+              <div>
+                <div style={sectionLabel()}>Known from</div>
+                <select
+                  value={safeStr(inviteEvidence.relationshipType)}
+                  onChange={(e) =>
+                    setInviteEvidence((prev) => ({
+                      ...prev,
+                      relationshipType: e.target.value,
+                    }))
+                  }
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                >
+                  <option value="">Choose one</option>
+                  {INVITE_RELATIONSHIP_SOURCE_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div style={sectionLabel()}>Known for</div>
+                <select
+                  value={inviteEvidence.knownDuration}
+                  onChange={(e) =>
+                    setInviteEvidence((prev) => ({
+                      ...prev,
+                      knownDuration: e.target.value,
+                    }))
+                  }
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                >
+                  <option value="">Choose duration</option>
+                  {KNOWN_DURATION_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 10 }}>
+              <div style={sectionLabel()}>Confidence</div>
+              <select
+                value={inviteEvidence.confidenceLevel}
+                onChange={(e) =>
+                  setInviteEvidence((prev) => ({
+                    ...prev,
+                    confidenceLevel: e.target.value,
+                  }))
+                }
+                style={{ ...inputStyle(), marginTop: 8 }}
+              >
+                {CONFIDENCE_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginTop: 10 }}>
+              <div style={sectionLabel()}>Short note</div>
+              <textarea
+                value={inviteEvidence.relationshipContext}
+                onChange={(e) =>
+                  setInviteEvidence((prev) => ({
+                    ...prev,
+                    relationshipContext: e.target.value,
+                  }))
+                }
+                placeholder="Example: We trade weekly in the same market, or our families know each other."
+                style={{ ...textAreaStyle(), minHeight: 82, marginTop: 8 }}
+              />
+            </div>
+          </div>
+        </div>
+
         <div style={shareGrid(isCompact)}>
           <PrimaryButton
             onClick={() => {
@@ -2026,7 +2273,9 @@ export default function BuildFirstCirclePage() {
             {firstCircleIconText("phone", "Phone book", 18)}
           </PrimaryButton>
           <SecondaryButton
-            onClick={openWhatsAppInvite}
+            onClick={() => {
+              void openWhatsAppInvite();
+            }}
             stableHeight={48}
             debugId="build-first-circle.quick.whatsapp"
             style={compactButtonStyle(false)}
@@ -2034,7 +2283,9 @@ export default function BuildFirstCirclePage() {
             {firstCircleIconText("phone", "WhatsApp", 18)}
           </SecondaryButton>
           <SecondaryButton
-            onClick={openEmailInvite}
+            onClick={() => {
+              void openEmailInvite();
+            }}
             stableHeight={48}
             debugId="build-first-circle.quick.email"
             style={compactButtonStyle(false)}
@@ -2042,7 +2293,9 @@ export default function BuildFirstCirclePage() {
             {firstCircleIconText("document", "Email", 18)}
           </SecondaryButton>
           <SecondaryButton
-            onClick={openFacebookInvite}
+            onClick={() => {
+              void openFacebookInvite();
+            }}
             stableHeight={48}
             debugId="build-first-circle.quick.facebook"
             style={compactButtonStyle(false)}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -12,7 +13,7 @@ from app.core import auth
 from app.core import clan_auth
 from app.core.security import create_access_token
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, User
+from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, TrustEvent, User
 from app.db.notification_models import Notification
 from app.main import app
 
@@ -1477,7 +1478,11 @@ def test_pending_activation_member_cannot_vote_on_join_request(
     try:
         res = client.post(
             "/clans/1/join-requests/1/vote",
-            json={"vote": "approve"},
+            json={
+                "vote": "approve",
+                "reason_code": "know_directly",
+                "reason_text": "I know this person directly.",
+            },
             headers={"X-Clan-Id": "1"},
         )
     finally:
@@ -2178,7 +2183,11 @@ def test_activated_reviewer_reject_vote_reaches_rejected_state_and_notifies_appl
     try:
         res = client.post(
             "/clans/1/join-requests/1/vote",
-            json={"vote": "reject"},
+            json={
+                "vote": "reject",
+                "reason_code": "community_concern",
+                "reason_text": "I have a community concern.",
+            },
             headers={"X-Clan-Id": "1"},
         )
     finally:
@@ -2217,6 +2226,85 @@ def test_activated_reviewer_reject_vote_reaches_rejected_state_and_notifies_appl
     assert status_data["result_channel"] == "request-rejected"
     assert status_data["result_path"] == "/join-approval/1"
     assert status_data["next_step"] == "review-decision"
+
+
+def test_activated_reviewer_neutral_vote_records_reason_without_final_decision(
+    client,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="neutral-applicant@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    from app.core import auth as auth_core
+
+    def fake_current_user():
+        return SimpleNamespace(
+            id=1,
+            email="admin@example.com",
+            role="admin",
+            hashed_password="hashed",
+        )
+
+    app.dependency_overrides[auth_core.get_current_user] = fake_current_user
+    try:
+        res = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={
+                "vote": "neutral",
+                "reason_code": "do_not_know_enough",
+                "reason_text": "I do not know this person well enough to decide.",
+            },
+            headers={"X-Clan-Id": "1"},
+        )
+    finally:
+        app.dependency_overrides.pop(auth_core.get_current_user, None)
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["approved_now"] is False
+    assert data["rejected_now"] is False
+    assert data["request"]["status"] == "pending"
+    assert data["request"]["neutrals"] == 1
+    assert data["request"]["total_votes"] == 1
+
+    with SessionLocal() as db:
+        req = db.get(ClanJoinRequest, 1)
+        vote = db.query(clans_route.ClanJoinVote).filter_by(join_request_id=1).one()
+        event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "join_request.vote_recorded")
+            .order_by(TrustEvent.id.desc())
+            .first()
+        )
+
+        assert req is not None
+        assert req.status == "pending"
+        assert vote.vote == "neutral"
+        assert event is not None
+        meta = json.loads(event.meta_json or "{}")
+        assert meta["vote"] == "neutral"
+        assert meta["reason_code"] == "do_not_know_enough"
+        assert meta["reason_text"] == "I do not know this person well enough to decide."
 
 
 def test_public_join_request_rejects_short_lived_invite_after_daily_pilot_window(client):
@@ -2262,7 +2350,7 @@ def test_public_join_request_still_accepts_legacy_community_invite_code(client):
         assert clan.invite_uses == 1
 
 
-def test_create_invite_route_refreshes_by_retiring_older_live_invites(
+def test_create_invite_route_refreshes_without_retiring_older_live_invites(
     client,
 ):
     _seed_join_context()
@@ -2292,7 +2380,7 @@ def test_create_invite_route_refreshes_by_retiring_older_live_invites(
         second_code = second_data["invite_code"]
 
         assert second_code != first_code
-        assert second_data["retired_live_invites"] == 1
+        assert second_data["retired_live_invites"] == 0
 
         with SessionLocal() as db:
             invites = (
@@ -2304,11 +2392,74 @@ def test_create_invite_route_refreshes_by_retiring_older_live_invites(
 
             assert len(invites) == 2
             assert invites[0].code == first_code
-            assert invites[0].is_active is False
-            assert invites[0].revoked_at is not None
+            assert invites[0].is_active is True
+            assert invites[0].revoked_at is None
             assert invites[1].code == second_code
             assert invites[1].is_active is True
             assert invites[1].revoked_at is None
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
+
+def test_create_invite_route_records_relationship_evidence_in_trust_event(
+    client,
+):
+    _seed_join_context()
+
+    def fake_clan_ctx():
+        clan = SimpleNamespace(
+            id=1,
+            name="Aberdeen City ICA",
+            marketplace_name="Aberdeen city marketplace",
+        )
+        membership = SimpleNamespace(role="admin", clan_id=1, user_id=1)
+        current_user = SimpleNamespace(id=1, email="admin@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+
+    try:
+        res = client.post(
+            "/clans/1/invite",
+            json={
+                "relationship_evidence": {
+                    "evidence_source": "first_circle",
+                    "invitation_context": "trusted_community_invite",
+                    "relationship_type": "supplier",
+                    "known_duration": "over_5_years",
+                    "confidence_level": "known_through_trade",
+                    "relationship_context": "We trade every market week.",
+                    "first_circle_role": "trader",
+                    "first_circle_ready_count": 3,
+                    "first_circle_selected_count": 4,
+                }
+            },
+        )
+
+        assert res.status_code == 200, res.text
+        invite_code = res.json()["invite_code"]
+
+        with SessionLocal() as db:
+            event = (
+                db.query(TrustEvent)
+                .filter(TrustEvent.event_type == "invite_created")
+                .order_by(TrustEvent.id.desc())
+                .first()
+            )
+            assert event is not None
+
+            meta = json.loads(event.meta_json or "{}")
+            assert meta["invite_code"] == invite_code
+            evidence = meta["relationship_evidence"]
+            assert evidence["evidence_source"] == "first_circle"
+            assert evidence["relationship_type"] == "supplier"
+            assert evidence["known_duration"] == "over_5_years"
+            assert evidence["confidence_level"] == "known_through_trade"
+            assert evidence["relationship_context"] == "We trade every market week."
+            assert evidence["first_circle_ready_count"] == 3
+            assert evidence["first_circle_selected_count"] == 4
+            assert "private phone numbers" in evidence["privacy_note"]
+            assert "relationship statement" in meta["trust_record_note"]
     finally:
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
@@ -2364,7 +2515,7 @@ def test_member_can_read_existing_marketplace_join_link_without_refresh_power(
         assert data["invite_status"] == "ready"
         assert data["invite_code"] == "admin-prepared-code"
         assert "admin-prepared-code" in data["invite_link"]
-        assert data["can_refresh_invite"] is False
+        assert data["can_refresh_invite"] is True
         assert data["requires_admin_refresh"] is False
         assert data["invited_by_user_id"] == 1
         assert "community review" in data["message"]
@@ -2372,10 +2523,23 @@ def test_member_can_read_existing_marketplace_join_link_without_refresh_power(
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
 
-def test_member_get_invite_link_without_live_invite_returns_admin_required_state(
+def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link(
     client,
 ):
     _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(User(id=2, email="member-auto-link@example.com", hashed_password="hashed"))
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="member",
+                personal_pool_balance=0,
+            )
+        )
+        db.commit()
 
     def fake_clan_ctx():
         clan = SimpleNamespace(
@@ -2394,22 +2558,38 @@ def test_member_get_invite_link_without_live_invite_returns_admin_required_state
         assert res.status_code == 200, res.text
         data = res.json()
 
-        assert data["invite_status"] == "admin_required"
-        assert data["can_refresh_invite"] is False
-        assert data["requires_admin_refresh"] is True
-        assert "prepare this official join link" in data["message"]
-        assert "invite_link" not in data
+        assert data["invite_status"] == "ready"
+        assert data["can_refresh_invite"] is True
+        assert data["requires_admin_refresh"] is False
+        assert "Any active member may share it" in data["message"]
+        assert data["invite_link"]
+        assert data["invited_by_user_id"] == 2
 
         with SessionLocal() as db:
-            assert db.query(ClanInvite).filter(ClanInvite.clan_id == 1).count() == 0
+            invite = db.query(ClanInvite).filter(ClanInvite.clan_id == 1).one()
+            assert invite.created_by_user_id == 2
+            assert invite.max_uses == 0
     finally:
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
 
-def test_member_cannot_refresh_or_change_marketplace_join_link_policy(
+def test_member_can_refresh_marketplace_join_link_without_usage_quota(
     client,
 ):
     _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(User(id=2, email="member-refresh-link@example.com", hashed_password="hashed"))
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="member",
+                personal_pool_balance=0,
+            )
+        )
+        db.commit()
 
     def fake_clan_ctx():
         clan = SimpleNamespace(
@@ -2425,10 +2605,11 @@ def test_member_cannot_refresh_or_change_marketplace_join_link_policy(
 
     try:
         refresh_res = client.post("/clans/1/invite")
-        assert refresh_res.status_code == 403, refresh_res.text
+        assert refresh_res.status_code == 200, refresh_res.text
+        assert refresh_res.json()["max_uses"] is None
 
         policy_res = client.get("/clans/1/invite-link?max_uses=10")
-        assert policy_res.status_code == 403, policy_res.text
-        assert "community admin" in policy_res.json()["detail"]
+        assert policy_res.status_code == 200, policy_res.text
+        assert policy_res.json()["invite_max_uses"] is None
     finally:
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)

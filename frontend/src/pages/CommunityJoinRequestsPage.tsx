@@ -38,6 +38,7 @@ type JoinRequestItem = {
   decided_at?: string | null;
   approvals?: number;
   rejects?: number;
+  neutrals?: number;
   total_votes?: number;
   active_member_count?: number;
   required_approvals?: number;
@@ -237,8 +238,61 @@ function navActionStyle(kind: "light" | "blue" = "light"): React.CSSProperties {
   };
 }
 
-function decisionButtonStyle(kind: "approve" | "reject"): React.CSSProperties {
+type JoinVoteDecision = "approve" | "neutral" | "reject";
+
+type VoteReasonOption = {
+  code: string;
+  text: string;
+};
+
+const JOIN_VOTE_REASON_OPTIONS: Record<JoinVoteDecision, VoteReasonOption[]> = {
+  approve: [
+    {
+      code: "know_directly",
+      text: "I know this person directly and can support the request.",
+    },
+    {
+      code: "known_from_marketplace",
+      text: "I know this person from market, trade, or service dealings.",
+    },
+    {
+      code: "known_from_family_or_group",
+      text: "I know this person through family, school, faith, or group life.",
+    },
+  ],
+  neutral: [
+    {
+      code: "do_not_know_enough",
+      text: "I do not know this person well enough to decide.",
+    },
+    {
+      code: "need_more_information",
+      text: "I need more information before supporting or rejecting.",
+    },
+    {
+      code: "no_direct_relationship",
+      text: "I have no direct relationship with this person.",
+    },
+  ],
+  reject: [
+    {
+      code: "identity_not_clear",
+      text: "I am not satisfied that this person is clearly known to us.",
+    },
+    {
+      code: "community_concern",
+      text: "I have a community concern and cannot support the request.",
+    },
+    {
+      code: "relationship_not_confirmed",
+      text: "The claimed relationship has not been confirmed enough for me.",
+    },
+  ],
+};
+
+function decisionButtonStyle(kind: JoinVoteDecision): React.CSSProperties {
   const approve = kind === "approve";
+  const neutral = kind === "neutral";
   return {
     width: "100%",
     minWidth: 0,
@@ -251,9 +305,15 @@ function decisionButtonStyle(kind: "approve" | "reject"): React.CSSProperties {
     fontWeight: 1000,
     background: approve
       ? "linear-gradient(180deg, #1977F2 0%, #0754C7 100%)"
+      : neutral
+        ? "linear-gradient(180deg, #FFF7DA 0%, #F7E3A5 100%)"
       : "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
     color: approve ? "#FFFFFF" : "#0B1F33",
-    border: approve ? "1px solid rgba(172,204,255,0.44)" : "1px solid rgba(11,31,51,0.12)",
+    border: approve
+      ? "1px solid rgba(172,204,255,0.44)"
+      : neutral
+        ? "1px solid rgba(201,161,54,0.30)"
+        : "1px solid rgba(11,31,51,0.12)",
   };
 }
 
@@ -306,6 +366,7 @@ type JoinRequestIconName =
   | "id"
   | "invite"
   | "market"
+  | "neutral"
   | "person"
   | "refresh"
   | "reject"
@@ -320,6 +381,7 @@ const JOIN_REQUEST_ICON_MAP = {
   id: "id",
   invite: "join-person-plus",
   market: "shop",
+  neutral: "document",
   person: "user",
   refresh: "refresh",
   reject: "alert",
@@ -475,6 +537,8 @@ export default function CommunityJoinRequestsPage() {
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewerRole, setReviewerRole] = useState<string>("user");
   const [reviewerCanPilotApprove, setReviewerCanPilotApprove] = useState(false);
+  const [voteDecisions, setVoteDecisions] = useState<Record<number, JoinVoteDecision>>({});
+  const [voteReasonCodes, setVoteReasonCodes] = useState<Record<number, string>>({});
 
   const clanNum = Number(clanId || 0);
 
@@ -545,12 +609,17 @@ export default function CommunityJoinRequestsPage() {
     const rejected = items.filter(
       (item) => friendlyStatus(item.status) === "rejected"
     ).length;
+    const neutralVotes = items.reduce(
+      (sum, item) => sum + Number(item.neutrals || 0),
+      0
+    );
 
     return {
       total: items.length,
       pending,
       approved,
       rejected,
+      neutralVotes,
     };
   }, [items]);
 
@@ -585,7 +654,16 @@ export default function CommunityJoinRequestsPage() {
     [clanNum]
   );
 
-  async function handleVote(requestId: number, vote: "approve" | "reject") {
+  function selectedVoteReason(requestId: number, vote: JoinVoteDecision): VoteReasonOption {
+    const options = JOIN_VOTE_REASON_OPTIONS[vote];
+    const selectedCode = safeStr(voteReasonCodes[requestId]);
+    return (
+      options.find((item) => item.code === selectedCode) ||
+      options[0]
+    );
+  }
+
+  async function handleVote(requestId: number, vote: JoinVoteDecision) {
     try {
       setBusyId(requestId);
       setError("");
@@ -594,7 +672,11 @@ export default function CommunityJoinRequestsPage() {
 
       await selectClan(clanNum).catch(() => null);
 
-      const res = (await voteOnJoinRequest(requestId, vote)) as VoteResponse;
+      const reason = selectedVoteReason(requestId, vote);
+      const res = (await voteOnJoinRequest(requestId, vote, {
+        reason_code: reason.code,
+        reason_text: reason.text,
+      })) as VoteResponse;
 
       if (vote === "approve" && res?.approved_now && res?.approval_result?.gmfn_id) {
         setSuccess(
@@ -610,6 +692,8 @@ export default function CommunityJoinRequestsPage() {
           res?.rejection_result?.decision_message ||
             "Request rejected successfully. The applicant can now reopen the decision page."
         );
+      } else if (vote === "neutral") {
+        setSuccess("Neutral vote recorded. GSN kept your reason in the community record.");
       } else {
         setSuccess("Rejection recorded successfully.");
       }
@@ -856,7 +940,7 @@ export default function CommunityJoinRequestsPage() {
             display: "grid",
             gridTemplateColumns: isCompact
               ? "repeat(2, minmax(0, 1fr))"
-              : "repeat(4, minmax(0, 1fr))",
+              : "repeat(5, minmax(0, 1fr))",
             gap: isCompact ? 10 : 14,
             width: "100%",
             minWidth: 0,
@@ -866,6 +950,7 @@ export default function CommunityJoinRequestsPage() {
             ["review", "Total", summary.total, "#0B1F33"],
             ["clock", "Pending", summary.pending, "#9A6A10"],
             ["approve", "Approved", summary.approved, "#2E9B62"],
+            ["neutral", "Neutral", summary.neutralVotes, "#8A5A08"],
             ["reject", "Rejected", summary.rejected, "#DC2626"],
           ].map(([icon, label, value, color]) => (
             <div key={String(label)} style={statTile(String(color))}>
@@ -1207,6 +1292,7 @@ export default function CommunityJoinRequestsPage() {
                     ["Submitted", safeDateTime(item.created_at)],
                     ["Required", String(Number(item.required_approvals || 0))],
                     ["Approvals", String(Number(item.approvals || 0))],
+                    ["Neutral", String(Number(item.neutrals || 0))],
                     ["Rejects", String(Number(item.rejects || 0))],
                     ["Active", String(Number(item.active_member_count || 0))],
                     ["Applicant", safeStr(item.applicant_gmfn_id || "Not issued yet")],
@@ -1275,14 +1361,94 @@ export default function CommunityJoinRequestsPage() {
                     </div>
                   ) : null}
 
+                  <div
+                    style={{
+                      marginTop: 14,
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "220px minmax(0, 1fr)",
+                      gap: 10,
+                      alignItems: "end",
+                    }}
+                  >
+                    <div>
+                      <div style={sectionLabel("#64748B")}>Your vote</div>
+                      <select
+                        value={voteDecisions[item.id] || "approve"}
+                        onChange={(event) => {
+                          const nextVote = event.target.value as JoinVoteDecision;
+                          setVoteDecisions((prev) => ({
+                            ...prev,
+                            [item.id]: nextVote,
+                          }));
+                          setVoteReasonCodes((prev) => ({
+                            ...prev,
+                            [item.id]: JOIN_VOTE_REASON_OPTIONS[nextVote][0].code,
+                          }));
+                        }}
+                        style={{
+                          marginTop: 8,
+                          width: "100%",
+                          minHeight: 50,
+                          borderRadius: 12,
+                          border: "1px solid rgba(11,31,51,0.12)",
+                          padding: "0 12px",
+                          fontWeight: 850,
+                          color: "#0B1F33",
+                          background: "#FFFFFF",
+                        }}
+                      >
+                        <option value="approve">Approve</option>
+                        <option value="neutral">Neutral</option>
+                        <option value="reject">Reject</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <div style={sectionLabel("#64748B")}>Reason</div>
+                      <select
+                        value={
+                          voteReasonCodes[item.id] ||
+                          JOIN_VOTE_REASON_OPTIONS[
+                            voteDecisions[item.id] || "approve"
+                          ][0].code
+                        }
+                        onChange={(event) =>
+                          setVoteReasonCodes((prev) => ({
+                            ...prev,
+                            [item.id]: event.target.value,
+                          }))
+                        }
+                        style={{
+                          marginTop: 8,
+                          width: "100%",
+                          minHeight: 50,
+                          borderRadius: 12,
+                          border: "1px solid rgba(11,31,51,0.12)",
+                          padding: "0 12px",
+                          fontWeight: 850,
+                          color: "#0B1F33",
+                          background: "#FFFFFF",
+                        }}
+                      >
+                        {JOIN_VOTE_REASON_OPTIONS[
+                          voteDecisions[item.id] || "approve"
+                        ].map((reason) => (
+                          <option key={reason.code} value={reason.code}>
+                            {reason.text}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <CardActionRow
                     align="stretch"
                     style={{
                       marginTop: 14,
                       display: "grid",
                       gridTemplateColumns: reviewerCanPilotApprove
-                        ? isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))"
-                        : isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                        ? isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))"
+                        : isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
                       gap: 12,
                       minHeight: 0,
                       width: "100%",
@@ -1301,6 +1467,20 @@ export default function CommunityJoinRequestsPage() {
                     >
                       {iconText("approve", "Approve")}
                     </PrimaryButton>
+
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => handleVote(item.id, "neutral")}
+                      disabled={isBusy}
+                      busy={isBusy}
+                      busyLabel="Working..."
+                      stableHeight={58}
+                      debugId="community-join-requests.neutral"
+                      style={decisionButtonStyle("neutral")}
+                      fullWidth
+                    >
+                      {iconText("neutral", "Neutral")}
+                    </SecondaryButton>
 
                     <SecondaryButton
                       type="button"

@@ -78,6 +78,524 @@ def test_entry_phone_default_registers_without_sms_for_controlled_testing(client
         assert event.subject_user_id == create_body["user_id"]
 
 
+def test_entry_phone_start_canonicalizes_local_number_and_blocks_existing_identity(client):
+    with SessionLocal() as db:
+        db.add(
+            User(
+                email="existing-local-phone@example.com",
+                hashed_password=get_password_hash("secret123"),
+                role="user",
+                gmfn_id="GMFN-U-LOCALMATCH",
+                phone_e164="+2348011112020",
+                display_name="Existing Local Phone",
+            )
+        )
+        db.commit()
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Existing Local Phone",
+            "phone_e164": "08011112020",
+            "country": "Nigeria",
+        },
+    )
+
+    assert start_res.status_code == 400, start_res.text
+    assert "Phone number already registered" in start_res.text
+
+
+def test_entry_phone_start_blocks_legacy_malformed_local_identity_variant(client):
+    with SessionLocal() as db:
+        db.add(
+            User(
+                email="legacy-local-phone@example.com",
+                hashed_password=get_password_hash("secret123"),
+                role="user",
+                gmfn_id="GMFN-U-LEGACYLOCAL",
+                phone_e164="+08011112021",
+                display_name="Legacy Local Phone",
+            )
+        )
+        db.commit()
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Legacy Local Phone",
+            "phone_e164": "08011112021",
+            "country": "Nigeria",
+        },
+    )
+
+    assert start_res.status_code == 400, start_res.text
+    assert "Phone number already registered" in start_res.text
+
+
+def test_entry_phone_start_rejects_ambiguous_local_number_without_country(client):
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "No Country Local",
+            "phone_e164": "08011112022",
+        },
+    )
+
+    assert start_res.status_code == 400, start_res.text
+    assert "select the phone country first" in start_res.text
+
+
+def test_entry_phone_start_records_identity_profile_evidence(client):
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Profile Evidence Founder",
+            "phone_e164": "+2348011113025",
+            "email": "profile-evidence@example.com",
+            "country": "Nigeria",
+            "date_of_birth": "1984-03-21",
+            "birth_country": "Nigeria",
+            "birth_place": "Aba, Abia State",
+            "country_of_origin": "Nigeria",
+            "residential_area": "Wuse 2, Abuja",
+            "client_fingerprint": "entry-device-alpha",
+            "device_label": "Pilot browser",
+        },
+    )
+
+    assert start_res.status_code == 201, start_res.text
+    verification_id = int(start_res.json()["verification_id"])
+
+    with SessionLocal() as db:
+        check = (
+            db.query(IdentityVerificationCheck)
+            .filter(
+                IdentityVerificationCheck.entry_phone_verification_id == verification_id,
+                IdentityVerificationCheck.verification_type == "identity_profile",
+            )
+            .first()
+        )
+        assert check is not None
+        payload = json.loads(check.submitted_payload_json)
+        assert payload["date_of_birth"] == "1984-03-21"
+        assert payload["client_fingerprint"] == "ENTRYDEVICEALPHA"
+        assert payload["country_key"] == "NG"
+        assert payload["birth_country_key"] == "NG"
+        assert payload["birth_place_key"] == "ABAABIASTATE"
+        assert payload["country_of_origin_key"] == "NG"
+        assert payload["residential_area_key"] == "WUSE2ABUJA"
+
+
+def test_entry_create_blocks_second_identity_with_existing_bank_destination(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    with SessionLocal() as db:
+        existing_user = User(
+            email="existing-bank-identity@example.com",
+            hashed_password=get_password_hash("secret123"),
+            role="user",
+            gmfn_id="GMFN-U-BANKMATCH",
+            phone_e164="+2348011113030",
+            display_name="Existing Bank Identity",
+        )
+        db.add(existing_user)
+        db.flush()
+        db.add(
+            UserPayoutDestination(
+                user_id=int(existing_user.id),
+                destination_name="Existing Bank Identity",
+                bank_name="Pilot Community Bank",
+                account_number="0123456789",
+                phone_number="+2348011113030",
+                country="NG",
+                currency="NGN",
+                verification_status="recorded",
+                verification_note="Existing pilot record.",
+            )
+        )
+        db.commit()
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Second Bank Identity",
+            "phone_e164": "+2348011113031",
+            "country": "Nigeria",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Second Bank Identity",
+            "bank_name": "Pilot Community Bank",
+            "account_number": "0123456789",
+            "country": "Nigeria",
+            "currency": "NGN",
+        },
+    )
+    assert bank_res.status_code == 200, bank_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Second Bank Identity Circle",
+            "country": "Nigeria",
+        },
+    )
+    assert create_res.status_code == 409, create_res.text
+    detail = create_res.json()["detail"]
+    assert detail["code"] == "entry_identity_match_review_required"
+    assert detail["signal"] == "bank_destination_exact_match"
+    assert detail["gmfn_id"] == "GMFN-U-BANKMATCH"
+
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.phone_e164 == "+2348011113031").first() is None
+
+
+def test_entry_create_blocks_second_identity_with_existing_official_id(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    with SessionLocal() as db:
+        existing_user = User(
+            email="existing-official-id@example.com",
+            hashed_password=get_password_hash("secret123"),
+            role="user",
+            gmfn_id="GMFN-U-IDMATCH",
+            phone_e164="+2348011113040",
+            display_name="Existing Official Identity",
+        )
+        db.add(existing_user)
+        db.flush()
+        db.add(
+            IdentityVerificationCheck(
+                user_id=int(existing_user.id),
+                verification_type="official_id",
+                region_code="NG",
+                provider_key="official-id.manual-record",
+                status="manual_review_required",
+                subject_reference="National Identification Number (NIN)",
+                confidence_score=25,
+                explanation="Existing official ID evidence.",
+                submitted_payload_json=json.dumps(
+                    {
+                        "document_type": "National Identification Number (NIN)",
+                        "document_reference": "12345678901",
+                        "country": "Nigeria",
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Second Official Identity",
+            "phone_e164": "+2348011113041",
+            "country": "Nigeria",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    official_res = client.post(
+        "/entry/official-id/record",
+        json={
+            "verification_id": start_body["verification_id"],
+            "document_type": "National Identification Number (NIN)",
+            "document_reference": "12345678901",
+            "country": "Nigeria",
+            "note": "Same NIN entered with a second phone",
+        },
+    )
+    assert official_res.status_code == 201, official_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Second Official Identity Circle",
+            "country": "Nigeria",
+        },
+    )
+    assert create_res.status_code == 409, create_res.text
+    detail = create_res.json()["detail"]
+    assert detail["code"] == "entry_identity_match_review_required"
+    assert detail["signal"] == "official_id_exact_match"
+    assert detail["gmfn_id"] == "GMFN-U-IDMATCH"
+
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.phone_e164 == "+2348011113041").first() is None
+
+
+def test_entry_create_blocks_second_identity_with_same_name_dob_profile(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    with SessionLocal() as db:
+        existing_user = User(
+            email="existing-profile-identity@example.com",
+            hashed_password=get_password_hash("secret123"),
+            role="user",
+            gmfn_id="GMFN-U-PROFILEMATCH",
+            phone_e164="+2348011113050",
+            display_name="Exact Profile Founder",
+        )
+        db.add(existing_user)
+        db.flush()
+        db.add(
+            IdentityVerificationCheck(
+                user_id=int(existing_user.id),
+                verification_type="identity_profile",
+                region_code="NG",
+                provider_key="entry.profile_and_device",
+                status="recorded",
+                subject_reference="Exact Profile Founder",
+                confidence_score=20,
+                explanation="Existing registration profile evidence.",
+                submitted_payload_json=json.dumps(
+                    {
+                        "display_name": "Exact Profile Founder",
+                        "date_of_birth": "1980-05-14",
+                        "country": "Nigeria",
+                        "country_key": "NG",
+                        "birth_country": "Nigeria",
+                        "birth_country_key": "NG",
+                        "birth_place": "Aba, Abia State",
+                        "birth_place_key": "ABAABIASTATE",
+                        "country_of_origin": "Nigeria",
+                        "country_of_origin_key": "NG",
+                        "residential_area": "Wuse 2, Abuja",
+                        "residential_area_key": "WUSE2ABUJA",
+                        "client_fingerprint": "EXISTINGDEVICEPROFILE",
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Exact Profile Founder",
+            "phone_e164": "+2348011113051",
+            "email": "second-profile-identity@example.com",
+            "country": "Nigeria",
+            "date_of_birth": "1980-05-14",
+            "birth_country": "Nigeria",
+            "birth_place": "Aba, Abia State",
+            "country_of_origin": "Nigeria",
+            "residential_area": "Wuse 2, Abuja",
+            "client_fingerprint": "another-device-profile",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Second Profile Identity Circle",
+            "country": "Nigeria",
+            "date_of_birth": "1980-05-14",
+            "birth_country": "Nigeria",
+            "birth_place": "Aba, Abia State",
+            "country_of_origin": "Nigeria",
+            "residential_area": "Wuse 2, Abuja",
+        },
+    )
+    assert create_res.status_code == 409, create_res.text
+    detail = create_res.json()["detail"]
+    assert detail["code"] == "entry_identity_match_review_required"
+    assert detail["signal"] == "profile_composite_match"
+    assert detail["gmfn_id"] == "GMFN-U-PROFILEMATCH"
+
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.phone_e164 == "+2348011113051").first() is None
+
+
+def test_entry_create_allows_same_name_dob_without_region_profile_match(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    with SessionLocal() as db:
+        existing_user = User(
+            email="existing-common-name@example.com",
+            hashed_password=get_password_hash("secret123"),
+            role="user",
+            gmfn_id="GMFN-U-COMMONNAME",
+            phone_e164="+2348011113055",
+            display_name="Common Founder Name",
+        )
+        db.add(existing_user)
+        db.flush()
+        db.add(
+            IdentityVerificationCheck(
+                user_id=int(existing_user.id),
+                verification_type="identity_profile",
+                region_code="NG",
+                provider_key="entry.profile_and_device",
+                status="recorded",
+                subject_reference="Common Founder Name",
+                confidence_score=20,
+                explanation="Existing registration profile evidence.",
+                submitted_payload_json=json.dumps(
+                    {
+                        "display_name": "Common Founder Name",
+                        "date_of_birth": "1991-09-09",
+                        "country": "Nigeria",
+                        "country_key": "NG",
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Common Founder Name",
+            "phone_e164": "+2348011113056",
+            "email": "second-common-name@example.com",
+            "country": "Nigeria",
+            "date_of_birth": "1991-09-09",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Common Name Separate Circle",
+            "country": "Nigeria",
+            "date_of_birth": "1991-09-09",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    assert create_res.json()["phone_e164"] == "+2348011113056"
+
+
+def test_entry_create_blocks_second_identity_with_same_device_and_dob(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    with SessionLocal() as db:
+        existing_user = User(
+            email="existing-device-identity@example.com",
+            hashed_password=get_password_hash("secret123"),
+            role="user",
+            gmfn_id="GMFN-U-DEVICEMATCH",
+            phone_e164="+2348011113060",
+            display_name="Device Profile One",
+        )
+        db.add(existing_user)
+        db.flush()
+        db.add(
+            IdentityVerificationCheck(
+                user_id=int(existing_user.id),
+                verification_type="identity_profile",
+                region_code="NG",
+                provider_key="entry.profile_and_device",
+                status="recorded",
+                subject_reference="Device Profile One",
+                confidence_score=20,
+                explanation="Existing registration profile evidence.",
+                submitted_payload_json=json.dumps(
+                    {
+                        "display_name": "Device Profile One",
+                        "date_of_birth": "1977-08-02",
+                        "country": "Nigeria",
+                        "country_key": "NG",
+                        "client_fingerprint": "SHAREDDEVICEKEY",
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Device Profile Two",
+            "phone_e164": "+2348011113061",
+            "email": "second-device-identity@example.com",
+            "country": "Nigeria",
+            "date_of_birth": "1977-08-02",
+            "client_fingerprint": "shared-device-key",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Second Device Identity Circle",
+            "country": "Nigeria",
+            "date_of_birth": "1977-08-02",
+        },
+    )
+    assert create_res.status_code == 409, create_res.text
+    detail = create_res.json()["detail"]
+    assert detail["code"] == "entry_identity_match_review_required"
+    assert detail["signal"] == "device_profile_dob_match"
+    assert detail["gmfn_id"] == "GMFN-U-DEVICEMATCH"
+
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.phone_e164 == "+2348011113061").first() is None
+
+
 def test_entry_community_name_check_reports_existing_name(client):
     with SessionLocal() as db:
         owner = User(email="name-owner@example.com", hashed_password="hashed", role="admin")

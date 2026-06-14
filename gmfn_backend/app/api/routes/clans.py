@@ -7,7 +7,7 @@ from decimal import Decimal
 from typing import Any, List, Optional
 from urllib.parse import quote, urlencode, urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from sqlalchemy import or_
@@ -39,6 +39,7 @@ from app.services.invites_service import (
 from app.services.global_identity_service import ensure_user_gmfn_id
 from app.services.feature_entitlements_service import get_active_feature_quantity_for_scope
 from app.services.trust_events_services import log_trust_event
+from app.schemas.invites import ClanInviteRelationshipEvidence
 
 router = APIRouter(prefix="/clans", tags=["clans"])
 
@@ -199,6 +200,10 @@ class InviteSettingsUpdateIn(BaseModel):
     rotate: bool = False
 
 
+class ClanInviteCreateBody(BaseModel):
+    relationship_evidence: Optional[ClanInviteRelationshipEvidence] = None
+
+
 class JoinApplicationIn(BaseModel):
     invite_code: str = Field(..., min_length=3, max_length=128)
     first_name: Optional[str] = Field(default=None, min_length=1, max_length=80)
@@ -210,7 +215,30 @@ class JoinApplicationIn(BaseModel):
 
 
 class VoteJoinRequestIn(BaseModel):
-    vote: str = Field(..., pattern="^(approve|reject)$")
+    vote: str = Field(..., pattern="^(approve|reject|neutral)$")
+    reason_code: str = Field(..., min_length=2, max_length=80)
+    reason_text: Optional[str] = Field(default=None, max_length=240)
+
+
+_DEFAULT_VOTE_REASON_TEXT = {
+    "approve": "I know this person well enough to support the request.",
+    "reject": "I have a concern and cannot support the request.",
+    "neutral": "I do not know this person well enough to decide.",
+}
+
+
+def _clean_vote_reason(payload: VoteJoinRequestIn) -> dict[str, str]:
+    vote = _safe_str(payload.vote).lower()
+    reason_code = _safe_str(payload.reason_code).lower().replace(" ", "_")
+    reason_text = _safe_str(payload.reason_text)
+
+    if not reason_code:
+        raise HTTPException(status_code=422, detail="Vote reason is required")
+
+    return {
+        "reason_code": reason_code[:80],
+        "reason_text": (reason_text or _DEFAULT_VOTE_REASON_TEXT.get(vote, "Reason recorded."))[:240],
+    }
 
 
 def _invite_preview_payload(
@@ -236,7 +264,7 @@ def _invite_preview_payload(
             expires_at=getattr(invite_row, "expires_at", None),
         )
         uses = int(getattr(invite_row, "uses", 0) or 0)
-        max_uses = getattr(invite_row, "max_uses", None)
+        max_uses = None
     elif clan is not None:
         invite_code = getattr(clan, "invite_code", None)
         expires_at = _effective_invite_expires_at(
@@ -244,7 +272,7 @@ def _invite_preview_payload(
             expires_at=getattr(clan, "invite_expires_at", None),
         )
         uses = int(getattr(clan, "invite_uses", 0) or 0)
-        max_uses = getattr(clan, "invite_max_uses", None)
+        max_uses = None
 
     return {
         "ok": True,
@@ -508,9 +536,7 @@ def _is_clan_invite_expired(invite: ClanInvite) -> bool:
 
 
 def _is_clan_invite_used_up(invite: ClanInvite) -> bool:
-    max_uses = getattr(invite, "max_uses", None)
-    uses = int(getattr(invite, "uses", 0) or 0)
-    return max_uses is not None and uses >= int(max_uses)
+    return False
 
 
 def _latest_usable_clan_invite(
@@ -574,16 +600,7 @@ def _invite_matches_share_policy(
     desired_max_uses: int,
     strict: bool,
 ) -> bool:
-    current_max_uses = getattr(invite, "max_uses", None)
-    try:
-        current_value = int(current_max_uses)
-    except (TypeError, ValueError):
-        return False
-
-    desired_value = int(desired_max_uses)
-    if strict:
-        return current_value == desired_value
-    return current_value >= desired_value
+    return True
 
 
 def _clan_from_community_code(
@@ -631,6 +648,9 @@ def _current_join_status(
     rejects = sum(
         1 for v in votes if str(getattr(v, "vote", "")).lower() == "reject"
     )
+    neutrals = sum(
+        1 for v in votes if str(getattr(v, "vote", "")).lower() == "neutral"
+    )
     total_votes = len(votes)
 
     active_members = len(reviewer_rows)
@@ -646,6 +666,7 @@ def _current_join_status(
     return {
         "approvals": approvals,
         "rejects": rejects,
+        "neutrals": neutrals,
         "total_votes": total_votes,
         "active_member_count": active_members,
         "required_approvals": required,
@@ -718,6 +739,7 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "decided_at": req.decided_at,
         "approvals": stats["approvals"],
         "rejects": stats["rejects"],
+        "neutrals": stats["neutrals"],
         "total_votes": stats["total_votes"],
         "active_member_count": stats["active_member_count"],
         "required_approvals": stats["required_approvals"],
@@ -875,6 +897,7 @@ def _join_request_status_payload(
         ),
         "approvals": stats["approvals"],
         "rejects": stats["rejects"],
+        "neutrals": stats["neutrals"],
         "total_votes": stats["total_votes"],
         "active_member_count": stats["active_member_count"],
         "required_approvals": stats["required_approvals"],
@@ -1070,11 +1093,7 @@ def _ready_join_preview_for_clan(
         )
 
     clan = _ensure_invite_expiry(db, clan, days=None)
-    invite_max_uses = getattr(clan, "invite_max_uses", None)
-    invite_uses = int(getattr(clan, "invite_uses", 0) or 0)
     if _is_invite_expired(clan):
-        return None
-    if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
         return None
 
     inviter_membership = (
@@ -1713,26 +1732,32 @@ def create_invite(
     request: Request,
     days: Optional[int] = None,
     max_uses: Optional[int] = None,
+    payload: Optional[ClanInviteCreateBody] = Body(default=None),
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    clan, membership, current_user = clan_ctx
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
+    if membership is None or getattr(membership, "left_at", None) is not None:
+        raise HTTPException(status_code=403, detail="Only community members can create invite links")
 
     days_n = _normalize_invite_days(days)
-    max_uses_n = _shareable_join_invite_max_uses(clan, max_uses)
 
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(days=days_n)
-    retired_live_invites = _retire_active_clan_invites(db, clan_id=int(clan_id))
 
     inv = create_clan_invite(
         db,
         clan_id=int(clan_id),
         created_by_user=current_user,
         expires_at=expires_at,
-        max_uses=max_uses_n,
+        max_uses=None,
+        relationship_evidence=(
+            payload.relationship_evidence.model_dump(exclude_none=True)
+            if payload and payload.relationship_evidence
+            else None
+        ),
     )
 
     share_link = _frontend_community_join_link(
@@ -1756,8 +1781,8 @@ def create_invite(
         "expires_at": inv.expires_at,
         "is_active": bool(inv.is_active),
         "uses": int(inv.uses or 0),
-        "max_uses": inv.max_uses,
-        "retired_live_invites": retired_live_invites,
+        "max_uses": None,
+        "retired_live_invites": 0,
         "share_link": share_link,
         "invite_link": share_link,
         "invite_url": share_link,
@@ -1785,22 +1810,9 @@ def get_invite_link(
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
 
-    can_refresh_invite = (membership.role or "").lower() == "admin"
-    if not can_refresh_invite and (days is not None or max_uses is not None):
-        raise HTTPException(
-            status_code=403,
-            detail="Only a community admin can change the official join link policy",
-        )
-
-    max_uses_norm = _shareable_join_invite_max_uses(clan, max_uses)
-    strict_max_uses = max_uses is not None
-    if max_uses is not None:
-        clan = _ensure_invite_expiry(db, clan, days=days)
-        clan.invite_max_uses = max_uses_norm
-        if clan.invite_uses is None:
-            clan.invite_uses = 0
-        db.commit()
-        db.refresh(clan)
+    can_refresh_invite = True
+    max_uses_norm = None
+    strict_max_uses = False
 
     latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
 
@@ -1812,22 +1824,6 @@ def get_invite_link(
         latest_invite = None
 
     if latest_invite is None:
-        if not can_refresh_invite:
-            return {
-                "clan_id": int(clan.id),
-                "community_code": _community_code(clan.id),
-                "community_name": clan.name,
-                "marketplace_name": getattr(clan, "marketplace_name", None),
-                "invite_status": "admin_required",
-                "invite_source": "clan_invite",
-                "can_refresh_invite": False,
-                "requires_admin_refresh": True,
-                "message": (
-                    "A community admin must prepare this official join link "
-                    "before members can share it."
-                ),
-            }
-
         days_n = _normalize_invite_days(days)
         expires_at = datetime.now(timezone.utc) + timedelta(days=days_n)
         latest_invite = create_clan_invite(
@@ -1835,7 +1831,7 @@ def get_invite_link(
             clan_id=int(clan.id),
             created_by_user=current_user,
             expires_at=expires_at,
-            max_uses=max_uses_norm,
+            max_uses=None,
         )
 
     if latest_invite is not None:
@@ -1863,15 +1859,15 @@ def get_invite_link(
             "invite_code": latest_invite.code,
             "invite_created_at": latest_invite.created_at,
             "invite_expires_at": latest_invite.expires_at,
-            "invite_max_uses": latest_invite.max_uses,
+            "invite_max_uses": None,
             "invite_uses": int(getattr(latest_invite, "uses", 0) or 0),
             "invite_status": "ready",
             "invite_source": "clan_invite",
             "can_refresh_invite": bool(can_refresh_invite),
             "requires_admin_refresh": False,
             "message": (
-                "Official join link ready. Members may share it, and every "
-                "join request still goes through community review."
+                "Official join link ready. Any active member may share it, and "
+                "every join request still goes through community review."
             ),
             "invite_link": share_link,
             "invite_url": share_link,
@@ -1953,25 +1949,6 @@ def preview_join_invite(
                 invited_by_user_id=int(invite_row.created_by_user_id),
             )
 
-        invite_max_uses = getattr(invite_row, "max_uses", None)
-        invite_uses = int(getattr(invite_row, "uses", 0) or 0)
-        if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
-            recovered = _ready_join_preview_for_clan(
-                db,
-                clan=clan,
-                message="A newer live invitation was found for this community. You can continue with your join request.",
-            )
-            if recovered and _safe_str(recovered.get("invite_code")) != invite_code:
-                return recovered
-            return _invite_preview_payload(
-                valid=False,
-                status="usage_limit",
-                message="This invitation has already been used enough times. Ask for a fresh GSN invite link.",
-                clan=clan,
-                invite_row=invite_row,
-                invited_by_user_id=int(invite_row.created_by_user_id),
-            )
-
         return _invite_preview_payload(
             valid=True,
             status="ready",
@@ -1992,8 +1969,6 @@ def preview_join_invite(
             return recovered
 
         legacy_clan = _ensure_invite_expiry(db, legacy_clan, days=None)
-        invite_max_uses = getattr(legacy_clan, "invite_max_uses", None)
-        invite_uses = int(getattr(legacy_clan, "invite_uses", 0) or 0)
 
         if _is_invite_expired(legacy_clan):
             return _invite_preview_payload(
@@ -2003,13 +1978,12 @@ def preview_join_invite(
                 clan=legacy_clan,
             )
 
-        if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
-            return _invite_preview_payload(
-                valid=False,
-                status="usage_limit",
-                message="This invitation has already been used enough times. Ask for a fresh GSN invite link.",
-                clan=legacy_clan,
-            )
+        return _invite_preview_payload(
+            valid=True,
+            status="ready",
+            message="Invite is ready. You can send your join request for community review.",
+            clan=legacy_clan,
+        )
 
     community_clan = _clan_from_community_code(db, community_code)
     if community_clan is not None:
@@ -2137,28 +2111,15 @@ def join_landing_page(
         uses = int(getattr(clan, "invite_uses", 0) or 0)
         max_uses = getattr(clan, "invite_max_uses", None)
 
-        if max_uses is None:
-            usage_text = f"{uses} / unlimited"
-            remaining_text = "Unlimited"
-        else:
-            max_u = int(max_uses)
-            remaining = max(0, max_u - uses)
-            usage_text = f"{uses} / {max_u}"
-            remaining_text = str(remaining)
+        usage_text = f"{uses} / unlimited"
+        remaining_text = "Unlimited"
 
         expired = False
         if expires_at is not None and expires_at < now:
             expired = True
 
-        used_up = False
-        if max_uses is not None and uses >= int(max_uses):
-            used_up = True
-
         if expired:
             status_text = "Invite expired"
-            status_color = "#b00"
-        elif used_up:
-            status_text = "Invite used up"
             status_color = "#b00"
         else:
             status_text = "Invite valid"
@@ -2230,10 +2191,8 @@ def create_join_request(
         if _is_clan_invite_expired(invite_row):
             raise HTTPException(status_code=400, detail="Invitation has expired")
 
-        invite_max_uses = getattr(invite_row, "max_uses", None)
+        invite_max_uses = None
         invite_uses = int(getattr(invite_row, "uses", 0) or 0)
-        if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
-            raise HTTPException(status_code=400, detail="Invitation usage limit reached")
 
         invited_by_user_id = int(invite_row.created_by_user_id)
     else:
@@ -2246,10 +2205,8 @@ def create_join_request(
         if _is_invite_expired(clan):
             raise HTTPException(status_code=400, detail="Invitation has expired")
 
-        invite_max_uses = getattr(clan, "invite_max_uses", None)
+        invite_max_uses = None
         invite_uses = int(getattr(clan, "invite_uses", 0) or 0)
-        if invite_max_uses is not None and invite_uses >= int(invite_max_uses):
-            raise HTTPException(status_code=400, detail="Invitation usage limit reached")
 
         inviter_membership = (
             db.query(ClanMembership)
@@ -2587,6 +2544,8 @@ def vote_join_request(
             "request": _join_request_out(db, req),
         }
 
+    vote_reason = _clean_vote_reason(payload)
+
     existing_vote = (
         db.query(ClanJoinVote)
         .filter(
@@ -2611,6 +2570,27 @@ def vote_join_request(
 
     db.commit()
     db.refresh(req)
+
+    log_trust_event(
+        db,
+        event_type="join_request.vote_recorded",
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(req.applicant_user_id),
+        meta={
+            "reason": "join_request_vote_recorded",
+            "join_request_id": int(req.id),
+            "vote": _safe_str(payload.vote).lower(),
+            "reason_code": vote_reason["reason_code"],
+            "reason_text": vote_reason["reason_text"],
+            "voter_user_id": int(current_user.id),
+            "applicant_user_id": int(req.applicant_user_id),
+            "invite_id": int(req.invite_id) if req.invite_id else None,
+            "invited_by_user_id": int(req.invited_by_user_id)
+            if req.invited_by_user_id
+            else None,
+        },
+    )
 
     stats = _current_join_status(db, join_request=req)
     approved_now = False

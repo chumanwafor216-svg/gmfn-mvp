@@ -48,6 +48,11 @@ def create_invite(
         created_by_user=user,
         expires_at=payload.expires_at,
         max_uses=payload.max_uses,
+        relationship_evidence=(
+            payload.relationship_evidence.model_dump(exclude_none=True)
+            if payload.relationship_evidence
+            else None
+        ),
     )
 
     return {
@@ -56,7 +61,7 @@ def create_invite(
         "created_by_user_id": invite.created_by_user_id,
         "code": invite.code,
         "is_active": invite.is_active,
-        "max_uses": invite.max_uses,
+        "max_uses": None,
         "uses": invite.uses,
         "created_at": invite.created_at,
         "expires_at": invite.expires_at,
@@ -89,7 +94,7 @@ def get_clan_invites(
             "created_by_user_id": inv.created_by_user_id,
             "code": inv.code,
             "is_active": inv.is_active,
-            "max_uses": inv.max_uses,
+            "max_uses": None,
             "uses": inv.uses,
             "created_at": inv.created_at,
             "expires_at": inv.expires_at,

@@ -1322,6 +1322,16 @@ export default function CreateEntryPage() {
         phone?: string;
         email?: string;
         country?: string;
+        date_of_birth?: string;
+        dateOfBirth?: string;
+        birth_country?: string;
+        birthCountry?: string;
+        birth_place?: string;
+        birthPlace?: string;
+        country_of_origin?: string;
+        countryOfOrigin?: string;
+        residential_area?: string;
+        residentialArea?: string;
         create_code?: string;
       };
     } | null)?.create_entry || null;
@@ -1336,6 +1346,23 @@ export default function CreateEntryPage() {
   const restoredDraft = useMemo(
     () => readCreateEntryDraft(createCode),
     [createCode]
+  );
+  const hasRestoredEntryProgress = Boolean(
+    restoredDraft &&
+      (safeStr(restoredDraft.communityName) ||
+        safeStr(restoredDraft.description) ||
+        safeStr(restoredDraft.displayName) ||
+        safeStr(restoredDraft.phone) ||
+        safeStr(restoredDraft.email) ||
+        safeStr(restoredDraft.dateOfBirth) ||
+        safeStr(restoredDraft.birthPlace) ||
+        safeStr(restoredDraft.residentialArea) ||
+        Number(restoredDraft.verificationId || 0) > 0 ||
+        restoredDraft.phoneVerificationProof ||
+        restoredDraft.bankRecordProof ||
+        restoredDraft.bankVerificationResult ||
+        restoredDraft.licenceVerificationResult ||
+        restoredDraft.identityPhotoResult)
   );
 
   const initialCommunityName = safeStr(
@@ -1380,6 +1407,42 @@ export default function CreateEntryPage() {
       countryFromPhone(initialPhone) ||
       "Nigeria"
   );
+  const initialDateOfBirth = safeStr(
+    stateCreateEntry?.date_of_birth ||
+      stateCreateEntry?.dateOfBirth ||
+      search.get("date_of_birth") ||
+      search.get("dob") ||
+      restoredDraft?.dateOfBirth ||
+      ""
+  );
+  const initialBirthCountry = safeStr(
+    stateCreateEntry?.birth_country ||
+      stateCreateEntry?.birthCountry ||
+      search.get("birth_country") ||
+      restoredDraft?.birthCountry ||
+      initialCountry
+  );
+  const initialBirthPlace = safeStr(
+    stateCreateEntry?.birth_place ||
+      stateCreateEntry?.birthPlace ||
+      search.get("birth_place") ||
+      restoredDraft?.birthPlace ||
+      ""
+  );
+  const initialCountryOfOrigin = safeStr(
+    stateCreateEntry?.country_of_origin ||
+      stateCreateEntry?.countryOfOrigin ||
+      search.get("country_of_origin") ||
+      restoredDraft?.countryOfOrigin ||
+      initialCountry
+  );
+  const initialResidentialArea = safeStr(
+    stateCreateEntry?.residential_area ||
+      stateCreateEntry?.residentialArea ||
+      search.get("residential_area") ||
+      restoredDraft?.residentialArea ||
+      ""
+  );
 
   const hasInitialCommunityContext = Boolean(
     initialCommunityName || initialDescription
@@ -1403,6 +1466,11 @@ export default function CreateEntryPage() {
   const [phone, setPhone] = useState(initialPhone);
   const [email, setEmail] = useState(initialEmail);
   const [country, setCountry] = useState(initialCountry);
+  const [dateOfBirth, setDateOfBirth] = useState(initialDateOfBirth);
+  const [birthCountry, setBirthCountry] = useState(initialBirthCountry);
+  const [birthPlace, setBirthPlace] = useState(initialBirthPlace);
+  const [countryOfOrigin, setCountryOfOrigin] = useState(initialCountryOfOrigin);
+  const [residentialArea, setResidentialArea] = useState(initialResidentialArea);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -1466,7 +1534,9 @@ export default function CreateEntryPage() {
   );
   const [procedureOpen, setProcedureOpen] = useState(false);
   const [guideStepOpen, setGuideStepOpen] = useState<GuideStepKey | null>(null);
-  const [existingMemberOpen, setExistingMemberOpen] = useState(false);
+  const [identityGateDone, setIdentityGateDone] = useState(hasRestoredEntryProgress);
+  const identityGateActive = !identityGateDone;
+  const [existingMemberOpen, setExistingMemberOpen] = useState(!hasRestoredEntryProgress);
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
     initialOpenPanel
   );
@@ -1494,6 +1564,11 @@ export default function CreateEntryPage() {
     !!safeStr(phone) &&
     !!safeStr(email) &&
     !!safeStr(country) &&
+    !!safeStr(dateOfBirth) &&
+    !!safeStr(birthCountry) &&
+    !!safeStr(birthPlace) &&
+    !!safeStr(countryOfOrigin) &&
+    !!safeStr(residentialArea) &&
     passwordReady;
   const canRecordCommunityDetails =
     step === "community" &&
@@ -1512,6 +1587,11 @@ export default function CreateEntryPage() {
     !!safeStr(phone) &&
     !!safeStr(email) &&
     !!safeStr(country) &&
+    !!safeStr(dateOfBirth) &&
+    !!safeStr(birthCountry) &&
+    !!safeStr(birthPlace) &&
+    !!safeStr(countryOfOrigin) &&
+    !!safeStr(residentialArea) &&
     passwordReady;
   const normalizedOtpCode = otpDigits(otpCode);
   const canConfirmOtp = Number(verificationId) > 0 && normalizedOtpCode.length >= 4;
@@ -1704,8 +1784,19 @@ export default function CreateEntryPage() {
     nav(existingMemberLoginTo, { replace: false });
   }
 
+  function handleConfirmNewIdentity() {
+    setIdentityGateDone(true);
+    setExistingMemberOpen(false);
+    setGuideDone(true);
+    setOpenPanel("details");
+    clearFeedback("global");
+    focusPanel("details");
+  }
+
   function handleStartFreshEntry() {
     clearCreateEntryDraft(createCode);
+    setIdentityGateDone(false);
+    setExistingMemberOpen(true);
     setCommunityName("");
     setDescription("");
     setDisplayName("");
@@ -1755,6 +1846,11 @@ export default function CreateEntryPage() {
       phone,
       email,
       country,
+      dateOfBirth,
+      birthCountry,
+      birthPlace,
+      countryOfOrigin,
+      residentialArea,
       createCode,
       step,
       openPanel,
@@ -1769,9 +1865,13 @@ export default function CreateEntryPage() {
   }, [
     bankRecordProof,
     bankVerificationResult,
+    birthCountry,
+    birthPlace,
     communityName,
+    countryOfOrigin,
     createCode,
     country,
+    dateOfBirth,
     description,
     displayName,
     email,
@@ -1781,6 +1881,7 @@ export default function CreateEntryPage() {
     openPanel,
     phone,
     phoneVerificationProof,
+    residentialArea,
     step,
     verificationId,
   ]);
@@ -1858,7 +1959,7 @@ export default function CreateEntryPage() {
   }, [error, feedbackTarget, success]);
 
   const existingMemberPanel = (
-    <div style={existingMemberCard(existingMemberOpen)}>
+    <div style={existingMemberCard(identityGateActive || existingMemberOpen)}>
       <div
         aria-hidden="true"
         style={{
@@ -1884,7 +1985,7 @@ export default function CreateEntryPage() {
         <MiniLineIcon kind="member" />
         <div style={{ display: "grid", gap: 3 }}>
           <div style={{ ...sectionLabel(), color: "#F3D06A", fontSize: 9.5, letterSpacing: 1.4 }}>
-            Already a member?
+            {identityGateActive ? "Identity check first" : "Already a member?"}
           </div>
           <div
             style={{
@@ -1894,12 +1995,18 @@ export default function CreateEntryPage() {
               lineHeight: 1.24,
             }}
           >
-            Already registered? Sign in.
+            {identityGateActive
+              ? "Do you already have a GSN ID?"
+              : "Already have a GSN ID? Sign in first."}
           </div>
         </div>
 
         <SecondaryButton
-          onClick={() => setExistingMemberOpen((current) => !current)}
+          onClick={
+            identityGateActive
+              ? handleExistingMemberLogin
+              : () => setExistingMemberOpen((current) => !current)
+          }
           minWidth={122}
           stableHeight={52}
           debugId="create-entry.existing-member.toggle"
@@ -1914,11 +2021,11 @@ export default function CreateEntryPage() {
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10)",
           }}
         >
-          {existingMemberOpen ? "Close" : "Sign-in help"}
+          {identityGateActive ? "Sign in" : existingMemberOpen ? "Close" : "Sign-in help"}
         </SecondaryButton>
       </div>
 
-      {existingMemberOpen ? (
+      {identityGateActive || existingMemberOpen ? (
         <div
           style={{
             borderRadius: 18,
@@ -1937,7 +2044,9 @@ export default function CreateEntryPage() {
               fontWeight: 700,
             }}
           >
-            Already have GSN? Sign in to open your workspace.
+            {identityGateActive
+              ? "Before GSN opens a fresh community registration, answer this first. If you already have a GSN number, sign in and create or join communities from that same identity so your history, store, and trust records stay together."
+              : "One person should keep one GSN ID across every community. Sign in first, then create or join communities from that same identity."}
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1956,16 +2065,20 @@ export default function CreateEntryPage() {
               Sign in
             </PrimaryButton>
             <SecondaryButton
-              onClick={() => setExistingMemberOpen(false)}
-              minWidth={112}
+              onClick={
+                identityGateActive
+                  ? handleConfirmNewIdentity
+                  : () => setExistingMemberOpen(false)
+              }
+              minWidth={identityGateActive ? 176 : 112}
               stableHeight={52}
               debugId="create-entry.existing-member.stay"
               style={{
                 ...secondaryBtn(),
-                minWidth: 112,
+                minWidth: identityGateActive ? 176 : 112,
               }}
             >
-              Stay here
+              {identityGateActive ? "I do not have one" : "Stay here"}
             </SecondaryButton>
           </div>
         </div>
@@ -2011,6 +2124,11 @@ export default function CreateEntryPage() {
     if (!safeStr(country)) missing.push("country");
     if (!safeStr(phone)) missing.push("phone");
     if (!safeStr(email)) missing.push("email");
+    if (!safeStr(dateOfBirth)) missing.push("date of birth");
+    if (!safeStr(birthCountry)) missing.push("birth country");
+    if (!safeStr(birthPlace)) missing.push("birth place");
+    if (!safeStr(countryOfOrigin)) missing.push("country of origin");
+    if (!safeStr(residentialArea)) missing.push("current town or area");
     if (!passwordReady) missing.push("matching password");
     return missing;
   }
@@ -2262,6 +2380,12 @@ export default function CreateEntryPage() {
     if (!safeStr(driverLicenceCountry) || safeStr(driverLicenceCountry) === safeStr(country)) {
       setDriverLicenceCountry(cleanCountry);
     }
+    if (!safeStr(birthCountry) || safeStr(birthCountry) === safeStr(country)) {
+      setBirthCountry(cleanCountry);
+    }
+    if (!safeStr(countryOfOrigin) || safeStr(countryOfOrigin) === safeStr(country)) {
+      setCountryOfOrigin(cleanCountry);
+    }
     const nextCurrency = currencyForBankCountry(cleanCountry);
     if (nextCurrency && (!safeStr(bankCurrency) || safeStr(bankCurrency) === "NGN")) {
       setBankCurrency(nextCurrency);
@@ -2415,6 +2539,11 @@ export default function CreateEntryPage() {
       phone_e164: safeStr(phone),
       email: safeStr(email) || undefined,
       country: safeStr(country) || undefined,
+      date_of_birth: safeStr(dateOfBirth) || undefined,
+      birth_country: safeStr(birthCountry) || undefined,
+      birth_place: safeStr(birthPlace) || undefined,
+      country_of_origin: safeStr(countryOfOrigin) || undefined,
+      residential_area: safeStr(residentialArea) || undefined,
     });
 
     setVerificationId(Number(out?.verification_id || 0));
@@ -2818,6 +2947,11 @@ export default function CreateEntryPage() {
 
     payload.email = safeStr(email);
     payload.country = safeStr(country) || undefined;
+    payload.date_of_birth = safeStr(dateOfBirth) || undefined;
+    payload.birth_country = safeStr(birthCountry) || undefined;
+    payload.birth_place = safeStr(birthPlace) || undefined;
+    payload.country_of_origin = safeStr(countryOfOrigin) || undefined;
+    payload.residential_area = safeStr(residentialArea) || undefined;
 
     if (createCode) {
       payload.create_code = createCode;
@@ -3127,7 +3261,7 @@ export default function CreateEntryPage() {
       number: "1",
       title: "Your details",
       detail:
-        "Add your name, country, phone, email, and password.",
+        "Add your name, date of birth, origin, residence, phone, email, and password.",
     },
     {
       key: "verification",
@@ -3544,7 +3678,7 @@ export default function CreateEntryPage() {
 
         </div>
 
-        {resumeNotice ? (
+        {identityGateDone && resumeNotice ? (
           <div
             style={{
               ...softCard("#FFFBEF"),
@@ -3607,6 +3741,7 @@ export default function CreateEntryPage() {
               "linear-gradient(180deg, rgba(8,31,53,0.96) 0%, rgba(6,24,39,0.98) 100%)",
             border: "1px solid rgba(126,164,204,0.20)",
             padding: 9,
+            display: identityGateDone ? "block" : "none",
             opacity: guideDone ? 1 : 0.78,
             boxShadow: guideDone
               ? "0 12px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)"
@@ -3711,7 +3846,7 @@ export default function CreateEntryPage() {
                     fontWeight: 760,
                   }}
                 >
-                  Name, country, phone, email.
+                  Name, birth details, residence, phone, email.
                 </div>
               ) : !guideDone ? (
                 <div
@@ -3868,6 +4003,112 @@ export default function CreateEntryPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="id" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Date of birth</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Helps GSN protect one identity across communities.
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      placeholder="YYYY-MM-DD"
+                      type="date"
+                      autoComplete="bday"
+                      style={credentialInputStyle()}
+                    />
+                  </div>
+
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="globe" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Birth country</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Helps separate people with the same name.
+                        </div>
+                      </div>
+                    </div>
+                    <select
+                      value={birthCountry}
+                      onChange={(e) => setBirthCountry(e.target.value)}
+                      autoComplete="country-name"
+                      style={credentialInputStyle()}
+                    >
+                      {BANK_COUNTRY_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="id" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Place of birth</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Town, city, state, province, or LGA.
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      value={birthPlace}
+                      onChange={(e) => setBirthPlace(e.target.value)}
+                      placeholder="e.g. Aba, Abia State"
+                      autoComplete="address-level2"
+                      style={credentialInputStyle()}
+                    />
+                  </div>
+
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="globe" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Country of origin</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Use the country tied to your family origin.
+                        </div>
+                      </div>
+                    </div>
+                    <select
+                      value={countryOfOrigin}
+                      onChange={(e) => setCountryOfOrigin(e.target.value)}
+                      autoComplete="country-name"
+                      style={credentialInputStyle()}
+                    >
+                      {BANK_COUNTRY_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="globe" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Current town or area</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Town, city area, state, province, or district.
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      value={residentialArea}
+                      onChange={(e) => setResidentialArea(e.target.value)}
+                      placeholder="e.g. Wuse 2, Abuja"
+                      autoComplete="address-level2"
+                      style={credentialInputStyle()}
+                    />
                   </div>
 
                   <div style={{ display: "grid", gap: 5 }}>

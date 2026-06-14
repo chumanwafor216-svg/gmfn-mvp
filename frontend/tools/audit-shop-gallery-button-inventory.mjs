@@ -235,19 +235,19 @@ if (memberSurfaceLinkCount !== expectedSignedInShortcutCount) {
   findings.push({
     file: shopGalleryFile,
     line: 1,
-    message: `Public Shop signed-in shortcut inventory changed from ${expectedSignedInShortcutCount} to ${memberSurfaceLinkCount}. Re-audit the signed-in shortcut strip before accepting this baseline.`,
+    message: `Public Shop owner shortcut inventory changed from ${expectedSignedInShortcutCount} to ${memberSurfaceLinkCount}. Re-audit the owner shortcut strip before accepting this baseline.`,
     text: memberSurfaceLinksBlock.replace(/\s+/g, " ").slice(0, 260),
   });
 }
 
 assertContains(
   /const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?debugId: "shop-gallery\.member-nav\.dashboard"[\s\S]*?label: "Community Home"[\s\S]*?debugId: "shop-gallery\.member-nav\.community"[\s\S]*?label: "Marketplace"[\s\S]*?debugId: "shop-gallery\.member-nav\.marketplace"[\s\S]*?label: "Public Shop"[\s\S]*?debugId: "shop-gallery\.member-nav\.public-shop"[\s\S]*?label: "Finance"[\s\S]*?debugId: "shop-gallery\.member-nav\.finance"[\s\S]*?label: "Loans"[\s\S]*?debugId: "shop-gallery\.member-nav\.loans"[\s\S]*?label: "Trust"[\s\S]*?debugId: "shop-gallery\.member-nav\.trust"/,
-  "Public Shop signed-in shortcut strip must keep Dashboard, Community Home, Marketplace, Public Shop, Finance, Loans, and Trust in the audited order."
+  "Public Shop owner shortcut strip must keep Dashboard, Community Home, Marketplace, Public Shop, Finance, Loans, and Trust in the audited order."
 );
 
 assertContains(
-  /<OwnerOnlySurfaceNav[\s\S]*?label="Public Shop shortcuts"[\s\S]*?ariaLabel="Public Shop signed-in shortcuts"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{false\}/,
-  "Public Shop shortcut strip must stay hidden from ordinary visitors but visible to signed-in members through OwnerOnlySurfaceNav."
+  /<OwnerOnlySurfaceNav[\s\S]*?label="Owner shop shortcuts"[\s\S]*?ariaLabel="Public Shop owner shortcuts"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{true\}/,
+  "Public Shop shortcut strip must stay hidden from ordinary visitors and non-owner signed-in members through OwnerOnlySurfaceNav."
 );
 
 assertFileContains(

@@ -787,19 +787,61 @@ function detectBrowserTimezone(): string | undefined {
   }
 }
 
+const GMFN_ENTRY_DEVICE_FINGERPRINT_KEY = "gmfn_entry_device_fingerprint:v1";
+
+function detectEntryDeviceFingerprint(): string | undefined {
+  try {
+    const existing = String(readStorage(GMFN_ENTRY_DEVICE_FINGERPRINT_KEY) || "").trim();
+    if (existing) return existing;
+
+    const generated =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `entry-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+    writeStorage(GMFN_ENTRY_DEVICE_FINGERPRINT_KEY, generated);
+    return generated;
+  } catch {
+    return undefined;
+  }
+}
+
+function detectEntryDeviceLabel(): string | undefined {
+  try {
+    if (typeof navigator === "undefined") return undefined;
+    const platform = String((navigator as any)?.platform || "").trim();
+    const language = String((navigator as any)?.language || "").trim();
+    const ua = String((navigator as any)?.userAgent || "").trim().slice(0, 80);
+    return [platform, language, ua].filter(Boolean).join(" | ") || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function startEntryPhoneVerification(payload: {
   display_name: string;
   phone_e164: string;
   email?: string | null;
   country?: string | null;
+  date_of_birth?: string | null;
+  birth_country?: string | null;
+  birth_place?: string | null;
+  country_of_origin?: string | null;
+  residential_area?: string | null;
 }): Promise<any> {
     return httpJson("/entry/phone/start", "POST", {
       display_name: String(payload?.display_name || "").trim(),
       phone_e164: String(payload?.phone_e164 || "").trim(),
       email: String(payload?.email || "").trim() || undefined,
       country: String(payload?.country || "").trim() || undefined,
+      date_of_birth: String(payload?.date_of_birth || "").trim() || undefined,
+      birth_country: String(payload?.birth_country || "").trim() || undefined,
+      birth_place: String(payload?.birth_place || "").trim() || undefined,
+      country_of_origin: String(payload?.country_of_origin || "").trim() || undefined,
+      residential_area: String(payload?.residential_area || "").trim() || undefined,
       browser_locale: detectBrowserLocale(),
       browser_timezone: detectBrowserTimezone(),
+      client_fingerprint: detectEntryDeviceFingerprint(),
+      device_label: detectEntryDeviceLabel(),
     });
   }
 
@@ -1097,11 +1139,28 @@ export async function getClanInviteLink(clanId: number): Promise<any> {
   );
 }
 
-export async function createClanInvite(clanId: number): Promise<any> {
+export type ClanInviteRelationshipEvidencePayload = {
+  evidence_source?: string | null;
+  invitation_context?: string | null;
+  relationship_type?: string | null;
+  known_duration?: string | null;
+  confidence_level?: string | null;
+  relationship_context?: string | null;
+  first_circle_role?: string | null;
+  first_circle_ready_count?: number | null;
+  first_circle_selected_count?: number | null;
+};
+
+export async function createClanInvite(
+  clanId: number,
+  payload?: {
+    relationship_evidence?: ClanInviteRelationshipEvidencePayload | null;
+  }
+): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/invite`,
     "POST",
-    undefined,
+    payload,
     { header_clan_id: clanId }
   );
 }
@@ -1264,14 +1323,19 @@ export async function getInvitePreview(code: string): Promise<any> {
 export async function voteJoinRequest(
   clanId: number,
   joinRequestId: number,
-  vote: "approve" | "reject"
+  vote: "approve" | "reject" | "neutral",
+  reason?: { reason_code?: string | null; reason_text?: string | null }
 ): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/join-requests/${encodeURIComponent(
       String(joinRequestId)
     )}/vote`,
     "POST",
-    { vote },
+    {
+      vote,
+      reason_code: String(reason?.reason_code || "").trim() || `${vote}_reason`,
+      reason_text: String(reason?.reason_text || "").trim() || undefined,
+    },
     { header_clan_id: clanId }
   );
 }
@@ -4109,7 +4173,8 @@ export async function getCommunityJoinRequests(clanId: number): Promise<any> {
 
 export async function voteOnJoinRequest(
   id: number,
-  vote: "approve" | "reject"
+  vote: "approve" | "reject" | "neutral",
+  reason?: { reason_code?: string | null; reason_text?: string | null }
 ): Promise<any> {
   const clanId = getSelectedClanId();
 
@@ -4122,7 +4187,11 @@ export async function voteOnJoinRequest(
       String(id)
     )}/vote`,
     "POST",
-    { vote },
+    {
+      vote,
+      reason_code: String(reason?.reason_code || "").trim() || `${vote}_reason`,
+      reason_text: String(reason?.reason_text || "").trim() || undefined,
+    },
     { header_clan_id: clanId }
   );
 }
