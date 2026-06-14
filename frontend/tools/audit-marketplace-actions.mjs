@@ -156,6 +156,12 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /From \(sender\)[\s\S]*?aria-label="Sender name for join invitation"[\s\S]*?\{memberName\}[\s\S]*?Receiver name[\s\S]*?Message to receiver \(optional\)[\s\S]*?Private GSN relationship note \(optional\)/,
+  "Marketplace Join invite form must visibly distinguish sender, receiver, receiver-facing note, and private GSN relationship note."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /createClanInvite\(activeCommunityId, \{[\s\S]*?relationship_evidence: relationshipEvidence[\s\S]*?\}\)[\s\S]*?setJoinRelationshipEvidenceRecordedKey\(joinRelationshipEvidenceKey\)/,
   "Marketplace Join invite creation must send private relationship evidence to the backend trust event before marking the link as recorded."
 );

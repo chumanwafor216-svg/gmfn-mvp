@@ -7433,6 +7433,25 @@ export default function MarketplacePage() {
                       ? personalizedInviteMaskedLabel
                       : marketplaceJoinLinkGuidance}
                   </div>
+                  <div style={{ marginTop: isCompact ? 8 : 10, display: "grid", gap: 6 }}>
+                    <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                      From (sender)
+                    </span>
+                    <div
+                      aria-label="Sender name for join invitation"
+                      style={{
+                        ...inputStyle(),
+                        display: "flex",
+                        alignItems: "center",
+                        minHeight: isCompact ? 40 : 44,
+                        color: "#07172c",
+                        fontWeight: 900,
+                        background: "rgba(247, 250, 255, 0.92)",
+                      }}
+                    >
+                      {memberName}
+                    </div>
+                  </div>
                   <div
                     style={{
                       marginTop: isCompact ? 8 : 10,
@@ -7446,7 +7465,7 @@ export default function MarketplacePage() {
                       style={{ display: "grid", gap: 6 }}
                     >
                       <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
-                        Name
+                        Receiver name
                       </span>
                       <input
                         {...marketplaceFieldTouchProps("marketplace.join.recipient-name")}
@@ -7462,7 +7481,7 @@ export default function MarketplacePage() {
                       style={{ display: "grid", gap: 6 }}
                     >
                       <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
-                        Note (optional)
+                        Message to receiver (optional)
                       </span>
                       <textarea
                         {...marketplaceFieldTouchProps("marketplace.join.invite-note")}
@@ -7477,7 +7496,7 @@ export default function MarketplacePage() {
                           resize: "none",
                           overflowY: "hidden",
                         }}
-                        aria-label="Short personal note for join invitation"
+                        aria-label="Short personal message for join invitation"
                       />
                     </label>
                   </div>
@@ -7545,7 +7564,7 @@ export default function MarketplacePage() {
                     style={{ marginTop: isCompact ? 8 : 10, display: "grid", gap: 6 }}
                   >
                     <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
-                      Trust note for GSN (optional)
+                      Private GSN relationship note (optional)
                     </span>
                     <textarea
                       {...marketplaceFieldTouchProps("marketplace.join.relationship-context")}
@@ -7563,7 +7582,7 @@ export default function MarketplacePage() {
                         resize: "none",
                         overflowY: "hidden",
                       }}
-                      aria-label="Private trust note about how you know the invited person"
+                      aria-label="Private relationship note about how you know the invited person"
                     />
                   </label>
                   <div style={marketplaceJoinActionsStyle(isCompact)}>

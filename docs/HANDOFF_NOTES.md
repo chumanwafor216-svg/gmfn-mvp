@@ -1,3 +1,33 @@
+### Marketplace join invite form now shows sender and separates note meanings (2026-06-14)
+
+- Trigger:
+  - owner noticed the join invite block showed the receiver name but not the
+    sender name, even though the outbound message now carries both.
+  - owner also challenged the duplicate-looking optional notes: `Note
+    (optional)` and `Trust note for GSN (optional)`.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added a visible read-only `From (sender)` line using the current member
+      display name;
+    - renamed `Name` to `Receiver name`;
+    - renamed `Note (optional)` to `Message to receiver (optional)`;
+    - renamed `Trust note for GSN (optional)` to
+      `Private GSN relationship note (optional)`.
+  - `frontend/tools/audit-marketplace-actions.mjs`
+    - added a cage requiring the join invite form to visibly distinguish sender,
+      receiver, receiver-facing note, and private GSN relationship note.
+- Verification:
+  - Passed targeted ESLint for `MarketplacePage` and the marketplace action
+    audit.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - the private GSN relationship note is not for the invitee. It is for extra
+    relationship evidence such as “known from Alaba market for 5 years” or “my
+    schoolmate and trading contact.” It stays out of the WhatsApp message.
+
 ### Join invite messages now carry explicit sender and receiver names (2026-06-14)
 
 - Trigger:
