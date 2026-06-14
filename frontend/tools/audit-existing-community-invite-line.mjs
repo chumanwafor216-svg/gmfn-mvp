@@ -85,14 +85,20 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showInviteLauncher && canUseNewMemberForm[\s\S]*?I already have a GSN ID[\s\S]*?I am new to GSN[\s\S]*?formOpen && canOpenForm && canUseNewMemberForm[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Submit Join Request/,
+  /showInviteLauncher && canUseNewMemberForm[\s\S]*?Use GSN ID[\s\S]*?New request[\s\S]*?formOpen && canOpenForm && canUseNewMemberForm[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Submit request/,
   "A ready existing-community invite must expose the new-member form path with basic request fields and submit action."
 );
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /lockedAuthenticatedWithoutGmfn[\s\S]*?old or unclear sign-in session[\s\S]*?debugId=\{signInConflictCta\.debugId\}[\s\S]*?Sign in again[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?Open request form/,
+  /lockedAuthenticatedWithoutGmfn[\s\S]*?old or unclear sign-in session[\s\S]*?debugId=\{signInConflictCta\.debugId\}[\s\S]*?Sign in again[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?Open form/,
   "Unclear stored-session state must explain the problem and offer both sign-in recovery and request-form recovery."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /function joinEntryIconText\([\s\S]*?width: "100%"[\s\S]*?style=\{\{ display: "inline-grid", flex: "0 0 auto" \}\}[\s\S]*?wordBreak: "normal"[\s\S]*?function entryChoiceActionStyle[\s\S]*?height: 52[\s\S]*?boxSizing: "border-box"[\s\S]*?touchAction: "manipulation"/,
+  "Existing-community invite buttons must keep stable centered icon/text geometry on phone."
 );
 
 assertContains(

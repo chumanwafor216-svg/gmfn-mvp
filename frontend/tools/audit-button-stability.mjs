@@ -328,8 +328,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?function joinEntryIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function joinEntryIconTile\([\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="join-entry\.resume-saved-request"[\s\S]*?joinEntryIconText\("refresh"[\s\S]*?debugId="join-entry\.existing-identity"[\s\S]*?joinEntryIconText\("id", "Join with existing GSN ID"\)[\s\S]*?debugId="join-entry\.already-have-gmfn"[\s\S]*?joinEntryIconText\("id", "I already have a GSN ID"\)[\s\S]*?debugId="join-entry\.submit-new-request"[\s\S]*?joinEntryIconText\("join-person-plus", "Submit Join Request"\)/,
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?function joinEntryIconText\([\s\S]*?width: "100%"[\s\S]*?maxWidth: "100%"[\s\S]*?minWidth: 0[\s\S]*?<GsnLegacyIcon[\s\S]*?style=\{\{ display: "inline-grid", flex: "0 0 auto" \}\}[\s\S]*?wordBreak: "normal"[\s\S]*?function joinEntryIconTile\([\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function entryChoiceActionStyle[\s\S]*?height: 52[\s\S]*?boxSizing: "border-box"[\s\S]*?display: "inline-flex"[\s\S]*?touchAction: "manipulation"[\s\S]*?WebkitTapHighlightColor: "transparent"[\s\S]*?debugId="join-entry\.resume-saved-request"[\s\S]*?joinEntryIconText\("refresh"[\s\S]*?debugId="join-entry\.existing-identity"[\s\S]*?joinEntryIconText\("id", "Join with GSN ID"\)[\s\S]*?debugId="join-entry\.already-have-gmfn"[\s\S]*?joinEntryIconText\("id", "Use GSN ID"\)[\s\S]*?debugId="join-entry\.submit-new-request"[\s\S]*?joinEntryIconText\("join-person-plus", "Submit request"\)/,
   "Join entry must use shared stable CTA primitives and shared 3D GSN icon helpers for invite buttons."
+);
+
+assertNotContains(
+  "src/pages/JoinEntryPage.tsx",
+  /Join with existing GSN ID|I already have a GSN ID|I am new to GSN|Close new-member form|Submit Join Request|Check approval status|Open pending page|Open request form/,
+  "Join entry phone-critical buttons must not restore long labels that wrap or drift on mobile."
 );
 
 assertNotContains(

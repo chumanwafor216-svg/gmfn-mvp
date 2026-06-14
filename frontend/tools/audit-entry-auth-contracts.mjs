@@ -120,7 +120,7 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /If you already have a GSN ID[\s\S]*I already have a GSN ID[\s\S]*I am new to GSN/,
+  /If you already have a GSN ID[\s\S]*Use GSN ID[\s\S]*New request/,
   "Logged-out invite entry must branch existing GSN holders away from new-person signup."
 );
 
@@ -138,7 +138,7 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /lockedAuthenticatedWithoutGmfn[\s\S]*old or unclear sign-in session[\s\S]*Sign in again[\s\S]*Open request form/,
+  /lockedAuthenticatedWithoutGmfn[\s\S]*old or unclear sign-in session[\s\S]*Sign in again[\s\S]*Open form/,
   "Join Entry must explain and recover from an unclear stored session instead of dead-ending after invite validation."
 );
 

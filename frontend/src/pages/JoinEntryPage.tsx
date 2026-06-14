@@ -170,9 +170,39 @@ function joinEntryIconText(
   size = 24
 ) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-      <GsnLegacyIcon name={name} size={size} />
-      <span>{label}</span>
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0,
+        lineHeight: 1.12,
+        textAlign: "center",
+        whiteSpace: "normal",
+      }}
+    >
+      <GsnLegacyIcon
+        name={name}
+        size={size}
+        style={{ display: "inline-grid", flex: "0 0 auto" }}
+      />
+      <span
+        style={{
+          minWidth: 0,
+          maxWidth: "100%",
+          overflow: "hidden",
+          overflowWrap: "normal",
+          wordBreak: "normal",
+          hyphens: "none",
+          textAlign: "center",
+          whiteSpace: "normal",
+        }}
+      >
+        {label}
+      </span>
     </span>
   );
 }
@@ -210,12 +240,22 @@ function entryChoiceActionStyle(kind: "primary" | "secondary"): React.CSSPropert
     maxHeight: 52,
     borderRadius: 16,
     minWidth: 0,
+    boxSizing: "border-box",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
     padding: "0 14px",
     fontSize: 14,
     fontWeight: 1000,
     lineHeight: 1.15,
+    textAlign: "center",
     whiteSpace: "normal",
     overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
     border: primary
       ? "1px solid rgba(28,76,126,0.28)"
       : "1px solid rgba(28,76,126,0.18)",
@@ -1890,7 +1930,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("primary")}
                   >
-                    {joinEntryIconText("id", "Join with existing GSN ID")}
+                    {joinEntryIconText("id", "Join with GSN ID")}
                   </PrimaryButton>
                 </div>
               </div>
@@ -1920,7 +1960,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    {joinEntryIconText("join-person-plus", "Open request form")}
+                    {joinEntryIconText("join-person-plus", "Open form")}
                   </SecondaryButton>
                 </CardActionRow>
               </div>
@@ -1965,7 +2005,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    {joinEntryIconText("id", "I already have a GSN ID")}
+                    {joinEntryIconText("id", "Use GSN ID")}
                   </StableCtaLink>
 
                   <SecondaryButton
@@ -1988,8 +2028,8 @@ export default function JoinEntryPage() {
                       inviteChecking
                         ? "Checking"
                         : formOpen
-                        ? "Close new-member form"
-                        : "I am new to GSN"
+                        ? "Hide form"
+                        : "New request"
                     )}
                   </SecondaryButton>
                 </div>
@@ -2108,7 +2148,7 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      {joinEntryIconText("eye", "Check approval status")}
+                      {joinEntryIconText("eye", "Approval status")}
                     </StableCtaLink>
                   ) : (
                     <StableCtaLink
@@ -2118,7 +2158,7 @@ export default function JoinEntryPage() {
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      {joinEntryIconText("document", "Open pending page")}
+                      {joinEntryIconText("document", "Pending page")}
                     </StableCtaLink>
                   )}
                 </div>
@@ -2271,7 +2311,7 @@ export default function JoinEntryPage() {
                     width: isCompact ? "100%" : "min(100%, 420px)",
                   }}
                 >
-                  {joinEntryIconText("join-person-plus", "Submit Join Request")}
+                  {joinEntryIconText("join-person-plus", "Submit request")}
                 </PrimaryButton>
               </div>
             </form>

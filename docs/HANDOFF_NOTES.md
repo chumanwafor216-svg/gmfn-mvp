@@ -1,3 +1,53 @@
+### Existing-community Join buttons stabilized and caged (2026-06-14)
+
+- Trigger:
+  - owner asked to correct the unstable buttons once and for all after the
+    existing-community invite form was restored but still felt jumpy on phone.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - Join Entry icon+text button content now has a centered full-width
+      footprint with fixed icon flex, no inside-word breaks, and no label drift;
+    - Join Entry button style now explicitly keeps fixed 52px geometry,
+      border-box sizing, centered inline-flex content, mobile tap manipulation,
+      and transparent tap highlight;
+    - shortened phone-critical labels:
+      - `Join with GSN ID`;
+      - `Use GSN ID`;
+      - `New request`;
+      - `Hide form`;
+      - `Open form`;
+      - `Submit request`;
+      - `Approval status`;
+      - `Pending page`.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages the Join Entry fixed icon/text geometry and fails if the old
+      long phone-critical labels return.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - now cages both the existing-community invite form attachment and the
+      stable Join button geometry.
+  - `frontend/tools/audit-entry-auth-contracts.mjs`
+    - updated for the shorter existing-GSN/new-request labels while preserving
+      the distinct existing-identity route.
+- Verification:
+  - `npm run audit:existing-community-invite-line` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:marketplace-touch-blockers` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm exec -- eslint src/pages/JoinEntryPage.tsx tools/audit-button-stability.mjs tools/audit-entry-auth-contracts.mjs tools/audit-existing-community-invite-line.mjs` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this removes the source-level classes that made the Join buttons risky:
+    long labels, loose icon/text footprint, and uncaged button geometry;
+  - browser verification was attempted, but the local Vite server could not be
+    kept reachable from the sandboxed tool session after the known esbuild
+    `spawn EPERM` issue; phone testing on the local or Render build remains the
+    final feel check.
+
 ### Existing-community invite line caged separately from create-community (2026-06-14)
 
 - Trigger:
