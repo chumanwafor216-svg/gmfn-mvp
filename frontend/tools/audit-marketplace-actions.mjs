@@ -162,6 +162,18 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /function marketplaceJoinFieldLabelStyle[\s\S]*?minHeight: isCompact \? 28 : 30[\s\S]*?maxHeight: isCompact \? 28 : 30[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function marketplaceJoinFieldShellStyle[\s\S]*?const shellHeight = isCompact \? 78 : 82[\s\S]*?height: shellHeight[\s\S]*?maxHeight: shellHeight[\s\S]*?function marketplaceJoinFixedFieldStyle[\s\S]*?height: isCompact \? 44 : 46[\s\S]*?maxHeight: isCompact \? 44 : 46[\s\S]*?function marketplaceJoinReadonlyFieldStyle/,
+  "Marketplace Join form controls must keep fixed label, field, and shell geometry so phone taps do not land on moving targets."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /marketplaceSurfaceTouchProps\("marketplace\.links\.join\.surface"\)[\s\S]*?marketplaceFieldTouchProps\("marketplace\.join\.sender-name"\)[\s\S]*?marketplaceJoinReadonlyFieldStyle\(isCompact\)[\s\S]*?marketplaceJoinFieldShellStyle\(isCompact\)[\s\S]*?marketplaceJoinFixedFieldStyle\(isCompact\)[\s\S]*?marketplaceSurfaceTouchProps\("marketplace\.links\.join\.actions"\)[\s\S]*?marketplaceJoinActionsStyle\(isCompact\)/,
+  "Marketplace Join invite surface must cage the expanded lane, read-only sender, field package, and action grid with stable route-local touch helpers."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /createClanInvite\(activeCommunityId, \{[\s\S]*?relationship_evidence: relationshipEvidence[\s\S]*?\}\)[\s\S]*?setJoinRelationshipEvidenceRecordedKey\(joinRelationshipEvidenceKey\)/,
   "Marketplace Join invite creation must send private relationship evidence to the backend trust event before marking the link as recorded."
 );

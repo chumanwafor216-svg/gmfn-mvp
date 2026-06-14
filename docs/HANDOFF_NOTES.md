@@ -1,3 +1,41 @@
+### Marketplace join invite buttons and fields tightened against mobile jump (2026-06-14)
+
+- Trigger:
+  - owner reported that the new Marketplace join invite controls were still
+    jumpy on phone, with taps in the receiver-name area sometimes landing on
+    unrelated routes or notification/welcome surfaces.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added route-local fixed geometry helpers for the new join invite labels,
+      field shells, input/select/textarea controls, and read-only sender line;
+    - converted the join invite expanded row and action grid into named neutral
+      Marketplace touch surfaces;
+    - guarded the visible `From (sender)` line with the same Marketplace field
+      tap metadata used by the editable invite fields;
+    - removed layout-paint containment after the protected freeze audit caught
+      it as a mobile hit-box drift risk, replacing it with fixed shell heights.
+  - `frontend/tools/audit-marketplace-touch-blockers.mjs`
+    - now requires the join surface, action surface, sender field, receiver
+      field, receiver message, relationship type, known-duration field, and
+      private relationship note to remain protected.
+  - `frontend/tools/audit-marketplace-actions.mjs`
+    - now cages the fixed join invite field geometry and the route-local
+      surface/field helper usage.
+- Verification:
+  - Passed targeted ESLint for `MarketplacePage` and the updated Marketplace
+    audit scripts.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this closes the obvious source-level gap in the new join invite block, but
+    it does not prove the real phone experience is fully fixed. If the phone
+    still jumps after this, the next suspect is outside this block: broader
+    Marketplace scroll/focus behavior, keyboard viewport movement, or a
+    document-level tap-guard edge case.
+
 ### Marketplace join invite form now shows sender and separates note meanings (2026-06-14)
 
 - Trigger:
