@@ -35,29 +35,24 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
 
   lines.push(receiver ? `Hello ${receiver},` : "Hello,");
   lines.push(
-    `${inviter} is inviting you to request access to ${communityName}.`
+    `${inviter} is inviting you to join ${communityName} on GSN.`
   );
-  lines.push(
-    "This follows what trusted people already do: we know one another, help where we can, encourage each other, and stand with real relationships."
-  );
-  lines.push(
-    "GSN helps carry that relationship record beyond one place, so your community identity can support safer business, support, and opportunity wherever it is accepted."
-  );
+  lines.push("GSN helps trusted communities keep one identity, one record, and one review path for real people who know one another.");
 
   if (marketplaceName) {
     lines.push(`Community market: ${marketplaceName}.`);
   }
 
   if (customMessage) {
-    lines.push(`Message from inviter: ${customMessage}`);
+    lines.push(`Personal note: ${customMessage}`);
   }
 
   if (expiresAt) {
-    lines.push(`This invitation remains open until ${safeDateTime(expiresAt)}.`);
+    lines.push(`Open until: ${safeDateTime(expiresAt)}.`);
   }
 
   lines.push(
-    "If you are interested, continue to the request form. Entry is not automatic; the community still reviews and votes before membership is granted."
+    "If you are interested, continue and send a request. Entry is not automatic; the community reviews first."
   );
 
   return lines;
@@ -76,17 +71,16 @@ export function buildJoinInviteDoorwayMessage(
   return [
     receiver ? `Hello ${receiver},` : "Hello,",
     "",
-    `${cleanText(args.inviter) || "A known GSN member"} is inviting you to request access to ${communityName} on GSN.`,
-    "This is relationship-based. It carries the kind of help, encouragement, and real-life support trusted people already give each other into a safer community record.",
-    "GSN helps that record travel beyond one place, so one trusted identity can support safer business and support wherever it is accepted.",
+    `${cleanText(args.inviter) || "A known GSN member"} is inviting you to join ${communityName} on GSN.`,
+    "GSN helps trusted communities keep one identity, one record, and one review path.",
     marketplaceName ? `Community market: ${marketplaceName}.` : "",
-    customMessage ? `Message: ${customMessage}` : "",
-    expiresAt ? `This invitation remains open until ${safeDateTime(expiresAt)}.` : "",
+    customMessage ? `Personal note: ${customMessage}` : "",
+    expiresAt ? `Open until: ${safeDateTime(expiresAt)}.` : "",
     "",
-    "If you are interested, open the invitation here:",
+    "Open the invitation here:",
     inviteLink,
     "",
-    "Entry is not automatic. The community reviews your request first.",
+    "If you already have a GSN ID, sign in with it. If not, fill the request form. Entry is not automatic.",
   ]
     .filter(Boolean)
     .join("\n");

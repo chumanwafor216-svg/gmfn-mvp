@@ -1,3 +1,54 @@
+### Existing-community invite copy simplified (2026-06-14)
+
+- Trigger:
+  - owner reviewed the join request page on phone and found the invite/form copy
+    too long and too textbook-like for normal WhatsApp invite recipients.
+  - owner also asked for clearer behavior when the invite recipient already has
+    a GSN number or is already signed in.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - shortened the WhatsApp/share invite text and in-app invitation letter;
+    - kept the core message: a known member is inviting the person, GSN keeps
+      one identity/record/review path, entry is still reviewed by the community;
+    - retained `customMessage`, so invite-specific personal notes still attach
+      without exposing long letterhead text.
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - shortened the join request heading/helper text;
+    - changed the identity branch to `Already have a GSN ID?` with direct copy:
+      enter it and sign in, or choose `I am new`;
+    - clarified stale/unclear session recovery without the older long warning;
+    - reduced the identity-continuity note under the manual form.
+  - Audits updated:
+    - `frontend/tools/audit-entry-auth-contracts.mjs`;
+    - `frontend/tools/audit-existing-community-invite-line.mjs`.
+- Behavior clarification:
+  - if the invited person is already signed in with a valid GSN identity, the
+    invite page uses that signed-in identity and sends the join request from
+    the app; the person should not type the GSN number again;
+  - if the invited person is not signed in but already has a GSN number, they
+    enter the number and sign in so the same identity is reused;
+  - if the person is new, they choose `I am new` and complete the request form;
+  - community-specific invite templates are not built yet, but the current
+    invite note path can carry a personal message; a future owner/admin
+    template setting should be added as a separate, caged feature.
+- Verification:
+  - Passed targeted ESLint for `JoinEntryPage`, `joinInviteMessaging`, and the
+    two updated audits.
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:action-surfaces`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is a frontend copy/flow refinement only;
+  - it does not add community-managed invite templates yet;
+  - backend identity continuity logic from `cf54d3f` is still pushed but not
+    verified live on Render until the missing Render API credentials are added
+    or the backend is manually deployed.
+
 ### Marketplace lane landing scroll softened (2026-06-14)
 
 - Trigger:

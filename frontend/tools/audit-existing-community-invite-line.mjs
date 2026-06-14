@@ -85,7 +85,7 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showInviteLauncher && canUseNewMemberForm[\s\S]*?Use one GSN identity[\s\S]*?Existing GSN number[\s\S]*?Sign in to reuse[\s\S]*?No GSN ID[\s\S]*?formOpen && canOpenForm && canUseNewMemberForm && !hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
+  /showInviteLauncher && canUseNewMemberForm[\s\S]*?Already have a GSN ID\?[\s\S]*?Existing GSN number[\s\S]*?Sign in to reuse[\s\S]*?I am new[\s\S]*?formOpen && canOpenForm && canUseNewMemberForm && !hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
   "A ready existing-community invite must ask for existing GSN identity first, block duplicate manual submission when it is present, and still expose the new-member request form path."
 );
 
@@ -97,7 +97,7 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /This follows what trusted people already do[\s\S]*?GSN helps carry that relationship record beyond one place[\s\S]*?If you are interested, continue to the request form/,
+  /GSN helps trusted communities keep one identity, one record, and one review path[\s\S]*?If you are interested, continue and send a request/,
   "Existing-community invite message must keep the relationship-based explanation before the request form."
 );
 
@@ -109,7 +109,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /lockedAuthenticatedWithoutGmfn[\s\S]*?old or unclear sign-in session[\s\S]*?debugId=\{signInConflictCta\.debugId\}[\s\S]*?Sign in again[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?Open form/,
+  /lockedAuthenticatedWithoutGmfn[\s\S]*?cannot confirm the signed-in GSN identity[\s\S]*?debugId=\{signInConflictCta\.debugId\}[\s\S]*?Sign in again[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?Open form/,
   "Unclear stored-session state must explain the problem and offer both sign-in recovery and request-form recovery."
 );
 

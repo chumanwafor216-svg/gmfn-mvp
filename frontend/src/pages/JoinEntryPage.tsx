@@ -1863,7 +1863,7 @@ export default function JoinEntryPage() {
                       fontSize: 15,
                     }}
                   >
-                    {joinEntryIconText("document", "Invitation letter", 22)}
+                    {joinEntryIconText("document", "Invitation", 22)}
                   </div>
 
                   <div
@@ -1924,13 +1924,12 @@ export default function JoinEntryPage() {
                 color: "#0B1F33",
               }}
             >
-              {joinEntryIconText("pen", "Submit your request", 24)}
+              {joinEntryIconText("pen", "Request to join", 24)}
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Tell the community enough to know who is asking to join. Your
-              request still goes back to people for review, because trust stays
-              protected.
+              Use your existing GSN ID if you have one. If you are new, fill the
+              short form for community review.
             </div>
 
             {joinResumeNotice ? (
@@ -2036,9 +2035,8 @@ export default function JoinEntryPage() {
             {lockedAuthenticatedWithoutGmfn ? (
               <div style={{ marginTop: 14, ...noticeStyle("info") }}>
                 <div>
-                  This phone has an old or unclear sign-in session. Sign in again
-                  if you already have a GSN ID. If this is not your session, clear
-                  it here and open the join request form.
+                  We cannot confirm the signed-in GSN identity on this phone.
+                  Sign in again, or open the form as a new requester.
                 </div>
                 <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
                   <StableCtaLink
@@ -2074,13 +2072,11 @@ export default function JoinEntryPage() {
               >
                 <div>
                   <div style={{ ...labelText(), marginBottom: 4 }}>
-                    {joinEntryIconText("id", "Use one GSN identity", 22)}
+                    {joinEntryIconText("id", "Already have a GSN ID?", 22)}
                   </div>
                   <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
-                    If you already have a GSN number, enter it here first. GSN
-                    should reuse one identity across communities, so your
-                    business and trust record do not split into two separate
-                    online identities.
+                    Enter it and sign in. This invite will use your existing
+                    identity, so your record stays together.
                   </div>
                 </div>
 
@@ -2097,11 +2093,9 @@ export default function JoinEntryPage() {
 
                 {identityNoteOpen ? (
                   <div style={{ ...noticeStyle("info"), marginTop: 0 }}>
-                    One person should not carry two GSN identities. If you
-                    already have a GSN number, reuse it for this community
-                    request. That keeps your trust history, business identity,
-                    and community record together. GSN will not create another
-                    identity after the existing one is verified.
+                    One person should keep one GSN identity across communities.
+                    After sign-in, the app sends this invite request from your
+                    signed-in GSN account instead of creating another one.
                   </div>
                 ) : null}
 
@@ -2138,7 +2132,7 @@ export default function JoinEntryPage() {
                         ? "Checking"
                         : formOpen
                         ? "Form open"
-                        : "No GSN ID"
+                        : "I am new"
                     )}
                   </SecondaryButton>
                   )}
@@ -2166,7 +2160,7 @@ export default function JoinEntryPage() {
                         ? "Clear GSN ID"
                         : identityNoteOpen
                         ? "Hide note"
-                        : "Why it matters"
+                        : "One identity"
                     )}
                   </SecondaryButton>
                 </div>
@@ -2211,8 +2205,8 @@ export default function JoinEntryPage() {
 
             {inviteReady ? (
               <div style={{ marginTop: 18, ...noticeStyle("success") }}>
-                Invite checked. You can send your join request for community
-                review.
+                Invite checked. Continue with your GSN ID or fill the new
+                requester form.
               </div>
             ) : null}
 
@@ -2459,10 +2453,8 @@ export default function JoinEntryPage() {
               </div>
 
               <div style={{ marginTop: 12, ...noticeStyle("info") }}>
-                These details help GSN avoid creating two online business
-                identities for the same person. They are recorded for identity
-                continuity review; they are not treated as government-verified
-                proof here.
+                Used only to help avoid duplicate GSN identities. This is not
+                government verification.
               </div>
 
               <div style={{ marginTop: 12 }}>
