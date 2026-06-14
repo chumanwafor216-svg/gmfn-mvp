@@ -287,7 +287,7 @@ if (
 }
 
 if (
-  !/const EDITABLE_FIELD_SELECTOR = \[[\s\S]*?textarea[\s\S]*?select/.test(
+  !/const EDITABLE_FIELD_SELECTOR = \[[\s\S]*?data-gmfn-field-root="true"[\s\S]*?textarea[\s\S]*?select/.test(
     mobileTapGuardSource
   ) ||
   !/const FIELD_CONTEXT_STALE_MS = 3600;[\s\S]*?const FIELD_CANCEL_SUPPRESS_MS = 2600;[\s\S]*?const FIELD_TAP_MOVE_TOLERANCE_PX = 72;/.test(
@@ -314,7 +314,7 @@ if (
   !/focused-field-action-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/.test(
     mobileTapGuardSource
   ) ||
-  !/function shouldAllowMarketplaceJoinFieldAction\([\s\S]*?isMarketplacePath\(\)[\s\S]*?isMarketplaceJoinField\(fieldRoot\)[\s\S]*?isMarketplaceJoinAction\(actionRoot\)[\s\S]*?marketplace-join-field-action-allowed[\s\S]*?marketplace-join-focused-field-action-allowed/.test(
+  /shouldAllowMarketplaceJoinFieldAction|marketplace-join-field-action-allowed|marketplace-join-focused-field-action-allowed/.test(
     mobileTapGuardSource
   ) ||
   !/document\.addEventListener\([\s\S]*?"focusin"[\s\S]*?rememberFocusedField\(editableFieldFromEvent\(event\)\)/.test(
@@ -327,7 +327,7 @@ if (
     label:
       "Editable fields must be tracked separately from action buttons so keyboard viewport shifts cannot trigger Marketplace route buttons",
     text:
-      "Expected editable-field pointer context, accepted field clicks, wrong-root field-click suppression, and Marketplace Join field/action exception were not found.",
+      "Expected editable-field package markers, accepted field clicks, wrong-root field-click suppression, and no Marketplace Join field/action exception.",
   });
 }
 

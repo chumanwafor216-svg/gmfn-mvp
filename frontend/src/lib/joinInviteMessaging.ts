@@ -62,7 +62,6 @@ export function buildJoinInviteDoorwayMessage(
 ): string {
   const receiver = cleanText(args.receiver);
   const communityName = cleanText(args.communityName) || "this GSN community";
-  const inviter = cleanText(args.inviter) || "A known GSN member";
   const marketplaceName = cleanText(args.marketplaceName);
   const inviteLink = cleanText(args.inviteLink);
   const customMessage = cleanText(args.customMessage);
@@ -71,9 +70,9 @@ export function buildJoinInviteDoorwayMessage(
   return [
     receiver ? `Hello ${receiver},` : "Hello,",
     "",
-    `${inviter} is inviting you to request access to ${communityName} on GSN.`,
+    `You are invited to request access to ${communityName} on GSN.`,
     marketplaceName ? `Community market: ${marketplaceName}.` : "",
-    customMessage ? `Message from inviter: ${customMessage}` : "",
+    customMessage ? `Message: ${customMessage}` : "",
     expiresAt ? `This invitation remains open until ${safeDateTime(expiresAt)}.` : "",
     "",
     "Click here to open the request form:",

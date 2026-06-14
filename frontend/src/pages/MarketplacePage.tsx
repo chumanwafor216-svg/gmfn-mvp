@@ -7310,7 +7310,10 @@ export default function MarketplacePage() {
                       gap: isCompact ? 8 : 10,
                     }}
                   >
-                    <label style={{ display: "grid", gap: 6 }}>
+                    <label
+                      {...marketplaceFieldTouchProps("marketplace.join.recipient-name")}
+                      style={{ display: "grid", gap: 6 }}
+                    >
                       <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
                         Name
                       </span>
@@ -7323,7 +7326,10 @@ export default function MarketplacePage() {
                         aria-label="Receiver name for join invitation"
                       />
                     </label>
-                    <label style={{ display: "grid", gap: 6 }}>
+                    <label
+                      {...marketplaceFieldTouchProps("marketplace.join.invite-note")}
+                      style={{ display: "grid", gap: 6 }}
+                    >
                       <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
                         Note (optional)
                       </span>

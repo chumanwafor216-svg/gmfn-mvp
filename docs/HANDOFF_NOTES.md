@@ -1,3 +1,53 @@
+### Marketplace Join receiver field wrong-route tap guard corrected (2026-06-14)
+
+- Trigger:
+  - owner retested the Marketplace Join card and reported that tapping the
+    receiver-name field still frequently landed on Welcome or Notifications
+    instead of allowing the name to be entered.
+- Root-cause finding:
+  - the earlier button-label stabilization did not explain wrong-page routing;
+  - `frontend/src/lib/mobileTapGuard.ts` still allowed a Marketplace Join field
+    tap to be converted into a nearby `marketplace.links.join.*` action through
+    the `shouldAllowMarketplaceJoinFieldAction` exception;
+  - `frontend/src/pages/MarketplacePage.tsx` protected the native input itself,
+    but not the whole label/field package, so edge taps around `Name` or
+    `Note` could miss the field context.
+- Changed:
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - `[data-gmfn-field-root="true"]` is now part of the editable-field
+      selector;
+    - removed the Marketplace Join field-to-action allowance completely;
+    - after a field tap/focus, a wrong-root click is suppressed instead of
+      being rescued into a nearby share/invite action.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - the Marketplace Join receiver-name and note wrappers now carry
+      `marketplaceFieldTouchProps(...)`;
+    - the native input/textarea still keep their own field guards.
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - WhatsApp doorway text no longer repeats the sender name; it now says the
+      receiver is invited to request access and keeps the form link as the main
+      action.
+  - Audits updated:
+    - `frontend/tools/audit-mobile-tap-stability.mjs`;
+    - `frontend/tools/audit-marketplace-touch-blockers.mjs`.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-touch-blockers` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:existing-community-invite-line` passed.
+  - `npm run audit:proof-surfaces` passed.
+  - `npm run audit:share-tag-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts src/pages/MarketplacePage.tsx src/lib/joinInviteMessaging.ts tools/audit-mobile-tap-stability.mjs tools/audit-marketplace-touch-blockers.mjs` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is a better root-cause correction than the previous label-only button
+    pass because it changes the wrong-route tap logic itself;
+  - it still needs owner phone testing because real keyboard/viewport behavior
+    is the final proof.
+
 ### Existing-community Join buttons stabilized and caged (2026-06-14)
 
 - Trigger:

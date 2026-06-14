@@ -10,6 +10,7 @@ const ACTION_ROOT_SELECTOR = [
   'input[type="file"]',
 ].join(",");
 const EDITABLE_FIELD_SELECTOR = [
+  '[data-gmfn-field-root="true"]',
   'input:not([type="button"]):not([type="submit"]):not([type="file"])',
   "textarea",
   "select",
@@ -291,27 +292,6 @@ function isCommunityHomeAction(root: Element | null): boolean {
 function isMarketplaceAction(root: Element | null): boolean {
   const ctaId = root?.getAttribute("data-cta-id") || "";
   return ctaId.startsWith("marketplace.");
-}
-
-function isMarketplaceJoinField(root: Element | null): boolean {
-  const debugId = root?.getAttribute("data-gmfn-debug-id") || "";
-  return debugId.startsWith("marketplace.join.");
-}
-
-function isMarketplaceJoinAction(root: Element | null): boolean {
-  const ctaId = root?.getAttribute("data-cta-id") || "";
-  return ctaId.startsWith("marketplace.links.join.");
-}
-
-function shouldAllowMarketplaceJoinFieldAction(
-  fieldRoot: Element | null,
-  actionRoot: Element | null
-): boolean {
-  return (
-    isMarketplacePath() &&
-    isMarketplaceJoinField(fieldRoot) &&
-    isMarketplaceJoinAction(actionRoot)
-  );
 }
 
 function isMarketplacePath(): boolean {
@@ -675,32 +655,22 @@ function handleClick(event: MouseEvent): void {
 
     if ((recentFieldPointer || recentFieldCancel) && fieldTapLike && endRoot) {
       const fieldContext = lastFieldPointerContext;
-      if (shouldAllowMarketplaceJoinFieldAction(fieldContext.root, endRoot)) {
-        traceTap("marketplace-join-field-action-allowed", {
-          field: fieldContext.rootLabel,
+      traceTap(
+        recentFieldCancel
+          ? "field-click-after-cancel-suppressed"
+          : "field-click-mismatch-suppressed",
+        {
+          started: fieldContext.rootLabel,
           ended: labelForAction(endRoot),
           moved: Math.round(moved),
           elapsed: Math.round(elapsedSinceStart),
-        });
-        lastFieldPointerContext = null;
-      } else {
-        traceTap(
-          recentFieldCancel
-          ? "field-click-after-cancel-suppressed"
-          : "field-click-mismatch-suppressed",
-          {
-            started: fieldContext.rootLabel,
-            ended: labelForAction(endRoot),
-            moved: Math.round(moved),
-            elapsed: Math.round(elapsedSinceStart),
-          }
-        );
-        event.preventDefault();
-        event.stopPropagation();
-        lastFieldPointerContext = null;
-        clearActiveTap();
-        return;
-      }
+        }
+      );
+      event.preventDefault();
+      event.stopPropagation();
+      lastFieldPointerContext = null;
+      clearActiveTap();
+      return;
     }
 
     if (lastFieldPointerContext && (!recentFieldPointer || moved > FIELD_TAP_MOVE_TOLERANCE_PX)) {
@@ -719,24 +689,15 @@ function handleClick(event: MouseEvent): void {
     const recentFieldFocus = elapsedSinceFocus <= FIELD_CONTEXT_STALE_MS;
 
     if (recentFieldFocus && !activeTap && !lastPointerContext) {
-      if (shouldAllowMarketplaceJoinFieldAction(lastFocusedFieldContext.root, endRoot)) {
-        traceTap("marketplace-join-focused-field-action-allowed", {
-          field: lastFocusedFieldContext.rootLabel,
-          ended: labelForAction(endRoot),
-          elapsed: Math.round(elapsedSinceFocus),
-        });
-        lastFocusedFieldContext = null;
-      } else {
-        traceTap("focused-field-action-suppressed", {
-          field: lastFocusedFieldContext.rootLabel,
-          ended: labelForAction(endRoot),
-          elapsed: Math.round(elapsedSinceFocus),
-        });
-        event.preventDefault();
-        event.stopPropagation();
-        clearActiveTap();
-        return;
-      }
+      traceTap("focused-field-action-suppressed", {
+        field: lastFocusedFieldContext.rootLabel,
+        ended: labelForAction(endRoot),
+        elapsed: Math.round(elapsedSinceFocus),
+      });
+      event.preventDefault();
+      event.stopPropagation();
+      clearActiveTap();
+      return;
     }
   }
 

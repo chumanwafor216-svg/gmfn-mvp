@@ -86,6 +86,13 @@ assertContains(
   "Marketplace native fields must keep field-only tap guards so keyboard taps do not replay nearby actions."
 );
 
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.recipient-name"\)\}[\s\S]*?<input[\s\S]*?value=\{joinRecipientName\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.invite-note"\)\}[\s\S]*?<textarea[\s\S]*?value=\{joinInviteNote\}/,
+  "Marketplace Join receiver/name field packages must be protected as fields, not only the native input line."
+);
+
 const surfaceUses = [...marketplaceSource.matchAll(/marketplaceSurfaceTouchProps\("([^"]+)"\)/g)];
 const expectedSurfaceIds = [
   "marketplace.rosca.actions",
@@ -120,8 +127,15 @@ for (const match of surfaceUses) {
 assertContains(
   mobileTapGuardFile,
   tapGuardSource,
-  /function actionRootFromTarget\(target: EventTarget \| null\): Element \| null \{[\s\S]*?if \(editableFieldFromTarget\(target\)\) return null;[\s\S]*?return target\.closest\(ACTION_ROOT_SELECTOR\);/,
+  /const EDITABLE_FIELD_SELECTOR = \[[\s\S]*?data-gmfn-field-root="true"[\s\S]*?function actionRootFromTarget\(target: EventTarget \| null\): Element \| null \{[\s\S]*?if \(editableFieldFromTarget\(target\)\) return null;[\s\S]*?return target\.closest\(ACTION_ROOT_SELECTOR\);/,
   "Global tap guard must ignore editable fields before looking for an action root."
+);
+
+assertContains(
+  mobileTapGuardFile,
+  tapGuardSource,
+  /field-click-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?focused-field-action-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/,
+  "Global tap guard must suppress wrong-root clicks after field taps instead of allowing Marketplace Join field taps to become share actions."
 );
 
 assertContains(
