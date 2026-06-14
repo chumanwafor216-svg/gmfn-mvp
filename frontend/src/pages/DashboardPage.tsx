@@ -6145,9 +6145,9 @@ export default function DashboardPage() {
   return (
     <div
       style={{
-        minHeight: "100%",
+        minHeight: isPhone ? "auto" : "100%",
         margin: "0 -16px",
-        padding: "18px 16px 40px",
+        padding: isPhone ? "18px 16px 12px" : "18px 16px 40px",
         background: DASHBOARD_BRAND.pageWash,
         WebkitFontSmoothing: "antialiased",
         MozOsxFontSmoothing: "grayscale",

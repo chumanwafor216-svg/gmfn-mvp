@@ -21,6 +21,10 @@ const BOTTOM_NAV_SELECTOR =
 const OPEN_MOBILE_OVERLAY_SELECTOR =
   '[data-gmfn-mobile-overlay-open="true"]';
 const ACTIVE_ACTION_CLASS = "gmfn-action-press-lock";
+const ACTION_CONTEXT_STALE_MS = 1200;
+const FIELD_CONTEXT_STALE_MS = 3600;
+const FIELD_CANCEL_SUPPRESS_MS = 2600;
+const FIELD_TAP_MOVE_TOLERANCE_PX = 72;
 
 type ActionRect = {
   left: number;
@@ -57,9 +61,16 @@ type FieldPointerContext = PointerContext & {
   releasedAt?: number;
 };
 
+type FocusedFieldContext = {
+  root: Element;
+  rootLabel: string;
+  focusedAt: number;
+};
+
 let activeTap: ActiveTap | null = null;
 let lastPointerContext: PointerContext | null = null;
 let lastFieldPointerContext: FieldPointerContext | null = null;
+let lastFocusedFieldContext: FocusedFieldContext | null = null;
 let installed = false;
 let lastAcceptedActionClickAt = 0;
 let lastAcceptedActionRoot: Element | null = null;
@@ -246,6 +257,15 @@ function sameFieldRoot(startedAt: Element, endedAt: Element | null): boolean {
   return startedAt === endedAt;
 }
 
+function rememberFocusedField(root: Element | null): void {
+  if (!root) return;
+  lastFocusedFieldContext = {
+    root,
+    rootLabel: labelForAction(root),
+    focusedAt: nowMs(),
+  };
+}
+
 function isAppShellAction(root: Element | null): boolean {
   const ctaId = root?.getAttribute("data-cta-id") || "";
   return ctaId.startsWith("app-layout.");
@@ -429,15 +449,25 @@ function clearIfStale(): void {
     clearActiveTap();
   }
 
-  if (lastPointerContext && currentTime - lastPointerContext.startedAt > 1200) {
+  if (
+    lastPointerContext &&
+    currentTime - lastPointerContext.startedAt > ACTION_CONTEXT_STALE_MS
+  ) {
     lastPointerContext = null;
   }
 
   if (
     lastFieldPointerContext &&
-    currentTime - lastFieldPointerContext.startedAt > 1200
+    currentTime - lastFieldPointerContext.startedAt > FIELD_CONTEXT_STALE_MS
   ) {
     lastFieldPointerContext = null;
+  }
+
+  if (
+    lastFocusedFieldContext &&
+    currentTime - lastFocusedFieldContext.focusedAt > FIELD_CONTEXT_STALE_MS
+  ) {
+    lastFocusedFieldContext = null;
   }
 }
 
@@ -446,6 +476,7 @@ function handlePointerDown(event: PointerEvent): void {
   if (fieldRoot) {
     clearActiveTap();
     lastPointerContext = null;
+    rememberFocusedField(fieldRoot);
     lastFieldPointerContext = {
       root: fieldRoot,
       rootLabel: labelForAction(fieldRoot),
@@ -586,6 +617,78 @@ function handleClick(event: MouseEvent): void {
     return;
   }
 
+  if (lastFieldPointerContext) {
+    const elapsedSinceStart = currentTime - lastFieldPointerContext.startedAt;
+    const elapsedSinceCancel = lastFieldPointerContext.cancelledAt
+      ? currentTime - lastFieldPointerContext.cancelledAt
+      : Number.POSITIVE_INFINITY;
+    const moved = Math.hypot(
+      event.clientX - lastFieldPointerContext.x,
+      event.clientY - lastFieldPointerContext.y
+    );
+    const sameField = sameFieldRoot(lastFieldPointerContext.root, endFieldRoot);
+    const recentFieldPointer = elapsedSinceStart <= FIELD_CONTEXT_STALE_MS;
+    const recentFieldCancel = elapsedSinceCancel <= FIELD_CANCEL_SUPPRESS_MS;
+    const fieldTapLike = moved <= FIELD_TAP_MOVE_TOLERANCE_PX;
+
+    if ((recentFieldPointer || recentFieldCancel) && sameField) {
+      traceTap("field-click-accepted", {
+        field: lastFieldPointerContext.rootLabel,
+        moved: Math.round(moved),
+        elapsed: Math.round(elapsedSinceStart),
+      });
+      rememberFocusedField(lastFieldPointerContext.root);
+      lastFieldPointerContext = null;
+      return;
+    }
+
+    if ((recentFieldPointer || recentFieldCancel) && fieldTapLike && endRoot) {
+      traceTap(
+        recentFieldCancel
+          ? "field-click-after-cancel-suppressed"
+          : "field-click-mismatch-suppressed",
+        {
+          started: lastFieldPointerContext.rootLabel,
+          ended: labelForAction(endRoot),
+          moved: Math.round(moved),
+          elapsed: Math.round(elapsedSinceStart),
+        }
+      );
+      event.preventDefault();
+      event.stopPropagation();
+      lastFieldPointerContext = null;
+      clearActiveTap();
+      return;
+    }
+
+    if (!recentFieldPointer || moved > FIELD_TAP_MOVE_TOLERANCE_PX) {
+      traceTap("field-click-observed", {
+        started: lastFieldPointerContext.rootLabel,
+        ended: labelForAction(endRoot),
+        moved: Math.round(moved),
+        elapsed: Math.round(elapsedSinceStart),
+      });
+      lastFieldPointerContext = null;
+    }
+  }
+
+  if (lastFocusedFieldContext && endRoot && !endFieldRoot) {
+    const elapsedSinceFocus = currentTime - lastFocusedFieldContext.focusedAt;
+    const recentFieldFocus = elapsedSinceFocus <= FIELD_CONTEXT_STALE_MS;
+
+    if (recentFieldFocus && !activeTap && !lastPointerContext) {
+      traceTap("focused-field-action-suppressed", {
+        field: lastFocusedFieldContext.rootLabel,
+        ended: labelForAction(endRoot),
+        elapsed: Math.round(elapsedSinceFocus),
+      });
+      event.preventDefault();
+      event.stopPropagation();
+      clearActiveTap();
+      return;
+    }
+  }
+
   if (coveredDashboardRoot && endRoot) {
     traceTap("bottom-nav-covered-dashboard-suppressed", {
       intended: labelForAction(coveredDashboardRoot),
@@ -624,60 +727,6 @@ function handleClick(event: MouseEvent): void {
     event.stopPropagation();
     clearActiveTap();
     return;
-  }
-
-  if (lastFieldPointerContext) {
-    const elapsedSinceStart = currentTime - lastFieldPointerContext.startedAt;
-    const elapsedSinceCancel = lastFieldPointerContext.cancelledAt
-      ? currentTime - lastFieldPointerContext.cancelledAt
-      : Number.POSITIVE_INFINITY;
-    const moved = Math.hypot(
-      event.clientX - lastFieldPointerContext.x,
-      event.clientY - lastFieldPointerContext.y
-    );
-    const sameField = sameFieldRoot(lastFieldPointerContext.root, endFieldRoot);
-    const recentFieldPointer = elapsedSinceStart <= 900;
-    const recentFieldCancel = elapsedSinceCancel <= 700;
-    const fieldTapLike = moved <= 40;
-
-    if ((recentFieldPointer || recentFieldCancel) && sameField) {
-      traceTap("field-click-accepted", {
-        field: lastFieldPointerContext.rootLabel,
-        moved: Math.round(moved),
-        elapsed: Math.round(elapsedSinceStart),
-      });
-      lastFieldPointerContext = null;
-      return;
-    }
-
-    if ((recentFieldPointer || recentFieldCancel) && fieldTapLike && endRoot) {
-      traceTap(
-        recentFieldCancel
-          ? "field-click-after-cancel-suppressed"
-          : "field-click-mismatch-suppressed",
-        {
-          started: lastFieldPointerContext.rootLabel,
-          ended: labelForAction(endRoot),
-          moved: Math.round(moved),
-          elapsed: Math.round(elapsedSinceStart),
-        }
-      );
-      event.preventDefault();
-      event.stopPropagation();
-      lastFieldPointerContext = null;
-      clearActiveTap();
-      return;
-    }
-
-    if (!recentFieldPointer || moved > 40) {
-      traceTap("field-click-observed", {
-        started: lastFieldPointerContext.rootLabel,
-        ended: labelForAction(endRoot),
-        moved: Math.round(moved),
-        elapsed: Math.round(elapsedSinceStart),
-      });
-      lastFieldPointerContext = null;
-    }
   }
 
   const insideSettleWindow =
@@ -878,6 +927,13 @@ export function installMobileTapGuard(): void {
   if (installed || typeof document === "undefined") return;
   installed = true;
 
+  document.addEventListener(
+    "focusin",
+    (event) => {
+      rememberFocusedField(editableFieldFromEvent(event));
+    },
+    true
+  );
   document.addEventListener("pointerdown", handlePointerDown, true);
   document.addEventListener("pointercancel", handlePointerCancel, true);
   document.addEventListener("pointerup", handlePointerUp, true);

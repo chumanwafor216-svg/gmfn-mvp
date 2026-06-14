@@ -32,6 +32,7 @@ import {
   readJoinEntryDraft,
   saveJoinEntryDraft,
 } from "../lib/entryDraft";
+import { buildJoinInviteLetter } from "../lib/joinInviteMessaging";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -643,60 +644,6 @@ function safeDateTime(value: any): string {
   return d.toLocaleString();
 }
 
-function buildInviteLetter(args: {
-  receiver: string;
-  communityName: string;
-  inviter: string;
-  marketplaceName: string;
-  expiresAt: string;
-  customMessage: string;
-}): string[] {
-  const receiver = cleanText(args.receiver);
-  const communityName = cleanText(args.communityName) || "this GSN community";
-  const inviter = cleanText(args.inviter) || "a known GSN member";
-  const marketplaceName = cleanText(args.marketplaceName);
-  const expiresAt = cleanText(args.expiresAt);
-  const customMessage = cleanText(args.customMessage);
-
-  const lines: string[] = [];
-
-  lines.push(receiver ? `Hello ${receiver},` : "Hello,");
-  lines.push(
-    `${inviter} is inviting you to begin the join request process for ${communityName}.`
-  );
-
-  if (marketplaceName) {
-    lines.push(`Community / Market: ${marketplaceName}.`);
-  }
-
-  lines.push(
-    "We have already built trust by knowing, helping, lending, supporting, and standing for one another."
-  );
-  lines.push(
-    "GSN helps make that trust visible, recordable, and useful, so the good things people do for each other can become proof for tomorrow."
-  );
-  lines.push(
-    "With GSN, a trusted circle can trade, support small needs, lend, borrow, repay, and build a clearer record of reliability."
-  );
-  lines.push(
-    "Over time, those records can help members carry their good name further, even beyond the people who already know them."
-  );
-
-  if (customMessage) {
-    lines.push(`Message: ${customMessage}`);
-  }
-
-  if (expiresAt) {
-    lines.push(`This invitation remains open until ${safeDateTime(expiresAt)}.`);
-  }
-
-  lines.push(
-    "If you wish to continue, complete the form below and your request will return to the community for review."
-  );
-
-  return lines;
-}
-
 function joinRequestStorageKey(inviteCode: string, communityCode: string): string {
   const invite = cleanText(inviteCode) || "unknown-invite";
   const community = cleanText(communityCode) || "unknown-community";
@@ -882,7 +829,7 @@ export default function JoinEntryPage() {
   }, [inviteExpiry, invitePreview]);
 
   const inviteLetter = useMemo(() => {
-    return buildInviteLetter({
+    return buildJoinInviteLetter({
       receiver: intendedReceiver,
       communityName: resolvedCommunityName,
       inviter: inviterLabel,

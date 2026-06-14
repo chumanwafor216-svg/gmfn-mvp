@@ -133,13 +133,13 @@ assertContains(
 
 assertContains(
   "src/layout/AppLayout.tsx",
-  /function mainContent\([\s\S]*?bottomNavReservePx: number[\s\S]*?const bottomRailReserve = Math\.max\(0, Math\.ceil\(bottomNavReservePx \|\| 0\)\);[\s\S]*?bottomRailReserve \+ 16[\s\S]*?const showMobileBottomRail =[\s\S]*?showMobileBottomRail \? mobileBottomNavReservePx : 0[\s\S]*?\{showMobileBottomRail \?/,
-  "AppLayout must reserve the measured mobile bottom rail height for page content so lower Marketplace/Repost buttons cannot fall under the Trust bottom-nav hit area."
+  /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{mainContent\(isMobile, !!taskMode\)\}[\s\S]*?\{showMobileBottomRail \?/,
+  "AppLayout must not double-reserve mobile bottom rail height while the rail remains visible in normal layout flow."
 );
 
 assertNotContains(
   "src/layout/AppLayout.tsx",
-  /(<button|<\/button>|<a\s|OriginLink|layoutTapGuardProps|handleDisabledNavClick|actionTapGuardProps|brandStableTapTarget|stopActionTap|void _bottomNavReservePx)/,
+  /(<button|<\/button>|<a\s|OriginLink|layoutTapGuardProps|handleDisabledNavClick|actionTapGuardProps|brandStableTapTarget|stopActionTap)/,
   "AppLayout must not keep raw button/link primitives or local tap/action guards."
 );
 
@@ -193,13 +193,13 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /id="marketplace-paid-network-placement"[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.surface"\)\}/,
+  /id="marketplace-paid-network-placement"[\s\S]*?\{\.\.\.marketplaceSurfaceTouchProps\("marketplace\.network-repost\.surface"\)\}/,
   "Marketplace Paid Repost surface must use the shared Marketplace tap-root helper."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.payment-actions"\)\}/,
+  /\{\.\.\.marketplaceSurfaceTouchProps\("marketplace\.network-repost\.payment-actions"\)\}/,
   "Marketplace Paid Repost payment row must use the shared Marketplace tap-root helper."
 );
 

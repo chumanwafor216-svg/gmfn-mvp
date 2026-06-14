@@ -124,7 +124,7 @@ if (!recordsLinksSection.text) {
     /gridTemplateColumns: isCompact[\s\S]*?\? "minmax\(0, 1fr\) minmax\(112px, 0\.48fr\)"/,
     /debugId="marketplace\.network-repost\.target-help\.summary"/,
     /debugId="marketplace\.network-repost\.credit-details\.summary"/,
-    /\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.payment-actions"\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?debugId="marketplace\.network-repost\.credit-details\.summary"[\s\S]*?debugId="marketplace\.network-repost\.subscription"/,
+    /\{\.\.\.marketplaceSurfaceTouchProps\("marketplace\.network-repost\.payment-actions"\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?debugId="marketplace\.network-repost\.credit-details\.summary"[\s\S]*?debugId="marketplace\.network-repost\.subscription"/,
     /5\. Community Packages/,
     /15 members included\. Extra members, shop blocks, ROSCA, and meetings live here\./,
     /debugId="marketplace\.links\.community-packages"[\s\S]*?OWNER_SHOP_HASHES\.communityPackage/,

@@ -1,3 +1,378 @@
+### Join invite chat link shortened and caged (2026-06-14)
+
+- Trigger:
+  - owner tested the shared join invite and found it still too long and
+    repetitive in WhatsApp: poster preview, "GSN Trusted Link" title, formal
+    headed-paper language, title/purpose text, and a long raw URL could appear
+    together.
+- Changed:
+  - `frontend/src/lib/joinLinks.ts`
+    - added `compactJoinInviteUrl()` so shareable join invites can use only the
+      canonical `/start/join/{code}` route instead of adding sender, receiver,
+      community name, marketplace name, and personal note into the blue chat
+      URL.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace join sharing now uses `compactJoinInviteUrl(inviteLink)` for
+      the copied/shared join URL;
+    - human context still stays in the outbound message, not the URL.
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - shortened the form-page invitation and outbound doorway message;
+    - removed repeated trust/philosophy paragraphs from the invite;
+    - outbound invite now says who is inviting, the community, optional note,
+      one "Click here to open the request form" line, and one review warning.
+  - `frontend/index.html`
+    - generic fallback link preview changed from `GSN Trusted Link` plus a long
+      explanation to `GSN Link` / `Open this GSN page.`
+  - `frontend/server.mjs`
+    - join-invite Open Graph title changed to `GSN Invite`;
+    - join-invite description is now one sentence.
+- Cages updated:
+  - `frontend/tools/audit-link-contracts.mjs`
+    - now requires the short generic preview metadata;
+    - now requires route-specific join invite metadata to stay short;
+    - now requires `compactJoinInviteUrl()` so personal details do not drift
+      back into the public chat URL.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now requires Marketplace join sharing to use the compact URL and the
+      short shared doorway message.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:proof-surfaces` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - WhatsApp may still show its own preview card whenever the message contains
+    a URL. GSN cannot fully control that client behavior. This fix controls
+    what GSN sends: shorter preview metadata, shorter message text, and a short
+    canonical link without repeated personal query parameters.
+
+### Mobile bottom gap line audit fixed duplicate bottom-rail reserve (2026-06-14)
+
+- Trigger:
+  - owner confirmed the bottom domain rail had returned, but the large blank
+    gap still existed and vertical drag still felt held back, especially when
+    dragging from top toward bottom.
+- Line-audit finding:
+  - `frontend/src/layout/AppLayout.tsx`
+    - the mobile bottom rail is `position: "relative"` with `flexShrink: 0`,
+      so it already occupies real layout space below `<main>`;
+    - `<main>` was also receiving a measured bottom-rail-height padding reserve
+      through `mobileBottomNavReservePx`;
+    - this double-counted the rail and created the persistent dead zone above
+      the bottom domain rail.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - removed the measured bottom-nav reserve constants, state, resize observer,
+      and extra height padding from mobile `<main>`;
+    - mobile `<main>` now keeps only
+      `calc(16px + env(safe-area-inset-bottom, 0px))` bottom breathing room;
+    - bottom rail rendering remains in place and still appears after `<main>`.
+  - audits updated so they no longer force the stale double-reserve model:
+    - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - `frontend/tools/audit-dashboard-button-inventory.mjs`
+    - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - `frontend/tools/audit-button-stability.mjs`
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:dashboard-button-inventory` passed.
+  - `npm run audit:dashboard-phone-buttons` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:community-home-button-inventory` passed.
+  - `npm run build` passed from `frontend/`.
+  - `http://127.0.0.1:5199/app/dashboard` returned `200`.
+  - `http://192.168.1.13:5199/app/dashboard` returned `200`.
+- Unabated truth:
+  - the previous audit was caging the wrong belief. It protected a bottom-rail
+    reserve that only makes sense for a fixed overlay rail, but the current rail
+    is in normal flex layout. This pass fixes that systemic contradiction
+    instead of adding another Dashboard-only visual patch.
+
+### Dashboard phone bottom gap attempt reverted after stuck-scroll report (2026-06-14)
+
+- Trigger:
+  - owner reported a large blank gap between the `Your Focus...` Dashboard
+    card and the bottom domain rail on phone.
+- Attempted:
+  - `frontend/src/layout/AppLayout.tsx`
+    - a Dashboard-only mobile shrink-wrap flag was briefly added so the bottom
+      rail would follow short Dashboard content.
+- Reverted:
+  - the shrink-wrap flag was removed after the owner reported the phone page
+    became stuck and could not move up or down.
+  - the shared mobile shell is back to the caged measured-bottom-rail reserve.
+  - Market Wisdom copy, presentation, interaction model, and Dashboard button
+    targets were not changed.
+- Impact now:
+  - scroll/touch movement should be restored to the previous working shell
+    behavior;
+  - the visual blank gap still needs a safer product/layout solution.
+- Verification:
+  - `npm run audit:dashboard-button-inventory` passed.
+  - `npm run audit:dashboard-phone-buttons` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - the gap is the visible side effect of a fixed mobile shell plus a measured
+    bottom-rail safety reserve on a short Dashboard. Removing the gap by making
+    the shell shrink-wrap is unsafe because it can trap scroll. A safer next
+    pass should either fill that space with an approved compact Dashboard
+    surface or reduce Dashboard-local bottom padding/reserve without changing
+    shell flex behavior.
+
+### Dashboard bottom domain rail restored, gap reduced safely (2026-06-14)
+
+- Trigger:
+  - owner clarified the bottom domain rail itself had disappeared or been pushed
+    out of reach after the earlier gap attempt, and that the request was to
+    remove the excessive gap, not remove the bottom domain controls.
+- Changed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - Dashboard root now uses `minHeight: isPhone ? "auto" : "100%"`;
+    - Dashboard root phone bottom padding changed from `40px` to `12px`;
+    - this keeps the shared mobile shell and bottom rail rendering untouched.
+  - `frontend/src/layout/AppLayout.tsx`
+    - no active layout behavior change remains; the earlier shrink-wrap attempt
+      was reverted.
+- Local dev server:
+  - old `5199` Vite process was stopped;
+  - first sandboxed restart hit the known Windows Vite/esbuild `spawn EPERM`;
+  - restarted outside the sandbox on `0.0.0.0:5199`;
+  - current phone URL: `http://192.168.1.13:5199/app/dashboard`.
+- Verification:
+  - `npm run audit:dashboard-button-inventory` passed.
+  - `npm run audit:dashboard-phone-buttons` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed from `frontend/`.
+  - `http://127.0.0.1:5199/app/dashboard` returned `200`.
+  - `http://127.0.0.1:8012/auth/me` returned `200`.
+- Unabated truth:
+  - the bottom domain rail was not intentionally removed. The failed
+    shrink-wrap approach could push/trap the shell, so this pass fixes the
+    Dashboard page pressure instead of touching the rail.
+
+### Mobile drag glue feel reduced in shell scroll container (2026-06-14)
+
+- Trigger:
+  - owner asked to check the phone "glue-like" dragging effect where vertical
+    movement can feel stuck before releasing.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - mobile `<main>` keeps `overflowY: "auto"` and
+      `WebkitOverflowScrolling: "touch"`;
+    - changed `overscrollBehaviorY` from `"contain"` to `"auto"` so the
+      scroll container does not hold the gesture as aggressively;
+    - added `touchAction: "pan-y"` to explicitly allow vertical panning on the
+      main scroll surface.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - updated the caged mobile-shell rule to expect natural vertical pan/scroll
+      behavior instead of the old overscroll containment.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:dashboard-button-inventory` passed.
+  - `npm run audit:dashboard-phone-buttons` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+  - Vite dev server on `0.0.0.0:5199` picked up the update.
+- Unabated truth:
+  - the tap guard was not directly blocking drags; it does not listen to
+    `pointermove` or `touchmove`. The likely cause was the nested fixed mobile
+    shell plus overscroll containment on the main scroll area.
+
+### Marketplace Join invite restored to Join Entry letter/form flow (2026-06-14)
+
+- Trigger:
+  - owner clarified that GSN already had a carefully composed invite/welcome
+    message and that Marketplace should attach the invite link to that existing
+    flow, not invent a separate WhatsApp/document message.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - new shared source of truth for join-invite wording;
+    - `buildJoinInviteLetter()` contains the full receiver-side invitation
+      letter used above the Join Entry form, including the line:
+      "If you wish to continue, complete the form below and your request will
+      return to the community for review.";
+    - `buildJoinInviteDoorwayMessage()` contains the short outbound
+      WhatsApp/email/share doorway text. It points the recipient to the invite
+      link and tells them the page contains the invitation letter and join
+      request form.
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - removed the page-local invite-letter builder and now imports
+      `buildJoinInviteLetter()` so the full letter stays caged in shared logic.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace Join sharing now imports `buildJoinInviteDoorwayMessage()`;
+    - `Copy Join Link` copies only the personalized URL;
+    - `Copy Invite Message`, `Email Join Link`, `WhatsApp`, and native share
+      now send the short doorway message, not the formal GSN headed-paper
+      package and not a separate invented letter.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added `joinEntry` and `joinInviteMessaging` source checks;
+    - now cages that Join Entry renders the shared full letter while
+      Marketplace uses the shared doorway message.
+- Verification:
+  - `node tools/audit-institutional-proof-surfaces.mjs` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run build` passed from `frontend/`.
+  - local runtime checks:
+    - `http://192.168.1.13:5199/app/marketplace#marketplace-owned-links`
+      returned `200`;
+    - `http://127.0.0.1:8012/auth/me` returned `200`.
+- Unabated truth:
+  - the earlier compact-message pass was only a partial correction; it removed
+    the noisy headed-paper body but still left Marketplace owning invite
+    wording. This pass supersedes it by reconnecting Marketplace to the Join
+    Entry invite-letter/form flow;
+  - WhatsApp can still show its automatic link preview card. This change
+    controls the message text GSN sends and the page/form reached by the link,
+    not WhatsApp's preview UI.
+
+### Marketplace Join button cage recheck before phone validation (2026-06-14)
+
+- Trigger:
+  - owner asked not to call the batch finished until the buttons around the
+    Marketplace Join invite area were checked again, because the area still
+    felt jumpy on phone.
+- Checked:
+  - exact Join card controls in `frontend/src/pages/MarketplacePage.tsx`:
+    - `marketplace.links.join.copy`
+    - `marketplace.links.join.refresh`
+    - `marketplace.links.join.copy-message`
+    - `marketplace.links.join.email`
+    - `marketplace.links.join.whatsapp`
+    - `marketplace.links.join.tag-social`
+  - confirmed all outbound message controls use `joinInviteDoorwayMessage`.
+  - confirmed local runtime remains available for phone testing:
+    - `http://192.168.1.13:5199/app/marketplace#marketplace-owned-links` -> `200`
+    - `http://127.0.0.1:8012/auth/me` -> `200`
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:link-contracts` passed.
+  - `node tools/audit-institutional-proof-surfaces.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - the in-app browser automation surface was unavailable in this session, so
+    this was verified through source/audit/runtime checks plus the owner phone
+    path, not through an automated visual click walkthrough;
+  - do not push/deploy until owner confirms the local phone test is acceptable.
+
+### Marketplace Join card deeper tap-root cleanup (2026-06-14)
+
+- Trigger:
+  - owner clarified the phone tests use two surfaces:
+    - Render/live URL for deployed behavior and lag;
+    - laptop Wi-Fi dev URL for immediate UI/UX checks;
+  - owner confirmed Render still jumps from Marketplace -> Join this community
+    `Name` field to unrelated routes such as Dashboard, Finance, Shop Control,
+    Trust, or Welcome, so the first field-tap guard was not deep enough.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - `marketplaceFieldTouchProps()` now marks native fields with
+      `data-gmfn-field-root` only, not `data-gmfn-action-root` or
+      `data-cta-id`;
+    - added `marketplaceSurfaceTouchProps()` for non-field panels/action
+      groups that still need action-root tracking, such as ROSCA actions and
+      Paid Repost surfaces;
+    - moved ROSCA action group, Paid Repost surface, and Paid Repost payment
+      action group to the surface helper;
+    - removed tiny nested scroll panes from invite/link preview boxes:
+      `shareMessageCardStyle()` and `linkReserveTextStyle()` now clip fixed
+      height content instead of using internal `overflowY: "auto"` /
+      momentum scroll. This targets the owner-reported drag/grow-like phone
+      effect where a small card could hold the finger before page scrolling
+      released.
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - extended editable-field protection from short button timing to a
+      phone-keyboard-safe window (`FIELD_CONTEXT_STALE_MS = 3600`);
+    - added focus-based field context so a recently focused field can suppress
+      accidental route/action clicks even if the pointer sequence is lost by a
+      keyboard/viewport shift;
+    - field-started wrong-root clicks are suppressed before app-shell/covered
+      action rescue logic can replay the wrong action.
+  - Audits updated:
+    - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - `frontend/tools/audit-marketplace-actions.mjs`
+    - `frontend/tools/audit-button-stability.mjs`
+    - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - `frontend/tools/audit-link-contracts.mjs`
+- Verification:
+  - `npm run audit:link-contracts` passed after the nested-scroll cleanup.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run build` passed from `frontend/`.
+  - laptop Wi-Fi dev server was started with `npm run dev -- --host 0.0.0.0
+    --port 5199`; local checks returned:
+    - `http://127.0.0.1:5199` -> `200`;
+    - `http://192.168.1.13:5199` -> `200`.
+- Current test URL for owner:
+  - `http://192.168.1.13:5199/app/marketplace#marketplace-owned-links`
+- Unabated truth:
+  - this change is not pushed or deployed yet; it is intentionally waiting for
+    local phone validation because the project freeze policy says batch-first /
+    push-last during pipeline shortage;
+  - the deeper source issue was that fields were still registered as action
+    roots. That is now removed for native fields, while non-field panels keep a
+    separate surface helper;
+  - if the local Wi-Fi URL still jumps after this change, the next suspect is a
+    physical overlay/hit-test issue from the app shell or browser viewport, not
+    merely field debug metadata.
+
+### Marketplace Join invite chat message cleanup (2026-06-14)
+
+- Trigger:
+  - owner tested the Marketplace Join invite through WhatsApp and found the
+    shared message too long, repetitive, and out of place for a person-to-person
+    invite.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace Join sharing now uses compact chat text from
+      `buildGsnSharePreview()` instead of the formal
+      `buildGsnInviteLinkPackage()` headed-paper body;
+    - `Copy Join Link` now copies only the personalized join URL;
+    - `Copy Invite Message`, `Email Join Link`, `WhatsApp`, and the native
+      share button now use the same compact invite message;
+    - the compact invite keeps only: greeting, sender/community, optional
+      marketplace, optional personal note, one review/approval warning, one
+      invite link, and one privacy line.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - updated the Marketplace expectation so chat invites stay short while the
+      shared `gsnSnapshotPaper` proof helper still keeps formal GSN headed-paper
+      packages for proof surfaces and First Circle.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `node tools/audit-institutional-proof-surfaces.mjs` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - WhatsApp may still show its automatic rich link preview for the invite URL;
+    this change fixes the actual message body GSN sends into WhatsApp, not
+    WhatsApp's own preview-card rendering.
+
 ### Marketplace Join card mobile field/button stability (2026-06-14)
 
 - Trigger:

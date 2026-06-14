@@ -395,8 +395,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function mainContent\([\s\S]*?bottomNavReservePx: number[\s\S]*?bottomRailReserve \+ 16[\s\S]*?const showMobileBottomRail =[\s\S]*?showMobileBottomRail \? mobileBottomNavReservePx : 0[\s\S]*?\{showMobileBottomRail \?/,
-  "Community Home mobile content must reserve the measured bottom rail height so page controls cannot sit under the bottom-nav tap targets."
+  /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{mainContent\(isMobile, !!taskMode\)\}[\s\S]*?\{showMobileBottomRail \?/,
+  "Community Home mobile content must not double-reserve the bottom rail while the rail remains visible in normal layout flow."
 );
 
 const rawActionPattern =

@@ -5,8 +5,8 @@ import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
+  compactJoinInviteUrl,
   normalizedJoinInviteUrl,
-  personalizedJoinInviteUrl,
 } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import {
@@ -18,9 +18,9 @@ import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { OWNER_SHOP_HASHES } from "../lib/ownerShopHandles";
 import {
   buildGsnCommunityVerifyLinkPackage,
-  buildGsnInviteLinkPackage,
   buildGsnPublicShopLinkPackage,
 } from "../lib/gsnSnapshotPaper";
+import { buildJoinInviteDoorwayMessage } from "../lib/joinInviteMessaging";
 import {
   publicApiUrl,
   publicFrontendUrl,
@@ -1193,6 +1193,25 @@ function marketplaceFieldTouchProps(debugId: string) {
   };
 
   return {
+    "data-gmfn-field-root": "true",
+    "data-gmfn-debug-id": debugId,
+    onPointerDownCapture: stopMarketplaceTap,
+    onPointerDown: stopMarketplaceTap,
+    onPointerUpCapture: stopMarketplaceTap,
+    onPointerUp: stopMarketplaceTap,
+    onMouseDownCapture: stopMarketplaceTap,
+    onMouseDown: stopMarketplaceTap,
+    onClickCapture: stopMarketplaceTap,
+    onClick: stopMarketplaceTap,
+  };
+}
+
+function marketplaceSurfaceTouchProps(debugId: string) {
+  const stopMarketplaceTap = (event: React.SyntheticEvent<HTMLElement>) => {
+    event.stopPropagation();
+  };
+
+  return {
     "data-gmfn-action-root": "true",
     "data-cta-id": debugId,
     "data-gmfn-debug-id": debugId,
@@ -1976,8 +1995,7 @@ function shareMessageCardStyle(isCompact = false): React.CSSProperties {
     padding: "10px 12px",
     minHeight: isCompact ? 146 : 132,
     maxHeight: isCompact ? 146 : 164,
-    overflowY: "auto",
-    WebkitOverflowScrolling: "touch",
+    overflow: "hidden",
     overflowAnchor: "none",
   };
 }
@@ -1999,7 +2017,7 @@ function linkReserveTextStyle(): React.CSSProperties {
     height: 66,
     minHeight: 66,
     maxHeight: 66,
-    overflowY: "auto",
+    overflow: "hidden",
   };
 }
 
@@ -2270,38 +2288,6 @@ function marketplaceLinkMiniIconStyle(): React.CSSProperties {
     marginRight: 7,
     flexShrink: 0,
   };
-}
-
-function buildGsnSharePreview(
-  kind: "join",
-  opts: {
-    memberName: string;
-    communityName: string;
-    marketplaceName?: string;
-    recipientName?: string;
-    personalNote?: string;
-    maskedLabel: string;
-  }
-): string {
-  const sender = safeStr(opts.memberName) || "a known GSN member";
-  const community = safeStr(opts.communityName) || "this community";
-  const marketplace = safeStr(opts.marketplaceName);
-  const recipient = safeStr(opts.recipientName);
-  const personalNote = safeStr(opts.personalNote);
-  const maskedLabel = safeStr(opts.maskedLabel) || "Secure GSN join link";
-
-  return [
-    recipient ? `Hello ${recipient},` : "Hello,",
-    "",
-    `${sender} from ${marketplace || community} is inviting you to begin the GSN join request for ${community}.`,
-    "This link lets you send your request back to the community for review. It is not automatic entry.",
-    personalNote ? `Personal note: ${personalNote}` : "",
-    "",
-    "GSN helps existing trust become visible, recordable, and useful.",
-    maskedLabel,
-    "",
-    "Sent through GSN",
-  ].join("\n");
 }
 
 function buildGsnEmailSubject(
@@ -4779,23 +4765,8 @@ export default function MarketplacePage() {
   }, [selectedCommunity]);
 
   const personalizedInviteLink = useMemo(() => {
-    return (
-      personalizedJoinInviteUrl(inviteLink, {
-        inviterName: memberName,
-        recipientName: joinRecipientName,
-        communityName: activeJoinCommunityName,
-        marketplaceName: activeCommunityName,
-        message: joinInviteNote,
-      }) || inviteLink
-    );
-  }, [
-    inviteLink,
-    memberName,
-    joinRecipientName,
-    activeJoinCommunityName,
-    activeCommunityName,
-    joinInviteNote,
-  ]);
+    return compactJoinInviteUrl(inviteLink) || inviteLink;
+  }, [inviteLink]);
 
   const personalizedInviteMaskedLabel = useMemo(() => {
     return cleanMaskedLinkLabel(
@@ -4813,46 +4784,23 @@ export default function MarketplacePage() {
     );
   }, [publicCommunityWorkspaceLink, activeCommunityName]);
 
-  const joinInvitePackage = useMemo(() => {
+  const joinInviteDoorwayMessage = useMemo(() => {
     if (!personalizedInviteLink) return "";
-    return buildGsnInviteLinkPackage({
-      senderName: memberName,
-      senderGsnId: currentGmfnId,
-      communityName: activeJoinCommunityName || activeCommunityName,
+    return buildJoinInviteDoorwayMessage({
+      inviter: memberName,
+      communityName: activeJoinCommunityName,
+      marketplaceName: activeCommunityName,
+      receiver: joinRecipientName,
+      customMessage: joinInviteNote,
       inviteLink: personalizedInviteLink,
-      messageLines: [
-        joinRecipientName ? `Recipient: ${joinRecipientName}` : "",
-        joinInviteNote ? `Personal note: ${joinInviteNote}` : "",
-        "This invitation opens a join request path. It is not automatic entry.",
-        "The community still reviews the request before membership is granted.",
-      ],
     });
   }, [
     personalizedInviteLink,
     memberName,
-    currentGmfnId,
     activeJoinCommunityName,
     activeCommunityName,
     joinRecipientName,
     joinInviteNote,
-  ]);
-
-  const joinWhatsappPreview = useMemo(() => {
-    return buildGsnSharePreview("join", {
-      memberName,
-      communityName: activeJoinCommunityName,
-      marketplaceName: activeCommunityName,
-      recipientName: joinRecipientName,
-      personalNote: joinInviteNote,
-      maskedLabel: personalizedInviteMaskedLabel,
-    });
-  }, [
-    memberName,
-    activeJoinCommunityName,
-    activeCommunityName,
-    joinRecipientName,
-    joinInviteNote,
-    personalizedInviteMaskedLabel,
   ]);
 
   const joinEmailSubject = useMemo(() => {
@@ -6999,7 +6947,7 @@ export default function MarketplacePage() {
             </div>
 
             <div
-              {...marketplaceFieldTouchProps("marketplace.rosca.actions")}
+              {...marketplaceSurfaceTouchProps("marketplace.rosca.actions")}
               style={{
                 ...marketplaceInlineActionsStyle(isCompact),
                 gridTemplateColumns: isCompact
@@ -7331,9 +7279,8 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceLink(
                             personalizedInviteLink,
-                            "GSN join invite package copied.",
-                            marketplaceJoinLinkMissingMessage,
-                            joinInvitePackage
+                            "GSN join link copied.",
+                            marketplaceJoinLinkMissingMessage
                           );
                         });
                       }}
@@ -7384,9 +7331,9 @@ export default function MarketplacePage() {
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceMessage(
-                              joinInvitePackage,
+                              joinInviteDoorwayMessage,
                               personalizedInviteLink,
-                              "GSN join invite package copied.",
+                              "GSN join invite message copied.",
                               marketplaceJoinLinkMissingMessage
                             );
                           });
@@ -7410,7 +7357,7 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           openMarketplaceEmail(
                             joinEmailSubject,
-                            joinInvitePackage,
+                            joinInviteDoorwayMessage,
                             personalizedInviteLink,
                             marketplaceJoinLinkMissingMessage
                           );
@@ -7437,7 +7384,7 @@ export default function MarketplacePage() {
                             return;
                           }
                           openMarketplaceExternalLink(
-                            `https://wa.me/?text=${encodeURIComponent(joinInvitePackage)}`,
+                            `https://wa.me/?text=${encodeURIComponent(joinInviteDoorwayMessage)}`,
                             marketplaceJoinLinkMissingMessage
                           );
                         });
@@ -7456,7 +7403,7 @@ export default function MarketplacePage() {
                     <SocialTagShareButton
                       target={{
                         title: joinEmailSubject,
-                        message: joinInvitePackage,
+                        message: joinInviteDoorwayMessage,
                         url: personalizedInviteLink,
                       }}
                       disabled={!inviteLink}
@@ -7483,7 +7430,7 @@ export default function MarketplacePage() {
                         }}
                       >
                         {inviteLink
-                          ? joinWhatsappPreview
+                          ? joinInviteDoorwayMessage
                           : marketplaceJoinPreviewPendingMessage}
                       </div>
                     </div>
@@ -7829,7 +7776,7 @@ export default function MarketplacePage() {
 
                 <div
                   id="marketplace-paid-network-placement"
-                  {...marketplaceFieldTouchProps("marketplace.network-repost.surface")}
+                  {...marketplaceSurfaceTouchProps("marketplace.network-repost.surface")}
                   style={{
                     ...marketplaceLinkRowStyle(isCompact),
                     scrollMarginTop: isCompact ? 84 : 104,
@@ -8485,7 +8432,7 @@ export default function MarketplacePage() {
                     </span>
                   </div>
                   <div
-                    {...marketplaceFieldTouchProps("marketplace.network-repost.payment-actions")}
+                    {...marketplaceSurfaceTouchProps("marketplace.network-repost.payment-actions")}
                     style={marketplaceInlineActionsStyle(isCompact)}
                   >
                     <StableButton

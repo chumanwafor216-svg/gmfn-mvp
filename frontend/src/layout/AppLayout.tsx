@@ -34,9 +34,6 @@ type MobileDrawerGroup = {
   variant?: "main" | "tools" | "quick";
 };
 
-const MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX = 28;
-const MOBILE_BOTTOM_NAV_EXTRA_SPACE_PX = 0;
-
 type RouteMeta = {
   section: string;
   page: string;
@@ -987,13 +984,9 @@ function navItem(active = false, disabled = false): React.CSSProperties {
 
 function mainContent(
   isMobile: boolean,
-  taskMode: boolean,
-  bottomNavReservePx: number
+  taskMode: boolean
 ): React.CSSProperties {
-  const bottomRailReserve = Math.max(0, Math.ceil(bottomNavReservePx || 0));
-  const mobileBottomPadding = bottomRailReserve
-    ? `calc(${bottomRailReserve + 16}px + env(safe-area-inset-bottom, 0px))`
-    : "calc(16px + env(safe-area-inset-bottom, 0px))";
+  const mobileBottomPadding = "calc(16px + env(safe-area-inset-bottom, 0px))";
 
   return {
     minWidth: 0,
@@ -1005,7 +998,8 @@ function mainContent(
     overflowX: "hidden",
     overflowY: isMobile ? "auto" : undefined,
     WebkitOverflowScrolling: isMobile ? "touch" : undefined,
-    overscrollBehaviorY: isMobile ? "contain" : undefined,
+    overscrollBehaviorY: isMobile ? "auto" : undefined,
+    touchAction: isMobile ? "pan-y" : undefined,
     flex: isMobile ? "1 1 auto" : undefined,
   };
 }
@@ -1429,8 +1423,6 @@ export default function AppLayout() {
     [location.search]
   );
   const mobileBottomNavRef = useRef<HTMLElement | null>(null);
-  const [mobileBottomNavReservePx, setMobileBottomNavReservePx] =
-    useState<number>(MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX);
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1703,46 +1695,6 @@ export default function AppLayout() {
 
     return () => window.cancelAnimationFrame(frame);
   }, [isMobile, location.pathname, location.search, canUseAdminTools]);
-
-  useEffect(() => {
-    if (!isMobile) {
-      setMobileBottomNavReservePx(MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX);
-      return;
-    }
-
-    const bottomNav = mobileBottomNavRef.current;
-    if (!bottomNav) return;
-
-    function updateBottomReserve() {
-      const height = bottomNav?.getBoundingClientRect().height || 0;
-      const nextReserve = Math.max(
-        MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX,
-        Math.ceil(height + MOBILE_BOTTOM_NAV_EXTRA_SPACE_PX)
-      );
-      setMobileBottomNavReservePx((current) =>
-        current === nextReserve ? current : nextReserve
-      );
-    }
-
-    updateBottomReserve();
-    window.addEventListener("resize", updateBottomReserve);
-
-    const Observer = window.ResizeObserver;
-    const observer = Observer ? new Observer(updateBottomReserve) : null;
-    observer?.observe(bottomNav);
-
-    return () => {
-      window.removeEventListener("resize", updateBottomReserve);
-      observer?.disconnect();
-    };
-  }, [
-    isMobile,
-    location.pathname,
-    location.search,
-    canUseAdminTools,
-    myShopGalleryDisabled,
-    myShopGalleryTo,
-  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2324,11 +2276,7 @@ export default function AppLayout() {
       )}
 
       <main
-        style={mainContent(
-          isMobile,
-          !!taskMode,
-          showMobileBottomRail ? mobileBottomNavReservePx : 0
-        )}
+        style={mainContent(isMobile, !!taskMode)}
       >
         <WorkspaceCompanionBridge />
         <WorkspaceSettingsBridge />

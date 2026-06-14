@@ -28,6 +28,8 @@ const files = {
   trustSnapshots: "frontend/src/lib/trustDocumentSnapshots.ts",
   communityVerify: "frontend/src/pages/CommunityVerifyPage.tsx",
   firstCircle: "frontend/src/pages/BuildFirstCirclePage.tsx",
+  joinEntry: "frontend/src/pages/JoinEntryPage.tsx",
+  joinInviteMessaging: "frontend/src/lib/joinInviteMessaging.ts",
   marketplace: "frontend/src/pages/MarketplacePage.tsx",
   shopAssets: "frontend/src/pages/ShopAssetsPage.tsx",
   communityShopControl: "frontend/src/components/CommunityShopControlPanel.tsx",
@@ -430,8 +432,18 @@ assertContains(
 );
 assertContains(
   "marketplace",
-  /buildGsnInviteLinkPackage[\s\S]*?joinInvitePackage[\s\S]*?copyMarketplaceLink\([\s\S]*?joinInvitePackage/,
-  "Marketplace join link copy must use the branded GSN invite package."
+  /import \{[\s\S]*?compactJoinInviteUrl[\s\S]*?\} from "\.\.\/lib\/joinLinks";[\s\S]*?import \{ buildJoinInviteDoorwayMessage \} from "\.\.\/lib\/joinInviteMessaging";[\s\S]*?personalizedInviteLink[\s\S]*?compactJoinInviteUrl\(inviteLink\)[\s\S]*?buildJoinInviteDoorwayMessage\([\s\S]*?copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."[\s\S]*?copyMarketplaceMessage\([\s\S]*?joinInviteDoorwayMessage[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\(joinInviteDoorwayMessage\)\}/,
+  "Marketplace join sharing must use the shared doorway message while Copy Join Link copies only a compact canonical URL."
+);
+assertContains(
+  "joinEntry",
+  /import \{ buildJoinInviteLetter \} from "\.\.\/lib\/joinInviteMessaging";[\s\S]*?const inviteLetter = useMemo\([\s\S]*?buildJoinInviteLetter\(/,
+  "Join Entry must render the shared full invitation letter above the join request form."
+);
+assertContains(
+  "joinInviteMessaging",
+  /export function buildJoinInviteLetter[\s\S]*?Complete the form below if you want to continue[\s\S]*?Entry is not automatic[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?Click here to open the request form:[\s\S]*?Entry is not automatic\. The community reviews your request first\./,
+  "Shared join invite messaging must keep the form-page invite and outbound doorway message short, non-repetitive, and review-aware."
 );
 assertContains(
   "marketplace",

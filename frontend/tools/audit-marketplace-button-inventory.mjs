@@ -169,8 +169,13 @@ for (const field of nativeFields) {
 }
 
 assertContains(
-  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: stopMarketplaceTap[\s\S]*?onPointerDown: stopMarketplaceTap[\s\S]*?onPointerUpCapture: stopMarketplaceTap[\s\S]*?onPointerUp: stopMarketplaceTap[\s\S]*?onMouseDownCapture: stopMarketplaceTap[\s\S]*?onMouseDown: stopMarketplaceTap[\s\S]*?onClickCapture: stopMarketplaceTap[\s\S]*?onClick: stopMarketplaceTap/,
-  "Marketplace native field tap roots must use stable action-root metadata and pointer/mouse/click guards without touch double-fire handlers."
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: stopMarketplaceTap[\s\S]*?onPointerDown: stopMarketplaceTap[\s\S]*?onPointerUpCapture: stopMarketplaceTap[\s\S]*?onPointerUp: stopMarketplaceTap[\s\S]*?onMouseDownCapture: stopMarketplaceTap[\s\S]*?onMouseDown: stopMarketplaceTap[\s\S]*?onClickCapture: stopMarketplaceTap[\s\S]*?onClick: stopMarketplaceTap/,
+  "Marketplace native field tap roots must use field-only debug metadata and pointer/mouse/click guards without registering as action roots."
+);
+
+assertNotContains(
+  /function marketplaceFieldTouchProps\(debugId: string\)(?:(?!function marketplaceSurfaceTouchProps)[\s\S])*?(?:"data-gmfn-action-root"|"data-cta-id": debugId)/,
+  "Marketplace native fields must not register as action roots or CTA ids."
 );
 
 assertContains(
@@ -769,8 +774,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function mainContent\([\s\S]*?bottomNavReservePx: number[\s\S]*?bottomRailReserve \+ 16[\s\S]*?const showMobileBottomRail =[\s\S]*?showMobileBottomRail \? mobileBottomNavReservePx : 0[\s\S]*?\{showMobileBottomRail \?/,
-  "Marketplace mobile content must reserve the measured bottom rail height so paid Repost controls cannot sit under the Trust bottom-nav tap target."
+  /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{mainContent\(isMobile, !!taskMode\)\}[\s\S]*?\{showMobileBottomRail \?/,
+  "Marketplace mobile content must not double-reserve the bottom rail while the rail remains visible in normal layout flow."
 );
 
 if (findings.length > 0) {

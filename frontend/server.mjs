@@ -221,9 +221,9 @@ function joinInviteMeta(searchParams, pathname, search) {
       searchParams.get("to")
     )
   );
-  const addressed = receiver ? `${receiver}, ` : "";
-  const title = "GSN Community Invitation";
-  const description = `${addressed}${inviter} invites you to request access to ${community} through GSN.`;
+  const addressed = receiver ? `${receiver}: ` : "";
+  const title = "GSN Invite";
+  const description = `${addressed}${inviter} invites you to request access to ${community}.`;
 
   return {
     title,

@@ -290,6 +290,9 @@ if (
   !/const EDITABLE_FIELD_SELECTOR = \[[\s\S]*?textarea[\s\S]*?select/.test(
     mobileTapGuardSource
   ) ||
+  !/const FIELD_CONTEXT_STALE_MS = 3600;[\s\S]*?const FIELD_CANCEL_SUPPRESS_MS = 2600;[\s\S]*?const FIELD_TAP_MOVE_TOLERANCE_PX = 72;/.test(
+    mobileTapGuardSource
+  ) ||
   !/function actionRootFromTarget\(target: EventTarget \| null\): Element \| null \{[\s\S]*?editableFieldFromTarget\(target\)[\s\S]*?return null[\s\S]*?return target\.closest\(ACTION_ROOT_SELECTOR\);/.test(
     mobileTapGuardSource
   ) ||
@@ -299,10 +302,19 @@ if (
   !/function editableFieldFromTarget\(target: EventTarget \| null\): Element \| null[\s\S]*?function sameFieldRoot\(startedAt: Element, endedAt: Element \| null\): boolean/.test(
     mobileTapGuardSource
   ) ||
-  !/let lastFieldPointerContext: FieldPointerContext \| null = null;[\s\S]*?function handlePointerDown\(event: PointerEvent\): void \{[\s\S]*?const fieldRoot = editableFieldFromEvent\(event\);[\s\S]*?lastFieldPointerContext = \{/.test(
+  !/type FocusedFieldContext = \{[\s\S]*?let lastFieldPointerContext: FieldPointerContext \| null = null;[\s\S]*?let lastFocusedFieldContext: FocusedFieldContext \| null = null;[\s\S]*?function rememberFocusedField\(root: Element \| null\): void/.test(
+    mobileTapGuardSource
+  ) ||
+  !/function handlePointerDown\(event: PointerEvent\): void \{[\s\S]*?const fieldRoot = editableFieldFromEvent\(event\);[\s\S]*?rememberFocusedField\(fieldRoot\);[\s\S]*?lastFieldPointerContext = \{/.test(
     mobileTapGuardSource
   ) ||
   !/function handleClick\(event: MouseEvent\): void \{[\s\S]*?const endFieldRoot = editableFieldFromEvent\(event\);[\s\S]*?field-click-accepted[\s\S]*?field-click-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?field-click-observed/.test(
+    mobileTapGuardSource
+  ) ||
+  !/focused-field-action-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/.test(
+    mobileTapGuardSource
+  ) ||
+  !/document\.addEventListener\([\s\S]*?"focusin"[\s\S]*?rememberFocusedField\(editableFieldFromEvent\(event\)\)/.test(
     mobileTapGuardSource
   )
 ) {
@@ -894,15 +906,15 @@ const marketplaceActionStabilitySource = readFileSync(
 const appShellChecks = [
   {
     label:
-      "Mobile app shell must reserve measured bottom-rail space only when the rail is visible",
+      "Mobile app shell must not double-reserve bottom-rail height while the rail is in normal flow",
     pattern:
-      /function mainContent\([\s\S]*?bottomNavReservePx: number[\s\S]*?const bottomRailReserve = Math\.max\(0, Math\.ceil\(bottomNavReservePx \|\| 0\)\);[\s\S]*?bottomRailReserve \+ 16[\s\S]*?const showMobileBottomRail =[\s\S]*?showMobileBottomRail \? mobileBottomNavReservePx : 0/,
+      /function mainContent\(\s*isMobile: boolean,\s*taskMode: boolean\s*\): React\.CSSProperties \{[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?function bottomNav\(\): React\.CSSProperties \{[\s\S]*?position: "relative"[\s\S]*?flexShrink: 0[\s\S]*?style=\{mainContent\(isMobile, !!taskMode\)\}[\s\S]*?\{showMobileBottomRail \?/,
   },
   {
     label:
-      "Mobile app shell must keep the bottom rail in the visible viewport while main content scrolls",
+      "Mobile app shell must keep the bottom rail visible while main content scrolls naturally",
     pattern:
-      /function mobileShell\(\): React\.CSSProperties[\s\S]*?height: "100dvh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "contain" : undefined/,
+      /function mobileShell\(\): React\.CSSProperties[\s\S]*?height: "100dvh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "auto" : undefined[\s\S]*?touchAction: isMobile \? "pan-y" : undefined/,
   },
   {
     label:

@@ -57,6 +57,23 @@ export function canonicalJoinInviteUrl(code: string): string {
   return canonicalPublicFrontendUrl(`/start/join/${encodeURIComponent(cleanCode)}`);
 }
 
+export function compactJoinInviteUrl(rawLink: string): string {
+  const direct = safeText(rawLink);
+  if (!direct) return "";
+
+  const code = inviteCodeFromLink(direct);
+  if (code) return canonicalJoinInviteUrl(code);
+
+  if (!isJoinInviteLink(direct)) return "";
+
+  try {
+    const url = new URL(direct, publicFrontendOrigin());
+    return canonicalPublicFrontendUrl(url.pathname);
+  } catch {
+    return "";
+  }
+}
+
 function isJoinInviteLink(rawLink: string): boolean {
   const direct = safeText(rawLink);
   if (!direct) return false;

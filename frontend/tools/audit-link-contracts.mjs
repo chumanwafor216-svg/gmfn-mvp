@@ -525,8 +525,8 @@ assertContains(
 
 assertContains(
   "index.html",
-  /<title>GSN<\/title>[\s\S]*?GSN Trusted Link[\s\S]*?Open a trusted GSN link for a public shop[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
-  "The static frontend shell must use a generic frontend-hosted PNG fallback poster, not a shop-specific fallback, so non-shop public routes do not preview as shops."
+  /<title>GSN<\/title>[\s\S]*?GSN Link[\s\S]*?Open this GSN page\.[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
+  "The static frontend shell must use a short generic frontend-hosted PNG fallback poster, not a shop-specific or repeated trusted-link fallback."
 );
 
 assertContains(
@@ -543,8 +543,14 @@ assertNotContains(
 
 assertContains(
   "server.mjs",
-  /function joinInviteMeta\(searchParams, pathname, search\)[\s\S]*?GSN Community Invitation[\s\S]*?invites you to request access[\s\S]*?gsn-community-invitation-poster\.png[\s\S]*?serveJoinInviteHtml[\s\S]*?\/\(\?:start\\\/join\|join\|get-invite\|join\\\/community\)/,
-  "The frontend server must serve route-specific WhatsApp/Open Graph metadata for community join invite links, so they do not preview as public shops."
+  /function joinInviteMeta\(searchParams, pathname, search\)[\s\S]*?GSN Invite[\s\S]*?invites you to request access[\s\S]*?gsn-community-invitation-poster\.png[\s\S]*?serveJoinInviteHtml[\s\S]*?\/\(\?:start\\\/join\|join\|get-invite\|join\\\/community\)/,
+  "The frontend server must serve short route-specific WhatsApp/Open Graph metadata for community join invite links, so they do not preview as public shops or formal documents."
+);
+
+assertContains(
+  "src/lib/joinLinks.ts",
+  /export function compactJoinInviteUrl\(rawLink: string\): string \{[\s\S]*?const code = inviteCodeFromLink\(direct\);[\s\S]*?if \(code\) return canonicalJoinInviteUrl\(code\);[\s\S]*?return canonicalPublicFrontendUrl\(url\.pathname\);/,
+  "Join invite sharing must keep a compact canonical URL instead of putting sender, receiver, note, and community names into the blue chat link."
 );
 
 assertContains(
@@ -694,8 +700,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function linkReserveTextStyle\(\): React\.CSSProperties[\s\S]*?height: 66,[\s\S]*?maxHeight: 66,[\s\S]*?overflowY: "auto",/,
-  "Marketplace public link reserves must stay fixed-height so link refresh does not make surrounding buttons jump."
+  /function linkReserveTextStyle\(\): React\.CSSProperties[\s\S]*?height: 66,[\s\S]*?maxHeight: 66,[\s\S]*?overflow: "hidden",/,
+  "Marketplace public link reserves must stay fixed-height and must not become nested mobile scroll panes."
 );
 
 assertContains(

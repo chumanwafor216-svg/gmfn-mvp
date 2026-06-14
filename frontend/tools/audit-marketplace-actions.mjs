@@ -132,7 +132,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.payment-actions"\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?runMarketplaceAction\(event, \(\) => \{[\s\S]*?void createMarketplaceRepostPaymentInstruction\(\);[\s\S]*?disabled=\{\s*creatingRepostPaymentInstruction\s*\}/,
+  /\{\.\.\.marketplaceSurfaceTouchProps\("marketplace\.network-repost\.payment-actions"\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?runMarketplaceAction\(event, \(\) => \{[\s\S]*?void createMarketplaceRepostPaymentInstruction\(\);[\s\S]*?disabled=\{\s*creatingRepostPaymentInstruction\s*\}/,
   "Marketplace Paid Repost payment actions must be a named tap root, and Generate Payment Code must call the guarded payment-code handler instead of becoming a disabled/dead target."
 );
 
@@ -144,13 +144,13 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId/,
-  "Marketplace Paid Repost fields must carry data-cta-id as well as action-root markers so the phone tap guard can match the same control after reflow."
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId/,
+  "Marketplace fields must stay field-only, while non-field Paid Repost surfaces keep action-root markers for the phone tap guard."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /id="marketplace-paid-network-placement"[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.surface"\)\}[\s\S]*?scrollMarginTop: isCompact \? 84 : 104[\s\S]*?position: "relative"[\s\S]*?pointerEvents: "auto"/,
+  /id="marketplace-paid-network-placement"[\s\S]*?\{\.\.\.marketplaceSurfaceTouchProps\("marketplace\.network-repost\.surface"\)\}[\s\S]*?scrollMarginTop: isCompact \? 84 : 104[\s\S]*?position: "relative"[\s\S]*?pointerEvents: "auto"/,
   "Marketplace Paid Repost surface must be a named action root without a local z-index/isolation stacking layer."
 );
 
