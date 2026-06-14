@@ -146,6 +146,13 @@ assertContains(
 );
 
 assertContains(
+  mobileTapGuardFile,
+  tapGuardSource,
+  /function shouldReplayMismatchedOriginalAction\(root: Element \| null\): boolean \{[\s\S]*?if \(isMarketplacePath\(\)\) \{[\s\S]*?!isMarketplaceAction\(root\)[\s\S]*?!isAppShellAction\(root\)[\s\S]*?!isBottomNavAction\(root\)[\s\S]*?function isMarketplaceShellReplayBlocked\(root: Element \| null\): boolean \{[\s\S]*?isMarketplacePath\(\) && \(isAppShellAction\(root\) \|\| isBottomNavAction\(root\)\)[\s\S]*?marketplace-shell-mismatch-no-replay/,
+  "Marketplace mismatched taps must not replay stale Menu, Tools, page-action, or bottom-rail routes."
+);
+
+assertContains(
   marketplaceFile,
   marketplaceSource,
   /const routeHashLandingAppliedRef = useRef\(""\);/,

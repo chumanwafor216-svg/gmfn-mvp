@@ -299,6 +299,23 @@ function isMarketplacePath(): boolean {
   return window.location.pathname === "/app/marketplace";
 }
 
+function shouldReplayMismatchedOriginalAction(root: Element | null): boolean {
+  if (isMarketplacePath()) {
+    return (
+      !isMarketplaceAction(root) &&
+      !isAppShellAction(root) &&
+      !isBottomNavAction(root) &&
+      !isDisabledAction(root)
+    );
+  }
+
+  return !isDisabledAction(root);
+}
+
+function isMarketplaceShellReplayBlocked(root: Element | null): boolean {
+  return isMarketplacePath() && (isAppShellAction(root) || isBottomNavAction(root));
+}
+
 function isTrustedPublicShopAction(root: Element | null): boolean {
   const ctaId = root?.getAttribute("data-cta-id") || "";
 
@@ -833,7 +850,19 @@ function handleClick(event: MouseEvent): void {
         return;
       }
 
-      const committed = !isDisabledAction(intendedRoot)
+      if (isMarketplaceShellReplayBlocked(intendedRoot)) {
+        traceTap("marketplace-shell-mismatch-no-replay", {
+          intended: intendedLabel,
+          ended: labelForAction(endRoot),
+          moved: Math.round(moved),
+          elapsed: Math.round(elapsedSinceStart),
+          shifted: unsafeGeometry,
+        });
+        clearActiveTap();
+        return;
+      }
+
+      const committed = shouldReplayMismatchedOriginalAction(intendedRoot)
         ? commitOriginalAction(intendedRoot, reason, {
             ended: labelForAction(endRoot),
             moved: Math.round(moved),
@@ -928,7 +957,20 @@ function handleClick(event: MouseEvent): void {
       return;
     }
 
-    const committed = !isDisabledAction(intendedRoot)
+    if (isMarketplaceShellReplayBlocked(intendedRoot)) {
+      traceTap("marketplace-shell-mismatch-no-replay", {
+        intended: intendedLabel,
+        ended: labelForAction(endRoot),
+        moved: Math.round(moved),
+        elapsed: Math.round(elapsed),
+        shifted: unsafeGeometry,
+      });
+      clearActiveTap();
+      lastPointerContext = null;
+      return;
+    }
+
+    const committed = shouldReplayMismatchedOriginalAction(intendedRoot)
       ? commitOriginalAction(intendedRoot, reason, {
           ended: labelForAction(endRoot),
           moved: Math.round(moved),

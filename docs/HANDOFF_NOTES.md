@@ -53721,6 +53721,49 @@ GSN-branded invite composer and invite-entry continuity.
   - API deploy was intentionally skipped (`deploy_api=false`), because no
     backend files changed.
 
+### Marketplace wrong-route tap replay guard (2026-06-14)
+
+- Trigger:
+  - pilot phone testing on Marketplace still showed taps on inner controls and
+    receiver-name fields landing on unrelated routes such as Welcome,
+    Notifications, Dashboard, or shell actions.
+- Root cause found:
+  - `frontend/src/lib/mobileTapGuard.ts` already failed closed for mismatched
+    Marketplace action roots, but it could still replay stale app-shell or
+    bottom-rail action roots while the current route was `/app/marketplace`;
+  - this meant the global guard could turn a bad mobile hit-test into a wrong
+    navigation instead of simply suppressing the bad tap.
+- Changed:
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - added a route-aware mismatch replay policy for `/app/marketplace`;
+    - stale `app-layout.*` shell actions and bottom-rail actions are no longer
+      replayed after a Marketplace mismatch;
+    - added `marketplace-shell-mismatch-no-replay` trace coverage for this
+      fail-closed behavior.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - now requires Marketplace mismatch protection to include shell and
+      bottom-rail no-replay rules.
+  - `frontend/tools/audit-marketplace-touch-blockers.mjs`
+    - now checks that stale Menu, Tools, page-action, and bottom-rail routes
+      cannot be replayed from Marketplace mismatches.
+- Verification:
+  - Passed `npm run audit:marketplace-touch-blockers` from `frontend/`.
+  - Passed `npm run audit:tap-stability` from `frontend/`.
+  - Passed `npm run audit:marketplace-button-inventory` from `frontend/`.
+  - Passed `npm run audit:marketplace-button-lines` from `frontend/`.
+  - Passed `npm run audit:link-contracts` from `frontend/`.
+  - Passed targeted ESLint for `src/lib/mobileTapGuard.ts` and the two updated
+    audit files.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is a real system-level bug class, not merely a bad Marketplace button;
+  - the fix deliberately prefers a mismatched phone tap doing nothing over
+    navigating to the wrong screen;
+  - same-root Marketplace, shell, and bottom-rail taps still work normally;
+  - this still needs owner phone testing before it should be called fully
+    solved, because static audits cannot reproduce every mobile browser
+    hit-test edge case.
+
 ### Phone rail clearance pass for CCI Reading and Action Inbox (2026-06-13)
 
 - Trigger:
