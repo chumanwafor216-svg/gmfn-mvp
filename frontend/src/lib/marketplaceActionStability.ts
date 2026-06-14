@@ -9,6 +9,7 @@ type MarketplaceLandingTraceDetail = {
   offset?: number;
   delta?: number;
   corrected?: boolean;
+  skipped?: boolean;
   settled?: boolean;
   viewportHeight?: number;
   scrollContainer?: string;
@@ -90,6 +91,44 @@ function viewportHeight(): number {
   );
 }
 
+function landingComfortBounds(container: HTMLElement | null): {
+  topEdge: number;
+  bottomEdge: number;
+  offset: number;
+  viewportHeight: number;
+} {
+  const height = viewportHeight();
+  const containerRect = container?.getBoundingClientRect();
+  const topEdge = Math.max(containerRect?.top ?? 0, 0);
+  const bottomEdge = Math.min(containerRect?.bottom ?? height, height);
+  const offset = marketplaceLandingOffsetPx();
+
+  return {
+    topEdge,
+    bottomEdge: Math.max(bottomEdge, topEdge),
+    offset,
+    viewportHeight: height,
+  };
+}
+
+export function isMarketplaceLandingComfortablyVisible(target: HTMLElement): boolean {
+  if (typeof window === "undefined") return false;
+
+  const container = scrollableAncestor(target);
+  const targetRect = target.getBoundingClientRect();
+  const { topEdge, bottomEdge, offset } = landingComfortBounds(container);
+  const comfortableTop = topEdge + 16;
+  const comfortableBottom = Math.max(comfortableTop, bottomEdge - 96);
+  const landingLine = topEdge + offset;
+
+  const sectionTopAlreadyReachable =
+    targetRect.top >= comfortableTop && targetRect.top <= comfortableBottom;
+  const landingLineInsideSection =
+    targetRect.top <= landingLine && targetRect.bottom >= landingLine + 96;
+
+  return sectionTopAlreadyReachable || landingLineInsideSection;
+}
+
 export function scrollElementToMarketplaceLanding(
   target: HTMLElement,
   detail: Omit<MarketplaceLandingTraceDetail, "top" | "offset" | "viewportHeight">
@@ -109,6 +148,21 @@ export function scrollElementToMarketplaceLanding(
   const top = Math.max(0, Math.round(targetTop));
   const scrollContainer = container ? container.tagName.toLowerCase() : "window";
 
+  if (isMarketplaceLandingComfortablyVisible(target)) {
+    traceMarketplaceLanding({
+      ...detail,
+      reason: `${detail.reason}-already-visible`,
+      top: currentScroll,
+      offset,
+      corrected: false,
+      skipped: true,
+      settled: true,
+      viewportHeight: viewportHeight(),
+      scrollContainer,
+    });
+    return;
+  }
+
   if (container) {
     container.scrollTo({ top, behavior: "auto" });
   } else {
@@ -120,7 +174,8 @@ export function scrollElementToMarketplaceLanding(
     const delta = Math.round(
       target.getBoundingClientRect().top - (nextContainerRect?.top || 0) - offset
     );
-    const settled = Math.abs(delta) <= 18;
+    const settled =
+      Math.abs(delta) <= 32 || isMarketplaceLandingComfortablyVisible(target);
 
     if (!settled) {
       const correctedTop = Math.max(

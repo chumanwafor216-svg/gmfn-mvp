@@ -1,3 +1,44 @@
+### Marketplace lane landing scroll softened (2026-06-14)
+
+- Trigger:
+  - owner continued to feel jumpy/sticky Marketplace taps on phone, especially
+    inside the inner Marketplace invite area.
+  - read-only line auditor confirmed the old wrong-route tap class is caged by
+    audits, but the remaining real-phone feel likely comes from Marketplace
+    lanes mounting/unmounting followed by forced scroll/correction.
+- Changed:
+  - `frontend/src/lib/marketplaceActionStability.ts`
+    - added `isMarketplaceLandingComfortablyVisible()` so Marketplace landing
+      scrolls are skipped when the target section is already reachable in the
+      mobile scroll container;
+    - the correction pass now accepts a wider settled tolerance and also treats
+      a comfortably visible section as settled;
+    - landing trace records `section-open-already-visible` with `skipped: true`
+      when a forced scroll is avoided.
+- Verification:
+  - Passed targeted ESLint for `marketplaceActionStability`,
+    `MarketplacePage`, and `MarketplaceWorkspacePage`.
+  - Passed `npm --prefix frontend run audit:marketplace-touch-blockers`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-lines`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is a route-level stabilization fix for Marketplace scroll correction,
+    not a claim that every real phone/browser keyboard combination is now
+    proven perfect;
+  - global tap guard protections were not weakened;
+  - the earlier identity-continuity commit `cf54d3f` was pushed to `main`;
+    frontend Render deploy hook accepted it with deploy id
+    `dep-d8nf7ujtqb8s73d4fhh0`;
+  - the same workflow refused backend deployment because GitHub still lacks
+    `RENDER_API_KEY` / exact API service credentials, so backend changes from
+    `cf54d3f` are committed and pushed but cannot honestly be claimed live on
+    Render until the API is deployed manually or the missing secret is added.
+
 ### Existing-community join identity profile cage (2026-06-14)
 
 - Trigger:
