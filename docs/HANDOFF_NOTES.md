@@ -1,3 +1,46 @@
+### Existing-community invite line caged separately from create-community (2026-06-14)
+
+- Trigger:
+  - owner confirmed the existing-community invite form line is partly working
+    again but asked to cage the line before more button/detail work;
+  - owner emphasized this is different from the earlier create-community path.
+- Added:
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - verifies `/create` still opens `CreateEntryPage`;
+    - verifies `/join`, `/join/:code`, `/start/join/:code`,
+      `/start/invite/:code`, `/invite/:code`, and `/get-invite/:code` still
+      open `JoinEntryPage`;
+    - verifies authenticated create/new-community aliases still canonicalize to
+      `/create`, not the existing-community invite form;
+    - verifies ready existing-community invites keep the request form fields
+      and `Submit Join Request`;
+    - verifies stale local auth cannot hide the request form again;
+    - verifies public form submit uses `includeAuth: false` while existing
+      identity submit keeps the authenticated path;
+    - verifies Marketplace invite sharing preserves personalized join context
+      and does not strip the form context with compact join URLs;
+    - verifies backend duplicate-phone protection and existing-identity reuse
+      remain covered.
+  - `frontend/package.json`
+    - added `npm run audit:existing-community-invite-line`.
+  - `frontend/tools/audit-protected-button-freeze.mjs`
+    - now includes the existing-community invite-line auditor in the protected
+      freeze band.
+- Verification:
+  - `npm run audit:existing-community-invite-line` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:protected-button-freeze` passed and now includes the new
+    existing-community invite-line cage.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:proof-surfaces` passed.
+  - `npm exec -- eslint tools/audit-existing-community-invite-line.mjs tools/audit-protected-button-freeze.mjs` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is a source/build regression cage, not a visual polish pass;
+  - it protects the corrected line so later button work is less likely to break
+    it, but owner phone testing still decides whether the buttons feel good
+    enough.
+
 ### Join invite form restored after stale-session dead end (2026-06-14)
 
 - Trigger:

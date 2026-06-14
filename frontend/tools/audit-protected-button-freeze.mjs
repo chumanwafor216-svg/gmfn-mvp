@@ -68,6 +68,10 @@ const protectedAudits = [
     script: "audit-entry-copy-response.mjs",
   },
   {
+    label: "existing-community invite line",
+    script: "audit-existing-community-invite-line.mjs",
+  },
+  {
     label: "share tag actions",
     script: "audit-share-tag-actions.mjs",
   },
@@ -102,5 +106,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "\nProtected button freeze audit passed: Dashboard, Community Home, Marketplace touch blockers, Action Inbox, entry/auth, shared tap guard, and global stable-action hygiene are still caged."
+  "\nProtected button freeze audit passed: Dashboard, Community Home, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, shared tap guard, and global stable-action hygiene are still caged."
 );

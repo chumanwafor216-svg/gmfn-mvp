@@ -1,0 +1,145 @@
+/* global console, process */
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = join(frontendRoot, "..");
+
+function readFromRoot(relativePath) {
+  return readFileSync(join(repoRoot, relativePath), "utf8");
+}
+
+function assertContains(file, pattern, message) {
+  const text = readFromRoot(file);
+  if (!pattern.test(text)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Expected existing-community invite-line pattern was not found.",
+    });
+  }
+}
+
+function assertNotContains(file, pattern, message) {
+  const text = readFromRoot(file);
+  const lines = text.split(/\r?\n/);
+
+  lines.forEach((line, index) => {
+    if (pattern.test(line)) {
+      findings.push({
+        file,
+        line: index + 1,
+        message,
+        text: line.trim(),
+      });
+    }
+  });
+}
+
+const findings = [];
+
+assertContains(
+  "frontend/src/App.tsx",
+  /const CreateEntryPage = React\.lazy\(\(\) => import\("\.\/pages\/CreateEntryPage"\)\);[\s\S]*?const JoinEntryPage = React\.lazy\(\(\) => import\("\.\/pages\/JoinEntryPage"\)\);[\s\S]*?<Route path="\/create" element=\{<CreateEntryPage \/>\} \/>[\s\S]*?<Route path="\/join" element=\{<JoinEntryPage \/>\} \/>[\s\S]*?<Route path="\/join\/:code" element=\{<JoinEntryPage \/>\} \/>[\s\S]*?path="\/start\/join\/:code"[\s\S]*?element=\{<JoinEntryPage \/>\}[\s\S]*?path="\/start\/invite\/:code"[\s\S]*?element=\{<JoinEntryPage \/>\}/,
+  "Create-community and existing-community invite routes must stay separate: /create uses CreateEntryPage, while /join and /start/join invite links use JoinEntryPage."
+);
+
+assertContains(
+  "frontend/src/App.tsx",
+  /path="\/invite\/:code"[\s\S]*?element=\{<JoinEntryPage \/>\}/,
+  "Legacy invite URLs must keep opening the existing-community JoinEntryPage instead of the create-community entry lane."
+);
+
+assertContains(
+  "frontend/src/App.tsx",
+  /path="\/get-invite\/:code"[\s\S]*?element=\{<JoinEntryPage \/>\}/,
+  "Legacy get-invite URLs must keep opening the existing-community JoinEntryPage instead of the create-community entry lane."
+);
+
+assertContains(
+  "frontend/src/App.tsx",
+  /path="create-community" element=\{<Navigate to="\/create" replace \/>/,
+  "Authenticated create-community alias must still canonicalize to the create-community lane, not the existing-community invite form."
+);
+
+assertContains(
+  "frontend/src/App.tsx",
+  /path="new-community" element=\{<Navigate to="\/create" replace \/>/,
+  "Authenticated new-community alias must still canonicalize to the create-community lane, not the existing-community invite form."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /const canUseNewMemberForm =\s*currentMemberChecked && !usingExistingIdentity;/,
+  "Existing-community Join Entry must not hide the request form just because a stale token exists in localStorage."
+);
+
+assertNotContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /const canUseNewMemberForm =[\s\S]*?!has(?:Authenticated|Stored)Session[\s\S]*?!usingExistingIdentity;/,
+  "Existing-community Join Entry must not restore the old stale-token gate that hid the request form after invite validation."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /showInviteLauncher && canUseNewMemberForm[\s\S]*?I already have a GSN ID[\s\S]*?I am new to GSN[\s\S]*?formOpen && canOpenForm && canUseNewMemberForm[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Submit Join Request/,
+  "A ready existing-community invite must expose the new-member form path with basic request fields and submit action."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /lockedAuthenticatedWithoutGmfn[\s\S]*?old or unclear sign-in session[\s\S]*?debugId=\{signInConflictCta\.debugId\}[\s\S]*?Sign in again[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?Open request form/,
+  "Unclear stored-session state must explain the problem and offer both sign-in recovery and request-form recovery."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /submitJoinRequest\([\s\S]*?includeAuth: false[\s\S]*?\);[\s\S]*?async function requestJoinWithExistingIdentity\([\s\S]*?submitJoinRequest\(\{[\s\S]*?invite_code: safeInviteCode/,
+  "Public Join Entry form submission must avoid stale auth, while verified existing identity joins still use the authenticated path."
+);
+
+assertContains(
+  "frontend/src/lib/api.ts",
+  /export async function submitJoinRequest\([\s\S]*?options\?: \{ includeAuth\?: boolean \}[\s\S]*?const tok = options\?\.includeAuth === false \? null : getAccessToken\(\);/,
+  "The join-request API helper must support public unauthenticated submission for existing-community invite forms."
+);
+
+assertContains(
+  "frontend/src/pages/MarketplacePage.tsx",
+  /personalizedJoinInviteUrl\(inviteLink,[\s\S]*?inviterName: memberName[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?communityName: activeJoinCommunityName[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote/,
+  "Marketplace invite sharing must keep the personalized existing-community join URL context needed by JoinEntryPage."
+);
+
+assertNotContains(
+  "frontend/src/pages/MarketplacePage.tsx",
+  /compactJoinInviteUrl\(inviteLink\)|compactJoinInviteUrl\(personalizedInviteLink\)/,
+  "Marketplace invite sharing must not strip existing-community invite form context back to a compact URL."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/clans.py",
+  /def create_join_request\([\s\S]*?current_user: Optional\[User\] = Depends\(_optional_current_user\)[\s\S]*?existing_identity_join = bool\([\s\S]*?current_user is not None[\s\S]*?applicant_user = _ensure_user_gmfn_id\(db, current_user\)[\s\S]*?existing_account_login_required[\s\S]*?This phone number is already tied to an existing GSN identity/,
+  "Backend join-request creation must keep existing identity reuse and duplicate-phone protection for existing-community invite forms."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_join_requests.py",
+  /existing_account_login_required[\s\S]*?test_logged_in_existing_member_join_request_reuses_global_identity[\s\S]*?identity_reused/,
+  "Backend tests must keep coverage for duplicate phone blocking and logged-in existing identity reuse."
+);
+
+if (findings.length > 0) {
+  console.error("Existing-community invite line audit failed:");
+  for (const finding of findings) {
+    const loc = finding.line ? `${finding.file}:${finding.line}` : finding.file;
+    console.error(`- ${loc} ${finding.message}\n  ${finding.text}`);
+  }
+  process.exit(1);
+}
+
+console.log(
+  "Existing-community invite line audit passed: create-community and join-existing-community stay separate, ready invite forms stay visible, stale auth is bypassed for public submit, and backend duplicate-ID protection remains caged."
+);
