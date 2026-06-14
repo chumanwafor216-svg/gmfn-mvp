@@ -1,3 +1,48 @@
+### Join invite form restored after stale-session dead end (2026-06-14)
+
+- Trigger:
+  - owner tested a fresh Render invite and the invite page showed the invitation
+    and `Invite checked`, but the actual join request form fields and submit
+    action were not attached.
+- Root cause:
+  - `frontend/src/pages/JoinEntryPage.tsx` used localStorage token presence as
+    the form gate:
+    `canUseNewMemberForm = currentMemberChecked && !hasAuthenticatedSession && !usingExistingIdentity`;
+  - if the phone had an old/stale token, the page hid the new-member form even
+    when `/auth/me` did not prove a usable current member;
+  - the invite preview was still valid, so the page looked ready while giving
+    no way to submit.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - request form visibility now depends on verified `currentMember` state,
+      not merely a stored token;
+    - signed-in users can request with the existing account even when the GSN ID
+      is still being confirmed by the backend;
+    - unclear/stale session state now explains the issue and offers `Sign in
+      again` plus `Open request form`;
+    - the public request form submits without carrying an unverified stale auth
+      token.
+  - `frontend/src/lib/api.ts`
+    - `submitJoinRequest()` now accepts `includeAuth: false` for public invite
+      form submission.
+  - `frontend/tools/audit-entry-auth-contracts.mjs`
+    - caged the corrected contract so stale local auth cannot hide the join form
+      again and public form submit cannot carry unverified auth.
+- Verification:
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm exec -- eslint src/pages/JoinEntryPage.tsx src/lib/api.ts tools/audit-entry-auth-contracts.mjs` passed.
+  - `npm run build` passed from `frontend/`.
+  - local route returned `200`:
+    `http://127.0.0.1:5199/start/join/test-code?community_name=Homeland%20isa&receiver_name=Test`.
+- Unabated truth:
+  - the in-app browser plugin was unavailable in this session, so this was not
+    visually rechecked inside Codex;
+  - source, build, route, and audit checks are clean, but owner phone testing is
+    still the deciding proof after deploy.
+
 ### Marketplace mobile touch/scroll and join-link hardening (2026-06-14)
 
 - Trigger:

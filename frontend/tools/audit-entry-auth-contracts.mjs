@@ -132,8 +132,26 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /lockedAuthenticatedWithoutGmfn[\s\S]*will not create a second identity for a logged-in\s+member/,
-  "Logged-in invite entry must not fall back to the new-person form when identity state is unclear."
+  /const canUseNewMemberForm =\s*currentMemberChecked && !usingExistingIdentity;/,
+  "Join Entry must not hide the request form merely because localStorage has a stale access token."
+);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /lockedAuthenticatedWithoutGmfn[\s\S]*old or unclear sign-in session[\s\S]*Sign in again[\s\S]*Open request form/,
+  "Join Entry must explain and recover from an unclear stored session instead of dead-ending after invite validation."
+);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /submitJoinRequest\([\s\S]*includeAuth: false/,
+  "Public Join Entry form submission must not carry an unverified or stale local auth token."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /submitJoinRequest\([\s\S]*options\?: \{ includeAuth\?: boolean \}[\s\S]*options\?\.includeAuth === false \? null : getAccessToken\(\)/,
+  "The shared join-request API helper must support public unauthenticated submission for the invite form."
 );
 
 if (findings.length > 0) {

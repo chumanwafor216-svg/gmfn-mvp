@@ -18,7 +18,9 @@ import {
   getJoinInvitePreview,
   getJoinInviteRequestStatus,
   getMe,
+  getStoredGmfnId,
   isAuthenticated,
+  logout,
   submitJoinRequest,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
@@ -944,13 +946,13 @@ export default function JoinEntryPage() {
     invitePreviewMessage,
     inviteBlocked
   );
-  const currentGmfnId = cleanText(currentMember?.gmfn_id || "");
-  const hasAuthenticatedSession = isAuthenticated();
-  const usingExistingIdentity = Boolean(currentMember && currentGmfnId);
+  const currentGmfnId = cleanText(currentMember?.gmfn_id || getStoredGmfnId() || "");
+  const hasStoredSession = isAuthenticated();
+  const usingExistingIdentity = Boolean(currentMember);
   const lockedAuthenticatedWithoutGmfn =
-    currentMemberChecked && hasAuthenticatedSession && !usingExistingIdentity;
+    currentMemberChecked && hasStoredSession && !usingExistingIdentity;
   const canUseNewMemberForm =
-    currentMemberChecked && !hasAuthenticatedSession && !usingExistingIdentity;
+    currentMemberChecked && !usingExistingIdentity;
 
   const canSubmit =
     !!effectiveInviteCode &&
@@ -1259,6 +1261,15 @@ export default function JoinEntryPage() {
     setWorkDetail("");
   }
 
+  function clearUnclearSessionAndOpenForm() {
+    logout();
+    setCurrentMember(null);
+    setCurrentMemberChecked(true);
+    setFormOpen(true);
+    setErr(null);
+    setSuccess(null);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -1297,15 +1308,20 @@ export default function JoinEntryPage() {
         throw new Error("Enter country.");
       }
 
-      const res = await submitJoinRequest({
-        invite_code: safeInviteCode,
-        first_name: safeFirstName,
-        surname: safeSurname,
-        phone_e164: safePhone,
-        country: safeCountry,
-        business_name: safeBusinessName || undefined,
-        note: safeNote || undefined,
-      });
+      const res = await submitJoinRequest(
+        {
+          invite_code: safeInviteCode,
+          first_name: safeFirstName,
+          surname: safeSurname,
+          phone_e164: safePhone,
+          country: safeCountry,
+          business_name: safeBusinessName || undefined,
+          note: safeNote || undefined,
+        },
+        {
+          includeAuth: false,
+        }
+      );
 
       const existingRequest =
         Boolean(res?.existing_request) ||
@@ -1827,7 +1843,9 @@ export default function JoinEntryPage() {
                 >
                   {joinEntryIconText(
                     "community",
-                    "Join this community with your existing GSN identity.",
+                    currentGmfnId
+                      ? "Join this community with your existing GSN identity."
+                      : "Join this community with your signed-in GSN account.",
                     26
                   )}
                 </div>
@@ -1845,7 +1863,13 @@ export default function JoinEntryPage() {
                   }}
                 >
                   <span style={badge(true)}>
-                    {joinEntryIconText("id", `GSN ID ${currentGmfnId}`, 20)}
+                    {joinEntryIconText(
+                      "id",
+                      currentGmfnId
+                        ? `GSN ID ${currentGmfnId}`
+                        : "GSN ID will be confirmed",
+                      20
+                    )}
                   </span>
                   <span style={badge(false)}>
                     {joinEntryIconText(
@@ -1874,9 +1898,31 @@ export default function JoinEntryPage() {
 
             {lockedAuthenticatedWithoutGmfn ? (
               <div style={{ marginTop: 14, ...noticeStyle("info") }}>
-                Sign in again before using an existing GSN identity for this
-                invite. The app will not create a second identity for a logged-in
-                member.
+                <div>
+                  This phone has an old or unclear sign-in session. Sign in again
+                  if you already have a GSN ID. If this is not your session, clear
+                  it here and open the join request form.
+                </div>
+                <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
+                  <StableCtaLink
+                    to={ctaPath(signInConflictCta)}
+                    kind="secondary"
+                    debugId={signInConflictCta.debugId}
+                    stableHeight={52}
+                    style={entryChoiceActionStyle("secondary")}
+                  >
+                    {joinEntryIconText("id", "Sign in again")}
+                  </StableCtaLink>
+                  <SecondaryButton
+                    type="button"
+                    onClick={clearUnclearSessionAndOpenForm}
+                    debugId="join-entry.clear-unclear-session-open-form"
+                    stableHeight={52}
+                    style={entryChoiceActionStyle("secondary")}
+                  >
+                    {joinEntryIconText("join-person-plus", "Open request form")}
+                  </SecondaryButton>
+                </CardActionRow>
               </div>
             ) : null}
 

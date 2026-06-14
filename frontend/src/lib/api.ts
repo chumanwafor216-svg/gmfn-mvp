@@ -1174,21 +1174,24 @@ export async function listClanMembers(clanId: number): Promise<any> {
   );
 }
 
-export async function submitJoinRequest(payload: {
-  invite_code: string;
-  first_name?: string | null;
-  surname?: string | null;
-  phone_e164?: string | null;
-  country?: string | null;
-  business_name?: string | null;
-  note?: string | null;
-}): Promise<any> {
+export async function submitJoinRequest(
+  payload: {
+    invite_code: string;
+    first_name?: string | null;
+    surname?: string | null;
+    phone_e164?: string | null;
+    country?: string | null;
+    business_name?: string | null;
+    note?: string | null;
+  },
+  options?: { includeAuth?: boolean }
+): Promise<any> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
   };
 
-  const tok = getAccessToken();
+  const tok = options?.includeAuth === false ? null : getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
 
   const res = await fetch(buildUrl("/clans/join-requests"), {
