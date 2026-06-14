@@ -1,3 +1,43 @@
+### Join invite messages now carry explicit sender and receiver names (2026-06-14)
+
+- Trigger:
+  - owner clarified that typed GSN ID is a claim at invite-request time; after
+    community approval, the invited person must later prove the claim by
+    signing in/activating with that same GSN identity.
+  - owner also asked that the outbound invite message carry both the sender name
+    and receiver name, not assume WhatsApp context alone identifies both sides.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - outbound join invite messages now include explicit `To:` and `From:`
+      lines;
+    - the message no longer tells an invitee to `sign in` during the request
+      stage;
+    - it now says existing members should enter their GSN ID in the request
+      form, while new people fill the short request form.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - receiver name is now required before refreshing or sending a join invite;
+    - the join link is not treated as ready unless receiver name and private
+      relationship evidence are both present and recorded on a fresh invite.
+  - Audits updated:
+    - `frontend/tools/audit-marketplace-actions.mjs`;
+    - `frontend/tools/audit-institutional-proof-surfaces.mjs`.
+- Verification:
+  - Passed targeted ESLint for join invite messaging, Marketplace page, and
+    updated audits.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed direct `node tools/audit-institutional-proof-surfaces.mjs` because
+    there is no npm script for that audit.
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this makes the invite message personal and aligned with the current flow;
+  - it does not yet implement an automatic post-approval fraud penalty workflow.
+    The logical next backend/admin slice is to mark a request as failed or
+    suspect if the approved person cannot later authenticate with the claimed
+    GSN ID.
+
 ### Existing-community invite ID/sign-in logic and private inviter evidence tightened (2026-06-14)
 
 - Trigger:

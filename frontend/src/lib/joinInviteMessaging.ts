@@ -67,11 +67,15 @@ export function buildJoinInviteDoorwayMessage(
   const inviteLink = cleanText(args.inviteLink);
   const customMessage = cleanText(args.customMessage);
   const expiresAt = cleanText(args.expiresAt);
+  const inviter = cleanText(args.inviter) || "A known GSN member";
 
   return [
+    `To: ${receiver || "Invited person"}`,
+    `From: ${inviter}`,
+    "",
     receiver ? `Hello ${receiver},` : "Hello,",
     "",
-    `${cleanText(args.inviter) || "A known GSN member"} is inviting you to join ${communityName} on GSN.`,
+    `${inviter} is inviting you to join ${communityName} on GSN.`,
     "GSN helps trusted communities keep one identity, one record, and one review path.",
     marketplaceName ? `Community market: ${marketplaceName}.` : "",
     customMessage ? `Personal note: ${customMessage}` : "",
@@ -80,7 +84,7 @@ export function buildJoinInviteDoorwayMessage(
     "Open the invitation here:",
     inviteLink,
     "",
-    "If you already have a GSN ID, sign in with it. If not, fill the request form. Entry is not automatic.",
+    "If you already have a GSN ID, enter it in the request form. If not, fill the short request form. Entry is not automatic; the community reviews first.",
   ]
     .filter(Boolean)
     .join("\n");

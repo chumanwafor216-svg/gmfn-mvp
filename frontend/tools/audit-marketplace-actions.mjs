@@ -150,8 +150,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /JOIN_RELATIONSHIP_OPTIONS[\s\S]*?marketplace_trade[\s\S]*?JOIN_KNOWN_DURATION_OPTIONS[\s\S]*?over_5_years[\s\S]*?joinRelationshipReady[\s\S]*?joinInviteTrustReady/,
-  "Marketplace Join must collect how the inviter knows the person and how long they have known them before a join invite can be treated as ready."
+  /JOIN_RELATIONSHIP_OPTIONS[\s\S]*?marketplace_trade[\s\S]*?JOIN_KNOWN_DURATION_OPTIONS[\s\S]*?over_5_years[\s\S]*?joinRelationshipReady[\s\S]*?joinRecipientReady[\s\S]*?joinInviteTrustReady/,
+  "Marketplace Join must collect the receiver name, how the inviter knows the person, and how long they have known them before a join invite can be treated as ready."
 );
 
 assertContains(
@@ -162,8 +162,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add how you know this person[\s\S]*?Refresh Join Link so GSN records how you know this person[\s\S]*?return true;/,
-  "Marketplace Join share actions must refuse to send until relationship evidence has been recorded on the generated invite."
+  /function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add the receiver name before sending the invite[\s\S]*?Add how you know this person[\s\S]*?Refresh Join Link so GSN records how you know this person[\s\S]*?return true;/,
+  "Marketplace Join share actions must refuse to send until receiver name and relationship evidence have been recorded on the generated invite."
 );
 
 assertContains(

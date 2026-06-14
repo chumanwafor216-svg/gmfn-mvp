@@ -4845,6 +4845,10 @@ export default function MarketplacePage() {
     return Boolean(safeStr(joinRelationshipType) && safeStr(joinKnownDuration));
   }, [joinRelationshipType, joinKnownDuration]);
 
+  const joinRecipientReady = useMemo(() => {
+    return Boolean(safeStr(joinRecipientName));
+  }, [joinRecipientName]);
+
   const joinRelationshipEvidenceKey = useMemo(() => {
     return [
       safeStr(joinRelationshipType),
@@ -4856,22 +4860,25 @@ export default function MarketplacePage() {
   const joinInviteTrustReady = useMemo(() => {
     return Boolean(
       inviteLink &&
+        joinRecipientReady &&
         joinRelationshipReady &&
         joinRelationshipEvidenceRecordedKey &&
         joinRelationshipEvidenceRecordedKey === joinRelationshipEvidenceKey
     );
   }, [
     inviteLink,
+    joinRecipientReady,
     joinRelationshipReady,
     joinRelationshipEvidenceKey,
     joinRelationshipEvidenceRecordedKey,
   ]);
 
   const joinRelationshipStatusText = useMemo(() => {
+    if (!joinRecipientReady) return "Name needed";
     if (!joinRelationshipReady) return "Relationship needed";
     if (inviteLink && !joinInviteTrustReady) return "Refresh needed";
     return inviteLink ? "Ready" : "Refresh";
-  }, [inviteLink, joinInviteTrustReady, joinRelationshipReady]);
+  }, [inviteLink, joinInviteTrustReady, joinRecipientReady, joinRelationshipReady]);
 
   const personalizedInviteLink = useMemo(() => {
     return (
@@ -5360,6 +5367,11 @@ export default function MarketplacePage() {
       return;
     }
 
+    if (!safeStr(joinRecipientName)) {
+      showNotice("error", "Add the receiver name before refreshing the join link.");
+      return;
+    }
+
     const relationshipType = safeStr(joinRelationshipType);
     const knownDuration = safeStr(joinKnownDuration);
 
@@ -5413,6 +5425,11 @@ export default function MarketplacePage() {
   }
 
   function requireJoinInviteTrustEvidence(): boolean {
+    if (!joinRecipientReady) {
+      showNotice("error", "Add the receiver name before sending the invite.");
+      return false;
+    }
+
     if (!joinRelationshipReady) {
       showNotice(
         "error",
@@ -7401,6 +7418,8 @@ export default function MarketplacePage() {
                     <span style={compactStatusPillStyle(joinInviteTrustReady)}>
                       {joinInviteTrustReady
                         ? "Community join link ready"
+                        : !joinRecipientReady
+                          ? "Add receiver name first"
                         : !joinRelationshipReady
                           ? "Add relationship evidence first"
                           : canManageMarketplaceLinks

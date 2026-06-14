@@ -442,7 +442,7 @@ assertContains(
 );
 assertContains(
   "joinInviteMessaging",
-  /export function buildJoinInviteLetter[\s\S]*?Complete the form below if you want to continue[\s\S]*?Entry is not automatic[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?Click here to open the request form:[\s\S]*?Entry is not automatic\. The community reviews your request first\./,
+  /export function buildJoinInviteLetter[\s\S]*?GSN helps trusted communities keep one identity[\s\S]*?Entry is not automatic[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?`To: \$\{receiver \|\| "Invited person"\}`[\s\S]*?`From: \$\{inviter\}`[\s\S]*?Open the invitation here:[\s\S]*?If you already have a GSN ID, enter it in the request form[\s\S]*?Entry is not automatic; the community reviews first\./,
   "Shared join invite messaging must keep the form-page invite and outbound doorway message short, non-repetitive, and review-aware."
 );
 assertContains(
