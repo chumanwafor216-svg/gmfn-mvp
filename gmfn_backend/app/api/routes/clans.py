@@ -2407,6 +2407,28 @@ def create_join_request(
 
     submitted_phone = _safe_str(payload.phone_e164)
     join_identity_profile_payload: dict[str, Any] | None = None
+    if claimed_existing_identity_user is not None:
+        missing_existing_fields = [
+            label
+            for label, value in (
+                ("first_name", payload.first_name),
+                ("surname", payload.surname),
+                ("phone_e164", payload.phone_e164),
+            )
+            if not _safe_str(value)
+        ]
+        if missing_existing_fields:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "existing_gsn_applicant_details_required",
+                    "message": (
+                        "Add the applicant name and phone number with the GSN number "
+                        "so the community can recognize who is asking to join."
+                    ),
+                    "missing_fields": missing_existing_fields,
+                },
+            )
     if existing_identity_join:
         applicant_user = (
             claimed_existing_identity_user

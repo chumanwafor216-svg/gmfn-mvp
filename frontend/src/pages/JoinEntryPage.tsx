@@ -1225,6 +1225,7 @@ export default function JoinEntryPage() {
     hasExistingGsnClaim &&
     !!cleanText(firstName) &&
     !!cleanText(surname) &&
+    !!cleanText(phone) &&
     !busy;
 
   const submittedRequestId = cleanText(
@@ -1825,10 +1826,13 @@ export default function JoinEntryPage() {
       }
       const safeFirstName = cleanText(firstName);
       const safeSurname = cleanText(surname);
+      const safePhone = cleanText(phone);
       const safeBusinessName = buildWorkSummary(workCategory, workDetail);
 
-      if (!safeFirstName || !safeSurname) {
-        throw new Error("Add your name with the GSN number before sending the request.");
+      if (!safeFirstName || !safeSurname || !safePhone) {
+        throw new Error(
+          "Add your name and phone number with the GSN number before sending the request."
+        );
       }
 
       const res = await submitJoinRequest(
@@ -1837,6 +1841,7 @@ export default function JoinEntryPage() {
           existing_gmfn_id: safeExistingGsnId,
           first_name: safeFirstName,
           surname: safeSurname,
+          phone_e164: safePhone,
           business_name: safeBusinessName || undefined,
           note: cleanText(note) || undefined,
         },
@@ -2435,6 +2440,16 @@ export default function JoinEntryPage() {
                           style={{ ...inputStyle(), marginTop: 8 }}
                         />
                       </div>
+                    </div>
+                    <div>
+                      <div style={labelText()}>Phone number</div>
+                      <input
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        placeholder="Phone number voters may know"
+                        inputMode="tel"
+                        style={{ ...inputStyle(), marginTop: 8 }}
+                      />
                     </div>
                     <div>
                       <div style={labelText()}>Work, business, or trade (optional)</div>

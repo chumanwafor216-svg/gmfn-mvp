@@ -68,6 +68,43 @@
     must refresh the join link so the new backend trust event contains the
     private relationship evidence before sharing.
 
+### Existing-GSN invite branch now requires phone for community recognition (2026-06-14)
+
+- Trigger:
+  - owner pointed out that an existing GSN number alone is not enough for the
+    community review group to recognize the applicant.
+  - the community needs at least ordinary identifying context, especially name
+    and phone, so members can tell whether this is someone they already know.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - the `Use GSN ID` branch now requires `Existing GSN number`, `First name`,
+      `Surname`, and `Phone number`;
+    - the typed existing-GSN submit payload now sends `phone_e164` with the
+      name and GSN number;
+    - the submit button stays visually unavailable until phone is filled.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - public typed-existing-GSN join requests now reject missing first name,
+      surname, or phone with `existing_gsn_applicant_details_required`.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage that missing phone is rejected and successful typed-GSN
+      reuse records phone in the trust event applicant profile.
+  - Audits updated:
+    - `frontend/tools/audit-existing-community-invite-line.mjs`;
+    - `frontend/tools/audit-entry-auth-contracts.mjs`.
+- Verification:
+  - Passed targeted ESLint for touched entry files/audits.
+  - Passed `python -m pytest -q tests/test_join_requests.py` from
+    `gmfn_backend` (`52 passed`).
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this gives the community a recognizable applicant record, but it still does
+    not prove that the typed GSN ID belongs to the person typing it. Ownership
+    verification remains a future stronger proof step.
+
 ### Existing-community invite sign-in detour removed (2026-06-14)
 
 - Trigger:

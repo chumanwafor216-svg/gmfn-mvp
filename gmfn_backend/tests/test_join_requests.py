@@ -691,6 +691,21 @@ def test_public_join_request_existing_gmfn_id_reuses_global_identity(client):
         )
         db.commit()
 
+    missing_phone_res = client.post(
+        "/clans/join-requests",
+        json={
+            "invite_code": "package-code",
+            "existing_gmfn_id": "GMFN-U-EXISTING123",
+            "first_name": "Chika",
+            "surname": "Okafor",
+        },
+    )
+    assert missing_phone_res.status_code == 422, missing_phone_res.text
+    assert missing_phone_res.json()["detail"]["code"] == (
+        "existing_gsn_applicant_details_required"
+    )
+    assert "phone_e164" in missing_phone_res.json()["detail"]["missing_fields"]
+
     res = client.post(
         "/clans/join-requests",
         json={
@@ -698,6 +713,7 @@ def test_public_join_request_existing_gmfn_id_reuses_global_identity(client):
             "existing_gmfn_id": "GMFN-U-EXISTING123",
             "first_name": "Chika",
             "surname": "Okafor",
+            "phone_e164": "+2348012345678",
             "business_name": "Marketplace trader",
             "note": "Known by the inviter.",
         },
@@ -730,6 +746,7 @@ def test_public_join_request_existing_gmfn_id_reuses_global_identity(client):
         assert meta["identity_reused"] is True
         assert meta["applicant_profile"]["first_name"] == "Chika"
         assert meta["applicant_profile"]["surname"] == "Okafor"
+        assert meta["applicant_profile"]["phone_e164"] == "+2348012345678"
         assert meta["applicant_profile"]["business_name"] == "Marketplace trader"
 
 

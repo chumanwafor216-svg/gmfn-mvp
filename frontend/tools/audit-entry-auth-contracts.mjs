@@ -120,8 +120,14 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /Do you already have a GSN number\?[\s\S]*Use GSN ID[\s\S]*No GSN ID[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN number[\s\S]*First name[\s\S]*Surname[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
+  /Do you already have a GSN number\?[\s\S]*Use GSN ID[\s\S]*No GSN ID[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN number[\s\S]*First name[\s\S]*Surname[\s\S]*Phone number[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
   "Logged-out invite entry must branch existing GSN holders away from new-person signup before exposing the new-person form."
+);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /async function requestJoinWithExistingGsnId\(\)[\s\S]*?const safePhone = cleanText\(phone\)[\s\S]*?first_name: safeFirstName[\s\S]*?surname: safeSurname[\s\S]*?phone_e164: safePhone[\s\S]*?\{ includeAuth: false \}/,
+  "Typed existing-GSN invite submission must send first name, surname, and phone with the GSN number for community recognition."
 );
 
 assertNotContains(
