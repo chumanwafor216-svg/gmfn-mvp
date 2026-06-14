@@ -139,7 +139,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MarketplacePage.tsx",
-  /personalizedJoinInviteUrl\(inviteLink,[\s\S]*?inviterName: memberName[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?communityName: activeJoinCommunityName[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote/,
+  /personalizedJoinInviteUrl\(inviteLink,[\s\S]*?inviterName: joinSenderDisplayName[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?communityName: activeJoinCommunityName[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote/,
   "Marketplace invite sharing must keep the personalized existing-community join URL context needed by JoinEntryPage."
 );
 

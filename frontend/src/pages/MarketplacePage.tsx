@@ -3307,21 +3307,6 @@ function marketplaceJoinFixedFieldStyle(
   };
 }
 
-function marketplaceJoinReadonlyFieldStyle(
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    ...marketplaceJoinFixedFieldStyle(isCompact),
-    display: "flex",
-    alignItems: "center",
-    color: "#07172c",
-    fontWeight: 900,
-    background: "rgba(247, 250, 255, 0.92)",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-  };
-}
-
 function noticeCard(tone: NoticeTone): React.CSSProperties {
   return {
     ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
@@ -3422,6 +3407,7 @@ export default function MarketplacePage() {
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [inviteLink, setInviteLink] = useState<string>("");
+  const [joinSenderName, setJoinSenderName] = useState("");
   const [joinRecipientName, setJoinRecipientName] = useState("");
   const [joinInviteNote, setJoinInviteNote] = useState("");
   const [joinRelationshipType, setJoinRelationshipType] = useState("");
@@ -4888,16 +4874,21 @@ export default function MarketplacePage() {
     visibleRepostProducts,
   ]);
 
-  const memberName = useMemo(() => {
-    return (
-      firstPublicIdentity(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name
-      ) || "GSN member"
+  const profileMemberName = useMemo(() => {
+    return firstPublicIdentity(
+      me?.display_name,
+      me?.nickname,
+      me?.name,
+      me?.first_name
     );
   }, [me]);
+
+  const memberName = profileMemberName || "GSN member";
+
+  useEffect(() => {
+    if (!profileMemberName || safeStr(joinSenderName)) return;
+    setJoinSenderName(profileMemberName);
+  }, [profileMemberName, joinSenderName]);
 
   const activeCommunityName = useMemo(() => {
     return communityName(selectedCommunity);
@@ -4919,6 +4910,14 @@ export default function MarketplacePage() {
     return Boolean(safeStr(joinRecipientName));
   }, [joinRecipientName]);
 
+  const joinSenderDisplayName = useMemo(() => {
+    return safeStr(joinSenderName);
+  }, [joinSenderName]);
+
+  const joinSenderReady = useMemo(() => {
+    return Boolean(joinSenderDisplayName);
+  }, [joinSenderDisplayName]);
+
   const joinRelationshipEvidenceKey = useMemo(() => {
     return [
       safeStr(joinRelationshipType),
@@ -4930,6 +4929,7 @@ export default function MarketplacePage() {
   const joinInviteTrustReady = useMemo(() => {
     return Boolean(
       inviteLink &&
+        joinSenderReady &&
         joinRecipientReady &&
         joinRelationshipReady &&
         joinRelationshipEvidenceRecordedKey &&
@@ -4937,6 +4937,7 @@ export default function MarketplacePage() {
     );
   }, [
     inviteLink,
+    joinSenderReady,
     joinRecipientReady,
     joinRelationshipReady,
     joinRelationshipEvidenceKey,
@@ -4944,16 +4945,23 @@ export default function MarketplacePage() {
   ]);
 
   const joinRelationshipStatusText = useMemo(() => {
+    if (!joinSenderReady) return "Sender needed";
     if (!joinRecipientReady) return "Name needed";
     if (!joinRelationshipReady) return "Relationship needed";
     if (inviteLink && !joinInviteTrustReady) return "Refresh needed";
     return inviteLink ? "Ready" : "Refresh";
-  }, [inviteLink, joinInviteTrustReady, joinRecipientReady, joinRelationshipReady]);
+  }, [
+    inviteLink,
+    joinInviteTrustReady,
+    joinRecipientReady,
+    joinRelationshipReady,
+    joinSenderReady,
+  ]);
 
   const personalizedInviteLink = useMemo(() => {
     return (
       personalizedJoinInviteUrl(inviteLink, {
-        inviterName: memberName,
+        inviterName: joinSenderDisplayName,
         recipientName: joinRecipientName,
         communityCode: activeJoinCommunityCode,
         communityName: activeJoinCommunityName,
@@ -4963,7 +4971,7 @@ export default function MarketplacePage() {
     );
   }, [
     inviteLink,
-    memberName,
+    joinSenderDisplayName,
     joinRecipientName,
     activeJoinCommunityCode,
     activeJoinCommunityName,
@@ -4990,7 +4998,7 @@ export default function MarketplacePage() {
   const joinInviteDoorwayMessage = useMemo(() => {
     if (!personalizedInviteLink) return "";
     return buildJoinInviteDoorwayMessage({
-      inviter: memberName,
+      inviter: joinSenderDisplayName,
       communityName: activeJoinCommunityName,
       marketplaceName: activeCommunityName,
       receiver: joinRecipientName,
@@ -4999,7 +5007,7 @@ export default function MarketplacePage() {
     });
   }, [
     personalizedInviteLink,
-    memberName,
+    joinSenderDisplayName,
     activeJoinCommunityName,
     activeCommunityName,
     joinRecipientName,
@@ -5437,6 +5445,11 @@ export default function MarketplacePage() {
       return;
     }
 
+    if (!safeStr(joinSenderDisplayName)) {
+      showNotice("error", "Add your sender name before refreshing the join link.");
+      return;
+    }
+
     if (!safeStr(joinRecipientName)) {
       showNotice("error", "Add the receiver name before refreshing the join link.");
       return;
@@ -5495,6 +5508,11 @@ export default function MarketplacePage() {
   }
 
   function requireJoinInviteTrustEvidence(): boolean {
+    if (!joinSenderReady) {
+      showNotice("error", "Add your sender name before sending the invite.");
+      return false;
+    }
+
     if (!joinRecipientReady) {
       showNotice("error", "Add the receiver name before sending the invite.");
       return false;
@@ -7491,6 +7509,8 @@ export default function MarketplacePage() {
                     <span style={compactStatusPillStyle(joinInviteTrustReady)}>
                       {joinInviteTrustReady
                         ? "Community join link ready"
+                        : !joinSenderReady
+                          ? "Add sender name first"
                         : !joinRecipientReady
                           ? "Add receiver name first"
                         : !joinRelationshipReady
@@ -7506,7 +7526,7 @@ export default function MarketplacePage() {
                       ? personalizedInviteMaskedLabel
                       : marketplaceJoinLinkGuidance}
                   </div>
-                  <div
+                  <label
                     {...marketplaceFieldTouchProps("marketplace.join.sender-name")}
                     style={{
                       ...marketplaceJoinFieldShellStyle(isCompact),
@@ -7516,14 +7536,15 @@ export default function MarketplacePage() {
                     <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
                       From (sender)
                     </span>
-                    <div
+                    <input
                       {...marketplaceFieldTouchProps("marketplace.join.sender-name")}
+                      value={joinSenderName}
+                      onChange={(event) => setJoinSenderName(event.target.value)}
+                      placeholder="Your name"
                       aria-label="Sender name for join invitation"
-                      style={marketplaceJoinReadonlyFieldStyle(isCompact)}
-                    >
-                      {memberName}
-                    </div>
-                  </div>
+                      style={marketplaceJoinFixedFieldStyle(isCompact)}
+                    />
+                  </label>
                   <div
                     style={{
                       marginTop: isCompact ? 8 : 10,

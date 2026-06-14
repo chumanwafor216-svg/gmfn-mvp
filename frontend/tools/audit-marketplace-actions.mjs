@@ -150,26 +150,26 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /JOIN_RELATIONSHIP_OPTIONS[\s\S]*?marketplace_trade[\s\S]*?JOIN_KNOWN_DURATION_OPTIONS[\s\S]*?over_5_years[\s\S]*?joinRelationshipReady[\s\S]*?joinRecipientReady[\s\S]*?joinInviteTrustReady/,
-  "Marketplace Join must collect the receiver name, how the inviter knows the person, and how long they have known them before a join invite can be treated as ready."
+  /JOIN_RELATIONSHIP_OPTIONS[\s\S]*?marketplace_trade[\s\S]*?JOIN_KNOWN_DURATION_OPTIONS[\s\S]*?over_5_years[\s\S]*?joinRelationshipReady[\s\S]*?joinRecipientReady[\s\S]*?joinSenderDisplayName[\s\S]*?joinSenderReady[\s\S]*?joinInviteTrustReady/,
+  "Marketplace Join must collect the sender name, receiver name, how the inviter knows the person, and how long they have known them before a join invite can be treated as ready."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /From \(sender\)[\s\S]*?aria-label="Sender name for join invitation"[\s\S]*?\{memberName\}[\s\S]*?Receiver name[\s\S]*?Message to receiver \(optional\)[\s\S]*?Private GSN relationship note \(optional\)/,
-  "Marketplace Join invite form must visibly distinguish sender, receiver, receiver-facing note, and private GSN relationship note."
+  /From \(sender\)[\s\S]*?<input[\s\S]*?value=\{joinSenderName\}[\s\S]*?onChange=\{\(event\) => setJoinSenderName\(event\.target\.value\)\}[\s\S]*?aria-label="Sender name for join invitation"[\s\S]*?Receiver name[\s\S]*?Message to receiver \(optional\)[\s\S]*?Private GSN relationship note \(optional\)/,
+  "Marketplace Join invite form must visibly distinguish and edit sender, receiver, receiver-facing note, and private GSN relationship note."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceJoinFieldLabelStyle[\s\S]*?minHeight: isCompact \? 28 : 30[\s\S]*?maxHeight: isCompact \? 28 : 30[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function marketplaceJoinFieldShellStyle[\s\S]*?const shellHeight = isCompact \? 78 : 82[\s\S]*?height: shellHeight[\s\S]*?maxHeight: shellHeight[\s\S]*?function marketplaceJoinFixedFieldStyle[\s\S]*?height: isCompact \? 44 : 46[\s\S]*?maxHeight: isCompact \? 44 : 46[\s\S]*?fontSize: 16[\s\S]*?function marketplaceJoinReadonlyFieldStyle/,
+  /function marketplaceJoinFieldLabelStyle[\s\S]*?minHeight: isCompact \? 28 : 30[\s\S]*?maxHeight: isCompact \? 28 : 30[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function marketplaceJoinFieldShellStyle[\s\S]*?const shellHeight = isCompact \? 78 : 82[\s\S]*?height: shellHeight[\s\S]*?maxHeight: shellHeight[\s\S]*?function marketplaceJoinFixedFieldStyle[\s\S]*?height: isCompact \? 44 : 46[\s\S]*?maxHeight: isCompact \? 44 : 46[\s\S]*?fontSize: 16/,
   "Marketplace Join form controls must keep fixed label, field, 16px anti-zoom input text, and shell geometry so phone taps do not land on moving targets."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /marketplaceSurfaceTouchProps\("marketplace\.links\.join\.surface"\)[\s\S]*?marketplaceFieldTouchProps\("marketplace\.join\.sender-name"\)[\s\S]*?marketplaceJoinReadonlyFieldStyle\(isCompact\)[\s\S]*?marketplaceJoinFieldShellStyle\(isCompact\)[\s\S]*?marketplaceJoinFixedFieldStyle\(isCompact\)[\s\S]*?marketplaceSurfaceTouchProps\("marketplace\.links\.join\.actions"\)[\s\S]*?marketplaceJoinActionsStyle\(isCompact\)/,
-  "Marketplace Join invite surface must cage the expanded lane, read-only sender, field package, and action grid with stable route-local touch helpers."
+  /marketplaceSurfaceTouchProps\("marketplace\.links\.join\.surface"\)[\s\S]*?marketplaceFieldTouchProps\("marketplace\.join\.sender-name"\)[\s\S]*?value=\{joinSenderName\}[\s\S]*?marketplaceJoinFixedFieldStyle\(isCompact\)[\s\S]*?marketplaceJoinFieldShellStyle\(isCompact\)[\s\S]*?marketplaceJoinFixedFieldStyle\(isCompact\)[\s\S]*?marketplaceSurfaceTouchProps\("marketplace\.links\.join\.actions"\)[\s\S]*?marketplaceJoinActionsStyle\(isCompact\)/,
+  "Marketplace Join invite surface must cage the expanded lane, editable sender, field package, and action grid with stable route-local touch helpers."
 );
 
 assertContains(
@@ -180,8 +180,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add the receiver name before sending the invite[\s\S]*?Add how you know this person[\s\S]*?Refresh Join Link so GSN records how you know this person[\s\S]*?return true;/,
-  "Marketplace Join share actions must refuse to send until receiver name and relationship evidence have been recorded on the generated invite."
+  /function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add your sender name before sending the invite[\s\S]*?Add the receiver name before sending the invite[\s\S]*?Add how you know this person[\s\S]*?Refresh Join Link so GSN records how you know this person[\s\S]*?return true;/,
+  "Marketplace Join share actions must refuse to send until sender name, receiver name, and relationship evidence have been recorded on the generated invite."
 );
 
 assertContains(

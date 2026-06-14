@@ -1,3 +1,36 @@
+### Marketplace join invite sender is now editable (2026-06-14)
+
+- Trigger:
+  - owner asked why the `GSN member` value under `From (sender)` was not
+    clickable and whether the inviter should be able to put in a name there.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - changed `From (sender)` from a read-only profile fallback into an
+      editable sender-name input;
+    - pre-fills the sender field from the signed-in profile when a real profile
+      name is available;
+    - blocks join-link refresh/share until sender name, receiver name, and
+      relationship evidence are present;
+    - uses the typed sender name in the personalized join URL and outbound
+      WhatsApp/email invite message instead of falling back to `GSN member`.
+  - Audits updated:
+    - `frontend/tools/audit-marketplace-actions.mjs`;
+    - `frontend/tools/audit-marketplace-touch-blockers.mjs`;
+    - `frontend/tools/audit-marketplace-button-lines.mjs`;
+    - `frontend/tools/audit-existing-community-invite-line.mjs`.
+- Verification:
+  - Passed targeted ESLint for `MarketplacePage` and touched audits.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this fixes the source-level mistake: a generic sender fallback should not
+    be locked when the trust invite depends on a real personal sender name.
+    Phone testing is still needed for the live touch feel.
+
 ### Marketplace join fields now use mobile anti-zoom text size (2026-06-14)
 
 - Trigger:
