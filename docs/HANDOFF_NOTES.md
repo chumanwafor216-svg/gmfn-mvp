@@ -1,3 +1,38 @@
+### Existing-community invitation paper branded (2026-06-14)
+
+- Trigger:
+  - owner asked for the first invitation message itself to look like a proper
+    GSN platform document, with a large faint standard mark/watermark behind
+    the message instead of plain text.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - replaced the old exposed invite message block with a branded
+      `BrandedInvitationPaper` surface;
+    - added a large centered faint `GSNBrandMark` watermark, a small official
+      seal mark, gold/navy paper styling, invite metadata chips, and a compact
+      official footer;
+    - kept the existing acknowledge/continue behavior and join request form
+      gating untouched.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - added a line guard so existing-community invites must keep rendering as
+      a branded GSN invitation paper with the mark/watermark.
+- Verification:
+  - Passed targeted ESLint for `JoinEntryPage` and
+    `audit-existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:action-surfaces`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is route-local to the existing-community invite page right now;
+  - it does not yet create a shared invite/create message template engine;
+  - it does not regenerate the WhatsApp/OpenGraph preview poster image. If the
+    owner wants the WhatsApp link preview card itself to carry the same new
+    paper design, update the poster asset separately.
+
 ### Existing-community invite copy simplified (2026-06-14)
 
 - Trigger:

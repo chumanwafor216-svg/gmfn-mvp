@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
+import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   CardActionRow,
@@ -167,6 +168,102 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 900,
     fontSize: 12,
     whiteSpace: "normal",
+  };
+}
+
+function invitationPaperStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: isCompact ? 26 : 30,
+    padding: isCompact ? 18 : 22,
+    background:
+      "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, rgba(248,252,255,0.96) 52%, rgba(255,247,222,0.92) 100%)",
+    border: "1px solid rgba(214,170,69,0.34)",
+    boxShadow:
+      "0 24px 46px rgba(9,35,63,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
+  };
+}
+
+function invitationPaperContentStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+    display: "grid",
+    gap: 14,
+  };
+}
+
+function invitationPaperHeaderStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "auto 1fr",
+    gap: isCompact ? 10 : 12,
+    alignItems: "center",
+    minWidth: 0,
+  };
+}
+
+function invitationPaperSealStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    width: isCompact ? 48 : 56,
+    height: isCompact ? 48 : 56,
+    borderRadius: 18,
+    display: "grid",
+    placeItems: "center",
+    background: "linear-gradient(145deg, #071D33 0%, #0B2D4A 100%)",
+    border: "1px solid rgba(246,215,122,0.36)",
+    boxShadow: "0 14px 28px rgba(7,29,51,0.24)",
+  };
+}
+
+function invitationPaperEyebrowStyle(): React.CSSProperties {
+  return {
+    color: "#8A640E",
+    fontSize: 11,
+    fontWeight: 1000,
+    letterSpacing: 1.8,
+    textTransform: "uppercase",
+  };
+}
+
+function invitationPaperTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: 2,
+    color: "#07172C",
+    fontSize: isCompact ? 22 : 28,
+    lineHeight: 1.08,
+    fontWeight: 1000,
+  };
+}
+
+function invitationPaperMessageStyle(): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    padding: "14px 16px",
+    background: "rgba(255,255,255,0.72)",
+    border: "1px solid rgba(37,78,119,0.12)",
+    color: "#243E59",
+    lineHeight: 1.58,
+    fontSize: 14,
+    display: "grid",
+    gap: 8,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+  };
+}
+
+function invitationPaperFooterStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    flexWrap: "wrap",
+    color: "#7A5C17",
+    fontSize: 11,
+    fontWeight: 900,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
   };
 }
 
@@ -727,6 +824,87 @@ function readStoredJoinRequest(key: string): any | null {
     writeStorage(key, null);
     return null;
   }
+}
+
+function BrandedInvitationPaper({
+  lines,
+  inviterLabel,
+  communityName,
+  expiresAt,
+  isCompact,
+}: {
+  lines: string[];
+  inviterLabel: string;
+  communityName: string;
+  expiresAt?: string;
+  isCompact: boolean;
+}) {
+  return (
+    <section style={invitationPaperStyle(isCompact)} aria-label="GSN invitation">
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "grid",
+          placeItems: "center",
+          opacity: 0.055,
+          pointerEvents: "none",
+          transform: "translateY(8px)",
+        }}
+      >
+        <GSNBrandMark width={isCompact ? 210 : 280} height={isCompact ? 265 : 352} />
+      </div>
+
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 10,
+          borderRadius: isCompact ? 20 : 24,
+          border: "1px solid rgba(214,170,69,0.18)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <div style={invitationPaperContentStyle()}>
+        <div style={invitationPaperHeaderStyle(isCompact)}>
+          <div style={invitationPaperSealStyle(isCompact)}>
+            <GSNBrandMark width={isCompact ? 28 : 32} height={isCompact ? 36 : 42} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={invitationPaperEyebrowStyle()}>Global Support Network</div>
+            <div style={invitationPaperTitleStyle(isCompact)}>
+              Community invitation
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span style={badge(true)}>{joinEntryIconText("id", inviterLabel, 18)}</span>
+          <span style={badge(false)}>
+            {joinEntryIconText("community", communityName || "GSN community", 18)}
+          </span>
+          {expiresAt ? (
+            <span style={badge(false)}>
+              {joinEntryIconText("calendar", `Open until ${safeDateTime(expiresAt)}`, 18)}
+            </span>
+          ) : null}
+        </div>
+
+        <div style={invitationPaperMessageStyle()}>
+          {lines.map((line, index) => (
+            <div key={`${line}-${index}`}>{line}</div>
+          ))}
+        </div>
+
+        <div style={invitationPaperFooterStyle()}>
+          <span>Official GSN invite</span>
+          <span>One identity. Community review.</span>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function JoinEntryPage() {
@@ -1815,73 +1993,13 @@ export default function JoinEntryPage() {
                 </div>
               ) : null}
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  marginBottom: 14,
-                }}
-              >
-                <span style={badge(true)}>
-                  {joinEntryIconText("id", `Invited by ${inviterLabel}`, 20)}
-                </span>
-                <span style={badge(false)}>
-                  {joinEntryIconText(
-                    "community",
-                    resolvedCommunityName || "This GSN community",
-                    20
-                  )}
-                </span>
-                {resolvedInviteExpiry ? (
-                  <span style={badge(false)}>
-                    {joinEntryIconText("calendar", `Expires ${safeDateTime(resolvedInviteExpiry)}`, 20)}
-                  </span>
-                ) : null}
-              </div>
-              {isCompact ? (
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: "#35516B",
-                    lineHeight: 1.65,
-                    fontSize: 15,
-                    display: "grid",
-                    gap: 8,
-                  }}
-                >
-                  {inviteLetter.map((line, index) => (
-                    <div key={`${line}-${index}`}>{line}</div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      fontWeight: 1000,
-                      color: "#0B1F33",
-                      fontSize: 15,
-                    }}
-                  >
-                    {joinEntryIconText("document", "Invitation", 22)}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#35516B",
-                      lineHeight: 1.82,
-                      fontSize: 15,
-                      display: "grid",
-                      gap: 10,
-                    }}
-                  >
-                    {inviteLetter.map((line, index) => (
-                      <div key={`${line}-${index}`}>{line}</div>
-                    ))}
-                  </div>
-                </>
-              )}
+              <BrandedInvitationPaper
+                lines={inviteLetter}
+                inviterLabel={`Invited by ${inviterLabel}`}
+                communityName={resolvedCommunityName || "This GSN community"}
+                expiresAt={resolvedInviteExpiry}
+                isCompact={isCompact}
+              />
 
               {!inviteAcknowledged ? (
                 <div style={{ marginTop: 18 }}>

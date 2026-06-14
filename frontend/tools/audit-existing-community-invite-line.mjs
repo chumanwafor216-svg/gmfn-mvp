@@ -96,6 +96,12 @@ assertContains(
 );
 
 assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /import GSNBrandMark[\s\S]*?function BrandedInvitationPaper[\s\S]*?<GSNBrandMark[\s\S]*?Community invitation[\s\S]*?Official GSN invite[\s\S]*?<BrandedInvitationPaper/,
+  "Existing-community invites must render as a branded GSN invitation paper with a visible GSN mark/watermark, not a plain message block."
+);
+
+assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
   /GSN helps trusted communities keep one identity, one record, and one review path[\s\S]*?If you are interested, continue and send a request/,
   "Existing-community invite message must keep the relationship-based explanation before the request form."
