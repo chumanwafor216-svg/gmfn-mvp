@@ -2335,6 +2335,15 @@ function marketplaceInlineActionsStyle(
   };
 }
 
+function marketplaceJoinActionsStyle(
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    ...marketplaceInlineActionsStyle(isCompact),
+    gridTemplateColumns: isCompact ? "1fr" : "repeat(auto-fit, minmax(168px, 1fr))",
+  };
+}
+
 function marketplaceInlineActionStyle(
   kind: "primary" | "secondary" | "soft",
   disabled: boolean,
@@ -7271,7 +7280,7 @@ export default function MarketplacePage() {
                       />
                     </label>
                   </div>
-                  <div style={marketplaceInlineActionsStyle(isCompact)}>
+                  <div style={marketplaceJoinActionsStyle(isCompact)}>
                     <StableButton
                       debugId="marketplace.links.join.copy"
                       type="button"

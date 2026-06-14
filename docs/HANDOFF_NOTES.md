@@ -1,3 +1,50 @@
+### Marketplace Join tap replay disabled and phone buttons widened vertically (2026-06-14)
+
+- Trigger:
+  - owner reported the Marketplace `Join this community` card was still very
+    unsteady on phone: tapping fields/buttons could land on another action and
+    was only successful after many attempts.
+- Line-audit finding:
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - the global tap guard could suppress a mismatch and then call
+      `root.click()` on the "intended" action;
+    - that replay behavior is useful for rescuing some shifted buttons, but it
+      is dangerous on `/app/marketplace` because Marketplace has dense fields,
+      share buttons, route buttons, and bottom-nav controls close together.
+- Changed:
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - added Marketplace-specific no-replay protection;
+    - if a Marketplace action tap becomes mismatched/ambiguous, the guard now
+      suppresses it and records:
+      `marketplace-orphan-mismatch-no-replay` or
+      `marketplace-click-mismatch-no-replay`;
+    - this favors "nothing happens, tap again" over "wrong page/action opens."
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added `marketplaceJoinActionsStyle()`;
+    - Join invite controls are now one-column on compact phone layouts instead
+      of side-by-side, reducing hit pressure under the Name/Note fields.
+  - Audits updated:
+    - `frontend/tools/audit-mobile-tap-stability.mjs`
+      - cages that Marketplace taps must fail closed instead of replaying
+        guessed actions.
+    - `frontend/tools/audit-marketplace-button-inventory.mjs`
+      - cages one-column phone layout for Join invite buttons.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:proof-surfaces` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this does not prove the physical phone tap is perfect until owner retests,
+    because the in-app browser automation surface was not available here.
+    It removes the most dangerous code path found in the line audit: replaying
+    a guessed Marketplace action after a mismatch.
+
 ### Join invite chat link shortened and caged (2026-06-14)
 
 - Trigger:

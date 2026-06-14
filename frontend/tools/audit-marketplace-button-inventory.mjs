@@ -189,6 +189,11 @@ assertContains(
 );
 
 assertContains(
+  /function marketplaceJoinActionsStyle\([\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "repeat\(auto-fit, minmax\(168px, 1fr\)\)"[\s\S]*?<div style=\{marketplaceJoinActionsStyle\(isCompact\)\}>/,
+  "Marketplace Join invite buttons must be one-column on phone so field taps are not crowded by side-by-side share controls."
+);
+
+assertContains(
   /selectedRoscaMemberIds\.length < 2[\s\S]*?Choose at least two members for this ROSCA cycle[\s\S]*?createRoscaCycle\(\{[\s\S]*?member_user_ids: selectedRoscaMemberIds/,
   "Marketplace ROSCA Start Cycle must require explicit member selection and pass member_user_ids."
 );

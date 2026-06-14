@@ -288,6 +288,16 @@ function isCommunityHomeAction(root: Element | null): boolean {
   return ctaId.startsWith("community-home.");
 }
 
+function isMarketplaceAction(root: Element | null): boolean {
+  const ctaId = root?.getAttribute("data-cta-id") || "";
+  return ctaId.startsWith("marketplace.");
+}
+
+function isMarketplacePath(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.pathname === "/app/marketplace";
+}
+
 function isTrustedPublicShopAction(root: Element | null): boolean {
   const ctaId = root?.getAttribute("data-cta-id") || "";
 
@@ -809,6 +819,18 @@ function handleClick(event: MouseEvent): void {
       event.stopPropagation();
       lastPointerContext = null;
 
+      if (isMarketplacePath() && isMarketplaceAction(intendedRoot)) {
+        traceTap("marketplace-orphan-mismatch-no-replay", {
+          intended: intendedLabel,
+          ended: labelForAction(endRoot),
+          moved: Math.round(moved),
+          elapsed: Math.round(elapsedSinceStart),
+          shifted: unsafeGeometry,
+        });
+        clearActiveTap();
+        return;
+      }
+
       const committed = !isDisabledAction(intendedRoot)
         ? commitOriginalAction(intendedRoot, reason, {
             ended: labelForAction(endRoot),
@@ -891,6 +913,19 @@ function handleClick(event: MouseEvent): void {
 
     const intendedRoot = activeTap.root;
     const intendedLabel = activeTap.rootLabel;
+    if (isMarketplacePath() && isMarketplaceAction(intendedRoot)) {
+      traceTap("marketplace-click-mismatch-no-replay", {
+        intended: intendedLabel,
+        ended: labelForAction(endRoot),
+        moved: Math.round(moved),
+        elapsed: Math.round(elapsed),
+        shifted: unsafeGeometry,
+      });
+      clearActiveTap();
+      lastPointerContext = null;
+      return;
+    }
+
     const committed = !isDisabledAction(intendedRoot)
       ? commitOriginalAction(intendedRoot, reason, {
           ended: labelForAction(endRoot),

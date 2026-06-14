@@ -328,6 +328,21 @@ if (
   });
 }
 
+if (
+  !/function isMarketplaceAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("marketplace\."\)[\s\S]*?function isMarketplacePath\(\): boolean \{[\s\S]*?window\.location\.pathname === "\/app\/marketplace"[\s\S]*?marketplace-orphan-mismatch-no-replay[\s\S]*?marketplace-click-mismatch-no-replay/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Marketplace mobile taps must fail closed instead of replaying guessed actions",
+    text:
+      "Expected Marketplace-specific no-replay protection was not found in the shared tap guard.",
+  });
+}
+
 if (/setPointerCapture\?\.\(event\.pointerId\)/.test(mobileTapGuardSource)) {
   findings.push({
     file: relative(frontendRoot, mobileTapGuardPath),
