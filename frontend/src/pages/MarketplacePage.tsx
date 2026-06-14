@@ -3300,6 +3300,7 @@ function marketplaceJoinFixedFieldStyle(
     height: isCompact ? 44 : 46,
     minHeight: isCompact ? 44 : 46,
     maxHeight: isCompact ? 44 : 46,
+    fontSize: 16,
     lineHeight: 1.2,
     overflow: "hidden",
     transition: "none",

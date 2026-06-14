@@ -162,8 +162,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceJoinFieldLabelStyle[\s\S]*?minHeight: isCompact \? 28 : 30[\s\S]*?maxHeight: isCompact \? 28 : 30[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function marketplaceJoinFieldShellStyle[\s\S]*?const shellHeight = isCompact \? 78 : 82[\s\S]*?height: shellHeight[\s\S]*?maxHeight: shellHeight[\s\S]*?function marketplaceJoinFixedFieldStyle[\s\S]*?height: isCompact \? 44 : 46[\s\S]*?maxHeight: isCompact \? 44 : 46[\s\S]*?function marketplaceJoinReadonlyFieldStyle/,
-  "Marketplace Join form controls must keep fixed label, field, and shell geometry so phone taps do not land on moving targets."
+  /function marketplaceJoinFieldLabelStyle[\s\S]*?minHeight: isCompact \? 28 : 30[\s\S]*?maxHeight: isCompact \? 28 : 30[\s\S]*?whiteSpace: "nowrap"[\s\S]*?function marketplaceJoinFieldShellStyle[\s\S]*?const shellHeight = isCompact \? 78 : 82[\s\S]*?height: shellHeight[\s\S]*?maxHeight: shellHeight[\s\S]*?function marketplaceJoinFixedFieldStyle[\s\S]*?height: isCompact \? 44 : 46[\s\S]*?maxHeight: isCompact \? 44 : 46[\s\S]*?fontSize: 16[\s\S]*?function marketplaceJoinReadonlyFieldStyle/,
+  "Marketplace Join form controls must keep fixed label, field, 16px anti-zoom input text, and shell geometry so phone taps do not land on moving targets."
 );
 
 assertContains(

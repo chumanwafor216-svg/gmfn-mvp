@@ -1,3 +1,30 @@
+### Marketplace join fields now use mobile anti-zoom text size (2026-06-14)
+
+- Trigger:
+  - owner shared a phone screenshot showing the Marketplace join invite form
+    still felt jumpy while entering/tapping the receiver and relationship
+    fields on the local `192.168.1.13:5199` test page.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - set the route-local Marketplace join invite input/select/textarea helper
+      to `fontSize: 16` while keeping fixed heights, so mobile browsers are
+      less likely to zoom or shift the viewport when a field receives focus.
+  - `frontend/tools/audit-marketplace-actions.mjs`
+    - caged the 16px anti-zoom field text requirement alongside the fixed
+      geometry checks.
+- Verification:
+  - Passed targeted ESLint for `MarketplacePage` and the Marketplace action
+    audit.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this targets the likely browser focus-zoom jump visible from the screenshot.
+    It still needs a real phone retest. The in-app browser connector was not
+    available in this session, so no browser smoke test was performed.
+
 ### Marketplace join invite buttons and fields tightened against mobile jump (2026-06-14)
 
 - Trigger:
