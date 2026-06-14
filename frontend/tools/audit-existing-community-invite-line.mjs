@@ -85,7 +85,7 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showInviteLauncher && canUseNewMemberForm[\s\S]*?How do you want to continue\?[\s\S]*?Sign in \/ use GSN ID[\s\S]*?I am new[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN number[\s\S]*?Sign in to reuse[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
+  /showJoinPathLauncher[\s\S]*?How do you want to continue\?[\s\S]*?Sign in \/ use GSN ID[\s\S]*?I am new[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN number[\s\S]*?Sign in to reuse[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
   "A ready existing-community invite must first present one guided choice, then reveal either existing GSN sign-in or the new-member request form without dumping both paths at once."
 );
 
@@ -115,7 +115,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /lockedAuthenticatedWithoutGmfn[\s\S]*?cannot confirm the signed-in GSN identity[\s\S]*?debugId=\{signInConflictCta\.debugId\}[\s\S]*?Sign in again[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?Open form/,
+  /showUnclearSessionRecovery[\s\S]*?old or unclear sign-in[\s\S]*?debugId=\{signInConflictCta\.debugId\}[\s\S]*?Sign in again[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?I am new/,
   "Unclear stored-session state must explain the problem and offer both sign-in recovery and request-form recovery."
 );
 

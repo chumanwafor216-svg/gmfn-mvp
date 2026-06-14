@@ -138,7 +138,7 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /lockedAuthenticatedWithoutGmfn[\s\S]*cannot confirm the signed-in GSN identity[\s\S]*Sign in again[\s\S]*Open form/,
+  /showUnclearSessionRecovery[\s\S]*old or unclear sign-in[\s\S]*Sign in again[\s\S]*I am new/,
   "Join Entry must explain and recover from an unclear stored session instead of dead-ending after invite validation."
 );
 

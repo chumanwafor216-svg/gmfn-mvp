@@ -40,6 +40,41 @@
   - real-phone review is still needed to confirm the first viewport feels calm
     after Render/local deployment.
 
+### Join request competing recovery cards corrected (2026-06-14)
+
+- Trigger:
+  - owner tested the join request page on phone and saw `Saved form found`,
+    unclear sign-in recovery, and the normal `How do you want to continue?`
+    launcher all stacked together.
+  - this failed the one-decision rule and still looked like a dump.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - added priority gates so the request page shows only one recovery/choice
+      surface at a time;
+    - unclear sign-in recovery now suppresses both the saved-form prompt and
+      the normal launcher until the user chooses `Sign in again` or `I am new`;
+    - unresolved saved draft suppresses the normal launcher until the user
+      chooses `Continue saved form` or `Start again`;
+    - unclear sign-in copy was shortened to explain the real decision without
+      showing an extra normal choice card beneath it.
+  - Audits updated:
+    - `frontend/tools/audit-existing-community-invite-line.mjs`;
+    - `frontend/tools/audit-entry-auth-contracts.mjs`.
+- Verification:
+  - Passed targeted ESLint for `JoinEntryPage` and updated audits.
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:action-surfaces`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this fixes the visible stacked-decision bug shown in the phone screenshot;
+  - if the first viewport still feels too heavy after this, the next likely
+    issue is the page-level heading/helper text and card scale, not the branch
+    logic.
+
 ### Existing-community invitation paper branded (2026-06-14)
 
 - Trigger:

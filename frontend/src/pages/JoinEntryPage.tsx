@@ -1207,6 +1207,18 @@ export default function JoinEntryPage() {
   const canUseNewMemberForm =
     currentMemberChecked && !usingExistingIdentity;
   const hasExistingGsnClaim = Boolean(cleanText(existingGsnId));
+  const showUnclearSessionRecovery =
+    lockedAuthenticatedWithoutGmfn && joinPathChoice !== "new";
+  const showDraftRecovery =
+    Boolean(joinResumeNotice) &&
+    !showUnclearSessionRecovery &&
+    joinPathChoice === null &&
+    !success;
+  const showJoinPathLauncher =
+    showInviteLauncher &&
+    canUseNewMemberForm &&
+    !showUnclearSessionRecovery &&
+    !showDraftRecovery;
 
   const canSubmit =
     !!effectiveInviteCode &&
@@ -2090,7 +2102,7 @@ export default function JoinEntryPage() {
               short form for community review.
             </div>
 
-            {joinResumeNotice ? (
+            {showDraftRecovery ? (
               <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
                 <div style={labelText()}>
                   {joinEntryIconText("refresh", "Saved form found", 22)}
@@ -2190,11 +2202,11 @@ export default function JoinEntryPage() {
               </div>
             ) : null}
 
-            {lockedAuthenticatedWithoutGmfn ? (
+            {showUnclearSessionRecovery ? (
               <div style={{ marginTop: 14, ...noticeStyle("info") }}>
                 <div>
-                  We cannot confirm the signed-in GSN identity on this phone.
-                  Sign in again, or open the form as a new requester.
+                  This phone has an old or unclear sign-in. Sign in again if
+                  you already have a GSN ID, or continue as new.
                 </div>
                 <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
                   <StableCtaLink
@@ -2213,13 +2225,13 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    {joinEntryIconText("join-person-plus", "Open form")}
+                    {joinEntryIconText("join-person-plus", "I am new")}
                   </SecondaryButton>
                 </CardActionRow>
               </div>
             ) : null}
 
-            {showInviteLauncher && canUseNewMemberForm ? (
+            {showJoinPathLauncher ? (
               <div
                 style={{
                   ...innerCard("#FFFFFF"),
