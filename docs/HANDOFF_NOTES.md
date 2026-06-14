@@ -1,3 +1,49 @@
+### Marketplace Join card mobile field/button stability (2026-06-14)
+
+- Trigger:
+  - owner reported that on Marketplace -> Join this community, typing/tapping
+    the `Name` field could jump to unrelated places such as Trust or Welcome;
+  - owner also reported that dragging/scrolling inside Marketplace inner pages
+    could feel stuck for a few seconds before releasing.
+- Changed:
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - editable fields are now tracked separately from action buttons;
+    - when a touch begins in an input/textarea/select, a later tap-sized click
+      that lands on a different route/action root is suppressed instead of
+      being committed as navigation;
+    - editable fields are excluded from normal action-root detection even when
+      they carry `data-cta-id` debug metadata.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace native fields now keep `touchAction: "auto"` so typing and
+      vertical dragging feel like fields, not buttons;
+    - the Join card's one-row `Short note` textarea no longer creates a tiny
+      internal vertical scroll trap.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - added guards for editable-field pointer tracking and wrong-root
+      suppression after field touches.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - added guards for Marketplace native field touch behavior and the Join
+      note field avoiding internal scroll.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run build` passed from `frontend/`.
+  - local Vite server started on `http://127.0.0.1:5191` and returned HTTP 200.
+- Unabated truth:
+  - browser-level visual/touch verification was not completed: the in-app
+    browser target was unavailable (`iab` not exposed), and fallback Playwright
+    could not launch because the Chromium binary is not installed locally;
+  - the source-level cause was real: Marketplace fields carried action-root
+    metadata and the global tap guard could still discover them as actions via
+    a direct `closest(ACTION_ROOT_SELECTOR)` path. That direct path has been
+    removed;
+  - this should reduce the field-to-wrong-route jumps and textarea drag hang,
+    but final proof still needs owner testing on the same phone/browser where
+    the issue was observed.
+
 ### Public Shop visitor return to Marketplace (2026-06-14)
 
 - Trigger:

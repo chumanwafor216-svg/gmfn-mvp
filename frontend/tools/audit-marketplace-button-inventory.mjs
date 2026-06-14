@@ -174,6 +174,16 @@ assertContains(
 );
 
 assertContains(
+  /function inputStyle\(\): React\.CSSProperties \{[\s\S]*?pointerEvents: "auto"[\s\S]*?touchAction: "auto"[\s\S]*?position: "relative"[\s\S]*?zIndex: 2/,
+  "Marketplace native fields must keep native touch behavior so typing and vertical dragging do not feel like button taps."
+);
+
+assertContains(
+  /placeholder="Short note"[\s\S]*?rows=\{1\}[\s\S]*?minHeight: isCompact \? 40 : 44[\s\S]*?maxHeight: isCompact \? 40 : 44[\s\S]*?resize: "none"[\s\S]*?overflowY: "hidden"/,
+  "Marketplace Join short-note field must not create a tiny internal scroll trap on mobile."
+);
+
+assertContains(
   /selectedRoscaMemberIds\.length < 2[\s\S]*?Choose at least two members for this ROSCA cycle[\s\S]*?createRoscaCycle\(\{[\s\S]*?member_user_ids: selectedRoscaMemberIds/,
   "Marketplace ROSCA Start Cycle must require explicit member selection and pass member_user_ids."
 );

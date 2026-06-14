@@ -3221,7 +3221,7 @@ function inputStyle(): React.CSSProperties {
     outline: "none",
     boxSizing: "border-box",
     pointerEvents: "auto",
-    touchAction: "manipulation",
+    touchAction: "auto",
     position: "relative",
     zIndex: 2,
   };
@@ -7317,7 +7317,7 @@ export default function MarketplacePage() {
                           minHeight: isCompact ? 40 : 44,
                           maxHeight: isCompact ? 40 : 44,
                           resize: "none",
-                          overflowY: "auto",
+                          overflowY: "hidden",
                         }}
                         aria-label="Short personal note for join invitation"
                       />

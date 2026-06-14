@@ -286,6 +286,36 @@ if (
   });
 }
 
+if (
+  !/const EDITABLE_FIELD_SELECTOR = \[[\s\S]*?textarea[\s\S]*?select/.test(
+    mobileTapGuardSource
+  ) ||
+  !/function actionRootFromTarget\(target: EventTarget \| null\): Element \| null \{[\s\S]*?editableFieldFromTarget\(target\)[\s\S]*?return null[\s\S]*?return target\.closest\(ACTION_ROOT_SELECTOR\);/.test(
+    mobileTapGuardSource
+  ) ||
+  !/function actionRootFromEvent\(event: Event\): Element \| null \{[\s\S]*?const root = actionRootFromTarget\(item\);/.test(
+    mobileTapGuardSource
+  ) ||
+  !/function editableFieldFromTarget\(target: EventTarget \| null\): Element \| null[\s\S]*?function sameFieldRoot\(startedAt: Element, endedAt: Element \| null\): boolean/.test(
+    mobileTapGuardSource
+  ) ||
+  !/let lastFieldPointerContext: FieldPointerContext \| null = null;[\s\S]*?function handlePointerDown\(event: PointerEvent\): void \{[\s\S]*?const fieldRoot = editableFieldFromEvent\(event\);[\s\S]*?lastFieldPointerContext = \{/.test(
+    mobileTapGuardSource
+  ) ||
+  !/function handleClick\(event: MouseEvent\): void \{[\s\S]*?const endFieldRoot = editableFieldFromEvent\(event\);[\s\S]*?field-click-accepted[\s\S]*?field-click-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?field-click-observed/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Editable fields must be tracked separately from action buttons so keyboard viewport shifts cannot trigger Marketplace route buttons",
+    text:
+      "Expected editable-field pointer context, accepted field clicks, and wrong-root field-click suppression were not found.",
+  });
+}
+
 if (/setPointerCapture\?\.\(event\.pointerId\)/.test(mobileTapGuardSource)) {
   findings.push({
     file: relative(frontendRoot, mobileTapGuardPath),

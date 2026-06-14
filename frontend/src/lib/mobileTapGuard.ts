@@ -9,6 +9,12 @@ const ACTION_ROOT_SELECTOR = [
   'input[type="submit"]',
   'input[type="file"]',
 ].join(",");
+const EDITABLE_FIELD_SELECTOR = [
+  'input:not([type="button"]):not([type="submit"]):not([type="file"])',
+  "textarea",
+  "select",
+  '[contenteditable="true"]',
+].join(",");
 
 const BOTTOM_NAV_SELECTOR =
   '[data-gmfn-bottom-nav="true"], [data-gmfn-bottom-nav-item="true"]';
@@ -47,8 +53,13 @@ type PointerContext = {
   cancelledAt?: number;
 };
 
+type FieldPointerContext = PointerContext & {
+  releasedAt?: number;
+};
+
 let activeTap: ActiveTap | null = null;
 let lastPointerContext: PointerContext | null = null;
+let lastFieldPointerContext: FieldPointerContext | null = null;
 let installed = false;
 let lastAcceptedActionClickAt = 0;
 let lastAcceptedActionRoot: Element | null = null;
@@ -62,6 +73,7 @@ function nowMs(): number {
 
 function actionRootFromTarget(target: EventTarget | null): Element | null {
   if (!(target instanceof Element)) return null;
+  if (editableFieldFromTarget(target)) return null;
   return target.closest(ACTION_ROOT_SELECTOR);
 }
 
@@ -71,7 +83,7 @@ function actionRootFromEvent(event: Event): Element | null {
 
   for (const item of path) {
     if (!(item instanceof Element)) continue;
-    const root = item.closest(ACTION_ROOT_SELECTOR);
+    const root = actionRootFromTarget(item);
     if (root) return root;
   }
 
@@ -209,6 +221,29 @@ function commitOriginalAction(
 function isBottomNavAction(root: Element | null): boolean {
   if (!root) return false;
   return Boolean(root.closest(BOTTOM_NAV_SELECTOR));
+}
+
+function editableFieldFromTarget(target: EventTarget | null): Element | null {
+  if (!(target instanceof Element)) return null;
+  return target.closest(EDITABLE_FIELD_SELECTOR);
+}
+
+function editableFieldFromEvent(event: Event): Element | null {
+  const path =
+    typeof event.composedPath === "function" ? event.composedPath() : [];
+
+  for (const item of path) {
+    if (!(item instanceof Element)) continue;
+    const field = editableFieldFromTarget(item);
+    if (field) return field;
+  }
+
+  return editableFieldFromTarget(event.target);
+}
+
+function sameFieldRoot(startedAt: Element, endedAt: Element | null): boolean {
+  if (!endedAt) return false;
+  return startedAt === endedAt;
 }
 
 function isAppShellAction(root: Element | null): boolean {
@@ -397,9 +432,33 @@ function clearIfStale(): void {
   if (lastPointerContext && currentTime - lastPointerContext.startedAt > 1200) {
     lastPointerContext = null;
   }
+
+  if (
+    lastFieldPointerContext &&
+    currentTime - lastFieldPointerContext.startedAt > 1200
+  ) {
+    lastFieldPointerContext = null;
+  }
 }
 
 function handlePointerDown(event: PointerEvent): void {
+  const fieldRoot = editableFieldFromEvent(event);
+  if (fieldRoot) {
+    clearActiveTap();
+    lastPointerContext = null;
+    lastFieldPointerContext = {
+      root: fieldRoot,
+      rootLabel: labelForAction(fieldRoot),
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      rect: rectForAction(fieldRoot),
+      startedAt: nowMs(),
+    };
+    return;
+  }
+
+  lastFieldPointerContext = null;
   const initialRoot = actionRootFromEvent(event);
   const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, initialRoot);
   const coveredCommunityHomeRoot = coveredCommunityHomeActionFromAppShell(
@@ -449,6 +508,13 @@ function handlePointerDown(event: PointerEvent): void {
 }
 
 function handlePointerCancel(event: PointerEvent): void {
+  if (lastFieldPointerContext?.pointerId === event.pointerId) {
+    lastFieldPointerContext = {
+      ...lastFieldPointerContext,
+      cancelledAt: nowMs(),
+    };
+  }
+
   if (lastPointerContext?.pointerId === event.pointerId) {
     lastPointerContext = {
       ...lastPointerContext,
@@ -463,6 +529,13 @@ function handlePointerCancel(event: PointerEvent): void {
 
 function handlePointerUp(event: PointerEvent): void {
   clearIfStale();
+  if (lastFieldPointerContext?.pointerId === event.pointerId) {
+    lastFieldPointerContext = {
+      ...lastFieldPointerContext,
+      releasedAt: nowMs(),
+    };
+  }
+
   if (!activeTap || activeTap.pointerId !== event.pointerId) return;
 
   const endRoot = actionRootFromEvent(event);
@@ -493,6 +566,7 @@ function handleClick(event: MouseEvent): void {
   clearIfStale();
 
   const endRoot = actionRootFromEvent(event);
+  const endFieldRoot = editableFieldFromEvent(event);
   const currentTime = nowMs();
   const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, endRoot);
   const coveredCommunityHomeRoot = coveredCommunityHomeActionFromAppShell(
@@ -550,6 +624,60 @@ function handleClick(event: MouseEvent): void {
     event.stopPropagation();
     clearActiveTap();
     return;
+  }
+
+  if (lastFieldPointerContext) {
+    const elapsedSinceStart = currentTime - lastFieldPointerContext.startedAt;
+    const elapsedSinceCancel = lastFieldPointerContext.cancelledAt
+      ? currentTime - lastFieldPointerContext.cancelledAt
+      : Number.POSITIVE_INFINITY;
+    const moved = Math.hypot(
+      event.clientX - lastFieldPointerContext.x,
+      event.clientY - lastFieldPointerContext.y
+    );
+    const sameField = sameFieldRoot(lastFieldPointerContext.root, endFieldRoot);
+    const recentFieldPointer = elapsedSinceStart <= 900;
+    const recentFieldCancel = elapsedSinceCancel <= 700;
+    const fieldTapLike = moved <= 40;
+
+    if ((recentFieldPointer || recentFieldCancel) && sameField) {
+      traceTap("field-click-accepted", {
+        field: lastFieldPointerContext.rootLabel,
+        moved: Math.round(moved),
+        elapsed: Math.round(elapsedSinceStart),
+      });
+      lastFieldPointerContext = null;
+      return;
+    }
+
+    if ((recentFieldPointer || recentFieldCancel) && fieldTapLike && endRoot) {
+      traceTap(
+        recentFieldCancel
+          ? "field-click-after-cancel-suppressed"
+          : "field-click-mismatch-suppressed",
+        {
+          started: lastFieldPointerContext.rootLabel,
+          ended: labelForAction(endRoot),
+          moved: Math.round(moved),
+          elapsed: Math.round(elapsedSinceStart),
+        }
+      );
+      event.preventDefault();
+      event.stopPropagation();
+      lastFieldPointerContext = null;
+      clearActiveTap();
+      return;
+    }
+
+    if (!recentFieldPointer || moved > 40) {
+      traceTap("field-click-observed", {
+        started: lastFieldPointerContext.rootLabel,
+        ended: labelForAction(endRoot),
+        moved: Math.round(moved),
+        elapsed: Math.round(elapsedSinceStart),
+      });
+      lastFieldPointerContext = null;
+    }
   }
 
   const insideSettleWindow =
