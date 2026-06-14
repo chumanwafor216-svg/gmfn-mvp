@@ -1217,6 +1217,15 @@ export default function JoinEntryPage() {
     !!cleanText(dateOfBirth) &&
     !!cleanText(birthPlace) &&
     !busy;
+  const canSubmitExistingGsn =
+    !!effectiveInviteCode &&
+    !inviteBlocked &&
+    !inviteChecking &&
+    inviteAcknowledged &&
+    hasExistingGsnClaim &&
+    !!cleanText(firstName) &&
+    !!cleanText(surname) &&
+    !busy;
 
   const submittedRequestId = cleanText(
     success?.request?.id || success?.request_id || ""
@@ -1715,7 +1724,7 @@ export default function JoinEntryPage() {
         throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
       if (!usingExistingIdentity) {
-        throw new Error("Sign in to your existing GSN account before joining with your current GSN ID.");
+        throw new Error("Use the GSN ID option on this invite before sending the request.");
       }
 
       const displayName = cleanText(currentMember?.display_name || currentMember?.nickname || "");
@@ -1814,11 +1823,22 @@ export default function JoinEntryPage() {
       if (!safeExistingGsnId) {
         throw new Error("Enter your GSN number first.");
       }
+      const safeFirstName = cleanText(firstName);
+      const safeSurname = cleanText(surname);
+      const safeBusinessName = buildWorkSummary(workCategory, workDetail);
+
+      if (!safeFirstName || !safeSurname) {
+        throw new Error("Add your name with the GSN number before sending the request.");
+      }
 
       const res = await submitJoinRequest(
         {
           invite_code: safeInviteCode,
           existing_gmfn_id: safeExistingGsnId,
+          first_name: safeFirstName,
+          surname: safeSurname,
+          business_name: safeBusinessName || undefined,
+          note: cleanText(note) || undefined,
         },
         { includeAuth: false }
       );
@@ -2218,7 +2238,7 @@ export default function JoinEntryPage() {
                     "community",
                     currentGmfnId
                       ? "Join this community with your existing GSN identity."
-                      : "Join this community with your signed-in GSN account.",
+                      : "Join this community with your current GSN account.",
                     26
                   )}
                 </div>
@@ -2272,8 +2292,8 @@ export default function JoinEntryPage() {
             {showUnclearSessionRecovery ? (
               <div style={{ marginTop: 14, ...noticeStyle("info") }}>
                 <div>
-                  This phone has an old or unclear sign-in. Enter your GSN
-                  number here, or continue as new.
+                  This phone has an old saved access state. Enter your GSN
+                  number here, or continue without one.
                 </div>
                 <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
                   <SecondaryButton
@@ -2292,7 +2312,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    {joinEntryIconText("join-person-plus", "I am new")}
+                    {joinEntryIconText("join-person-plus", "No GSN ID")}
                   </SecondaryButton>
                 </CardActionRow>
               </div>
@@ -2309,7 +2329,7 @@ export default function JoinEntryPage() {
               >
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ ...labelText(), marginBottom: 0 }}>
-                    {joinEntryIconText("id", "How do you want to continue?", 22)}
+                    {joinEntryIconText("id", "Do you already have a GSN number?", 22)}
                   </div>
                   <div
                     style={{
@@ -2318,8 +2338,9 @@ export default function JoinEntryPage() {
                       lineHeight: 1.55,
                     }}
                   >
-                    Use your existing GSN ID if you have one. If you are new,
-                    open the short request form for community review.
+                    If you already have one, enter it here so GSN does not
+                    issue another identity after approval. If you do not have
+                    one, fill the short request form for community review.
                   </div>
                   {inviteReady ? (
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -2368,7 +2389,7 @@ export default function JoinEntryPage() {
                       "join-person-plus",
                       inviteChecking
                         ? "Checking"
-                        : "I am new"
+                        : "No GSN ID"
                     )}
                   </SecondaryButton>
                 </div>
@@ -2389,6 +2410,67 @@ export default function JoinEntryPage() {
                         style={{ ...inputStyle(), marginTop: 8 }}
                       />
                     </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <div style={labelText()}>First name</div>
+                        <input
+                          value={firstName}
+                          onChange={(event) => setFirstName(event.target.value)}
+                          placeholder="Enter first name"
+                          style={{ ...inputStyle(), marginTop: 8 }}
+                        />
+                      </div>
+                      <div>
+                        <div style={labelText()}>Surname</div>
+                        <input
+                          value={surname}
+                          onChange={(event) => setSurname(event.target.value)}
+                          placeholder="Enter surname"
+                          style={{ ...inputStyle(), marginTop: 8 }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={labelText()}>Work, business, or trade (optional)</div>
+                      <select
+                        value={workCategory}
+                        onChange={(event) => handleWorkCategoryChange(event.target.value)}
+                        style={{ ...inputStyle(), marginTop: 8 }}
+                      >
+                        <option value="">Select the closest one</option>
+                        {WORK_OPTIONS.map((item) => (
+                          <option key={item.value} value={item.value}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {workCategory && workCategory !== "none" ? (
+                      <div>
+                        <div style={labelText()}>Short detail (optional)</div>
+                        <input
+                          value={workDetail}
+                          onChange={(event) => setWorkDetail(event.target.value)}
+                          placeholder={selectedWorkOption?.hint || "Add a few words if needed"}
+                          style={{ ...inputStyle(), marginTop: 8 }}
+                        />
+                      </div>
+                    ) : null}
+                    <div>
+                      <div style={labelText()}>Short note to the community (optional)</div>
+                      <textarea
+                        value={note}
+                        onChange={(event) => setNote(event.target.value)}
+                        placeholder="Add a short note"
+                        style={{ ...textareaStyle(), marginTop: 8, minHeight: 84 }}
+                      />
+                    </div>
                     {identityNoteOpen ? (
                       <div style={{ ...noticeStyle("info"), marginTop: 0 }}>
                         One person should keep one GSN identity across
@@ -2400,7 +2482,7 @@ export default function JoinEntryPage() {
                       <PrimaryButton
                         type="button"
                         disabled={
-                          !hasExistingGsnClaim ||
+                          !canSubmitExistingGsn ||
                           !canOpenForm ||
                           inviteChecking ||
                           inviteBlocked ||
@@ -2414,9 +2496,9 @@ export default function JoinEntryPage() {
                         style={{
                           ...entryChoiceActionStyle("primary"),
                           opacity:
-                            hasExistingGsnClaim && canOpenForm && !busy ? 1 : 0.62,
+                            canSubmitExistingGsn && canOpenForm && !busy ? 1 : 0.62,
                           cursor:
-                            hasExistingGsnClaim && canOpenForm && !busy
+                            canSubmitExistingGsn && canOpenForm && !busy
                               ? "pointer"
                               : "not-allowed",
                         }}

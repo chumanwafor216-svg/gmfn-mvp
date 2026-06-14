@@ -148,6 +148,36 @@ assertContains(
   "Marketplace fields must stay field-only, while non-field Paid Repost surfaces keep neutral surface markers so the phone tap guard does not treat whole panels as actions."
 );
 
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /JOIN_RELATIONSHIP_OPTIONS[\s\S]*?marketplace_trade[\s\S]*?JOIN_KNOWN_DURATION_OPTIONS[\s\S]*?over_5_years[\s\S]*?joinRelationshipReady[\s\S]*?joinInviteTrustReady/,
+  "Marketplace Join must collect how the inviter knows the person and how long they have known them before a join invite can be treated as ready."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /createClanInvite\(activeCommunityId, \{[\s\S]*?relationship_evidence: relationshipEvidence[\s\S]*?\}\)[\s\S]*?setJoinRelationshipEvidenceRecordedKey\(joinRelationshipEvidenceKey\)/,
+  "Marketplace Join invite creation must send private relationship evidence to the backend trust event before marking the link as recorded."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add how you know this person[\s\S]*?Refresh Join Link so GSN records how you know this person[\s\S]*?return true;/,
+  "Marketplace Join share actions must refuse to send until relationship evidence has been recorded on the generated invite."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.links\.join\.copy"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?copyMarketplaceLink\([\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?copyMarketplaceMessage\([\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?openMarketplaceEmail\([\s\S]*?debugId="marketplace\.links\.join\.whatsapp"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?wa\.me[\s\S]*?disabled=\{!joinInviteTrustReady\}[\s\S]*?debugId="marketplace\.links\.join\.tag-social"/,
+  "Marketplace Join copy, message, email, WhatsApp, and share controls must all use the same private trust-evidence readiness gate."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /buildJoinInviteDoorwayMessage\(\{[\s\S]{0,900}joinRelationship/,
+  "Private relationship evidence must not be exposed in the WhatsApp/email invite message."
+);
+
 assertNotContains(
   "src/pages/MarketplacePage.tsx",
   /function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]{0,650}(data-gmfn-action-root|data-cta-id)/,

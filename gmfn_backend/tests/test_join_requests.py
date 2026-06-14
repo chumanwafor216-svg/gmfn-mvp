@@ -696,6 +696,10 @@ def test_public_join_request_existing_gmfn_id_reuses_global_identity(client):
         json={
             "invite_code": "package-code",
             "existing_gmfn_id": "GMFN-U-EXISTING123",
+            "first_name": "Chika",
+            "surname": "Okafor",
+            "business_name": "Marketplace trader",
+            "note": "Known by the inviter.",
         },
     )
 
@@ -715,6 +719,18 @@ def test_public_join_request_existing_gmfn_id_reuses_global_identity(client):
         assert join_request is not None
         assert join_request.applicant_user_id == 2
         assert join_request.activation_delivery_status == "not_required"
+        event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "invite_accepted")
+            .order_by(TrustEvent.id.desc())
+            .first()
+        )
+        assert event is not None
+        meta = json.loads(event.meta_json or "{}")
+        assert meta["identity_reused"] is True
+        assert meta["applicant_profile"]["first_name"] == "Chika"
+        assert meta["applicant_profile"]["surname"] == "Okafor"
+        assert meta["applicant_profile"]["business_name"] == "Marketplace trader"
 
 
 def test_public_join_request_unknown_existing_gmfn_id_does_not_create_identity(client):

@@ -67,6 +67,7 @@ import {
   listMyClans,
   listMyLoans,
   safeCopy,
+  type ClanInviteRelationshipEvidencePayload,
 } from "../lib/api";
 import {
   getCommunityMoneySurface,
@@ -408,6 +409,27 @@ function normalizeMarketplaceSectionState(
   if (state.money) return focusedMarketplaceSectionState("money");
   return DEFAULT_SECTION_STATE;
 }
+
+const JOIN_RELATIONSHIP_OPTIONS = [
+  { value: "family", label: "Family / blood relation" },
+  { value: "school", label: "School days" },
+  { value: "marketplace_trade", label: "Marketplace / trade" },
+  { value: "work_business", label: "Work / business" },
+  { value: "faith_association", label: "Faith or association" },
+  { value: "neighbour_area", label: "Neighbour / same area" },
+  { value: "friendship", label: "Friendship" },
+  { value: "community_contact", label: "Community contact" },
+  { value: "other", label: "Other known relationship" },
+];
+
+const JOIN_KNOWN_DURATION_OPTIONS = [
+  { value: "under_6_months", label: "Less than 6 months" },
+  { value: "6_to_12_months", label: "6 to 12 months" },
+  { value: "1_to_3_years", label: "1 to 3 years" },
+  { value: "3_to_5_years", label: "3 to 5 years" },
+  { value: "over_5_years", label: "More than 5 years" },
+  { value: "childhood_or_family", label: "Childhood / long family knowledge" },
+];
 
 const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   {
@@ -3332,6 +3354,11 @@ export default function MarketplacePage() {
   const [inviteLink, setInviteLink] = useState<string>("");
   const [joinRecipientName, setJoinRecipientName] = useState("");
   const [joinInviteNote, setJoinInviteNote] = useState("");
+  const [joinRelationshipType, setJoinRelationshipType] = useState("");
+  const [joinKnownDuration, setJoinKnownDuration] = useState("");
+  const [joinRelationshipContext, setJoinRelationshipContext] = useState("");
+  const [joinRelationshipEvidenceRecordedKey, setJoinRelationshipEvidenceRecordedKey] =
+    useState("");
   const [creatingInviteLink, setCreatingInviteLink] = useState(false);
   const [publicShopRecord, setPublicShopRecord] =
     useState<MarketplaceShop | null>(null);
@@ -4814,6 +4841,38 @@ export default function MarketplacePage() {
     return communityCode(selectedCommunity);
   }, [selectedCommunity]);
 
+  const joinRelationshipReady = useMemo(() => {
+    return Boolean(safeStr(joinRelationshipType) && safeStr(joinKnownDuration));
+  }, [joinRelationshipType, joinKnownDuration]);
+
+  const joinRelationshipEvidenceKey = useMemo(() => {
+    return [
+      safeStr(joinRelationshipType),
+      safeStr(joinKnownDuration),
+      safeStr(joinRelationshipContext),
+    ].join("|");
+  }, [joinRelationshipType, joinKnownDuration, joinRelationshipContext]);
+
+  const joinInviteTrustReady = useMemo(() => {
+    return Boolean(
+      inviteLink &&
+        joinRelationshipReady &&
+        joinRelationshipEvidenceRecordedKey &&
+        joinRelationshipEvidenceRecordedKey === joinRelationshipEvidenceKey
+    );
+  }, [
+    inviteLink,
+    joinRelationshipReady,
+    joinRelationshipEvidenceKey,
+    joinRelationshipEvidenceRecordedKey,
+  ]);
+
+  const joinRelationshipStatusText = useMemo(() => {
+    if (!joinRelationshipReady) return "Relationship needed";
+    if (inviteLink && !joinInviteTrustReady) return "Refresh needed";
+    return inviteLink ? "Ready" : "Refresh";
+  }, [inviteLink, joinInviteTrustReady, joinRelationshipReady]);
+
   const personalizedInviteLink = useMemo(() => {
     return (
       personalizedJoinInviteUrl(inviteLink, {
@@ -5301,10 +5360,31 @@ export default function MarketplacePage() {
       return;
     }
 
+    const relationshipType = safeStr(joinRelationshipType);
+    const knownDuration = safeStr(joinKnownDuration);
+
+    if (!relationshipType || !knownDuration) {
+      showNotice(
+        "error",
+        "Add how you know this person and how long you have known them before refreshing the join link."
+      );
+      return;
+    }
+
     setCreatingInviteLink(true);
 
     try {
-      const inviteRes = await createClanInvite(activeCommunityId);
+      const relationshipEvidence: ClanInviteRelationshipEvidencePayload = {
+        evidence_source: "marketplace_join_invite",
+        invitation_context: "existing_community_join_invite",
+        relationship_type: relationshipType,
+        known_duration: knownDuration,
+        confidence_level: "declared_by_inviter",
+        relationship_context: safeStr(joinRelationshipContext) || null,
+      };
+      const inviteRes = await createClanInvite(activeCommunityId, {
+        relationship_evidence: relationshipEvidence,
+      });
       const nextInviteLink = getInviteUrl(inviteRes);
 
       if (!nextInviteLink) {
@@ -5313,6 +5393,7 @@ export default function MarketplacePage() {
       }
 
       setInviteLink(nextInviteLink);
+      setJoinRelationshipEvidenceRecordedKey(joinRelationshipEvidenceKey);
       const retiredCount = Number(inviteRes?.retired_live_invites || 0);
       showNotice(
         "success",
@@ -5329,6 +5410,31 @@ export default function MarketplacePage() {
     } finally {
       setCreatingInviteLink(false);
     }
+  }
+
+  function requireJoinInviteTrustEvidence(): boolean {
+    if (!joinRelationshipReady) {
+      showNotice(
+        "error",
+        "Add how you know this person and how long you have known them before sending the invite."
+      );
+      return false;
+    }
+
+    if (!inviteLink) {
+      showNotice("error", "Refresh the join link after adding how you know this person.");
+      return false;
+    }
+
+    if (!joinInviteTrustReady) {
+      showNotice(
+        "error",
+        "Refresh Join Link so GSN records how you know this person before sending it."
+      );
+      return false;
+    }
+
+    return true;
   }
 
   async function copyMarketplaceLink(
@@ -7280,19 +7386,25 @@ export default function MarketplacePage() {
                     </div>
                     <span
                       style={marketplaceLinkRowStatusStyle(
-                        inviteLink ? "ready" : canManageMarketplaceLinks ? "warn" : "idle",
+                        joinInviteTrustReady
+                          ? "ready"
+                          : canManageMarketplaceLinks
+                            ? "warn"
+                            : "idle",
                         isCompact
                       )}
                     >
-                      {inviteLink ? "Ready" : canManageMarketplaceLinks ? "Refresh" : "Admin"}
+                      {canManageMarketplaceLinks ? joinRelationshipStatusText : "Admin"}
                     </span>
                   </div>
                   <div style={{ marginTop: 10 }}>
-                    <span style={compactStatusPillStyle(Boolean(inviteLink))}>
-                      {inviteLink
+                    <span style={compactStatusPillStyle(joinInviteTrustReady)}>
+                      {joinInviteTrustReady
                         ? "Community join link ready"
-                        : canManageMarketplaceLinks
-                          ? "Join link not ready yet"
+                        : !joinRelationshipReady
+                          ? "Add relationship evidence first"
+                          : canManageMarketplaceLinks
+                            ? "Refresh join link to record trust evidence"
                           : "Admin prepares join link"}
                     </span>
                   </div>
@@ -7350,6 +7462,91 @@ export default function MarketplacePage() {
                       />
                     </label>
                   </div>
+                  <div
+                    style={{
+                      marginTop: isCompact ? 8 : 10,
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                      gap: isCompact ? 8 : 10,
+                    }}
+                  >
+                    <label
+                      {...marketplaceFieldTouchProps("marketplace.join.relationship-type")}
+                      style={{ display: "grid", gap: 6 }}
+                    >
+                      <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                        How do you know this person?
+                      </span>
+                      <select
+                        {...marketplaceFieldTouchProps("marketplace.join.relationship-type")}
+                        value={joinRelationshipType}
+                        onChange={(event) => {
+                          setJoinRelationshipType(event.target.value);
+                          setJoinRelationshipEvidenceRecordedKey("");
+                        }}
+                        style={inputStyle()}
+                        aria-label="How you know the person you are inviting"
+                      >
+                        <option value="">Choose one</option>
+                        {JOIN_RELATIONSHIP_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label
+                      {...marketplaceFieldTouchProps("marketplace.join.known-duration")}
+                      style={{ display: "grid", gap: 6 }}
+                    >
+                      <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                        How long have you known them?
+                      </span>
+                      <select
+                        {...marketplaceFieldTouchProps("marketplace.join.known-duration")}
+                        value={joinKnownDuration}
+                        onChange={(event) => {
+                          setJoinKnownDuration(event.target.value);
+                          setJoinRelationshipEvidenceRecordedKey("");
+                        }}
+                        style={inputStyle()}
+                        aria-label="How long you have known the person you are inviting"
+                      >
+                        <option value="">Choose one</option>
+                        {JOIN_KNOWN_DURATION_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <label
+                    {...marketplaceFieldTouchProps("marketplace.join.relationship-context")}
+                    style={{ marginTop: isCompact ? 8 : 10, display: "grid", gap: 6 }}
+                  >
+                    <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                      Trust note for GSN (optional)
+                    </span>
+                    <textarea
+                      {...marketplaceFieldTouchProps("marketplace.join.relationship-context")}
+                      value={joinRelationshipContext}
+                      onChange={(event) => {
+                        setJoinRelationshipContext(event.target.value);
+                        setJoinRelationshipEvidenceRecordedKey("");
+                      }}
+                      placeholder="Private note, not sent in the invite message"
+                      rows={1}
+                      style={{
+                        ...textAreaStyle(),
+                        minHeight: isCompact ? 40 : 44,
+                        maxHeight: isCompact ? 40 : 44,
+                        resize: "none",
+                        overflowY: "hidden",
+                      }}
+                      aria-label="Private trust note about how you know the invited person"
+                    />
+                  </label>
                   <div style={marketplaceJoinActionsStyle(isCompact)}>
                     {!isCompact ? (
                       <StableButton
@@ -7357,6 +7554,7 @@ export default function MarketplacePage() {
                         type="button"
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
+                            if (!requireJoinInviteTrustEvidence()) return;
                             copyMarketplaceLink(
                               personalizedInviteLink,
                               "GSN join link copied.",
@@ -7366,7 +7564,7 @@ export default function MarketplacePage() {
                         }}
                         style={marketplaceInlineActionStyle(
                           "primary",
-                          !inviteLink,
+                          !joinInviteTrustReady,
                           isCompact
                         )}
                       >
@@ -7387,7 +7585,9 @@ export default function MarketplacePage() {
                         }}
                         style={marketplaceInlineActionStyle(
                           "secondary",
-                          creatingInviteLink || !canManageMarketplaceLinks,
+                          creatingInviteLink ||
+                            !canManageMarketplaceLinks ||
+                            !joinRelationshipReady,
                           isCompact
                         )}
                       >
@@ -7410,6 +7610,7 @@ export default function MarketplacePage() {
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
+                          if (!requireJoinInviteTrustEvidence()) return;
                           copyMarketplaceMessage(
                             joinInviteDoorwayMessage,
                             personalizedInviteLink,
@@ -7420,7 +7621,7 @@ export default function MarketplacePage() {
                       }}
                       style={marketplaceInlineActionStyle(
                         isCompact ? "primary" : "secondary",
-                        !inviteLink,
+                        !joinInviteTrustReady,
                         isCompact
                       )}
                     >
@@ -7435,6 +7636,7 @@ export default function MarketplacePage() {
                         type="button"
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
+                            if (!requireJoinInviteTrustEvidence()) return;
                             openMarketplaceEmail(
                               joinEmailSubject,
                               joinInviteDoorwayMessage,
@@ -7445,7 +7647,7 @@ export default function MarketplacePage() {
                         }}
                         style={marketplaceInlineActionStyle(
                           "secondary",
-                          !inviteLink,
+                          !joinInviteTrustReady,
                           isCompact
                         )}
                       >
@@ -7460,10 +7662,7 @@ export default function MarketplacePage() {
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
-                          if (!inviteLink) {
-                            showNotice("error", marketplaceJoinLinkMissingMessage);
-                            return;
-                          }
+                          if (!requireJoinInviteTrustEvidence()) return;
                           openMarketplaceExternalLink(
                             `https://wa.me/?text=${encodeURIComponent(joinInviteDoorwayMessage)}`,
                             marketplaceJoinLinkMissingMessage
@@ -7472,7 +7671,7 @@ export default function MarketplacePage() {
                       }}
                       style={marketplaceInlineActionStyle(
                         "secondary",
-                        !inviteLink,
+                        !joinInviteTrustReady,
                         isCompact
                       )}
                     >
@@ -7488,13 +7687,13 @@ export default function MarketplacePage() {
                           message: joinInviteDoorwayMessage,
                           url: personalizedInviteLink,
                         }}
-                        disabled={!inviteLink}
+                        disabled={!joinInviteTrustReady}
                         buttonLabel="Share"
                         stableHeight={58}
                         debugId="marketplace.links.join.tag-social"
                         style={marketplaceInlineActionStyle(
                           "secondary",
-                          !inviteLink,
+                          !joinInviteTrustReady,
                           isCompact
                         )}
                         onResult={showNotice}

@@ -89,8 +89,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.recipient-name"\)\}[\s\S]*?<input[\s\S]*?value=\{joinRecipientName\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.invite-note"\)\}[\s\S]*?<textarea[\s\S]*?value=\{joinInviteNote\}/,
-  "Marketplace Join receiver/name field packages must be protected as fields, not only the native input line."
+  /<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.recipient-name"\)\}[\s\S]*?<input[\s\S]*?value=\{joinRecipientName\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.invite-note"\)\}[\s\S]*?<textarea[\s\S]*?value=\{joinInviteNote\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.relationship-type"\)\}[\s\S]*?<select[\s\S]*?value=\{joinRelationshipType\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.known-duration"\)\}[\s\S]*?<select[\s\S]*?value=\{joinKnownDuration\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.relationship-context"\)\}[\s\S]*?<textarea[\s\S]*?value=\{joinRelationshipContext\}/,
+  "Marketplace Join receiver/name and private relationship evidence field packages must be protected as fields, not only the native input line."
 );
 
 const surfaceUses = [...marketplaceSource.matchAll(/marketplaceSurfaceTouchProps\("([^"]+)"\)/g)];

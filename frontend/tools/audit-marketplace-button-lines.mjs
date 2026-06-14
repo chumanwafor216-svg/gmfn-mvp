@@ -10,7 +10,7 @@ const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const findings = [];
 
 const expectedStableActionCount = 59;
-const expectedNativeFieldCount = 14;
+const expectedNativeFieldCount = 17;
 const allowedBusyDisabledExpressions = new Set([
   "creatingRepostPaymentInstruction",
   "loadingRepostCredits",

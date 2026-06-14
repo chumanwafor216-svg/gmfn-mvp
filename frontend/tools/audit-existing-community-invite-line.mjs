@@ -85,13 +85,13 @@ assertNotContains(
 
 assertNotContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /Sign in \/ use GSN ID|Sign in to reuse|Open sign in|Sign in again|signInConflictCta/,
+  /Sign in \/ use GSN ID|Sign in to reuse|Open sign in|Sign in again|signInConflictCta|I am new/,
   "Existing-community Join Entry must not restore the old sign-in detour for invite recipients; existing members should type their GSN ID here."
 );
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showJoinPathLauncher[\s\S]*?How do you want to continue\?[\s\S]*?Use GSN ID[\s\S]*?I am new[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN number[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?Send with GSN ID[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
+  /showJoinPathLauncher[\s\S]*?Do you already have a GSN number\?[\s\S]*?Use GSN ID[\s\S]*?No GSN ID[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN number[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Work, business, or trade[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?Send with GSN ID[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
   "A ready existing-community invite must first present one guided choice, then reveal either direct existing GSN ID submission or the new-member request form without dumping both paths at once."
 );
 
@@ -115,7 +115,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showUnclearSessionRecovery[\s\S]*?old or unclear sign-in[\s\S]*?debugId="join-entry\.use-existing-gsn-after-unclear-session"[\s\S]*?Use GSN ID[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?I am new/,
+  /showUnclearSessionRecovery[\s\S]*?old saved access state[\s\S]*?debugId="join-entry\.use-existing-gsn-after-unclear-session"[\s\S]*?Use GSN ID[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?No GSN ID/,
   "Unclear stored-session state must explain the problem and offer existing-GSN-ID recovery or new-request recovery without a sign-in detour."
 );
 

@@ -120,13 +120,13 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /How do you want to continue\?[\s\S]*Use GSN ID[\s\S]*I am new[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN number[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
+  /Do you already have a GSN number\?[\s\S]*Use GSN ID[\s\S]*No GSN ID[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN number[\s\S]*First name[\s\S]*Surname[\s\S]*requestJoinWithExistingGsnId[\s\S]*Send with GSN ID[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
   "Logged-out invite entry must branch existing GSN holders away from new-person signup before exposing the new-person form."
 );
 
 assertNotContains(
   "src/pages/JoinEntryPage.tsx",
-  /Sign in \/ use GSN ID|Sign in to reuse|Open sign in|Sign in again|signInConflictCta/,
+  /Sign in \/ use GSN ID|Sign in to reuse|Open sign in|Sign in again|signInConflictCta|I am new/,
   "Logged-out existing-community invite entry must not route existing GSN holders into a sign-in detour."
 );
 
@@ -144,7 +144,7 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /showUnclearSessionRecovery[\s\S]*old or unclear sign-in[\s\S]*Use GSN ID[\s\S]*I am new/,
+  /showUnclearSessionRecovery[\s\S]*old saved access state[\s\S]*Use GSN ID[\s\S]*No GSN ID/,
   "Join Entry must explain and recover from an unclear stored session instead of dead-ending after invite validation."
 );
 

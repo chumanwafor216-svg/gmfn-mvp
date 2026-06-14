@@ -1,3 +1,73 @@
+### Existing-community invite ID/sign-in logic and private inviter evidence tightened (2026-06-14)
+
+- Trigger:
+  - owner clarified that existing-community invite recipients should not be
+    sent to `Sign in` during the invite request stage.
+  - correct pilot flow is: ask whether the person already has a GSN number;
+    if yes, collect that number plus simple name/trade details so approval
+    reuses the identity; if no, show the short request form.
+  - owner also clarified that the inviter must declare how they know the
+    invited person and how long they have known them before sending the invite,
+    but that relationship evidence must stay private to GSN and not appear in
+    the WhatsApp/invite message.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - removed remaining existing-community invite-stage `Sign in` wording;
+    - changed the guided question to `Do you already have a GSN number?`;
+    - changed the new-person option to `No GSN ID`;
+    - existing-GSN branch now requires `Existing GSN number`, `First name`, and
+      `Surname`, with optional work/trade and note before `Send with GSN ID`;
+    - typed existing-GSN submissions carry simple applicant details with the
+      join request and still use public unauthenticated submission.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - typed existing-GSN join request trust events now include a compact
+      `applicant_profile` snapshot for reviewer/backend traceability.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - extended typed existing-GSN reuse test coverage to assert applicant
+      profile data reaches the trust event.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Join invite creation now asks the inviter how they know the person and
+      how long they have known them;
+    - the relationship evidence is sent through the existing
+      `relationship_evidence` backend invite contract;
+    - copy/email/WhatsApp/share actions now refuse to send until a fresh join
+      link has recorded that evidence;
+    - the private relationship evidence is intentionally not included in the
+      recipient-facing invite message.
+  - Audits updated:
+    - `frontend/tools/audit-existing-community-invite-line.mjs`;
+    - `frontend/tools/audit-entry-auth-contracts.mjs`;
+    - `frontend/tools/audit-button-stability.mjs`;
+    - `frontend/tools/audit-marketplace-button-lines.mjs`;
+    - `frontend/tools/audit-marketplace-touch-blockers.mjs`;
+    - `frontend/tools/audit-marketplace-actions.mjs`.
+- Verification:
+  - `rg` found no remaining `Sign in`, `sign in`, `signed-in`, `I am new`, or
+    old `How do you want...` invite-stage wording in `JoinEntryPage`.
+  - Passed targeted ESLint for the touched frontend pages/audits.
+  - Passed `python -m pytest -q tests/test_join_requests.py` from
+    `gmfn_backend` (`52 passed`).
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:action-surfaces`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this fixes the current invite-stage detour by removing sign-in from that
+    stage;
+  - typed GSN ID is still not ownership verification by itself. It prevents a
+    new identity from being issued when the typed ID matches an active user,
+    but a stronger future slice should verify the typed ID through the signed-in
+    app, phone/bank/NIN/BVN, or another trusted proof channel after approval;
+  - if a join link existed before relationship evidence was entered, the user
+    must refresh the join link so the new backend trust event contains the
+    private relationship evidence before sharing.
+
 ### Existing-community invite sign-in detour removed (2026-06-14)
 
 - Trigger:

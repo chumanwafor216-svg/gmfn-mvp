@@ -2643,6 +2643,14 @@ def create_join_request(
             "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
             "identity_reused": existing_identity_join,
             "community_admission_status": "pending",
+            "applicant_profile": {
+                "first_name": _safe_str(payload.first_name) or None,
+                "surname": _safe_str(payload.surname) or None,
+                "phone_e164": submitted_phone or None,
+                "country": _safe_str(payload.country) or None,
+                "business_name": _safe_str(payload.business_name) or None,
+                "note": _safe_str(payload.note) or None,
+            },
         },
         dedupe_key=f"join-request-created:{int(join_request.id)}",
     )
