@@ -34,6 +34,11 @@ export type JoinEntryDraft = {
   surname?: string;
   phone?: string;
   country?: string;
+  dateOfBirth?: string;
+  birthCountry?: string;
+  birthPlace?: string;
+  countryOfOrigin?: string;
+  residentialArea?: string;
   workCategory?: string;
   workDetail?: string;
   note?: string;
@@ -277,6 +282,11 @@ export function readJoinEntryDraft(
         safeStr(parsed?.surname) ||
         safeStr(parsed?.phone) ||
         safeStr(parsed?.country) ||
+        safeStr(parsed?.dateOfBirth || parsed?.date_of_birth) ||
+        safeStr(parsed?.birthCountry || parsed?.birth_country) ||
+        safeStr(parsed?.birthPlace || parsed?.birth_place) ||
+        safeStr(parsed?.countryOfOrigin || parsed?.country_of_origin) ||
+        safeStr(parsed?.residentialArea || parsed?.residential_area) ||
         safeStr(parsed?.workCategory || parsed?.work_category) ||
         safeStr(parsed?.workDetail || parsed?.work_detail) ||
         safeStr(parsed?.note)
@@ -292,6 +302,11 @@ export function readJoinEntryDraft(
       surname: safeStr(parsed?.surname),
       phone: safeStr(parsed?.phone),
       country: safeStr(parsed?.country),
+      dateOfBirth: safeStr(parsed?.dateOfBirth || parsed?.date_of_birth),
+      birthCountry: safeStr(parsed?.birthCountry || parsed?.birth_country),
+      birthPlace: safeStr(parsed?.birthPlace || parsed?.birth_place),
+      countryOfOrigin: safeStr(parsed?.countryOfOrigin || parsed?.country_of_origin),
+      residentialArea: safeStr(parsed?.residentialArea || parsed?.residential_area),
       workCategory: safeStr(parsed?.workCategory || parsed?.work_category),
       workDetail: safeStr(parsed?.workDetail || parsed?.work_detail),
       note: safeStr(parsed?.note),
@@ -319,6 +334,11 @@ export function saveJoinEntryDraft(
     surname: safeStr(draft.surname),
     phone: safeStr(draft.phone),
     country: safeStr(draft.country),
+    dateOfBirth: safeStr(draft.dateOfBirth),
+    birthCountry: safeStr(draft.birthCountry),
+    birthPlace: safeStr(draft.birthPlace),
+    countryOfOrigin: safeStr(draft.countryOfOrigin),
+    residentialArea: safeStr(draft.residentialArea),
     workCategory: safeStr(draft.workCategory),
     workDetail: safeStr(draft.workDetail),
     note: safeStr(draft.note),
@@ -333,6 +353,11 @@ export function saveJoinEntryDraft(
       safeDraft.surname ||
       safeDraft.phone ||
       safeDraft.country ||
+      safeDraft.dateOfBirth ||
+      safeDraft.birthCountry ||
+      safeDraft.birthPlace ||
+      safeDraft.countryOfOrigin ||
+      safeDraft.residentialArea ||
       safeDraft.workCategory ||
       safeDraft.workDetail ||
       safeDraft.inviteAcknowledged ||

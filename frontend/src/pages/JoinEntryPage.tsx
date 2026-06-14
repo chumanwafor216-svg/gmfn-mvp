@@ -512,6 +512,13 @@ function friendlyJoinError(value: any): string {
     );
   }
 
+  if (parsedCode === "join_identity_match_review_required") {
+    return (
+      cleanText(parsed?.message) ||
+      "These details look like an existing GSN identity. Sign in with that identity first, or ask the community helper to review it before creating another identity."
+    );
+  }
+
   if (parsed?.message) {
     return cleanText(parsed.message);
   }
@@ -840,6 +847,15 @@ export default function JoinEntryPage() {
   const [surname, setSurname] = useState(() => restoredJoinDraft?.surname || "");
   const [phone, setPhone] = useState(() => restoredJoinDraft?.phone || "");
   const [country, setCountry] = useState(() => restoredJoinDraft?.country || "");
+  const [dateOfBirth, setDateOfBirth] = useState(() => restoredJoinDraft?.dateOfBirth || "");
+  const [birthCountry, setBirthCountry] = useState(() => restoredJoinDraft?.birthCountry || "");
+  const [birthPlace, setBirthPlace] = useState(() => restoredJoinDraft?.birthPlace || "");
+  const [countryOfOrigin, setCountryOfOrigin] = useState(
+    () => restoredJoinDraft?.countryOfOrigin || ""
+  );
+  const [residentialArea, setResidentialArea] = useState(
+    () => restoredJoinDraft?.residentialArea || ""
+  );
   const [workCategory, setWorkCategory] = useState(
     () => restoredJoinDraft?.workCategory || ""
   );
@@ -1017,6 +1033,8 @@ export default function JoinEntryPage() {
     !!cleanText(surname) &&
     !!cleanText(phone) &&
     !!cleanText(country) &&
+    !!cleanText(dateOfBirth) &&
+    !!cleanText(birthPlace) &&
     !busy;
 
   const submittedRequestId = cleanText(
@@ -1218,6 +1236,11 @@ export default function JoinEntryPage() {
       surname,
       phone,
       country,
+      dateOfBirth,
+      birthCountry,
+      birthPlace,
+      countryOfOrigin,
+      residentialArea,
       workCategory,
       workDetail,
       note,
@@ -1226,6 +1249,10 @@ export default function JoinEntryPage() {
     });
   }, [
     country,
+    dateOfBirth,
+    birthCountry,
+    birthPlace,
+    countryOfOrigin,
     communityCode,
     existingGsnId,
     firstName,
@@ -1234,6 +1261,7 @@ export default function JoinEntryPage() {
     inviteAcknowledged,
     note,
     phone,
+    residentialArea,
     surname,
     workCategory,
     workDetail,
@@ -1341,6 +1369,11 @@ export default function JoinEntryPage() {
       const safeSurname = cleanText(surname);
       const safePhone = cleanText(phone);
       const safeCountry = cleanText(country);
+      const safeDateOfBirth = cleanText(dateOfBirth);
+      const safeBirthCountry = cleanText(birthCountry) || safeCountry;
+      const safeBirthPlace = cleanText(birthPlace);
+      const safeCountryOfOrigin = cleanText(countryOfOrigin);
+      const safeResidentialArea = cleanText(residentialArea);
       const safeBusinessName = buildWorkSummary(workCategory, workDetail);
       const safeNote = cleanText(note);
 
@@ -1365,6 +1398,12 @@ export default function JoinEntryPage() {
       if (!safeCountry) {
         throw new Error("Enter country.");
       }
+      if (!safeDateOfBirth) {
+        throw new Error("Enter date of birth.");
+      }
+      if (!safeBirthPlace) {
+        throw new Error("Enter place of birth.");
+      }
 
       const res = await submitJoinRequest(
         {
@@ -1373,6 +1412,11 @@ export default function JoinEntryPage() {
           surname: safeSurname,
           phone_e164: safePhone,
           country: safeCountry,
+          date_of_birth: safeDateOfBirth,
+          birth_country: safeBirthCountry,
+          birth_place: safeBirthPlace,
+          country_of_origin: safeCountryOfOrigin || undefined,
+          residential_area: safeResidentialArea || undefined,
           business_name: safeBusinessName || undefined,
           note: safeNote || undefined,
         },
@@ -1582,6 +1626,11 @@ export default function JoinEntryPage() {
     setSurname("");
     setPhone("");
     setCountry("");
+    setDateOfBirth("");
+    setBirthCountry("");
+    setBirthPlace("");
+    setCountryOfOrigin("");
+    setResidentialArea("");
     setWorkCategory("");
     setWorkDetail("");
     setNote("");
@@ -2327,6 +2376,93 @@ export default function JoinEntryPage() {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={labelText()}>Date of birth</div>
+                  <input
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+
+                <div>
+                  <div style={labelText()}>Place of birth</div>
+                  <input
+                    value={birthPlace}
+                    onChange={(e) => setBirthPlace(e.target.value)}
+                    placeholder="Town, city, or area"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={labelText()}>Birth country (optional)</div>
+                  <select
+                    value={birthCountry}
+                    onChange={(e) => setBirthCountry(e.target.value)}
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  >
+                    <option value="">Same as country</option>
+                    {COUNTRY_OPTIONS.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div style={labelText()}>Residential area (optional)</div>
+                  <input
+                    value={residentialArea}
+                    onChange={(e) => setResidentialArea(e.target.value)}
+                    placeholder="Area or district"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <div style={labelText()}>Country of origin (optional)</div>
+                <select
+                  value={countryOfOrigin}
+                  onChange={(e) => setCountryOfOrigin(e.target.value)}
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                >
+                  <option value="">Not added</option>
+                  {COUNTRY_OPTIONS.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginTop: 12, ...noticeStyle("info") }}>
+                These details help GSN avoid creating two online business
+                identities for the same person. They are recorded for identity
+                continuity review; they are not treated as government-verified
+                proof here.
               </div>
 
               <div style={{ marginTop: 12 }}>

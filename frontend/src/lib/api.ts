@@ -1181,6 +1181,11 @@ export async function submitJoinRequest(
     surname?: string | null;
     phone_e164?: string | null;
     country?: string | null;
+    date_of_birth?: string | null;
+    birth_country?: string | null;
+    birth_place?: string | null;
+    country_of_origin?: string | null;
+    residential_area?: string | null;
     business_name?: string | null;
     note?: string | null;
   },

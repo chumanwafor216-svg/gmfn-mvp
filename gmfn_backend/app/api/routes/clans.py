@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -31,6 +32,11 @@ from app.db.models import (
     ClanJoinVote,
     ClanMembership,
     User,
+)
+from app.db.verification_models import IdentityVerificationCheck
+from app.api.routes.entry import (
+    _find_existing_user_by_identity_profile_checks,
+    _identity_profile_payload_for_entry,
 )
 from app.services.invites_service import (
     api_join_link,
@@ -210,6 +216,11 @@ class JoinApplicationIn(BaseModel):
     surname: Optional[str] = Field(default=None, min_length=1, max_length=80)
     phone_e164: Optional[str] = Field(default=None, min_length=8, max_length=32)
     country: Optional[str] = Field(default=None, min_length=2, max_length=80)
+    date_of_birth: Optional[str] = Field(default=None, max_length=32)
+    birth_country: Optional[str] = Field(default=None, max_length=64)
+    birth_place: Optional[str] = Field(default=None, max_length=160)
+    country_of_origin: Optional[str] = Field(default=None, max_length=64)
+    residential_area: Optional[str] = Field(default=None, max_length=160)
     business_name: Optional[str] = Field(default=None, max_length=160)
     note: Optional[str] = Field(default=None, max_length=500)
 
@@ -751,6 +762,143 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
 def _pending_applicant_email(phone_e164: str) -> str:
     digits = "".join(ch for ch in _safe_str(phone_e164) if ch.isdigit())
     return f"{digits}@pending.gmfn.local"
+
+
+def _join_applicant_display_name(payload: JoinApplicationIn) -> str:
+    return " ".join(
+        part
+        for part in (_safe_str(payload.first_name), _safe_str(payload.surname))
+        if part
+    )
+
+
+def _join_identity_profile_payload(
+    payload: JoinApplicationIn,
+    *,
+    applicant_email: str,
+) -> dict[str, Any]:
+    return _identity_profile_payload_for_entry(
+        display_name=_join_applicant_display_name(payload),
+        phone_e164=payload.phone_e164,
+        email=applicant_email,
+        country=payload.country,
+        date_of_birth=payload.date_of_birth,
+        birth_country=payload.birth_country or payload.country,
+        birth_place=payload.birth_place,
+        country_of_origin=payload.country_of_origin,
+        residential_area=payload.residential_area,
+        browser_locale=None,
+        browser_timezone=None,
+        client_fingerprint=None,
+        device_label=None,
+    )
+
+
+def _join_identity_match_error(
+    *,
+    user: User,
+    signal: str,
+    invite_code: str,
+    clan: Clan,
+) -> HTTPException:
+    return HTTPException(
+        status_code=409,
+        detail={
+            "code": "join_identity_match_review_required",
+            "message": (
+                "These join details look like an existing GSN identity. "
+                "Sign in with that identity first, or ask the community helper "
+                "to review this before a second identity is created."
+            ),
+            "signal": signal,
+            "next_action": "sign_in_or_identity_review",
+            "next_action_label": "Sign in or review identity",
+            "login_path": "/login",
+            "invite_code": invite_code,
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id, clan=clan),
+            "community_name": clan.name,
+            "marketplace_name": getattr(clan, "marketplace_name", None),
+            "gmfn_id": _safe_str(getattr(user, "gmfn_id", None)) or None,
+        },
+    )
+
+
+def _raise_if_join_profile_matches_existing_identity(
+    db: Session,
+    *,
+    payload: JoinApplicationIn,
+    applicant_email: str,
+    invite_code: str,
+    clan: Clan,
+) -> dict[str, Any]:
+    profile_payload = _join_identity_profile_payload(
+        payload,
+        applicant_email=applicant_email,
+    )
+    profile_check = IdentityVerificationCheck(
+        verification_type="identity_profile",
+        provider_key="join.profile_and_place",
+        status="recorded",
+        subject_reference=profile_payload.get("display_name"),
+        confidence_score=20,
+        submitted_payload_json=json.dumps(profile_payload, sort_keys=True),
+    )
+    profile_match, profile_signal = _find_existing_user_by_identity_profile_checks(
+        db,
+        checks=[profile_check],
+    )
+    if profile_match is not None:
+        raise _join_identity_match_error(
+            user=profile_match,
+            signal=profile_signal,
+            invite_code=invite_code,
+            clan=clan,
+        )
+    return profile_payload
+
+
+def _record_join_identity_profile_check(
+    db: Session,
+    *,
+    applicant_user: User,
+    profile_payload: dict[str, Any],
+) -> None:
+    existing_check = (
+        db.query(IdentityVerificationCheck)
+        .filter(
+            IdentityVerificationCheck.user_id == int(applicant_user.id),
+            IdentityVerificationCheck.verification_type == "identity_profile",
+            IdentityVerificationCheck.provider_key == "join.profile_and_place",
+        )
+        .order_by(IdentityVerificationCheck.id.asc())
+        .first()
+    )
+    normalized_payload = {
+        "display_name_key": profile_payload.get("display_name_key"),
+        "date_of_birth": profile_payload.get("date_of_birth"),
+        "country_key": profile_payload.get("country_key"),
+        "birth_country_key": profile_payload.get("birth_country_key"),
+        "birth_place_key": profile_payload.get("birth_place_key"),
+        "country_of_origin_key": profile_payload.get("country_of_origin_key"),
+        "residential_area_key": profile_payload.get("residential_area_key"),
+    }
+    check = existing_check or IdentityVerificationCheck(
+        user_id=int(applicant_user.id),
+        verification_type="identity_profile",
+        provider_key="join.profile_and_place",
+        status="recorded",
+        confidence_score=20,
+        explanation=(
+            "Join request profile evidence was recorded for identity-risk review. "
+            "This is not external identity verification."
+        ),
+    )
+    check.region_code = profile_payload.get("country_key")
+    check.subject_reference = profile_payload.get("display_name")
+    check.submitted_payload_json = json.dumps(profile_payload, sort_keys=True)
+    check.normalized_identity_json = json.dumps(normalized_payload, sort_keys=True)
+    db.add(check)
 
 
 def _is_active_membership(
@@ -2225,6 +2373,7 @@ def create_join_request(
     )
 
     submitted_phone = _safe_str(payload.phone_e164)
+    join_identity_profile_payload: dict[str, Any] | None = None
     if existing_identity_join:
         applicant_user = _ensure_user_gmfn_id(db, current_user)
     else:
@@ -2235,6 +2384,8 @@ def create_join_request(
                 ("surname", payload.surname),
                 ("phone_e164", payload.phone_e164),
                 ("country", payload.country),
+                ("date_of_birth", payload.date_of_birth),
+                ("birth_place", payload.birth_place),
             )
             if not _safe_str(value)
         ]
@@ -2249,6 +2400,15 @@ def create_join_request(
             )
 
         applicant_email = _pending_applicant_email(submitted_phone)
+        existing_user = db.query(User).filter(User.email == applicant_email).first()
+        if not existing_user:
+            join_identity_profile_payload = _raise_if_join_profile_matches_existing_identity(
+                db,
+                payload=payload,
+                applicant_email=applicant_email,
+                invite_code=invite_code,
+                clan=clan,
+            )
         existing_identity_user = (
             db.query(User)
             .filter(User.phone_e164 == submitted_phone)
@@ -2281,7 +2441,6 @@ def create_join_request(
                 },
             )
 
-        existing_user = db.query(User).filter(User.email == applicant_email).first()
         if existing_user:
             applicant_user = existing_user
         else:
@@ -2294,12 +2453,23 @@ def create_join_request(
             db.commit()
             db.refresh(applicant_user)
 
+        if join_identity_profile_payload:
+            _record_join_identity_profile_check(
+                db,
+                applicant_user=applicant_user,
+                profile_payload=join_identity_profile_payload,
+            )
+
+    applicant_phone_updated = False
     if (
         submitted_phone
         and not _safe_str(getattr(applicant_user, "phone_e164", None))
     ):
         applicant_user.phone_e164 = submitted_phone
         db.add(applicant_user)
+        applicant_phone_updated = True
+
+    if not existing_identity_join or applicant_phone_updated:
         db.commit()
         db.refresh(applicant_user)
 
@@ -2459,6 +2629,11 @@ def create_join_request(
             "surname": _safe_str(payload.surname) or None,
             "phone_e164": submitted_phone or None,
             "country": _safe_str(payload.country) or None,
+            "date_of_birth": _safe_str(payload.date_of_birth) or None,
+            "birth_country": _safe_str(payload.birth_country or payload.country) or None,
+            "birth_place": _safe_str(payload.birth_place) or None,
+            "country_of_origin": _safe_str(payload.country_of_origin) or None,
+            "residential_area": _safe_str(payload.residential_area) or None,
             "business_name": payload.business_name,
             "note": payload.note,
         },

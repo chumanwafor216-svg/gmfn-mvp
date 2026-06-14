@@ -1,3 +1,77 @@
+### Existing-community join identity profile cage (2026-06-14)
+
+- Trigger:
+  - owner found a fundamental integrity gap: create-community had duplicate
+    identity risk checks, but joining an existing community could still create
+    a fresh pending identity with similar personal details.
+  - owner clarified that an invite to an existing community must first protect
+    one-person-one-GSN-identity, then let the community voting/review process
+    decide membership.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - public existing-community join requests now collect and evaluate a small
+      identity-continuity profile before creating a new pending applicant;
+    - unauthenticated new applicants must provide date of birth and place of
+      birth, with optional birth country, country of origin, and residential
+      area;
+    - the join route reuses the existing create-entry identity profile matcher
+      and returns `409 join_identity_match_review_required` when the supplied
+      profile looks like an existing GSN identity;
+    - matched/reviewed profile checks are recorded through
+      `IdentityVerificationCheck` with provider key
+      `join.profile_and_place`;
+    - repeated requests from the same existing pending/applicant lineage are
+      preserved, so the fix blocks likely duplicate identities without breaking
+      the existing same-phone pending request behavior.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - join request payloads now include the identity-continuity fields;
+    - added a regression proving same name/date-of-birth/place details with a
+      different phone are blocked for identity review instead of creating a
+      second pending user.
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - the manual invite form now asks for date of birth and place of birth
+      before submission;
+    - optional birth country, residential area, and country of origin are shown
+      in the same caged identity-continuity area;
+    - visible copy explains that these details help GSN avoid creating two
+      online business identities for one person, without claiming government
+      verification.
+  - `frontend/src/lib/entryDraft.ts`, `frontend/src/lib/api.ts`
+    - join drafts and API payloads now carry the new identity-continuity fields.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - audit now guards that the existing-community invite form keeps date of
+      birth and place of birth visible.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_join_requests.py`.
+  - Passed targeted create-entry duplicate identity regression checks:
+    `test_entry_create_blocks_second_identity_with_same_name_dob_profile`,
+    `test_entry_create_blocks_second_identity_with_same_device_and_dob`,
+    `test_entry_create_blocks_second_identity_with_existing_bank_destination`,
+    and `test_entry_create_blocks_second_identity_with_existing_official_id`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:action-surfaces`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed targeted ESLint for `JoinEntryPage`, join draft/API, and the invite
+    line audit.
+- Unabated truth:
+  - this materially reduces duplicate identity risk for existing-community
+    invites, which was weaker than create-community before this slice;
+  - this is not full government-grade or bank-grade verification yet because
+    the invite join form still does not verify NIN/BVN/bank ownership or phone
+    ownership through paid providers;
+  - the matcher is intentionally conservative: a likely profile match blocks
+    creation of another pending identity and asks for sign-in/helper review;
+  - the route currently imports the existing create-entry matcher helper rather
+    than moving identity-risk logic into a dedicated shared service; that is
+    acceptable for this pilot fix but should be cleaned up if identity matching
+    grows further;
+  - no schema migration, auth contract, Render secret, or payment/finance logic
+    was changed.
+
 ### Existing-community invite protocol and action-surface cage tightened (2026-06-14)
 
 - Trigger:

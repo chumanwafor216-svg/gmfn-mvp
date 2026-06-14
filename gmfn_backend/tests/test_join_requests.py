@@ -15,6 +15,7 @@ from app.core.security import create_access_token
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, TrustEvent, User
 from app.db.notification_models import Notification
+from app.db.verification_models import IdentityVerificationCheck
 from app.main import app
 
 
@@ -52,6 +53,11 @@ def _join_payload(invite_code: str) -> dict[str, str]:
         "surname": "Nnamani",
         "phone_e164": "+2349071733533",
         "country": "Nigeria",
+        "date_of_birth": "1984-03-21",
+        "birth_country": "Nigeria",
+        "birth_place": "Aba, Abia State",
+        "country_of_origin": "Nigeria",
+        "residential_area": "Wuse 2, Abuja",
         "business_name": "Business",
         "note": "With God all things are possible",
     }
@@ -651,6 +657,90 @@ def test_public_join_request_existing_phone_requires_login_instead_of_duplicate(
         assert (
             db.query(User)
             .filter(User.email == "2349071733533@pending.gmfn.local")
+            .first()
+            is None
+        )
+        assert db.query(ClanJoinRequest).count() == 0
+
+
+def test_public_join_request_profile_match_requires_identity_review(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        existing_user = User(
+            id=2,
+            email="existing-profile@example.com",
+            phone_e164="+2348011113050",
+            gmfn_id="GMFN-U-JOINPROFILE",
+            hashed_password="hashed",
+            role="user",
+            display_name="Arinze Nnamani",
+        )
+        db.add(existing_user)
+        db.flush()
+        db.add(
+            IdentityVerificationCheck(
+                user_id=int(existing_user.id),
+                verification_type="identity_profile",
+                region_code="NG",
+                provider_key="entry.profile_and_device",
+                status="recorded",
+                subject_reference="Arinze Nnamani",
+                confidence_score=20,
+                explanation="Existing registration profile evidence.",
+                submitted_payload_json=json.dumps(
+                    {
+                        "display_name": "Arinze Nnamani",
+                        "date_of_birth": "1984-03-21",
+                        "country": "Nigeria",
+                        "country_key": "NG",
+                        "birth_country": "Nigeria",
+                        "birth_country_key": "NG",
+                        "birth_place": "Aba, Abia State",
+                        "birth_place_key": "ABAABIASTATE",
+                        "country_of_origin": "Nigeria",
+                        "country_of_origin_key": "NG",
+                        "residential_area": "Wuse 2, Abuja",
+                        "residential_area_key": "WUSE2ABUJA",
+                    }
+                ),
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/join-requests",
+        json={
+            **_join_payload("package-code"),
+            "phone_e164": "+2348011113999",
+        },
+    )
+
+    assert res.status_code == 409, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "join_identity_match_review_required"
+    assert detail["signal"] == "profile_composite_match"
+    assert detail["gmfn_id"] == "GMFN-U-JOINPROFILE"
+    assert detail["login_path"] == "/login"
+
+    with SessionLocal() as db:
+        assert db.query(User).count() == 2
+        assert (
+            db.query(User)
+            .filter(User.email == "2348011113999@pending.gmfn.local")
             .first()
             is None
         )
