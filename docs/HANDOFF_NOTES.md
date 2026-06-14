@@ -1,3 +1,40 @@
+### Public Shop visitor return to Marketplace (2026-06-14)
+
+- Trigger:
+  - owner reported that while viewing another same-community member's public
+    shop (example GSN/GSM number `GMFNU 66E 6A380`), there was no clear button
+    to go back to the main Marketplace member-shop rows and open another
+    person's shop;
+  - owner also confirmed the viewer is a visitor/member, so owner-only Shop,
+    Finance, Community Home, and control shortcuts must not be exposed.
+- Changed:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - added a fixed-height `Back to Marketplace` visitor action near the top of
+      Public Shop Gallery;
+    - the action routes to
+      `/app/marketplace#marketplace-members-shops`, preserving the active
+      community id when the shop record or selected community provides one;
+    - kept the existing `OwnerOnlySurfaceNav requireOwnerMatch={true}` guard,
+      so non-owner visitors still do not see owner shortcut controls.
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated the Public Shop action inventory baseline for the intentional new
+      visitor link;
+    - added a guard requiring the return action to remain fixed-height and to
+      target the Marketplace member shops section rather than owner tools.
+- Verification:
+  - `npm run audit:shop-gallery-button-inventory` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is the correct navigation fix, not a permission fix: it gives visitors
+    a way back to the member shops list without reopening owner controls;
+  - local browser verification was attempted but not completed because the Vite
+    dev server could not be started reliably in this sandbox/process session
+    (`spawn EPERM` on foreground start; hidden starts did not bind a port or
+    leave a fresh log). The source audits and production build passed, but the
+    owner should still tap-test the real deployed page.
+
 ### Welcome and Marketplace button jump tightening (2026-06-14)
 
 - Trigger:

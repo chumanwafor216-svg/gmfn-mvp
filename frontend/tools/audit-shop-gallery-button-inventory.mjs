@@ -27,8 +27,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 8,
   SecondaryButton: 11,
-  StableCtaLink: 3,
-  total: 22,
+  StableCtaLink: 4,
+  total: 23,
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 7;
@@ -173,6 +173,7 @@ for (const action of actions) {
 }
 
 const expectedActionOrder = [
+  "shop-gallery.return-marketplace",
   "shop-gallery.share-shop",
   "shop-gallery.verify-shop.toggle",
   "shop-gallery.owner-contact.choose",
@@ -248,6 +249,11 @@ assertContains(
 assertContains(
   /<OwnerOnlySurfaceNav[\s\S]*?label="Owner shop shortcuts"[\s\S]*?ariaLabel="Public Shop owner shortcuts"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{true\}/,
   "Public Shop shortcut strip must stay hidden from ordinary visitors and non-owner signed-in members through OwnerOnlySurfaceNav."
+);
+
+assertContains(
+  /const marketplaceMemberShopsPath = routeWithCommunity\([\s\S]*?`\$\{APP_ROUTES\.MARKETPLACE\}#marketplace-members-shops`[\s\S]*?ownerSurfaceCommunityId[\s\S]*?<StableCtaLink[\s\S]*?to=\{marketplaceMemberShopsPath\}[\s\S]*?stableHeight=\{isCompact \? 44 : 50\}[\s\S]*?debugId="shop-gallery\.return-marketplace"[\s\S]*?Back to Marketplace/,
+  "Public Shop visitors must have a fixed-height Back to Marketplace action that returns to the member shops section without exposing owner shortcuts."
 );
 
 assertFileContains(

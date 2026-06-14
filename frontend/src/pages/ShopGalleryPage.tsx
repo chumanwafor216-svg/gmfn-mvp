@@ -2152,6 +2152,10 @@ export default function ShopGalleryPage() {
   const ownerSurfaceCommunityId = positiveNumber(
     effectiveShop?.clanId || getSelectedClanId()
   );
+  const marketplaceMemberShopsPath = routeWithCommunity(
+    `${APP_ROUTES.MARKETPLACE}#marketplace-members-shops`,
+    ownerSurfaceCommunityId
+  );
   const signedInOwnsShop = Boolean(
     ownerSessionPresent &&
       signedInGmfnId &&
@@ -2830,6 +2834,31 @@ export default function ShopGalleryPage() {
             </div>
           </div>
         </div>
+
+        <StableCtaLink
+          to={marketplaceMemberShopsPath}
+          fullWidth
+          stableHeight={isCompact ? 44 : 50}
+          debugId="shop-gallery.return-marketplace"
+          aria-label="Back to Marketplace member shops"
+          style={{
+            ...secondaryBtn(false),
+            minHeight: isCompact ? 44 : 50,
+            borderRadius: isCompact ? 14 : 18,
+            fontSize: isCompact ? 12 : 14,
+            padding: isCompact ? "6px 9px" : "9px 14px",
+            color: "#07172C",
+            border: "1px solid rgba(214,170,69,0.26)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
+            boxShadow:
+              "0 10px 22px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
+            gap: isCompact ? 6 : 8,
+          }}
+        >
+          {inlineShopIcon("navigation", "#8C6829", isCompact ? 12 : 15)}
+          <span>Back to Marketplace</span>
+        </StableCtaLink>
 
         <section
           className="public-shop-signboard"
