@@ -615,7 +615,7 @@ def test_public_join_request_creates_pending_activation_identity(client):
         assert applicant.hashed_password == "PENDING_APPROVAL"
 
 
-def test_public_join_request_existing_phone_requires_login_instead_of_duplicate(client):
+def test_public_join_request_existing_phone_requires_gsn_id_instead_of_duplicate(client):
     _seed_join_context()
 
     with SessionLocal() as db:
@@ -648,9 +648,8 @@ def test_public_join_request_existing_phone_requires_login_instead_of_duplicate(
 
     assert res.status_code == 409, res.text
     detail = res.json()["detail"]
-    assert detail["code"] == "existing_account_login_required"
+    assert detail["code"] == "existing_gsn_id_required"
     assert detail["gmfn_id"] == "GMFN-U-PHONEEXISTS"
-    assert detail["login_path"] == "/login"
 
     with SessionLocal() as db:
         assert db.query(User).count() == 2
@@ -660,6 +659,98 @@ def test_public_join_request_existing_phone_requires_login_instead_of_duplicate(
             .first()
             is None
         )
+        assert db.query(ClanJoinRequest).count() == 0
+
+
+def test_public_join_request_existing_gmfn_id_reuses_global_identity(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=2,
+                email="existing-gsn@example.com",
+                phone_e164="+2348000000099",
+                gmfn_id="GMFN-U-EXISTING123",
+                hashed_password="hashed",
+                role="user",
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/join-requests",
+        json={
+            "invite_code": "package-code",
+            "existing_gmfn_id": "GMFN-U-EXISTING123",
+        },
+    )
+
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["existing_identity"] is True
+    assert data["identity_reused"] is True
+    assert data["user_id"] == 2
+    assert data["gmfn_id"] == "GMFN-U-EXISTING123"
+    assert data["request"]["applicant_user_id"] == 2
+    assert data["request"]["applicant_gmfn_id"] == "GMFN-U-EXISTING123"
+
+    with SessionLocal() as db:
+        assert db.query(User).count() == 2
+        assert db.query(ClanJoinRequest).count() == 1
+        join_request = db.query(ClanJoinRequest).first()
+        assert join_request is not None
+        assert join_request.applicant_user_id == 2
+        assert join_request.activation_delivery_status == "not_required"
+
+
+def test_public_join_request_unknown_existing_gmfn_id_does_not_create_identity(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/join-requests",
+        json={
+            "invite_code": "package-code",
+            "existing_gmfn_id": "GMFN-U-NOTFOUND",
+        },
+    )
+
+    assert res.status_code == 404, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "existing_gsn_id_not_found"
+    assert detail["gmfn_id"] == "GMFN-U-NOTFOUND"
+
+    with SessionLocal() as db:
+        assert db.query(User).count() == 1
         assert db.query(ClanJoinRequest).count() == 0
 
 
@@ -734,7 +825,7 @@ def test_public_join_request_profile_match_requires_identity_review(client):
     assert detail["code"] == "join_identity_match_review_required"
     assert detail["signal"] == "profile_composite_match"
     assert detail["gmfn_id"] == "GMFN-U-JOINPROFILE"
-    assert detail["login_path"] == "/login"
+    assert detail["next_action"] == "use_gsn_id_or_identity_review"
 
     with SessionLocal() as db:
         assert db.query(User).count() == 2

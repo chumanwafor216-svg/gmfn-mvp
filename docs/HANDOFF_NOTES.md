@@ -1,3 +1,58 @@
+### Existing-community invite sign-in detour removed (2026-06-14)
+
+- Trigger:
+  - owner tested the existing-community invite as an old member and found the
+    `Sign in / use GSN ID` branch landed back where the invite was generated,
+    which did not help the invited person continue the join request.
+  - owner clarified the desired pilot flow: existing recipients type their
+    global GSN/GMFN number directly on the invite page; new recipients use the
+    short join form; no sign-in detour or notification continuation is being
+    built in this slice.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - removed the invite-specific login route helper and all visible
+      `Sign in / use GSN ID`, `Sign in to reuse`, `Open sign in`, and
+      `Sign in again` actions from the existing-community invite path;
+    - the guided choice now shows `Use GSN ID` or `I am new`;
+    - the existing branch asks for `Existing GSN number` and sends the join
+      request with `Send with GSN ID`;
+    - unclear/stale phone session recovery now offers `Use GSN ID` or
+      `I am new`, instead of sending the person to sign in.
+  - `frontend/src/lib/api.ts`
+    - join request payloads now accept `existing_gmfn_id`.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `POST /clans/join-requests` now accepts `existing_gmfn_id`;
+    - if the ID belongs to an active user, the pending join request is attached
+      to that existing user and no new GSN identity is issued;
+    - if the typed ID is unknown, the route returns
+      `existing_gsn_id_not_found`;
+    - duplicate-phone/profile blockers now point to entering the existing GSN
+      number or helper review, not to sign-in.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added coverage for public typed-GSN-ID reuse and unknown-ID rejection.
+  - Audits updated:
+    - `frontend/tools/audit-existing-community-invite-line.mjs`;
+    - `frontend/tools/audit-entry-auth-contracts.mjs`;
+    - `frontend/tools/audit-button-stability.mjs`.
+- Verification:
+  - Passed targeted ESLint for `JoinEntryPage`, API helper, and updated audits.
+  - Passed `python -m pytest -q tests/test_join_requests.py` from
+    `gmfn_backend` (`52 passed`).
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:action-surfaces`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this fixes the broken sign-in detour for existing-community invites;
+  - typed GSN ID is still not proof of ownership by itself. It prevents a new
+    identity from being issued, but a person could type another active GSN ID.
+    The community review gate still protects admission, and a later stronger
+    slice should verify ownership of the typed GSN ID through signed-in app,
+    phone/BVN/NIN/bank, or another trusted confirmation route.
+
 ### Existing-community join request choice simplified (2026-06-14)
 
 - Trigger:

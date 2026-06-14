@@ -117,26 +117,6 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
   return finalQuery ? `${basePath}?${finalQuery}` : basePath;
 }
 
-function loginPathForExistingIdentity(
-  currentSearch: string,
-  inviteCode: string,
-  existingGsnId = ""
-): string {
-  const merged = new URLSearchParams(currentSearch);
-  const safeInviteCode = cleanText(inviteCode);
-  const safeExistingGsnId = cleanText(existingGsnId).toUpperCase();
-  if (safeInviteCode && !merged.has("invite_code")) {
-    merged.set("invite_code", safeInviteCode);
-  }
-  if (safeExistingGsnId) {
-    merged.set("gsn_id", safeExistingGsnId);
-    merged.set("gmfn_id", safeExistingGsnId);
-  }
-
-  const query = merged.toString();
-  return query ? `/login?${query}` : "/login";
-}
-
 function labelText(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -604,17 +584,20 @@ function friendlyJoinError(value: any): string {
   const raw = cleanText(value);
   const parsed = structuredErrorDetail(raw);
   const parsedCode = cleanText(parsed?.code).toLowerCase();
-  if (parsedCode === "existing_account_login_required") {
+  if (
+    parsedCode === "existing_account_login_required" ||
+    parsedCode === "existing_gsn_id_required"
+  ) {
     return (
       cleanText(parsed?.message) ||
-      "This phone is already tied to an existing GSN identity. Sign in first, then continue this join link with the same GSN ID."
+      "This phone is already tied to an existing GSN identity. Enter that GSN number here so the request can reuse one identity."
     );
   }
 
   if (parsedCode === "join_identity_match_review_required") {
     return (
       cleanText(parsed?.message) ||
-      "These details look like an existing GSN identity. Sign in with that identity first, or ask the community helper to review it before creating another identity."
+      "These details look like an existing GSN identity. Enter the existing GSN number if it belongs to you, or ask the community helper to review it before creating another identity."
     );
   }
 
@@ -626,11 +609,12 @@ function friendlyJoinError(value: any): string {
 
   if (
     lower.includes("existing_account_login_required") ||
+    lower.includes("existing_gsn_id_required") ||
     lower.includes("already tied to an existing gmfn identity") ||
     lower.includes("already tied to an existing gsn identity")
   ) {
     return (
-      "This phone is already tied to an existing GSN identity. Sign in first, then continue this join link with the same GSN ID."
+      "This phone is already tied to an existing GSN identity. Enter that GSN number here so the request can reuse one identity."
     );
   }
 
@@ -1237,18 +1221,6 @@ export default function JoinEntryPage() {
   const submittedRequestId = cleanText(
     success?.request?.id || success?.request_id || ""
   );
-  const signInConflictCta = useMemo(
-    () =>
-      resolveCtaTarget("login", {
-        explicitTo: loginPathForExistingIdentity(
-          location.search,
-          inviteCode,
-          existingGsnId
-        ),
-        debugId: "join-entry.sign-in-conflict",
-      }),
-    [existingGsnId, inviteCode, location.search]
-  );
   const welcomeCta = useMemo(
     () =>
       resolveCtaTarget("welcome", {
@@ -1821,6 +1793,101 @@ export default function JoinEntryPage() {
     }
   }
 
+  async function requestJoinWithExistingGsnId() {
+    setBusy(true);
+    setErr(null);
+    setSuccess(null);
+
+    try {
+      const safeInviteCode = cleanText(effectiveInviteCode);
+      const safeExistingGsnId = cleanText(existingGsnId).toUpperCase();
+
+      if (!safeInviteCode) {
+        throw new Error("Invite code is missing from this join link.");
+      }
+      if (inviteBlocked) {
+        throw new Error(invitePreviewMessage || "This invite link is not ready.");
+      }
+      if (inviteChecking) {
+        throw new Error("The app is still checking this invite link. Please wait a moment.");
+      }
+      if (!safeExistingGsnId) {
+        throw new Error("Enter your GSN number first.");
+      }
+
+      const res = await submitJoinRequest(
+        {
+          invite_code: safeInviteCode,
+          existing_gmfn_id: safeExistingGsnId,
+        },
+        { includeAuth: false }
+      );
+
+      const existingRequest =
+        Boolean(res?.existing_request) ||
+        Boolean(res?.existing_pending_request) ||
+        /_request_exists$/.test(cleanText(res?.code).toLowerCase());
+
+      if (existingRequest) {
+        storeExistingRequest(res);
+        clearJoinEntryDraft(inviteCode, communityCode);
+        if (continueExistingRequest(res)) {
+          return;
+        }
+      }
+
+      setSuccess(res);
+      clearJoinEntryDraft(inviteCode, communityCode);
+      setJoinPathChoice(null);
+
+      const resultStatus = cleanText(res?.result_status || res?.code || "").toLowerCase();
+      if (resultStatus === "already_member") {
+        return;
+      }
+
+      const nextRequestId = cleanText(res?.request?.id || res?.request_id || "");
+      const nextCommunityName = cleanText(
+        res?.community_name || res?.request?.clan_name || resolvedCommunityName
+      );
+
+      if (nextRequestId) {
+        storeExistingRequest(
+          {
+            request_id: nextRequestId,
+            status: cleanText(res?.request?.status || res?.status || "pending"),
+            community_name: nextCommunityName,
+            submitted_at: cleanText(
+              res?.request?.created_at ||
+                res?.submitted_at ||
+                new Date().toISOString()
+            ),
+            pending_status_path: res?.pending_status_path || "",
+          }
+        );
+
+        const pendingTo = mergeSearchIntoPath(
+          `/pending-approval?request_id=${encodeURIComponent(nextRequestId)}`,
+          location.search
+        );
+
+        navigate(pendingTo, {
+          replace: true,
+          state: {
+            request_id: nextRequestId,
+            community_name: nextCommunityName,
+            clan_name: nextCommunityName,
+            status: cleanText(res?.request?.status || res?.status || "pending"),
+            gmfn_id: cleanText(res?.gmfn_id || safeExistingGsnId),
+          },
+        });
+      }
+    } catch (e: any) {
+      setErr(friendlyJoinError(e?.message));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function resumeStoredRequest() {
     const requestId = cleanText(storedRequest?.request_id || "");
     if (!requestId) return;
@@ -2205,19 +2272,19 @@ export default function JoinEntryPage() {
             {showUnclearSessionRecovery ? (
               <div style={{ marginTop: 14, ...noticeStyle("info") }}>
                 <div>
-                  This phone has an old or unclear sign-in. Sign in again if
-                  you already have a GSN ID, or continue as new.
+                  This phone has an old or unclear sign-in. Enter your GSN
+                  number here, or continue as new.
                 </div>
                 <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
-                  <StableCtaLink
-                    to={ctaPath(signInConflictCta)}
-                    kind="secondary"
-                    debugId={signInConflictCta.debugId}
+                  <SecondaryButton
+                    type="button"
+                    onClick={chooseExistingGsnPath}
+                    debugId="join-entry.use-existing-gsn-after-unclear-session"
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    {joinEntryIconText("id", "Sign in again")}
-                  </StableCtaLink>
+                    {joinEntryIconText("id", "Use GSN ID")}
+                  </SecondaryButton>
                   <SecondaryButton
                     type="button"
                     onClick={clearUnclearSessionAndOpenForm}
@@ -2281,7 +2348,7 @@ export default function JoinEntryPage() {
                       cursor: canOpenForm ? "pointer" : "not-allowed",
                     }}
                   >
-                    {joinEntryIconText("id", "Sign in / use GSN ID")}
+                    {joinEntryIconText("id", "Use GSN ID")}
                   </SecondaryButton>
                   <SecondaryButton
                     type="button"
@@ -2325,23 +2392,37 @@ export default function JoinEntryPage() {
                     {identityNoteOpen ? (
                       <div style={{ ...noticeStyle("info"), marginTop: 0 }}>
                         One person should keep one GSN identity across
-                        communities. After sign-in, this invite uses that same
-                        account instead of creating another one.
+                        communities. If the community accepts this request, GSN
+                        uses that same identity instead of creating another one.
                       </div>
                     ) : null}
                     <div style={entryActionGrid(isCompact)}>
-                      <StableCtaLink
-                        to={ctaPath(signInConflictCta)}
-                        kind="secondary"
-                        debugId="join-entry.already-have-gsn"
+                      <PrimaryButton
+                        type="button"
+                        disabled={
+                          !hasExistingGsnClaim ||
+                          !canOpenForm ||
+                          inviteChecking ||
+                          inviteBlocked ||
+                          busy
+                        }
+                        onClick={requestJoinWithExistingGsnId}
+                        debugId="join-entry.submit-existing-gsn"
+                        busy={busy}
+                        busyLabel="Sending request..."
                         stableHeight={52}
-                        style={entryChoiceActionStyle("secondary")}
+                        style={{
+                          ...entryChoiceActionStyle("primary"),
+                          opacity:
+                            hasExistingGsnClaim && canOpenForm && !busy ? 1 : 0.62,
+                          cursor:
+                            hasExistingGsnClaim && canOpenForm && !busy
+                              ? "pointer"
+                              : "not-allowed",
+                        }}
                       >
-                        {joinEntryIconText(
-                          "id",
-                          hasExistingGsnClaim ? "Sign in to reuse" : "Open sign in"
-                        )}
-                      </StableCtaLink>
+                        {joinEntryIconText("id", "Send with GSN ID")}
+                      </PrimaryButton>
                       <SecondaryButton
                         type="button"
                         onClick={() => {
@@ -2417,17 +2498,17 @@ export default function JoinEntryPage() {
             {err ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
                 {err}
-                {err.toLowerCase().includes("sign in first") ? (
+                {err.toLowerCase().includes("enter that gsn number") ? (
                   <div style={{ marginTop: 12 }}>
-                    <StableCtaLink
-                      to={ctaPath(signInConflictCta)}
-                      kind="secondary"
-                      debugId={signInConflictCta.debugId}
+                    <SecondaryButton
+                      type="button"
+                      onClick={chooseExistingGsnPath}
+                      debugId="join-entry.use-existing-gsn-after-error"
                       stableHeight={52}
                       style={entryChoiceActionStyle("secondary")}
                     >
-                      {joinEntryIconText("lock", "Sign in to continue")}
-                    </StableCtaLink>
+                      {joinEntryIconText("id", "Use GSN ID")}
+                    </SecondaryButton>
                   </div>
                 ) : null}
               </div>

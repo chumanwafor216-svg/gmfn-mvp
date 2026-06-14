@@ -1177,6 +1177,7 @@ export async function listClanMembers(clanId: number): Promise<any> {
 export async function submitJoinRequest(
   payload: {
     invite_code: string;
+    existing_gmfn_id?: string | null;
     first_name?: string | null;
     surname?: string | null;
     phone_e164?: string | null;

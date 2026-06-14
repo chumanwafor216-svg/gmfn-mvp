@@ -212,6 +212,7 @@ class ClanInviteCreateBody(BaseModel):
 
 class JoinApplicationIn(BaseModel):
     invite_code: str = Field(..., min_length=3, max_length=128)
+    existing_gmfn_id: Optional[str] = Field(default=None, min_length=6, max_length=64)
     first_name: Optional[str] = Field(default=None, min_length=1, max_length=80)
     surname: Optional[str] = Field(default=None, min_length=1, max_length=80)
     phone_e164: Optional[str] = Field(default=None, min_length=8, max_length=32)
@@ -807,13 +808,13 @@ def _join_identity_match_error(
             "code": "join_identity_match_review_required",
             "message": (
                 "These join details look like an existing GSN identity. "
-                "Sign in with that identity first, or ask the community helper "
-                "to review this before a second identity is created."
+                "Enter the existing GSN number if it belongs to you, or ask "
+                "the community helper to review this before a second identity "
+                "is created."
             ),
             "signal": signal,
-            "next_action": "sign_in_or_identity_review",
-            "next_action_label": "Sign in or review identity",
-            "login_path": "/login",
+            "next_action": "use_gsn_id_or_identity_review",
+            "next_action_label": "Use GSN ID or review identity",
             "invite_code": invite_code,
             "community_id": int(clan.id),
             "community_code": _community_code(clan.id, clan=clan),
@@ -2368,14 +2369,50 @@ def create_join_request(
 
         invited_by_user_id = int(inviter_membership.user_id) if inviter_membership else None
 
+    submitted_existing_gmfn_id = _safe_str(payload.existing_gmfn_id).upper()
+    claimed_existing_identity_user = None
+    if submitted_existing_gmfn_id:
+        claimed_existing_identity_user = (
+            db.query(User)
+            .filter(User.gmfn_id == submitted_existing_gmfn_id)
+            .first()
+        )
+        if claimed_existing_identity_user is None or is_user_activation_pending(
+            claimed_existing_identity_user
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "existing_gsn_id_not_found",
+                    "message": (
+                        "We could not find an active GSN identity with that number. "
+                        "Check the number, or continue as new."
+                    ),
+                    "gmfn_id": submitted_existing_gmfn_id,
+                    "invite_code": invite_code,
+                    "community_id": int(clan.id),
+                    "community_code": _community_code(clan.id, clan=clan),
+                    "community_name": clan.name,
+                    "marketplace_name": getattr(clan, "marketplace_name", None),
+                },
+            )
+
     existing_identity_join = bool(
-        current_user is not None and not is_user_activation_pending(current_user)
+        (
+            current_user is not None
+            and not is_user_activation_pending(current_user)
+        )
+        or claimed_existing_identity_user is not None
     )
 
     submitted_phone = _safe_str(payload.phone_e164)
     join_identity_profile_payload: dict[str, Any] | None = None
     if existing_identity_join:
-        applicant_user = _ensure_user_gmfn_id(db, current_user)
+        applicant_user = (
+            claimed_existing_identity_user
+            if claimed_existing_identity_user is not None
+            else _ensure_user_gmfn_id(db, current_user)
+        )
     else:
         missing_fields = [
             label
@@ -2425,13 +2462,12 @@ def create_join_request(
             raise HTTPException(
                 status_code=409,
                 detail={
-                    "code": "existing_account_login_required",
+                    "code": "existing_gsn_id_required",
                     "message": (
                         "This phone number is already tied to an existing GSN identity. "
-                        "Sign in to that account first, then continue this community join "
-                        "with the same GSN ID."
+                        "Enter that GSN number on this invite so the community request "
+                        "can reuse one identity."
                     ),
-                    "login_path": "/login",
                     "invite_code": invite_code,
                     "community_id": int(clan.id),
                     "community_code": _community_code(clan.id, clan=clan),

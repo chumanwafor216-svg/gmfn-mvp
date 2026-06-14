@@ -83,10 +83,16 @@ assertNotContains(
   "Existing-community Join Entry must not restore the old stale-token gate that hid the request form after invite validation."
 );
 
+assertNotContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /Sign in \/ use GSN ID|Sign in to reuse|Open sign in|Sign in again|signInConflictCta/,
+  "Existing-community Join Entry must not restore the old sign-in detour for invite recipients; existing members should type their GSN ID here."
+);
+
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showJoinPathLauncher[\s\S]*?How do you want to continue\?[\s\S]*?Sign in \/ use GSN ID[\s\S]*?I am new[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN number[\s\S]*?Sign in to reuse[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
-  "A ready existing-community invite must first present one guided choice, then reveal either existing GSN sign-in or the new-member request form without dumping both paths at once."
+  /showJoinPathLauncher[\s\S]*?How do you want to continue\?[\s\S]*?Use GSN ID[\s\S]*?I am new[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN number[\s\S]*?requestJoinWithExistingGsnId[\s\S]*?Send with GSN ID[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
+  "A ready existing-community invite must first present one guided choice, then reveal either direct existing GSN ID submission or the new-member request form without dumping both paths at once."
 );
 
 assertContains(
@@ -108,15 +114,9 @@ assertContains(
 );
 
 assertContains(
-  "frontend/src/pages/LoginPage.tsx",
-  /const inviteGsnId =[\s\S]*?searchParams\.get\("gsn_id"\)[\s\S]*?searchParams\.get\("gmfn_id"\)[\s\S]*?useState\(founderEmail \|\| inviteGsnId \|\| ""\)[\s\S]*?Phone number, email, or GSN number/,
-  "Sign-in must accept and prefill the existing GSN number carried from an invite."
-);
-
-assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showUnclearSessionRecovery[\s\S]*?old or unclear sign-in[\s\S]*?debugId=\{signInConflictCta\.debugId\}[\s\S]*?Sign in again[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?I am new/,
-  "Unclear stored-session state must explain the problem and offer both sign-in recovery and request-form recovery."
+  /showUnclearSessionRecovery[\s\S]*?old or unclear sign-in[\s\S]*?debugId="join-entry\.use-existing-gsn-after-unclear-session"[\s\S]*?Use GSN ID[\s\S]*?debugId="join-entry\.clear-unclear-session-open-form"[\s\S]*?I am new/,
+  "Unclear stored-session state must explain the problem and offer existing-GSN-ID recovery or new-request recovery without a sign-in detour."
 );
 
 assertContains(
@@ -127,8 +127,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /submitJoinRequest\([\s\S]*?includeAuth: false[\s\S]*?\);[\s\S]*?async function requestJoinWithExistingIdentity\([\s\S]*?submitJoinRequest\(\{[\s\S]*?invite_code: safeInviteCode/,
-  "Public Join Entry form submission must avoid stale auth, while verified existing identity joins still use the authenticated path."
+  /async function requestJoinWithExistingIdentity\([\s\S]*?submitJoinRequest\(\{[\s\S]*?invite_code: safeInviteCode[\s\S]*?async function requestJoinWithExistingGsnId\([\s\S]*?existing_gmfn_id: safeExistingGsnId[\s\S]*?\{ includeAuth: false \}/,
+  "Public Join Entry must submit a typed existing GSN ID without stale auth, while verified in-app existing identity joins still use the authenticated path."
 );
 
 assertContains(
@@ -151,14 +151,14 @@ assertNotContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/clans.py",
-  /def create_join_request\([\s\S]*?current_user: Optional\[User\] = Depends\(_optional_current_user\)[\s\S]*?existing_identity_join = bool\([\s\S]*?current_user is not None[\s\S]*?applicant_user = _ensure_user_gmfn_id\(db, current_user\)[\s\S]*?existing_account_login_required[\s\S]*?This phone number is already tied to an existing GSN identity/,
-  "Backend join-request creation must keep existing identity reuse and duplicate-phone protection for existing-community invite forms."
+  /def create_join_request\([\s\S]*?submitted_existing_gmfn_id = _safe_str\(payload\.existing_gmfn_id\)\.upper\(\)[\s\S]*?claimed_existing_identity_user[\s\S]*?existing_identity_join = bool\([\s\S]*?claimed_existing_identity_user is not None[\s\S]*?existing_gsn_id_required[\s\S]*?Enter that GSN number/,
+  "Backend join-request creation must reuse typed existing GSN IDs and block duplicate-phone creation without requiring the invite recipient to sign in."
 );
 
 assertContains(
   "gmfn_backend/tests/test_join_requests.py",
-  /existing_account_login_required[\s\S]*?test_logged_in_existing_member_join_request_reuses_global_identity[\s\S]*?identity_reused/,
-  "Backend tests must keep coverage for duplicate phone blocking and logged-in existing identity reuse."
+  /test_public_join_request_existing_gmfn_id_reuses_global_identity[\s\S]*?existing_gmfn_id[\s\S]*?identity_reused[\s\S]*?test_public_join_request_unknown_existing_gmfn_id_does_not_create_identity[\s\S]*?existing_gsn_id_not_found/,
+  "Backend tests must keep coverage for public typed-GSN-ID reuse and unknown-GSN-ID rejection."
 );
 
 if (findings.length > 0) {
