@@ -85,8 +85,8 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /showInviteLauncher && canUseNewMemberForm[\s\S]*?Already have a GSN ID\?[\s\S]*?Existing GSN number[\s\S]*?Sign in to reuse[\s\S]*?I am new[\s\S]*?formOpen && canOpenForm && canUseNewMemberForm && !hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
-  "A ready existing-community invite must ask for existing GSN identity first, block duplicate manual submission when it is present, and still expose the new-member request form path."
+  /showInviteLauncher && canUseNewMemberForm[\s\S]*?How do you want to continue\?[\s\S]*?Sign in \/ use GSN ID[\s\S]*?I am new[\s\S]*?joinPathChoice === "existing"[\s\S]*?Existing GSN number[\s\S]*?Sign in to reuse[\s\S]*?formOpen &&[\s\S]*?joinPathChoice === "new"[\s\S]*?canOpenForm[\s\S]*?canUseNewMemberForm[\s\S]*?!hasExistingGsnClaim[\s\S]*?First name[\s\S]*?Surname[\s\S]*?Phone number[\s\S]*?Country[\s\S]*?Date of birth[\s\S]*?Place of birth[\s\S]*?Submit request/,
+  "A ready existing-community invite must first present one guided choice, then reveal either existing GSN sign-in or the new-member request form without dumping both paths at once."
 );
 
 assertContains(

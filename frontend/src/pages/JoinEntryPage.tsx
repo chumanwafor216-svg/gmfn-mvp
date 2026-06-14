@@ -38,6 +38,8 @@ import {
 import { buildJoinInviteLetter } from "../lib/joinInviteMessaging";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
+type JoinPathChoice = "existing" | "new" | null;
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalPageCard(bg),
@@ -1050,6 +1052,11 @@ export default function JoinEntryPage() {
     if (typeof restoredJoinDraft?.formOpen === "boolean") return restoredJoinDraft.formOpen;
     return false;
   });
+  const [joinPathChoice, setJoinPathChoice] = useState<JoinPathChoice>(() => {
+    if (cleanText(restoredJoinDraft?.existingGsnId || "")) return "existing";
+    if (restoredJoinDraft?.formOpen) return "new";
+    return null;
+  });
   const [invitePreview, setInvitePreview] = useState<any>(null);
   const [inviteChecking, setInviteChecking] = useState(false);
   const [currentMember, setCurrentMember] = useState<any>(null);
@@ -1101,7 +1108,7 @@ export default function JoinEntryPage() {
   const [resumeBusy, setResumeBusy] = useState(false);
   const [joinResumeNotice, setJoinResumeNotice] = useState<string | null>(() =>
     restoredJoinDraft
-      ? "GSN restored your unfinished join request on this device. No password, code, or private document number is stored."
+      ? "A saved join form was found on this phone."
       : null
   );
 
@@ -1529,9 +1536,39 @@ export default function JoinEntryPage() {
     logout();
     setCurrentMember(null);
     setCurrentMemberChecked(true);
+    setJoinPathChoice("new");
     setFormOpen(true);
     setErr(null);
     setSuccess(null);
+  }
+
+  function chooseExistingGsnPath() {
+    setJoinPathChoice("existing");
+    setFormOpen(false);
+    setIdentityNoteOpen(false);
+    setErr(null);
+    setSuccess(null);
+  }
+
+  function chooseNewRequesterPath() {
+    setJoinPathChoice("new");
+    setExistingGsnId("");
+    setIdentityNoteOpen(false);
+    setFormOpen(true);
+    setJoinResumeNotice(null);
+    setErr(null);
+    setSuccess(null);
+  }
+
+  function continueRestoredDraft() {
+    setJoinResumeNotice(null);
+    if (hasExistingGsnClaim) {
+      setJoinPathChoice("existing");
+      setFormOpen(false);
+      return;
+    }
+    setJoinPathChoice("new");
+    setFormOpen(true);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -1626,6 +1663,7 @@ export default function JoinEntryPage() {
       setWorkDetail("");
       setNote("");
       setFormOpen(false);
+      setJoinPathChoice(null);
 
       const nextRequestId = cleanText(res?.request?.id || res?.request_id || "");
       const nextCommunityName = cleanText(
@@ -1721,6 +1759,7 @@ export default function JoinEntryPage() {
 
       setSuccess(res);
       clearJoinEntryDraft(inviteCode, communityCode);
+      setJoinPathChoice(null);
 
       const resultStatus = cleanText(res?.result_status || res?.code || "").toLowerCase();
       if (resultStatus === "already_member") {
@@ -1813,6 +1852,7 @@ export default function JoinEntryPage() {
     setWorkDetail("");
     setNote("");
     setInviteAcknowledged(true);
+    setJoinPathChoice("new");
     setFormOpen(true);
     setJoinResumeNotice(null);
     setErr(null);
@@ -2053,7 +2093,7 @@ export default function JoinEntryPage() {
             {joinResumeNotice ? (
               <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
                 <div style={labelText()}>
-                  {joinEntryIconText("refresh", "Continue unfinished join request", 22)}
+                  {joinEntryIconText("refresh", "Saved form found", 22)}
                 </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   {joinResumeNotice}
@@ -2061,12 +2101,12 @@ export default function JoinEntryPage() {
                 <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
                   <PrimaryButton
                     type="button"
-                    onClick={() => setJoinResumeNotice(null)}
+                    onClick={continueRestoredDraft}
                     debugId="join-entry.resume-draft-continue"
                     stableHeight={52}
                     style={entryChoiceActionStyle("primary")}
                   >
-                    {joinEntryIconText("navigation", "Continue entry")}
+                    {joinEntryIconText("navigation", "Continue saved form")}
                   </PrimaryButton>
                   <SecondaryButton
                     type="button"
@@ -2188,58 +2228,59 @@ export default function JoinEntryPage() {
                   gap: 12,
                 }}
               >
-                <div>
-                  <div style={{ ...labelText(), marginBottom: 4 }}>
-                    {joinEntryIconText("id", "Already have a GSN ID?", 22)}
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ ...labelText(), marginBottom: 0 }}>
+                    {joinEntryIconText("id", "How do you want to continue?", 22)}
                   </div>
-                  <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
-                    Enter it and sign in. This invite will use your existing
-                    identity, so your record stays together.
+                  <div
+                    style={{
+                      color: "#35516B",
+                      fontSize: 14,
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    Use your existing GSN ID if you have one. If you are new,
+                    open the short request form for community review.
                   </div>
+                  {inviteReady ? (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <span style={badge(true)}>
+                        {joinEntryIconText("check", "Invite checked", 18)}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
-
-                <div>
-                  <div style={labelText()}>Existing GSN number</div>
-                  <input
-                    value={existingGsnId}
-                    onChange={(event) => setExistingGsnId(event.target.value)}
-                    placeholder="Example: GMFN-U-..."
-                    autoComplete="off"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
-
-                {identityNoteOpen ? (
-                  <div style={{ ...noticeStyle("info"), marginTop: 0 }}>
-                    One person should keep one GSN identity across communities.
-                    After sign-in, the app sends this invite request from your
-                    signed-in GSN account instead of creating another one.
-                  </div>
-                ) : null}
 
                 <div style={entryActionGrid(isCompact)}>
-                  {hasExistingGsnClaim ? (
-                    <StableCtaLink
-                      to={ctaPath(signInConflictCta)}
-                      kind="secondary"
-                      debugId="join-entry.already-have-gsn"
-                      stableHeight={52}
-                      style={entryChoiceActionStyle("secondary")}
-                    >
-                      {joinEntryIconText("id", "Sign in to reuse")}
-                    </StableCtaLink>
-                  ) : (
                   <SecondaryButton
                     type="button"
                     disabled={!canOpenForm}
                     onClick={() => {
                       if (!canOpenForm) return;
-                      setFormOpen(true);
+                      chooseExistingGsnPath();
                     }}
+                    debugId="join-entry.choose-existing-gsn"
+                    stableHeight={52}
+                    style={{
+                      ...entryChoiceActionStyle(
+                        joinPathChoice === "existing" ? "primary" : "secondary"
+                      ),
+                      opacity: canOpenForm ? 1 : 0.62,
+                      cursor: canOpenForm ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    {joinEntryIconText("id", "Sign in / use GSN ID")}
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    disabled={!canOpenForm}
+                    onClick={chooseNewRequesterPath}
                     debugId="join-entry.toggle-new-member-request-form"
                     stableHeight={52}
                     style={{
-                      ...entryChoiceActionStyle("secondary"),
+                      ...entryChoiceActionStyle(
+                        joinPathChoice === "new" ? "primary" : "secondary"
+                      ),
                       opacity: canOpenForm ? 1 : 0.62,
                       cursor: canOpenForm ? "pointer" : "not-allowed",
                     }}
@@ -2248,40 +2289,80 @@ export default function JoinEntryPage() {
                       "join-person-plus",
                       inviteChecking
                         ? "Checking"
-                        : formOpen
-                        ? "Form open"
                         : "I am new"
                     )}
                   </SecondaryButton>
-                  )}
+                </div>
+
+                {joinPathChoice === "existing" ? (
+                  <div style={{ display: "grid", gap: 12 }}>
+                    <div>
+                      <div style={labelText()}>Existing GSN number</div>
+                      <input
+                        value={existingGsnId}
+                        onChange={(event) => {
+                          setExistingGsnId(event.target.value);
+                          setJoinPathChoice("existing");
+                          setFormOpen(false);
+                        }}
+                        placeholder="Example: GMFN-U-..."
+                        autoComplete="off"
+                        style={{ ...inputStyle(), marginTop: 8 }}
+                      />
+                    </div>
+                    {identityNoteOpen ? (
+                      <div style={{ ...noticeStyle("info"), marginTop: 0 }}>
+                        One person should keep one GSN identity across
+                        communities. After sign-in, this invite uses that same
+                        account instead of creating another one.
+                      </div>
+                    ) : null}
+                    <div style={entryActionGrid(isCompact)}>
+                      <StableCtaLink
+                        to={ctaPath(signInConflictCta)}
+                        kind="secondary"
+                        debugId="join-entry.already-have-gsn"
+                        stableHeight={52}
+                        style={entryChoiceActionStyle("secondary")}
+                      >
+                        {joinEntryIconText(
+                          "id",
+                          hasExistingGsnClaim ? "Sign in to reuse" : "Open sign in"
+                        )}
+                      </StableCtaLink>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => {
+                          setIdentityNoteOpen((prev) => !prev);
+                        }}
+                        debugId="join-entry.identity-note-toggle"
+                        stableHeight={52}
+                        style={entryChoiceActionStyle("secondary")}
+                      >
+                        {joinEntryIconText(
+                          "eye",
+                          identityNoteOpen ? "Hide note" : "Why one ID"
+                        )}
+                      </SecondaryButton>
+                    </div>
+                  </div>
+                ) : null}
+
+                {hasExistingGsnClaim ? (
                   <SecondaryButton
                     type="button"
                     onClick={() => {
-                      if (hasExistingGsnClaim) {
-                        setExistingGsnId("");
-                        setFormOpen(false);
-                        return;
-                      }
-                      setIdentityNoteOpen((prev) => !prev);
+                      setExistingGsnId("");
+                      setJoinPathChoice(null);
+                      setFormOpen(false);
                     }}
-                    debugId={
-                      hasExistingGsnClaim
-                        ? "join-entry.clear-existing-gsn"
-                        : "join-entry.identity-note-toggle"
-                    }
+                    debugId="join-entry.clear-existing-gsn"
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    {joinEntryIconText(
-                      hasExistingGsnClaim ? "refresh" : "eye",
-                      hasExistingGsnClaim
-                        ? "Clear GSN ID"
-                        : identityNoteOpen
-                        ? "Hide note"
-                        : "One identity"
-                    )}
+                    {joinEntryIconText("refresh", "Clear GSN ID")}
                   </SecondaryButton>
-                </div>
+                ) : null}
               </div>
             ) : null}
 
@@ -2318,13 +2399,6 @@ export default function JoinEntryPage() {
                     </PrimaryButton>
                   </div>
                 ) : null}
-              </div>
-            ) : null}
-
-            {inviteReady ? (
-              <div style={{ marginTop: 18, ...noticeStyle("success") }}>
-                Invite checked. Continue with your GSN ID or fill the new
-                requester form.
               </div>
             ) : null}
 
@@ -2414,7 +2488,11 @@ export default function JoinEntryPage() {
               </div>
             ) : null}
 
-            {formOpen && canOpenForm && canUseNewMemberForm && !hasExistingGsnClaim ? (
+            {formOpen &&
+            joinPathChoice === "new" &&
+            canOpenForm &&
+            canUseNewMemberForm &&
+            !hasExistingGsnClaim ? (
             <form onSubmit={onSubmit}>
               <div
                 style={{

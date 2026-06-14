@@ -120,8 +120,8 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /Already have a GSN ID\?[\s\S]*Existing GSN number[\s\S]*Sign in to reuse[\s\S]*I am new[\s\S]*!hasExistingGsnClaim/,
-  "Logged-out invite entry must branch existing GSN holders away from new-person signup."
+  /How do you want to continue\?[\s\S]*Sign in \/ use GSN ID[\s\S]*I am new[\s\S]*joinPathChoice === "existing"[\s\S]*Existing GSN number[\s\S]*Sign in to reuse[\s\S]*joinPathChoice === "new"[\s\S]*!hasExistingGsnClaim/,
+  "Logged-out invite entry must branch existing GSN holders away from new-person signup before exposing the new-person form."
 );
 
 assertContains(

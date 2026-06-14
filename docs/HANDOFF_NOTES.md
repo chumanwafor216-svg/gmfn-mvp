@@ -1,3 +1,45 @@
+### Existing-community join request choice simplified (2026-06-14)
+
+- Trigger:
+  - owner reviewed the join request form and found the restored draft,
+    existing-ID prompt, and new-person form were competing for attention.
+  - owner asked for a more intelligent one-card guided path: sign in/use an
+    existing GSN ID, or choose `I am new`, then reveal only the relevant next
+    step.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - added `joinPathChoice` so the request area opens one branch at a time;
+    - changed the launcher to ask `How do you want to continue?`;
+    - first shows only `Sign in / use GSN ID` and `I am new`;
+    - reveals the existing GSN number field/sign-in action only after the
+      existing-ID choice;
+    - reveals the manual request form only after `I am new` or a restored
+      new-person draft;
+    - shortened the restored draft notice to `Saved form found` instead of a
+      long system-style message;
+    - folded `Invite checked` into the choice card instead of showing a
+      separate success block.
+  - Audits updated:
+    - `frontend/tools/audit-existing-community-invite-line.mjs`;
+    - `frontend/tools/audit-entry-auth-contracts.mjs`;
+    - `frontend/tools/audit-button-stability.mjs`.
+- Verification:
+  - Passed targeted ESLint for `JoinEntryPage` and the three updated audits.
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:action-surfaces`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is a frontend guided-flow correction; it does not change backend join
+    request rules;
+  - the in-app browser was unavailable in this session, so no browser
+    screenshot/DOM smoke check was completed before this note;
+  - real-phone review is still needed to confirm the first viewport feels calm
+    after Render/local deployment.
+
 ### Existing-community invitation paper branded (2026-06-14)
 
 - Trigger:
