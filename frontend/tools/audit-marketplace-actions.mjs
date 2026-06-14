@@ -144,8 +144,14 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId/,
-  "Marketplace fields must stay field-only, while non-field Paid Repost surfaces keep action-root markers for the phone tap guard."
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-surface-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId/,
+  "Marketplace fields must stay field-only, while non-field Paid Repost surfaces keep neutral surface markers so the phone tap guard does not treat whole panels as actions."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]{0,650}(data-gmfn-action-root|data-cta-id)/,
+  "Marketplace parent surfaces must not carry global action-root markers."
 );
 
 assertContains(
@@ -290,8 +296,8 @@ assertContains(
 
 assertContains(
   "src/lib/marketplaceActionStability.ts",
-  /MARKETPLACE_LANDING_TRACE_KEY[\s\S]*?marketplaceLandingOffsetPx[\s\S]*?visualViewport[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?window\.scrollTo[\s\S]*?window\.requestAnimationFrame[\s\S]*?const delta = Math\.round\(target\.getBoundingClientRect\(\)\.top - offset\)[\s\S]*?Math\.abs\(delta\) <= 18[\s\S]*?correctedTop[\s\S]*?reason: `\$\{detail\.reason\}-corrected`[\s\S]*?marketplaceSectionStyle/,
-  "Marketplace front/workspace pages must share one phone-safe landing helper with next-frame correction instead of route-local scroll guesses."
+  /MARKETPLACE_LANDING_TRACE_KEY[\s\S]*?marketplaceLandingOffsetPx[\s\S]*?visualViewport[\s\S]*?function scrollableAncestor[\s\S]*?node\.scrollHeight > node\.clientHeight[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?const container = scrollableAncestor\(target\)[\s\S]*?container\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?window\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?const delta = Math\.round\([\s\S]*?nextContainerRect[\s\S]*?correctedTop[\s\S]*?scrollContainer[\s\S]*?marketplaceSectionStyle/,
+  "Marketplace front/workspace pages must share one phone-safe landing helper that scrolls the real mobile container, with window scrolling only as desktop/body fallback."
 );
 
 assertContains(

@@ -11,6 +11,7 @@ type MarketplaceLandingTraceDetail = {
   corrected?: boolean;
   settled?: boolean;
   viewportHeight?: number;
+  scrollContainer?: string;
 };
 
 const MARKETPLACE_LANDING_TRACE_KEY = "gmfn_marketplace_landing_trace";
@@ -63,6 +64,32 @@ export function marketplaceLandingOffsetPx(): number {
   );
 }
 
+function scrollableAncestor(target: HTMLElement): HTMLElement | null {
+  let node = target.parentElement;
+
+  while (node && node !== document.body && node !== document.documentElement) {
+    const style = window.getComputedStyle(node);
+    const overflowY = `${style.overflowY || ""} ${style.overflow || ""}`;
+    const canScroll =
+      /(auto|scroll|overlay)/.test(overflowY) &&
+      node.scrollHeight > node.clientHeight + 8;
+
+    if (canScroll) return node;
+    node = node.parentElement;
+  }
+
+  return null;
+}
+
+function viewportHeight(): number {
+  return (
+    window.visualViewport?.height ||
+    window.innerHeight ||
+    document.documentElement.clientHeight ||
+    0
+  );
+}
+
 export function scrollElementToMarketplaceLanding(
   target: HTMLElement,
   detail: Omit<MarketplaceLandingTraceDetail, "top" | "offset" | "viewportHeight">
@@ -70,24 +97,41 @@ export function scrollElementToMarketplaceLanding(
   if (typeof window === "undefined") return;
 
   const offset = marketplaceLandingOffsetPx();
-  const targetTop = target.getBoundingClientRect().top + window.scrollY - offset;
+  const container = scrollableAncestor(target);
+  const containerRect = container?.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const currentScroll = container ? container.scrollTop : window.scrollY;
+  const targetTop =
+    targetRect.top -
+    (containerRect?.top || 0) +
+    currentScroll -
+    offset;
   const top = Math.max(0, Math.round(targetTop));
+  const scrollContainer = container ? container.tagName.toLowerCase() : "window";
 
-  window.scrollTo({
-    top,
-    behavior: "auto",
-  });
+  if (container) {
+    container.scrollTo({ top, behavior: "auto" });
+  } else {
+    window.scrollTo({ top, behavior: "auto" });
+  }
 
   window.requestAnimationFrame(() => {
-    const delta = Math.round(target.getBoundingClientRect().top - offset);
+    const nextContainerRect = container?.getBoundingClientRect();
+    const delta = Math.round(
+      target.getBoundingClientRect().top - (nextContainerRect?.top || 0) - offset
+    );
     const settled = Math.abs(delta) <= 18;
 
     if (!settled) {
-      const correctedTop = Math.max(0, Math.round(window.scrollY + delta));
-      window.scrollTo({
-        top: correctedTop,
-        behavior: "auto",
-      });
+      const correctedTop = Math.max(
+        0,
+        Math.round((container ? container.scrollTop : window.scrollY) + delta)
+      );
+      if (container) {
+        container.scrollTo({ top: correctedTop, behavior: "auto" });
+      } else {
+        window.scrollTo({ top: correctedTop, behavior: "auto" });
+      }
       traceMarketplaceLanding({
         ...detail,
         reason: `${detail.reason}-corrected`,
@@ -96,13 +140,14 @@ export function scrollElementToMarketplaceLanding(
         delta,
         corrected: true,
         settled: Math.abs(
-          Math.round(target.getBoundingClientRect().top - offset)
+          Math.round(
+            target.getBoundingClientRect().top -
+              (container?.getBoundingClientRect().top || 0) -
+              offset
+          )
         ) <= 18,
-        viewportHeight:
-          window.visualViewport?.height ||
-          window.innerHeight ||
-          document.documentElement.clientHeight ||
-          0,
+        viewportHeight: viewportHeight(),
+        scrollContainer,
       });
     } else {
       traceMarketplaceLanding({
@@ -113,11 +158,8 @@ export function scrollElementToMarketplaceLanding(
         delta,
         corrected: false,
         settled: true,
-        viewportHeight:
-          window.visualViewport?.height ||
-          window.innerHeight ||
-          document.documentElement.clientHeight ||
-          0,
+        viewportHeight: viewportHeight(),
+        scrollContainer,
       });
     }
   });
@@ -126,11 +168,8 @@ export function scrollElementToMarketplaceLanding(
     ...detail,
     top,
     offset,
-    viewportHeight:
-      window.visualViewport?.height ||
-      window.innerHeight ||
-      document.documentElement.clientHeight ||
-      0,
+    viewportHeight: viewportHeight(),
+    scrollContainer,
   });
 }
 

@@ -314,6 +314,9 @@ if (
   !/focused-field-action-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/.test(
     mobileTapGuardSource
   ) ||
+  !/function shouldAllowMarketplaceJoinFieldAction\([\s\S]*?isMarketplacePath\(\)[\s\S]*?isMarketplaceJoinField\(fieldRoot\)[\s\S]*?isMarketplaceJoinAction\(actionRoot\)[\s\S]*?marketplace-join-field-action-allowed[\s\S]*?marketplace-join-focused-field-action-allowed/.test(
+    mobileTapGuardSource
+  ) ||
   !/document\.addEventListener\([\s\S]*?"focusin"[\s\S]*?rememberFocusedField\(editableFieldFromEvent\(event\)\)/.test(
     mobileTapGuardSource
   )
@@ -324,7 +327,7 @@ if (
     label:
       "Editable fields must be tracked separately from action buttons so keyboard viewport shifts cannot trigger Marketplace route buttons",
     text:
-      "Expected editable-field pointer context, accepted field clicks, and wrong-root field-click suppression were not found.",
+      "Expected editable-field pointer context, accepted field clicks, wrong-root field-click suppression, and Marketplace Join field/action exception were not found.",
   });
 }
 
@@ -975,6 +978,12 @@ const marketplaceLandingChecks = [
       "Marketplace section landing offset must reserve enough mobile header space so opened bodies do not tuck under Menu/Tools",
     pattern:
       /function marketplaceLandingOffsetPx\(\): number[\s\S]*?if \(\(window\.innerWidth \|\| 0\) > 980\) return 96;[\s\S]*?Math\.min\([\s\S]*?196,[\s\S]*?Math\.max\(132,[\s\S]*?viewportHeight \* 0\.16[\s\S]*?addressBarDelta \* 0\.5/,
+  },
+  {
+    label:
+      "Marketplace section landing must scroll the real mobile scroll container before falling back to window scrolling",
+    pattern:
+      /function scrollableAncestor\(target: HTMLElement\): HTMLElement \| null[\s\S]*?node\.scrollHeight > node\.clientHeight[\s\S]*?const container = scrollableAncestor\(target\)[\s\S]*?container\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?window\.scrollTo\(\{ top, behavior: "auto" \}\)/,
   },
 ];
 

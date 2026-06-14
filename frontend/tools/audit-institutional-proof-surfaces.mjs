@@ -432,8 +432,8 @@ assertContains(
 );
 assertContains(
   "marketplace",
-  /import \{[\s\S]*?compactJoinInviteUrl[\s\S]*?\} from "\.\.\/lib\/joinLinks";[\s\S]*?import \{ buildJoinInviteDoorwayMessage \} from "\.\.\/lib\/joinInviteMessaging";[\s\S]*?personalizedInviteLink[\s\S]*?compactJoinInviteUrl\(inviteLink\)[\s\S]*?buildJoinInviteDoorwayMessage\([\s\S]*?copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."[\s\S]*?copyMarketplaceMessage\([\s\S]*?joinInviteDoorwayMessage[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\(joinInviteDoorwayMessage\)\}/,
-  "Marketplace join sharing must use the shared doorway message while Copy Join Link copies only a compact canonical URL."
+  /import \{[\s\S]*?personalizedJoinInviteUrl[\s\S]*?\} from "\.\.\/lib\/joinLinks";[\s\S]*?import \{ buildJoinInviteDoorwayMessage \} from "\.\.\/lib\/joinInviteMessaging";[\s\S]*?activeJoinCommunityCode[\s\S]*?communityCode\(selectedCommunity\)[\s\S]*?personalizedInviteLink[\s\S]*?personalizedJoinInviteUrl\(inviteLink[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote[\s\S]*?buildJoinInviteDoorwayMessage\([\s\S]*?copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."[\s\S]*?copyMarketplaceMessage\([\s\S]*?joinInviteDoorwayMessage[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\(joinInviteDoorwayMessage\)\}/,
+  "Marketplace join sharing must use the shared doorway message while the actual Join URL preserves receiver/community code/community/marketplace context for the request form."
 );
 assertContains(
   "joinEntry",

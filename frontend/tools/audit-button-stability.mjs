@@ -187,8 +187,14 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?onPointerDownCapture[\s\S]*?onPointerDown[\s\S]*?onPointerUpCapture[\s\S]*?onPointerUp[\s\S]*?onMouseDownCapture[\s\S]*?onMouseDown[\s\S]*?onClickCapture[\s\S]*?onClick/,
-  "Marketplace Paid Repost must wrap the surface and payment action row in capture-phase tap roots."
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?onPointerDownCapture[\s\S]*?onPointerDown[\s\S]*?onPointerUpCapture[\s\S]*?onPointerUp[\s\S]*?onMouseDownCapture[\s\S]*?onMouseDown[\s\S]*?onClickCapture[\s\S]*?onClick[\s\S]*?function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-surface-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?\};[\s\S]*?\}/,
+  "Marketplace fields may stop their own tap propagation, but larger inner surfaces must be neutral metadata-only surfaces so the global tap guard does not treat whole panels as actions."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]{0,650}(on(?:Pointer|Mouse|Click)|data-gmfn-action-root|data-cta-id)/,
+  "Marketplace inner surfaces must not install event handlers or global action-root metadata that can block, replay, or misclassify child controls."
 );
 
 assertContains(

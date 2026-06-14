@@ -465,8 +465,8 @@ assertContains(
 
 assertContains(
   "src/App.tsx",
-  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
-  "Authenticated sessions that reach Cover/Welcome must recover to the app route; the installed PWA icon must not keep signed-in users on a public front door."
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function currentRoutePath[\s\S]*?#marketplace-owned-links[\s\S]*?#marketplace-rosca[\s\S]*?#marketplace-loans-support[\s\S]*?#marketplace-paid-network-placement[\s\S]*?safeHash[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
+  "Authenticated sessions that reach Cover/Welcome must recover to the app route, while temporary Marketplace section hashes are stripped from remembered app destinations."
 );
 
 assertContains(
@@ -543,14 +543,14 @@ assertNotContains(
 
 assertContains(
   "server.mjs",
-  /function joinInviteMeta\(searchParams, pathname, search\)[\s\S]*?GSN Invite[\s\S]*?invites you to request access[\s\S]*?gsn-community-invitation-poster\.png[\s\S]*?serveJoinInviteHtml[\s\S]*?\/\(\?:start\\\/join\|join\|get-invite\|join\\\/community\)/,
+  /function joinInviteMeta\(searchParams, pathname, search\)[\s\S]*?GSN Invite[\s\S]*?invites you to request access[\s\S]*?gsn-community-invitation-poster\.png[\s\S]*?serveJoinInviteHtml[\s\S]*?\/\(\?:start\\\/join\|start\\\/invite\|join\|get-invite\|join\\\/community\)/,
   "The frontend server must serve short route-specific WhatsApp/Open Graph metadata for community join invite links, so they do not preview as public shops or formal documents."
 );
 
 assertContains(
   "src/lib/joinLinks.ts",
-  /export function compactJoinInviteUrl\(rawLink: string\): string \{[\s\S]*?const code = inviteCodeFromLink\(direct\);[\s\S]*?if \(code\) return canonicalJoinInviteUrl\(code\);[\s\S]*?return canonicalPublicFrontendUrl\(url\.pathname\);/,
-  "Join invite sharing must keep a compact canonical URL instead of putting sender, receiver, note, and community names into the blue chat link."
+  /export function personalizedJoinInviteUrl\([\s\S]*?communityCode\?: unknown;[\s\S]*?const communityCode = safeText\(opts\.communityCode\);[\s\S]*?if \(inviterName\) url\.searchParams\.set\("inviter_name", inviterName\);[\s\S]*?if \(recipientName\) url\.searchParams\.set\("receiver_name", recipientName\);[\s\S]*?if \(communityCode\) url\.searchParams\.set\("community_code", communityCode\);[\s\S]*?if \(communityName\) url\.searchParams\.set\("community_name", communityName\);[\s\S]*?if \(marketplaceName\) url\.searchParams\.set\("marketplace_name", marketplaceName\);[\s\S]*?if \(message\) url\.searchParams\.set\("message", message\);[\s\S]*?return shareablePublicFrontendUrl\(`\$\{url\.pathname\}\$\{url\.search\}\$\{url\.hash\}`\);/,
+  "Join invite sharing must keep form-safe personalized URL context, including community_code, and use the dev-aware shareable origin so phone testing opens the same frontend build."
 );
 
 assertContains(
@@ -603,8 +603,8 @@ assertContains(
 
 assertContains(
   "src/lib/joinLinks.ts",
-  /return canonicalPublicFrontendUrl\(`\/start\/join\/\$\{encodeURIComponent\(cleanCode\)\}`\);/,
-  "Invite links must canonicalize to the public join route."
+  /return shareablePublicFrontendUrl\(`\/start\/join\/\$\{encodeURIComponent\(cleanCode\)\}`\);/,
+  "Invite links must normalize to the public join route while staying on the current dev origin during phone testing."
 );
 
 assertContains(

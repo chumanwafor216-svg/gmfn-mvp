@@ -5,8 +5,8 @@ import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
-  compactJoinInviteUrl,
   normalizedJoinInviteUrl,
+  personalizedJoinInviteUrl,
 } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import {
@@ -904,6 +904,18 @@ function baseCommunityName(row: CommunityRow | null | undefined): string {
     ) || "Selected community"
   );
 }
+
+function communityCode(row: CommunityRow | null | undefined): string {
+  return firstTruthy(
+    row?.community_code,
+    row?.community?.community_code,
+    row?.profile?.community_code,
+    row?.marketplace?.community_code,
+    row?.clan?.community_code,
+    row?.meta?.community_code
+  );
+}
+
 function normalizeMarketplaceShopVisibility(raw: any): ShopVisibilityMode {
   const src = raw?.item || raw?.shop || raw || {};
 
@@ -1207,22 +1219,9 @@ function marketplaceFieldTouchProps(debugId: string) {
 }
 
 function marketplaceSurfaceTouchProps(debugId: string) {
-  const stopMarketplaceTap = (event: React.SyntheticEvent<HTMLElement>) => {
-    event.stopPropagation();
-  };
-
   return {
-    "data-gmfn-action-root": "true",
-    "data-cta-id": debugId,
+    "data-gmfn-surface-root": "true",
     "data-gmfn-debug-id": debugId,
-    onPointerDownCapture: stopMarketplaceTap,
-    onPointerDown: stopMarketplaceTap,
-    onPointerUpCapture: stopMarketplaceTap,
-    onPointerUp: stopMarketplaceTap,
-    onMouseDownCapture: stopMarketplaceTap,
-    onMouseDown: stopMarketplaceTap,
-    onClickCapture: stopMarketplaceTap,
-    onClick: stopMarketplaceTap,
   };
 }
 
@@ -3416,6 +3415,7 @@ export default function MarketplacePage() {
   const scrollFrameRef = useRef<number | null>(null);
   const scrollTimeoutRefs = useRef<number[]>([]);
   const pendingMarketplaceSectionRef = useRef("");
+  const routeHashLandingAppliedRef = useRef("");
   const withdrawalHandoffAppliedRef = useRef("");
   const publicShopPrepareInFlightRef = useRef(false);
 
@@ -4651,6 +4651,11 @@ export default function MarketplacePage() {
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
     if (hash !== "marketplace-loans-support") return;
+    const landingToken = `${location.pathname}${location.search}#${hash}:${
+      activeCommunityId || ""
+    }`;
+    if (routeHashLandingAppliedRef.current === landingToken) return;
+    routeHashLandingAppliedRef.current = landingToken;
 
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
     setSectionsOpen(focusedMarketplaceSectionState("support"));
@@ -4679,27 +4684,59 @@ export default function MarketplacePage() {
     }
 
     scrollToMarketplaceSection("marketplace-loans-support");
-  }, [location.hash, activeCommunityId, currentGmfnId, scrollToMarketplaceSection]);
+    clearMarketplaceHash();
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    activeCommunityId,
+    currentGmfnId,
+    scrollToMarketplaceSection,
+  ]);
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
     if (hash !== "marketplace-rosca") return;
+    const landingToken = `${location.pathname}${location.search}#${hash}:${
+      activeCommunityId || ""
+    }`;
+    if (routeHashLandingAppliedRef.current === landingToken) return;
+    routeHashLandingAppliedRef.current = landingToken;
 
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "rosca"));
     setSectionsOpen(focusedMarketplaceSectionState("rosca"));
 
     scrollToMarketplaceSection("marketplace-rosca");
-  }, [location.hash, scrollToMarketplaceSection]);
+    clearMarketplaceHash();
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    activeCommunityId,
+    scrollToMarketplaceSection,
+  ]);
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
     if (hash !== "marketplace-owned-links") return;
+    const landingToken = `${location.pathname}${location.search}#${hash}:${
+      activeCommunityId || ""
+    }`;
+    if (routeHashLandingAppliedRef.current === landingToken) return;
+    routeHashLandingAppliedRef.current = landingToken;
 
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "tools"));
     setSectionsOpen(focusedMarketplaceSectionState("tools"));
 
     scrollToMarketplaceSection("marketplace-owned-links");
-  }, [location.hash, scrollToMarketplaceSection]);
+    clearMarketplaceHash();
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    activeCommunityId,
+    scrollToMarketplaceSection,
+  ]);
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
@@ -4773,9 +4810,30 @@ export default function MarketplacePage() {
     return baseCommunityName(selectedCommunity);
   }, [selectedCommunity]);
 
+  const activeJoinCommunityCode = useMemo(() => {
+    return communityCode(selectedCommunity);
+  }, [selectedCommunity]);
+
   const personalizedInviteLink = useMemo(() => {
-    return compactJoinInviteUrl(inviteLink) || inviteLink;
-  }, [inviteLink]);
+    return (
+      personalizedJoinInviteUrl(inviteLink, {
+        inviterName: memberName,
+        recipientName: joinRecipientName,
+        communityCode: activeJoinCommunityCode,
+        communityName: activeJoinCommunityName,
+        marketplaceName: activeCommunityName,
+        message: joinInviteNote,
+      }) || inviteLink
+    );
+  }, [
+    inviteLink,
+    memberName,
+    joinRecipientName,
+    activeJoinCommunityCode,
+    activeJoinCommunityName,
+    activeCommunityName,
+    joinInviteNote,
+  ]);
 
   const personalizedInviteMaskedLabel = useMemo(() => {
     return cleanMaskedLinkLabel(
@@ -5339,6 +5397,12 @@ export default function MarketplacePage() {
     }
 
     if (typeof window !== "undefined") {
+      if (/^https:\/\/wa\.me\//i.test(url)) {
+        showNotice("success", "Opening WhatsApp now.");
+        window.location.href = url;
+        return;
+      }
+
       const opened = window.open(url, "_blank", "noopener,noreferrer");
       if (!opened) {
         showNotice("error", "The browser blocked that window. Copy the link and open it yourself.");
@@ -7281,29 +7345,31 @@ export default function MarketplacePage() {
                     </label>
                   </div>
                   <div style={marketplaceJoinActionsStyle(isCompact)}>
-                    <StableButton
-                      debugId="marketplace.links.join.copy"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          copyMarketplaceLink(
-                            personalizedInviteLink,
-                            "GSN join link copied.",
-                            marketplaceJoinLinkMissingMessage
-                          );
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "primary",
-                        !inviteLink,
-                        isCompact
-                      )}
-                    >
-                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                        <MarketplaceGlyph name="copy" size={18} />
-                      </span>
-                      {isCompact ? "Copy Join" : "Copy Join Link"}
-                    </StableButton>
+                    {!isCompact ? (
+                      <StableButton
+                        debugId="marketplace.links.join.copy"
+                        type="button"
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            copyMarketplaceLink(
+                              personalizedInviteLink,
+                              "GSN join link copied.",
+                              marketplaceJoinLinkMissingMessage
+                            );
+                          });
+                        }}
+                        style={marketplaceInlineActionStyle(
+                          "primary",
+                          !inviteLink,
+                          isCompact
+                        )}
+                      >
+                        <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                          <MarketplaceGlyph name="copy" size={18} />
+                        </span>
+                        Copy Join Link
+                      </StableButton>
+                    ) : null}
                     {!isCompact ? (
                       <StableButton
                         debugId="marketplace.links.join.refresh"
@@ -7333,16 +7399,40 @@ export default function MarketplacePage() {
                             : "Admin only"}
                       </StableButton>
                     ) : null}
+                    <StableButton
+                      debugId="marketplace.links.join.copy-message"
+                      type="button"
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          copyMarketplaceMessage(
+                            joinInviteDoorwayMessage,
+                            personalizedInviteLink,
+                            "GSN join invite message copied.",
+                            marketplaceJoinLinkMissingMessage
+                          );
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        isCompact ? "primary" : "secondary",
+                        !inviteLink,
+                        isCompact
+                      )}
+                    >
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="copy" size={18} />
+                      </span>
+                      {isCompact ? "Copy Invite" : "Copy Invite Message"}
+                    </StableButton>
                     {!isCompact ? (
                       <StableButton
-                        debugId="marketplace.links.join.copy-message"
+                        debugId="marketplace.links.join.email"
                         type="button"
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
-                            copyMarketplaceMessage(
+                            openMarketplaceEmail(
+                              joinEmailSubject,
                               joinInviteDoorwayMessage,
                               personalizedInviteLink,
-                              "GSN join invite message copied.",
                               marketplaceJoinLinkMissingMessage
                             );
                           });
@@ -7353,36 +7443,12 @@ export default function MarketplacePage() {
                           isCompact
                         )}
                       >
-                        <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                          <MarketplaceGlyph name="copy" size={18} />
-                        </span>
-                        Copy Invite Message
-                      </StableButton>
-                    ) : null}
-                    <StableButton
-                      debugId="marketplace.links.join.email"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          openMarketplaceEmail(
-                            joinEmailSubject,
-                            joinInviteDoorwayMessage,
-                            personalizedInviteLink,
-                            marketplaceJoinLinkMissingMessage
-                          );
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !inviteLink,
-                        isCompact
-                      )}
-                    >
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="email" size={18} />
                       </span>
-                      {isCompact ? "Email Join" : "Email Join Link"}
-                    </StableButton>
+                        Email Join Link
+                      </StableButton>
+                    ) : null}
                     <StableButton
                       debugId="marketplace.links.join.whatsapp"
                       type="button"
@@ -7409,23 +7475,25 @@ export default function MarketplacePage() {
                       </span>
                       WhatsApp
                     </StableButton>
-                    <SocialTagShareButton
-                      target={{
-                        title: joinEmailSubject,
-                        message: joinInviteDoorwayMessage,
-                        url: personalizedInviteLink,
-                      }}
-                      disabled={!inviteLink}
-                      buttonLabel="Share"
-                      stableHeight={58}
-                      debugId="marketplace.links.join.tag-social"
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !inviteLink,
-                        isCompact
-                      )}
-                      onResult={showNotice}
-                    />
+                    {!isCompact ? (
+                      <SocialTagShareButton
+                        target={{
+                          title: joinEmailSubject,
+                          message: joinInviteDoorwayMessage,
+                          url: personalizedInviteLink,
+                        }}
+                        disabled={!inviteLink}
+                        buttonLabel="Share"
+                        stableHeight={58}
+                        debugId="marketplace.links.join.tag-social"
+                        style={marketplaceInlineActionStyle(
+                          "secondary",
+                          !inviteLink,
+                          isCompact
+                        )}
+                        onResult={showNotice}
+                      />
+                    ) : null}
                   </div>
                   {!isCompact ? (
                     <div style={joinShareMessageCardStyle(isCompact)}>

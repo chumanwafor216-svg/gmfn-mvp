@@ -194,6 +194,11 @@ assertContains(
 );
 
 assertContains(
+  /\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.copy"[\s\S]*?\) : null\}[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.refresh"[\s\S]*?\) : null\}[\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?isCompact \? "primary" : "secondary"[\s\S]*?\{isCompact \? "Copy Invite" : "Copy Invite Message"\}[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?\) : null\}[\s\S]*?debugId="marketplace\.links\.join\.whatsapp"[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.tag-social"[\s\S]*?\) : null\}/,
+  "Marketplace Join Link Center compact phone view must expose only Copy Invite and WhatsApp; Copy Link, Refresh, Email, and social Share stay desktop-only."
+);
+
+assertContains(
   /selectedRoscaMemberIds\.length < 2[\s\S]*?Choose at least two members for this ROSCA cycle[\s\S]*?createRoscaCycle\(\{[\s\S]*?member_user_ids: selectedRoscaMemberIds/,
   "Marketplace ROSCA Start Cycle must require explicit member selection and pass member_user_ids."
 );
@@ -724,8 +729,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.links\.join\.copy"[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.refresh"[\s\S]*?\) : null\}[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?\) : null\}[\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?debugId="marketplace\.links\.join\.whatsapp"/,
-  "Marketplace Join Link Center must keep only Copy, Email, and WhatsApp visible on compact phones; refresh and copy-text stay desktop-only."
+  /\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.copy"[\s\S]*?\) : null\}[\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?debugId="marketplace\.links\.join\.whatsapp"[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.tag-social"[\s\S]*?\) : null\}/,
+  "Marketplace Join Link Center phone action cluster must stay collapsed to Copy Invite plus WhatsApp, with extra share surfaces kept off compact phones."
 );
 
 assertNotContains(

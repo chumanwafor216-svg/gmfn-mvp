@@ -1,3 +1,237 @@
+### Marketplace mobile touch/scroll and join-link hardening (2026-06-14)
+
+- Trigger:
+  - owner reported that Marketplace inner pages were still glued/jumpy after
+    the first button fix;
+  - owner explicitly requested a line auditor because the issue was taking too
+    long and still visible on phone.
+- Line-audit findings:
+  - `frontend/src/lib/marketplaceActionStability.ts`
+    - Marketplace landing used `window.scrollTo()` even though the mobile app
+      scrolls inside the app `<main>` container;
+    - this can make section landings fight the actual phone scroll surface and
+      feel like the screen is stuck or dragging.
+  - `frontend/src/App.tsx`
+    - remembered app routes preserved temporary Marketplace hashes like
+      `#marketplace-owned-links`, so route recovery could reopen the invite
+      lane after WhatsApp/login/public entry and look like a wrong-page jump.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - WhatsApp handoff used `window.open(..., "_blank")`, which is unstable in
+      mobile/in-app browsers.
+  - `frontend/src/lib/joinLinks.ts`
+    - join invite URLs were still forced to the canonical Render origin, so
+      local phone testing could silently open the deployed build instead of the
+      laptop dev build.
+- Changed:
+  - `frontend/src/lib/marketplaceActionStability.ts`
+    - added scrollable-ancestor detection;
+    - Marketplace section landing now scrolls the real mobile scroll container
+      first and only falls back to `window.scrollTo()` for desktop/body scroll.
+  - `frontend/src/App.tsx`
+    - strips temporary Marketplace hashes from remembered authenticated app
+      paths.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - WhatsApp/`wa.me` handoff now uses same-tab `window.location.href`;
+    - parent Marketplace surfaces remain neutral metadata, not global action
+      roots;
+    - route hash section landing remains one-shot and clears the hash after
+      landing;
+    - personalized join invite URL now includes `community_code` where the
+      selected community exposes it.
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - added a narrow Marketplace Join exception so taps from
+      `marketplace.join.*` fields to `marketplace.links.join.*` buttons are not
+      suppressed by the general editable-field safety delay;
+    - keeps the wider field protection for other routes and non-Join actions.
+  - `frontend/src/lib/joinLinks.ts`
+    - generated join invite URLs now use `shareablePublicFrontendUrl()` so
+      local phone testing opens the current dev origin while production still
+      resolves to the public frontend.
+  - `frontend/server.mjs`
+    - server-side join invite metadata now also covers `/start/invite/:code`.
+  - Audit cages updated:
+    - `frontend/tools/audit-marketplace-touch-blockers.mjs`;
+    - `frontend/tools/audit-marketplace-actions.mjs`;
+    - `frontend/tools/audit-mobile-tap-stability.mjs`;
+    - `frontend/tools/audit-action-response-protocol.mjs`;
+    - `frontend/tools/audit-link-contracts.mjs`;
+    - `frontend/tools/audit-route-fallthrough.mjs`;
+    - `frontend/tools/audit-protected-button-freeze.mjs`;
+    - `frontend/tools/audit-institutional-proof-surfaces.mjs`;
+    - `frontend/tools/audit-button-stability.mjs`;
+    - `frontend/tools/audit-marketplace-button-inventory.mjs`;
+    - `gmfn_backend/tests/test_join_requests.py`.
+- Verification:
+  - `npm run audit:marketplace-touch-blockers` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-button-lines` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:proof-surfaces` passed.
+  - `node tools/audit-action-response-protocol.mjs` passed.
+  - `python -m pytest gmfn_backend\tests\test_join_requests.py -k "join_invite_preview"` passed.
+    - includes a new regression test proving an old retired invite code plus
+      `community_code` recovers to the latest live invite instead of staying
+      invalid.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this still needs owner phone testing because the original issue is a real
+    phone touch/scroll behavior, not only a compile-time problem;
+  - old WhatsApp messages/preview cards can still open old/cached URLs; generate
+    a fresh invite after this patch before judging the Join form result;
+  - changes are local and not pushed/deployed yet.
+
+### Marketplace Join invite URL restored to form-safe personalized link (2026-06-14)
+
+- Trigger:
+  - owner tested the shortened WhatsApp invite and found that it opened Join
+    Entry but showed `Fresh invite link needed` instead of the join request
+    form;
+  - owner asked to remove the bad short/masked link behavior and recover the
+    original invite message flow that carries the request form.
+- Line-audit finding:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace was using `compactJoinInviteUrl(inviteLink) || inviteLink`
+      as the actual shared join URL;
+    - that made the message cleaner, but it stripped the receiver/community/
+      marketplace/inviter/note query context that Join Entry uses to render the
+      invitation letter and request form reliably.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - removed `compactJoinInviteUrl` from Marketplace join sharing;
+    - Marketplace now uses `personalizedJoinInviteUrl(inviteLink, ...)` so the
+      actual shared URL carries:
+      - inviter name;
+      - receiver name;
+      - community name;
+      - marketplace name;
+      - personal note.
+    - compact phone still shows only `Copy Invite` and `WhatsApp`, but both now
+      use the form-safe personalized URL.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - changed the invite-link cage away from compact URLs and toward
+      form-safe personalized URL context.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - changed the Marketplace join-sharing proof cage so the request-form
+      context cannot be stripped again.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:proof-surfaces` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-touch-blockers` passed.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - WhatsApp may still show a preview card and may cache old preview titles
+    such as `GSN Link`; GSN cannot force WhatsApp to hide or immediately refresh
+    a cached preview card;
+  - the product-critical fix is that the actual invite URL is no longer stripped
+    down in a way that loses the Join Entry form context;
+  - this is not pushed or deployed yet.
+
+### Marketplace inner-page touch blocker line audit and fix (2026-06-14)
+
+- Trigger:
+  - owner reported that they could not touch things inside Marketplace inner
+    pages at all and requested a full Marketplace line auditor.
+- Line-audit finding:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - `marketplaceSurfaceTouchProps()` was being applied to whole inner panels:
+      - `marketplace.rosca.actions`
+      - `marketplace.network-repost.surface`
+      - `marketplace.network-repost.payment-actions`
+    - the helper added capture/bubble event handlers such as
+      `onPointerDownCapture`, `onClickCapture`, and `onClick` that called
+      `stopPropagation()`;
+    - that means a parent Marketplace panel could swallow the tap before the
+      child button, select, input, video control, or disclosure summary received
+      it.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - `marketplaceSurfaceTouchProps()` is now metadata-only:
+      `data-gmfn-action-root`, `data-cta-id`, and `data-gmfn-debug-id`;
+    - it no longer installs pointer, mouse, or click handlers on parent panels;
+    - native fields still keep their separate `marketplaceFieldTouchProps()`
+      field guard.
+  - `frontend/tools/audit-marketplace-touch-blockers.mjs`
+    - new dedicated line auditor for Marketplace touch blockers;
+    - verifies the three inner surfaces remain metadata-only;
+    - verifies field taps are still guarded;
+    - verifies Marketplace tap mismatches still fail closed instead of replaying
+      guessed actions.
+  - `frontend/package.json`
+    - added `npm run audit:marketplace-touch-blockers`.
+  - `frontend/tools/audit-button-stability.mjs`
+    - changed the cage away from the wrong old belief that Marketplace inner
+      surfaces should be capture-phase tap roots.
+  - `frontend/tools/audit-protected-button-freeze.mjs`
+    - added the Marketplace touch-blocker auditor to the protected button
+      freeze so future button work must also prove Marketplace inner pages are
+      not swallowing child control taps.
+- Verification:
+  - `npm run audit:marketplace-touch-blockers` passed.
+  - `npm run audit:marketplace-button-lines` passed.
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed from `frontend/`.
+  - Local route checks returned `200`:
+    - `http://127.0.0.1:5199/app/marketplace#marketplace-owned-links`
+    - `http://192.168.1.13:5199/app/marketplace#marketplace-owned-links`
+- Unabated truth:
+  - this is a stronger root-cause fix than the earlier Join-card cleanup;
+  - it is still not pushed or deployed;
+  - real phone testing is the deciding proof because source audits cannot feel
+    whether the browser keyboard/viewport has stopped fighting the user.
+
+### Marketplace Join compact phone action cluster reduced (2026-06-14)
+
+- Trigger:
+  - owner retested the deployed/local Marketplace Join card and reported it was
+    still very jumpy on phone.
+- Devil's-advocate finding:
+  - the prior tap-guard fix removed dangerous wrong-action replay, but it did
+    not remove the crowded phone hit zone;
+  - compact Marketplace Join still exposed too many live actions around the
+    `Name` and `Note` fields: copy link, email, WhatsApp, and share. That is
+    exactly the kind of dense action cluster the mobile protocol warns against.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - compact phone Join card now exposes only:
+      - `Copy Invite`
+      - `WhatsApp`
+    - `Copy Join Link`, `Refresh Join Link`, `Email Join Link`, and social
+      `Share` remain desktop-only in this card;
+    - the Join invite message action now uses the primary button style on phone.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - caged the compact-phone contract so the extra Join actions cannot drift
+      back into the phone card unnoticed.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed.
+  - `npm run audit:marketplace-records-links-lane` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:proof-surfaces` passed.
+  - `npm run build` passed from `frontend/`.
+  - Local route checks returned `200`:
+    - `http://127.0.0.1:5199/app/marketplace#marketplace-owned-links`
+    - `http://192.168.1.13:5199/app/marketplace#marketplace-owned-links`
+- Unabated truth:
+  - this is not pushed or deployed;
+  - the in-app browser automation surface was unavailable, so this still needs
+    owner phone testing on the local Wi-Fi URL;
+  - if the page is still jumpy after this, the remaining fault is probably not
+    the Join button count but a deeper shell/touch/keyboard interaction.
+
 ### Marketplace Join tap replay disabled and phone buttons widened vertically (2026-06-14)
 
 - Trigger:

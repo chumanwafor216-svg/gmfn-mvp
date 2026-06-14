@@ -17,6 +17,7 @@
     "audit:marketplace-actions": "node tools/audit-marketplace-actions.mjs",
     "audit:marketplace-button-inventory": "node tools/audit-marketplace-button-inventory.mjs",
     "audit:marketplace-button-lines": "node tools/audit-marketplace-button-lines.mjs",
+    "audit:marketplace-touch-blockers": "node tools/audit-marketplace-touch-blockers.mjs",
     "audit:marketplace-money-pool-lane": "node tools/audit-marketplace-money-pool-lane.mjs",
     "audit:marketplace-rosca-lane": "node tools/audit-marketplace-rosca-lane.mjs",
     "audit:marketplace-support-lane": "node tools/audit-marketplace-support-lane.mjs",

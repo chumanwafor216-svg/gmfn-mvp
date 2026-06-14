@@ -12,6 +12,10 @@ const protectedAudits = [
     script: "audit-mobile-tap-stability.mjs",
   },
   {
+    label: "marketplace touch blockers",
+    script: "audit-marketplace-touch-blockers.mjs",
+  },
+  {
     label: "global action debug ids",
     script: "audit-global-action-debugids.mjs",
   },
@@ -98,5 +102,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "\nProtected button freeze audit passed: Dashboard, Community Home, Action Inbox, entry/auth, shared tap guard, and global stable-action hygiene are still caged."
+  "\nProtected button freeze audit passed: Dashboard, Community Home, Marketplace touch blockers, Action Inbox, entry/auth, shared tap guard, and global stable-action hygiene are still caged."
 );

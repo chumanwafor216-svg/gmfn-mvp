@@ -390,7 +390,7 @@ createServer(async (req, res) => {
       await serveShopHtml(res, decodeURIComponent(match[1]), url.searchParams);
       return;
     }
-    const joinMatch = url.pathname.match(/^\/(?:start\/join|join|get-invite|join\/community)\/([^/]+)$/);
+    const joinMatch = url.pathname.match(/^\/(?:start\/join|start\/invite|join|get-invite|join\/community)\/([^/]+)$/);
     if (joinMatch) {
       await serveJoinInviteHtml(res, url);
       return;

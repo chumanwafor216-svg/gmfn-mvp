@@ -167,8 +167,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function openMarketplaceEmail[\s\S]*?Opening email now\.[\s\S]*?function openMarketplaceExternalLink[\s\S]*?const opened = window\.open[\s\S]*?browser blocked that window[\s\S]*?Opening link now\.[\s\S]*?noticeCard\(notice\.tone\)/,
-  "Marketplace actions must keep visible success/error notice responses, including external and email handoffs."
+  /function openMarketplaceEmail[\s\S]*?Opening email now\.[\s\S]*?function openMarketplaceExternalLink[\s\S]*?\/\^https:[\s\S]*?wa\\\.me[\s\S]*?window\.location\.href = url/,
+  "Marketplace actions must keep visible email feedback and send WhatsApp handoffs through a same-tab phone-safe path."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function openMarketplaceExternalLink[\s\S]*?Opening WhatsApp now\.[\s\S]*?window\.location\.href = url[\s\S]*?const opened = window\.open[\s\S]*?browser blocked that window[\s\S]*?Opening link now\.[\s\S]*?noticeCard\(notice\.tone\)/,
+  "Marketplace external links must use same-tab WhatsApp handoff before falling back to ordinary blocked-window feedback for other external links."
 );
 
 assertContains(

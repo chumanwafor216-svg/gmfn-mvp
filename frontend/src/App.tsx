@@ -221,7 +221,21 @@ function PreserveRedirect(props: { to: string }) {
 }
 
 function currentRoutePath(location: Pick<ReturnType<typeof useLocation>, "pathname" | "search" | "hash">): string {
-  return `${location.pathname || ""}${location.search || ""}${location.hash || ""}`;
+  const pathname = location.pathname || "";
+  const search = location.search || "";
+  const hash = location.hash || "";
+  const ephemeralMarketplaceHash = new Set([
+    "#marketplace-owned-links",
+    "#marketplace-rosca",
+    "#marketplace-loans-support",
+    "#marketplace-paid-network-placement",
+  ]);
+  const safeHash =
+    pathname === APP_ROUTES.MARKETPLACE && ephemeralMarketplaceHash.has(hash)
+      ? ""
+      : hash;
+
+  return `${pathname}${search}${safeHash}`;
 }
 
 function rememberAuthenticatedAppPath(path: string): void {

@@ -1,6 +1,7 @@
 import {
   canonicalPublicFrontendUrl,
   publicFrontendOrigin,
+  shareablePublicFrontendUrl,
 } from "./publicLinks";
 
 function safeText(value: unknown): string {
@@ -54,7 +55,7 @@ export function inviteCodeFromLink(rawLink: string): string {
 export function canonicalJoinInviteUrl(code: string): string {
   const cleanCode = safeText(code);
   if (!cleanCode) return "";
-  return canonicalPublicFrontendUrl(`/start/join/${encodeURIComponent(cleanCode)}`);
+  return shareablePublicFrontendUrl(`/start/join/${encodeURIComponent(cleanCode)}`);
 }
 
 export function compactJoinInviteUrl(rawLink: string): string {
@@ -176,6 +177,7 @@ export function personalizedJoinInviteUrl(
   opts: {
     inviterName?: unknown;
     recipientName?: unknown;
+    communityCode?: unknown;
     communityName?: unknown;
     marketplaceName?: unknown;
     message?: unknown;
@@ -188,17 +190,19 @@ export function personalizedJoinInviteUrl(
     const url = new URL(direct, publicFrontendOrigin());
     const inviterName = safeText(opts.inviterName);
     const recipientName = safeText(opts.recipientName);
+    const communityCode = safeText(opts.communityCode);
     const communityName = safeText(opts.communityName);
     const marketplaceName = safeText(opts.marketplaceName);
     const message = safeText(opts.message);
 
     if (inviterName) url.searchParams.set("inviter_name", inviterName);
     if (recipientName) url.searchParams.set("receiver_name", recipientName);
+    if (communityCode) url.searchParams.set("community_code", communityCode);
     if (communityName) url.searchParams.set("community_name", communityName);
     if (marketplaceName) url.searchParams.set("marketplace_name", marketplaceName);
     if (message) url.searchParams.set("message", message);
 
-    return canonicalPublicFrontendUrl(`${url.pathname}${url.search}${url.hash}`);
+    return shareablePublicFrontendUrl(`${url.pathname}${url.search}${url.hash}`);
   } catch {
     return "";
   }
