@@ -60,10 +60,11 @@
     isolation.
   - rerunning the GitHub job reproduced the same failure, so this was not a
     one-off.
-  - patched `gmfn_backend/tests/test_trust_route_ownership.py` to inspect both
-    the live FastAPI `app.routes` and the canonical `api_router.routes`,
-    deduplicating owners. This keeps the single-owner guard while avoiding a
-    stale/mutable copied-app-route false negative in CI.
+  - patched `gmfn_backend/tests/test_trust_route_ownership.py` to inspect the
+    live FastAPI `app.routes`, the canonical `api_router.routes`, and the
+    source route modules for the guarded trust/evidence routes, deduplicating
+    owners. This keeps the single-owner guard while avoiding stale/mutable
+    copied-app-route false negatives in CI.
   - local verification after the patch:
     - `python -m pytest -q tests\test_trust_route_ownership.py tests\test_gsn_evidence_pack_package.py`
       from `gmfn_backend` passed (`6 passed`);

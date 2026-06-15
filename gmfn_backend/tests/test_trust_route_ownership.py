@@ -7,13 +7,25 @@ from fastapi.testclient import TestClient
 from app.db.database import SessionLocal
 from app.db.models import TrustEvent, User
 from app.api.router import api_router
+from app.api.routes.admin_trust_why import router as admin_trust_why_router
+from app.api.routes.evidence_pack import router as evidence_pack_router
+from app.api.routes.trust_events import router as trust_events_router
+from app.api.routes.trust_why import router as trust_why_router
 from app.main import app
 
 
 def _route_owners(path: str, method: str = "GET") -> list[str]:
     owners: list[str] = []
     seen: set[str] = set()
-    for route in [*app.routes, *api_router.routes]:
+    route_sources = [
+        app.routes,
+        api_router.routes,
+        evidence_pack_router.routes,
+        trust_why_router.routes,
+        admin_trust_why_router.routes,
+        trust_events_router.routes,
+    ]
+    for route in [route for source in route_sources for route in source]:
         endpoint = getattr(route, "endpoint", None)
         methods = getattr(route, "methods", set()) or set()
         if endpoint is None or getattr(route, "path", "") != path or method not in methods:
