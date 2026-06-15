@@ -3509,6 +3509,7 @@ export default function MarketplacePage() {
   const [joinRelationshipEvidenceRecordedKey, setJoinRelationshipEvidenceRecordedKey] =
     useState("");
   const [creatingInviteLink, setCreatingInviteLink] = useState(false);
+  const joinInviteAutoPrepareKeyRef = useRef("");
   const [activeLinkCenterTool, setActiveLinkCenterTool] =
     useState<LinkCenterTool | null>(null);
   const [publicShopRecord, setPublicShopRecord] =
@@ -4021,9 +4022,9 @@ export default function MarketplacePage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  function showNotice(tone: NoticeTone, text: string) {
+  const showNotice = useCallback((tone: NoticeTone, text: string) => {
     setNotice({ tone, text });
-  }
+  }, []);
 
   function toggleSection(key: keyof SectionState) {
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, key));
@@ -5007,6 +5008,7 @@ export default function MarketplacePage() {
     routeRepostSource,
     scrollToMarketplaceSection,
     selectedRepostProductId,
+    showNotice,
     visibleRepostProducts,
   ]);
 
@@ -5084,9 +5086,11 @@ export default function MarketplacePage() {
     if (!joinSenderReady) return "Sender needed";
     if (!joinRecipientReady) return "Name needed";
     if (!joinRelationshipReady) return "Relationship needed";
-    if (inviteLink && !joinInviteTrustReady) return "Refresh needed";
-    return inviteLink ? "Ready" : "Refresh";
+    if (creatingInviteLink) return "Preparing";
+    if (inviteLink && !joinInviteTrustReady) return "Preparing";
+    return inviteLink ? "Ready" : "Auto";
   }, [
+    creatingInviteLink,
     inviteLink,
     joinInviteTrustReady,
     joinRecipientReady,
@@ -5324,19 +5328,24 @@ export default function MarketplacePage() {
     ).toLowerCase();
   }, [currentGmfnId, me, members, selectedCommunity]);
 
-  const canManageMarketplaceLinks =
-    currentMemberRole === "admin" || safeStr(me?.role).toLowerCase() === "admin";
+  const canManageMarketplaceLinks = Boolean(
+    activeCommunityId &&
+      (currentMemberRole ||
+        positiveNumber(me?.id) ||
+        safeStr(me?.gmfn_id) ||
+        safeStr(me?.role).toLowerCase() === "admin")
+  );
   const marketplaceJoinLinkMissingMessage = canManageMarketplaceLinks
-    ? "Create the official join link first. Then copy or send it from here."
-    : "A community admin must prepare this official join link before members can copy it.";
+    ? "GSN is preparing the reusable join link. Try again in a moment."
+    : "Join links are available to active members after community selection.";
   const marketplaceJoinLinkGuidance = canManageMarketplaceLinks
-    ? "Create the official join link first, then copy or open it from here."
-    : "A community admin prepares the official join link. Once it is ready, members can copy and share it. Every join request still goes through community review.";
+    ? "Add the invite names and relationship evidence. GSN will prepare the reusable join link automatically."
+    : "Select an active community first. Every join request still goes through community review.";
   const marketplaceJoinPreviewPendingMessage = canManageMarketplaceLinks
-    ? "The join message preview will appear here after the official join link is ready."
-    : "The invite message will appear after a community admin prepares the official join link.";
+    ? "The join message preview appears after GSN prepares the reusable link."
+    : "The invite message appears after the community is selected.";
   const marketplaceJoinRefreshBlockedMessage =
-    "Only a community admin can refresh the official join link. Members can share it after an admin prepares it.";
+    "Select an active community before preparing a join link. Every request still goes through community review.";
 
   const marketplaceTrustDisplay = marketplaceTrustLabel(
     selectedCommunity,
@@ -5509,41 +5518,53 @@ export default function MarketplacePage() {
     }
   }
 
-  async function handleCreateInviteLink() {
+  const handleCreateInviteLink = useCallback(async (opts?: {
+    quiet?: boolean;
+    force?: boolean;
+  }): Promise<boolean> => {
+    const quiet = Boolean(opts?.quiet);
+
+    if (!opts?.force && joinInviteTrustReady) {
+      if (!quiet) showNotice("success", "Reusable join link is ready.");
+      return true;
+    }
+
     if (!activeCommunityId) {
-      showNotice("error", "Select a community first.");
-      return;
+      if (!quiet) showNotice("error", "Select a community first.");
+      return false;
     }
 
     if (creatingInviteLink) {
-      showNotice("error", "Join link refresh is already running.");
-      return;
+      if (!quiet) showNotice("error", "Join link preparation is already running.");
+      return false;
     }
 
     if (!canManageMarketplaceLinks) {
-      showNotice("error", marketplaceJoinRefreshBlockedMessage);
-      return;
+      if (!quiet) showNotice("error", marketplaceJoinRefreshBlockedMessage);
+      return false;
     }
 
     if (!safeStr(joinSenderDisplayName)) {
-      showNotice("error", "Add your sender name before refreshing the join link.");
-      return;
+      if (!quiet) showNotice("error", "Add your sender name before preparing the join link.");
+      return false;
     }
 
     if (!safeStr(joinRecipientName)) {
-      showNotice("error", "Add the receiver name before refreshing the join link.");
-      return;
+      if (!quiet) showNotice("error", "Add the receiver name before preparing the join link.");
+      return false;
     }
 
     const relationshipType = safeStr(joinRelationshipType);
     const knownDuration = safeStr(joinKnownDuration);
 
     if (!relationshipType || !knownDuration) {
-      showNotice(
-        "error",
-        "Add how you know this person and how long you have known them before refreshing the join link."
-      );
-      return;
+      if (!quiet) {
+        showNotice(
+          "error",
+          "Add how you know this person and how long you have known them before preparing the join link."
+        );
+      }
+      return false;
     }
 
     setCreatingInviteLink(true);
@@ -5564,28 +5585,84 @@ export default function MarketplacePage() {
 
       if (!nextInviteLink) {
         showNotice("error", "Invite link is not ready yet.");
-        return;
+        return false;
       }
 
       setInviteLink(nextInviteLink);
       setJoinRelationshipEvidenceRecordedKey(joinRelationshipEvidenceKey);
       const retiredCount = Number(inviteRes?.retired_live_invites || 0);
-      showNotice(
-        "success",
-        retiredCount > 0
-          ? "Fresh join invite created and older live link retired. Copy it from the link shown here."
-          : "Fresh join invite created. Copy it from the link shown here."
-      );
+      if (!quiet) {
+        showNotice(
+          "success",
+          retiredCount > 0
+            ? "Reusable join invite prepared. The old live link stays harmless; copy this one from here."
+            : "Reusable join invite prepared. Copy it from here."
+        );
+      }
+      return true;
     } catch (err: any) {
       showNotice(
         "error",
         safeStr(err?.message) ||
-          "GSN could not create the join link yet. Please refresh and try again."
+          "GSN could not prepare the join link yet. Please try again."
       );
+      return false;
     } finally {
       setCreatingInviteLink(false);
     }
-  }
+  }, [
+    activeCommunityId,
+    canManageMarketplaceLinks,
+    creatingInviteLink,
+    joinInviteTrustReady,
+    joinKnownDuration,
+    joinRecipientName,
+    joinRelationshipContext,
+    joinRelationshipEvidenceKey,
+    joinRelationshipType,
+    joinSenderDisplayName,
+    marketplaceJoinRefreshBlockedMessage,
+    showNotice,
+  ]);
+
+  useEffect(() => {
+    if (activeLinkCenterTool !== "join") return;
+    if (!activeCommunityId || !canManageMarketplaceLinks || creatingInviteLink) return;
+    if (!joinSenderReady || !joinRecipientReady || !joinRelationshipReady) return;
+    if (!joinRelationshipEvidenceKey) return;
+    if (
+      inviteLink &&
+      joinRelationshipEvidenceRecordedKey === joinRelationshipEvidenceKey
+    ) {
+      return;
+    }
+
+    const autoPrepareKey = [
+      activeCommunityId,
+      joinRelationshipEvidenceKey,
+    ].join("|");
+    if (joinInviteAutoPrepareKeyRef.current === autoPrepareKey) return;
+
+    joinInviteAutoPrepareKeyRef.current = autoPrepareKey;
+    void handleCreateInviteLink({ quiet: true }).then((ok) => {
+      if (!ok && joinInviteAutoPrepareKeyRef.current === autoPrepareKey) {
+        joinInviteAutoPrepareKeyRef.current = "";
+      }
+    });
+  }, [
+    activeCommunityId,
+    activeLinkCenterTool,
+    canManageMarketplaceLinks,
+    creatingInviteLink,
+    handleCreateInviteLink,
+    inviteLink,
+    joinInviteAutoPrepareKeyRef,
+    joinRecipientReady,
+    joinRelationshipEvidenceKey,
+    joinRelationshipEvidenceRecordedKey,
+    joinRelationshipReady,
+    joinSenderReady,
+  ]);
 
   function requireJoinInviteTrustEvidence(): boolean {
     if (!joinSenderReady) {
@@ -5607,14 +5684,17 @@ export default function MarketplacePage() {
     }
 
     if (!inviteLink) {
-      showNotice("error", "Refresh the join link after adding how you know this person.");
+      showNotice(
+        "error",
+        "GSN is preparing the join link. Try Copy Invite again in a moment."
+      );
       return false;
     }
 
     if (!joinInviteTrustReady) {
       showNotice(
         "error",
-        "Refresh Join Link so GSN records how you know this person before sending it."
+        "GSN is recording how you know this person. Try Copy Invite again in a moment."
       );
       return false;
     }
@@ -7690,22 +7770,24 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      {canManageMarketplaceLinks ? joinRelationshipStatusText : "Admin"}
+                      {canManageMarketplaceLinks ? joinRelationshipStatusText : "Member"}
                     </span>
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <span style={compactStatusPillStyle(joinInviteTrustReady)}>
                       {joinInviteTrustReady
                         ? "Community join link ready"
+                        : creatingInviteLink
+                          ? "Preparing reusable join link"
                         : !joinSenderReady
                           ? "Add sender name first"
                         : !joinRecipientReady
                           ? "Add receiver name first"
                         : !joinRelationshipReady
                           ? "Add relationship evidence first"
-                          : canManageMarketplaceLinks
-                            ? "Refresh join link to record trust evidence"
-                          : "Admin prepares join link"}
+                        : canManageMarketplaceLinks
+                            ? "GSN prepares the reusable link automatically"
+                          : "Select an active community first"}
                     </span>
                   </div>
                   <div style={linkReserveTextStyle()}>
@@ -7949,17 +8031,17 @@ export default function MarketplacePage() {
                       )}
                     >
                       {creatingInviteLink
-                        ? "Refreshing..."
+                        ? "Preparing..."
                         : canManageMarketplaceLinks
                           ? (
                             <>
                               <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                                 <MarketplaceGlyph name="refresh" size={18} />
                               </span>
-                              Refresh Join Link
+                              {joinInviteTrustReady ? "Link Ready" : "Prepare Link"}
                             </>
                           )
-                          : "Admin only"}
+                          : "Community needed"}
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.copy-message"

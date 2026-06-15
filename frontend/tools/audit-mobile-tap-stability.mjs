@@ -705,9 +705,9 @@ const marketplaceActionSystemChecks = [
   },
   {
     label:
-      "Refreshing a Marketplace join link must not auto-copy on mobile; copy is a separate tap",
+      "Preparing a Marketplace join link must not auto-copy on mobile; copy is a separate tap",
     pattern:
-      /async function handleCreateInviteLink\([\s\S]*?setInviteLink\(nextInviteLink\);(?![\s\S]{0,260}safeCopy\(nextInviteLink\))[\s\S]*?Copy it from the link shown here\./,
+      /handleCreateInviteLink = useCallback\(async \([\s\S]*?setInviteLink\(nextInviteLink\);(?![\s\S]{0,260}safeCopy\(nextInviteLink\))[\s\S]*?Reusable join invite prepared\. Copy it from here\./,
   },
   {
     label:
@@ -741,9 +741,9 @@ const marketplaceActionSystemChecks = [
   },
   {
     label:
-      "Marketplace join-link response must explain admin refresh, member sharing, and community review",
+      "Marketplace join-link response must explain reusable member sharing and community review",
     pattern:
-      /marketplaceJoinLinkGuidance[\s\S]*?A community admin prepares the official join link[\s\S]*?members can copy and share it[\s\S]*?Every join request still goes through community review[\s\S]*?marketplaceJoinRefreshBlockedMessage[\s\S]*?Only a community admin can refresh the official join link[\s\S]*?Admin only/,
+      /marketplaceJoinLinkGuidance[\s\S]*?GSN will prepare the reusable join link automatically[\s\S]*?Every join request still goes through community review[\s\S]*?marketplaceJoinRefreshBlockedMessage[\s\S]*?Select an active community before preparing a join link[\s\S]*?Community needed/,
   },
 ];
 

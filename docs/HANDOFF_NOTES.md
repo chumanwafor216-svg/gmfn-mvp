@@ -1,3 +1,60 @@
+## 2026-06-15 - Marketplace Join Link Auto-Prepares Without Admin Refresh Gate
+
+- Trigger:
+  - owner confirmed Render was better than local phone testing but still only
+    about `4/10`;
+  - owner managed to fill the Join Invite form for the first time, then hit
+    stale copy saying a committee/admin must refresh the link;
+  - owner restated the pilot rule: invite quota/max-person logic is disabled
+    for now, anybody may invite any number, but community voting/approval still
+    stands.
+- Confirmed facts:
+  - backend already has coverage that a member can refresh a marketplace join
+    link without a usage quota;
+  - backend invite refresh returns reusable/no-quota behavior (`max_uses` /
+    invite policy max uses are `null`);
+  - the remaining blocker was frontend readiness/copy that still required a
+    manual admin-style refresh.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - active members can prepare/share the reusable join link; no admin-only
+      refresh gate is shown for this pilot path;
+    - once sender, receiver, relationship type, and known duration are present,
+      the Join panel quietly auto-prepares the reusable invite link;
+    - Copy Invite / WhatsApp still wait until the backend records the
+      relationship evidence, but the user is no longer told to find an admin;
+    - stale labels such as `Refresh Join Link`, `Admin only`, and admin-refresh
+      blocker copy were replaced with `Prepare Link`, `Link Ready`, and plain
+      preparing messages;
+    - approval/voting logic was not changed.
+  - Audits updated:
+    - `frontend/tools/audit-marketplace-actions.mjs`;
+    - `frontend/tools/audit-mobile-tap-stability.mjs`.
+- Verification:
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Local Playwright mobile-size check against
+    `http://127.0.0.1:5174/app/marketplace`:
+    - opened Marketplace -> Public Links -> Invite;
+    - filled sender, receiver, short note, relationship type, and known
+      duration;
+    - frontend made exactly one `POST /clans/1/invite`;
+    - UI reached `Community join link ready`;
+    - no admin/committee/`Refresh Join Link` wording appeared.
+- Unabated truth:
+  - this fixes the stale admin-refresh/quota UX, not the remaining physical
+    phone jumpiness by itself;
+  - if phone Chrome still behaves like `4/10`, the next product-level move is
+    still to split Join Invite into its own route/sheet or suspend Marketplace
+    auto-scroll around the active Join lane.
+
 ## 2026-06-15 - Marketplace Join Fields Stop Swallowing Phone Focus
 
 - Trigger:

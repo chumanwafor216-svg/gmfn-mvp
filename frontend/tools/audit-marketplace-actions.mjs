@@ -180,8 +180,20 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add your sender name before sending the invite[\s\S]*?Add the receiver name before sending the invite[\s\S]*?Add how you know this person[\s\S]*?Refresh Join Link so GSN records how you know this person[\s\S]*?return true;/,
-  "Marketplace Join share actions must refuse to send until sender name, receiver name, and relationship evidence have been recorded on the generated invite."
+  /function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add your sender name before sending the invite[\s\S]*?Add the receiver name before sending the invite[\s\S]*?Add how you know this person[\s\S]*?GSN is preparing the join link[\s\S]*?GSN is recording how you know this person[\s\S]*?return true;/,
+  "Marketplace Join share actions must wait for automatic reusable-link preparation and relationship evidence recording before sending."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /joinInviteAutoPrepareKeyRef[\s\S]*?useEffect\(\(\) => \{[\s\S]*?activeLinkCenterTool !== "join"[\s\S]*?joinSenderReady[\s\S]*?joinRecipientReady[\s\S]*?joinRelationshipReady[\s\S]*?joinRelationshipEvidenceKey[\s\S]*?handleCreateInviteLink\(\{ quiet: true \}\)/,
+  "Marketplace Join must automatically prepare the reusable invite link after sender, receiver, and relationship evidence are complete."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /committee administrator|community admin can refresh|Only a community admin can refresh|Refresh Join Link so GSN records|Refresh join link to record trust evidence/g,
+  "Marketplace Join must not expose the retired admin-refresh/quota wording during the pilot reusable-link flow."
 );
 
 assertContains(
