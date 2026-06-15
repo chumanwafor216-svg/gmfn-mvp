@@ -1,3 +1,326 @@
+## 2026-06-15 - Deployment Alignment Check After Cage
+
+- Trigger:
+  - owner said `continue` after repetition/flakiness cage.
+  - checked GitHub/Render alignment so local, `main`, CI, and deploy truth are
+    not confused.
+- Git state:
+  - Local `main`, `origin/main`, and `origin/HEAD` point to
+    `d34ddf4 Harden trust route ownership check`.
+  - Worktree has only this handoff file modified.
+- GitHub Actions:
+  - Latest relevant backend test run for `d34ddf4`:
+    - `Backend Tests`;
+    - status: success.
+  - Successful frontend deploy workflow:
+    - run `27553294856`;
+    - triggered gmfn-frontend deploy hook for
+      `d34ddf43c7de4b556515b94472243d3af5e54878`;
+    - Render accepted deploy id `dep-d8o0njrbc2fs73ffmc9g`;
+    - backend deploy needed: `false`.
+  - Later failed deploy workflow:
+    - run `27553387145`;
+    - failure reason was intentional backend deploy guard, not a frontend build
+      failure.
+    - workflow input had `DEPLOY_API_INPUT=true`.
+    - `RENDER_API_KEY` was empty.
+    - workflow refused to deploy backend because exact-commit backend deploys
+      require `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID`.
+- Workflow file checked:
+  - `.github/workflows/render-deploy.yml` still supports frontend deploy hook.
+  - backend deploy path intentionally requires Render API credentials for
+    exact-commit deployment.
+  - if those secrets are missing, backend deploy is blocked by design.
+- Unabated truth:
+  - frontend deploy for `d34ddf4` was accepted by Render.
+  - backend CI for `d34ddf4` passed.
+  - the failed deploy workflow does not mean the app build failed.
+  - it does mean GitHub currently cannot perform exact backend deploys until
+    `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured, or
+    backend is deployed manually from Render and verified afterward.
+
+## 2026-06-15 - Repetition Cage: Marketplace Join Smoke + Join Approval
+
+- Trigger:
+  - owner said `continue` after the full backend cage.
+  - moved from single-pass proof to repetition/flakiness proof for the two
+    most sensitive paths:
+    - deployed Marketplace -> Public Links -> Invite Someone form;
+    - join-request approval backend behavior.
+- Marketplace live smoke repetition:
+  - Ran `npm run smoke:live-marketplace-join-form` five times in sequence
+    against deployed frontend.
+  - All five runs passed.
+  - Each run confirmed:
+    - deployed Marketplace loaded with mocked authenticated data;
+    - Public Links opened;
+    - Invite Someone opened;
+    - sender, receiver, note, relationship, duration, and private note fields
+      accepted input;
+    - Prepare Link completed;
+    - Copy Invite and WhatsApp became enabled;
+    - `fieldRoots=6`;
+    - `activeElement=none`.
+- Join approval repetition:
+  - Ran `python -m pytest tests\test_join_requests.py
+    --basetemp=C:\tmp\gmfn_pytest_join_requests_repeat`.
+  - Result: `54 passed`.
+- Environment note:
+  - Playwright repeated smoke required approved escalation because Windows
+    blocks Chromium launch inside the sandbox.
+  - pytest used `C:\tmp` basetemp with approved escalation to avoid the known
+    Windows temp-permission issue.
+- Unabated truth:
+  - the automated Marketplace invite path is not flaky across five repeated
+    Pixel 5 Playwright runs.
+  - this is still not equal to the owner's physical Android Chrome test. It is
+    strong evidence that the deployed app path and our field shells are stable
+    under automation, while physical keyboard/browser behavior remains the last
+    real-world proof.
+  - the join approval backend path remains green under repeat testing.
+
+## 2026-06-15 - Full Backend Cage After Domain Audit
+
+- Trigger:
+  - owner said `continue` after the live Marketplace smoke and focused backend
+    route checks.
+  - moved from focused route tests to the whole backend suite.
+- First full-suite attempt:
+  - Ran `python -m pytest` from `gmfn_backend`.
+  - Product result was mostly green, but pytest hit Windows temp-folder
+    permission errors while setting up `tmp_path`.
+  - The visible test progress showed `260 passed, 5 errors`; the five errors
+    were not product assertions. They were `PermissionError: [WinError 5]
+    Access is denied` against pytest temp directories.
+- Isolation:
+  - Ran `python -m pytest tests\test_marketplace_public_shop.py
+    --basetemp=C:\tmp\gmfn_pytest_marketplace_public_shop`.
+  - Sandbox still blocked temp directory creation.
+  - Reran the same narrowed command with approved escalation.
+  - Result: `21 passed`.
+- Final clean backend run:
+  - Ran `python -m pytest --basetemp=C:\tmp\gmfn_pytest_full_backend` with
+    approved escalation so pytest could create temp directories.
+  - Result: `265 passed`.
+- Cleanup:
+  - A sandboxed attempt left `gmfn_backend\.pytest_tmp_full_backend`
+    unreadable.
+  - Removed only that verified generated temp directory after confirming the
+    resolved path stayed inside the workspace.
+- Unabated truth:
+  - the backend suite is green when the local Windows temp-permission issue is
+    removed from the equation.
+  - the earlier `5 errors` should not be treated as Marketplace/Public Shop
+    product failures.
+  - backend cage is now stronger than before: full suite, public shop isolated,
+    join requests, share previews, trust ownership, verification, loans,
+    community, package usage, spotlight pricing, and entry creation all pass.
+
+## 2026-06-15 - Continued Cage: Live Marketplace Smoke + Approval Route Proof
+
+- Trigger:
+  - owner said `continue` after the app-wide domain audit cage.
+  - continued from source inventory audits into the two highest-risk truth
+    checks:
+    - deployed Marketplace invite form behavior;
+    - backend approval/share/route ownership behavior.
+- Additional frontend verification:
+  - Passed `npm run audit:notifications-button-inventory`.
+    - current accepted inventory: `17` stable source actions, `4` bucket rows,
+      `41` mobile shell controls, `61` whole-route fixed action families total,
+      plus dynamic notice-row actions.
+  - Passed `npm run audit:live-api-identity-routes`.
+    - live API identity and public verification contracts are present on
+      `https://gmfn-api.onrender.com`.
+  - Passed `npm run smoke:live-marketplace-join-form`.
+    - the smoke test loaded deployed Marketplace with mocked authenticated
+      data.
+    - Public Links opened.
+    - Invite Someone opened.
+    - sender, receiver, note, relationship, duration, and private note fields
+      all accepted input.
+    - Prepare Link completed.
+    - Copy Invite and WhatsApp became enabled.
+    - final smoke output: `fieldRoots=6 activeElement=none`.
+- Additional backend verification:
+  - Passed:
+    - `python -m pytest tests\test_join_requests.py tests\test_notification_route_truth.py tests\test_trust_route_ownership.py tests\test_share_preview.py tests\test_frontend_link_origins.py`
+  - Result: `71 passed`.
+- Environment note:
+  - first Playwright smoke attempt failed with Windows sandbox `spawn EPERM`.
+  - reran with approved escalation only for `npm run smoke:live-marketplace-join-form`.
+  - escalated run passed.
+- Unabated truth:
+  - this is now stronger than a static cage for the historically painful
+    Marketplace invite path because a real Chromium mobile-device smoke reached
+    the deployed route and completed the form flow.
+  - it still does not replace the owner's Android Chrome test. It proves the app
+    can complete the path under Playwright's Pixel 5 profile; it does not prove
+    every physical phone/browser/keyboard combination is calm.
+  - backend join-request logic is not currently auto-approving in the tested
+    route set. The focused backend suite for join requests, notifications,
+    trust-route ownership, share previews, and frontend link origins is green.
+
+## 2026-06-15 - Domain Button Shell Continuation: Shop, Finance, Trust, Loans, Entry
+
+- Trigger:
+  - owner said `continue` after the first domain baseline.
+  - continued the same domain-by-domain cage pass beyond Dashboard, Community
+    Home, and Marketplace.
+- Scope:
+  - no product code changed in this continuation.
+  - this is a source/audit cage, not a physical Android Chrome proof.
+- Shop / Public Shop / Shop Control verification:
+  - Passed `npm run audit:shop-control-button-inventory`.
+    - current accepted inventory: `11` `PrimaryButton`, `18`
+      `SecondaryButton`, `2` `SubtleButton`, `3` `StableButton`, `7`
+      `StableCtaLink`, `24` native fields, `55` whole-route mobile action
+      roots total.
+  - Passed `npm run audit:shop-gallery-button-inventory`.
+    - current accepted inventory: `23` page stable action templates, `0`
+      native fields, `34` whole-route action template families total.
+  - Passed `npm run audit:shop-assets-slots`.
+  - Passed `npm run audit:vault-control-button-inventory`.
+    - current accepted inventory: `5` `PrimaryButton`, `8`
+      `SecondaryButton`, `2` `SubtleButton`, `3` `StableButton`, `8`
+      native fields, `36` whole-route mobile action families total.
+- Finance verification:
+  - Passed `npm run audit:finance-actions`.
+  - Passed `npm run audit:finance-button-inventory`.
+    - current accepted inventory: `9` stable source actions, `15` expected
+      rendered action roots.
+  - Passed `npm run audit:finance-front-package`.
+  - Passed `npm run audit:finance-lane-map`.
+  - Passed lane audits:
+    - `audit:finance-money-summary-lane`;
+    - `audit:finance-money-movement-lanes`;
+    - `audit:finance-banking-rails-lane`;
+    - `audit:finance-records-events-lane`;
+    - `audit:finance-signals-readiness-lane`;
+    - `audit:finance-secondary-route-tools`.
+- Trust / Identity / Proof verification:
+  - Passed `npm run audit:trust-actions`.
+  - Passed `npm run audit:proof-surfaces`.
+  - Passed `npm run audit:trust-passport-button-inventory`.
+    - current accepted inventory: `14` stable source actions, `22` expected
+      rendered action roots.
+  - Passed `npm run audit:trust-passport-front-package`.
+  - Passed `npm run audit:identity-integrity-front-package`.
+  - Passed lane audits:
+    - `audit:trust-passport-lane-map`;
+    - `audit:trust-passport-community-confirmation-lane`;
+    - `audit:trust-passport-evidence-story-lane`;
+    - `audit:trust-passport-finance-discipline-lane`;
+    - `audit:trust-passport-repair-lane`.
+- Loans / support / operations verification:
+  - Passed `npm run audit:loans-actions`.
+  - Passed `npm run audit:payout-details-protocol`.
+  - Passed `npm run audit:payment-instruction-phone-rows`.
+  - Passed `npm run audit:demand-box-front-package`.
+  - Passed `npm run audit:admin-ops-actions`.
+- Entry / route / share / protocol verification:
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:member-entry-actions`.
+  - Passed `npm run audit:entry-flow-polish`.
+  - Passed `npm run audit:entry-copy-response`.
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:share-tag-actions`.
+  - Passed `npm run audit:link-contracts`.
+  - Passed `npm run audit:route-fallthrough`.
+  - Passed `npm run audit:action-surfaces`.
+  - Passed `npm run audit:spotlight-controls`.
+  - Passed `npm run audit:spotlight-quota`.
+  - Passed `npm run audit:protocol-readiness`.
+- Build/lint:
+  - Passed `npm run build`.
+  - Passed `npm run lint` with only the known pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings at lines `920` and
+    `941`.
+- Unabated truth:
+  - the source audit suite currently gives a green cage across Shop, Finance,
+    Trust/Identity proof, Loans/support, Entry/share, and route contracts.
+  - this does not prove every phone tap feels perfect. It proves the current
+    source contracts, button inventories, lane maps, and stability guards agree.
+  - Shop Control, Marketplace, Dashboard, and some proof pages remain large
+    bundles. They are caged by audit, not magically lightweight.
+  - next useful real-world step is phone testing domain by domain, starting with
+    the user's highest-risk path: Marketplace -> Records & Links -> Join
+    invite, then Community Join Requests approval.
+
+## 2026-06-15 - Domain Button Shell Baseline: Dashboard, Community Home, Marketplace
+
+- Trigger:
+  - owner asked to begin a domain-by-domain button/shell/navigator audit before
+    moving deeper into testing.
+  - owner wants Dashboard, Community Home, and Marketplace checked for visible
+    buttons, inner buttons, in-page navigators, action stability, and route
+    shell safety before each domain is treated as caged.
+- Scope:
+  - no product code changed in this pass.
+  - this was a source/audit baseline, not a phone proof.
+  - order used:
+    1. Dashboard;
+    2. Community Home and Join Requests;
+    3. Marketplace and its inner lanes;
+    4. protected/global stability band.
+- Dashboard verification:
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:dashboard-button-inventory`.
+    - current accepted inventory: `53` `StableButton`, `1`
+      `StableDisclosureSummary`, `2` `PictureFrameToolsControl`, `9` native
+      fields, `62` dashboard action roots, `42` mobile app-shell controls,
+      `104` whole-route mobile effective action controls total.
+  - Passed `npm run audit:dashboard-phone-buttons`.
+  - Passed `npm run audit:inner-navigation-origin`.
+- Community Home verification:
+  - Passed `npm run audit:community-home-button-inventory`.
+    - current accepted inventory: `15` `StableButton` source templates, `12`
+      `NextActionGuide` items, `5` front quick buttons, `5` spotlight guided
+      buttons, `11` compact tool rows, `30` expanded route-local action
+      templates, `41` mobile app-shell controls, `71` whole-route mobile action
+      templates total.
+  - Passed `npm run audit:community-home-phone-buttons`.
+  - Passed `npm run audit:community-join-requests-layout`.
+  - Passed `npm run audit:community-shop-actions`.
+- Marketplace verification:
+  - Passed `npm run audit:marketplace-button-inventory`.
+    - current accepted inventory: `63` stable source actions, `19` native
+      fields, `47` mobile app-shell controls, `110` whole-route mobile controls
+      total.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed lane audits:
+    - `audit:marketplace-money-pool-lane`;
+    - `audit:marketplace-rosca-lane`;
+    - `audit:marketplace-support-lane`;
+    - `audit:marketplace-trusted-trade-lane`;
+    - `audit:marketplace-records-links-lane`;
+    - `audit:marketplace-more-tools-lane`;
+    - `audit:marketplace-trust-pill`;
+    - `audit:marketplace-demand-box-lane`;
+    - `audit:marketplace-front-package`.
+- Protected/global verification:
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:action-response-protocol`.
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed `npm run audit:icon-protocol`.
+  - Passed `npm run audit:global-action-debugids`.
+  - Passed `npm run audit:global-raw-action-elements`.
+- Unabated truth:
+  - the domain source cages are green, so Dashboard, Community Home, Join
+    Requests, and Marketplace are stable enough to proceed to phone review by
+    domain.
+  - Marketplace is still a heavy surface: `63` source actions and `19` fields
+    means the product is caged, not magically simple.
+  - these audits cannot fully prove Android Chrome physical tap stability; the
+    owner's phone test remains the final proof for jumpiness.
+  - do not treat these domains as permanently frozen. Treat them as caged
+    checkpoints: future changes must update the matching route-local audit
+    intentionally.
+
 ## 2026-06-15 - Join Request Approval Feedback + Final-State Guard
 
 - Trigger:
