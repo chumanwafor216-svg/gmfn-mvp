@@ -3515,6 +3515,8 @@ export default function MarketplacePage() {
   const [creatingInviteLink, setCreatingInviteLink] = useState(false);
   const joinInviteAutoPrepareKeyRef = useRef("");
   const joinInviteDraftRestoredKeyRef = useRef("");
+  const [joinInviteManualCopyMessage, setJoinInviteManualCopyMessage] =
+    useState("");
   const [activeLinkCenterTool, setActiveLinkCenterTool] =
     useState<LinkCenterTool | null>(null);
   const [publicShopRecord, setPublicShopRecord] =
@@ -5087,17 +5089,21 @@ export default function MarketplacePage() {
     joinRelationshipEvidenceRecordedKey,
   ]);
 
+  const joinInviteShareReady = useMemo(() => {
+    return Boolean(
+      inviteLink && joinSenderReady && joinRecipientReady && joinRelationshipReady
+    );
+  }, [inviteLink, joinSenderReady, joinRecipientReady, joinRelationshipReady]);
+
   const joinRelationshipStatusText = useMemo(() => {
     if (!joinSenderReady) return "Sender needed";
     if (!joinRecipientReady) return "Name needed";
     if (!joinRelationshipReady) return "Relationship needed";
     if (creatingInviteLink) return "Preparing";
-    if (inviteLink && !joinInviteTrustReady) return "Preparing";
-    return inviteLink ? "Ready" : "Auto";
+    return joinInviteShareReady ? "Ready" : "Auto";
   }, [
     creatingInviteLink,
-    inviteLink,
-    joinInviteTrustReady,
+    joinInviteShareReady,
     joinRecipientReady,
     joinRelationshipReady,
     joinSenderReady,
@@ -5780,20 +5786,35 @@ export default function MarketplacePage() {
     if (!inviteLink) {
       showNotice(
         "error",
-        "GSN is preparing the join link. Try Copy Invite again in a moment."
-      );
-      return false;
-    }
-
-    if (!joinInviteTrustReady) {
-      showNotice(
-        "error",
-        "GSN is recording how you know this person. Try Copy Invite again in a moment."
+        "GSN is preparing the join link. Use Prepare Link first if this takes too long."
       );
       return false;
     }
 
     return true;
+  }
+
+  async function copyJoinInviteMessage() {
+    if (!requireJoinInviteTrustEvidence()) return;
+
+    const message = safeStr(joinInviteDoorwayMessage);
+    if (!message || !personalizedInviteLink) {
+      showNotice("error", marketplaceJoinLinkMissingMessage);
+      return;
+    }
+
+    const copied = await safeCopy(message);
+    if (copied) {
+      setJoinInviteManualCopyMessage("");
+      showNotice("success", "GSN join invite message copied.");
+      return;
+    }
+
+    setJoinInviteManualCopyMessage(message);
+    showNotice(
+      "error",
+      "Clipboard copy was blocked. The invite text is shown below so you can still send it."
+    );
   }
 
   async function copyMarketplaceLink(
@@ -5808,26 +5829,6 @@ export default function MarketplacePage() {
     }
 
     const copied = await safeCopy(safeStr(packageText) || url);
-    showNotice(
-      copied ? "success" : "error",
-      copied
-        ? successText
-        : "Clipboard copy was blocked. The old clipboard may still contain another app route."
-    );
-  }
-
-  async function copyMarketplaceMessage(
-    message: string,
-    url: string,
-    successText: string,
-    missingText: string
-  ) {
-    if (!url || !safeStr(message)) {
-      showNotice("error", missingText);
-      return;
-    }
-
-    const copied = await safeCopy(message);
     showNotice(
       copied ? "success" : "error",
       copied
@@ -7858,7 +7859,9 @@ export default function MarketplacePage() {
                       style={marketplaceLinkRowStatusStyle(
                         joinInviteTrustReady
                           ? "ready"
-                          : canManageMarketplaceLinks
+                          : joinInviteShareReady
+                            ? "ready"
+                            : canManageMarketplaceLinks
                             ? "warn"
                             : "idle",
                         isCompact
@@ -7868,8 +7871,8 @@ export default function MarketplacePage() {
                     </span>
                   </div>
                   <div style={{ marginTop: 10 }}>
-                    <span style={compactStatusPillStyle(joinInviteTrustReady)}>
-                      {joinInviteTrustReady
+                    <span style={compactStatusPillStyle(joinInviteShareReady)}>
+                      {joinInviteShareReady
                         ? "Community join link ready"
                         : creatingInviteLink
                           ? "Preparing reusable join link"
@@ -8142,18 +8145,12 @@ export default function MarketplacePage() {
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
-                          if (!requireJoinInviteTrustEvidence()) return;
-                          copyMarketplaceMessage(
-                            joinInviteDoorwayMessage,
-                            personalizedInviteLink,
-                            "GSN join invite message copied.",
-                            marketplaceJoinLinkMissingMessage
-                          );
+                          void copyJoinInviteMessage();
                         });
                       }}
                       style={marketplaceInlineActionStyle(
                         isCompact ? "primary" : "secondary",
-                        !joinInviteTrustReady,
+                        !joinInviteShareReady,
                         isCompact
                       )}
                     >
@@ -8179,7 +8176,7 @@ export default function MarketplacePage() {
                         }}
                         style={marketplaceInlineActionStyle(
                           "secondary",
-                          !joinInviteTrustReady,
+                          !joinInviteShareReady,
                           isCompact
                         )}
                       >
@@ -8203,7 +8200,7 @@ export default function MarketplacePage() {
                       }}
                       style={marketplaceInlineActionStyle(
                         "secondary",
-                        !joinInviteTrustReady,
+                        !joinInviteShareReady,
                         isCompact
                       )}
                     >
@@ -8219,19 +8216,59 @@ export default function MarketplacePage() {
                           message: joinInviteDoorwayMessage,
                           url: personalizedInviteLink,
                         }}
-                        disabled={!joinInviteTrustReady}
+                        disabled={!joinInviteShareReady}
                         buttonLabel="Share"
                         stableHeight={58}
                         debugId="marketplace.links.join.tag-social"
                         style={marketplaceInlineActionStyle(
                           "secondary",
-                          !joinInviteTrustReady,
+                          !joinInviteShareReady,
                           isCompact
                         )}
                         onResult={showNotice}
                       />
                     ) : null}
                   </div>
+                  {joinInviteManualCopyMessage ? (
+                    <div
+                      style={{
+                        ...joinShareMessageCardStyle(isCompact),
+                        height: isCompact ? 224 : 238,
+                        minHeight: isCompact ? 224 : 238,
+                        maxHeight: isCompact ? 224 : 238,
+                      }}
+                    >
+                      <div style={sectionLabel()}>Invite text</div>
+                      <textarea
+                        {...marketplaceFieldTouchProps("marketplace.join.manual-copy")}
+                        id="marketplace-join-manual-copy"
+                        readOnly
+                        value={joinInviteManualCopyMessage}
+                        onFocus={(event) => event.currentTarget.select()}
+                        onClick={(event) => event.currentTarget.select()}
+                        aria-label="Prepared join invite text"
+                        rows={5}
+                        style={{
+                          marginTop: 8,
+                          width: "100%",
+                          minHeight: isCompact ? 170 : 184,
+                          maxHeight: isCompact ? 170 : 184,
+                          resize: "none",
+                          border: "1px solid rgba(148, 163, 184, 0.42)",
+                          borderRadius: 14,
+                          background: "#FFFFFF",
+                          color: "#102033",
+                          fontSize: 16,
+                          lineHeight: 1.38,
+                          fontWeight: 800,
+                          padding: isCompact ? "12px 13px" : "14px 16px",
+                          boxSizing: "border-box",
+                          WebkitUserSelect: "text",
+                          userSelect: "text",
+                        }}
+                      />
+                    </div>
+                  ) : null}
                   {!isCompact ? (
                     <div style={joinShareMessageCardStyle(isCompact)}>
                       <div style={sectionLabel()}>Message to send</div>

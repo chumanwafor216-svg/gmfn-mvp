@@ -180,8 +180,14 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add your sender name before sending the invite[\s\S]*?Add the receiver name before sending the invite[\s\S]*?Add how you know this person[\s\S]*?GSN is preparing the join link[\s\S]*?GSN is recording how you know this person[\s\S]*?return true;/,
-  "Marketplace Join share actions must wait for automatic reusable-link preparation and relationship evidence recording before sending."
+  /const joinInviteShareReady = useMemo\(\(\) => \{[\s\S]*?inviteLink && joinSenderReady && joinRecipientReady && joinRelationshipReady[\s\S]*?function requireJoinInviteTrustEvidence\(\)[\s\S]*?Add your sender name before sending the invite[\s\S]*?Add the receiver name before sending the invite[\s\S]*?Add how you know this person[\s\S]*?GSN is preparing the join link[\s\S]*?return true;/,
+  "Marketplace Join share actions must unlock once the reusable link exists and the required invite fields are complete."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /async function copyJoinInviteMessage\(\)[\s\S]*?safeCopy\(message\)[\s\S]*?setJoinInviteManualCopyMessage\(""\)[\s\S]*?setJoinInviteManualCopyMessage\(message\)[\s\S]*?Clipboard copy was blocked\. The invite text is shown below[\s\S]*?id="marketplace-join-manual-copy"[\s\S]*?readOnly[\s\S]*?value=\{joinInviteManualCopyMessage\}/,
+  "Marketplace Join Copy Invite must show a selectable manual invite text fallback when mobile clipboard copy is blocked."
 );
 
 assertContains(
@@ -204,14 +210,14 @@ assertContains(
 
 assertNotContains(
   "src/pages/MarketplacePage.tsx",
-  /committee administrator|community admin can refresh|Only a community admin can refresh|Refresh Join Link so GSN records|Refresh join link to record trust evidence/g,
-  "Marketplace Join must not expose the retired admin-refresh/quota wording during the pilot reusable-link flow."
+  /committee administrator|community admin can refresh|Only a community admin can refresh|Refresh Join Link so GSN records|Refresh join link to record trust evidence|Try Copy Invite again/g,
+  "Marketplace Join must not expose the retired admin-refresh/quota wording or dead-end try-again copy wording during the pilot reusable-link flow."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /debugId="marketplace\.links\.join\.copy"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?copyMarketplaceLink\([\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?copyMarketplaceMessage\([\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?openMarketplaceEmail\([\s\S]*?debugId="marketplace\.links\.join\.whatsapp"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?wa\.me[\s\S]*?disabled=\{!joinInviteTrustReady\}[\s\S]*?debugId="marketplace\.links\.join\.tag-social"/,
-  "Marketplace Join copy, message, email, WhatsApp, and share controls must all use the same private trust-evidence readiness gate."
+  /debugId="marketplace\.links\.join\.copy"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?copyMarketplaceLink\([\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?copyJoinInviteMessage\(\)[\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?openMarketplaceEmail\([\s\S]*?debugId="marketplace\.links\.join\.whatsapp"[\s\S]*?if \(!requireJoinInviteTrustEvidence\(\)\) return;[\s\S]*?wa\.me[\s\S]*?disabled=\{!joinInviteShareReady\}[\s\S]*?debugId="marketplace\.links\.join\.tag-social"/,
+  "Marketplace Join copy, message, email, WhatsApp, and share controls must share the same route-local invite readiness gate and fallback copy path."
 );
 
 assertNotContains(

@@ -55312,3 +55312,57 @@ GSN-branded invite composer and invite-entry continuity.
   - if the real phone still jumps after this, the next serious fix should be to
     move Join Invite onto a dedicated route or modal-like sheet with no
     Marketplace section landing scroll running around it.
+
+## 2026-06-15 - Marketplace Join Copy Invite Fallback
+
+- Trigger:
+  - owner completed the Join Invite form on phone, GSN reported that it was
+    recording how the inviter knows the person, but Copy Invite then failed and
+    asked the owner to try copying again.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - separated Join Invite share readiness from the fragile local
+      `joinInviteTrustReady` recording flag: once the invite link exists and
+      sender, receiver, and relationship fields are complete, Copy Invite /
+      WhatsApp / Email / Share may proceed;
+    - removed the dead-end "Try Copy Invite again" recording gate from the
+      share path;
+    - added `copyJoinInviteMessage()`, which first attempts clipboard copy and,
+      if blocked by the mobile browser, shows a stable readonly `Invite text`
+      box containing the full prepared message and join link;
+    - the fallback textarea uses `marketplaceFieldTouchProps` and fixed compact
+      geometry so it is audited as a native mobile field rather than an
+      accidental new tap surface.
+  - `frontend/tools/audit-marketplace-actions.mjs`
+    - now requires the manual fallback and forbids the dead-end
+      "Try Copy Invite again" wording.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - updates Marketplace native field count from 18 to 19 and explicitly cages
+      the readonly manual-copy textarea.
+- Verification:
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Passed Playwright mobile Chromium blocked-clipboard check:
+    - opened Marketplace -> Public Links -> Invite;
+    - filled sender, receiver, short note, relationship type, and known duration;
+    - confirmed one invite preparation POST;
+    - deliberately blocked `navigator.clipboard.writeText` and legacy
+      `document.execCommand("copy")`;
+    - tapped Copy Invite;
+    - confirmed the page stayed on `/app/marketplace`;
+    - confirmed `#marketplace-join-manual-copy` appeared with receiver name and
+      join link in the prepared message;
+    - confirmed no "Try Copy Invite again" or admin-refresh wording appeared.
+- Unabated truth:
+  - this does not force Android Chrome to allow clipboard access, because the
+    browser controls that permission;
+  - it does remove the dead end: if copy is blocked, the user gets the complete
+    invite message on-screen and can still send it;
+  - the best next product improvement remains a dedicated Join Invite route or
+    sheet if the full Marketplace page keeps producing phone-only instability.

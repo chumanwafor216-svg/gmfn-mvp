@@ -20,7 +20,7 @@ const actionTargetRoutesSource = readFileSync(
 );
 const findings = [];
 const expectedStableActionCount = 62;
-const expectedNativeFieldCount = 18;
+const expectedNativeFieldCount = 19;
 const expectedSourceBreakdown = {
   front: 11,
   body: 51,
@@ -196,6 +196,11 @@ assertContains(
 assertContains(
   /htmlFor="marketplace-join-sender-name"[\s\S]*?id="marketplace-join-sender-name"[\s\S]*?htmlFor="marketplace-join-recipient-name"[\s\S]*?id="marketplace-join-recipient-name"[\s\S]*?htmlFor="marketplace-join-invite-note"[\s\S]*?id="marketplace-join-invite-note"[\s\S]*?htmlFor="marketplace-join-relationship-type"[\s\S]*?id="marketplace-join-relationship-type"[\s\S]*?htmlFor="marketplace-join-known-duration"[\s\S]*?id="marketplace-join-known-duration"[\s\S]*?htmlFor="marketplace-join-relationship-context"[\s\S]*?id="marketplace-join-relationship-context"/,
   "Marketplace Join fields must keep explicit label/htmlFor and id wiring so mobile taps focus the intended native control."
+);
+
+assertContains(
+  /joinInviteManualCopyMessage \? \([\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.manual-copy"\)\}[\s\S]*?id="marketplace-join-manual-copy"[\s\S]*?readOnly[\s\S]*?onFocus=\{\(event\) => event\.currentTarget\.select\(\)\}[\s\S]*?minHeight: isCompact \? 170 : 184[\s\S]*?maxHeight: isCompact \? 170 : 184/,
+  "Marketplace Join manual copy fallback must be an audited readonly native field with stable phone geometry and field touch props."
 );
 
 assertContains(
