@@ -1298,6 +1298,12 @@ assertContains(
   "Clans page must use shared stable CTA primitives and shared CTA resolution for community creation, selection, invite package, and route actions."
 );
 
+assertContains(
+  "src/pages/ClansPage.tsx",
+  /const \[isCompact, setIsCompact\][\s\S]*?window\.innerWidth <= 720[\s\S]*?window\.addEventListener\("resize", handleResize\)[\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "1\.05fr 0\.95fr"[\s\S]*?fontSize: 16[\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "1fr 1fr"[\s\S]*?maxHeight: isCompact \? "calc\(100svh - 32px\)" : undefined/,
+  "Clans page must keep a real phone layout: one-column grids, non-zooming form fields, and a scrollable invite modal on compact viewports."
+);
+
 assertNotContains(
   "src/pages/ClansPage.tsx",
   /(<button|<\/button>|<a\s|OriginLink|to="\/app|homeTo="\/app|backTo="\/app|withClanQuery\("\/app|navigateWithOrigin\(navigate, "\/app)/,

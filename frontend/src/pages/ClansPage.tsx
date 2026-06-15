@@ -97,7 +97,7 @@ function inputStyle(): React.CSSProperties {
     border: "1px solid rgba(28,76,126,0.16)",
     padding: "13px 14px",
     outline: "none",
-    fontSize: 14,
+    fontSize: 16,
     color: "#0B1F33",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
@@ -349,6 +349,9 @@ function buildInviteState(
 export default function ClansPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isCompact, setIsCompact] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth <= 720 : false
+  );
 
   const [me, setMe] = useState<any>(null);
   const [communities, setCommunities] = useState<CommunityItem[]>([]);
@@ -367,6 +370,14 @@ export default function ClansPage() {
 
   const [inviteReceiver, setInviteReceiver] = useState("");
   const [inviteMessage, setInviteMessage] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => setIsCompact(window.innerWidth <= 720);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   async function loadCommunities(preferredId?: number) {
     setLoadingCommunities(true);
@@ -554,9 +565,14 @@ export default function ClansPage() {
       style={{
         maxWidth: 1160,
         margin: "0 auto",
-        paddingBottom: 36,
+        padding: isCompact ? "0 10px calc(104px + env(safe-area-inset-bottom, 0px))" : 0,
+        paddingBottom: isCompact
+          ? "calc(104px + env(safe-area-inset-bottom, 0px))"
+          : 36,
         display: "grid",
-        gap: 18,
+        gap: isCompact ? 12 : 18,
+        overflowX: "hidden",
+        boxSizing: "border-box",
       }}
     >
       <ExplainToggle
@@ -572,7 +588,8 @@ export default function ClansPage() {
           ...pageCard(
             "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
           ),
-          marginTop: 18,
+          marginTop: isCompact ? 10 : 18,
+          padding: isCompact ? 16 : 20,
         }}
       >
         <div
@@ -590,7 +607,7 @@ export default function ClansPage() {
             <h1
               style={{
                 margin: "14px 0 8px",
-                fontSize: 30,
+                fontSize: isCompact ? 24 : 30,
                 lineHeight: 1.15,
                 color: "#F8FBFF",
               }}
@@ -601,8 +618,8 @@ export default function ClansPage() {
             <div
               style={{
                 color: "#D7E3F1",
-                fontSize: 15,
-                lineHeight: 1.7,
+                fontSize: isCompact ? 14 : 15,
+                lineHeight: isCompact ? 1.55 : 1.7,
                 maxWidth: 760,
               }}
             >
@@ -614,8 +631,9 @@ export default function ClansPage() {
 
           <div
             style={{
-              minWidth: 240,
-              flex: "0 1 300px",
+              minWidth: isCompact ? 0 : 240,
+              width: isCompact ? "100%" : undefined,
+              flex: isCompact ? "1 1 100%" : "0 1 300px",
               ...softCard("rgba(255,255,255,0.96)"),
               border: "1px solid rgba(212,175,55,0.14)",
               boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
@@ -636,7 +654,7 @@ export default function ClansPage() {
               <StableCtaLink
                 to={routes.community}
                 debugId="clans.quick.community"
-                style={btn(false)}
+                style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
               >
                 Community Home
               </StableCtaLink>
@@ -644,7 +662,7 @@ export default function ClansPage() {
                 to={routes.dashboard}
                 kind="primary"
                 debugId="clans.quick.dashboard"
-                style={btn(true)}
+                style={{ ...btn(true), width: isCompact ? "100%" : undefined }}
               >
                 Dashboard
               </StableCtaLink>
@@ -665,8 +683,9 @@ export default function ClansPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: 14,
+          gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+          gap: isCompact ? 10 : 14,
+          order: isCompact ? 2 : undefined,
         }}
       >
         <div style={card()}>
@@ -719,16 +738,16 @@ export default function ClansPage() {
         </div>
       </div>
 
-      <div style={pageCard()}>
+      <div style={{ ...pageCard(), order: isCompact ? 1 : undefined }}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.05fr 0.95fr",
-            gap: 16,
+            gridTemplateColumns: isCompact ? "1fr" : "1.05fr 0.95fr",
+            gap: isCompact ? 12 : 16,
             alignItems: "start",
           }}
         >
-          <div style={softCard()}>
+          <div style={{ ...softCard(), minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
               Community creation form
             </div>
@@ -790,7 +809,7 @@ export default function ClansPage() {
                     border: "1px solid rgba(11,31,51,0.12)",
                     padding: "12px 14px",
                     outline: "none",
-                    fontSize: 14,
+                    fontSize: 16,
                     color: "#0B1F33",
                     background: "#FFFFFF",
                     boxSizing: "border-box",
@@ -820,7 +839,7 @@ export default function ClansPage() {
                     border: "1px solid rgba(11,31,51,0.12)",
                     padding: "12px 14px",
                     outline: "none",
-                    fontSize: 14,
+                    fontSize: 16,
                     color: "#0B1F33",
                     background: "#FFFFFF",
                     boxSizing: "border-box",
@@ -841,7 +860,10 @@ export default function ClansPage() {
                   busy={creatingCommunity}
                   busyLabel="Creating..."
                   debugId="clans.create-community"
-                  style={btn(true, creatingCommunity || !safeStr(communityNameInput))}
+                  style={{
+                    ...btn(true, creatingCommunity || !safeStr(communityNameInput)),
+                    width: isCompact ? "100%" : undefined,
+                  }}
                   disabled={creatingCommunity || !safeStr(communityNameInput)}
                 >
                   Create community
@@ -850,7 +872,7 @@ export default function ClansPage() {
                 <StableCtaLink
                   to={routes.community}
                   debugId="clans.create.open-community"
-                  style={btn(false)}
+                  style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
                 >
                   Open Community Home
                 </StableCtaLink>
@@ -858,7 +880,7 @@ export default function ClansPage() {
             </form>
           </div>
 
-          <div style={softCard()}>
+          <div style={{ ...softCard(), minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
               Current community
             </div>
@@ -896,9 +918,10 @@ export default function ClansPage() {
                   border: "1px solid rgba(11,31,51,0.12)",
                   background: "#FFFFFF",
                   padding: "12px 14px",
-                  fontSize: 14,
+                  fontSize: 16,
                   color: "#0B1F33",
                   outline: "none",
+                  boxSizing: "border-box",
                 }}
               >
                 {communities.length === 0 ? (
@@ -985,28 +1008,28 @@ export default function ClansPage() {
                   <StableCtaLink
                     to={routes.communityDetail}
                     debugId="clans.next.community"
-                    style={btn(false)}
+                    style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
                   >
                     Community Home
                   </StableCtaLink>
                   <StableCtaLink
                     to={routes.demandBox}
                     debugId="clans.next.demand-box"
-                    style={btn(false)}
+                    style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
                   >
                     Demand Box
                   </StableCtaLink>
                   <StableCtaLink
                     to={routes.shop}
                     debugId="clans.next.shop-control"
-                    style={btn(false)}
+                    style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
                   >
                     My Shop Tools
                   </StableCtaLink>
                   <StableCtaLink
                     to={routes.marketplace}
                     debugId="clans.next.marketplace"
-                    style={btn(false)}
+                    style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
                   >
                     Marketplace
                   </StableCtaLink>
@@ -1033,7 +1056,7 @@ export default function ClansPage() {
         </div>
       </div>
 
-      <div style={pageCard()}>
+      <div style={{ ...pageCard(), order: isCompact ? 3 : undefined }}>
         <div
           style={{
             display: "flex",
@@ -1061,7 +1084,10 @@ export default function ClansPage() {
           </div>
 
           <PrimaryButton
-            style={btn(true, !selectedCommunityId || inviteLoading)}
+            style={{
+              ...btn(true, !selectedCommunityId || inviteLoading),
+              width: isCompact ? "100%" : undefined,
+            }}
             onClick={() => setInviteComposerOpen(true)}
             disabled={!selectedCommunityId || inviteLoading}
             busy={inviteLoading}
@@ -1073,14 +1099,14 @@ export default function ClansPage() {
         </div>
 
         <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
-          }}
-        >
-          <div style={softCard()}>
+        style={{
+          marginTop: 14,
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+          gap: isCompact ? 12 : 16,
+        }}
+      >
+          <div style={{ ...softCard(), minWidth: 0 }}>
             <div
               style={{
                 color: "#F8FBFF",
@@ -1126,7 +1152,10 @@ export default function ClansPage() {
 
               <div>
                 <PrimaryButton
-                  style={btn(true, !selectedCommunityId || inviteLoading)}
+                  style={{
+                    ...btn(true, !selectedCommunityId || inviteLoading),
+                    width: isCompact ? "100%" : undefined,
+                  }}
                   onClick={() => setInviteComposerOpen(true)}
                   disabled={!selectedCommunityId || inviteLoading}
                   busy={inviteLoading}
@@ -1139,7 +1168,7 @@ export default function ClansPage() {
             </div>
           </div>
 
-          <div style={softCard()}>
+          <div style={{ ...softCard(), minWidth: 0 }}>
             {!selectedCommunityId ? (
               <div style={{ color: "#64748B", lineHeight: 1.7 }}>
                 Select a community to create an invitation.
@@ -1323,7 +1352,7 @@ export default function ClansPage() {
 
                       {inviteState.whatsappShareText ? (
                         <PrimaryButton
-                          style={btn(true)}
+                          style={{ ...btn(true), width: isCompact ? "100%" : undefined }}
                           onClick={shareViaWhatsApp}
                           debugId="clans.invite.share-whatsapp"
                         >
@@ -1365,8 +1394,14 @@ export default function ClansPage() {
       </div>
 
       {inviteComposerOpen ? (
-        <div style={overlayShell()}>
-          <div style={modalCard()}>
+        <div style={{ ...overlayShell(), padding: isCompact ? 10 : 18 }}>
+          <div
+            style={{
+              ...modalCard(),
+              maxHeight: isCompact ? "calc(100svh - 32px)" : undefined,
+              overflowY: isCompact ? "auto" : "hidden",
+            }}
+          >
             <div style={{ ...darkPanel(), marginBottom: 16 }}>
               <div
                 style={{
@@ -1489,7 +1524,7 @@ export default function ClansPage() {
               >
                 <SecondaryButton
                   onClick={() => setInviteComposerOpen(false)}
-                  style={btn(false)}
+                  style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
                   disabled={inviteLoading}
                   debugId="clans.invite-modal.cancel"
                 >
@@ -1497,7 +1532,10 @@ export default function ClansPage() {
                 </SecondaryButton>
                 <PrimaryButton
                   onClick={() => void handleCreateInvite()}
-                  style={btn(true, inviteLoading || !selectedCommunityId)}
+                  style={{
+                    ...btn(true, inviteLoading || !selectedCommunityId),
+                    width: isCompact ? "100%" : undefined,
+                  }}
                   disabled={inviteLoading || !selectedCommunityId}
                   busy={inviteLoading}
                   busyLabel="Creating..."
@@ -1511,7 +1549,7 @@ export default function ClansPage() {
         </div>
       ) : null}
 
-      <div style={pageCard()}>
+      <div style={{ ...pageCard(), order: isCompact ? 4 : undefined }}>
         <div
           style={{
             display: "flex",
@@ -1541,7 +1579,7 @@ export default function ClansPage() {
             to={routes.community}
             kind="primary"
             debugId="clans.existing.open-community"
-            style={btn(true)}
+            style={{ ...btn(true), width: isCompact ? "100%" : undefined }}
           >
             Open Community Home
           </StableCtaLink>
@@ -1608,7 +1646,7 @@ export default function ClansPage() {
                       alignItems: "center",
                     }}
                   >
-                    <div style={{ minWidth: 220, flex: 1 }}>
+                    <div style={{ minWidth: isCompact ? 0 : 220, flex: 1 }}>
                       <div
                         style={{
                           color: "#F8FBFF",
@@ -1653,14 +1691,18 @@ export default function ClansPage() {
 
                     <div
                       style={{
-                        display: "flex",
+                        display: isCompact ? "grid" : "flex",
                         gap: 10,
                         flexWrap: "wrap",
                         justifyContent: "flex-end",
+                        width: isCompact ? "100%" : undefined,
                       }}
                     >
                       <SecondaryButton
-                        style={isActive ? btn(true) : btn(false)}
+                        style={{
+                          ...(isActive ? btn(true) : btn(false)),
+                          width: isCompact ? "100%" : undefined,
+                        }}
                         onClick={() => handleSelectCommunity(id)}
                         debugId={`clans.community.${id}.select`}
                       >
@@ -1668,7 +1710,7 @@ export default function ClansPage() {
                       </SecondaryButton>
 
                       <SecondaryButton
-                        style={btn(false)}
+                        style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
                         onClick={() => handleOpenMarketplace(id)}
                         debugId={`clans.community.${id}.marketplace`}
                       >

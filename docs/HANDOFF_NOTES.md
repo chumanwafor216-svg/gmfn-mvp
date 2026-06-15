@@ -1,3 +1,52 @@
+## 2026-06-15 - Create Community Phone Layout Cage
+
+- Trigger:
+  - owner tested the newly restored existing-member create lane at
+    `/app/clans` and showed phone screenshots where the route was technically
+    correct but visually broken:
+    - the community form was squeezed into a desktop two-column layout;
+    - stats appeared before the actual creation task;
+    - buttons and inputs were narrow, partly hidden, or hard to use near the
+      bottom navigation;
+    - the page looked like a desktop/admin surface forced onto mobile.
+- Confirmed facts:
+  - the four-lane create/join routing fix was correct;
+  - `ClansPage` itself had not been phone-caged after `/app/clans` was
+    reconnected;
+  - the issue was not a backend identity-flow problem in this case, but a
+    frontend compact-layout failure on the authenticated create-community page.
+- Changed:
+  - `frontend/src/pages/ClansPage.tsx`
+    - adds a real compact breakpoint at `<= 720px`;
+    - changes the phone order to hero -> creation form -> stats -> invite
+      package -> existing communities;
+    - converts desktop two-column grids to one-column phone grids;
+    - makes route-local buttons full-width on compact screens;
+    - sets form controls to `16px` to avoid mobile browser focus zoom;
+    - adds safe bottom clearance and horizontal-overflow protection;
+    - makes the invite modal scroll inside the viewport on compact screens.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages the Clans phone layout requirements so the page cannot quietly
+      fall back to a squeezed desktop layout again.
+- Verification:
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed local Edge mobile smoke against the built app at `390x844`:
+    - `/app/clans` had `scrollWidth: 390`;
+    - the creation form rendered before the stats on compact view;
+    - no horizontal page overflow was detected.
+- Unabated truth:
+  - this fixes a real page-structure failure on the existing-member create
+    lane;
+  - it does not prove every remaining jumpiness report is solved, because the
+    hardest failures have been on the owner's physical phone/browser;
+  - after deploy, the next practical test is exactly `/app/clans` on phone:
+    tap community name, short description, create/select community, then open
+    marketplace from the selected community card.
+
 ## 2026-06-15 - Four-Lane Create/Join Identity Routing
 
 - Trigger:
