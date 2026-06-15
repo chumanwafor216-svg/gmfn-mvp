@@ -55264,3 +55264,51 @@ GSN-branded invite composer and invite-entry continuity.
   - if this still jumps on the phone, the next escalation should be route-local
     removal or suspension of Marketplace auto-landing scroll, not more field
     styling.
+
+## 2026-06-15 - Marketplace Join Duration Draft Protection
+
+- Trigger:
+  - owner reported the Join Invite form was now fillable up to the
+    "How long have you known them?" control, but selecting that duration could
+    throw the phone out of the page before the final submission/ready state.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added community-scoped local draft storage for Join Invite fields:
+      sender name, receiver name, short note, relationship type, known duration,
+      and private relationship context;
+    - restores the Join Invite tool and previously entered values after reload
+      or route recovery, so a phone jump does not erase the work already typed;
+    - delays automatic invite-link preparation by 3.2 seconds after the final
+      relationship evidence fields are complete, giving the Android/native
+      dropdown close a chance to settle before backend work and UI updates run;
+    - skips writing completely blank drafts so restore cannot be overwritten by
+      an empty first render.
+  - `frontend/tools/audit-marketplace-actions.mjs`
+    - added guards requiring Join Invite draft save/restore and delayed
+      auto-prepare behavior.
+- Verification:
+  - Passed `npm run lint` with only pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build`.
+  - Passed Playwright mobile Chromium check on `127.0.0.1:5174`:
+    - opened Marketplace -> Public Links -> Invite;
+    - filled sender, receiver, short note, relationship type, and known duration;
+    - confirmed no invite POST during the first second after duration selection;
+    - reloaded the page and confirmed all draft values restored;
+    - confirmed the link auto-prepared after the delay;
+    - confirmed no committee-admin/refresh wording returned.
+- Unabated truth:
+  - this saves the user's typed work and removes the likely timing collision at
+    the final dropdown;
+  - it is still not a full proof against real Android Chrome viewport/browser
+    chrome movement, because Playwright cannot reproduce that exact native
+    selector and address-bar behavior;
+  - if the real phone still jumps after this, the next serious fix should be to
+    move Join Invite onto a dedicated route or modal-like sheet with no
+    Marketplace section landing scroll running around it.

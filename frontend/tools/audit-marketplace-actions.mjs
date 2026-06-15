@@ -190,6 +190,18 @@ assertContains(
   "Marketplace Join must automatically prepare the reusable invite link after sender, receiver, and relationship evidence are complete."
 );
 
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /joinInviteDraftStorageKey[\s\S]*?joinInviteDraftRestoredKeyRef[\s\S]*?readLocalJSON[\s\S]*?setJoinSenderName[\s\S]*?setJoinRecipientName[\s\S]*?setJoinKnownDuration[\s\S]*?setActiveLinkCenterTool\("join"\)[\s\S]*?writeLocalJSON\(joinInviteDraftStorageKey\(activeCommunityId\)/,
+  "Marketplace Join must save and restore the in-progress invite draft so phone jumps or reloads do not erase filled fields."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /const timer = window\.setTimeout\(\(\) => \{[\s\S]*?handleCreateInviteLink\(\{ quiet: true \}\)[\s\S]*?\}, 3200\);[\s\S]*?return \(\) => window\.clearTimeout\(timer\);/,
+  "Marketplace Join auto-prepare must wait for the final phone dropdown to settle before calling the backend."
+);
+
 assertNotContains(
   "src/pages/MarketplacePage.tsx",
   /committee administrator|community admin can refresh|Only a community admin can refresh|Refresh Join Link so GSN records|Refresh join link to record trust evidence/g,

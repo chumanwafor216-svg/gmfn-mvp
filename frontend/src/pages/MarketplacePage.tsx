@@ -3453,6 +3453,10 @@ function communitySectionsStorageKey(communityId: number): string {
   return `gmfn.marketplace.sections.v4.${communityId}`;
 }
 
+function joinInviteDraftStorageKey(communityId: number): string {
+  return `gmfn.marketplace.joinInviteDraft.v1.${communityId || "unknown"}`;
+}
+
 function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
   return `${WITHDRAWAL_TASK_STORAGE_KEY_PREFIX}.${gmfnId || "me"}.${clanId || 0}`;
 }
@@ -3510,6 +3514,7 @@ export default function MarketplacePage() {
     useState("");
   const [creatingInviteLink, setCreatingInviteLink] = useState(false);
   const joinInviteAutoPrepareKeyRef = useRef("");
+  const joinInviteDraftRestoredKeyRef = useRef("");
   const [activeLinkCenterTool, setActiveLinkCenterTool] =
     useState<LinkCenterTool | null>(null);
   const [publicShopRecord, setPublicShopRecord] =
@@ -5626,6 +5631,91 @@ export default function MarketplacePage() {
   ]);
 
   useEffect(() => {
+    if (!activeCommunityId) return;
+
+    const draftKey = joinInviteDraftStorageKey(activeCommunityId);
+    if (joinInviteDraftRestoredKeyRef.current === draftKey) return;
+
+    joinInviteDraftRestoredKeyRef.current = draftKey;
+    const draft = readLocalJSON<{
+      senderName?: string;
+      recipientName?: string;
+      inviteNote?: string;
+      relationshipType?: string;
+      knownDuration?: string;
+      relationshipContext?: string;
+    } | null>(draftKey, null);
+
+    if (!draft) return;
+
+    const hasDraftValue = [
+      draft.senderName,
+      draft.recipientName,
+      draft.inviteNote,
+      draft.relationshipType,
+      draft.knownDuration,
+      draft.relationshipContext,
+    ].some((value) => safeStr(value));
+
+    if (!hasDraftValue) return;
+
+    if (!safeStr(joinSenderName)) setJoinSenderName(safeStr(draft.senderName));
+    if (!safeStr(joinRecipientName)) setJoinRecipientName(safeStr(draft.recipientName));
+    if (!safeStr(joinInviteNote)) setJoinInviteNote(safeStr(draft.inviteNote));
+    if (!safeStr(joinRelationshipType)) {
+      setJoinRelationshipType(safeStr(draft.relationshipType));
+    }
+    if (!safeStr(joinKnownDuration)) {
+      setJoinKnownDuration(safeStr(draft.knownDuration));
+    }
+    if (!safeStr(joinRelationshipContext)) {
+      setJoinRelationshipContext(safeStr(draft.relationshipContext));
+    }
+    setActiveLinkCenterTool("join");
+  }, [
+    activeCommunityId,
+    joinInviteNote,
+    joinKnownDuration,
+    joinRecipientName,
+    joinRelationshipContext,
+    joinRelationshipType,
+    joinSenderName,
+  ]);
+
+  useEffect(() => {
+    if (!activeCommunityId) return;
+
+    const hasDraftValue = [
+      joinSenderName,
+      joinRecipientName,
+      joinInviteNote,
+      joinRelationshipType,
+      joinKnownDuration,
+      joinRelationshipContext,
+    ].some((value) => safeStr(value));
+
+    if (!hasDraftValue) return;
+
+    writeLocalJSON(joinInviteDraftStorageKey(activeCommunityId), {
+      senderName: joinSenderName,
+      recipientName: joinRecipientName,
+      inviteNote: joinInviteNote,
+      relationshipType: joinRelationshipType,
+      knownDuration: joinKnownDuration,
+      relationshipContext: joinRelationshipContext,
+      updatedAt: new Date().toISOString(),
+    });
+  }, [
+    activeCommunityId,
+    joinInviteNote,
+    joinKnownDuration,
+    joinRecipientName,
+    joinRelationshipContext,
+    joinRelationshipType,
+    joinSenderName,
+  ]);
+
+  useEffect(() => {
     if (activeLinkCenterTool !== "join") return;
     if (!activeCommunityId || !canManageMarketplaceLinks || creatingInviteLink) return;
     if (!joinSenderReady || !joinRecipientReady || !joinRelationshipReady) return;
@@ -5644,11 +5734,15 @@ export default function MarketplacePage() {
     if (joinInviteAutoPrepareKeyRef.current === autoPrepareKey) return;
 
     joinInviteAutoPrepareKeyRef.current = autoPrepareKey;
-    void handleCreateInviteLink({ quiet: true }).then((ok) => {
-      if (!ok && joinInviteAutoPrepareKeyRef.current === autoPrepareKey) {
-        joinInviteAutoPrepareKeyRef.current = "";
-      }
-    });
+    const timer = window.setTimeout(() => {
+      void handleCreateInviteLink({ quiet: true }).then((ok) => {
+        if (!ok && joinInviteAutoPrepareKeyRef.current === autoPrepareKey) {
+          joinInviteAutoPrepareKeyRef.current = "";
+        }
+      });
+    }, 3200);
+
+    return () => window.clearTimeout(timer);
   }, [
     activeCommunityId,
     activeLinkCenterTool,
