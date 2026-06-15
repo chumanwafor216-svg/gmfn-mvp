@@ -72,6 +72,18 @@ assertContains(
 );
 
 assertContains(
+  "frontend/src/lib/joinInviteMessaging.ts",
+  /export function buildJoinInviteLetter[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\.[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\./,
+  "Existing-community invite message must keep the sender name on both the visible invitation paper and the copied doorway message."
+);
+
+assertContains(
+  "frontend/src/lib/joinInviteMessaging.ts",
+  /JOIN_INVITE_LINK_HINT[\s\S]*?Tap the GSN Link preview above to open the invitation[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \? JOIN_INVITE_LINK_HINT : null/,
+  "Copied existing-community invite messages must place a clear tap instruction beside the top GSN link preview."
+);
+
+assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
   /const canUseNewMemberForm =\s*currentMemberChecked && !usingExistingIdentity;/,
   "Existing-community Join Entry must not hide the request form just because a stale token exists in localStorage."
@@ -109,8 +121,14 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /You have been invited to join a community on GSN\.[\s\S]*?GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust[\s\S]*?✅ Community-backed ✅ Verifiable[\s\S]*?✅ Portable ✅ Privacy protected[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\./,
+  /JOIN_INVITE_PROOF_LINES = \[[\s\S]*?✅ Community-backed trust[\s\S]*?✅ Verifiable record[\s\S]*?✅ Portable reputation[\s\S]*?✅ Privacy protected[\s\S]*?You have been invited to join a community on GSN\.[\s\S]*?GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_PROOF_LINES\)[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\./,
   "Existing-community invite message must keep the portable-trust explanation, proof icons, GSN-link instruction, and review-before-approval boundary."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /function isInvitationProofLine[\s\S]*?startsWith\("✅ "\)[\s\S]*?function invitationProofGridStyle[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?function invitationProofItemStyle[\s\S]*?function renderInvitationMessageLines[\s\S]*?invitationProofGridStyle\(isCompact\)[\s\S]*?renderInvitationMessageLines\(lines, isCompact\)/,
+  "The visible invitation paper must render portable-trust proof points as a proper compact proof grid, not a loose sentence line."
 );
 
 assertContains(

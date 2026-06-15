@@ -263,6 +263,66 @@ function invitationPaperMessageStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
+function isInvitationProofLine(line: string): boolean {
+  return cleanText(line).startsWith("✅ ");
+}
+
+function invitationProofGridStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+    gap: 8,
+    margin: isCompact ? "2px 0" : "4px 0",
+  };
+}
+
+function invitationProofItemStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "22px minmax(0, 1fr)",
+    alignItems: "center",
+    gap: 7,
+    minHeight: isCompact ? 38 : 40,
+    padding: isCompact ? "8px 9px" : "8px 10px",
+    borderRadius: isCompact ? 13 : 14,
+    background: "rgba(236, 253, 245, 0.72)",
+    border: "1px solid rgba(22, 101, 52, 0.12)",
+    color: "#173B2A",
+    fontSize: isCompact ? 13.5 : 13,
+    fontWeight: 900,
+    lineHeight: 1.18,
+    overflow: "hidden",
+  };
+}
+
+function renderInvitationMessageLines(lines: string[], isCompact: boolean) {
+  const proofLines = lines.filter(isInvitationProofLine);
+  let proofRendered = false;
+
+  return lines.map((line, index) => {
+    if (isInvitationProofLine(line)) {
+      if (proofRendered) return null;
+      proofRendered = true;
+
+      return (
+        <div
+          key="invitation-proof-grid"
+          style={invitationProofGridStyle(isCompact)}
+        >
+          {proofLines.map((proofLine) => (
+            <div key={proofLine} style={invitationProofItemStyle(isCompact)}>
+              <span aria-hidden="true">✅</span>
+              <span>{cleanText(proofLine).replace(/^✅\s*/, "")}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return <div key={`${line}-${index}`}>{line}</div>;
+  });
+}
+
 function invitationPaperFooterStyle(): React.CSSProperties {
   return {
     display: "flex",
@@ -910,9 +970,7 @@ function BrandedInvitationPaper({
         </div>
 
         <div style={invitationPaperMessageStyle(isCompact)}>
-          {lines.map((line, index) => (
-            <div key={`${line}-${index}`}>{line}</div>
-          ))}
+          {renderInvitationMessageLines(lines, isCompact)}
         </div>
 
         <div style={invitationPaperFooterStyle()}>

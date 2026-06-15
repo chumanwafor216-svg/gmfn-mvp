@@ -1,3 +1,116 @@
+## 2026-06-15 - Join Invite Link Tap Hint
+
+- Trigger:
+  - owner noted that some less confident WhatsApp recipients may not realize
+    the link preview/text area is the place to tap.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - adds `⬆️ Tap the GSN Link preview above to open the invitation.` directly
+      after the top invite URL in copied/WhatsApp doorway messages.
+    - keeps the compact link first so WhatsApp can still generate the hero
+      preview card.
+    - changes the lower doorway instruction to `After it opens, request access
+      from the invitation page.` so the copied message does not repeat the same
+      link instruction twice.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - cages the tap hint beside the top invite link.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - cages the same tap hint in the shared proof/message package.
+- Verification:
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:proof-surfaces`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm --prefix frontend run build` outside the sandbox because the
+    sandboxed Vite/esbuild process hits Windows `spawn EPERM`.
+  - Confirmed generated copied-message text starts with:
+    - invite URL;
+    - `⬆️ Tap the GSN Link preview above to open the invitation.`
+  - Confirmed lower copied-message instruction now says:
+    - `After it opens, request access from the invitation page.`
+- Unabated truth:
+  - this helps users who do not instinctively know to tap a WhatsApp preview;
+  - it does not change invite validity, join routing, backend logic, or button
+    behavior.
+
+## 2026-06-15 - Join Invite Sender Name Restored
+
+- Trigger:
+  - owner noticed the latest invitation-message amendment removed the sender's
+    name from the human-readable invite message.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - restored the sender as `Invited by {sender}.` immediately after the
+      greeting in both the visible invitation paper and copied doorway message.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - added a guard so the existing-community invite message fails audit if the
+      sender line disappears from either surface.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added the same sender-name guard for the shared proof/message surface.
+- Verification:
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:proof-surfaces`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm --prefix frontend run build` after rerunning outside the
+    sandbox because the first sandboxed Vite build hit Windows `spawn EPERM`.
+  - Passed a local Edge/Playwright phone-width smoke check at `390x844`:
+    - `Invited by CHUKWUMA NWAFOR` rendered in the invitation paper;
+    - `Hello Proff` rendered;
+    - portable-trust and review-before-approval wording rendered;
+    - document `scrollWidth` stayed equal to viewport width (`390`).
+- Unabated truth:
+  - the previous amendment made the invite cleaner but accidentally weakened
+    trust by hiding who sent it;
+  - this restores the trust source without changing routes, backend logic,
+    buttons, or deployment state.
+
+## 2026-06-15 - Join Invite Proof Point Arrangement Polish
+
+- Trigger:
+  - owner reviewed the new join-invite message and said the proof words such
+    as `Community-backed` needed more intelligence and better arrangement.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - changed the proof line from two crowded paired phrases into four clearer
+      proof points:
+      - `Community-backed trust`;
+      - `Verifiable record`;
+      - `Portable reputation`;
+      - `Privacy protected`.
+    - kept the same proof points in both the public invitation paper and the
+      copied/WhatsApp doorway message.
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - detects invitation proof-point lines and renders them as a compact
+      proof grid in the branded invitation paper instead of loose text lines;
+    - uses one-column proof chips on compact phone screens and two columns on
+      wider screens.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - now cages the four clearer proof points and the invitation proof-grid
+      renderer.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now cages the shared proof-point wording and outbound doorway message.
+- Verification:
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:proof-surfaces`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Passed local Edge/Playwright phone smoke at `390x844` on
+    `/start/join/TESTINVITE?...`:
+    - all four proof points rendered;
+    - `Homeland isa Marketplace` rendered;
+    - document `scrollWidth` stayed equal to viewport width (`390`).
+- Unabated truth:
+  - this improves the message arrangement and the invitation paper proof block;
+  - it is verified locally but not pushed/deployed yet.
+
 ## 2026-06-15 - Join Invite Message Portable Trust Rewrite
 
 - Trigger:

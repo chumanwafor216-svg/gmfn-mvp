@@ -11,6 +11,16 @@ type JoinInviteDoorwayParams = JoinInviteTextParams & {
   inviteLink?: string;
 };
 
+const JOIN_INVITE_PROOF_LINES = [
+  "✅ Community-backed trust",
+  "✅ Verifiable record",
+  "✅ Portable reputation",
+  "✅ Privacy protected",
+];
+
+const JOIN_INVITE_LINK_HINT =
+  "⬆️ Tap the GSN Link preview above to open the invitation.";
+
 function cleanText(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -25,6 +35,7 @@ function safeDateTime(value: unknown): string {
 
 export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   const receiver = cleanText(args.receiver);
+  const inviter = cleanText(args.inviter);
   const marketplaceName =
     cleanText(args.marketplaceName) ||
     (cleanText(args.communityName) ? `${cleanText(args.communityName)} Marketplace` : "");
@@ -34,6 +45,9 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   const lines: string[] = [];
 
   lines.push(receiver ? `Hello ${receiver},` : "Hello,");
+  if (inviter) {
+    lines.push(`Invited by ${inviter}.`);
+  }
   lines.push("");
   lines.push(
     "You have been invited to join a community on GSN."
@@ -43,8 +57,7 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
     "GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust that can travel with people wherever they go."
   );
   lines.push("");
-  lines.push("✅ Community-backed ✅ Verifiable");
-  lines.push("✅ Portable ✅ Privacy protected");
+  lines.push(...JOIN_INVITE_PROOF_LINES);
 
   if (marketplaceName) {
     lines.push("");
@@ -77,6 +90,7 @@ export function buildJoinInviteDoorwayMessage(
   args: JoinInviteDoorwayParams
 ): string {
   const receiver = cleanText(args.receiver);
+  const inviter = cleanText(args.inviter);
   const communityName = cleanText(args.communityName) || "this GSN community";
   const marketplaceName =
     cleanText(args.marketplaceName) ||
@@ -87,15 +101,16 @@ export function buildJoinInviteDoorwayMessage(
 
   const lines: Array<string | null> = [
     inviteLink || null,
+    inviteLink ? JOIN_INVITE_LINK_HINT : null,
     "",
     receiver ? `Hello ${receiver},` : "Hello,",
+    inviter ? `Invited by ${inviter}.` : null,
     "",
     "You have been invited to join a community on GSN.",
     "",
     "GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust that can travel with people wherever they go.",
     "",
-    "✅ Community-backed ✅ Verifiable",
-    "✅ Portable ✅ Privacy protected",
+    ...JOIN_INVITE_PROOF_LINES,
     "",
     marketplaceName ? `🏛️ ${marketplaceName}` : null,
   ];
@@ -110,7 +125,7 @@ export function buildJoinInviteDoorwayMessage(
 
   lines.push(
     "",
-    "Open the GSN link above to view the invitation and request access.",
+    "After it opens, request access from the invitation page.",
     "",
     "Community membership is reviewed before approval."
   );
