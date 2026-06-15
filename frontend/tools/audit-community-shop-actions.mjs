@@ -101,8 +101,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /joinRequests:\s*routeTarget\(\s*"communityJoinRequests"[\s\S]*?debugId="community-home\.empty\.create-community"[\s\S]*?openCommunityRoute\(event, "\/create"\)/,
-  "Community Home owner and empty-state routes must avoid the retired /app/clans alias."
+  /joinRequests:\s*routeTarget\(\s*"communityJoinRequests"[\s\S]*?createCommunity:\s*routeTarget\(\s*"clans"[\s\S]*?debugId="community-home\.empty\.create-community"[\s\S]*?openCommunityRoute\(event, routes\.createCommunity\)/,
+  "Community Home owner and empty-state routes must send existing members to the authenticated create-community lane."
 );
 
 assertContains(

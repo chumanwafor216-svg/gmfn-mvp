@@ -1005,7 +1005,7 @@ export default function LoginPage() {
                     letterSpacing: 0.2,
                   }}
                 >
-                  Phone number, email, or GSN number
+                  Phone number, email, or GSN ID
                 </div>
                 <div
                   style={{
@@ -1031,7 +1031,7 @@ export default function LoginPage() {
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter phone, email, or GSN number"
+                    placeholder="Enter phone, email, or GSN ID"
                     autoComplete="username"
                     style={{
                       ...inputStyle(),

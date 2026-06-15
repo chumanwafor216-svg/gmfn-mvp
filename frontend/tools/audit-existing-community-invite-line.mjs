@@ -61,14 +61,14 @@ assertContains(
 
 assertContains(
   "frontend/src/App.tsx",
-  /path="create-community" element=\{<Navigate to="\/create" replace \/>/,
-  "Authenticated create-community alias must still canonicalize to the create-community lane, not the existing-community invite form."
+  /const ClansPage = React\.lazy\(\(\) => import\("\.\/pages\/ClansPage"\)\);[\s\S]*?<Route path="clans" element=\{<ClansPage \/>\} \/>[\s\S]*?path="create-community" element=\{<PreserveRedirect to=\{APP_ROUTES\.CLANS\} \/>\}/,
+  "Authenticated create-community alias must open the existing-member create-community lane, not the public new-founder form or the join form."
 );
 
 assertContains(
   "frontend/src/App.tsx",
-  /path="new-community" element=\{<Navigate to="\/create" replace \/>/,
-  "Authenticated new-community alias must still canonicalize to the create-community lane, not the existing-community invite form."
+  /path="new-community" element=\{<PreserveRedirect to=\{APP_ROUTES\.CLANS\} \/>\}/,
+  "Authenticated new-community alias must open the existing-member create-community lane, not the public new-founder form or the join form."
 );
 
 assertContains(

@@ -7781,7 +7781,7 @@ export default function MarketplacePage() {
                   onClick={(event) => {
                     cancelMarketplaceSectionScroll();
                     pendingMarketplaceSectionRef.current = "";
-                    openMarketplaceRoute(event, "/create");
+                    openMarketplaceRoute(event, APP_ROUTES.CLANS);
                   }}
                   stableHeight={isCompact ? 68 : 88}
                   style={marketplaceLinkChooserButtonStyle(isCompact)}

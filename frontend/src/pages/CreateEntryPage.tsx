@@ -1679,6 +1679,7 @@ export default function CreateEntryPage() {
     const params = new URLSearchParams(location.search);
     params.set("entry", "existing");
     params.set("force", "1");
+    params.set("next", "/app/clans");
     params.delete("create_code");
     params.delete("founder_code");
     params.delete("public_create_code");
@@ -1997,7 +1998,7 @@ export default function CreateEntryPage() {
           >
             {identityGateActive
               ? "Do you already have a GSN ID?"
-              : "Already have a GSN ID? Sign in first."}
+              : "Already have a GSN ID? Use it first."}
           </div>
         </div>
 
@@ -2021,7 +2022,7 @@ export default function CreateEntryPage() {
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10)",
           }}
         >
-          {identityGateActive ? "Sign in" : existingMemberOpen ? "Close" : "Sign-in help"}
+          {identityGateActive ? "Use GSN ID" : existingMemberOpen ? "Close" : "Sign-in help"}
         </SecondaryButton>
       </div>
 
@@ -2045,7 +2046,7 @@ export default function CreateEntryPage() {
             }}
           >
             {identityGateActive
-              ? "Before GSN opens a fresh community registration, answer this first. If you already have a GSN number, sign in and create or join communities from that same identity so your history, store, and trust records stay together."
+              ? "Before GSN opens a fresh founder record, answer this first. If you already have a GSN ID, sign in and create the new community from that same identity. GSN will ask for the community details, not another full personal record."
               : "One person should keep one GSN ID across every community. Sign in first, then create or join communities from that same identity."}
           </div>
 
@@ -2062,7 +2063,7 @@ export default function CreateEntryPage() {
                 flex: "1 1 220px",
               }}
             >
-              Sign in
+              Sign in with GSN ID
             </PrimaryButton>
             <SecondaryButton
               onClick={
@@ -2652,7 +2653,7 @@ export default function CreateEntryPage() {
         setExistingMemberOpen(true);
         showError(
           "details",
-          "This phone number already belongs to a completed GSN account. Please use Already a member to sign in instead of starting a second community entry."
+          "This phone number already belongs to a completed GSN account. Sign in with that GSN ID, phone, or email first, then create the new community from your existing account."
         );
       } else {
         showError("details", err?.message || "Phone verification could not be started.");
@@ -3194,7 +3195,7 @@ export default function CreateEntryPage() {
         setExistingMemberOpen(true);
         showError(
           feedbackTargetForFinish,
-          "This phone or email already has a completed GSN account. Use Already a member to sign in with the email and password you entered. If that does not work, ask the person helping you to review the intake record."
+          "This phone or email already has a completed GSN account. Sign in with that GSN ID, phone, or email first, then create the new community from your existing account."
         );
       } else {
         showError(

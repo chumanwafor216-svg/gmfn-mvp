@@ -258,8 +258,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="community-home\.empty\.create-community"[\s\S]*?openCommunityRoute\(event, "\/create"\)/,
-  "Community Home empty-state Create New Community must open the real create-community lane, not the retired /app/clans alias."
+  /createCommunity:\s*routeTarget\(\s*"clans"[\s\S]*?debugId="community-home\.empty\.create-community"[\s\S]*?openCommunityRoute\(event, routes\.createCommunity\)/,
+  "Community Home empty-state Create New Community must open the authenticated existing-member create lane."
 );
 
 assertContains(

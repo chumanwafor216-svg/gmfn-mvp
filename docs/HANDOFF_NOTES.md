@@ -1,3 +1,68 @@
+## 2026-06-15 - Four-Lane Create/Join Identity Routing
+
+- Trigger:
+  - owner clarified the product truth: create and join each split into two
+    identity lanes, making four total paths:
+    1. new person creates a first community with no existing GSN ID;
+    2. existing GSN member creates another community;
+    3. new person joins a community by invite with no existing GSN ID;
+    4. existing GSN member joins another community by invite.
+- Confirmed facts:
+  - public `/create` is the new-founder lane and still uses the fuller
+    identity/community entry path;
+  - public `/join` / `/join/:code` already presents `Use GSN ID` vs
+    `New to GSN`, so the join side already has the two-lane split;
+  - the weak create-side route was authenticated Create buttons pointing to
+    public `/create`, which pushed existing members back into duplicate-founder
+    identity checks;
+  - `ClansPage` already has the authenticated `createClan()` community form,
+    but `/app/clans` was redirecting away from it.
+- Changed:
+  - `frontend/src/App.tsx`
+    - mounts `ClansPage` at `/app/clans`;
+    - redirects authenticated `/app/create-community` and `/app/new-community`
+      to `/app/clans` instead of public `/create`.
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - existing-member prompt now sends sign-in to `/login?...&next=/app/clans`;
+    - copy now says `GSN ID` and explains that existing members should create
+      the new community from the same identity, without repeating a full
+      personal record;
+    - duplicate phone/email messages now point existing members to sign in and
+      create the new community from the existing account.
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - Create Community quick action and empty-state action now open the
+      authenticated existing-member create lane.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Public Links -> Create Community now opens `/app/clans` instead of
+      public `/create`.
+  - `frontend/src/pages/LoginPage.tsx`
+    - sign-in identifier copy now says `GSN ID` instead of `GSN number`.
+  - Audits updated:
+    - `frontend/tools/audit-existing-community-invite-line.mjs`;
+    - `frontend/tools/audit-community-home-button-inventory.mjs`;
+    - `frontend/tools/audit-community-shop-actions.mjs`;
+    - `frontend/tools/audit-marketplace-button-inventory.mjs`.
+- Verification so far:
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:community-home-button-inventory`.
+  - Passed `npm run audit:community-shop-actions`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed local Edge mobile route smoke against the built app:
+    `/app/clans` stayed on `/app/clans` and rendered `Create Community`.
+- Unabated truth:
+  - this straightens the route logic and removes a real circular path for
+    existing members;
+  - it does not yet prove the phone jumpiness is gone;
+  - `ClansPage` is functional but should be phone-tested because it was
+    previously disconnected from `/app/clans`;
+  - no Render deploy has been done for this entry yet.
+
 ## 2026-06-15 - Marketplace Join Link Auto-Prepares Without Admin Refresh Gate
 
 - Trigger:

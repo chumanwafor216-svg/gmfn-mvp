@@ -30,6 +30,7 @@ const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const JoinEntryPage = React.lazy(() => import("./pages/JoinEntryPage"));
 const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
 const CommunityHomePage = React.lazy(() => import("./pages/CommunityHomePage"));
+const ClansPage = React.lazy(() => import("./pages/ClansPage"));
 const LoansPage = React.lazy(() => import("./pages/LoansPage"));
 const MarketplacePage = React.lazy(() => import("./pages/MarketplacePage"));
 const ShopGalleryPage = React.lazy(() => import("./pages/ShopGalleryPage"));
@@ -784,9 +785,9 @@ export default function App() {
           element={<PreserveRedirect to={APP_ROUTES.DASHBOARD} />}
         />
 
-        <Route path="clans" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />
-        <Route path="create-community" element={<Navigate to="/create" replace />} />
-        <Route path="new-community" element={<Navigate to="/create" replace />} />
+        <Route path="clans" element={<ClansPage />} />
+        <Route path="create-community" element={<PreserveRedirect to={APP_ROUTES.CLANS} />} />
+        <Route path="new-community" element={<PreserveRedirect to={APP_ROUTES.CLANS} />} />
 
         <Route path="community" element={<CommunityHomePage />} />
         <Route path="community-home" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />

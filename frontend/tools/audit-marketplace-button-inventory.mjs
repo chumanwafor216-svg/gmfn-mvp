@@ -224,8 +224,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.links\.choose\.verify"[\s\S]*?setActiveLinkCenterTool\("verify"\)[\s\S]*?debugId="marketplace\.links\.choose\.join"[\s\S]*?setActiveLinkCenterTool\("join"\)[\s\S]*?debugId="marketplace\.links\.choose\.create-community"[\s\S]*?openMarketplaceRoute\(event, "\/create"\)[\s\S]*?debugId="marketplace\.links\.choose\.shop-face"[\s\S]*?setActiveLinkCenterTool\("shopFace"\)/,
-  "Marketplace public links chooser must expose the four true public entry jobs: verify, invite, create community, and public shop face."
+  /debugId="marketplace\.links\.choose\.verify"[\s\S]*?setActiveLinkCenterTool\("verify"\)[\s\S]*?debugId="marketplace\.links\.choose\.join"[\s\S]*?setActiveLinkCenterTool\("join"\)[\s\S]*?debugId="marketplace\.links\.choose\.create-community"[\s\S]*?openMarketplaceRoute\(event, APP_ROUTES\.CLANS\)[\s\S]*?debugId="marketplace\.links\.choose\.shop-face"[\s\S]*?setActiveLinkCenterTool\("shopFace"\)/,
+  "Marketplace public links chooser must expose the four true link jobs, with Create Community using the authenticated existing-member create lane."
 );
 
 assertContains(

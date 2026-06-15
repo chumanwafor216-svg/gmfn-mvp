@@ -1145,6 +1145,11 @@ export default function CommunityHomePage() {
         selectedClanId,
         "community-home.route.join-requests"
       ),
+      createCommunity: routeTarget(
+        "clans",
+        selectedClanId,
+        "community-home.route.create-community"
+      ),
       marketplace: routeTarget(
         "marketplace",
         selectedClanId,
@@ -1501,8 +1506,8 @@ export default function CommunityHomePage() {
         return {
           title: "Start a new community",
           detail:
-            "GSN will take you into the create-community lane and lead the founder steps from there.",
-          firstStep: "Open the create-community path.",
+            "GSN will open the existing-member create lane so your same GSN ID starts a new community without repeating the full personal record.",
+          firstStep: "Open the existing-member create path.",
           continueLabel: "Start community",
           continueTone: "primary",
         };
@@ -2107,7 +2112,7 @@ export default function CommunityHomePage() {
         void openSelectedMarketplace(event);
         break;
       case "create-community":
-        openCommunityRoute(event, "/create");
+        openCommunityRoute(event, routes.createCommunity);
         break;
       case "join-community":
         openCommunityRoute(event, "/join");
@@ -2464,7 +2469,7 @@ export default function CommunityHomePage() {
               <StableButton
                 type="button"
                 debugId="community-home.empty.create-community"
-                onClick={(event) => openCommunityRoute(event, "/create")}
+                onClick={(event) => openCommunityRoute(event, routes.createCommunity)}
                 style={communityActionStyle("primary")}
               >
                 Create New Community
