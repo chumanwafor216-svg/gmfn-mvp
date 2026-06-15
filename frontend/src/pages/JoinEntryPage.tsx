@@ -153,26 +153,55 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function invitationMessageCardStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...pageCard(),
+    padding: isCompact ? 8 : 24,
+  };
+}
+
+function invitationMessageShellStyle(isCompact: boolean): React.CSSProperties {
+  if (isCompact) {
+    return {
+      marginTop: 14,
+      width: "100%",
+      maxWidth: "100%",
+      boxSizing: "border-box",
+    };
+  }
+
+  return {
+    marginTop: 18,
+    ...softCard(),
+  };
+}
+
 function invitationPaperStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    borderRadius: isCompact ? 26 : 30,
-    padding: isCompact ? 18 : 22,
+    width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    borderRadius: isCompact ? 22 : 30,
+    padding: isCompact ? 8 : 22,
     background:
       "linear-gradient(145deg, rgba(255,255,255,0.97) 0%, rgba(248,252,255,0.96) 52%, rgba(255,247,222,0.92) 100%)",
-    border: "1px solid rgba(214,170,69,0.34)",
-    boxShadow:
-      "0 24px 46px rgba(9,35,63,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
+    border: isCompact
+      ? "1px solid rgba(214,170,69,0.22)"
+      : "1px solid rgba(214,170,69,0.34)",
+    boxShadow: isCompact
+      ? "0 16px 30px rgba(9,35,63,0.10), inset 0 1px 0 rgba(255,255,255,0.72)"
+      : "0 24px 46px rgba(9,35,63,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
   };
 }
 
-function invitationPaperContentStyle(): React.CSSProperties {
+function invitationPaperContentStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "relative",
     zIndex: 1,
     display: "grid",
-    gap: 14,
+    gap: isCompact ? 12 : 14,
   };
 }
 
@@ -188,9 +217,9 @@ function invitationPaperHeaderStyle(isCompact: boolean): React.CSSProperties {
 
 function invitationPaperSealStyle(isCompact: boolean): React.CSSProperties {
   return {
-    width: isCompact ? 48 : 56,
-    height: isCompact ? 48 : 56,
-    borderRadius: 18,
+    width: isCompact ? 44 : 56,
+    height: isCompact ? 44 : 56,
+    borderRadius: isCompact ? 16 : 18,
     display: "grid",
     placeItems: "center",
     background: "linear-gradient(145deg, #071D33 0%, #0B2D4A 100%)",
@@ -213,24 +242,24 @@ function invitationPaperTitleStyle(isCompact: boolean): React.CSSProperties {
   return {
     marginTop: 2,
     color: "#07172C",
-    fontSize: isCompact ? 22 : 28,
+    fontSize: isCompact ? 20 : 28,
     lineHeight: 1.08,
     fontWeight: 1000,
   };
 }
 
-function invitationPaperMessageStyle(): React.CSSProperties {
+function invitationPaperMessageStyle(isCompact: boolean): React.CSSProperties {
   return {
-    borderRadius: 22,
-    padding: "14px 16px",
-    background: "rgba(255,255,255,0.72)",
-    border: "1px solid rgba(37,78,119,0.12)",
+    borderRadius: isCompact ? 18 : 22,
+    padding: isCompact ? "12px" : "14px 16px",
+    background: isCompact ? "rgba(255,255,255,0.58)" : "rgba(255,255,255,0.72)",
+    border: isCompact ? "0" : "1px solid rgba(37,78,119,0.12)",
     color: "#243E59",
-    lineHeight: 1.58,
-    fontSize: 14,
+    lineHeight: isCompact ? 1.52 : 1.58,
+    fontSize: isCompact ? 15 : 14,
     display: "grid",
     gap: 8,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+    boxShadow: isCompact ? "none" : "inset 0 1px 0 rgba(255,255,255,0.75)",
   };
 }
 
@@ -842,18 +871,20 @@ function BrandedInvitationPaper({
         <GSNBrandMark width={isCompact ? 210 : 280} height={isCompact ? 265 : 352} />
       </div>
 
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 10,
-          borderRadius: isCompact ? 20 : 24,
-          border: "1px solid rgba(214,170,69,0.18)",
-          pointerEvents: "none",
-        }}
-      />
+      {!isCompact ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 10,
+            borderRadius: 24,
+            border: "1px solid rgba(214,170,69,0.18)",
+            pointerEvents: "none",
+          }}
+        />
+      ) : null}
 
-      <div style={invitationPaperContentStyle()}>
+      <div style={invitationPaperContentStyle(isCompact)}>
         <div style={invitationPaperHeaderStyle(isCompact)}>
           <div style={invitationPaperSealStyle(isCompact)}>
             <GSNBrandMark width={isCompact ? 28 : 32} height={isCompact ? 36 : 42} />
@@ -878,7 +909,7 @@ function BrandedInvitationPaper({
           ) : null}
         </div>
 
-        <div style={invitationPaperMessageStyle()}>
+        <div style={invitationPaperMessageStyle(isCompact)}>
           {lines.map((line, index) => (
             <div key={`${line}-${index}`}>{line}</div>
           ))}
@@ -2062,7 +2093,7 @@ export default function JoinEntryPage() {
             gap: 18,
           }}
         >
-          <div style={pageCard()}>
+          <div style={invitationMessageCardStyle(isCompact)}>
             <div
               style={{
                 display: "flex",
@@ -2083,7 +2114,7 @@ export default function JoinEntryPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 18, ...softCard() }}>
+            <div style={invitationMessageShellStyle(isCompact)}>
               {storedRequest?.request_id ? (
                 <div
                   style={{

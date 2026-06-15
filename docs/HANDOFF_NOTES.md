@@ -55417,3 +55417,38 @@ GSN-branded invite composer and invite-entry continuity.
   - the Create Community route should still be tested on the owner's real
     phone after deployment because the route target is verified in Chromium,
     while phone browser chrome and keyboard movement remain the real-risk area.
+
+## 2026-06-15 - Join Invitation Paper Mobile Frame Tightening
+
+- Trigger:
+  - owner liked the public invitation message design but reported that too many
+    nested borders/frames made the text column narrow and long on phone.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - kept the branded invitation paper and official GSN feel;
+    - removed the compact/mobile soft-card wrapper around the invitation paper;
+    - removed the compact/mobile inner decorative gold frame inside the paper;
+    - reduced compact/mobile invitation card padding from 14px to 8px;
+    - reduced compact/mobile invitation paper padding from 12px to 8px;
+    - removed the compact/mobile message-box border/shadow so the body text
+      has more horizontal breathing room.
+- Verification:
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - In-app Browser connector was unavailable, so verified with local Playwright
+    against the built app served from `dist` using system Edge:
+    - 390px mobile viewport;
+    - invite paper width increased from 302px to 314px;
+    - actual message text width increased from 276px to 296px;
+    - compact message body now has no inner border.
+- Unabated truth:
+  - this is a real width improvement, not just a cosmetic border change;
+  - it does not shorten the invite copy itself, so very long inviter/community
+    names can still make the invite tall;
+  - if the owner wants the invite to fit much more of one phone screen, the next
+    honest step is copy condensation or a two-part collapsed evidence section,
+    not more padding cuts.
