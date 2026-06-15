@@ -74,14 +74,18 @@ Rules:
 - The app may request browser-supported install only after the user taps the
   install action.
 - Do not claim GSN can silently place itself on the phone screen.
-- The installed phone icon should open the authenticated app entry at
+- Pilot safety note: because Android Play Protect can block browser-generated
+  WebAPK installs outside this repo with an old-target-SDK warning, the current
+  web build must not actively trigger the native Android app-install prompt.
+  Use browser home-screen/bookmark steps until a verified Android package or
+  WebAPK-safe path exists.
+- The phone-screen shortcut should open the authenticated app entry at
   `/app/dashboard?source=pwa`. If no valid session exists, the normal auth guard
   sends the user to Sign In.
 - Cover and Welcome must remain free to view for ordinary public browsing, but
   they must not trap signed-in PWA users away from the real app shell.
-- The prompt must not show competing install buttons. Use one clear button:
-  try the native install prompt when available, otherwise open three short
-  manual steps.
+- The prompt must not show competing install buttons. Use one clear button that
+  opens three short manual steps.
 - Do not cache private API responses or uploaded user data in the service
   worker.
 - The prompt may appear on Welcome, Sign In, Public Shop, invite/public access,

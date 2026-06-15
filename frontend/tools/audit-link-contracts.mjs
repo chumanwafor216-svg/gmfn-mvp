@@ -124,13 +124,13 @@ assertContains(
 assertContains(
   "index.html",
   /<link rel="manifest" href="\/manifest\.json" \/>[\s\S]*?<meta name="theme-color" content="#061827" \/>[\s\S]*?<meta name="apple-mobile-web-app-capable" content="yes" \/>[\s\S]*?<title>GSN<\/title>/,
-  "GSN public links must expose installable PWA metadata so phone users can keep the app on the home screen."
+  "GSN public links must expose shortcut metadata so phone users can keep the app reachable from the home screen."
 );
 
 assertContains(
   "public/manifest.json",
-  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/app\/dashboard\?source=pwa"[\s\S]*?"display": "standalone"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
-  "The PWA manifest must keep the GSN home-screen identity, authenticated app start URL, standalone display mode, and standard phone icons."
+  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/app\/dashboard\?source=pwa"[\s\S]*?"display": "browser"[\s\S]*?"display_override": \["browser"\][\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
+  "The shortcut manifest must keep the GSN identity, authenticated app start URL, browser display fallback, and standard phone icons."
 );
 
 assertContains(
@@ -165,8 +165,14 @@ assertContains(
 
 assertContains(
   "src/components/GsnInstallPrompt.tsx",
-  /promptGsnInstall[\s\S]*?open this page in Safari first[\s\S]*?Add to Home Screen[\s\S]*?Add to Home screen or Install app[\s\S]*?Show iPhone screen steps[\s\S]*?Add GSN to phone screen[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon\.svg/,
-  "The GSN install prompt must offer one simple setup action plus truthful Android and iPhone manual phone instructions."
+  /open this page in Safari first[\s\S]*?Add to Home Screen[\s\S]*?Add page to home screen or Bookmark[\s\S]*?Play Protect blocks it[\s\S]*?Show iPhone screen steps[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon\.svg/,
+  "The GSN shortcut prompt must offer one simple setup action plus truthful Android and iPhone manual phone instructions without triggering native Android install."
+);
+
+assertWholeFileNotContains(
+  "src/components/GsnInstallPrompt.tsx",
+  /promptGsnInstall/,
+  "The GSN shortcut prompt must not call the native Android install prompt during the pilot Play Protect safety period."
 );
 
 assertWholeFileNotContains(

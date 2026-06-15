@@ -1,3 +1,52 @@
+## 2026-06-15 - Android Play Protect PWA Install Mitigation
+
+- Trigger:
+  - a tester screenshot showed Android Google Play Protect blocking `GSN` with:
+    `Unsafe app blocked` and `This app was built for an older version of Android
+    and doesn't include the latest privacy protections`;
+  - the modal appeared immediately after the `Keep GSN nearby` install card
+    reported `Done. Check your phone screen for GSN`.
+- Confirmed source facts:
+  - this repo has no native Android/Gradle project and no `targetSdkVersion`
+    value to raise;
+  - the affected path is the web/PWA install prompt:
+    `frontend/src/components/GsnInstallPrompt.tsx`,
+    `frontend/public/manifest.json`, `frontend/public/manifest.webmanifest`,
+    and `frontend/public/sw.js`;
+  - the previous manifest used `display: "standalone"` and the card called the
+    native `beforeinstallprompt` event when available, which can lead Android
+    into a browser-generated WebAPK path outside our direct build control.
+- Fix:
+  - changed both manifests to `display: "browser"` with
+    `display_override: ["browser"]` so the web build no longer advertises a
+    standalone Android app install path during the pilot;
+  - removed the Android `mobile-web-app-capable` meta tag from
+    `frontend/index.html` while keeping the iOS Apple home-screen metadata;
+  - changed `GsnInstallPrompt` to always open manual shortcut/bookmark steps and
+    never call `promptGsnInstall`;
+  - updated the Android manual copy to recommend `Add page to home screen` or
+    `Bookmark`, and to tell users not to fight Play Protect if Android offers
+    `Install app` and blocks it;
+  - bumped the service-worker shell cache to `gsn-pwa-shell-v9` so phones can
+    pick up the safer manifest/service-worker metadata;
+  - updated `docs/SCREEN_SPECS.md` and `frontend/tools/audit-link-contracts.mjs`
+    so the pilot safety contract is guarded.
+- Verification:
+  - `npm run audit:link-contracts` passed;
+  - `npm exec -- eslint src\components\GsnInstallPrompt.tsx
+    src\lib\pwaInstall.ts tools\audit-link-contracts.mjs` passed;
+  - `npm run audit:shop-gallery-button-inventory` passed;
+  - `npm run build` passed.
+- Unabated truth:
+  - this is a pilot mitigation, not a real Android app fix. A proper native
+    Android/TWA build would need its own modern target SDK and store/release
+    path;
+  - old already-created phone icons or cached install prompts may need removal
+    and a fresh page reload after deploy before the tester sees the safer
+    behavior;
+  - after deployment, retest the exact tester phone/browser path before telling
+    users the Play Protect warning is gone.
+
 ## 2026-06-15 - Phone Pilot Test Script After Cage
 
 - Trigger:

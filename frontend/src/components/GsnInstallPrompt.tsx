@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { PrimaryButton } from "./StableButton";
 import {
-  hasNativeInstallPrompt,
   isGsnStandaloneDisplay,
   isIosManualInstallTarget,
-  promptGsnInstall,
   subscribePwaInstall,
   wasInstalledThisSession,
 } from "../lib/pwaInstall";
@@ -19,13 +17,11 @@ type GsnInstallPromptProps = {
 };
 
 type InstallState = {
-  promptReady: boolean;
   installed: boolean;
 };
 
 function readInstallState(): InstallState {
   return {
-    promptReady: hasNativeInstallPrompt(),
     installed: isGsnStandaloneDisplay() || wasInstalledThisSession(),
   };
 }
@@ -107,9 +103,9 @@ function manualSteps(isIos: boolean): string[] {
   }
 
   return [
-    "Tap the Chrome menu ⋮.",
-    "Tap Add to Home screen or Install app.",
-    "Tap Add.",
+    "Open the browser menu.",
+    "Choose Add page to home screen or Bookmark.",
+    "Use that new GSN shortcut to come back.",
   ];
 }
 
@@ -148,34 +144,16 @@ export default function GsnInstallPrompt({
 
   if (state.installed) return null;
 
-  async function handleInstall() {
-    setMessage("");
-
-    const choice = await promptGsnInstall();
-    if (!choice) {
-      setManualOpen(true);
-      setMessage(
-        isIos
-          ? "iPhone uses Safari's Share button for this. Follow these steps."
-          : "Chrome may hide this in the menu. Follow these steps."
-      );
-      return;
-    }
-
-    if (choice.outcome === "accepted") {
-      setMessage("Done. Check your phone screen for GSN.");
-      return;
-    }
-
-    setManualOpen(true);
-    setMessage("Not added yet. Use these simple steps.");
+  function handleInstall() {
+    setManualOpen((current) => !current);
+    setMessage(
+      isIos
+        ? "iPhone uses Safari's Share button for this. Follow these steps."
+        : "Use a browser shortcut for now. If Android offers Install app and Play Protect blocks it, choose Bookmark or keep this page saved instead."
+    );
   }
 
-  const label = isIos
-    ? "Show iPhone screen steps"
-    : state.promptReady
-    ? "Add GSN to phone screen"
-    : "Show 3 phone steps";
+  const label = isIos ? "Show iPhone screen steps" : "Show 3 phone steps";
   const describedBy = `gsn-install-${surface.replace(/[^a-z0-9-]+/gi, "-")}`;
   const steps = manualSteps(isIos);
 
@@ -227,14 +205,14 @@ export default function GsnInstallPrompt({
 
       <PrimaryButton
         type="button"
-        onClick={state.promptReady ? handleInstall : () => setManualOpen((current) => !current)}
+        onClick={handleInstall}
         stableHeight={52}
         debugId={`gsn-install.${surface}.setup`}
         aria-expanded={manualOpen}
         aria-describedby={describedBy}
         style={primaryStyle(compact)}
       >
-        {manualOpen && !state.promptReady ? "Hide steps" : label}
+        {manualOpen ? "Hide steps" : label}
       </PrimaryButton>
 
       {message ? <p style={helperTextStyle(tone, compact)}>{message}</p> : null}
