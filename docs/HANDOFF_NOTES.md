@@ -1,3 +1,58 @@
+## 2026-06-15 - Join Invite Best-Version Body Rewrite
+
+- Trigger:
+  - owner asked to undo the last more scenario-heavy body and use the cleaner
+    "With GSN, you can" version, lightly tilted and protected with the same
+    button discipline.
+  - owner asked to commit, push, and deploy/push to Render after verification.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - changed the invite lead to:
+      - `You're invited to {marketplaceName} on GSN.`
+    - changed the explanation to:
+      - `GSN is a trust platform that helps people turn trust and integrity into real-life opportunities.`
+    - added the bridge line:
+      - `With GSN, you can:`
+    - replaced the previous problem-scenario list with eight calmer solution
+      proof lines:
+      - build a trusted identity that follows you;
+      - find work, customers, and opportunities with greater confidence;
+      - buy and sell online knowing more about who you are dealing with;
+      - verify people, businesses, and communities before decisions;
+      - keep community records clear and reduce misunderstandings/disputes;
+      - organise savings groups, support circles, and community activities with
+        greater accountability;
+      - receive community-backed support when it matters most;
+      - share Trust Passport or TrustSlip as proof of credibility.
+    - kept the copied-message top invite URL, tap hint, sender name, personal
+      note, expiry, request-access instruction, and review boundary.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - updated the invite body guard for the best-version solution proof lines.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - updated the shared proof/message guard for the same body.
+- Verification:
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:proof-surfaces`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm --prefix frontend run build` outside the sandbox because the
+    sandboxed Vite/esbuild process repeatedly hits Windows `spawn EPERM`.
+  - Confirmed generated copied-message text keeps:
+    - top invite URL;
+    - tap hint;
+    - sender line;
+    - `You're invited to {marketplaceName} on GSN.`;
+    - `With GSN, you can:`;
+    - eight serial solution proof lines;
+    - `Community: {marketplaceName}`;
+    - personal note and review boundary.
+- Unabated truth:
+  - this remains copy-only in the shared invite message builder and audits;
+  - no button, tap-guard, route, backend, shell, or deployment file should be
+    touched for this change.
+
 ## 2026-06-15 - Join Invite Problem-Solution Body Rewrite
 
 - Trigger:

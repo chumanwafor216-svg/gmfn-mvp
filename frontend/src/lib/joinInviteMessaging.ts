@@ -12,14 +12,14 @@ type JoinInviteDoorwayParams = JoinInviteTextParams & {
 };
 
 const JOIN_INVITE_PROOF_LINES = [
-  "✅ New in a place? Don't start from zero trust.",
-  "✅ Looking for customers? Let your integrity speak before you arrive.",
-  "✅ Buying online? Verify the person before money moves.",
-  "✅ Selling online? Give buyers confidence before they pay.",
-  "✅ In a union, club, church group, town union, or savings circle? Keep records clear and reduce wahala.",
-  "✅ Need support? Let trusted people stand behind you with accountability.",
-  "✅ Moving between communities? Keep one trusted identity people can verify.",
-  "✅ Need proof of credibility? Share your Trust Passport or TrustSlip.",
+  "✅ Build a trusted identity that follows you wherever life takes you.",
+  "✅ Find work, customers, and opportunities with greater confidence.",
+  "✅ Buy and sell online knowing more about who you are dealing with.",
+  "✅ Verify people, businesses, and communities before making decisions.",
+  "✅ Keep community records clear and reduce misunderstandings and disputes.",
+  "✅ Organise savings groups, support circles, and community activities with greater accountability.",
+  "✅ Receive community-backed support when it matters most.",
+  "✅ Share your Trust Passport or TrustSlip as proof of credibility when trust is needed.",
 ];
 
 const JOIN_INVITE_LINK_HINT =
@@ -55,12 +55,14 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   }
   lines.push("");
   lines.push(
-    `I'd like to invite you to ${inviteTarget} on GSN.`
+    `You're invited to ${inviteTarget} on GSN.`
   );
   lines.push("");
   lines.push(
-    "GSN helps people turn trust and integrity into real-life opportunities."
+    "GSN is a trust platform that helps people turn trust and integrity into real-life opportunities."
   );
+  lines.push("");
+  lines.push("With GSN, you can:");
   lines.push("");
   lines.push(...JOIN_INVITE_PROOF_LINES);
 
@@ -112,9 +114,11 @@ export function buildJoinInviteDoorwayMessage(
     receiver ? `Hello ${receiver},` : "Hello,",
     inviter ? `Invited by ${inviter}.` : null,
     "",
-    `I'd like to invite you to ${inviteTarget} on GSN.`,
+    `You're invited to ${inviteTarget} on GSN.`,
     "",
-    "GSN helps people turn trust and integrity into real-life opportunities.",
+    "GSN is a trust platform that helps people turn trust and integrity into real-life opportunities.",
+    "",
+    "With GSN, you can:",
     "",
     ...JOIN_INVITE_PROOF_LINES,
     "",
