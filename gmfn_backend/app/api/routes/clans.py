@@ -2777,9 +2777,17 @@ def vote_join_request(
         raise HTTPException(status_code=404, detail="Join request not found")
 
     if str(req.status).lower() != "pending":
+        status = _safe_str(req.status, "completed").lower()
         return {
             "ok": True,
-            "message": f"Request already {req.status}.",
+            "status_already_final": True,
+            "approved_now": False,
+            "rejected_now": False,
+            "approval_result": None,
+            "rejection_result": None,
+            "message": (
+                f"This request is already {status}. No new vote was recorded."
+            ),
             "community_id": int(clan_id),
             "community_code": _community_code(clan_id),
             "request": _join_request_out(db, req),
@@ -2901,6 +2909,24 @@ def pilot_approve_join_request(
     if not req:
         raise HTTPException(status_code=404, detail="Join request not found")
 
+    if str(req.status).lower() != "pending":
+        status = _safe_str(req.status, "completed").lower()
+        return {
+            "ok": True,
+            "pilot_override": True,
+            "status_already_final": True,
+            "approved_now": False,
+            "rejected_now": False,
+            "approval_result": None,
+            "rejection_result": None,
+            "message": (
+                f"This request is already {status}. Admin override was not applied again."
+            ),
+            "community_id": int(clan_id),
+            "community_code": _community_code(clan_id),
+            "request": _join_request_out(db, req),
+        }
+
     existing_vote = (
         db.query(ClanJoinVote)
         .filter(
@@ -2925,17 +2951,6 @@ def pilot_approve_join_request(
 
     db.commit()
     db.refresh(req)
-
-    if str(req.status).lower() != "pending":
-        return {
-            "ok": True,
-            "pilot_override": True,
-            "approved_now": False,
-            "message": f"Request already {req.status}.",
-            "community_id": int(clan_id),
-            "community_code": _community_code(clan_id),
-            "request": _join_request_out(db, req),
-        }
 
     approval_result = _approve_join_request(
         db,

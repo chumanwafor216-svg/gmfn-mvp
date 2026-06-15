@@ -100,6 +100,16 @@ assertContains(
   "Join Requests mobile review flow must collapse inactive request cards behind one stable Review action."
 );
 
+assertContains(
+  /const \[showCompletedRequests, setShowCompletedRequests\] = useState\(false\);[\s\S]*?const visibleItems = useMemo\(\(\) => \{[\s\S]*?if \(showCompletedRequests\) return items;[\s\S]*?friendlyStatus\(item\.status\) === "pending"[\s\S]*?debugId="community-join-requests\.toggle-completed"[\s\S]*?visibleItems\.map/,
+  "Join Requests must keep completed records out of the working queue by default while preserving a stable Show completed review path."
+);
+
+assertContains(
+  /function approvalProgress\(item: JoinRequestItem[\s\S]*?approvals[\s\S]*?required[\s\S]*?remaining[\s\S]*?function approvalSuccessText\(res: VoteResponse[\s\S]*?status_already_final[\s\S]*?Approval successful[\s\S]*?approvalProgressText\(request\)[\s\S]*?approvalNextStepText\(request\)/,
+  "Join Requests approval actions must answer with exact approval progress and must distinguish already-final requests from fresh successful approvals."
+);
+
 assertNotContains(
   /isCompact\s*\?\s*"repeat\(2, minmax\(0, 1fr\)\)"\s*:\s*"repeat\(3, minmax\(0, 1fr\)\)"/g,
   "Join Requests request fact grid must not return to a two-column phone layout."

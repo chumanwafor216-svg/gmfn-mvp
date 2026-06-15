@@ -1,3 +1,59 @@
+## 2026-06-15 - Join Request Approval Feedback + Final-State Guard
+
+- Trigger:
+  - owner reported that after approving a join request the page said the request
+    was already approved instead of clearly saying the current reviewer had
+    succeeded.
+  - owner also asked whether the system was automatically approving requests to
+    the committee, because repeated review attempts showed the same
+    already-approved message.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - normal join-request voting now returns an explicit
+      `status_already_final` response for approved/rejected requests and does
+      not record a new vote after a request is final.
+    - pilot/admin approval now checks final status before writing an override
+      vote, so an already-approved request cannot receive another admin vote.
+    - final-state responses now say no new vote was recorded or no override was
+      applied again.
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+    - added exact approval progress copy: `x of y approvals recorded` plus the
+      next step.
+    - fresh approvals now say `Approval successful...` instead of sounding like
+      the request was already done before the reviewer acted.
+    - completed requests are hidden from the working queue by default, with a
+      stable `Show completed` review path.
+    - completed cards show their final status and approval count.
+    - admin action is now labelled `Admin override` with copy explaining that it
+      bypasses the normal approval count.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - added regression coverage proving completed requests do not record new
+      normal votes or pilot override votes.
+  - `frontend/tools/audit-community-join-requests-layout.mjs`
+    - added guards for the pending queue, completed-toggle path, and exact
+      approval feedback copy.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_join_requests.py`
+    (`54 passed`).
+  - Passed `npm run audit:community-join-requests-layout`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the known pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+- Unabated truth:
+  - the system is not silently auto-approving every request, but a tiny test
+    community can legitimately need only `1` approval if the configured ratio
+    and active reviewer count produce a threshold of `1`.
+  - admin override still exists and can bypass the threshold by design, but the
+    UI now says so plainly and the backend no longer applies that override after
+    the request is already final.
+  - this fixes approval-state confusion and stale completed-card behaviour; it
+    does not prove the owner's Android Chrome button jumpiness is gone until the
+    phone test is repeated.
+  - not pushed/deployed in this batch yet; current protocol says to publish only
+    when the owner explicitly approves this batch for deployment.
+
 ## 2026-06-15 - Live Marketplace Join Form Smoke Harness
 
 - Trigger:

@@ -2332,6 +2332,117 @@ def test_approving_existing_member_join_request_does_not_create_activation(
         assert membership is not None
 
 
+def test_vote_on_completed_join_request_does_not_record_new_vote(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="already-approved@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="approved",
+                created_at=datetime.now(timezone.utc),
+                decided_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    from app.core import auth as auth_core
+
+    def fake_current_user():
+        return SimpleNamespace(
+            id=1,
+            email="admin@example.com",
+            role="admin",
+            hashed_password="hashed",
+        )
+
+    app.dependency_overrides[auth_core.get_current_user] = fake_current_user
+    try:
+        res = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={
+                "vote": "approve",
+                "reason_code": "know_directly",
+                "reason_text": "I know this person directly.",
+            },
+            headers={"X-Clan-Id": "1"},
+        )
+    finally:
+        app.dependency_overrides.pop(auth_core.get_current_user, None)
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["status_already_final"] is True
+    assert data["approved_now"] is False
+    assert data["rejected_now"] is False
+    assert data["request"]["status"] == "approved"
+    assert "No new vote was recorded" in data["message"]
+
+    with SessionLocal() as db:
+        votes = db.query(clans_route.ClanJoinVote).filter_by(join_request_id=1).all()
+        assert votes == []
+
+
+def test_pilot_approve_completed_join_request_does_not_record_new_vote(
+    client,
+    override_clan_ctx_admin,
+    override_current_user,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="pilot-already-approved@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="approved",
+                created_at=datetime.now(timezone.utc),
+                decided_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/1/join-requests/1/pilot-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["pilot_override"] is True
+    assert data["status_already_final"] is True
+    assert data["approved_now"] is False
+    assert data["request"]["status"] == "approved"
+    assert "Admin override was not applied again" in data["message"]
+
+    with SessionLocal() as db:
+        votes = db.query(clans_route.ClanJoinVote).filter_by(join_request_id=1).all()
+        assert votes == []
+
+
 def test_activate_approved_member_accepts_request_id_path(
     client,
     override_clan_ctx_admin,

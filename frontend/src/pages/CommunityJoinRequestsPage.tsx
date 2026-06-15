@@ -78,6 +78,8 @@ type VoteResponse = {
   approved_now?: boolean;
   rejected_now?: boolean;
   pilot_override?: boolean;
+  status_already_final?: boolean;
+  message?: string | null;
   approval_result?: ApprovalResult | null;
   rejection_result?: {
     status?: string;
@@ -508,6 +510,50 @@ function friendlyStatus(value: any): string {
   return raw;
 }
 
+function approvalProgress(item: JoinRequestItem | undefined | null): {
+  approvals: number;
+  required: number;
+  remaining: number;
+} {
+  const approvals = Math.max(0, Number(item?.approvals || 0));
+  const required = Math.max(1, Number(item?.required_approvals || 1));
+  return {
+    approvals,
+    required,
+    remaining: Math.max(0, required - approvals),
+  };
+}
+
+function approvalProgressText(item: JoinRequestItem | undefined | null): string {
+  const progress = approvalProgress(item);
+  return `${progress.approvals} of ${progress.required} approvals recorded`;
+}
+
+function approvalNextStepText(item: JoinRequestItem | undefined | null): string {
+  const progress = approvalProgress(item);
+  if (friendlyStatus(item?.status) === "approved") return "Request is approved.";
+  if (friendlyStatus(item?.status) === "rejected") return "Request is rejected.";
+  if (progress.remaining <= 0) return "The community decision is ready.";
+  return `${progress.remaining} more approval${progress.remaining === 1 ? "" : "s"} needed.`;
+}
+
+function approvalSuccessText(res: VoteResponse, fallback: string): string {
+  const request = res?.request;
+  if (res?.status_already_final) {
+    return safeStr(res.message, fallback);
+  }
+  if (res?.approved_now) {
+    return `Approval successful. ${approvalProgressText(request)}. ${approvalNextStepText(request)}`;
+  }
+  if (res?.rejected_now) {
+    return safeStr(
+      res?.rejection_result?.decision_message,
+      `Decision recorded. ${approvalProgressText(request)}. ${approvalNextStepText(request)}`
+    );
+  }
+  return `${fallback} ${approvalProgressText(request)}. ${approvalNextStepText(request)}`;
+}
+
 function copyText(text: string) {
   const safe = safeStr(text);
   if (!safe) return;
@@ -539,6 +585,7 @@ export default function CommunityJoinRequestsPage() {
   const [reviewerCanPilotApprove, setReviewerCanPilotApprove] = useState(false);
   const [voteDecisions, setVoteDecisions] = useState<Record<number, JoinVoteDecision>>({});
   const [voteReasonCodes, setVoteReasonCodes] = useState<Record<number, string>>({});
+  const [showCompletedRequests, setShowCompletedRequests] = useState(false);
 
   const clanNum = Number(clanId || 0);
 
@@ -623,18 +670,23 @@ export default function CommunityJoinRequestsPage() {
     };
   }, [items]);
 
+  const visibleItems = useMemo(() => {
+    if (showCompletedRequests) return items;
+    return items.filter((item) => friendlyStatus(item.status) === "pending");
+  }, [items, showCompletedRequests]);
+
   useEffect(() => {
-    if (!items.length) {
+    if (!visibleItems.length) {
       setActiveRequestId(null);
       return;
     }
 
-    const stillVisible = items.some((item) => item.id === activeRequestId);
+    const stillVisible = visibleItems.some((item) => item.id === activeRequestId);
     if (stillVisible) return;
 
-    const firstPending = items.find((item) => friendlyStatus(item.status) === "pending");
-    setActiveRequestId(firstPending?.id || items[0]?.id || null);
-  }, [activeRequestId, items]);
+    const firstPending = visibleItems.find((item) => friendlyStatus(item.status) === "pending");
+    setActiveRequestId(firstPending?.id || visibleItems[0]?.id || null);
+  }, [activeRequestId, visibleItems]);
 
   const communityHomeCta = useMemo(
     () =>
@@ -679,23 +731,21 @@ export default function CommunityJoinRequestsPage() {
       })) as VoteResponse;
 
       if (vote === "approve" && res?.approved_now && res?.approval_result?.gmfn_id) {
-        setSuccess(
-          `Request approved successfully. GSN ID issued: ${res.approval_result.gmfn_id}`
-        );
+        setSuccess(approvalSuccessText(res, `GSN ID issued: ${res.approval_result.gmfn_id}.`));
         setActivationPack(res.approval_result || null);
       } else if (vote === "approve") {
-        setSuccess(
-          "Approval recorded successfully. The request may still be waiting for the final approval threshold."
-        );
+        setSuccess(approvalSuccessText(res, "Your approval was recorded."));
       } else if (res?.rejected_now) {
-        setSuccess(
-          res?.rejection_result?.decision_message ||
-            "Request rejected successfully. The applicant can now reopen the decision page."
-        );
+        setSuccess(approvalSuccessText(res, "Rejection recorded."));
       } else if (vote === "neutral") {
-        setSuccess("Neutral vote recorded. GSN kept your reason in the community record.");
+        setSuccess(
+          approvalSuccessText(
+            res,
+            "Neutral vote recorded. GSN kept your reason in the community record."
+          )
+        );
       } else {
-        setSuccess("Rejection recorded successfully.");
+        setSuccess(approvalSuccessText(res, "Rejection recorded."));
       }
 
       await load();
@@ -719,11 +769,14 @@ export default function CommunityJoinRequestsPage() {
 
       if (res?.approval_result?.gmfn_id) {
         setSuccess(
-          `Admin approval completed successfully. GSN ID issued: ${res.approval_result.gmfn_id}`
+          approvalSuccessText(
+            res,
+            `Admin approval completed. GSN ID issued: ${res.approval_result.gmfn_id}.`
+          )
         );
         setActivationPack(res.approval_result || null);
       } else {
-        setSuccess("Admin approval completed.");
+        setSuccess(approvalSuccessText(res, "Admin approval completed."));
       }
 
       await load();
@@ -999,6 +1052,50 @@ export default function CommunityJoinRequestsPage() {
           </div>
         </section>
 
+        <section
+          style={{
+            ...whitePanel(14),
+            display: "grid",
+            gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "minmax(0, 1fr) 190px",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 17 }}>
+              {iconText("review", showCompletedRequests ? "Showing all requests" : "Pending queue")}
+            </div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#475569",
+                lineHeight: 1.45,
+                fontSize: 13,
+                fontWeight: 750,
+              }}
+            >
+              {showCompletedRequests
+                ? "Approved and rejected requests are visible for checking."
+                : "Completed requests move out of the working queue so reviewers can focus on who still needs a decision."}
+            </div>
+          </div>
+          <SecondaryButton
+            type="button"
+            onClick={() => setShowCompletedRequests((value) => !value)}
+            stableHeight={52}
+            fullWidth
+            debugId="community-join-requests.toggle-completed"
+            style={{
+              minWidth: 0,
+              borderRadius: 12,
+              fontSize: 13,
+              padding: "0 10px",
+            }}
+          >
+            {iconText("review", showCompletedRequests ? "Hide completed" : "Show completed")}
+          </SecondaryButton>
+        </section>
+
       {activationPack?.gmfn_id ? (
         <div
           style={{
@@ -1138,8 +1235,25 @@ export default function CommunityJoinRequestsPage() {
         </div>
       ) : null}
 
+      {!loading && !error && items.length > 0 && !visibleItems.length ? (
+        <div style={whitePanel(18)}>
+          <strong>{iconText("approve", "No pending join requests.")}</strong>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#475569",
+              lineHeight: 1.5,
+              fontWeight: 750,
+            }}
+          >
+            Approved or rejected requests are hidden from the working queue.
+            Use Show completed if you need to inspect the finished records.
+          </div>
+        </div>
+      ) : null}
+
       <div style={{ display: "grid", gap: 16 }}>
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const status = friendlyStatus(item.status);
           const isPending = status === "pending";
           const isBusy = busyId === item.id;
@@ -1290,8 +1404,8 @@ export default function CommunityJoinRequestsPage() {
                     ["Community ID", safeStr(item.community_code || "Awaiting issue")],
                     ["Invite", safeStr(item.invite_code || "Not available yet")],
                     ["Submitted", safeDateTime(item.created_at)],
-                    ["Required", String(Number(item.required_approvals || 0))],
-                    ["Approvals", String(Number(item.approvals || 0))],
+                    ["Required", `${approvalProgress(item).required} approvals`],
+                    ["Approvals", approvalProgressText(item)],
                     ["Neutral", String(Number(item.neutrals || 0))],
                     ["Rejects", String(Number(item.rejects || 0))],
                     ["Active", String(Number(item.active_member_count || 0))],
@@ -1319,7 +1433,12 @@ export default function CommunityJoinRequestsPage() {
                     fontWeight: 800,
                   }}
                 >
-                  {iconText(status === "approved" ? "approve" : "reject", <>This request has already been {status}.</>)}
+                  {iconText(
+                    status === "approved" ? "approve" : "reject",
+                    <>
+                      This request is {status}. {approvalProgressText(item)}.
+                    </>
+                  )}
                 </div>
               ) : (
                 <>
@@ -1334,7 +1453,12 @@ export default function CommunityJoinRequestsPage() {
                       fontWeight: 800,
                     }}
                   >
-                    {iconText("clock", "Waiting until approvals reach the community threshold.")}
+                    {iconText(
+                      "clock",
+                      <>
+                        {approvalProgressText(item)}. {approvalNextStepText(item)}
+                      </>
+                    )}
                   </div>
 
                   {reviewerCanPilotApprove ? (
@@ -1347,7 +1471,7 @@ export default function CommunityJoinRequestsPage() {
                         border: "1px solid rgba(201,161,54,0.24)",
                       }}
                     >
-                      <div style={sectionLabel("#8A5A08")}>Admin review option</div>
+                      <div style={sectionLabel("#8A5A08")}>Admin override option</div>
                       <div
                         style={{
                           marginTop: 8,
@@ -1356,7 +1480,9 @@ export default function CommunityJoinRequestsPage() {
                           fontSize: 14,
                         }}
                       >
-                        If the second reviewer cannot be reached, an admin can approve this request directly so the member journey can continue.
+                        This bypasses the normal approval count. Use it only when
+                        pilot testing or community admin judgement must move the
+                        member journey forward.
                       </div>
                     </div>
                   ) : null}
@@ -1508,7 +1634,7 @@ export default function CommunityJoinRequestsPage() {
                         style={decisionButtonStyle("reject")}
                         fullWidth
                       >
-                        {iconText("shield", "Approve now")}
+                        {iconText("shield", "Admin override")}
                       </SecondaryButton>
                     ) : null}
                   </CardActionRow>
