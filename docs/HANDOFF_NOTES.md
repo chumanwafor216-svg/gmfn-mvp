@@ -1,3 +1,103 @@
+## 2026-06-15 - Join Invite Problem-Solution Body Rewrite
+
+- Trigger:
+  - owner asked to update the invite body again so it sells the solution GSN
+    provides in real life, not a generic explanation of GSN.
+  - owner explicitly asked to maintain the existing link hint, sender line,
+    message shell, and button work.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - changed the invite target line to use the actual marketplace/community
+      target:
+      - `I'd like to invite you to {marketplaceName} on GSN.`
+    - changed the benefit lead to:
+      - `GSN helps people turn trust and integrity into real-life opportunities.`
+    - replaced the prior six generic benefit lines with eight practical
+      problem-solution proof lines:
+      - new in a place: do not start from zero trust;
+      - looking for customers: let integrity speak before arrival;
+      - buying online: verify the person before money moves;
+      - selling online: give buyers confidence before they pay;
+      - union/club/church/town union/savings circle: keep records clear and
+        reduce wahala;
+      - need support: let trusted people stand behind you with accountability;
+      - moving between communities: keep one trusted identity people can
+        verify;
+      - need proof of credibility: share Trust Passport or TrustSlip.
+    - kept the copied-message top invite URL, tap hint, sender name, personal
+      note, expiry, request-access instruction, and review boundary.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - updated the invite body guard for the new problem-solution proof lines.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - updated the shared proof/message guard for the same body.
+- Verification:
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:proof-surfaces`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm --prefix frontend run build` outside the sandbox because the
+    sandboxed Vite/esbuild process repeatedly hits Windows `spawn EPERM`.
+  - Confirmed generated copied-message text keeps:
+    - top invite URL;
+    - tap hint;
+    - sender line;
+    - marketplace/community target line;
+    - eight serial problem-solution proof lines;
+    - `Community: {marketplaceName}`;
+    - personal note and review boundary.
+- Unabated truth:
+  - this is still copy-only in the shared invite message builder and audits;
+  - no button, tap-guard, route, backend, shell, or deployment file should be
+    touched for this change.
+
+## 2026-06-15 - Join Invite Body Benefit Rewrite
+
+- Trigger:
+  - owner asked to update only the body of the invite message, keep the earlier
+    link hint/sender work intact, arrange the bullet points serially, and avoid
+    touching buttons.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - changed the invite body to:
+      - `I'd like to invite you to join our community on GSN.`
+      - `GSN helps people carry their trust wherever life takes them.`
+    - replaced the four generic proof points with six serial benefit lines:
+      - find work with proof of reliability;
+      - build trust faster and win more customers;
+      - know who you are dealing with before paying;
+      - access community support with confidence and accountability;
+      - save/contribute with clearer records and fewer disputes;
+      - do not start from zero; take your trust with you.
+    - changed the marketplace/community line to
+      `🏛️ Community: {marketplaceName}`.
+    - kept the copied-message top invite URL, tap hint, sender name, personal
+      note, expiry, request-access instruction, and review boundary.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - updated the invite body guard for the new serial benefit lines.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - updated the shared proof/message guard for the same body.
+- Verification:
+  - Passed `npm --prefix frontend run audit:existing-community-invite-line`.
+  - Passed `npm --prefix frontend run audit:proof-surfaces`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm --prefix frontend run build` outside the sandbox because the
+    sandboxed Vite/esbuild process repeatedly hits Windows `spawn EPERM`.
+  - Confirmed generated copied-message text keeps:
+    - top invite URL;
+    - tap hint;
+    - sender line;
+    - six serial benefit lines;
+    - `🏛️ Community: {marketplaceName}`;
+    - personal note and review boundary.
+- Unabated truth:
+  - this is copy-only in the shared invite message builder and source audits;
+  - no button, tap-guard, route, backend, shell, or deployment file was touched.
+
 ## 2026-06-15 - Join Invite Link Tap Hint
 
 - Trigger:

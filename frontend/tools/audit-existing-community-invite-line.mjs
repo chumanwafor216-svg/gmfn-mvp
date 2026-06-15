@@ -121,8 +121,8 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /JOIN_INVITE_PROOF_LINES = \[[\s\S]*?✅ Community-backed trust[\s\S]*?✅ Verifiable record[\s\S]*?✅ Portable reputation[\s\S]*?✅ Privacy protected[\s\S]*?You have been invited to join a community on GSN\.[\s\S]*?GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_PROOF_LINES\)[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\./,
-  "Existing-community invite message must keep the portable-trust explanation, proof icons, GSN-link instruction, and review-before-approval boundary."
+  /JOIN_INVITE_PROOF_LINES = \[[\s\S]*?New in a place\? Don't start from zero trust\.[\s\S]*?Looking for customers\? Let your integrity speak before you arrive\.[\s\S]*?Buying online\? Verify the person before money moves\.[\s\S]*?Selling online\? Give buyers confidence before they pay\.[\s\S]*?In a union, club, church group, town union, or savings circle\? Keep records clear and reduce wahala\.[\s\S]*?Need support\? Let trusted people stand behind you with accountability\.[\s\S]*?Moving between communities\? Keep one trusted identity people can verify\.[\s\S]*?Need proof of credibility\? Share your Trust Passport or TrustSlip\.[\s\S]*?I'd like to invite you to \$\{inviteTarget\} on GSN\.[\s\S]*?GSN helps people turn trust and integrity into real-life opportunities\.[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_PROOF_LINES\)[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\./,
+  "Existing-community invite message must keep the problem-solution invite body, serial proof lines, community line, GSN-link instruction, and review-before-approval boundary."
 );
 
 assertContains(

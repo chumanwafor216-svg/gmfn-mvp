@@ -12,10 +12,14 @@ type JoinInviteDoorwayParams = JoinInviteTextParams & {
 };
 
 const JOIN_INVITE_PROOF_LINES = [
-  "✅ Community-backed trust",
-  "✅ Verifiable record",
-  "✅ Portable reputation",
-  "✅ Privacy protected",
+  "✅ New in a place? Don't start from zero trust.",
+  "✅ Looking for customers? Let your integrity speak before you arrive.",
+  "✅ Buying online? Verify the person before money moves.",
+  "✅ Selling online? Give buyers confidence before they pay.",
+  "✅ In a union, club, church group, town union, or savings circle? Keep records clear and reduce wahala.",
+  "✅ Need support? Let trusted people stand behind you with accountability.",
+  "✅ Moving between communities? Keep one trusted identity people can verify.",
+  "✅ Need proof of credibility? Share your Trust Passport or TrustSlip.",
 ];
 
 const JOIN_INVITE_LINK_HINT =
@@ -39,6 +43,7 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   const marketplaceName =
     cleanText(args.marketplaceName) ||
     (cleanText(args.communityName) ? `${cleanText(args.communityName)} Marketplace` : "");
+  const inviteTarget = marketplaceName || cleanText(args.communityName) || "our community";
   const expiresAt = cleanText(args.expiresAt);
   const customMessage = cleanText(args.customMessage);
 
@@ -50,18 +55,18 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   }
   lines.push("");
   lines.push(
-    "You have been invited to join a community on GSN."
+    `I'd like to invite you to ${inviteTarget} on GSN.`
   );
   lines.push("");
   lines.push(
-    "GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust that can travel with people wherever they go."
+    "GSN helps people turn trust and integrity into real-life opportunities."
   );
   lines.push("");
   lines.push(...JOIN_INVITE_PROOF_LINES);
 
   if (marketplaceName) {
     lines.push("");
-    lines.push(`🏛️ ${marketplaceName}`);
+    lines.push(`🏛️ Community: ${marketplaceName}`);
   }
 
   if (customMessage) {
@@ -95,6 +100,7 @@ export function buildJoinInviteDoorwayMessage(
   const marketplaceName =
     cleanText(args.marketplaceName) ||
     (cleanText(args.communityName) ? `${communityName} Marketplace` : "");
+  const inviteTarget = marketplaceName || communityName;
   const inviteLink = cleanText(args.inviteLink);
   const customMessage = cleanText(args.customMessage);
   const expiresAt = cleanText(args.expiresAt);
@@ -106,13 +112,13 @@ export function buildJoinInviteDoorwayMessage(
     receiver ? `Hello ${receiver},` : "Hello,",
     inviter ? `Invited by ${inviter}.` : null,
     "",
-    "You have been invited to join a community on GSN.",
+    `I'd like to invite you to ${inviteTarget} on GSN.`,
     "",
-    "GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust that can travel with people wherever they go.",
+    "GSN helps people turn trust and integrity into real-life opportunities.",
     "",
     ...JOIN_INVITE_PROOF_LINES,
     "",
-    marketplaceName ? `🏛️ ${marketplaceName}` : null,
+    marketplaceName ? `🏛️ Community: ${marketplaceName}` : null,
   ];
 
   if (customMessage) {
