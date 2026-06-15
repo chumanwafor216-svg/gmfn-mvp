@@ -1,3 +1,107 @@
+## 2026-06-15 - Phone Pilot Test Script After Cage
+
+- Trigger:
+  - owner said `continue` after the docs-only cage evidence commit.
+  - next useful step is not more blind automation; it is a practical phone test
+    script for the exact routes most likely to embarrass the pilot.
+- Current truth before phone testing:
+  - frontend source audits are green.
+  - backend full suite is green.
+  - deployed Marketplace join smoke passed once, then five repeated times.
+  - approval backend tests passed focused and repeated.
+  - frontend deploy for `d34ddf4` was accepted.
+  - docs-only checkpoint `f98a62a` records the cage evidence but does not
+    change product behavior.
+- Phone test rule:
+  - test one domain at a time.
+  - do not jump between domains when a failure appears.
+  - capture:
+    - route;
+    - visible section;
+    - exact button or field;
+    - whether keyboard was open;
+    - whether bottom nav/header moved;
+    - whether the page scrolled by itself;
+    - attempt count, for example `worked 2/10`;
+    - screenshot or short screen recording if possible.
+- Priority 1: Marketplace invite path.
+  - Route: `/app/marketplace`.
+  - Open `Records & Links` / public links area.
+  - Open `Invite Someone`.
+  - Fill:
+    - sender name;
+    - receiver name;
+    - short note;
+    - how you know the person;
+    - how long you have known them;
+    - private relationship context.
+  - Expected pass:
+    - every field focuses within one or two taps;
+    - keyboard opening does not throw the page to another route;
+    - bottom nav stays visually attached and does not cover the active field;
+    - Prepare/Refresh Link completes;
+    - Copy Invite and WhatsApp become available.
+  - Failure classification:
+    - `field-focus failure` if tap does not focus the input/select;
+    - `keyboard-scroll failure` if keyboard opens and page jumps away;
+    - `shell-overlay failure` if header or bottom nav covers the field;
+    - `state failure` if data enters but buttons do not unlock.
+- Priority 2: Community join request approval.
+  - Route: Community / join requests review surface.
+  - Open pending request.
+  - Approve once.
+  - Expected pass:
+    - first approver gets clear success feedback, not only "already approved";
+    - approval count/required count is visible or understandable;
+    - already-approved reviewers get a true already-approved message;
+    - approved request no longer behaves like a fresh pending request.
+  - Failure classification:
+    - `wrong-copy failure` if first approval says only already approved;
+    - `state-count failure` if approval count is absent or wrong;
+    - `list-refresh failure` if completed request stays in the wrong queue.
+- Priority 3: Dashboard.
+  - Route: `/app/dashboard`.
+  - Test top quick actions, Market Wisdom frozen area, and domain navigation.
+  - Expected pass:
+    - no bottom-nav/body separation feeling;
+    - no accidental scroll jump from quick actions;
+    - frozen Market Wisdom remains visually steady.
+- Priority 4: Community Home.
+  - Route: `/app/community`.
+  - Test owner actions, selected community, open Marketplace, and inner
+    navigation back to Community Home.
+  - Expected pass:
+    - compact rows open intentionally;
+    - there is a clear way back/up from inner surfaces;
+    - action rows do not expose too many buttons at once.
+- Priority 5: Public Shop / Shop Control.
+  - Routes:
+    - public shop;
+    - owner shop control;
+    - gallery/vault control if reachable.
+  - Expected pass:
+    - shop cards and media controls do not cover each other;
+    - owner controls are reachable without horizontal confusion;
+    - upload/media actions remain framed and tappable.
+- Priority 6: Finance / Trust / Loans.
+  - Test these after Marketplace, Community approval, Dashboard, Community
+    Home, and Shop are calm.
+  - Expected pass:
+    - buttons are exposed in short guided groups;
+    - no raw endpoint or placeholder wording leaks to users;
+    - each deep page has a clear route back.
+- Stop condition:
+  - if Marketplace invite form still fails on real phone more than `2/10`
+    attempts, stop domain testing and fix that page first.
+  - if approval copy/state is wrong, stop approval testing and fix that route
+    before broader committee testing.
+- Unabated truth:
+  - the app is testable now, but not proven by phone yet.
+  - the biggest remaining risk is physical browser behavior: Android Chrome
+    keyboard, viewport resize, sticky header, and bottom nav interaction.
+  - if a phone failure appears, do not add more features. Freeze scope, isolate
+    the exact field/button, and fix only that surface.
+
 ## 2026-06-15 - Deployment Alignment Check After Cage
 
 - Trigger:
