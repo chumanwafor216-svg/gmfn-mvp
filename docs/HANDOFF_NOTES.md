@@ -1,3 +1,34 @@
+## 2026-06-15 - Create Community Warm Retone
+
+- Trigger:
+  - owner disliked the deep blue treatment on the repaired authenticated
+    Create Community page and asked for something warmer.
+- Changed:
+  - `frontend/src/pages/ClansPage.tsx`
+    - replaced the route-local navy panel treatment with warm ivory, soft gold,
+      and brown/charcoal text;
+    - changed primary route-local buttons from blue to gold;
+    - warmed modal, chip, card, badge, form-field, and muted-text colors;
+    - kept the compact phone layout, full-width phone buttons, and `16px`
+      phone-safe form fields from the previous cage.
+- Verification:
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed local Edge mobile smoke on `/app/clans` at `390x844`:
+    - `scrollWidth: 390`;
+    - route stayed on `/app/clans`;
+    - `Create a new community` and `Community creation form` were present.
+- Visual proof:
+  - local screenshot saved at `C:/tmp/clans-warm-mobile-dismissed.png`.
+- Unabated truth:
+  - this is a route-local color retone, not a product-wide theme change;
+  - it makes `/app/clans` warmer and less heavy, but the owner should confirm
+    on the physical phone after Render because visual taste is best judged on
+    the real device.
+
 ## 2026-06-15 - Create Community Phone Layout Cage
 
 - Trigger:

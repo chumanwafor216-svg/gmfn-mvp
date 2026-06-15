@@ -53,7 +53,7 @@ function overlayShell(): React.CSSProperties {
   return {
     position: "fixed",
     inset: 0,
-    background: "rgba(7,16,28,0.64)",
+    background: "rgba(54,38,24,0.52)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -66,11 +66,11 @@ function modalCard(): React.CSSProperties {
   return {
     width: "min(100%, 720px)",
     borderRadius: 26,
-    border: "1px solid rgba(255,255,255,0.28)",
+    border: "1px solid rgba(190,143,55,0.26)",
     background:
-      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+      "linear-gradient(180deg, rgba(255,253,247,0.98) 0%, rgba(249,240,224,0.96) 58%, rgba(238,222,196,0.92) 100%)",
     boxShadow:
-      "0 26px 64px rgba(5,16,38,0.30), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "0 26px 64px rgba(54,38,24,0.24), inset 0 1px 0 rgba(255,255,255,0.82)",
     padding: 20,
     overflow: "hidden",
   };
@@ -80,10 +80,10 @@ function darkPanel(): React.CSSProperties {
   return {
     borderRadius: 22,
     background:
-      "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)",
-    border: "1px solid rgba(16,37,59,0.16)",
+      "linear-gradient(180deg, rgba(255,250,240,0.98) 0%, rgba(246,232,206,0.96) 100%)",
+    border: "1px solid rgba(190,143,55,0.22)",
     boxShadow:
-      "0 18px 34px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "0 18px 34px rgba(54,38,24,0.14), inset 0 1px 0 rgba(255,255,255,0.72)",
     padding: 18,
     position: "relative",
     overflow: "hidden",
@@ -94,16 +94,16 @@ function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
     borderRadius: 14,
-    border: "1px solid rgba(28,76,126,0.16)",
+    border: "1px solid rgba(128,91,44,0.18)",
     padding: "13px 14px",
     outline: "none",
     fontSize: 16,
-    color: "#0B1F33",
+    color: "#241A12",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,250,242,0.98) 100%)",
     boxSizing: "border-box",
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(10,24,49,0.04)",
+      "inset 0 1px 0 rgba(255,255,255,0.86), 0 6px 14px rgba(54,38,24,0.05)",
   };
 }
 
@@ -124,11 +124,11 @@ function modalChip(primary = false): React.CSSProperties {
     gap: 6,
     padding: "6px 10px",
     borderRadius: 999,
-    background: primary ? "rgba(243,208,106,0.16)" : "rgba(16,37,59,0.06)",
-    color: primary ? "#8A6508" : "#475569",
+    background: primary ? "rgba(243,208,106,0.18)" : "rgba(128,91,44,0.08)",
+    color: primary ? "#8A6508" : "#6B5D50",
     border: primary
       ? "1px solid rgba(243,208,106,0.28)"
-      : "1px solid rgba(11,31,51,0.08)",
+      : "1px solid rgba(128,91,44,0.10)",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -138,14 +138,14 @@ function modalChip(primary = false): React.CSSProperties {
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
-    border: "1px solid rgba(123,161,204,0.20)",
+    border: "1px solid rgba(190,143,55,0.20)",
     background:
       bg === "#FFFFFF" || bg === "#F8FBFF"
-        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
+        ? "linear-gradient(180deg, rgba(255,253,247,0.98) 0%, rgba(249,240,224,0.97) 56%, rgba(242,228,205,0.95) 100%)"
         : bg,
     padding: 20,
     boxShadow:
-      "0 22px 48px rgba(2,6,23,0.22), 0 2px 8px rgba(15,23,42,0.04)",
+      "0 22px 48px rgba(54,38,24,0.14), 0 2px 8px rgba(92,62,32,0.05)",
     overflow: "hidden",
   };
 }
@@ -153,28 +153,28 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function card(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(123,161,204,0.16)",
+    border: "1px solid rgba(190,143,55,0.18)",
     background:
       bg === "#FFFFFF" || bg === "#F8FBFF"
-        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
+        ? "linear-gradient(180deg, rgba(255,252,246,0.98) 0%, rgba(246,235,216,0.96) 100%)"
         : bg,
     padding: 16,
     boxShadow:
-      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 14px 30px rgba(54,38,24,0.12), inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 16,
-    border: "1px solid rgba(123,161,204,0.14)",
+    border: "1px solid rgba(190,143,55,0.16)",
     background:
       bg === "#F8FBFF" || bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
+        ? "linear-gradient(180deg, rgba(255,253,248,0.98) 0%, rgba(250,242,229,0.96) 100%)"
         : bg,
     padding: 14,
     boxShadow:
-      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 14px 28px rgba(54,38,24,0.10), inset 0 1px 0 rgba(255,255,255,0.74)",
   };
 }
 
@@ -187,14 +187,14 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     padding: "10px 13px",
     borderRadius: 12,
     border: primary
-      ? "1px solid rgba(11,99,209,0.22)"
-      : "1px solid rgba(123,161,204,0.16)",
+      ? "1px solid rgba(174,121,32,0.34)"
+      : "1px solid rgba(128,91,44,0.18)",
     background: disabled
-      ? "#CBD5E1"
+      ? "#D8CFC0"
       : primary
-      ? "#0B63D1"
-      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    color: primary ? "#FFFFFF" : "#E6EEF8",
+      ? "linear-gradient(180deg, #F2C766 0%, #D9A441 100%)"
+      : "linear-gradient(180deg, rgba(255,252,246,0.98) 0%, rgba(246,235,216,0.96) 100%)",
+    color: primary ? "#241A12" : "#3A2A1C",
     fontWeight: 900,
     textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
@@ -202,7 +202,7 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     fontSize: 14,
     boxShadow: primary
       ? undefined
-      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      : "0 12px 24px rgba(54,38,24,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
   };
 }
 
@@ -213,8 +213,8 @@ function badge(primary = false): React.CSSProperties {
     gap: 6,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
-    color: primary ? "#CFE3FF" : "#E6EEF8",
+    background: primary ? "rgba(214,170,69,0.28)" : "rgba(128,91,44,0.10)",
+    color: primary ? "#5F410D" : "#5F5143",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -224,7 +224,7 @@ function badge(primary = false): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#9CB4CF",
+    color: "#8A735C",
     fontWeight: 1000,
     letterSpacing: 0.5,
     textTransform: "uppercase",
@@ -586,7 +586,7 @@ export default function ClansPage() {
       <div
         style={{
           ...pageCard(
-            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
+            "linear-gradient(180deg, rgba(255,253,247,0.98) 0%, rgba(249,240,224,0.97) 56%, rgba(242,228,205,0.95) 100%)"
           ),
           marginTop: isCompact ? 10 : 18,
           padding: isCompact ? 16 : 20,
@@ -609,7 +609,7 @@ export default function ClansPage() {
                 margin: "14px 0 8px",
                 fontSize: isCompact ? 24 : 30,
                 lineHeight: 1.15,
-                color: "#F8FBFF",
+                color: "#241A12",
               }}
             >
               Create a new community
@@ -617,7 +617,7 @@ export default function ClansPage() {
 
             <div
               style={{
-                color: "#D7E3F1",
+                color: "#5F5143",
                 fontSize: isCompact ? 14 : 15,
                 lineHeight: isCompact ? 1.55 : 1.7,
                 maxWidth: 760,
@@ -634,12 +634,12 @@ export default function ClansPage() {
               minWidth: isCompact ? 0 : 240,
               width: isCompact ? "100%" : undefined,
               flex: isCompact ? "1 1 100%" : "0 1 300px",
-              ...softCard("rgba(255,255,255,0.96)"),
-              border: "1px solid rgba(212,175,55,0.14)",
-              boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
+              ...softCard("rgba(255,252,246,0.96)"),
+              border: "1px solid rgba(190,143,55,0.18)",
+              boxShadow: "0 18px 38px rgba(54,38,24,0.12)",
             }}
           >
-            <div style={{ fontSize: 13, color: "#64748B", fontWeight: 900 }}>
+            <div style={{ fontSize: 13, color: "#6B5D50", fontWeight: 900 }}>
               Quick links
             </div>
 
@@ -689,7 +689,7 @@ export default function ClansPage() {
         }}
       >
         <div style={card()}>
-          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
+          <div style={{ fontSize: 13, color: "#6B5D50", fontWeight: 800 }}>
             My communities
           </div>
           <div
@@ -697,7 +697,7 @@ export default function ClansPage() {
               marginTop: 8,
               fontSize: 28,
               fontWeight: 1000,
-              color: "#F8FBFF",
+              color: "#241A12",
             }}
           >
             {communityCount}
@@ -705,7 +705,7 @@ export default function ClansPage() {
         </div>
 
         <div style={card()}>
-          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
+          <div style={{ fontSize: 13, color: "#6B5D50", fontWeight: 800 }}>
             Selected community
           </div>
           <div
@@ -713,7 +713,7 @@ export default function ClansPage() {
               marginTop: 8,
               fontSize: 18,
               fontWeight: 1000,
-              color: "#F8FBFF",
+              color: "#241A12",
               lineHeight: 1.35,
             }}
           >
@@ -722,7 +722,7 @@ export default function ClansPage() {
         </div>
 
         <div style={card()}>
-          <div style={{ fontSize: 13, color: "#64748B", fontWeight: 800 }}>
+          <div style={{ fontSize: 13, color: "#6B5D50", fontWeight: 800 }}>
             Selected members
           </div>
           <div
@@ -730,7 +730,7 @@ export default function ClansPage() {
               marginTop: 8,
               fontSize: 28,
               fontWeight: 1000,
-              color: "#F8FBFF",
+              color: "#241A12",
             }}
           >
             {selectedCommunityMemberCount}
@@ -748,14 +748,14 @@ export default function ClansPage() {
           }}
         >
           <div style={{ ...softCard(), minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#241A12" }}>
               Community creation form
             </div>
 
             <div
               style={{
                 marginTop: 6,
-                color: "#64748B",
+                color: "#6B5D50",
                 fontSize: 14,
                 lineHeight: 1.7,
               }}
@@ -791,7 +791,7 @@ export default function ClansPage() {
               <div>
                 <div
                   style={{
-                    color: "#F8FBFF",
+                    color: "#3A2A1C",
                     fontWeight: 900,
                     fontSize: 14,
                     marginBottom: 6,
@@ -806,11 +806,11 @@ export default function ClansPage() {
                   style={{
                     width: "100%",
                     borderRadius: 12,
-                    border: "1px solid rgba(11,31,51,0.12)",
+                    border: "1px solid rgba(128,91,44,0.16)",
                     padding: "12px 14px",
                     outline: "none",
                     fontSize: 16,
-                    color: "#0B1F33",
+                    color: "#241A12",
                     background: "#FFFFFF",
                     boxSizing: "border-box",
                   }}
@@ -820,7 +820,7 @@ export default function ClansPage() {
               <div>
                 <div
                   style={{
-                    color: "#F8FBFF",
+                    color: "#3A2A1C",
                     fontWeight: 900,
                     fontSize: 14,
                     marginBottom: 6,
@@ -836,11 +836,11 @@ export default function ClansPage() {
                   style={{
                     width: "100%",
                     borderRadius: 12,
-                    border: "1px solid rgba(11,31,51,0.12)",
+                    border: "1px solid rgba(128,91,44,0.16)",
                     padding: "12px 14px",
                     outline: "none",
                     fontSize: 16,
-                    color: "#0B1F33",
+                    color: "#241A12",
                     background: "#FFFFFF",
                     boxSizing: "border-box",
                     resize: "vertical",
@@ -881,14 +881,14 @@ export default function ClansPage() {
           </div>
 
           <div style={{ ...softCard(), minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#241A12" }}>
               Current community
             </div>
 
             <div
               style={{
                 marginTop: 6,
-                color: "#64748B",
+                color: "#6B5D50",
                 fontSize: 14,
                 lineHeight: 1.7,
               }}
@@ -899,7 +899,7 @@ export default function ClansPage() {
             <div style={{ marginTop: 14 }}>
               <div
                 style={{
-                  color: "#F8FBFF",
+                  color: "#3A2A1C",
                   fontWeight: 900,
                   fontSize: 14,
                   marginBottom: 6,
@@ -915,11 +915,11 @@ export default function ClansPage() {
                 style={{
                   width: "100%",
                   borderRadius: 12,
-                  border: "1px solid rgba(11,31,51,0.12)",
+                  border: "1px solid rgba(128,91,44,0.16)",
                   background: "#FFFFFF",
                   padding: "12px 14px",
                   fontSize: 16,
-                  color: "#0B1F33",
+                  color: "#241A12",
                   outline: "none",
                   boxSizing: "border-box",
                 }}
@@ -938,7 +938,7 @@ export default function ClansPage() {
 
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
               <div style={card("#F8FBFF")}>
-                <div style={{ color: "#F8FBFF", fontWeight: 1000, fontSize: 16 }}>
+                <div style={{ color: "#241A12", fontWeight: 1000, fontSize: 16 }}>
                   {selectedCommunity
                     ? communityName(selectedCommunity)
                     : "No community selected"}
@@ -967,7 +967,7 @@ export default function ClansPage() {
                 <div
                   style={{
                     marginTop: 10,
-                    color: "#64748B",
+                    color: "#6B5D50",
                     fontSize: 14,
                     lineHeight: 1.7,
                   }}
@@ -982,14 +982,14 @@ export default function ClansPage() {
               </div>
 
               <div style={card()}>
-                <div style={{ color: "#F8FBFF", fontWeight: 1000, fontSize: 16 }}>
+                <div style={{ color: "#241A12", fontWeight: 1000, fontSize: 16 }}>
                   After creation / next steps
                 </div>
 
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#64748B",
+                    color: "#6B5D50",
                     fontSize: 14,
                     lineHeight: 1.7,
                   }}
@@ -1039,10 +1039,10 @@ export default function ClansPage() {
                   style={{
                     marginTop: 12,
                     borderRadius: 12,
-                    border: "1px solid rgba(11,31,51,0.08)",
+                    border: "1px solid rgba(128,91,44,0.10)",
                     background: "#F8FBFF",
                     padding: 12,
-                    color: "#64748B",
+                    color: "#6B5D50",
                     fontSize: 13,
                     lineHeight: 1.7,
                   }}
@@ -1067,13 +1067,13 @@ export default function ClansPage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#241A12" }}>
               Invite package
             </div>
             <div
               style={{
                 marginTop: 6,
-                color: "#64748B",
+                color: "#6B5D50",
                 fontSize: 14,
                 lineHeight: 1.7,
               }}
@@ -1109,7 +1109,7 @@ export default function ClansPage() {
           <div style={{ ...softCard(), minWidth: 0 }}>
             <div
               style={{
-                color: "#F8FBFF",
+                color: "#241A12",
                 fontWeight: 1000,
                 fontSize: 16,
               }}
@@ -1134,18 +1134,18 @@ export default function ClansPage() {
               <div
                 style={{
                   borderRadius: 12,
-                  border: "1px solid rgba(11,31,51,0.08)",
+                  border: "1px solid rgba(128,91,44,0.10)",
                   background:
-                    "linear-gradient(180deg, rgba(10,22,36,0.94) 0%, rgba(14,31,50,0.92) 100%)",
+                    "linear-gradient(180deg, rgba(255,252,246,0.98) 0%, rgba(246,235,216,0.96) 100%)",
                   padding: "12px 14px",
-                  color: "#F8FBFF",
+                  color: "#3A2A1C",
                   fontWeight: 700,
                 }}
               >
                 Sender: {senderName}
               </div>
 
-              <div style={{ color: "#64748B", lineHeight: 1.7, fontSize: 14 }}>
+              <div style={{ color: "#6B5D50", lineHeight: 1.7, fontSize: 14 }}>
                 Use the invite form to attach the receiver name and short note
                 before the join package is generated.
               </div>
@@ -1170,7 +1170,7 @@ export default function ClansPage() {
 
           <div style={{ ...softCard(), minWidth: 0 }}>
             {!selectedCommunityId ? (
-              <div style={{ color: "#64748B", lineHeight: 1.7 }}>
+              <div style={{ color: "#6B5D50", lineHeight: 1.7 }}>
                 Select a community to create an invitation.
               </div>
             ) : inviteState?.link || inviteState?.code ? (
@@ -1178,7 +1178,7 @@ export default function ClansPage() {
                 <div style={card("#F8FBFF")}>
                   <div
                     style={{
-                      color: "#F8FBFF",
+                      color: "#241A12",
                       fontWeight: 1000,
                       fontSize: 16,
                     }}
@@ -1189,7 +1189,7 @@ export default function ClansPage() {
                   <div
                     style={{
                       marginTop: 8,
-                      color: "#64748B",
+                      color: "#6B5D50",
                       fontSize: 14,
                       lineHeight: 1.7,
                     }}
@@ -1204,7 +1204,7 @@ export default function ClansPage() {
                         <div
                           style={{
                             fontSize: 12,
-                            color: "#64748B",
+                            color: "#6B5D50",
                             fontWeight: 900,
                             marginBottom: 6,
                             textTransform: "uppercase",
@@ -1215,11 +1215,11 @@ export default function ClansPage() {
                         <div
                           style={{
                             borderRadius: 12,
-                            border: "1px solid rgba(11,31,51,0.08)",
+                            border: "1px solid rgba(128,91,44,0.10)",
                             background:
-                            "linear-gradient(180deg, rgba(10,22,36,0.94) 0%, rgba(14,31,50,0.92) 100%)",
+                              "linear-gradient(180deg, rgba(255,252,246,0.98) 0%, rgba(246,235,216,0.96) 100%)",
                             padding: "12px 14px",
-                            color: "#F8FBFF",
+                            color: "#241A12",
                             fontWeight: 900,
                             wordBreak: "break-word",
                           }}
@@ -1234,7 +1234,7 @@ export default function ClansPage() {
                         <div
                           style={{
                             fontSize: 12,
-                            color: "#64748B",
+                            color: "#6B5D50",
                             fontWeight: 900,
                             marginBottom: 6,
                             textTransform: "uppercase",
@@ -1245,11 +1245,11 @@ export default function ClansPage() {
                         <div
                           style={{
                             borderRadius: 12,
-                            border: "1px solid rgba(11,31,51,0.08)",
+                            border: "1px solid rgba(128,91,44,0.10)",
                             background:
-                            "linear-gradient(180deg, rgba(10,22,36,0.94) 0%, rgba(14,31,50,0.92) 100%)",
+                              "linear-gradient(180deg, rgba(255,252,246,0.98) 0%, rgba(246,235,216,0.96) 100%)",
                             padding: "12px 14px",
-                            color: "#F8FBFF",
+                            color: "#241A12",
                             fontWeight: 700,
                             wordBreak: "break-word",
                           }}
@@ -1262,7 +1262,7 @@ export default function ClansPage() {
                     {inviteState.expiresAt ? (
                       <div
                         style={{
-                          color: "#64748B",
+                          color: "#6B5D50",
                           fontSize: 12,
                           fontWeight: 700,
                         }}
@@ -1276,7 +1276,7 @@ export default function ClansPage() {
                         <div
                           style={{
                             fontSize: 12,
-                            color: "#64748B",
+                            color: "#6B5D50",
                             fontWeight: 900,
                             marginBottom: 6,
                             textTransform: "uppercase",
@@ -1287,11 +1287,11 @@ export default function ClansPage() {
                         <div
                           style={{
                             borderRadius: 12,
-                            border: "1px solid rgba(11,31,51,0.08)",
+                            border: "1px solid rgba(128,91,44,0.10)",
                             background:
-                            "linear-gradient(180deg, rgba(10,22,36,0.94) 0%, rgba(14,31,50,0.92) 100%)",
+                              "linear-gradient(180deg, rgba(255,252,246,0.98) 0%, rgba(246,235,216,0.96) 100%)",
                             padding: "12px 14px",
-                            color: "#F8FBFF",
+                            color: "#241A12",
                             fontWeight: 700,
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word",
@@ -1367,7 +1367,7 @@ export default function ClansPage() {
               <div style={card("#F8FBFF")}>
                 <div
                   style={{
-                    color: "#F8FBFF",
+                    color: "#241A12",
                     fontWeight: 1000,
                     fontSize: 16,
                   }}
@@ -1378,7 +1378,7 @@ export default function ClansPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#64748B",
+                    color: "#6B5D50",
                     lineHeight: 1.7,
                     fontSize: 14,
                   }}
@@ -1427,7 +1427,7 @@ export default function ClansPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#F8FBFF",
+                    color: "#241A12",
                     fontSize: 24,
                     fontWeight: 1000,
                     lineHeight: 1.2,
@@ -1438,7 +1438,7 @@ export default function ClansPage() {
                 <div
                   style={{
                     marginTop: 10,
-                    color: "#D7E3F1",
+                    color: "#5F5143",
                     fontSize: 14,
                     lineHeight: 1.7,
                     maxWidth: 560,
@@ -1470,7 +1470,7 @@ export default function ClansPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#F8FBFF",
+                    color: "#241A12",
                     fontWeight: 900,
                     fontSize: 16,
                   }}
@@ -1484,7 +1484,7 @@ export default function ClansPage() {
                 <div
                   style={{
                     marginTop: 8,
-                    color: "#F8FBFF",
+                    color: "#241A12",
                     fontWeight: 900,
                     fontSize: 16,
                   }}
@@ -1560,13 +1560,13 @@ export default function ClansPage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
+            <div style={{ fontSize: 18, fontWeight: 1000, color: "#241A12" }}>
               Existing communities
             </div>
             <div
               style={{
                 marginTop: 6,
-                color: "#64748B",
+                color: "#6B5D50",
                 fontSize: 14,
                 lineHeight: 1.7,
               }}
@@ -1593,14 +1593,14 @@ export default function ClansPage() {
           }}
         >
           {loadingCommunities ? (
-            <div style={{ color: "#64748B", lineHeight: 1.7 }}>
+            <div style={{ color: "#6B5D50", lineHeight: 1.7 }}>
               Loading your communities...
             </div>
           ) : communities.length === 0 ? (
             <div style={card("#F8FBFF")}>
               <div
                 style={{
-                  color: "#F8FBFF",
+                  color: "#241A12",
                   fontWeight: 1000,
                   fontSize: 17,
                 }}
@@ -1610,7 +1610,7 @@ export default function ClansPage() {
               <div
                 style={{
                   marginTop: 8,
-                  color: "#64748B",
+                  color: "#6B5D50",
                   lineHeight: 1.7,
                   fontSize: 14,
                 }}
@@ -1630,11 +1630,11 @@ export default function ClansPage() {
                   style={{
                     ...card(),
                     border: isActive
-                      ? "1px solid rgba(11,99,209,0.24)"
-                      : "1px solid rgba(11,31,51,0.08)",
+                      ? "1px solid rgba(174,121,32,0.30)"
+                      : "1px solid rgba(128,91,44,0.10)",
                     boxShadow: isActive
-                      ? "0 12px 28px rgba(11,99,209,0.08)"
-                      : "0 12px 30px rgba(15,23,42,0.05)",
+                      ? "0 12px 28px rgba(174,121,32,0.12)"
+                      : "0 12px 30px rgba(54,38,24,0.07)",
                   }}
                 >
                   <div
@@ -1649,7 +1649,7 @@ export default function ClansPage() {
                     <div style={{ minWidth: isCompact ? 0 : 220, flex: 1 }}>
                       <div
                         style={{
-                          color: "#F8FBFF",
+                          color: "#241A12",
                           fontWeight: 1000,
                           fontSize: 17,
                         }}
@@ -1660,7 +1660,7 @@ export default function ClansPage() {
                       <div
                         style={{
                           marginTop: 8,
-                          color: "#64748B",
+                          color: "#6B5D50",
                           fontSize: 14,
                           lineHeight: 1.7,
                         }}
