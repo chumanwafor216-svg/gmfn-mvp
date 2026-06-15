@@ -169,8 +169,8 @@ for (const field of nativeFields) {
 }
 
 assertContains(
-  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: stopMarketplaceTap[\s\S]*?onPointerDown: stopMarketplaceTap[\s\S]*?onPointerUpCapture: stopMarketplaceTap[\s\S]*?onPointerUp: stopMarketplaceTap[\s\S]*?onMouseDownCapture: stopMarketplaceTap[\s\S]*?onMouseDown: stopMarketplaceTap[\s\S]*?onClickCapture: stopMarketplaceTap[\s\S]*?onClick: stopMarketplaceTap/,
-  "Marketplace native field tap roots must use field-only debug metadata and pointer/mouse/click guards without registering as action roots."
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?const rememberMarketplaceFieldPointer[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?const rememberMarketplaceFieldFocus[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: rememberMarketplaceFieldPointer[\s\S]*?onPointerDown: stopMarketplaceTap[\s\S]*?onPointerUpCapture: stopMarketplaceTap[\s\S]*?onPointerUp: stopMarketplaceTap[\s\S]*?onMouseDownCapture: stopMarketplaceTap[\s\S]*?onMouseDown: stopMarketplaceTap[\s\S]*?onFocusCapture: rememberMarketplaceFieldFocus[\s\S]*?onClickCapture: stopMarketplaceTap[\s\S]*?onClick: stopMarketplaceTap/,
+  "Marketplace native field tap roots must mark recent field interaction early, keep field-only debug metadata, and guard pointer/mouse/click events without forcing programmatic focus or registering as action roots."
 );
 
 assertNotContains(
@@ -229,8 +229,8 @@ assertNotContains(
 );
 
 assertContains(
-  /function marketplaceActiveElementIsEditable\(\): boolean[\s\S]*?tagName === "input"[\s\S]*?tagName === "textarea"[\s\S]*?tagName === "select"[\s\S]*?section-scroll-skipped-field-focus[\s\S]*?section-schedule-skipped-field-focus/,
-  "Marketplace section landing scroll must skip while a native field is focused so Chrome keyboard focus is not fighting route-local scroll code."
+  /function marketplaceActiveElementIsEditable\(\): boolean[\s\S]*?tagName === "input"[\s\S]*?tagName === "textarea"[\s\S]*?tagName === "select"[\s\S]*?marketplaceRecentlyInteractedWithField[\s\S]*?section-scroll-skipped-field-focus[\s\S]*?section-scroll-skipped-recent-field-touch[\s\S]*?section-schedule-skipped-field-focus[\s\S]*?section-schedule-skipped-recent-field-touch/,
+  "Marketplace section landing scroll must skip while a native field is focused or inside the recent touch-to-focus window so Chrome keyboard focus is not fighting route-local scroll code."
 );
 
 assertContains(

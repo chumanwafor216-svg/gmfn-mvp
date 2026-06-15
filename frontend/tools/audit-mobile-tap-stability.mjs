@@ -332,7 +332,7 @@ if (
 }
 
 if (
-  !/function isMarketplaceAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("marketplace\."\)[\s\S]*?function isMarketplacePath\(\): boolean \{[\s\S]*?window\.location\.pathname === "\/app\/marketplace"[\s\S]*?function shouldReplayMismatchedOriginalAction\(root: Element \| null\): boolean \{[\s\S]*?!isMarketplaceAction\(root\)[\s\S]*?!isAppShellAction\(root\)[\s\S]*?!isBottomNavAction\(root\)[\s\S]*?function isMarketplaceShellReplayBlocked\(root: Element \| null\): boolean \{[\s\S]*?isMarketplacePath\(\) && \(isAppShellAction\(root\) \|\| isBottomNavAction\(root\)\)[\s\S]*?marketplace-orphan-mismatch-no-replay[\s\S]*?marketplace-click-mismatch-no-replay[\s\S]*?marketplace-shell-mismatch-no-replay/.test(
+  !/function isMarketplaceAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("marketplace\."\)[\s\S]*?function isMarketplacePath\(\): boolean \{[\s\S]*?window\.location\.pathname === "\/app\/marketplace"[\s\S]*?function shouldReplayMismatchedOriginalAction\(root: Element \| null\): boolean \{[\s\S]*?!isMarketplaceAction\(root\)[\s\S]*?!isAppShellAction\(root\)[\s\S]*?!isBottomNavAction\(root\)[\s\S]*?function isMarketplaceShellReplayBlocked\(root: Element \| null\): boolean \{[\s\S]*?isMarketplacePath\(\) && \(isAppShellAction\(root\) \|\| isBottomNavAction\(root\)\)[\s\S]*?function replayMarketplaceActionIfTapLike\([\s\S]*?moved > 18[\s\S]*?commitOriginalAction\(root, reason, detail\)[\s\S]*?marketplace-orphan-mismatch-replayed[\s\S]*?marketplace-click-mismatch-replayed[\s\S]*?marketplace-shell-mismatch-no-replay/.test(
     mobileTapGuardSource
   )
 ) {
@@ -340,9 +340,9 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Marketplace mobile taps must fail closed instead of replaying guessed Marketplace, shell, or bottom-rail actions",
+      "Marketplace mobile taps must replay only tiny moved Marketplace taps while shell and bottom-rail replays stay blocked",
     text:
-      "Expected Marketplace-specific no-replay protection was not found in the shared tap guard.",
+      "Expected Marketplace-specific bounded replay protection was not found in the shared tap guard.",
   });
 }
 
@@ -932,7 +932,7 @@ const appShellChecks = [
     label:
       "Mobile app shell must keep the bottom rail visible while main content scrolls naturally",
     pattern:
-      /function mobileShell\(\): React\.CSSProperties[\s\S]*?height: "100dvh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "auto" : undefined[\s\S]*?touchAction: isMobile \? "pan-y" : undefined/,
+      /function mobileShell\(\): React\.CSSProperties[\s\S]*?minHeight: "100svh"[\s\S]*?height: "100svh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "auto" : undefined[\s\S]*?touchAction: isMobile \? "pan-y" : undefined[\s\S]*?minHeight: isMobile \? 0 : undefined/,
   },
   {
     label:

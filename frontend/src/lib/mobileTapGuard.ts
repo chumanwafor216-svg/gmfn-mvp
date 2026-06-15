@@ -316,6 +316,18 @@ function isMarketplaceShellReplayBlocked(root: Element | null): boolean {
   return isMarketplacePath() && (isAppShellAction(root) || isBottomNavAction(root));
 }
 
+function replayMarketplaceActionIfTapLike(
+  root: Element | null,
+  reason: string,
+  detail: Record<string, unknown>
+): boolean {
+  if (!isMarketplacePath() || !isMarketplaceAction(root)) return false;
+  const moved = Number(detail.moved);
+  if (!Number.isFinite(moved) || moved > 18) return false;
+
+  return commitOriginalAction(root, reason, detail);
+}
+
 function isTrustedPublicShopAction(root: Element | null): boolean {
   const ctaId = root?.getAttribute("data-cta-id") || "";
 
@@ -839,6 +851,18 @@ function handleClick(event: MouseEvent): void {
       lastPointerContext = null;
 
       if (isMarketplacePath() && isMarketplaceAction(intendedRoot)) {
+        const committed = replayMarketplaceActionIfTapLike(
+          intendedRoot,
+          "marketplace-orphan-mismatch-replayed",
+          {
+            ended: labelForAction(endRoot),
+            moved: Math.round(moved),
+            elapsed: Math.round(elapsedSinceStart),
+            shifted: unsafeGeometry,
+          }
+        );
+        if (committed) return;
+
         traceTap("marketplace-orphan-mismatch-no-replay", {
           intended: intendedLabel,
           ended: labelForAction(endRoot),
@@ -945,6 +969,18 @@ function handleClick(event: MouseEvent): void {
     const intendedRoot = activeTap.root;
     const intendedLabel = activeTap.rootLabel;
     if (isMarketplacePath() && isMarketplaceAction(intendedRoot)) {
+      const committed = replayMarketplaceActionIfTapLike(
+        intendedRoot,
+        "marketplace-click-mismatch-replayed",
+        {
+          ended: labelForAction(endRoot),
+          moved: Math.round(moved),
+          elapsed: Math.round(elapsed),
+          shifted: unsafeGeometry,
+        }
+      );
+      if (committed) return;
+
       traceTap("marketplace-click-mismatch-no-replay", {
         intended: intendedLabel,
         ended: labelForAction(endRoot),

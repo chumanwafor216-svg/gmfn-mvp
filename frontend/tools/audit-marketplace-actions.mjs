@@ -344,8 +344,8 @@ assertContains(
 
 assertContains(
   "src/lib/marketplaceActionStability.ts",
-  /MARKETPLACE_LANDING_TRACE_KEY[\s\S]*?marketplaceLandingOffsetPx[\s\S]*?visualViewport[\s\S]*?function scrollableAncestor[\s\S]*?node\.scrollHeight > node\.clientHeight[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?const container = scrollableAncestor\(target\)[\s\S]*?container\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?window\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?const delta = Math\.round\([\s\S]*?nextContainerRect[\s\S]*?correctedTop[\s\S]*?scrollContainer[\s\S]*?marketplaceSectionStyle/,
-  "Marketplace front/workspace pages must share one phone-safe landing helper that scrolls the real mobile container, with window scrolling only as desktop/body fallback."
+  /MARKETPLACE_LANDING_TRACE_KEY[\s\S]*?marketplaceLandingOffsetPx[\s\S]*?visualViewport[\s\S]*?function scrollableAncestor[\s\S]*?node\.scrollHeight > node\.clientHeight[\s\S]*?function activeElementIsEditable[\s\S]*?tagName === "input"[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?const container = scrollableAncestor\(target\)[\s\S]*?container\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?window\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?if \(activeElementIsEditable\(\)\)[\s\S]*?correction-skipped-field-focus[\s\S]*?const delta = Math\.round\([\s\S]*?nextContainerRect[\s\S]*?correctedTop[\s\S]*?scrollContainer[\s\S]*?marketplaceSectionStyle/,
+  "Marketplace front/workspace pages must share one phone-safe landing helper that scrolls the real mobile container, skips corrective scrolling during field focus, and uses window scrolling only as desktop/body fallback."
 );
 
 assertContains(

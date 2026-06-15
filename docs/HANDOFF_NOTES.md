@@ -55082,3 +55082,72 @@ GSN-branded invite composer and invite-entry continuity.
   - it does not yet prove the owner phone Chrome experience is fully stable,
     because the automated browser is not the same active phone session and the
     route still sits inside the shared mobile app shell.
+
+## 2026-06-15 - Marketplace Mobile Jump Root-Cause Stabilization
+
+- Trigger:
+  - owner reported Marketplace had become progressively worse on phone Chrome:
+    the page was hard to open, Public Links / Invite Someone felt dead, and Join
+    Invite fields could fail after many attempts.
+- Devil's-advocate audit result:
+  - field markup alone was not the root issue;
+  - the strongest failure path was shared shell / route scroll / tap guard
+    interaction:
+    - mobile app shell used `100dvh`, which can resize with Chrome browser UI
+      and keyboard movement;
+    - mobile `<main>` was the flex scroll child but did not declare
+      `minHeight: 0`;
+    - Marketplace section landing used delayed double-RAF scroll and a
+      corrective scroll that could run near field focus;
+    - the tap guard suppressed Marketplace action clicks on geometry shift
+      without committing the original button the user touched.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - changed mobile shell height from `100dvh` to stable `100svh`;
+    - added `minHeight: 0` to mobile main content so the flex scroll child can
+      shrink/scroll correctly under top bar, bottom rail, and keyboard.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added recent field pointer/focus tracking for Marketplace fields;
+    - section landing scroll now skips during either active native-field focus
+      or the recent touch-to-focus window;
+    - field helper does **not** force `.focus()` on pointerdown; Chrome is left
+      to perform native focus.
+  - `frontend/src/lib/marketplaceActionStability.ts`
+    - corrective section scroll now skips if a native editable field is focused.
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - Marketplace action taps can replay the originally touched Marketplace
+      action only when movement is still tiny (`<= 18px`);
+    - app-shell and bottom-nav mismatch replay remains blocked.
+  - Audits updated:
+    - `frontend/tools/audit-mobile-tap-stability.mjs`;
+    - `frontend/tools/audit-marketplace-touch-blockers.mjs`;
+    - `frontend/tools/audit-marketplace-button-inventory.mjs`;
+    - `frontend/tools/audit-marketplace-actions.mjs`.
+- Verification:
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Playwright mobile Chromium stress check with pilot fake-token fallback:
+    - opened Marketplace;
+    - clicked Public Links row;
+    - clicked Invite Someone;
+    - focused and filled sender, receiver, and short note five times each;
+    - all 15 focus attempts landed on the correct native field;
+    - tap trace showed `field-click-accepted` for each field;
+    - landing trace showed only the initial Public Links landing scroll, settled
+      in the `main` scroll container, with no repeated field-time scroll.
+- Unabated truth:
+  - this is the first fix in this sequence that addresses the real system-level
+    jump mechanism instead of only hardening individual fields;
+  - it still needs the owner's real phone Chrome test because headless Chromium
+    cannot fully reproduce mobile browser chrome/keyboard behavior;
+  - if this still jumps on the phone, the next escalation should be route-local
+    removal or suspension of Marketplace auto-landing scroll, not more field
+    styling.

@@ -1180,20 +1180,46 @@ function uniqRepostProductOptions(items: RepostProductOption[]): RepostProductOp
   });
 }
 
+let marketplaceLastFieldInteractionAt = 0;
+
+function markMarketplaceFieldInteraction() {
+  marketplaceLastFieldInteractionAt =
+    typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
+function marketplaceRecentlyInteractedWithField(ms = 2400): boolean {
+  if (!marketplaceLastFieldInteractionAt) return false;
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  return now - marketplaceLastFieldInteractionAt <= ms;
+}
+
 function marketplaceFieldTouchProps(debugId: string) {
   const stopMarketplaceTap = (event: React.SyntheticEvent<HTMLElement>) => {
     event.stopPropagation();
+  };
+  const rememberMarketplaceFieldPointer = (
+    event: React.SyntheticEvent<HTMLElement>
+  ) => {
+    event.stopPropagation();
+    markMarketplaceFieldInteraction();
+  };
+  const rememberMarketplaceFieldFocus = (
+    event: React.SyntheticEvent<HTMLElement>
+  ) => {
+    event.stopPropagation();
+    markMarketplaceFieldInteraction();
   };
 
   return {
     "data-gmfn-field-root": "true",
     "data-gmfn-debug-id": debugId,
-    onPointerDownCapture: stopMarketplaceTap,
+    onPointerDownCapture: rememberMarketplaceFieldPointer,
     onPointerDown: stopMarketplaceTap,
     onPointerUpCapture: stopMarketplaceTap,
     onPointerUp: stopMarketplaceTap,
     onMouseDownCapture: stopMarketplaceTap,
     onMouseDown: stopMarketplaceTap,
+    onFocusCapture: rememberMarketplaceFieldFocus,
     onClickCapture: stopMarketplaceTap,
     onClick: stopMarketplaceTap,
   };
@@ -4135,12 +4161,17 @@ export default function MarketplacePage() {
     id: string,
     attempt = 0
   ) {
-    if (marketplaceActiveElementIsEditable()) {
+    if (
+      marketplaceActiveElementIsEditable() ||
+      marketplaceRecentlyInteractedWithField()
+    ) {
       pendingMarketplaceSectionRef.current = "";
       traceMarketplaceLanding({
         surface: "marketplace",
         targetId: id,
-        reason: "section-scroll-skipped-field-focus",
+        reason: marketplaceActiveElementIsEditable()
+          ? "section-scroll-skipped-field-focus"
+          : "section-scroll-skipped-recent-field-touch",
         attempt,
         skipped: true,
       });
@@ -4191,12 +4222,17 @@ export default function MarketplacePage() {
     function scheduleMarketplaceSectionScroll(sectionId: string) {
       if (typeof window === "undefined") return;
       cancelMarketplaceSectionScroll();
-      if (marketplaceActiveElementIsEditable()) {
+      if (
+        marketplaceActiveElementIsEditable() ||
+        marketplaceRecentlyInteractedWithField()
+      ) {
         pendingMarketplaceSectionRef.current = "";
         traceMarketplaceLanding({
           surface: "marketplace",
           targetId: sectionId,
-          reason: "section-schedule-skipped-field-focus",
+          reason: marketplaceActiveElementIsEditable()
+            ? "section-schedule-skipped-field-focus"
+            : "section-schedule-skipped-recent-field-touch",
           skipped: true,
         });
         return;

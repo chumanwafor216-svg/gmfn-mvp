@@ -91,6 +91,20 @@ function viewportHeight(): number {
   );
 }
 
+function activeElementIsEditable(): boolean {
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement;
+  if (!active) return false;
+  const tagName = active.tagName.toLowerCase();
+
+  return (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    active.getAttribute("contenteditable") === "true"
+  );
+}
+
 function landingComfortBounds(container: HTMLElement | null): {
   topEdge: number;
   bottomEdge: number;
@@ -170,6 +184,21 @@ export function scrollElementToMarketplaceLanding(
   }
 
   window.requestAnimationFrame(() => {
+    if (activeElementIsEditable()) {
+      traceMarketplaceLanding({
+        ...detail,
+        reason: `${detail.reason}-correction-skipped-field-focus`,
+        top,
+        offset,
+        corrected: false,
+        skipped: true,
+        settled: true,
+        viewportHeight: viewportHeight(),
+        scrollContainer,
+      });
+      return;
+    }
+
     const nextContainerRect = container?.getBoundingClientRect();
     const delta = Math.round(
       target.getBoundingClientRect().top - (nextContainerRect?.top || 0) - offset

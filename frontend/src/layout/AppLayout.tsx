@@ -807,8 +807,8 @@ function desktopShell(): React.CSSProperties {
 
 function mobileShell(): React.CSSProperties {
   return {
-    minHeight: "100vh",
-    height: "100dvh",
+    minHeight: "100svh",
+    height: "100svh",
     background: gmfnBrand.gradients.pageWash,
     display: "flex",
     flexDirection: "column",
@@ -1001,6 +1001,7 @@ function mainContent(
     overscrollBehaviorY: isMobile ? "auto" : undefined,
     touchAction: isMobile ? "pan-y" : undefined,
     flex: isMobile ? "1 1 auto" : undefined,
+    minHeight: isMobile ? 0 : undefined,
   };
 }
 

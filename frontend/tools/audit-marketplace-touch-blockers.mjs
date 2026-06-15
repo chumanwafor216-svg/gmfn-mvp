@@ -82,9 +82,19 @@ const fieldHelper = functionBody(marketplaceSource, "marketplaceFieldTouchProps"
 assertContains(
   marketplaceFile,
   fieldHelper.text,
-  /"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: stopMarketplaceTap[\s\S]*?onClick: stopMarketplaceTap/,
-  "Marketplace native fields must keep field-only tap guards so keyboard taps do not replay nearby actions."
+  /const rememberMarketplaceFieldPointer[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?const rememberMarketplaceFieldFocus[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: rememberMarketplaceFieldPointer[\s\S]*?onFocusCapture: rememberMarketplaceFieldFocus[\s\S]*?onClick: stopMarketplaceTap/,
+  "Marketplace native fields must mark pointer/focus interaction early and keep field-only tap guards so keyboard taps do not replay nearby actions."
 );
+
+if (/\.focus\(/.test(fieldHelper.text)) {
+  addFinding(
+    marketplaceFile,
+    marketplaceSource,
+    fieldHelper.start + fieldHelper.text.search(/\.focus\(/),
+    "Marketplace field tap guards must not force programmatic focus during pointerdown; mobile Chrome should handle native field focus.",
+    "Remove forced .focus() from marketplaceFieldTouchProps."
+  );
+}
 
 assertContains(
   marketplaceFile,
@@ -160,8 +170,8 @@ assertContains(
 assertContains(
   mobileTapGuardFile,
   tapGuardSource,
-  /if \(isMarketplacePath\(\) && isMarketplaceAction\(intendedRoot\)\)[\s\S]*?marketplace-click-mismatch-no-replay[\s\S]*?clearActiveTap\(\);[\s\S]*?lastPointerContext = null;[\s\S]*?return;/,
-  "Marketplace mismatched taps must fail closed instead of replaying a guessed action."
+  /function replayMarketplaceActionIfTapLike\([\s\S]*?if \(!Number\.isFinite\(moved\) \|\| moved > 18\) return false;[\s\S]*?return commitOriginalAction\(root, reason, detail\);[\s\S]*?marketplace-orphan-mismatch-replayed[\s\S]*?marketplace-click-mismatch-replayed/,
+  "Marketplace action taps may replay only the original Marketplace action when the movement is still tap-like."
 );
 
 assertContains(
@@ -204,5 +214,5 @@ if (findings.length) {
 }
 
 console.log(
-  `Marketplace touch-blocker line audit passed: ${surfaceUses.length} neutral inner surfaces, one-shot hash landings, field taps guarded, and Marketplace mismatch replay disabled.`
+  `Marketplace touch-blocker line audit passed: ${surfaceUses.length} neutral inner surfaces, one-shot hash landings, field taps guarded, and Marketplace tap-like replay bounded.`
 );
