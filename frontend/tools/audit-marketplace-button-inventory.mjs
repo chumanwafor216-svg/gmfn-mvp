@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 62;
+const expectedStableActionCount = 63;
 const expectedNativeFieldCount = 19;
 const expectedSourceBreakdown = {
   front: 11,
-  body: 51,
+  body: 52,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -224,8 +224,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.links\.choose\.verify"[\s\S]*?setActiveLinkCenterTool\("verify"\)[\s\S]*?debugId="marketplace\.links\.choose\.join"[\s\S]*?setActiveLinkCenterTool\("join"\)[\s\S]*?debugId="marketplace\.links\.choose\.shop-face"[\s\S]*?setActiveLinkCenterTool\("shopFace"\)/,
-  "Marketplace public links chooser must expose only the three true outward-link jobs: verify, invite, and public shop face."
+  /debugId="marketplace\.links\.choose\.verify"[\s\S]*?setActiveLinkCenterTool\("verify"\)[\s\S]*?debugId="marketplace\.links\.choose\.join"[\s\S]*?setActiveLinkCenterTool\("join"\)[\s\S]*?debugId="marketplace\.links\.choose\.create-community"[\s\S]*?openMarketplaceRoute\(event, "\/create"\)[\s\S]*?debugId="marketplace\.links\.choose\.shop-face"[\s\S]*?setActiveLinkCenterTool\("shopFace"\)/,
+  "Marketplace public links chooser must expose the four true public entry jobs: verify, invite, create community, and public shop face."
 );
 
 assertContains(
@@ -390,8 +390,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open access and public links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Public Links[\s\S]*?Verify, invite, and share the shop\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Shop Face/,
-  "Marketplace public links grouped card must open marketplace-owned links and advertise only verify, invite, and shop sharing."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open access and public links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Public Links[\s\S]*?Verify, invite, create, or share the shop\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face/,
+  "Marketplace public links grouped card must open marketplace-owned links and advertise verify, invite, create, and shop sharing."
 );
 
 assertContains(
@@ -704,6 +704,7 @@ const expectedOrder = [
   exactDebugId("marketplace.links.toggle"),
   exactDebugId("marketplace.links.choose.verify"),
   exactDebugId("marketplace.links.choose.join"),
+  exactDebugId("marketplace.links.choose.create-community"),
   exactDebugId("marketplace.links.choose.shop-face"),
   exactDebugId("marketplace.links.back-to-center"),
   exactDebugId("marketplace.links.join.copy"),

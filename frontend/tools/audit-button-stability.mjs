@@ -346,7 +346,7 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /debugId="join-entry\.acknowledge-invite"[\s\S]*?joinEntryIconText\([\s\S]*?"navigation"[\s\S]*?"Continue"[\s\S]*?debugId="join-entry\.existing-identity"[\s\S]*?joinEntryIconText\("id", "Join with GSN ID"\)[\s\S]*?debugId="join-entry\.choose-existing-gsn"[\s\S]*?joinEntryIconText\("id", "Use GSN ID"\)[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?joinEntryIconText\([\s\S]*?"join-person-plus"[\s\S]*?"No GSN ID"[\s\S]*?debugId="join-entry\.submit-existing-gsn"[\s\S]*?Send with GSN ID[\s\S]*?debugId="join-entry\.submit-new-request"[\s\S]*?joinEntryIconText\("join-person-plus", "Submit request"\)/,
+  /debugId="join-entry\.acknowledge-invite"[\s\S]*?joinEntryIconText\([\s\S]*?"navigation"[\s\S]*?"Continue"[\s\S]*?debugId="join-entry\.existing-identity"[\s\S]*?joinEntryIconText\("id", "Join with GSN ID"\)[\s\S]*?debugId="join-entry\.choose-existing-gsn"[\s\S]*?joinEntryIconText\("id", "Use GSN ID"\)[\s\S]*?debugId="join-entry\.toggle-new-member-request-form"[\s\S]*?joinEntryIconText\([\s\S]*?"join-person-plus"[\s\S]*?"New to GSN"[\s\S]*?debugId="join-entry\.submit-existing-gsn"[\s\S]*?Send with GSN ID[\s\S]*?debugId="join-entry\.submit-new-request"[\s\S]*?joinEntryIconText\("join-person-plus", "Submit request"\)/,
   "Join entry must keep stable invitation, existing-identity, guided existing-GSN/new-person choices, typed-GSN submit, and submit-request actions."
 );
 

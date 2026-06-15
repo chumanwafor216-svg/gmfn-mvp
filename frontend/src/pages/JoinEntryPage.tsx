@@ -590,14 +590,14 @@ function friendlyJoinError(value: any): string {
   ) {
     return (
       cleanText(parsed?.message) ||
-      "This phone is already tied to an existing GSN identity. Enter that GSN number here so the request can reuse one identity."
+      "This phone is already tied to an existing GSN identity. Enter that GSN ID here so the request can reuse one identity."
     );
   }
 
   if (parsedCode === "join_identity_match_review_required") {
     return (
       cleanText(parsed?.message) ||
-      "These details look like an existing GSN identity. Enter the existing GSN number if it belongs to you, or ask the community helper to review it before creating another identity."
+      "These details look like an existing GSN identity. Enter the existing GSN ID if it belongs to you, or ask the community helper to review it before creating another identity."
     );
   }
 
@@ -614,7 +614,7 @@ function friendlyJoinError(value: any): string {
     lower.includes("already tied to an existing gsn identity")
   ) {
     return (
-      "This phone is already tied to an existing GSN identity. Enter that GSN number here so the request can reuse one identity."
+      "This phone is already tied to an existing GSN identity. Enter that GSN ID here so the request can reuse one identity."
     );
   }
 
@@ -1822,7 +1822,7 @@ export default function JoinEntryPage() {
         throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
       if (!safeExistingGsnId) {
-        throw new Error("Enter your GSN number first.");
+        throw new Error("Enter your GSN ID first.");
       }
       const safeFirstName = cleanText(firstName);
       const safeSurname = cleanText(surname);
@@ -1831,7 +1831,7 @@ export default function JoinEntryPage() {
 
       if (!safeFirstName || !safeSurname || !safePhone) {
         throw new Error(
-          "Add your name and phone number with the GSN number before sending the request."
+          "Add your name and phone number with the GSN ID before sending the request."
         );
       }
 
@@ -2297,8 +2297,8 @@ export default function JoinEntryPage() {
             {showUnclearSessionRecovery ? (
               <div style={{ marginTop: 14, ...noticeStyle("info") }}>
                 <div>
-                  This phone has an old saved access state. Enter your GSN
-                  number here, or continue without one.
+                  This phone has an old saved access state. Already a member?
+                  Use your GSN ID here. New to GSN? Continue to the short form.
                 </div>
                 <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
                   <SecondaryButton
@@ -2317,7 +2317,7 @@ export default function JoinEntryPage() {
                     stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
-                    {joinEntryIconText("join-person-plus", "No GSN ID")}
+                    {joinEntryIconText("join-person-plus", "New to GSN")}
                   </SecondaryButton>
                 </CardActionRow>
               </div>
@@ -2334,7 +2334,7 @@ export default function JoinEntryPage() {
               >
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ ...labelText(), marginBottom: 0 }}>
-                    {joinEntryIconText("id", "Do you already have a GSN number?", 22)}
+                    {joinEntryIconText("id", "Already a member?", 22)}
                   </div>
                   <div
                     style={{
@@ -2343,9 +2343,9 @@ export default function JoinEntryPage() {
                       lineHeight: 1.55,
                     }}
                   >
-                    If you already have one, enter it here so GSN does not
-                    issue another identity after approval. If you do not have
-                    one, fill the short request form for community review.
+                    Use your GSN ID so GSN does not issue another identity after
+                    approval. If you are new to GSN, fill the short request form
+                    for community review.
                   </div>
                   {inviteReady ? (
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -2394,7 +2394,7 @@ export default function JoinEntryPage() {
                       "join-person-plus",
                       inviteChecking
                         ? "Checking"
-                        : "No GSN ID"
+                        : "New to GSN"
                     )}
                   </SecondaryButton>
                 </div>
@@ -2402,7 +2402,7 @@ export default function JoinEntryPage() {
                 {joinPathChoice === "existing" ? (
                   <div style={{ display: "grid", gap: 12 }}>
                     <div>
-                      <div style={labelText()}>Existing GSN number</div>
+                      <div style={labelText()}>Existing GSN ID</div>
                       <input
                         value={existingGsnId}
                         onChange={(event) => {
@@ -2595,7 +2595,7 @@ export default function JoinEntryPage() {
             {err ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
                 {err}
-                {err.toLowerCase().includes("enter that gsn number") ? (
+                {err.toLowerCase().includes("enter that gsn id") ? (
                   <div style={{ marginTop: 12 }}>
                     <SecondaryButton
                       type="button"

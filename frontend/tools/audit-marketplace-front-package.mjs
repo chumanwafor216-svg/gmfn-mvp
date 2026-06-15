@@ -111,7 +111,7 @@ assertContains(
     id: "marketplace.row.records-links",
     glyph: "links",
     label: "Link Center",
-    tags: ["Join", "Verify", "Shop Face", "Paid Repost"],
+    tags: ["Join", "Verify", "Create", "Shop Face"],
   },
   {
     id: "marketplace.extra-tools.toggle",

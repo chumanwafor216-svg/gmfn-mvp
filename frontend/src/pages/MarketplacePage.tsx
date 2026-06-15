@@ -6618,7 +6618,7 @@ export default function MarketplacePage() {
                   Public Links
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Verify, invite, and share the shop.
+                  Verify, invite, create, or share the shop.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
@@ -6630,6 +6630,11 @@ export default function MarketplacePage() {
                     style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
                   >
                     Invite
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
+                  >
+                    Create
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
@@ -7695,13 +7700,14 @@ export default function MarketplacePage() {
                 Access & Public Links
               </div>
               <div style={marketplaceLinkHeroSubtitleStyle(isCompact)}>
-                Verify the community, invite someone, or share the public shop.
+                Verify the community, invite someone, start your own community,
+                or share the public shop.
               </div>
             </div>
             <div style={marketplaceLinkHeroPillRowStyle()}>
               <span style={marketplaceLinkHeroPillStyle()}>
                 <MarketplaceGlyph name="links" size={16} />
-                3 link jobs
+                4 link jobs
               </span>
               <span style={marketplaceLinkHeroPillStyle()}>
                 <MarketplaceGlyph name="spark" size={16} />
@@ -7766,6 +7772,29 @@ export default function MarketplacePage() {
                     </span>
                     <span style={marketplaceLinkChooserDetailStyle(isCompact)}>
                       Prepare a trusted join invite.
+                    </span>
+                  </span>
+                </StableButton>
+                <StableButton
+                  debugId="marketplace.links.choose.create-community"
+                  type="button"
+                  onClick={(event) => {
+                    cancelMarketplaceSectionScroll();
+                    pendingMarketplaceSectionRef.current = "";
+                    openMarketplaceRoute(event, "/create");
+                  }}
+                  stableHeight={isCompact ? 68 : 88}
+                  style={marketplaceLinkChooserButtonStyle(isCompact)}
+                >
+                  <span aria-hidden="true" style={marketplaceLinkRowIconStyle("navy", isCompact)}>
+                    <MarketplaceGlyph name="members" size={isCompact ? 24 : 28} />
+                  </span>
+                  <span style={marketplaceLinkChooserTextStyle()}>
+                    <span style={marketplaceLinkChooserTitleStyle(isCompact)}>
+                      Create Community
+                    </span>
+                    <span style={marketplaceLinkChooserDetailStyle(isCompact)}>
+                      Start your own group with the same GSN ID.
                     </span>
                   </span>
                 </StableButton>

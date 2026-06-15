@@ -55366,3 +55366,54 @@ GSN-branded invite composer and invite-entry continuity.
     invite message on-screen and can still send it;
   - the best next product improvement remains a dedicated Join Invite route or
     sheet if the full Marketplace page keeps producing phone-only instability.
+
+## 2026-06-15 - Join Entry GSN ID Wording And Public Links Create Route
+
+- Trigger:
+  - owner asked to stop mixing "GSN number", "GSM number", and "No GSN ID" on
+    the join request entry form;
+  - owner also asked for Create Community to appear inside Marketplace Public
+    Links so an existing member can start their own community instead of only
+    joining another one.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - first path now reads as an existing-member path using `GSN ID`;
+    - second path now reads `New to GSN`, so it is not a negative/no-ID label;
+    - helper, label, error, and recovery copy now say `GSN ID` instead of
+      `GSN number`.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - backend join-request error messages now say `GSN ID` instead of
+      `GSN number`; no schema, permission, quota, or identity logic changed.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace Public Links now shows four jobs: Verify, Invite, Create, and
+      Shop Face;
+    - added `Create Community`, routed directly to `/create`, preserving the
+      create-community flow as distinct from join/invite.
+  - audit tools were updated to cage the new wording, the fourth Public Links
+    job, the Create Community route, and the Marketplace button/native-field
+    counts.
+- Verification:
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-front-package`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_join_requests.py`
+    with 52 tests passing.
+  - Passed Playwright mobile Chromium route smoke:
+    Marketplace -> Public Links -> Create Community landed on `/create`.
+- Unabated truth:
+  - this fixes wording consistency and adds the missing Create route without
+    merging create and join;
+  - it does not claim the real Android jumpiness is solved by this wording
+    change alone;
+  - the Create Community route should still be tested on the owner's real
+    phone after deployment because the route target is verified in Chromium,
+    while phone browser chrome and keyboard movement remain the real-risk area.

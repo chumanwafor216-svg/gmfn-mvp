@@ -808,7 +808,7 @@ def _join_identity_match_error(
             "code": "join_identity_match_review_required",
             "message": (
                 "These join details look like an existing GSN identity. "
-                "Enter the existing GSN number if it belongs to you, or ask "
+                "Enter the existing GSN ID if it belongs to you, or ask "
                 "the community helper to review this before a second identity "
                 "is created."
             ),
@@ -2423,7 +2423,7 @@ def create_join_request(
                 detail={
                     "code": "existing_gsn_applicant_details_required",
                     "message": (
-                        "Add the applicant name and phone number with the GSN number "
+                        "Add the applicant name and phone number with the GSN ID "
                         "so the community can recognize who is asking to join."
                     ),
                     "missing_fields": missing_existing_fields,
@@ -2487,7 +2487,7 @@ def create_join_request(
                     "code": "existing_gsn_id_required",
                     "message": (
                         "This phone number is already tied to an existing GSN identity. "
-                        "Enter that GSN number on this invite so the community request "
+                        "Enter that GSN ID on this invite so the community request "
                         "can reuse one identity."
                     ),
                     "invite_code": invite_code,

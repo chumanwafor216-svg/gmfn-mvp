@@ -39,8 +39,8 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open access and public links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Public Links[\s\S]*?Verify, invite, and share the shop\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Shop Face/,
-  "Public Links grouped card must open marketplace-owned links and advertise only verify, invite, and shop sharing."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open access and public links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Public Links[\s\S]*?Verify, invite, create, or share the shop\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face/,
+  "Public Links grouped card must open marketplace-owned links and advertise verify, invite, create, and shop sharing."
 );
 
 assertContains(
@@ -68,6 +68,7 @@ if (!recordsLinksSection.text) {
     "marketplace.links.toggle",
     "marketplace.links.choose.join",
     "marketplace.links.choose.verify",
+    "marketplace.links.choose.create-community",
     "marketplace.links.choose.shop-face",
     "marketplace.links.back-to-center",
     "marketplace.links.join.copy",
@@ -106,12 +107,13 @@ if (!recordsLinksSection.text) {
   [
     /Access & public links/,
     /Access & Public Links/,
-    /Verify the community, invite someone, or share the public shop\./,
-    /3 link jobs/,
+    /Verify the community, invite someone, start your own community,[\s\S]*?or share the public shop\./,
+    /4 link jobs/,
     /1 active/,
     /Fast links/,
     /debugId="marketplace\.links\.choose\.verify"[\s\S]*?Verify Community/,
     /debugId="marketplace\.links\.choose\.join"[\s\S]*?Invite Someone/,
+    /debugId="marketplace\.links\.choose\.create-community"[\s\S]*?Create Community[\s\S]*?Start your own group with the same GSN ID/,
     /debugId="marketplace\.links\.choose\.shop-face"[\s\S]*?Public Shop Face/,
     /debugId="marketplace\.links\.back-to-center"[\s\S]*?Back to Link Center/,
     /activeLinkCenterTool === "join"[\s\S]*?activeLinkCenterTool === "verify"[\s\S]*?activeLinkCenterTool === "shopFace"[\s\S]*?activeLinkCenterTool === "repost"/,
