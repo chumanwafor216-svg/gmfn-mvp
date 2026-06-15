@@ -1,3 +1,59 @@
+## 2026-06-15 - Marketplace Join Fields Stop Swallowing Phone Focus
+
+- Trigger:
+  - owner retested phone Chrome on `192.168.1.13:5174/app/marketplace` and
+    reported the Marketplace Join Invite page remained effectively unusable:
+    sender focused rarely, receiver never, and short note never.
+- Devil's-advocate finding:
+  - the previous "field protection" still had a bad assumption: native inputs
+    were marked as fields, but also stopped pointer, mouse, and click
+    propagation;
+  - that can be safe in desktop automation while still interfering with real
+    mobile Chrome's native focus/keyboard sequence;
+  - automated tests passing did not prove the real phone was fixed.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - `marketplaceFieldTouchProps` now only marks recent pointer/focus
+      interaction and keeps `data-gmfn-field-root` / debug metadata;
+    - removed field-level `stopPropagation` / `stopMarketplaceTap` from native
+      inputs/selects/textareas so phone Chrome owns normal field focus;
+    - allowed the active Link Center tool stack, expanded Link row, and Join
+      field shells to use visible overflow so native focus UI is not clipped by
+      the active card.
+  - Audits updated:
+    - `frontend/tools/audit-marketplace-touch-blockers.mjs`;
+    - `frontend/tools/audit-marketplace-button-inventory.mjs`;
+    - `frontend/tools/audit-button-stability.mjs`.
+- Verification:
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Local Playwright mobile-size check against
+    `http://127.0.0.1:5174/app/marketplace`:
+    - opened Marketplace;
+    - tapped Public Links;
+    - tapped Invite;
+    - focused and filled sender, receiver, and short note five times each;
+    - all 15 field focus/fill attempts succeeded;
+    - tap trace showed `field-click-accepted` for sender, receiver, and short
+      note, with no failures.
+- Unabated truth:
+  - this removes a real code-level blocker that the prior stabilization had
+    accidentally preserved;
+  - it still does not replace the owner's real phone Chrome test, because
+    Playwright does not reproduce the Android browser address bar and keyboard
+    exactly;
+  - if this still fails physically, the next honest move is to split the Join
+    Invite form into its own route/sheet or suspend Marketplace's auto-landing
+    scroll for the active Link Center lane, not to add more field wrappers.
+
 ### Marketplace join invite sender is now editable (2026-06-14)
 
 - Trigger:

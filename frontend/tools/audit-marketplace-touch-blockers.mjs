@@ -82,9 +82,22 @@ const fieldHelper = functionBody(marketplaceSource, "marketplaceFieldTouchProps"
 assertContains(
   marketplaceFile,
   fieldHelper.text,
-  /const rememberMarketplaceFieldPointer[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?const rememberMarketplaceFieldFocus[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: rememberMarketplaceFieldPointer[\s\S]*?onFocusCapture: rememberMarketplaceFieldFocus[\s\S]*?onClick: stopMarketplaceTap/,
-  "Marketplace native fields must mark pointer/focus interaction early and keep field-only tap guards so keyboard taps do not replay nearby actions."
+  /const rememberMarketplaceFieldPointer[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?const rememberMarketplaceFieldFocus[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: rememberMarketplaceFieldPointer[\s\S]*?onFocusCapture: rememberMarketplaceFieldFocus/,
+  "Marketplace native fields must mark pointer/focus interaction early and keep field-only metadata so keyboard taps do not replay nearby actions."
 );
+
+const fieldBlocker = fieldHelper.text.match(
+  /stopPropagation|stopMarketplaceTap|onClick(?:Capture)?:|onPointerDown:|onPointerUp(?:Capture)?:|onMouseDown(?:Capture)?:/
+);
+if (fieldBlocker) {
+  addFinding(
+    marketplaceFile,
+    marketplaceSource,
+    fieldHelper.start + fieldBlocker.index,
+    "Marketplace native fields must not swallow pointer/mouse/click events. Real phone Chrome needs normal native focus behavior.",
+    fieldBlocker[0]
+  );
+}
 
 if (/\.focus\(/.test(fieldHelper.text)) {
   addFinding(

@@ -193,8 +193,14 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?onPointerDownCapture[\s\S]*?onPointerDown[\s\S]*?onPointerUpCapture[\s\S]*?onPointerUp[\s\S]*?onMouseDownCapture[\s\S]*?onMouseDown[\s\S]*?onClickCapture[\s\S]*?onClick[\s\S]*?function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-surface-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?\};[\s\S]*?\}/,
-  "Marketplace fields may stop their own tap propagation, but larger inner surfaces must be neutral metadata-only surfaces so the global tap guard does not treat whole panels as actions."
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?onPointerDownCapture: rememberMarketplaceFieldPointer[\s\S]*?onFocusCapture: rememberMarketplaceFieldFocus[\s\S]*?function marketplaceSurfaceTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-surface-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?\};[\s\S]*?\}/,
+  "Marketplace fields must mark field interactions without swallowing native phone focus, and larger inner surfaces must stay neutral metadata-only surfaces so the global tap guard does not treat whole panels as actions."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceFieldTouchProps\(debugId: string\)(?:(?!function marketplaceSurfaceTouchProps)[\s\S])*?(stopPropagation|stopMarketplaceTap|onClick(?:Capture)?:|onPointerDown:|onPointerUp(?:Capture)?:|onMouseDown(?:Capture)?:)/,
+  "Marketplace native fields must not stop pointer/mouse/click propagation because phone Chrome must own native input focus."
 );
 
 assertNotContains(

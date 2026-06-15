@@ -1194,19 +1194,10 @@ function marketplaceRecentlyInteractedWithField(ms = 2400): boolean {
 }
 
 function marketplaceFieldTouchProps(debugId: string) {
-  const stopMarketplaceTap = (event: React.SyntheticEvent<HTMLElement>) => {
-    event.stopPropagation();
-  };
-  const rememberMarketplaceFieldPointer = (
-    event: React.SyntheticEvent<HTMLElement>
-  ) => {
-    event.stopPropagation();
+  const rememberMarketplaceFieldPointer = () => {
     markMarketplaceFieldInteraction();
   };
-  const rememberMarketplaceFieldFocus = (
-    event: React.SyntheticEvent<HTMLElement>
-  ) => {
-    event.stopPropagation();
+  const rememberMarketplaceFieldFocus = () => {
     markMarketplaceFieldInteraction();
   };
 
@@ -1214,14 +1205,7 @@ function marketplaceFieldTouchProps(debugId: string) {
     "data-gmfn-field-root": "true",
     "data-gmfn-debug-id": debugId,
     onPointerDownCapture: rememberMarketplaceFieldPointer,
-    onPointerDown: stopMarketplaceTap,
-    onPointerUpCapture: stopMarketplaceTap,
-    onPointerUp: stopMarketplaceTap,
-    onMouseDownCapture: stopMarketplaceTap,
-    onMouseDown: stopMarketplaceTap,
     onFocusCapture: rememberMarketplaceFieldFocus,
-    onClickCapture: stopMarketplaceTap,
-    onClick: stopMarketplaceTap,
   };
 }
 
@@ -2257,7 +2241,7 @@ function marketplaceLinkActiveToolStackStyle(): React.CSSProperties {
     width: "100%",
     maxWidth: "100%",
     minWidth: 0,
-    overflow: "hidden",
+    overflow: "visible",
     overflowAnchor: "none",
     transition: "none",
   };
@@ -2282,7 +2266,7 @@ function marketplaceLinkRowStyle(isCompact: boolean, expanded = false): React.CS
     padding: isCompact ? 9 : 14,
     display: "grid",
     gap: isCompact ? 8 : expanded ? 12 : 10,
-    overflow: "hidden",
+    overflow: expanded ? "visible" : "hidden",
     overflowAnchor: "none",
     transition: "none",
   };
@@ -3392,7 +3376,7 @@ function marketplaceJoinFieldShellStyle(
     gap: 6,
     alignContent: "start",
     minWidth: 0,
-    overflow: "hidden",
+    overflow: "visible",
     overflowAnchor: "none",
     transition: "none",
     height: shellHeight,

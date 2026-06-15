@@ -169,8 +169,13 @@ for (const field of nativeFields) {
 }
 
 assertContains(
-  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?const rememberMarketplaceFieldPointer[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?const rememberMarketplaceFieldFocus[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: rememberMarketplaceFieldPointer[\s\S]*?onPointerDown: stopMarketplaceTap[\s\S]*?onPointerUpCapture: stopMarketplaceTap[\s\S]*?onPointerUp: stopMarketplaceTap[\s\S]*?onMouseDownCapture: stopMarketplaceTap[\s\S]*?onMouseDown: stopMarketplaceTap[\s\S]*?onFocusCapture: rememberMarketplaceFieldFocus[\s\S]*?onClickCapture: stopMarketplaceTap[\s\S]*?onClick: stopMarketplaceTap/,
-  "Marketplace native field tap roots must mark recent field interaction early, keep field-only debug metadata, and guard pointer/mouse/click events without forcing programmatic focus or registering as action roots."
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?const rememberMarketplaceFieldPointer[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?const rememberMarketplaceFieldFocus[\s\S]*?markMarketplaceFieldInteraction\(\)[\s\S]*?"data-gmfn-field-root": "true"[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: rememberMarketplaceFieldPointer[\s\S]*?onFocusCapture: rememberMarketplaceFieldFocus/,
+  "Marketplace native field tap roots must mark recent field interaction early and keep field-only debug metadata without swallowing native mobile focus/click events."
+);
+
+assertNotContains(
+  /function marketplaceFieldTouchProps\(debugId: string\)(?:(?!function marketplaceSurfaceTouchProps)[\s\S])*?(stopPropagation|stopMarketplaceTap|onClick(?:Capture)?:|onPointerDown:|onPointerUp(?:Capture)?:|onMouseDown(?:Capture)?:)/,
+  "Marketplace native fields must not stop pointer/mouse/click propagation; real phone Chrome must own native input focus."
 );
 
 assertNotContains(
@@ -209,8 +214,8 @@ assertContains(
 );
 
 assertContains(
-  /function marketplaceLinkActiveToolStackStyle\(\): React\.CSSProperties \{[\s\S]*?width: "100%"[\s\S]*?maxWidth: "100%"[\s\S]*?minWidth: 0[\s\S]*?overflow: "hidden"[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?style=\{marketplaceLinkActiveToolStackStyle\(\)\}/,
-  "Marketplace Link Center selected-tool stack must keep a stable non-moving shell around the active tool."
+  /function marketplaceLinkActiveToolStackStyle\(\): React\.CSSProperties \{[\s\S]*?width: "100%"[\s\S]*?maxWidth: "100%"[\s\S]*?minWidth: 0[\s\S]*?overflow: "visible"[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?style=\{marketplaceLinkActiveToolStackStyle\(\)\}/,
+  "Marketplace Link Center selected-tool stack must keep a stable shell while allowing native field focus UI to escape clipping."
 );
 
 assertContains(
