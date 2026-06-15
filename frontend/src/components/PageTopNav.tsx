@@ -6,6 +6,7 @@ type NavItem = {
   label: string;
   to: string;
   disabled?: boolean;
+  preserveOrigin?: boolean;
 };
 
 type PageTopNavProps = {
@@ -174,6 +175,7 @@ function renderNavRow(
             key={`${item.label}-${index}`}
             to={item.to}
             kind={kind}
+            preserveOrigin={item.preserveOrigin}
             style={navActionStyle(kind, false, compact)}
             debugId={`page-top-nav.${kind}.${item.label
               .toLowerCase()
@@ -234,7 +236,7 @@ export default function PageTopNav(props: PageTopNavProps) {
   const topLinks: NavItem[] = [
     homeTo && homeLabel ? { label: homeLabel, to: homeTo } : null,
     resolvedBackTo && resolvedBackLabel
-      ? { label: resolvedBackLabel, to: resolvedBackTo }
+      ? { label: resolvedBackLabel, to: resolvedBackTo, preserveOrigin: false }
       : null,
   ]
     .filter(Boolean)

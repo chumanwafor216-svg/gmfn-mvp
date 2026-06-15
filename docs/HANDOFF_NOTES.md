@@ -1,3 +1,53 @@
+## 2026-06-15 - App-Wide Source Return Navigator
+
+- Trigger:
+  - owner said Marketplace should not be frozen yet, but pages and buttons need
+    steady polishing;
+  - owner identified the main missing navigation feature as an in-page way to
+    go back to the page the user came from, across Marketplace and other
+    authenticated areas.
+- Changed:
+  - `frontend/src/components/OriginLink.tsx`
+    - added `preserveOrigin`, defaulting to `true`, so normal forward links
+      still carry source route state;
+    - explicit return links can now set `preserveOrigin={false}` so going Back
+      does not rewrite the origin and create a confusing ping-pong trail.
+  - `frontend/src/components/PageTopNav.tsx`
+    - origin-aware Back links now opt out of origin rewriting;
+    - the shared top-nav link renderer now passes the `preserveOrigin` contract
+      through to `StableCtaLink`.
+  - `frontend/src/layout/AppLayout.tsx`
+    - added a compact authenticated in-page `Return path` strip above the page
+      content whenever route state contains a safe internal origin path;
+    - the strip labels the source page, for example `Back to Dashboard`, and
+      returns cleanly without creating another origin loop;
+    - the strip is inside the scrollable page content, not the fixed mobile top
+      bar or bottom rail, to avoid adding more fixed chrome.
+  - `frontend/tools/audit-inner-navigation-origin.mjs`
+    - now cages the `preserveOrigin` escape hatch, PageTopNav clean Back links,
+      and the AppLayout shared return strip.
+- Verification:
+  - Passed `npm run audit:inner-navigation-origin`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Browser plugin was unavailable, so verified with local Playwright against
+    `http://127.0.0.1:5174` using system Edge:
+    - seeded a pilot auth token;
+    - opened `/app/dashboard`;
+    - tapped Marketplace;
+    - confirmed the shared strip showed `Back to Dashboard`;
+    - tapped Back and confirmed the route returned to `/app/dashboard`.
+- Unabated truth:
+  - this gives the app a real shared return path, but it is not a complete
+    button audit for every page;
+  - direct refreshes and manually typed URLs cannot know where the user came
+    from, so the strip appears only when route state carries a valid source;
+  - Marketplace is still editable and not frozen; this change cages one
+    navigation weakness before the next button polish pass.
+
 ## 2026-06-15 - Compact WhatsApp Join Invite Message
 
 - Trigger:

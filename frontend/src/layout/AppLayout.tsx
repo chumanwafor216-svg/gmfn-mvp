@@ -9,6 +9,7 @@ import { StableButton, StableCtaLink } from "../components/StableButton";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
+import { currentPath, isSafeInternalPath } from "../lib/nav";
 import { routeWithCommunity } from "../lib/appRoutes";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { publicShopPath } from "../lib/publicLinks";
@@ -102,6 +103,31 @@ function writeRole(role: string): void {
 
 function pathOnly(to: string): string {
   return String(to || "").split("?")[0].split("#")[0] || "/";
+}
+
+function routeParts(to: string): { pathname: string; search: string } {
+  const raw = String(to || "").trim();
+  const hashless = raw.split("#")[0] || "/";
+  const [pathnameRaw, searchRaw = ""] = hashless.split("?");
+  return {
+    pathname: pathnameRaw || "/",
+    search: searchRaw ? `?${searchRaw}` : "",
+  };
+}
+
+function originPathFromState(
+  location: ReturnType<typeof useLocation>
+): string {
+  const current = currentPath(location);
+  const raw =
+    location.state && typeof location.state === "object"
+      ? String(
+          (location.state as any).originPath || (location.state as any).from || ""
+        ).trim()
+      : "";
+
+  if (!raw || raw === current || !isSafeInternalPath(raw)) return "";
+  return raw;
 }
 
 function isItemActive(
@@ -1414,6 +1440,68 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   };
 }
 
+function sourceReturnStrip(isMobile: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) auto",
+    gap: isMobile ? 8 : 12,
+    alignItems: "center",
+    marginBottom: isMobile ? 12 : 16,
+    padding: isMobile ? "10px 11px" : "12px 14px",
+    borderRadius: isMobile ? 14 : 16,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.98) 100%)",
+    border: "1px solid rgba(29,95,212,0.12)",
+    boxShadow: "0 10px 22px rgba(15,23,42,0.07)",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function sourceReturnCopy(): React.CSSProperties {
+  return {
+    minWidth: 0,
+    display: "grid",
+    gap: 2,
+  };
+}
+
+function sourceReturnEyebrow(): React.CSSProperties {
+  return {
+    color: "#64748B",
+    fontSize: 11,
+    fontWeight: 900,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+  };
+}
+
+function sourceReturnTitle(): React.CSSProperties {
+  return {
+    color: "#0B1F33",
+    fontSize: 15,
+    fontWeight: 900,
+    lineHeight: 1.16,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+}
+
+function sourceReturnButton(isMobile: boolean): React.CSSProperties {
+  return {
+    width: isMobile ? "100%" : undefined,
+    minHeight: 40,
+    height: 40,
+    maxHeight: 40,
+    borderRadius: 12,
+    padding: "9px 12px",
+    whiteSpace: "nowrap",
+    fontSize: 13,
+  };
+}
+
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -1747,6 +1835,17 @@ export default function AppLayout() {
     canUseAdminTools,
     taskMode
   );
+  const originPath = originPathFromState(location);
+  const originRoute = originPath ? routeParts(originPath) : null;
+  const originMeta = originRoute
+    ? findCurrentRouteMeta(
+        originRoute.pathname,
+        originRoute.search,
+        groups,
+        canUseAdminTools,
+        null
+      )
+    : null;
 
   const pageActions = useMemo(
     () =>
@@ -2277,6 +2376,28 @@ export default function AppLayout() {
       <main
         style={mainContent(isMobile, !!taskMode)}
       >
+        {originPath && originMeta ? (
+          <section
+            aria-label="Return to previous page"
+            style={sourceReturnStrip(isMobile)}
+          >
+            <div style={sourceReturnCopy()}>
+              <div style={sourceReturnEyebrow()}>Return path</div>
+              <div style={sourceReturnTitle()}>
+                Back to {originMeta.page}
+              </div>
+            </div>
+            <StableCtaLink
+              to={originPath}
+              preserveOrigin={false}
+              kind="secondary"
+              debugId="app-layout.source-return"
+              style={sourceReturnButton(isMobile)}
+            >
+              Back
+            </StableCtaLink>
+          </section>
+        ) : null}
         <WorkspaceCompanionBridge />
         <WorkspaceSettingsBridge />
         <Outlet />

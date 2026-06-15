@@ -9,6 +9,7 @@ const files = {
   nav: "src/lib/nav.ts",
   originLink: "src/components/OriginLink.tsx",
   pageTopNav: "src/components/PageTopNav.tsx",
+  appLayout: "src/layout/AppLayout.tsx",
 };
 const findings = [];
 
@@ -28,6 +29,7 @@ function assertContains(source, file, pattern, message) {
 const navSource = sourceOf(files.nav);
 const originLinkSource = sourceOf(files.originLink);
 const pageTopNavSource = sourceOf(files.pageTopNav);
+const appLayoutSource = sourceOf(files.appLayout);
 
 assertContains(
   navSource,
@@ -51,6 +53,13 @@ assertContains(
 );
 
 assertContains(
+  originLinkSource,
+  files.originLink,
+  /preserveOrigin\s*=\s*true[\s\S]*?const nextState = preserveOrigin[\s\S]*?: state;/,
+  "OriginLink must allow explicit return links to opt out of rewriting the source origin."
+);
+
+assertContains(
   pageTopNavSource,
   files.pageTopNav,
   /const resolvedBackLabel =[\s\S]*?backLabel \|\| \(originPath && originPath !== currentPath \? "Back" : ""\)/,
@@ -60,8 +69,29 @@ assertContains(
 assertContains(
   pageTopNavSource,
   files.pageTopNav,
-  /resolvedBackTo && resolvedBackLabel[\s\S]*?\{ label: resolvedBackLabel, to: resolvedBackTo \}/,
-  "PageTopNav must render the origin-aware Back link when available."
+  /resolvedBackTo && resolvedBackLabel[\s\S]*?\{ label: resolvedBackLabel, to: resolvedBackTo, preserveOrigin: false \}/,
+  "PageTopNav must render the origin-aware Back link without rewriting the origin."
+);
+
+assertContains(
+  pageTopNavSource,
+  files.pageTopNav,
+  /<StableCtaLink[\s\S]*?preserveOrigin=\{item\.preserveOrigin\}/,
+  "PageTopNav must pass preserveOrigin through to rendered links."
+);
+
+assertContains(
+  appLayoutSource,
+  files.appLayout,
+  /const originPath = originPathFromState\(location\);[\s\S]*?const originMeta = originRoute[\s\S]*?findCurrentRouteMeta/,
+  "AppLayout must resolve source route metadata for the shared in-page return navigator."
+);
+
+assertContains(
+  appLayoutSource,
+  files.appLayout,
+  /aria-label="Return to previous page"[\s\S]*?Back to \{originMeta\.page\}[\s\S]*?preserveOrigin=\{false\}/,
+  "AppLayout must render a visible return strip that goes back without rewriting origin."
 );
 
 if (findings.length > 0) {
@@ -73,5 +103,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Inner navigation origin audit passed: links, programmatic navigation, and PageTopNav share a source-aware Back contract."
+  "Inner navigation origin audit passed: links, programmatic navigation, PageTopNav, and the app shell share a source-aware Back contract."
 );

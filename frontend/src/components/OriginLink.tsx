@@ -7,6 +7,7 @@ type OriginLinkProps = Omit<LinkProps, "to"> & {
   to: string;
   preserveSearch?: boolean;
   preserveHash?: boolean;
+  preserveOrigin?: boolean;
 };
 
 function isExternalTarget(to: string): boolean {
@@ -65,6 +66,7 @@ export default function OriginLink(props: OriginLinkProps) {
     to,
     preserveSearch = false,
     preserveHash = false,
+    preserveOrigin = true,
     state,
     children,
     ...rest
@@ -109,8 +111,8 @@ export default function OriginLink(props: OriginLinkProps) {
     preserveHash
   );
 
-  const nextState =
-    state && typeof state === "object"
+  const nextState = preserveOrigin
+    ? state && typeof state === "object"
       ? {
           ...(state as Record<string, unknown>),
           originPath: `${location.pathname}${location.search}${location.hash}`,
@@ -119,7 +121,8 @@ export default function OriginLink(props: OriginLinkProps) {
       : {
           originPath: `${location.pathname}${location.search}${location.hash}`,
           from: `${location.pathname}${location.search}${location.hash}`,
-        };
+        }
+    : state;
 
   const linkDebugId =
     typeof (rest as Record<string, unknown>)["data-cta-id"] === "string"
