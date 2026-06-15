@@ -80,6 +80,7 @@
     "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
     "audit:payment-instruction-phone-rows": "node tools/audit-payment-instruction-phone-rows.mjs",
+    "smoke:live-marketplace-join-form": "node tools/smoke-live-marketplace-join-form.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },

@@ -1,3 +1,42 @@
+## 2026-06-15 - Live Marketplace Join Form Smoke Harness
+
+- Trigger:
+  - owner asked to continue and resolve every audit gap before phone testing
+    continues.
+  - the remaining high-risk user pain is the Marketplace -> Public Links ->
+    Invite Someone form jumping or refusing to focus on phone.
+- Changed:
+  - `frontend/tools/smoke-live-marketplace-join-form.mjs`
+    - added a Playwright smoke test against the deployed Render frontend;
+    - injects clean authenticated local storage and mocks live API responses so
+      the test isolates the deployed UI shell instead of relying on the broken
+      live demo account;
+    - opens Marketplace, Public Links, and Invite Someone;
+    - fills sender, receiver, short note, relationship, known duration, and
+      private relationship note;
+    - prepares the reusable join link and verifies Copy Invite plus WhatsApp
+      become enabled.
+  - `frontend/package.json`
+    - added `smoke:live-marketplace-join-form`.
+- Verification:
+  - Passed `node tools/smoke-live-marketplace-join-form.mjs` from `frontend`
+    with Playwright Chromium outside the sandbox.
+  - Result:
+    - deployed Marketplace loaded with mocked authenticated data;
+    - Public Links opened;
+    - Invite Someone opened;
+    - all join invite fields accepted input;
+    - Prepare Link completed;
+    - Copy Invite and WhatsApp were enabled;
+    - `fieldRoots=6`, matching the expected editable join fields.
+- Unabated truth:
+  - this proves the deployed UI shell and field/button wiring can work when
+    authenticated data is present.
+  - it does not prove the real Render login/account path, because the documented
+    demo account failed with 401 on live Render.
+  - it does not replace the owner's Android Chrome test; it gives us a repeatable
+    failure detector for the exact join page before and after phone reports.
+
 ## 2026-06-15 - App-Wide Readiness Audit Gap Closure
 
 - Trigger:
