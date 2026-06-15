@@ -1,3 +1,53 @@
+## 2026-06-15 - App-Wide Readiness Audit Gap Closure
+
+- Trigger:
+  - owner asked to continue without stopping and resolve every remaining audit
+    gap so phone testing can continue.
+  - app-wide audit sweep had three red gaps after the prior invite-message
+    deployment.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - renamed the public-record boundary from `Public limits` to
+      `Privacy protection` so the public QR/community verification page states
+      the privacy boundary directly.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - tightened the mobile proof-task selector spacing from `70` to `52` so it
+      matches the compact Identity Integrity front-package contract.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated the Join this community lane guard to match the current intended
+      mobile/desktop split:
+      - mobile keeps the compact masked summary and three visible invite
+        actions;
+      - desktop keeps the full join-link, prepare/link-ready, copy-message,
+        email, WhatsApp, and social-share action set;
+      - manual-copy and desktop preview cards stay fixed-height.
+  - `frontend/tools/audit-button-stability.mjs`
+    - reconciled the Identity Integrity spacing guard with the newer compact
+      front-package audit (`52`, not the older `70`).
+- Verification:
+  - Passed every `frontend` audit script, including:
+    - `audit:protected-button-freeze`;
+    - `audit:button-stability`;
+    - `audit:tap-stability`;
+    - `audit:link-contracts`;
+    - `audit:trust-actions`;
+    - `audit:identity-integrity-front-package`;
+    - `audit:live-api-identity-routes`;
+    - all dashboard, community, marketplace, finance, shop, trust, entry, and
+      route-specific audits listed in `frontend/package.json`.
+  - Passed `npm --prefix frontend run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build` from `frontend` outside the sandbox. The sandboxed
+    build still hits the known Windows Vite/esbuild `spawn EPERM`, but the
+    escalated production build completed successfully.
+- Unabated truth:
+  - the automated app-wide contract suite is green now.
+  - this does not prove the phone jumpiness is gone on every real browser
+    touch path; it means the known structural/button-shell regressions are
+    caged and the remaining proof must come from live phone testing.
+  - no backend logic, route contracts, auth, schema, or deployment workflow was
+    changed in this pass.
+
 ## 2026-06-15 - Join Invite Best-Version Body Rewrite
 
 - Trigger:

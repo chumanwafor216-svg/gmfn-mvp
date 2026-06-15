@@ -2251,7 +2251,7 @@ export default function IdentityIntegrityPage() {
         <div
           data-identity-integrity-task-switcher="true"
           style={{
-            marginTop: isCompact ? 70 : 16,
+            marginTop: isCompact ? 52 : 16,
             display: "grid",
             gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
             gap: 8,

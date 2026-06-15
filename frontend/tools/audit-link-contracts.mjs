@@ -712,8 +712,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /sectionLabel\(\)}>Join this community[\s\S]*?linkReserveTextStyle\(\)[\s\S]*?Copy Join Link[\s\S]*?Refresh Join Link[\s\S]*?Copy Invite Message[\s\S]*?Email Join Link[\s\S]*?WhatsApp[\s\S]*?joinShareMessageCardStyle\(isCompact\)/,
-  "The Join this community lane must keep its compact masked fixed-height summary and stable button set/order."
+  /sectionLabel\(\)}>Join this community[\s\S]*?linkReserveTextStyle\(\)[\s\S]*?!isCompact \? \([\s\S]*?Copy Join Link[\s\S]*?debugId="marketplace\.links\.join\.refresh"[\s\S]*?Link Ready[\s\S]*?Prepare Link[\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?isCompact \? "Copy Invite" : "Copy Invite Message"[\s\S]*?!isCompact \? \([\s\S]*?Email Join Link[\s\S]*?debugId="marketplace\.links\.join\.whatsapp"[\s\S]*?WhatsApp[\s\S]*?joinShareMessageCardStyle\(isCompact\)[\s\S]*?height: isCompact \? 224 : 238[\s\S]*?!isCompact \? \([\s\S]*?joinShareMessageCardStyle\(isCompact\)/,
+  "The Join this community lane must keep its compact masked fixed-height summary, mobile three-action set, desktop full action set, and fixed-height invite previews."
 );
 
 assertContains(

@@ -503,7 +503,7 @@ export default function CommunityVerifyPage() {
                     }}
                   >
                     <h2 style={{ margin: 0, color: "#166534", fontSize: 17, fontWeight: 1000 }}>
-                      Public limits
+                      Privacy protection
                     </h2>
                     <p style={{ ...helperText(), color: "#1F3145" }}>
                       Visitors see identity, public status, and relay availability only.

@@ -724,7 +724,7 @@ assertContains(
 
 assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
-  /function selectIdentityTask\(key: IdentityTaskKey\)[\s\S]*?setActiveIdentityTask\(key\)[\s\S]*?setIdentityPhotoFile\(null\)[\s\S]*?setIdentityPhotoPreview\(""\)[\s\S]*?setPhoneTaskMessage\(""\)[\s\S]*?data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 70 : 16[\s\S]*?stableHeight=\{isCompact \? 54 : 58\}[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}[\s\S]*?data-identity-integrity-active-task="true"[\s\S]*?minHeight: isCompact \? 178 : undefined[\s\S]*?overflow: "hidden"/,
+  /function selectIdentityTask\(key: IdentityTaskKey\)[\s\S]*?setActiveIdentityTask\(key\)[\s\S]*?setIdentityPhotoFile\(null\)[\s\S]*?setIdentityPhotoPreview\(""\)[\s\S]*?setPhoneTaskMessage\(""\)[\s\S]*?data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 52 : 16[\s\S]*?stableHeight=\{isCompact \? 54 : 58\}[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}[\s\S]*?data-identity-integrity-active-task="true"[\s\S]*?minHeight: isCompact \? 178 : undefined[\s\S]*?overflow: "hidden"/,
   "Identity & Integrity proof-task selector must clear transient panels and keep the active task surface contained on phone."
 );
 
