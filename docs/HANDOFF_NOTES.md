@@ -61,7 +61,15 @@
   - it does not yet prove the phone jumpiness is gone;
   - `ClansPage` is functional but should be phone-tested because it was
     previously disconnected from `/app/clans`;
-  - no Render deploy has been done for this entry yet.
+- Publish/deploy:
+  - committed and pushed to `main` as `384bdf7`
+    (`Restore existing-member create community lane`);
+  - manually triggered GitHub Actions `Trigger Render Deploy` run
+    `27537694389` with `deploy_api=false`;
+  - workflow checked out `384bdf7`, Render accepted the frontend deploy hook,
+    and returned frontend deploy id `dep-d8nsid3bc2fs739q1420`;
+  - backend/API deploy was intentionally skipped because this change is
+    frontend routing/copy/audit/docs only.
 
 ## 2026-06-15 - Marketplace Join Link Auto-Prepares Without Admin Refresh Gate
 
