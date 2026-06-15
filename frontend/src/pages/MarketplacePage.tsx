@@ -7694,67 +7694,30 @@ export default function MarketplacePage() {
                       ? personalizedInviteMaskedLabel
                       : marketplaceJoinLinkGuidance}
                   </div>
-                  <label
+                  <div
                     style={{
                       ...marketplaceJoinFieldShellStyle(isCompact),
                       marginTop: isCompact ? 8 : 10,
                     }}
                   >
-                    <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
+                    <label
+                      htmlFor="marketplace-join-sender-name"
+                      style={marketplaceJoinFieldLabelStyle(isCompact)}
+                    >
                       From (sender)
-                    </span>
+                    </label>
                     <input
                       {...marketplaceFieldTouchProps("marketplace.join.sender-name")}
+                      id="marketplace-join-sender-name"
+                      type="text"
                       value={joinSenderName}
                       onChange={(event) => setJoinSenderName(event.target.value)}
                       placeholder="Your name"
+                      autoComplete="name"
+                      enterKeyHint="next"
                       aria-label="Sender name for join invitation"
                       style={marketplaceJoinFixedFieldStyle(isCompact)}
                     />
-                  </label>
-                  <div
-                    style={{
-                      marginTop: isCompact ? 8 : 10,
-                      display: "grid",
-                      gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                      gap: isCompact ? 8 : 10,
-                    }}
-                  >
-                    <label
-                      style={marketplaceJoinFieldShellStyle(isCompact)}
-                    >
-                      <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
-                        Receiver name
-                      </span>
-                      <input
-                        {...marketplaceFieldTouchProps("marketplace.join.recipient-name")}
-                        value={joinRecipientName}
-                        onChange={(event) => setJoinRecipientName(event.target.value)}
-                        placeholder="Receiver name"
-                        style={marketplaceJoinFixedFieldStyle(isCompact)}
-                        aria-label="Receiver name for join invitation"
-                      />
-                    </label>
-                    <label
-                      style={marketplaceJoinFieldShellStyle(isCompact)}
-                    >
-                      <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
-                        Message to receiver (optional)
-                      </span>
-                      <textarea
-                        {...marketplaceFieldTouchProps("marketplace.join.invite-note")}
-                        value={joinInviteNote}
-                        onChange={(event) => setJoinInviteNote(event.target.value)}
-                        placeholder="Short note"
-                        rows={1}
-                        style={{
-                          ...marketplaceJoinFixedFieldStyle(isCompact),
-                          resize: "none",
-                          overflowY: "hidden",
-                        }}
-                        aria-label="Short personal message for join invitation"
-                      />
-                    </label>
                   </div>
                   <div
                     style={{
@@ -7764,14 +7727,71 @@ export default function MarketplacePage() {
                       gap: isCompact ? 8 : 10,
                     }}
                   >
-                    <label
+                    <div
                       style={marketplaceJoinFieldShellStyle(isCompact)}
                     >
-                      <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
+                      <label
+                        htmlFor="marketplace-join-recipient-name"
+                        style={marketplaceJoinFieldLabelStyle(isCompact)}
+                      >
+                        Receiver name
+                      </label>
+                      <input
+                        {...marketplaceFieldTouchProps("marketplace.join.recipient-name")}
+                        id="marketplace-join-recipient-name"
+                        type="text"
+                        value={joinRecipientName}
+                        onChange={(event) => setJoinRecipientName(event.target.value)}
+                        placeholder="Receiver name"
+                        autoComplete="off"
+                        enterKeyHint="next"
+                        style={marketplaceJoinFixedFieldStyle(isCompact)}
+                        aria-label="Receiver name for join invitation"
+                      />
+                    </div>
+                    <div
+                      style={marketplaceJoinFieldShellStyle(isCompact)}
+                    >
+                      <label
+                        htmlFor="marketplace-join-invite-note"
+                        style={marketplaceJoinFieldLabelStyle(isCompact)}
+                      >
+                        Message to receiver (optional)
+                      </label>
+                      <input
+                        {...marketplaceFieldTouchProps("marketplace.join.invite-note")}
+                        id="marketplace-join-invite-note"
+                        type="text"
+                        value={joinInviteNote}
+                        onChange={(event) => setJoinInviteNote(event.target.value)}
+                        placeholder="Short note"
+                        autoComplete="off"
+                        enterKeyHint="next"
+                        style={marketplaceJoinFixedFieldStyle(isCompact)}
+                        aria-label="Short personal message for join invitation"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: isCompact ? 8 : 10,
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                      gap: isCompact ? 8 : 10,
+                    }}
+                  >
+                    <div
+                      style={marketplaceJoinFieldShellStyle(isCompact)}
+                    >
+                      <label
+                        htmlFor="marketplace-join-relationship-type"
+                        style={marketplaceJoinFieldLabelStyle(isCompact)}
+                      >
                         How do you know this person?
-                      </span>
+                      </label>
                       <select
                         {...marketplaceFieldTouchProps("marketplace.join.relationship-type")}
+                        id="marketplace-join-relationship-type"
                         value={joinRelationshipType}
                         onChange={(event) => {
                           setJoinRelationshipType(event.target.value);
@@ -7787,15 +7807,19 @@ export default function MarketplacePage() {
                           </option>
                         ))}
                       </select>
-                    </label>
-                    <label
+                    </div>
+                    <div
                       style={marketplaceJoinFieldShellStyle(isCompact)}
                     >
-                      <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
+                      <label
+                        htmlFor="marketplace-join-known-duration"
+                        style={marketplaceJoinFieldLabelStyle(isCompact)}
+                      >
                         How long have you known them?
-                      </span>
+                      </label>
                       <select
                         {...marketplaceFieldTouchProps("marketplace.join.known-duration")}
+                        id="marketplace-join-known-duration"
                         value={joinKnownDuration}
                         onChange={(event) => {
                           setJoinKnownDuration(event.target.value);
@@ -7811,9 +7835,9 @@ export default function MarketplacePage() {
                           </option>
                         ))}
                       </select>
-                    </label>
+                    </div>
                   </div>
-                  <label
+                  <div
                     style={{
                       ...marketplaceJoinFieldShellStyle(isCompact),
                       marginTop: isCompact ? 8 : 10,
@@ -7822,11 +7846,15 @@ export default function MarketplacePage() {
                       maxHeight: isCompact ? 114 : 118,
                     }}
                   >
-                    <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
+                    <label
+                      htmlFor="marketplace-join-relationship-context"
+                      style={marketplaceJoinFieldLabelStyle(isCompact)}
+                    >
                       Private GSN relationship note (optional)
-                    </span>
+                    </label>
                     <textarea
                       {...marketplaceFieldTouchProps("marketplace.join.relationship-context")}
+                      id="marketplace-join-relationship-context"
                       value={joinRelationshipContext}
                       onChange={(event) => {
                         setJoinRelationshipContext(event.target.value);
@@ -7853,7 +7881,7 @@ export default function MarketplacePage() {
                       Private trust note only. Do not add phone numbers, bank
                       details, exact addresses, or gossip.
                     </span>
-                  </label>
+                  </div>
                   <div
                     {...marketplaceSurfaceTouchProps("marketplace.links.join.actions")}
                     style={marketplaceJoinActionsStyle(isCompact)}

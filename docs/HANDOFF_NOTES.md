@@ -55030,3 +55030,55 @@ GSN-branded invite composer and invite-entry continuity.
   - it still needs the owner's live phone Chrome test because the deepest shell
     risk, AppLayout's `100dvh` inner scroller during keyboard entry, remains
     route-global and was intentionally not changed in this pass.
+
+## 2026-06-15 - Marketplace Join Invite Field Focus Tightening
+
+- Trigger:
+  - owner reported the Marketplace `Invite Someone` lane opened, but the
+    sender field focused only intermittently and the `Short note` field did not
+    focus at all on phone Chrome.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - replaced wrapper-label field shells in the Join Invite form with plain
+      fixed-height `div` shells;
+    - added explicit `label htmlFor` / native `id` pairs for:
+      - sender name;
+      - receiver name;
+      - receiver-facing short note;
+      - relationship type;
+      - known duration;
+      - private relationship context;
+    - changed the receiver-facing `Short note` from a one-row `textarea` to a
+      normal one-line `input type="text"` with the same stable field geometry;
+    - kept field tap guards only on native `input` / `select` / `textarea`
+      controls.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - now rejects the old tiny-textarea short-note pattern;
+    - now requires explicit Join field label/id wiring.
+  - `frontend/tools/audit-marketplace-touch-blockers.mjs`
+    - now verifies the Join lane uses the native one-line short-note input and
+      explicit label/id pairs.
+- Verification:
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Local `http://127.0.0.1:5174/app/marketplace` returned 200.
+  - Playwright mobile Chromium check, using the pilot fake-token/network-failure
+    fallback state, opened Marketplace -> Public Links -> Invite Someone and
+    confirmed these fields focused and accepted text:
+    - `marketplace-join-sender-name`;
+    - `marketplace-join-recipient-name`;
+    - `marketplace-join-invite-note`.
+- Unabated truth:
+  - this fixes a real markup-level focus risk: wrapper labels plus a one-row
+    textarea were too fragile for the critical invite path;
+  - it does not yet prove the owner phone Chrome experience is fully stable,
+    because the automated browser is not the same active phone session and the
+    route still sits inside the shared mobile app shell.

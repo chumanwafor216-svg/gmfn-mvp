@@ -184,8 +184,13 @@ assertContains(
 );
 
 assertContains(
-  /placeholder="Short note"[\s\S]*?rows=\{1\}[\s\S]*?marketplaceJoinFixedFieldStyle\(isCompact\)[\s\S]*?resize: "none"[\s\S]*?overflowY: "hidden"/,
-  "Marketplace Join short-note field must not create a tiny internal scroll trap on mobile."
+  /<label[\s\S]*?htmlFor="marketplace-join-invite-note"[\s\S]*?Message to receiver \(optional\)[\s\S]*?<input[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.invite-note"\)\}[\s\S]*?id="marketplace-join-invite-note"[\s\S]*?type="text"[\s\S]*?placeholder="Short note"[\s\S]*?enterKeyHint="next"[\s\S]*?style=\{marketplaceJoinFixedFieldStyle\(isCompact\)\}/,
+  "Marketplace Join short-note field must be a native one-line input with an explicit label/id pair, not a tiny textarea scroll trap."
+);
+
+assertContains(
+  /htmlFor="marketplace-join-sender-name"[\s\S]*?id="marketplace-join-sender-name"[\s\S]*?htmlFor="marketplace-join-recipient-name"[\s\S]*?id="marketplace-join-recipient-name"[\s\S]*?htmlFor="marketplace-join-invite-note"[\s\S]*?id="marketplace-join-invite-note"[\s\S]*?htmlFor="marketplace-join-relationship-type"[\s\S]*?id="marketplace-join-relationship-type"[\s\S]*?htmlFor="marketplace-join-known-duration"[\s\S]*?id="marketplace-join-known-duration"[\s\S]*?htmlFor="marketplace-join-relationship-context"[\s\S]*?id="marketplace-join-relationship-context"/,
+  "Marketplace Join fields must keep explicit label/htmlFor and id wiring so mobile taps focus the intended native control."
 );
 
 assertContains(
