@@ -25,34 +25,49 @@ function safeDateTime(value: unknown): string {
 
 export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   const receiver = cleanText(args.receiver);
-  const communityName = cleanText(args.communityName) || "this GSN community";
-  const inviter = cleanText(args.inviter) || "a known GSN member";
-  const marketplaceName = cleanText(args.marketplaceName);
+  const marketplaceName =
+    cleanText(args.marketplaceName) ||
+    (cleanText(args.communityName) ? `${cleanText(args.communityName)} Marketplace` : "");
   const expiresAt = cleanText(args.expiresAt);
   const customMessage = cleanText(args.customMessage);
 
   const lines: string[] = [];
 
   lines.push(receiver ? `Hello ${receiver},` : "Hello,");
+  lines.push("");
   lines.push(
-    `${inviter} is inviting you to join ${communityName} on GSN.`
+    "You have been invited to join a community on GSN."
   );
-  lines.push("GSN helps trusted communities keep one identity, one record, and one review path for real people who know one another.");
+  lines.push("");
+  lines.push(
+    "GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust that can travel with people wherever they go."
+  );
+  lines.push("");
+  lines.push("✅ Community-backed ✅ Verifiable");
+  lines.push("✅ Portable ✅ Privacy protected");
 
   if (marketplaceName) {
-    lines.push(`Community market: ${marketplaceName}.`);
+    lines.push("");
+    lines.push(`🏛️ ${marketplaceName}`);
   }
 
   if (customMessage) {
+    lines.push("");
     lines.push(`Personal note: ${customMessage}`);
   }
 
   if (expiresAt) {
+    lines.push("");
     lines.push(`Open until: ${safeDateTime(expiresAt)}.`);
   }
 
+  lines.push("");
   lines.push(
-    "If you are interested, continue and send a request. Entry is not automatic; the community reviews first."
+    "Open the GSN link above to view the invitation and request access."
+  );
+  lines.push("");
+  lines.push(
+    "Community membership is reviewed before approval."
   );
 
   return lines;
@@ -63,29 +78,42 @@ export function buildJoinInviteDoorwayMessage(
 ): string {
   const receiver = cleanText(args.receiver);
   const communityName = cleanText(args.communityName) || "this GSN community";
-  const marketplaceName = cleanText(args.marketplaceName);
+  const marketplaceName =
+    cleanText(args.marketplaceName) ||
+    (cleanText(args.communityName) ? `${communityName} Marketplace` : "");
   const inviteLink = cleanText(args.inviteLink);
   const customMessage = cleanText(args.customMessage);
   const expiresAt = cleanText(args.expiresAt);
-  const inviter = cleanText(args.inviter) || "A known GSN member";
 
-  return [
-    inviteLink,
-    "",
-    `To: ${receiver || "Invited person"}`,
-    `From: ${inviter}`,
+  const lines: Array<string | null> = [
+    inviteLink || null,
     "",
     receiver ? `Hello ${receiver},` : "Hello,",
     "",
-    `${inviter} is inviting you to join ${communityName} on GSN.`,
-    "GSN helps trusted communities keep one identity, one record, and one review path.",
-    marketplaceName ? `Community market: ${marketplaceName}.` : "",
-    customMessage ? `Personal note: ${customMessage}` : "",
-    expiresAt ? `Open until: ${safeDateTime(expiresAt)}.` : "",
+    "You have been invited to join a community on GSN.",
     "",
-    "Tap the GSN Link preview above to open the request.",
-    "If you already have a GSN ID, enter it in the request form. If not, fill the short request form. Entry is not automatic; the community reviews first.",
-  ]
-    .filter(Boolean)
-    .join("\n");
+    "GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust that can travel with people wherever they go.",
+    "",
+    "✅ Community-backed ✅ Verifiable",
+    "✅ Portable ✅ Privacy protected",
+    "",
+    marketplaceName ? `🏛️ ${marketplaceName}` : null,
+  ];
+
+  if (customMessage) {
+    lines.push("", `Personal note: ${customMessage}`);
+  }
+
+  if (expiresAt) {
+    lines.push("", `Open until: ${safeDateTime(expiresAt)}.`);
+  }
+
+  lines.push(
+    "",
+    "Open the GSN link above to view the invitation and request access.",
+    "",
+    "Community membership is reviewed before approval."
+  );
+
+  return lines.filter((line) => line !== null).join("\n");
 }

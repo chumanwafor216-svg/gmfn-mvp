@@ -1,3 +1,45 @@
+## 2026-06-15 - Join Invite Message Portable Trust Rewrite
+
+- Trigger:
+  - owner asked to replace the join-link invitation message with a calmer
+    portable-trust explanation:
+    - `You have been invited to join a community on GSN.`
+    - `GSN helps trusted communities turn reputation, relationships, and good
+      conduct into portable trust...`
+    - check-mark proof line for community-backed, verifiable, portable, and
+      privacy-protected;
+    - bank/institution icon line for the marketplace;
+    - direct instruction to open the GSN link above and request access;
+    - review-before-approval boundary.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - rewrote `buildJoinInviteLetter()` so the visible invitation paper uses
+      the new message and icon lines;
+    - rewrote `buildJoinInviteDoorwayMessage()` so copied/WhatsApp invite text
+      keeps the compact GSN link at the top for preview, then uses the new
+      message below it;
+    - preserved optional `Personal note:` only when the sender typed one;
+    - preserved optional `Open until:` only when expiry exists.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - now cages the new portable-trust wording, proof icons, GSN-link
+      instruction, and review boundary.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now cages the new shared form-page and outbound doorway invite message.
+- Verification:
+  - Passed `npm run audit:existing-community-invite-line`.
+  - Passed `npm run audit:proof-surfaces`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this changes the message copy and preserves the icon-led proof line;
+  - it does not change the Open Graph/link-preview hero image or preview card
+    metadata;
+  - this slice is verified locally but not pushed/deployed under the current
+    batch-first pilot protocol.
+
 ## 2026-06-15 - App-Wide Source Return Navigator
 
 - Trigger:

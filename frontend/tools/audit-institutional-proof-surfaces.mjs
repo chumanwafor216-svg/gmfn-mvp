@@ -442,8 +442,8 @@ assertContains(
 );
 assertContains(
   "joinInviteMessaging",
-  /export function buildJoinInviteLetter[\s\S]*?GSN helps trusted communities keep one identity[\s\S]*?Entry is not automatic[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink[\s\S]*?`To: \$\{receiver \|\| "Invited person"\}`[\s\S]*?`From: \$\{inviter\}`[\s\S]*?Tap the GSN Link preview above to open the request\.[\s\S]*?If you already have a GSN ID, enter it in the request form[\s\S]*?Entry is not automatic; the community reviews first\./,
-  "Shared join invite messaging must keep the form-page invite and outbound doorway message short, non-repetitive, and review-aware."
+  /export function buildJoinInviteLetter[\s\S]*?You have been invited to join a community on GSN\.[\s\S]*?GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust[\s\S]*?✅ Community-backed ✅ Verifiable[\s\S]*?🏛️ \$\{marketplaceName\}[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\.[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?Hello \$\{receiver\}[\s\S]*?You have been invited to join a community on GSN\.[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\./,
+  "Shared join invite messaging must keep the form-page invite and outbound doorway message short, portable-trust focused, icon-led, and review-aware."
 );
 assertContains(
   "marketplace",

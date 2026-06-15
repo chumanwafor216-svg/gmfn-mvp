@@ -109,8 +109,8 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /GSN helps trusted communities keep one identity, one record, and one review path[\s\S]*?If you are interested, continue and send a request/,
-  "Existing-community invite message must keep the relationship-based explanation before the request form."
+  /You have been invited to join a community on GSN\.[\s\S]*?GSN helps trusted communities turn reputation, relationships, and good conduct into portable trust[\s\S]*?✅ Community-backed ✅ Verifiable[\s\S]*?✅ Portable ✅ Privacy protected[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\./,
+  "Existing-community invite message must keep the portable-trust explanation, proof icons, GSN-link instruction, and review-before-approval boundary."
 );
 
 assertContains(
