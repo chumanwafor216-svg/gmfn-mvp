@@ -15,7 +15,6 @@ import {
   type CtaIntent,
 } from "../lib/ctaTargets";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
-import { OWNER_SHOP_HASHES } from "../lib/ownerShopHandles";
 import {
   buildGsnCommunityVerifyLinkPackage,
   buildGsnPublicShopLinkPackage,
@@ -79,7 +78,6 @@ import {
   scrollElementToMarketplaceLanding,
   traceMarketplaceLanding,
 } from "../lib/marketplaceActionStability";
-import { brandClampLines } from "../styles/gmfnBrand";
 
 type CommunityRow = {
   id?: number;
@@ -248,14 +246,6 @@ type CommunityPackageStatusItem = {
   latest_payment?: ExpectedPaymentRecord | null;
 };
 
-type CommunityMemberCapacitySnapshot = {
-  included: number;
-  extra: number;
-  total: number;
-  used: number;
-  remaining: number;
-};
-
 type RoscaRoundSummary = {
   round_number?: number | null;
   payout_user_id?: number | null;
@@ -343,6 +333,12 @@ type SectionState = {
   members: boolean;
   support: boolean;
 };
+
+type LinkCenterTool =
+  | "join"
+  | "verify"
+  | "shopFace"
+  | "repost";
 
 type MarketplaceIntentItem = {
   id: string;
@@ -670,43 +666,6 @@ function rowsOf<T = any>(input: any): T[] {
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function nonNegativeWholeNumber(value: any, fallback = 0): number {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n < 0) return fallback;
-  return Math.floor(n);
-}
-
-function readCommunityMemberCapacity(
-  source: any,
-  fallbackUsed = 0
-): CommunityMemberCapacitySnapshot {
-  const included = nonNegativeWholeNumber(
-    source?.member_capacity_included,
-    15
-  );
-  const extra = nonNegativeWholeNumber(source?.member_capacity_extra, 0);
-  const total = nonNegativeWholeNumber(
-    source?.member_capacity_total,
-    included + extra
-  );
-  const used = nonNegativeWholeNumber(
-    source?.member_capacity_used,
-    fallbackUsed
-  );
-  const remaining = nonNegativeWholeNumber(
-    source?.member_capacity_remaining,
-    Math.max(total - used, 0)
-  );
-
-  return {
-    included,
-    extra,
-    total,
-    used,
-    remaining,
-  };
 }
 
 function paymentQuantity(payment?: ExpectedPaymentRecord | null): number {
@@ -1245,6 +1204,20 @@ function marketplaceSurfaceTouchProps(debugId: string) {
     "data-gmfn-surface-root": "true",
     "data-gmfn-debug-id": debugId,
   };
+}
+
+function marketplaceActiveElementIsEditable(): boolean {
+  if (typeof document === "undefined") return false;
+  const active = document.activeElement;
+  if (!active) return false;
+  const tagName = active.tagName.toLowerCase();
+
+  return (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    active.getAttribute("contenteditable") === "true"
+  );
 }
 
 function communityIdentity(row: CommunityRow | null | undefined): string {
@@ -2151,6 +2124,116 @@ function marketplaceLinkHeroPillStyle(): React.CSSProperties {
     fontWeight: 900,
     whiteSpace: "nowrap",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
+  };
+}
+
+function marketplaceLinkChooserGridStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: 14,
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+    gap: isCompact ? 9 : 12,
+    width: "100%",
+    maxWidth: "100%",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function marketplaceLinkChooserButtonStyle(
+  isCompact: boolean,
+  primary = false
+): React.CSSProperties {
+  return {
+    ...marketplaceActionStyle(primary ? "primary" : "soft"),
+    width: "100%",
+    minWidth: 0,
+    height: isCompact ? 68 : 88,
+    minHeight: isCompact ? 68 : 88,
+    maxHeight: isCompact ? 68 : 88,
+    borderRadius: isCompact ? 18 : 20,
+    padding: isCompact ? "9px 10px" : "12px 13px",
+    display: "grid",
+    gridTemplateColumns: isCompact ? "44px minmax(0, 1fr)" : "58px minmax(0, 1fr)",
+    gap: 9,
+    alignItems: "center",
+    justifyContent: "stretch",
+    textAlign: "left",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function marketplaceLinkChooserTextStyle(): React.CSSProperties {
+  return {
+    minWidth: 0,
+    maxWidth: "100%",
+    display: "grid",
+    gap: 3,
+    overflow: "hidden",
+  };
+}
+
+function marketplaceLinkChooserTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    maxWidth: "100%",
+    color: "#07172C",
+    fontSize: isCompact ? 15 : 17,
+    lineHeight: 1.08,
+    fontWeight: 950,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  };
+}
+
+function marketplaceLinkChooserDetailStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    maxWidth: "100%",
+    color: "#516579",
+    fontSize: isCompact ? 11.5 : 12.5,
+    lineHeight: 1.18,
+    fontWeight: 760,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  };
+}
+
+function marketplaceLinkToolHeaderStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: 14,
+    borderRadius: isCompact ? 18 : 20,
+    border: "1px solid rgba(11,45,74,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(247,251,255,0.99) 0%, rgba(236,245,255,0.96) 100%)",
+    padding: isCompact ? 9 : 12,
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 180px",
+    gap: 10,
+    alignItems: "center",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function marketplaceLinkActiveToolStackStyle(): React.CSSProperties {
+  return {
+    marginTop: 12,
+    display: "grid",
+    gap: 12,
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
   };
 }
 
@@ -3416,6 +3499,8 @@ export default function MarketplacePage() {
   const [joinRelationshipEvidenceRecordedKey, setJoinRelationshipEvidenceRecordedKey] =
     useState("");
   const [creatingInviteLink, setCreatingInviteLink] = useState(false);
+  const [activeLinkCenterTool, setActiveLinkCenterTool] =
+    useState<LinkCenterTool | null>(null);
   const [publicShopRecord, setPublicShopRecord] =
     useState<MarketplaceShop | null>(null);
   const [preparingPublicShopLink, setPreparingPublicShopLink] = useState(false);
@@ -3445,8 +3530,6 @@ export default function MarketplacePage() {
   const [communityPackageItems, setCommunityPackageItems] = useState<
     CommunityPackageStatusItem[]
   >([]);
-  const [communityMemberCapacity, setCommunityMemberCapacity] =
-    useState<CommunityMemberCapacitySnapshot | null>(null);
   const [roscaCycles, setRoscaCycles] = useState<RoscaCycleSummary[]>([]);
   const [roscaTitle, setRoscaTitle] = useState("Community ROSCA cycle");
   const [roscaContributionAmount, setRoscaContributionAmount] = useState("25.00");
@@ -4052,6 +4135,18 @@ export default function MarketplacePage() {
     id: string,
     attempt = 0
   ) {
+    if (marketplaceActiveElementIsEditable()) {
+      pendingMarketplaceSectionRef.current = "";
+      traceMarketplaceLanding({
+        surface: "marketplace",
+        targetId: id,
+        reason: "section-scroll-skipped-field-focus",
+        attempt,
+        skipped: true,
+      });
+      return;
+    }
+
     if (attempt === 0 && scrollFrameRef.current !== null) {
       window.cancelAnimationFrame(scrollFrameRef.current);
       scrollFrameRef.current = null;
@@ -4096,6 +4191,16 @@ export default function MarketplacePage() {
     function scheduleMarketplaceSectionScroll(sectionId: string) {
       if (typeof window === "undefined") return;
       cancelMarketplaceSectionScroll();
+      if (marketplaceActiveElementIsEditable()) {
+        pendingMarketplaceSectionRef.current = "";
+        traceMarketplaceLanding({
+          surface: "marketplace",
+          targetId: sectionId,
+          reason: "section-schedule-skipped-field-focus",
+          skipped: true,
+        });
+        return;
+      }
       pendingMarketplaceSectionRef.current = sectionId;
 
       scrollFrameRef.current = window.requestAnimationFrame(() => {
@@ -4116,6 +4221,11 @@ export default function MarketplacePage() {
     if (!sectionId) return;
     scheduleMarketplaceSectionScroll(sectionId);
   }, [sectionsOpen, scheduleMarketplaceSectionScroll]);
+
+  useEffect(() => {
+    if (sectionsOpen.tools) return;
+    setActiveLinkCenterTool(null);
+  }, [sectionsOpen.tools]);
 
   function openMarketplaceIntent(
     event: React.SyntheticEvent<HTMLElement> | undefined,
@@ -4150,6 +4260,7 @@ export default function MarketplacePage() {
     if (item.id === "invite") {
       setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "tools"));
       setSectionsOpen(focusedMarketplaceSectionState("tools"));
+      setActiveLinkCenterTool("join");
       clearStaleMarketplaceHash("marketplace-owned-links");
       scheduleMarketplaceSectionScroll("marketplace-owned-links");
       return;
@@ -4334,9 +4445,6 @@ export default function MarketplacePage() {
       setMe(meRes || null);
       setSelectedCommunity(resolvedCommunity);
       setMembers(memberRows);
-      setCommunityMemberCapacity(
-        readCommunityMemberCapacity(membersRes, memberRows.length)
-      );
       setShops(shopRows);
       setPublicShopRecord(normalizeMarketplaceShop(ownerShopRes));
       setPoolInfo(poolRes);
@@ -4810,6 +4918,7 @@ export default function MarketplacePage() {
 
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "tools"));
     setSectionsOpen(focusedMarketplaceSectionState("tools"));
+    setActiveLinkCenterTool(null);
 
     scrollToMarketplaceSection("marketplace-owned-links");
     clearMarketplaceHash();
@@ -4823,15 +4932,22 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
+    const hasRepostContext = Boolean(
+      routeRepostSource ||
+        routeRepostProductId ||
+        routeRepostBlockNumber
+    );
     const openedFromShopBlock =
-      hash === "marketplace-paid-network-placement" ||
-      routeRepostSource === "shop-diaries" ||
-      routeRepostSource === "shop-control-gallery" ||
-      Boolean(routeRepostProductId || routeRepostBlockNumber);
+      hash === "marketplace-paid-network-placement" &&
+      hasRepostContext &&
+      (routeRepostSource === "shop-diaries" ||
+        routeRepostSource === "shop-control-gallery" ||
+        Boolean(routeRepostProductId || routeRepostBlockNumber));
     if (!openedFromShopBlock) return;
 
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "tools"));
     setSectionsOpen(focusedMarketplaceSectionState("tools"));
+    setActiveLinkCenterTool("repost");
 
     const matchedProduct =
       (routeRepostProductId
@@ -5224,65 +5340,9 @@ export default function MarketplacePage() {
     });
     return map;
   }, [communityPackageItems]);
-  const extraShopBlocksPackage =
-    communityPackageByCode.get("extra_shop_blocks") || null;
-  const meetingPackage =
-    communityPackageByCode.get("community_meeting_pack") || null;
   const roscaPackage = communityPackageByCode.get("rosca_cycle") || null;
   const roscaYearlyActive =
     positiveNumber(roscaPackage?.active_remaining) > 0;
-  const communityPackageRows = useMemo(
-    () => [
-      {
-        key: "members",
-        title: "Member places",
-        value: communityMemberCapacity
-          ? `${communityMemberCapacity.used}/${communityMemberCapacity.total}`
-          : "15 included",
-        detail: communityMemberCapacity
-          ? `${communityMemberCapacity.included} included + ${communityMemberCapacity.extra} paid extra. From member 16, use Community Package.`
-          : "Normal community quota is 15 members. Extra members use Community Package.",
-        status:
-          communityMemberCapacity && communityMemberCapacity.remaining <= 0
-            ? "Buy more"
-            : "Capacity",
-      },
-      {
-        key: "shop-blocks",
-        title: "Shop blocks",
-        value: `${positiveNumber(extraShopBlocksPackage?.active_remaining)} ready`,
-        detail:
-          extraShopBlocksPackage?.message ||
-          "Extra public shop blocks are applied to this shop after payment is matched.",
-        status: "GBP 1 unit",
-      },
-      {
-        key: "rosca",
-        title: "ROSCA yearly",
-        value: roscaYearlyActive ? "Active" : "Not active",
-        detail:
-          roscaPackage?.message ||
-          "ROSCA yearly service opens contribution cycles for this community.",
-        status: "GBP 60 yearly",
-      },
-      {
-        key: "meeting",
-        title: "Meeting pack",
-        value: `${positiveNumber(meetingPackage?.active_remaining)} ready`,
-        detail:
-          meetingPackage?.message ||
-          "Meeting packs create reminders, share text, notifications, and summary evidence.",
-        status: "Package",
-      },
-    ],
-    [
-      communityMemberCapacity,
-      extraShopBlocksPackage,
-      meetingPackage,
-      roscaPackage,
-      roscaYearlyActive,
-    ]
-  );
   const latestRoscaCycle = useMemo(() => {
     if (!roscaCycles.length) return null;
     return roscaCycles[roscaCycles.length - 1] || null;
@@ -6343,7 +6403,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.row.records-links"
-              aria-label="Open Records and Links for this marketplace"
+              aria-label="Open access and public links for this marketplace"
               onClick={(event) =>
                 openMarketplaceSection(event, "tools", "marketplace-owned-links")
               }
@@ -6360,17 +6420,12 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Link Center
+                  Public Links
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Share, verify, shop, repost.
+                  Verify, invite, and share the shop.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span
-                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
-                  >
-                    Join
-                  </span>
                   <span
                     style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
                   >
@@ -6379,17 +6434,12 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
                   >
+                    Invite
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
+                  >
                     Shop Face
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
-                  >
-                    Paid Repost
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}
-                  >
-                    Packages
                   </span>
                 </span>
               </span>
@@ -7416,7 +7466,7 @@ export default function MarketplacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionLabel()}>Marketplace links</div>
+          <div style={sectionLabel()}>Access & public links</div>
           <StableButton
             debugId="marketplace.links.toggle"
             type="button"
@@ -7447,16 +7497,16 @@ export default function MarketplacePage() {
           <div style={marketplaceLinkHeroBodyStyle(isCompact)}>
             <div>
               <div style={marketplaceLinkHeroTitleStyle(isCompact)}>
-                Link Center
+                Access & Public Links
               </div>
               <div style={marketplaceLinkHeroSubtitleStyle(isCompact)}>
-                Share, verify, shop, repost.
+                Verify the community, invite someone, or share the public shop.
               </div>
             </div>
             <div style={marketplaceLinkHeroPillRowStyle()}>
               <span style={marketplaceLinkHeroPillStyle()}>
                 <MarketplaceGlyph name="links" size={16} />
-                5 lanes
+                3 link jobs
               </span>
               <span style={marketplaceLinkHeroPillStyle()}>
                 <MarketplaceGlyph name="spark" size={16} />
@@ -7471,7 +7521,125 @@ export default function MarketplacePage() {
         </div>
 
         {sectionsOpen.tools ? (
-          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <>
+            {!activeLinkCenterTool ? (
+              <div style={marketplaceLinkChooserGridStyle(isCompact)}>
+                <StableButton
+                  debugId="marketplace.links.choose.verify"
+                  type="button"
+                  onClick={(event) =>
+                    runMarketplaceAction(event, () => {
+                      cancelMarketplaceSectionScroll();
+                      pendingMarketplaceSectionRef.current = "";
+                      setActiveLinkCenterTool("verify");
+                    })
+                  }
+                  stableHeight={isCompact ? 68 : 88}
+                  style={marketplaceLinkChooserButtonStyle(isCompact, true)}
+                >
+                  <span aria-hidden="true" style={marketplaceLinkRowIconStyle("navy", isCompact)}>
+                    <MarketplaceGlyph name="verify" size={isCompact ? 24 : 28} />
+                  </span>
+                  <span style={marketplaceLinkChooserTextStyle()}>
+                    <span style={marketplaceLinkChooserTitleStyle(isCompact)}>
+                      Verify Community
+                    </span>
+                    <span style={marketplaceLinkChooserDetailStyle(isCompact)}>
+                      Open or copy the public community record.
+                    </span>
+                  </span>
+                </StableButton>
+                <StableButton
+                  debugId="marketplace.links.choose.join"
+                  type="button"
+                  onClick={(event) =>
+                    runMarketplaceAction(event, () => {
+                      cancelMarketplaceSectionScroll();
+                      pendingMarketplaceSectionRef.current = "";
+                      setActiveLinkCenterTool("join");
+                    })
+                  }
+                  stableHeight={isCompact ? 68 : 88}
+                  style={marketplaceLinkChooserButtonStyle(isCompact)}
+                >
+                  <span aria-hidden="true" style={marketplaceLinkRowIconStyle("blue", isCompact)}>
+                    <MarketplaceGlyph name="join" size={isCompact ? 24 : 28} />
+                  </span>
+                  <span style={marketplaceLinkChooserTextStyle()}>
+                    <span style={marketplaceLinkChooserTitleStyle(isCompact)}>
+                      Invite Someone
+                    </span>
+                    <span style={marketplaceLinkChooserDetailStyle(isCompact)}>
+                      Prepare a trusted join invite.
+                    </span>
+                  </span>
+                </StableButton>
+                <StableButton
+                  debugId="marketplace.links.choose.shop-face"
+                  type="button"
+                  onClick={(event) =>
+                    runMarketplaceAction(event, () => {
+                      cancelMarketplaceSectionScroll();
+                      pendingMarketplaceSectionRef.current = "";
+                      setActiveLinkCenterTool("shopFace");
+                    })
+                  }
+                  stableHeight={isCompact ? 68 : 88}
+                  style={marketplaceLinkChooserButtonStyle(isCompact)}
+                >
+                  <span aria-hidden="true" style={marketplaceLinkRowIconStyle("gold", isCompact)}>
+                    <MarketplaceGlyph name="shop" size={isCompact ? 24 : 28} />
+                  </span>
+                  <span style={marketplaceLinkChooserTextStyle()}>
+                    <span style={marketplaceLinkChooserTitleStyle(isCompact)}>
+                      Public Shop Face
+                    </span>
+                    <span style={marketplaceLinkChooserDetailStyle(isCompact)}>
+                      Refresh, copy, share, or open the shop link.
+                    </span>
+                  </span>
+                </StableButton>
+              </div>
+            ) : (
+              <>
+                <div style={marketplaceLinkToolHeaderStyle(isCompact)}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={sectionLabel()}>Selected Link Center tool</div>
+                    <div style={marketplaceLinkHeroSubtitleStyle(isCompact)}>
+                      {activeLinkCenterTool === "join"
+                        ? "Join Invite"
+                        : activeLinkCenterTool === "verify"
+                          ? "Verify Community"
+                          : activeLinkCenterTool === "shopFace"
+                          ? "Public Shop Face"
+                          : activeLinkCenterTool === "repost"
+                            ? "Paid Repost"
+                            : "Access & Public Links"}
+                    </div>
+                  </div>
+                  <StableButton
+                    debugId="marketplace.links.back-to-center"
+                    type="button"
+                    onClick={(event) =>
+                      runMarketplaceAction(event, () => setActiveLinkCenterTool(null))
+                    }
+                    stableHeight={52}
+                    style={{
+                      ...marketplaceActionStyle("soft"),
+                      width: "100%",
+                      height: 52,
+                      minHeight: 52,
+                      maxHeight: 52,
+                    }}
+                  >
+                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                      <MarketplaceGlyph name="chevron" size={18} />
+                    </span>
+                    Back to Link Center
+                  </StableButton>
+                </div>
+                <div style={marketplaceLinkActiveToolStackStyle()}>
+                {activeLinkCenterTool === "join" ? (
                 <div
                   {...marketplaceSurfaceTouchProps("marketplace.links.join.surface")}
                   style={marketplaceLinkRowStyle(isCompact, true)}
@@ -7527,7 +7695,6 @@ export default function MarketplacePage() {
                       : marketplaceJoinLinkGuidance}
                   </div>
                   <label
-                    {...marketplaceFieldTouchProps("marketplace.join.sender-name")}
                     style={{
                       ...marketplaceJoinFieldShellStyle(isCompact),
                       marginTop: isCompact ? 8 : 10,
@@ -7554,7 +7721,6 @@ export default function MarketplacePage() {
                     }}
                   >
                     <label
-                      {...marketplaceFieldTouchProps("marketplace.join.recipient-name")}
                       style={marketplaceJoinFieldShellStyle(isCompact)}
                     >
                       <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
@@ -7570,7 +7736,6 @@ export default function MarketplacePage() {
                       />
                     </label>
                     <label
-                      {...marketplaceFieldTouchProps("marketplace.join.invite-note")}
                       style={marketplaceJoinFieldShellStyle(isCompact)}
                     >
                       <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
@@ -7600,7 +7765,6 @@ export default function MarketplacePage() {
                     }}
                   >
                     <label
-                      {...marketplaceFieldTouchProps("marketplace.join.relationship-type")}
                       style={marketplaceJoinFieldShellStyle(isCompact)}
                     >
                       <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
@@ -7625,7 +7789,6 @@ export default function MarketplacePage() {
                       </select>
                     </label>
                     <label
-                      {...marketplaceFieldTouchProps("marketplace.join.known-duration")}
                       style={marketplaceJoinFieldShellStyle(isCompact)}
                     >
                       <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
@@ -7651,10 +7814,12 @@ export default function MarketplacePage() {
                     </label>
                   </div>
                   <label
-                    {...marketplaceFieldTouchProps("marketplace.join.relationship-context")}
                     style={{
                       ...marketplaceJoinFieldShellStyle(isCompact),
                       marginTop: isCompact ? 8 : 10,
+                      height: isCompact ? 114 : 118,
+                      minHeight: isCompact ? 114 : 118,
+                      maxHeight: isCompact ? 114 : 118,
                     }}
                   >
                     <span style={marketplaceJoinFieldLabelStyle(isCompact)}>
@@ -7676,6 +7841,18 @@ export default function MarketplacePage() {
                       }}
                       aria-label="Private relationship note about how you know the invited person"
                     />
+                    <span
+                      style={{
+                        ...helperText(),
+                        fontSize: 10.5,
+                        lineHeight: 1.22,
+                        fontWeight: 800,
+                        color: "#6A4B0B",
+                      }}
+                    >
+                      Private trust note only. Do not add phone numbers, bank
+                      details, exact addresses, or gossip.
+                    </span>
                   </label>
                   <div
                     {...marketplaceSurfaceTouchProps("marketplace.links.join.actions")}
@@ -7707,37 +7884,35 @@ export default function MarketplacePage() {
                         Copy Join Link
                       </StableButton>
                     ) : null}
-                    {!isCompact ? (
-                      <StableButton
-                        debugId="marketplace.links.join.refresh"
-                        type="button"
-                        onClick={(event) => {
-                          runMarketplaceAction(event, () => {
-                            void handleCreateInviteLink();
-                          });
-                        }}
-                        style={marketplaceInlineActionStyle(
-                          "secondary",
-                          creatingInviteLink ||
-                            !canManageMarketplaceLinks ||
-                            !joinRelationshipReady,
-                          isCompact
-                        )}
-                      >
-                        {creatingInviteLink
-                          ? "Refreshing..."
-                          : canManageMarketplaceLinks
-                            ? (
-                              <>
-                                <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                                  <MarketplaceGlyph name="refresh" size={18} />
-                                </span>
-                                Refresh Join Link
-                              </>
-                            )
-                            : "Admin only"}
-                      </StableButton>
-                    ) : null}
+                    <StableButton
+                      debugId="marketplace.links.join.refresh"
+                      type="button"
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          void handleCreateInviteLink();
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        isCompact ? "primary" : "secondary",
+                        creatingInviteLink ||
+                          !canManageMarketplaceLinks ||
+                          !joinRelationshipReady,
+                        isCompact
+                      )}
+                    >
+                      {creatingInviteLink
+                        ? "Refreshing..."
+                        : canManageMarketplaceLinks
+                          ? (
+                            <>
+                              <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                                <MarketplaceGlyph name="refresh" size={18} />
+                              </span>
+                              Refresh Join Link
+                            </>
+                          )
+                          : "Admin only"}
+                    </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.copy-message"
                       type="button"
@@ -7851,8 +8026,10 @@ export default function MarketplacePage() {
                     </div>
                   ) : null}
                 </div>
+                ) : null}
 
-                <div style={marketplaceLinkRowStyle(isCompact)}>
+                {activeLinkCenterTool === "verify" ? (
+                <div style={marketplaceLinkRowStyle(isCompact, true)}>
                   <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
                     <span
                       aria-hidden="true"
@@ -7956,8 +8133,10 @@ export default function MarketplacePage() {
                     </StableButton>
                   </div>
                 </div>
+                ) : null}
 
-                <div style={marketplaceLinkRowStyle(isCompact)}>
+                {activeLinkCenterTool === "shopFace" ? (
+                <div style={marketplaceLinkRowStyle(isCompact, true)}>
                   <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
                     <span
                       aria-hidden="true"
@@ -8137,25 +8316,27 @@ export default function MarketplacePage() {
                       </span>
                       {isCompact ? "Email" : "Email Link"}
                     </StableButton>
-                    <SocialTagShareButton
-                      target={{
-                        title: shopEmailSubject,
-                        message: publicShopSocialPackage,
-                        socialMessage: `${firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop"} on GSN. Trusted public shop. Open the shop link.`,
-                        socialUrl: publicShopSocialPreviewLink,
-                        url: publicShopSocialLink,
-                      }}
-                      disabled={publicShopActionsLocked || !publicShopSocialLink}
-                      buttonLabel="Share"
-                      stableHeight={58}
-                      debugId="marketplace.public-shop.tag-social"
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        publicShopActionsLocked || !publicShopSocialLink,
-                        isCompact
-                      )}
-                      onResult={showNotice}
-                    />
+                    {!isCompact ? (
+                      <SocialTagShareButton
+                        target={{
+                          title: shopEmailSubject,
+                          message: publicShopSocialPackage,
+                          socialMessage: `${firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop"} on GSN. Trusted public shop. Open the shop link.`,
+                          socialUrl: publicShopSocialPreviewLink,
+                          url: publicShopSocialLink,
+                        }}
+                        disabled={publicShopActionsLocked || !publicShopSocialLink}
+                        buttonLabel="Share"
+                        stableHeight={58}
+                        debugId="marketplace.public-shop.tag-social"
+                        style={marketplaceInlineActionStyle(
+                          "secondary",
+                          publicShopActionsLocked || !publicShopSocialLink,
+                          isCompact
+                        )}
+                        onResult={showNotice}
+                      />
+                    ) : null}
                     <StableButton
                       type="button"
                       debugId="marketplace.public-shop.open"
@@ -8188,7 +8369,9 @@ export default function MarketplacePage() {
                     </StableButton>
                   </div>
                 </div>
+                ) : null}
 
+                {activeLinkCenterTool === "repost" ? (
                 <div
                   id="marketplace-paid-network-placement"
                   {...marketplaceSurfaceTouchProps("marketplace.network-repost.surface")}
@@ -9009,216 +9192,12 @@ export default function MarketplacePage() {
                     </StableCtaLink>
                   </details>
                 </div>
+                ) : null}
 
-                <div style={marketplaceLinkRowStyle(isCompact, true)}>
-                  <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
-                    <span
-                      aria-hidden="true"
-                      style={marketplaceLinkRowIconStyle("gold", isCompact)}
-                    >
-                      <MarketplaceGlyph name="payment" size={isCompact ? 25 : 30} />
-                    </span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                        5. Community Packages
-                      </div>
-                      <div style={marketplaceLinkRowSubStyle(isCompact)}>
-                        15 members included. Extra members, shop blocks, ROSCA, and meetings live here.
-                      </div>
-                    </div>
-                    <span
-                      style={marketplaceLinkRowStatusStyle(
-                        communityMemberCapacity && communityMemberCapacity.remaining <= 0
-                          ? "warn"
-                          : "ready",
-                        isCompact
-                      )}
-                    >
-                      {communityMemberCapacity
-                        ? `${communityMemberCapacity.remaining} left`
-                        : "Check"}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      width: "100%",
-                      maxWidth: "100%",
-                      minWidth: 0,
-                      boxSizing: "border-box",
-                      display: "grid",
-                      gridTemplateColumns: isCompact
-                        ? "1fr"
-                        : "repeat(4, minmax(0, 1fr))",
-                      gap: 8,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {communityPackageRows.map((row) => (
-                      <div
-                        key={row.key}
-                        style={{
-                          minHeight: isCompact ? 86 : 112,
-                          borderRadius: isCompact ? 16 : 18,
-                          border: "1px solid rgba(16,37,59,0.09)",
-                          background:
-                            "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
-                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
-                          padding: isCompact ? "9px 10px" : "12px 13px",
-                          boxSizing: "border-box",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: isCompact ? "center" : "space-between",
-                          gap: isCompact ? 5 : 7,
-                          minWidth: 0,
-                          maxWidth: "100%",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <span
-                          style={{
-                            minWidth: 0,
-                            maxWidth: "100%",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            color: "#07172C",
-                            fontSize: isCompact ? 14 : 15,
-                            lineHeight: 1.08,
-                            fontWeight: 950,
-                          }}
-                        >
-                          {row.title}
-                        </span>
-                        <span
-                          style={{
-                            minWidth: 0,
-                            maxWidth: "100%",
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            color: "#0B5A34",
-                            fontSize: isCompact ? 16 : 18,
-                            lineHeight: 1.1,
-                            fontWeight: 950,
-                          }}
-                        >
-                          {row.value}
-                        </span>
-                        <span
-                          style={{
-                            ...brandClampLines(2),
-                            color: "#516579",
-                            fontSize: isCompact ? 10.5 : 12,
-                            lineHeight: 1.22,
-                            fontWeight: 760,
-                          }}
-                        >
-                          {row.detail}
-                        </span>
-                        <span
-                          style={{
-                            alignSelf: "flex-start",
-                            maxWidth: "100%",
-                            borderRadius: 999,
-                            padding: "4px 7px",
-                            background: "#FFF7DE",
-                            color: "#805A0F",
-                            fontSize: 10.5,
-                            fontWeight: 950,
-                            lineHeight: 1,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {row.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <StableButton
-                      debugId="marketplace.links.community-packages"
-                      type="button"
-                      onClick={(event) =>
-                        openMarketplaceRoute(
-                          event,
-                          `${APP_ROUTES.SHOP}#${OWNER_SHOP_HASHES.communityPackage}`
-                        )
-                      }
-                      style={marketplaceInlineActionStyle(
-                        "primary",
-                        false,
-                        isCompact
-                      )}
-                    >
-                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                        <MarketplaceGlyph name="payment" size={18} />
-                      </span>
-                      {isCompact ? "Packages" : "Open Packages"}
-                    </StableButton>
-                    <StableCtaLink
-                      to={routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, activeCommunityId)}
-                      debugId="marketplace.links.package-spotlight"
-                      stableHeight={isCompact ? 52 : 58}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        false,
-                        isCompact
-                      )}
-                    >
-                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                        <MarketplaceGlyph name="spark" size={18} />
-                      </span>
-                      {isCompact ? "Spotlight" : "Paid Spotlight"}
-                    </StableCtaLink>
-                  </div>
                 </div>
-
-                <div style={marketplaceLinkRowStyle(isCompact)}>
-                  <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
-                    <span
-                      aria-hidden="true"
-                      style={marketplaceLinkRowIconStyle("purple", isCompact)}
-                    >
-                      <MarketplaceGlyph name="control" size={isCompact ? 25 : 30} />
-                    </span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                        6. Owner Controls
-                      </div>
-                      <div style={marketplaceLinkRowSubStyle(isCompact)}>
-                        Manage your shop & settings.
-                      </div>
-                    </div>
-                    <span style={marketplaceLinkRowStatusStyle("ready", isCompact)}>
-                      Ready
-                    </span>
-                  </div>
-                  <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <StableButton
-                      debugId="marketplace.links.owner-shop-control"
-                      type="button"
-                      onClick={(event) =>
-                        openMarketplaceCta(event, "shop")
-                      }
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        false,
-                        isCompact
-                      )}
-                    >
-                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                        <MarketplaceGlyph name="control" size={18} />
-                      </span>
-                      {isCompact ? "Control" : "Open Control"}
-                    </StableButton>
-                  </div>
-                </div>
-
-          </div>
+              </>
+            )}
+          </>
         ) : null}
       </section>
       ) : null}

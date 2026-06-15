@@ -49,12 +49,42 @@ For each domain:
 2. Identify the user type for each screen.
 3. Run source auditors where they exist.
 4. Patch the smallest visible and logical faults.
-5. Run the protected freeze band.
-6. Ask for phone review when the source checks are clean.
-7. Add or tighten an audit guard before moving to the next domain.
+5. Run the route-local button-shell pass before calling the work testable.
+6. Run the protected freeze band.
+7. Ask for phone review only when the source checks and button shell are clean.
+8. Add or tighten an audit guard before moving to the next domain.
 
 This is a cage, not a permanent freeze. The goal is to protect progress while
 still allowing deliberate improvement.
+
+## Testable-First Button Protocol
+
+No page, lane, or job is considered nearly finished if the product owner cannot
+physically test it on a phone because buttons, fields, panels, or the viewport
+jump around.
+
+At the end of every meaningful UI slice, and before asking for owner phone
+review, perform a button-shell pass on the affected route:
+
+- every visible action uses the approved stable button/link/disclosure primitive
+  or a route-local stable wrapper with a debug id;
+- every visible action has fixed height, fixed hit area, no text wrap collapse,
+  and no transition-driven movement;
+- every native input/select/textarea has field-only tap metadata and does not
+  register as an action root;
+- parent surfaces around buttons and fields have stable box sizing, overflow
+  control, and do not resize merely because a user taps, focuses, types,
+  loads, disables, or succeeds;
+- opening one job replaces or hides unrelated deep jobs instead of stacking all
+  work surfaces into one long moving page;
+- disabled or blocked states remain tappable where needed so the app explains
+  what is missing instead of silently preventing review;
+- the affected route has a route-local audit or an updated existing audit that
+  cages the button count, debug ids, field count, and layout contract.
+
+If the owner reports that a page is too jumpy to test, the next slice should be
+button-shell stabilization for that page before adding new features. Do not
+claim the feature is done merely because build, lint, and source audits pass.
 
 ## The Standard Audit Basket
 

@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 59;
-const expectedNativeFieldCount = 14;
+const expectedStableActionCount = 62;
+const expectedNativeFieldCount = 18;
 const expectedSourceBreakdown = {
   front: 11,
-  body: 48,
+  body: 51,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -123,7 +123,7 @@ function marketplaceActionArea(debugId) {
   return "unknown";
 }
 
-const actionPattern = /<Stable(?:Button|CtaLink)\b[\s\S]*?(?:\/>|<\/Stable(?:Button|CtaLink)>)/g;
+const actionPattern = /<(?:Stable(?:Button|CtaLink)|SocialTagShareButton)\b[\s\S]*?(?:\/>|<\/(?:Stable(?:Button|CtaLink)|SocialTagShareButton)>)/g;
 const actions = [];
 let match;
 
@@ -184,18 +184,78 @@ assertContains(
 );
 
 assertContains(
-  /placeholder="Short note"[\s\S]*?rows=\{1\}[\s\S]*?minHeight: isCompact \? 40 : 44[\s\S]*?maxHeight: isCompact \? 40 : 44[\s\S]*?resize: "none"[\s\S]*?overflowY: "hidden"/,
+  /placeholder="Short note"[\s\S]*?rows=\{1\}[\s\S]*?marketplaceJoinFixedFieldStyle\(isCompact\)[\s\S]*?resize: "none"[\s\S]*?overflowY: "hidden"/,
   "Marketplace Join short-note field must not create a tiny internal scroll trap on mobile."
 );
 
 assertContains(
-  /function marketplaceJoinActionsStyle\([\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "repeat\(auto-fit, minmax\(168px, 1fr\)\)"[\s\S]*?<div style=\{marketplaceJoinActionsStyle\(isCompact\)\}>/,
+  /function marketplaceJoinActionsStyle\([\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "repeat\(auto-fit, minmax\(168px, 1fr\)\)"[\s\S]*?style=\{marketplaceJoinActionsStyle\(isCompact\)\}/,
   "Marketplace Join invite buttons must be one-column on phone so field taps are not crowded by side-by-side share controls."
 );
 
 assertContains(
-  /\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.copy"[\s\S]*?\) : null\}[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.refresh"[\s\S]*?\) : null\}[\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?isCompact \? "primary" : "secondary"[\s\S]*?\{isCompact \? "Copy Invite" : "Copy Invite Message"\}[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?\) : null\}[\s\S]*?debugId="marketplace\.links\.join\.whatsapp"[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.tag-social"[\s\S]*?\) : null\}/,
-  "Marketplace Join Link Center compact phone view must expose only Copy Invite and WhatsApp; Copy Link, Refresh, Email, and social Share stay desktop-only."
+  /type LinkCenterTool[\s\S]*?\| "join"[\s\S]*?\| "verify"[\s\S]*?\| "shopFace"[\s\S]*?\| "repost"[\s\S]*?const \[activeLinkCenterTool, setActiveLinkCenterTool\][\s\S]*?useState<LinkCenterTool \| null>\(null\)/,
+  "Marketplace public links desk must keep an explicit active selection state without owner/package tools as equal Link Center choices."
+);
+
+assertContains(
+  /function marketplaceLinkChooserButtonStyle\([\s\S]*?height: isCompact \? 68 : 88[\s\S]*?minHeight: isCompact \? 68 : 88[\s\S]*?maxHeight: isCompact \? 68 : 88[\s\S]*?gridTemplateColumns: isCompact \? "44px minmax\(0, 1fr\)" : "58px minmax\(0, 1fr\)"[\s\S]*?overflow: "hidden"[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"/,
+  "Marketplace Link Center chooser buttons must reserve the exact icon-shell width and keep fixed no-transition geometry."
+);
+
+assertContains(
+  /function marketplaceLinkActiveToolStackStyle\(\): React\.CSSProperties \{[\s\S]*?width: "100%"[\s\S]*?maxWidth: "100%"[\s\S]*?minWidth: 0[\s\S]*?overflow: "hidden"[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?style=\{marketplaceLinkActiveToolStackStyle\(\)\}/,
+  "Marketplace Link Center selected-tool stack must keep a stable non-moving shell around the active tool."
+);
+
+assertContains(
+  /debugId="marketplace\.links\.choose\.verify"[\s\S]*?setActiveLinkCenterTool\("verify"\)[\s\S]*?debugId="marketplace\.links\.choose\.join"[\s\S]*?setActiveLinkCenterTool\("join"\)[\s\S]*?debugId="marketplace\.links\.choose\.shop-face"[\s\S]*?setActiveLinkCenterTool\("shopFace"\)/,
+  "Marketplace public links chooser must expose only the three true outward-link jobs: verify, invite, and public shop face."
+);
+
+assertContains(
+  /debugId="marketplace\.links\.back-to-center"[\s\S]*?setActiveLinkCenterTool\(null\)[\s\S]*?activeLinkCenterTool === "join"[\s\S]*?activeLinkCenterTool === "verify"[\s\S]*?activeLinkCenterTool === "shopFace"[\s\S]*?activeLinkCenterTool === "repost"/,
+  "Marketplace Link Center must show one selected tool at a time with a stable Back to Link Center action."
+);
+
+assertNotContains(
+  /debugId="marketplace\.links\.choose\.(?:repost|packages|owner-control)"|setActiveLinkCenterTool\("(?:packages|ownerControl)"\)|activeLinkCenterTool === "(?:packages|ownerControl)"/g,
+  "Marketplace public links chooser must not expose paid repost, packages, or owner controls as equal public-link choices."
+);
+
+assertContains(
+  /function marketplaceActiveElementIsEditable\(\): boolean[\s\S]*?tagName === "input"[\s\S]*?tagName === "textarea"[\s\S]*?tagName === "select"[\s\S]*?section-scroll-skipped-field-focus[\s\S]*?section-schedule-skipped-field-focus/,
+  "Marketplace section landing scroll must skip while a native field is focused so Chrome keyboard focus is not fighting route-local scroll code."
+);
+
+assertContains(
+  /From \(sender\)[\s\S]*?Receiver name[\s\S]*?Message to receiver \(optional\)[\s\S]*?How do you know this person\?[\s\S]*?How long have you known them\?[\s\S]*?Private GSN relationship note \(optional\)[\s\S]*?debugId="marketplace\.links\.join\.refresh"[\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?debugId="marketplace\.links\.join\.whatsapp"/,
+  "Marketplace Join compact phone view must keep sender, receiver, message, relationship, duration, private note, Refresh, Copy Invite, and WhatsApp in one continuous stable form."
+);
+
+assertNotContains(
+  /\bjoinCompactStep\b/g,
+  "Marketplace Join compact phone view must not hide proof fields behind a computed step while the user is typing."
+);
+
+assertNotContains(
+  /display:\s*!isCompact\s*\|\|\s*join/g,
+  "Marketplace Join proof fields must not use phone-only display:none stage gating."
+);
+
+assertContains(
+  /\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.copy"[\s\S]*?\) : null\}[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?\) : null\}[\s\S]*?\{!isCompact \? \([\s\S]*?debugId="marketplace\.links\.join\.tag-social"[\s\S]*?\) : null\}/,
+  "Marketplace Join Copy Link, Email, and social Share controls must stay desktop-only."
+);
+
+assertContains(
+  /\{!isCompact \? \([\s\S]*?debugId="marketplace\.public-shop\.tag-social"[\s\S]*?\) : null\}/,
+  "Marketplace Public Shop social Share must stay desktop-only so the phone action cluster remains simple."
+);
+
+assertContains(
+  /const hasRepostContext = Boolean\([\s\S]*?routeRepostSource[\s\S]*?routeRepostProductId[\s\S]*?routeRepostBlockNumber[\s\S]*?hash === "marketplace-paid-network-placement"[\s\S]*?hasRepostContext/,
+  "Marketplace Paid Repost must require product/block/source context; a naked hash must not open a finance-adjacent promotion panel."
 );
 
 assertContains(
@@ -315,8 +375,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Link Center[\s\S]*?Share, verify, shop, repost\.[\s\S]*?Join[\s\S]*?Verify[\s\S]*?Shop Face[\s\S]*?Paid Repost[\s\S]*?Packages/,
-  "Marketplace Link Center grouped card must open marketplace-owned links and avoid member/trade wording."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open access and public links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Public Links[\s\S]*?Verify, invite, and share the shop\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Shop Face/,
+  "Marketplace public links grouped card must open marketplace-owned links and advertise only verify, invite, and shop sharing."
 );
 
 assertContains(
@@ -627,11 +687,16 @@ const expectedOrder = [
   exactDebugId("marketplace.rosca.start-cycle"),
   exactDebugId("marketplace.rosca.record-payout"),
   exactDebugId("marketplace.links.toggle"),
+  exactDebugId("marketplace.links.choose.verify"),
+  exactDebugId("marketplace.links.choose.join"),
+  exactDebugId("marketplace.links.choose.shop-face"),
+  exactDebugId("marketplace.links.back-to-center"),
   exactDebugId("marketplace.links.join.copy"),
   exactDebugId("marketplace.links.join.refresh"),
   exactDebugId("marketplace.links.join.copy-message"),
   exactDebugId("marketplace.links.join.email"),
   exactDebugId("marketplace.links.join.whatsapp"),
+  exactDebugId("marketplace.links.join.tag-social"),
   exactDebugId("marketplace.links.community-desk.copy"),
   exactDebugId("marketplace.links.community-desk.email"),
   exactDebugId("marketplace.links.community-desk.open"),
@@ -639,7 +704,9 @@ const expectedOrder = [
   exactDebugId("marketplace.public-shop.refresh"),
   exactDebugId("marketplace.public-shop.copy"),
   exactDebugId("marketplace.public-shop.email"),
+  exactDebugId("marketplace.public-shop.tag-social"),
   exactDebugId("marketplace.public-shop.open"),
+  exactDebugId("marketplace.network-repost.selected-block.copy-link"),
   exactDebugId("marketplace.network-repost.find-targets"),
   dynamicDebugId(
     "marketplace.network-repost.target.*.use",
@@ -649,9 +716,6 @@ const expectedOrder = [
   exactDebugId("marketplace.network-repost.refresh-credits"),
   exactDebugId("marketplace.network-repost.place"),
   exactDebugId("marketplace.network-repost.subscription"),
-  exactDebugId("marketplace.links.community-packages"),
-  exactDebugId("marketplace.links.package-spotlight"),
-  exactDebugId("marketplace.links.owner-shop-control"),
   exactDebugId("marketplace.members.toggle"),
   exactDebugId("marketplace.members.demand-box"),
   dynamicDebugId(

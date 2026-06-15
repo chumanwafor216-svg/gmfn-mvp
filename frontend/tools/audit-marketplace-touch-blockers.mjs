@@ -89,9 +89,19 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /marketplaceSurfaceTouchProps\("marketplace\.links\.join\.surface"\)[\s\S]*?marketplaceFieldTouchProps\("marketplace\.join\.sender-name"\)[\s\S]*?<input[\s\S]*?value=\{joinSenderName\}[\s\S]*?aria-label="Sender name for join invitation"[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.recipient-name"\)\}[\s\S]*?<input[\s\S]*?value=\{joinRecipientName\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.invite-note"\)\}[\s\S]*?<textarea[\s\S]*?value=\{joinInviteNote\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.relationship-type"\)\}[\s\S]*?<select[\s\S]*?value=\{joinRelationshipType\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.known-duration"\)\}[\s\S]*?<select[\s\S]*?value=\{joinKnownDuration\}[\s\S]*?<label[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.relationship-context"\)\}[\s\S]*?<textarea[\s\S]*?value=\{joinRelationshipContext\}[\s\S]*?marketplaceSurfaceTouchProps\("marketplace\.links\.join\.actions"\)/,
-  "Marketplace Join surface, sender, receiver/name, private relationship evidence, and action packages must be protected as neutral surfaces or field roots, not left as loose child controls."
+  /marketplaceSurfaceTouchProps\("marketplace\.links\.join\.surface"\)[\s\S]*?<input[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.sender-name"\)\}[\s\S]*?value=\{joinSenderName\}[\s\S]*?aria-label="Sender name for join invitation"[\s\S]*?<input[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.recipient-name"\)\}[\s\S]*?value=\{joinRecipientName\}[\s\S]*?<textarea[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.invite-note"\)\}[\s\S]*?value=\{joinInviteNote\}[\s\S]*?<select[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.relationship-type"\)\}[\s\S]*?value=\{joinRelationshipType\}[\s\S]*?<select[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.known-duration"\)\}[\s\S]*?value=\{joinKnownDuration\}[\s\S]*?<textarea[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.relationship-context"\)\}[\s\S]*?value=\{joinRelationshipContext\}[\s\S]*?Private trust note only[\s\S]*?marketplaceSurfaceTouchProps\("marketplace\.links\.join\.actions"\)/,
+  "Marketplace Join surface, native sender/receiver/evidence fields, private trust warning, and action packages must be protected without duplicating field roots on outer labels."
 );
+
+if (/<label[\s\S]{0,240}\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\./.test(marketplaceSource)) {
+  addFinding(
+    marketplaceFile,
+    marketplaceSource,
+    marketplaceSource.search(/<label[\s\S]{0,240}\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\./),
+    "Marketplace Join labels must not duplicate native field roots because label/input identity mismatches can make phone field taps unstable.",
+    "Keep marketplaceFieldTouchProps on input/select/textarea only."
+  );
+}
 
 const surfaceUses = [...marketplaceSource.matchAll(/marketplaceSurfaceTouchProps\("([^"]+)"\)/g)];
 const expectedSurfaceIds = [

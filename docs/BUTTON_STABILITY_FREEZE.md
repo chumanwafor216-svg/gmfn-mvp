@@ -17,6 +17,30 @@ Run this command before and after major Marketplace button work:
 npm --prefix frontend run audit:protected-button-freeze
 ```
 
+## Testable-First Rule
+
+Button stability is not a final polish chore. It is the gate that makes owner
+phone testing possible.
+
+After any meaningful UI slice, and before saying the work is ready for phone
+review, tighten the affected route's button shell:
+
+- all action controls have stable primitives, debug ids, fixed hit areas, and
+  no transition-driven movement;
+- fields are treated as fields, not action roots, so typing does not trigger
+  nearby buttons or route changes;
+- action rows, cards, and panels around controls keep stable dimensions during
+  focus, loading, disabled, success, and error states;
+- long work areas use a chooser or one-active-job pattern instead of exposing
+  many deep tools at once;
+- route-local audits are updated when action counts, field counts, or layout
+  contracts intentionally change.
+
+If the product owner cannot test because the page jumps, button-shell
+stabilization becomes the next required task. Do not continue feature polishing
+on that page until the owner can at least open the page, choose a job, tap the
+buttons, and type in the fields without being thrown elsewhere.
+
 The protected freeze band covers:
 
 - Dashboard route action contracts and phone button geometry.

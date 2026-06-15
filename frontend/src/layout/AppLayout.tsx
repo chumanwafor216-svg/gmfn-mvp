@@ -1365,11 +1365,9 @@ function bottomNav(): React.CSSProperties {
     justifyContent: "flex-start",
     overflowX: "auto",
     padding: "7px 9px calc(9px + env(safe-area-inset-bottom, 0px))",
-    background:
-      "linear-gradient(180deg, rgba(245,249,255,0.98) 0%, rgba(232,240,255,0.99) 100%)",
-    backdropFilter: "blur(10px)",
-    borderTop: "1px solid rgba(29,95,212,0.16)",
-    boxShadow: "0 -14px 36px rgba(15,23,42,0.12)",
+    background: "rgba(244,248,255,0.99)",
+    borderTop: "1px solid rgba(29,95,212,0.12)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.76)",
     WebkitOverflowScrolling: "touch",
     overscrollBehaviorX: "contain",
     pointerEvents: "none",
@@ -1409,8 +1407,8 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     pointerEvents: "auto",
     cursor: disabled ? "not-allowed" : "pointer",
     boxShadow: active
-      ? "0 10px 24px rgba(29,95,212,0.16)"
-      : "0 8px 18px rgba(15,23,42,0.08)",
+      ? "inset 0 0 0 1px rgba(29,95,212,0.08)"
+      : "none",
     opacity: disabled ? 0.7 : 1,
   };
 }

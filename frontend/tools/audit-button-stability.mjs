@@ -137,6 +137,12 @@ assertContains(
   "AppLayout must not double-reserve mobile bottom rail height while the rail remains visible in normal layout flow."
 );
 
+assertContains(
+  "src/layout/AppLayout.tsx",
+  /function bottomNav\(\): React\.CSSProperties \{[\s\S]*?background: "rgba\(244,248,255,0\.99\)"[\s\S]*?boxShadow: "inset 0 1px 0 rgba\(255,255,255,0\.76\)"[\s\S]*?function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties \{[\s\S]*?boxShadow: active[\s\S]*?\? "inset 0 0 0 1px rgba\(29,95,212,0\.08\)"[\s\S]*?: "none"/,
+  "AppLayout mobile bottom rail must remain visually integrated with the app shell instead of using floating slab shadows."
+);
+
 assertNotContains(
   "src/layout/AppLayout.tsx",
   /(<button|<\/button>|<a\s|OriginLink|layoutTapGuardProps|handleDisabledNavClick|actionTapGuardProps|brandStableTapTarget|stopActionTap)/,

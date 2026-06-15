@@ -9,7 +9,7 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const findings = [];
 
-const expectedStableActionCount = 59;
+const expectedStableActionCount = 62;
 const expectedNativeFieldCount = 18;
 const allowedBusyDisabledExpressions = new Set([
   "creatingRepostPaymentInstruction",
@@ -68,7 +68,7 @@ function buttonType(block) {
 }
 
 const actionPattern =
-  /<Stable(Button|CtaLink)\b[\s\S]*?(?:\/>|<\/Stable(?:Button|CtaLink)>)/g;
+  /<(StableButton|StableCtaLink|SocialTagShareButton)\b[\s\S]*?(?:\/>|<\/(?:StableButton|StableCtaLink|SocialTagShareButton)>)/g;
 const actions = [];
 let match;
 
@@ -80,7 +80,7 @@ while ((match = actionPattern.exec(source))) {
     debugId: debugIdFor(block),
     disabled: disabledExpression(block),
     to: targetExpression(block),
-    buttonType: match[1] === "Button" ? buttonType(block) : "",
+    buttonType: match[1] === "StableButton" ? buttonType(block) : "",
     block,
   });
 }
@@ -131,7 +131,7 @@ for (const action of actions) {
   }
 
   if (
-    action.type === "Button" &&
+    action.type === "StableButton" &&
     action.buttonType !== "submit" &&
     !/onClick=/.test(action.block)
   ) {
@@ -142,7 +142,7 @@ for (const action of actions) {
     );
   }
 
-  if (action.type === "CtaLink") {
+  if (action.type === "StableCtaLink") {
     if (!action.to) {
       addFinding(
         action.line,
@@ -168,7 +168,7 @@ for (const action of actions) {
     }
   }
 
-  if (action.disabled) {
+  if (action.disabled && action.type !== "SocialTagShareButton") {
     if (!allowedBusyDisabledExpressions.has(action.disabled)) {
       addFinding(
         action.line,

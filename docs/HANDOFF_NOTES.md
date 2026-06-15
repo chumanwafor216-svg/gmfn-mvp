@@ -54718,3 +54718,315 @@ GSN-branded invite composer and invite-entry continuity.
     `dep-d8mq7kkvikkc73c6eobg`;
   - API deploy was intentionally skipped (`deploy_api=false`), because no
     backend files changed.
+
+### Marketplace phone Join composer anti-jump fix (2026-06-15)
+
+- Trigger:
+  - product owner phone screenshot showed `/app/marketplace` Link Center
+    `Join this community` as very jumpy on Android;
+  - the expanded Join card exposed sender, receiver, message, relationship,
+    duration, private note, and share actions at once, creating a tall moving
+    target near the fixed bottom navigation.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added a phone-only staged Join composer:
+      `names -> relationship -> refresh -> share`;
+    - kept the desktop composer behavior unchanged;
+    - kept native sender/receiver/message/relationship fields as one source
+      inventory, with phone visibility controlled by the current step;
+    - exposed compact `Refresh Join Link` on phone when relationship evidence
+      is ready but not yet recorded, instead of leaving only disabled share
+      actions visible.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - aligned native field inventory with the existing line audit baseline;
+    - updated the Join Link Center phone guard to protect staged compact
+      behavior rather than the old always-visible compact share cluster.
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - updated the Join note wording guard to the current
+      `Message to receiver (optional)` label.
+- Verification:
+  - Passed `npm run build` from `frontend/`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:marketplace-more-tools-lane`.
+  - Passed `npm run audit:marketplace-front-package`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:action-response-protocol`.
+  - Passed `npm run audit:protected-button-freeze`.
+- Follow-up tooling update:
+  - `@playwright/test` was installed in `frontend/` on 2026-06-15, and
+    Playwright Chromium was installed into the local user cache;
+  - `npx playwright --version` reports `1.60.0`;
+  - a sandboxed Chromium launch still fails with `spawn EPERM`, but the same
+    one-off launch test passes outside the sandbox with approval.
+- Unabated truth:
+  - the in-app Browser connector was unavailable in this session (`iab`
+    missing), so no in-app Browser screenshot was captured for this fix;
+  - the local frontend and backend were already reachable on
+    `http://192.168.1.13:5174/` and `0.0.0.0:8012`;
+  - no backend, auth, app shell, global navigation, deployment, or Render
+    configuration files were changed;
+  - not pushed or deployed in this session.
+
+### Marketplace phone Join composer full-evidence rollback (2026-06-15)
+
+- Trigger:
+  - product owner reported that the phone-only staged Join composer removed the
+    relationship evidence questions from view and still stayed jumpy;
+  - receiver-name typing was especially unstable because the computed compact
+    step changed as soon as the field became non-empty.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - removed the `joinCompactStep` staging and phone-only `display: none`
+      gating;
+    - restored the full invite evidence form on phone: sender, receiver,
+      receiver message, relationship type, known duration, and private GSN
+      relationship note all stay visible in one continuous block;
+    - kept `Refresh Join Link` visible in the compact phone action area so the
+      inviter can record relationship evidence before Copy Invite / WhatsApp.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - now rejects `joinCompactStep` and phone-only proof-field display gating;
+    - cages the full Join evidence block plus Refresh, Copy Invite, and
+      WhatsApp as one continuous stable phone form.
+- Verification:
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:marketplace-more-tools-lane`.
+  - Passed `npm run audit:marketplace-front-package`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:action-response-protocol`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with the pre-existing two
+    `BuildFirstCirclePage.tsx` hook dependency warnings only.
+  - Passed `npm run build`.
+  - Playwright Chromium launched outside the sandbox, but a fresh Playwright
+    browser profile was redirected to `/login?session=expired`; no authenticated
+    Marketplace screenshot was captured from Playwright.
+- Unabated truth:
+  - the previous staged compact composer was the wrong trade-off. It made the
+    visible form shorter but broke the required private relationship-evidence
+    workflow and caused focus-target movement while typing;
+  - source-level checks now prove the fields are not hidden by the compact
+    step logic, but the owner still needs to retest the live phone Chrome
+    session because Playwright did not have the authenticated local session.
+
+### Marketplace Link Center one-tool chooser (2026-06-15)
+
+- Trigger:
+  - product owner observed that Link Center was becoming a long scroll of
+    unrelated link jobs and argued that users should choose the exact job first
+    instead of entering an endless surface;
+  - owner also emphasized that button/input jumpiness makes months of work
+    unusable if it is not corrected system-wise.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added route-local `LinkCenterTool` state and `activeLinkCenterTool`;
+    - Link Center now opens first to six stable choices:
+      Join Invite, Verify Community, Public Shop Face, Share / Repost,
+      Community Packages, and Owner Shop Control;
+    - selecting one tool replaces the chooser with only that one existing
+      Link Center block and a stable `Back to Link Center` button;
+    - `Join Invite` still keeps the full sender, receiver, relationship,
+      duration, and private GSN relationship evidence form visible;
+    - route/hash entry from paid repost opens Link Center directly to the
+      Share / Repost tool.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - Marketplace stable action count is now intentionally 66;
+    - cages the six chooser buttons, active-tool state, and Back action;
+    - continues rejecting compact-step proof-field hiding.
+  - `frontend/tools/audit-marketplace-button-lines.mjs`
+    - stable action count baseline updated to 66.
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - updated from `5 lanes` to `6 tools`;
+    - cages chooser buttons, Back action, and one-active-tool branch logic.
+- Verification:
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:marketplace-more-tools-lane`.
+  - Passed `npm run audit:marketplace-front-package`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:action-response-protocol`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Local `http://127.0.0.1:5174/app/marketplace` returned 200.
+- Unabated truth:
+  - this is a better user-facing structure and should reduce stacked tap
+    surfaces, but it is not yet proof that all phone jumpiness is gone;
+  - no backend, auth, global navigation, app shell, deployment, or Render
+    settings changed;
+  - no commit, push, or deploy was performed.
+
+### Marketplace Link Center button-shell tightening pass (2026-06-15)
+
+- Trigger:
+  - product owner made the new protocol explicit: after UI work, button shells
+    must be tightened before the owner is asked to test; otherwise a feature can
+    appear finished while remaining impossible to test on phone.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - aligned Link Center chooser button grid columns with the actual icon
+      shell width (`44px` compact, `58px` desktop), removing a small shell
+      mismatch that could contribute to unstable hit geometry;
+    - added `marketplaceLinkActiveToolStackStyle()` so the selected-tool stack
+      has explicit width, min-width, overflow, overflow-anchor, and no
+      transition movement.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - now cages the chooser button fixed height/width contract and the selected
+      tool stack's non-moving shell.
+- Verification:
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-more-tools-lane`.
+  - Passed `npm run audit:marketplace-front-package`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run lint` with only the existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Local `http://127.0.0.1:5174/app/marketplace` returned 200.
+- Unabated truth:
+  - this pass found and fixed a real source-level shell mismatch, but it still
+    needs the owner's live phone Chrome test to prove the physical jumpiness is
+    gone.
+
+### Authenticated mobile bottom rail visual integration (2026-06-15)
+
+- Trigger:
+  - product owner reported that the authenticated bottom rail now looks like an
+    embossed separate body instead of part of the app, and suspected this may be
+    contributing to the remaining phone jumpiness.
+- Confirmed:
+  - `frontend/src/layout/AppLayout.tsx` still keeps the mobile bottom rail in
+    normal layout flow after `<main>` with `position: "relative"` and
+    `flexShrink: 0`;
+  - the rail was not changed to a fixed overlay and route targets/action counts
+    were not changed;
+  - the visual treatment did have a strong upward shadow plus per-button raised
+    shadows, which could make the rail feel detached from the app shell.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - flattened the mobile bottom rail background from a pronounced gradient to
+      a calm shell-colored fill;
+    - removed the rail `backdropFilter` and heavy upward shadow;
+    - replaced raised bottom-nav item shadows with a flat active inset and no
+      inactive item shadow.
+  - `frontend/tools/audit-button-stability.mjs`
+    - added a guard requiring the integrated bottom-rail treatment so the rail
+      does not regress into a floating slab without an audit failure.
+- Verification:
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:dashboard-button-inventory`.
+  - Passed `npm run audit:community-home-button-inventory`.
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run lint` with only the existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this fixes the confirmed detached bottom-rail visual issue, but it may not
+    be the whole cause of Marketplace input jumpiness;
+  - the next phone test should check whether tapping `From (sender)` and
+    `Receiver name` still causes viewport jumps when the keyboard opens.
+
+### Marketplace specialist audit pass: Public Links + keyboard focus stability (2026-06-15)
+
+- Trigger:
+  - product owner authorized specialist-style audits and asked Codex to take the
+    lead unless consultation is necessary;
+  - goal was to stop Marketplace jumpiness while also checking whether the Link
+    Center structure was institutionally correct for a trust/finance-adjacent
+    community product.
+- Specialist audit verdict:
+  - fintech/product audit:
+    - Marketplace can own outward community links, but the six-choice Link
+      Center mixed access control, public verification, shop sharing, paid
+      promotion, packages, and owner shop management;
+    - that grouping was a trust risk, not only a UX preference.
+  - UX route audit:
+    - one in-page Marketplace link desk is correct;
+    - six equal choices are too many for low-literacy/non-technical users;
+    - first visible choices should be the three plain link jobs.
+  - mobile shell/focus audit:
+    - likely jump source is the collision between Chrome keyboard resize,
+      AppLayout's inner mobile scroller, and Marketplace's delayed section
+      landing scroll;
+    - duplicated field touch roots on both label and native input/select/textarea
+      could also make field identity unstable.
+  - line/button audit:
+    - confirmed the new three-choice structure was internally consistent;
+    - found SocialTagShareButton actions were being undercounted;
+    - found Public Shop social share should be desktop-only on this compact
+      phone surface;
+    - found Paid Repost needed a stronger contextual-entry gate.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - changed front card from `Link Center` / `Share, verify, shop, repost.` to
+      `Public Links` / `Verify, invite, and share the shop.`;
+    - changed detail section label to `Access & public links`;
+    - changed the Link Center hero to `Access & Public Links`;
+    - first chooser now exposes only:
+      1. `Verify Community`;
+      2. `Invite Someone`;
+      3. `Public Shop Face`;
+    - removed `Community Packages` and `Owner Shop Control` as equal Link Center
+      tool states and panels;
+    - kept `Paid Repost` only as a contextual/deep-linked panel, not a first
+      chooser option;
+    - tightened Paid Repost entry so a naked
+      `#marketplace-paid-network-placement` hash no longer opens the promotion
+      panel without product/block/source context;
+    - added `marketplaceActiveElementIsEditable()` and skips both scheduled and
+      immediate Marketplace section landing scroll when a native field is
+      focused;
+    - moved Join field tap roots off the outer labels and kept them only on
+      native `input` / `select` / `textarea` controls;
+    - added private trust note warning:
+      do not add phone numbers, bank details, exact addresses, or gossip;
+    - made Public Shop social share desktop-only so phone stays focused.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - updated Marketplace action baseline to 62 source actions;
+    - counts `SocialTagShareButton` wrappers instead of undercounting them;
+    - cages the three public-link chooser only;
+    - rejects package/owner/repost as first-choice public-link buttons;
+    - cages Paid Repost context requirement and desktop-only Public Shop social
+      share.
+  - `frontend/tools/audit-marketplace-button-lines.mjs`
+    - updated action baseline to 62 and counts `SocialTagShareButton` wrappers.
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs`
+    - protects Public Links naming/structure and contextual Paid Repost gate.
+  - `frontend/tools/audit-marketplace-touch-blockers.mjs`
+    - protects the new field rule: native field roots only, no duplicate label
+      field roots.
+- Verification:
+  - Passed `npm run audit:marketplace-button-inventory`.
+  - Passed `npm run audit:marketplace-button-lines`.
+  - Passed `npm run audit:marketplace-records-links-lane`.
+  - Passed `npm run audit:marketplace-actions`.
+  - Passed `npm run audit:marketplace-touch-blockers`.
+  - Passed `npm run audit:marketplace-more-tools-lane`.
+  - Passed `npm run audit:marketplace-front-package`.
+  - Passed `npm run audit:share-tag-actions`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:action-response-protocol`.
+  - Passed `npm run lint` with only the existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+  - Passed `npm run build`.
+  - Local `http://127.0.0.1:5174/app/marketplace` returned 200.
+- Unabated truth:
+  - this is a stronger institutional structure than the six-tool chooser;
+  - it also removes two plausible phone jump triggers;
+  - it still needs the owner's live phone Chrome test because the deepest shell
+    risk, AppLayout's `100dvh` inner scroller during keyboard entry, remains
+    route-global and was intentionally not changed in this pass.
