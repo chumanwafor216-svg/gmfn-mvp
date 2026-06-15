@@ -53,6 +53,22 @@
     phone test is repeated.
   - not pushed/deployed in this batch yet; current protocol says to publish only
     when the owner explicitly approves this batch for deployment.
+- Follow-up after push:
+  - GitHub `Backend Tests` failed on
+    `tests/test_trust_route_ownership.py::test_trust_evidence_routes_have_single_active_owner`
+    even though the evidence-pack route and ownership test passed locally in
+    isolation.
+  - rerunning the GitHub job reproduced the same failure, so this was not a
+    one-off.
+  - patched `gmfn_backend/tests/test_trust_route_ownership.py` to inspect both
+    the live FastAPI `app.routes` and the canonical `api_router.routes`,
+    deduplicating owners. This keeps the single-owner guard while avoiding a
+    stale/mutable copied-app-route false negative in CI.
+  - local verification after the patch:
+    - `python -m pytest -q tests\test_trust_route_ownership.py tests\test_gsn_evidence_pack_package.py`
+      from `gmfn_backend` passed (`6 passed`);
+    - `python -m pytest -q gmfn_backend\tests\test_join_requests.py` passed
+      (`54 passed`).
 
 ## 2026-06-15 - Live Marketplace Join Form Smoke Harness
 

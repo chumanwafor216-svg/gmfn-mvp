@@ -6,17 +6,23 @@ from fastapi.testclient import TestClient
 
 from app.db.database import SessionLocal
 from app.db.models import TrustEvent, User
+from app.api.router import api_router
 from app.main import app
 
 
 def _route_owners(path: str, method: str = "GET") -> list[str]:
     owners: list[str] = []
-    for route in app.routes:
+    seen: set[str] = set()
+    for route in [*app.routes, *api_router.routes]:
         endpoint = getattr(route, "endpoint", None)
         methods = getattr(route, "methods", set()) or set()
         if endpoint is None or getattr(route, "path", "") != path or method not in methods:
             continue
-        owners.append(f"{endpoint.__module__}.{endpoint.__name__}")
+        owner = f"{endpoint.__module__}.{endpoint.__name__}"
+        if owner in seen:
+            continue
+        seen.add(owner)
+        owners.append(owner)
     return owners
 
 
