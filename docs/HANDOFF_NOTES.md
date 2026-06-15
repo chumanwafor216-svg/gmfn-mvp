@@ -1,3 +1,43 @@
+## 2026-06-15 - Compact WhatsApp Join Invite Message
+
+- Trigger:
+  - owner showed a WhatsApp invite where the top GSN preview card was already
+    clickable, while the lower message repeated a very long personalised join
+    URL with receiver/community/note query parameters exposed.
+- Confirmed facts:
+  - WhatsApp needs a URL somewhere in the message to generate the preview card;
+  - the old outbound invite message duplicated the same URL path in a long
+    lower block;
+  - the codebase already had `compactJoinInviteUrl()` for reducing join links
+    to `/start/join/{code}`.
+- Changed:
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - moves the single invite URL to the top of the outbound message;
+    - removes the lower `Open the invitation here:` raw URL block;
+    - replaces it with `Tap the GSN Link preview above to open the request.`
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - keeps `personalizedInviteLink` for direct `Copy Join Link`;
+    - adds `compactInviteLink` for the WhatsApp/copy invite message so the
+      visible message does not expose the long query string.
+  - `frontend/src/pages/ClansPage.tsx`
+    - uses the compact join URL in the visible invite package text.
+  - Audits updated:
+    - `frontend/tools/audit-existing-community-invite-line.mjs`;
+    - `frontend/tools/audit-institutional-proof-surfaces.mjs`.
+- Verification:
+  - Passed `node tools/audit-institutional-proof-surfaces.mjs`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run build`.
+  - Passed `npm run lint` with only the pre-existing
+    `BuildFirstCirclePage.tsx` hook dependency warnings.
+- Unabated truth:
+  - this removes the ugly duplicated long URL from the WhatsApp-style message;
+  - the compact shared message no longer exposes receiver/name/note in the URL,
+    so that context is carried as human-readable text instead;
+  - direct `Copy Join Link` still keeps the full personalised URL for cases
+    where the app needs the query context.
+
 ## 2026-06-15 - Create Community Warm Retone
 
 - Trigger:

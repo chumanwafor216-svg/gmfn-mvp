@@ -143,10 +143,16 @@ assertContains(
   "Marketplace invite sharing must keep the personalized existing-community join URL context needed by JoinEntryPage."
 );
 
-assertNotContains(
+assertContains(
   "frontend/src/pages/MarketplacePage.tsx",
-  /compactJoinInviteUrl\(inviteLink\)|compactJoinInviteUrl\(personalizedInviteLink\)/,
-  "Marketplace invite sharing must not strip existing-community invite form context back to a compact URL."
+  /const compactInviteLink = useMemo\([\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\) \|\| personalizedInviteLink[\s\S]*?buildJoinInviteDoorwayMessage\([\s\S]*?inviteLink: compactInviteLink/,
+  "Marketplace outbound invite messages may use the compact link so WhatsApp does not expose a long duplicate URL block."
+);
+
+assertContains(
+  "frontend/src/pages/MarketplacePage.tsx",
+  /copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."/,
+  "Marketplace Copy Join Link must still preserve the personalized existing-community join URL context for direct link copying."
 );
 
 assertContains(

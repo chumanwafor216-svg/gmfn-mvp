@@ -4,6 +4,7 @@ import ExplainToggle from "../components/ExplainToggle";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   canonicalJoinInviteUrl,
+  compactJoinInviteUrl,
   normalizedJoinInviteUrl,
   personalizedJoinInviteUrl,
 } from "../lib/joinLinks";
@@ -307,6 +308,7 @@ function buildInviteState(
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
+  const shareLink = compactJoinInviteUrl(link) || link;
 
   const personalNote = safeStr(shortMessage);
   const receiver = safeStr(receiverField);
@@ -320,7 +322,7 @@ function buildInviteState(
     personalNote ? `Personal note: ${personalNote}` : "",
     "",
     "GSN helps existing trust become visible, recordable, and useful.",
-    link ? `Open secure join link: ${link}` : "",
+    shareLink ? `Open secure join link: ${shareLink}` : "",
     code ? `Invite code: ${code}` : "",
     expiresAt ? `Expiry: ${safeDateTime(expiresAt)}` : "",
     "",

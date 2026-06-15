@@ -5,6 +5,7 @@ import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
+  compactJoinInviteUrl,
   normalizedJoinInviteUrl,
   personalizedJoinInviteUrl,
 } from "../lib/joinLinks";
@@ -5136,6 +5137,10 @@ export default function MarketplacePage() {
     );
   }, [personalizedInviteLink, activeCommunityName]);
 
+  const compactInviteLink = useMemo(() => {
+    return compactJoinInviteUrl(personalizedInviteLink) || personalizedInviteLink;
+  }, [personalizedInviteLink]);
+
   const maskedMarketplaceFaceLabel = useMemo(() => {
     return cleanMaskedLinkLabel(
       buildMaskedLinkLabel(
@@ -5147,17 +5152,17 @@ export default function MarketplacePage() {
   }, [publicCommunityWorkspaceLink, activeCommunityName]);
 
   const joinInviteDoorwayMessage = useMemo(() => {
-    if (!personalizedInviteLink) return "";
+    if (!compactInviteLink) return "";
     return buildJoinInviteDoorwayMessage({
       inviter: joinSenderDisplayName,
       communityName: activeJoinCommunityName,
       marketplaceName: activeCommunityName,
       receiver: joinRecipientName,
       customMessage: joinInviteNote,
-      inviteLink: personalizedInviteLink,
+      inviteLink: compactInviteLink,
     });
   }, [
-    personalizedInviteLink,
+    compactInviteLink,
     joinSenderDisplayName,
     activeJoinCommunityName,
     activeCommunityName,

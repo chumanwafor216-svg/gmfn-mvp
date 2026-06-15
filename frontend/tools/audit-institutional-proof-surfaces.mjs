@@ -432,8 +432,8 @@ assertContains(
 );
 assertContains(
   "marketplace",
-  /import \{[\s\S]*?personalizedJoinInviteUrl[\s\S]*?\} from "\.\.\/lib\/joinLinks";[\s\S]*?import \{ buildJoinInviteDoorwayMessage \} from "\.\.\/lib\/joinInviteMessaging";[\s\S]*?activeJoinCommunityCode[\s\S]*?communityCode\(selectedCommunity\)[\s\S]*?personalizedInviteLink[\s\S]*?personalizedJoinInviteUrl\(inviteLink[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote[\s\S]*?buildJoinInviteDoorwayMessage\([\s\S]*?copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."[\s\S]*?copyMarketplaceMessage\([\s\S]*?joinInviteDoorwayMessage[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\(joinInviteDoorwayMessage\)\}/,
-  "Marketplace join sharing must use the shared doorway message while the actual Join URL preserves receiver/community code/community/marketplace context for the request form."
+  /import \{[\s\S]*?compactJoinInviteUrl[\s\S]*?personalizedJoinInviteUrl[\s\S]*?\} from "\.\.\/lib\/joinLinks";[\s\S]*?import \{ buildJoinInviteDoorwayMessage \} from "\.\.\/lib\/joinInviteMessaging";[\s\S]*?activeJoinCommunityCode[\s\S]*?communityCode\(selectedCommunity\)[\s\S]*?personalizedInviteLink[\s\S]*?personalizedJoinInviteUrl\(inviteLink[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote[\s\S]*?compactInviteLink[\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\)[\s\S]*?buildJoinInviteDoorwayMessage\([\s\S]*?inviteLink: compactInviteLink[\s\S]*?copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\(joinInviteDoorwayMessage\)\}/,
+  "Marketplace join sharing must use a compact outbound doorway link while the actual Join URL preserves receiver/community code/community/marketplace context for the request form."
 );
 assertContains(
   "joinEntry",
@@ -442,7 +442,7 @@ assertContains(
 );
 assertContains(
   "joinInviteMessaging",
-  /export function buildJoinInviteLetter[\s\S]*?GSN helps trusted communities keep one identity[\s\S]*?Entry is not automatic[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?`To: \$\{receiver \|\| "Invited person"\}`[\s\S]*?`From: \$\{inviter\}`[\s\S]*?Open the invitation here:[\s\S]*?If you already have a GSN ID, enter it in the request form[\s\S]*?Entry is not automatic; the community reviews first\./,
+  /export function buildJoinInviteLetter[\s\S]*?GSN helps trusted communities keep one identity[\s\S]*?Entry is not automatic[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink[\s\S]*?`To: \$\{receiver \|\| "Invited person"\}`[\s\S]*?`From: \$\{inviter\}`[\s\S]*?Tap the GSN Link preview above to open the request\.[\s\S]*?If you already have a GSN ID, enter it in the request form[\s\S]*?Entry is not automatic; the community reviews first\./,
   "Shared join invite messaging must keep the form-page invite and outbound doorway message short, non-repetitive, and review-aware."
 );
 assertContains(

@@ -70,6 +70,8 @@ export function buildJoinInviteDoorwayMessage(
   const inviter = cleanText(args.inviter) || "A known GSN member";
 
   return [
+    inviteLink,
+    "",
     `To: ${receiver || "Invited person"}`,
     `From: ${inviter}`,
     "",
@@ -81,9 +83,7 @@ export function buildJoinInviteDoorwayMessage(
     customMessage ? `Personal note: ${customMessage}` : "",
     expiresAt ? `Open until: ${safeDateTime(expiresAt)}.` : "",
     "",
-    "Open the invitation here:",
-    inviteLink,
-    "",
+    "Tap the GSN Link preview above to open the request.",
     "If you already have a GSN ID, enter it in the request form. If not, fill the short request form. Entry is not automatic; the community reviews first.",
   ]
     .filter(Boolean)
