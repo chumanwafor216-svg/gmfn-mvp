@@ -612,6 +612,12 @@ export default function RepaymentPage() {
     };
   }, [numericLoanId, summary, canRepay, instruction, paymentConfirmedAt]);
 
+  const routeStateUsesLightCard = routeState.toneBg !== "#F8FBFF";
+  const routeStateLabelStyle = routeStateUsesLightCard
+    ? { ...sectionLabel(), color: routeState.toneText }
+    : sectionLabel();
+  const routeStateHelperColor = routeStateUsesLightCard ? "#0B1F33" : "#F8FBFF";
+
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -869,7 +875,7 @@ export default function RepaymentPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <div style={{ ...softCard(routeState.toneBg), border: routeState.toneBorder }}>
-        <div style={sectionLabel()}>Active repayment process</div>
+        <div style={routeStateLabelStyle}>Active repayment process</div>
         <div
           style={{
             marginTop: 8,
@@ -997,11 +1003,11 @@ export default function RepaymentPage() {
           </div>
 
           <div style={{ ...softCard(routeState.toneBg), border: routeState.toneBorder }}>
-            <div style={sectionLabel()}>Current route state</div>
+            <div style={routeStateLabelStyle}>Current route state</div>
             <div style={{ marginTop: 10, color: routeState.toneText, fontWeight: 900, fontSize: 20, lineHeight: 1.25 }}>
               {routeState.title}
             </div>
-            <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF" }}>
+            <div style={{ marginTop: 10, ...helperText(), color: routeStateHelperColor }}>
               {routeState.detail}
             </div>
           </div>
@@ -1316,11 +1322,11 @@ export default function RepaymentPage() {
               <div style={sectionLabel()}>Current result state</div>
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Route result</div>
+                  <div style={routeStateLabelStyle}>Route result</div>
                   <div style={{ marginTop: 8, color: routeState.toneText, fontWeight: 900, fontSize: 16, lineHeight: 1.35 }}>
                     {routeState.title}
                   </div>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
+                  <div style={{ marginTop: 8, ...helperText(), color: routeStateHelperColor }}>
                     {routeState.detail}
                   </div>
                 </div>

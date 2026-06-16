@@ -1,3 +1,53 @@
+## 2026-06-16 - Mobile Whitewash / Overflow Sweep
+
+- Trigger:
+  - owner asked to search through the app for more phone pages that look
+    washed out, oversized, or poorly aligned after the approved-status
+    screenshot.
+- Changed:
+  - `frontend/tools/audit-mobile-visual-sweep.mjs`
+    - added a Playwright mobile sweep for key entry and authenticated routes;
+    - mocks the session/community/status API calls needed to render the pages
+      at 390px phone width;
+    - checks visible first-screen horizontal overflow and severe low-contrast
+      text while ignoring closed off-canvas drawers, scrollable nav lanes,
+      disabled controls, decorative SVG internals, and gradient surfaces the
+      simple color parser cannot judge honestly.
+  - `frontend/package.json`
+    - added `npm run audit:mobile-visual-sweep`.
+  - `frontend/src/pages/MemberActivationPage.tsx`
+    - reduced and repositioned the compact/mobile decorative GSN watermark so
+      it no longer extends past the right edge.
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - moved decorative create-flow watermark/circle elements inside the mobile
+      frame to avoid clipped/sideways decoration.
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - made route-state labels and helper text use dark readable colors when
+      the repayment status card is pale, preventing the same washed-out class
+      of bug seen on join approval.
+- Verification:
+  - Passed `npm run audit:mobile-visual-sweep`.
+  - Passed `npm run audit:join-approval-contrast`.
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:entry-flow-polish`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:gsn-visible-language`.
+  - Passed targeted ESLint on:
+    - `src/pages/MemberActivationPage.tsx`
+    - `src/pages/CreateEntryPage.tsx`
+    - `src/pages/RepaymentPage.tsx`
+    - `tools/audit-mobile-visual-sweep.mjs`
+  - Passed `npm run build`.
+- Unabated truth:
+  - this is a rendered browser sweep, not just source search;
+  - it covers representative key routes, not every possible data state,
+    scrolled section, or live backend response;
+  - the audit intentionally avoids false positives from hidden drawers,
+    horizontal nav scrollers, disabled buttons, and decorative vectors;
+  - real-device review is still useful because mobile browser chrome, keyboard,
+    and live API data can expose issues a mocked Chromium route cannot.
+
 ## 2026-06-16 - Join Approval Whitewash Fix + Sign-In Truth Check
 
 - Trigger:

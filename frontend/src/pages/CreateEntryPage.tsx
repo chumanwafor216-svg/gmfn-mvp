@@ -888,7 +888,7 @@ function CreateCommunityWatermark(): React.ReactElement {
       aria-hidden="true"
       style={{
         position: "absolute",
-        right: -28,
+        right: 24,
         top: 58,
         width: 146,
         height: 146,
@@ -1965,8 +1965,8 @@ export default function CreateEntryPage() {
         aria-hidden="true"
         style={{
           position: "absolute",
-          right: -30,
-          top: -34,
+          right: -8,
+          top: -28,
           width: 112,
           height: 112,
           borderRadius: 999,
@@ -3896,7 +3896,7 @@ export default function CreateEntryPage() {
                     aria-hidden="true"
                     style={{
                       position: "absolute",
-                      right: -42,
+                      right: -14,
                       top: 210,
                       width: 150,
                       height: 150,
