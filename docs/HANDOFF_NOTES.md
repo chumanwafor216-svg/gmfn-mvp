@@ -1,3 +1,57 @@
+## 2026-06-16 - Dashboard Spotlight Speaker Restored In Frame
+
+- Trigger:
+  - owner confirmed the previous Dashboard Spotlight fix did not solve the
+    real audio complaint:
+    - Dashboard Spotlight speaker was not visible/on-screen;
+    - tapping near the video still felt like it could jump away from Dashboard;
+    - Public Marketplace/Public Shop Spotlight audio behavior felt correct and
+      should be the reference.
+- Confirmed source truth:
+  - `frontend/src/pages/DashboardPage.tsx` had the Dashboard Spotlight
+    `SpotlightMediaFrame` configured with `showAudioUnlock={false}`;
+  - therefore the Dashboard video could not expose the shared `Sound on` /
+    `Muted` control at all, even though the shared media component supports it;
+  - Dashboard also places a visual overlay after the media frame, so the media
+    frame needed an explicit higher z-index to keep the sound control visually
+    inside the video surface.
+- Changed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - restored `showAudioUnlock={Boolean(spotlightVideoCandidate)}` for the
+      Dashboard Spotlight primary media preview and the legacy spotlight dock;
+    - added `audioUnlockLabel="Sound on"` and `audioUnlockOffLabel="Muted"`;
+    - styled the Dashboard sound control as a compact light in-frame speaker
+      button at the top-right of the video frame;
+    - raised the media frame above the Dashboard decorative overlay with
+      `zIndex: 2`, while the existing bottom WhatsApp/status overlay remains
+      above the media frame.
+  - `frontend/tools/audit-dashboard-phone-buttons.mjs`
+    - changed the Dashboard phone cage from requiring no audio control to
+      requiring an in-frame `Sound on` / `Muted` video control with fixed phone
+      geometry.
+- Route/screen affected:
+  - `/app/dashboard`, Dashboard live Spotlight video/audio control only.
+- Verification:
+  - Passed `npm run audit:dashboard-phone-buttons`.
+  - Passed `npm run audit:dashboard-button-inventory`.
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm run audit:icon-protocol`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx tools\audit-dashboard-phone-buttons.mjs`.
+  - Passed `npm run build`.
+- Screenshot / browser verification limitation:
+  - in-app Browser connector returned `Browser is not available: iab`;
+  - sandboxed Vite dev server failed with Windows `spawn EPERM`;
+  - escalated Vite background launch on port `5201` did not produce a reachable
+    local server or log in this session.
+- Unabated truth:
+  - source now mounts the same shared Spotlight audio control used by working
+    spotlight surfaces, and cages it as visible in-frame;
+  - I still do not have an honest screenshot from this machine for this slice;
+  - final proof must be a phone/browser test after serving or deploying this
+    commit.
+
 ## 2026-06-16 - Dashboard Spotlight Open/Close Tap Surface
 
 - Trigger:

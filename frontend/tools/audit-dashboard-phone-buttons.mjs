@@ -120,9 +120,9 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
-      /<SpotlightMediaFrame[\s\S]*?showVideoControls=\{false\}[\s\S]*?autoPlayVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?mutedVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?loopVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?showAudioUnlock=\{false\}[\s\S]*?maxVideoSeconds=\{SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS\}/,
+      /<SpotlightMediaFrame[\s\S]*?frameStyle=\{\{[\s\S]*?zIndex: 2[\s\S]*?showVideoControls=\{false\}[\s\S]*?autoPlayVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?mutedVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?loopVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?showAudioUnlock=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?right: isPhone \? 12 : 18[\s\S]*?width: isPhone \? 44 : 52[\s\S]*?height: isPhone \? 44 : 52[\s\S]*?maxHeight: isPhone \? 44 : 52[\s\S]*?maxVideoSeconds=\{SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS\}/,
     message:
-      "Dashboard Spotlight primary media preview must not expose a dead-looking speaker/audio control.",
+      "Dashboard Spotlight primary media preview must expose an in-frame Sound on/Muted control for video without moving outside the screen.",
   },
 ];
 

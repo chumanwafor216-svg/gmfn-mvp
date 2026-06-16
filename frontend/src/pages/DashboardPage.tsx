@@ -9022,6 +9022,7 @@ export default function DashboardPage() {
                     minHeight: dashboardSpotlightScreenHeight,
                     borderRadius: isPhone ? 14 : 16,
                     background: "transparent",
+                    zIndex: 2,
                     boxShadow:
                       "inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 0 1px rgba(2,12,27,0.22)",
                   }}
@@ -9035,7 +9036,9 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
-                  showAudioUnlock={false}
+                  showAudioUnlock={Boolean(spotlightVideoCandidate)}
+                  audioUnlockLabel="Sound on"
+                  audioUnlockOffLabel="Muted"
                   audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
                     top: isPhone ? 12 : 18,
@@ -9047,12 +9050,13 @@ export default function DashboardPage() {
                     maxHeight: isPhone ? 44 : 52,
                     padding: 0,
                     borderRadius: 999,
-                    fontSize: isPhone ? 18 : 20,
+                    fontSize: 0,
                     border: "1px solid rgba(214,170,69,0.66)",
                     background:
-                      "linear-gradient(180deg, rgba(7,23,44,0.96) 0%, rgba(8,35,58,0.94) 100%)",
+                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,232,0.96) 100%)",
+                    color: "#07172C",
                     boxShadow:
-                      "0 12px 22px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.16)",
+                      "0 12px 22px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.92)",
                   }}
                   maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   fallback={
@@ -9671,6 +9675,7 @@ export default function DashboardPage() {
                     minHeight: dashboardSpotlightMinHeight,
                     borderRadius: dashboardSpotlightRadius,
                     background: "transparent",
+                    zIndex: 2,
                   }}
                   mediaStyle={{
                     width: "100%",
@@ -9682,7 +9687,9 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
-                  showAudioUnlock={false}
+                  showAudioUnlock={Boolean(spotlightVideoCandidate)}
+                  audioUnlockLabel="Sound on"
+                  audioUnlockOffLabel="Muted"
                   audioUnlockErrorLabel="Play"
                   audioUnlockStyle={{
                     top: isPhone ? 14 : 16,
@@ -9694,7 +9701,11 @@ export default function DashboardPage() {
                     maxHeight: isPhone ? 40 : 44,
                     padding: 0,
                     borderRadius: 999,
-                    fontSize: isPhone ? 18 : 20,
+                    fontSize: 0,
+                    color: "#07172C",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,232,0.96) 100%)",
+                    border: "1px solid rgba(214,170,69,0.66)",
                     boxShadow: "0 12px 22px rgba(2,12,27,0.30)",
                   }}
                   maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
