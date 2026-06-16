@@ -1,3 +1,42 @@
+## 2026-06-16 - Dashboard Spotlight Open/Close Tap Surface
+
+- Trigger:
+  - owner reported the Dashboard Spotlight area around the video/learn-more
+    surface felt too sensitive on phone;
+  - a missed tap could land on bottom navigation such as Community,
+    Marketplace, or Finance unless the tester aimed at the small toggle.
+- Changed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changed the Spotlight `Sharing matters` header row into the full
+      `dashboard.spotlight.guide.toggle` stable action surface;
+    - removed the small nested `Learn more` pill as the only active target;
+    - changed the toggle wording to `Open` / `Close` so the action says what it
+      actually does;
+    - kept the same debug id and action count so the Dashboard button inventory
+      remains stable.
+  - `frontend/tools/audit-dashboard-phone-buttons.mjs`
+    - updated the Dashboard phone cage to protect the new contract: the whole
+      Sharing matters row opens/closes the details, live count stays in that
+      row, and rotation timing stays inside the opened details.
+- Route/screen affected:
+  - `/app/dashboard`, Dashboard live Spotlight guide surface only.
+- Verification:
+  - Passed `npm run audit:dashboard-phone-buttons`.
+  - Passed `npm run audit:dashboard-button-inventory`.
+  - Passed `npm run audit:dashboard-actions`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed `npm run audit:button-stability`.
+  - Passed `npm exec -- eslint src\pages\DashboardPage.tsx tools\audit-dashboard-phone-buttons.mjs`.
+  - Passed `npm run build`.
+- Unabated truth:
+  - this fixes the source-level tap target by making the intended row the
+    action root; it does not prove the exact tester phone/browser feel without
+    another physical phone tap pass;
+  - Dashboard video remains muted autoplay in this primary preview; this slice
+    did not turn on audio by default because browser autoplay rules and the
+    existing Dashboard cage intentionally avoid a dead-looking audio control
+    there.
+
 ## 2026-06-16 - Mobile Whitewash / Overflow Sweep
 
 - Trigger:

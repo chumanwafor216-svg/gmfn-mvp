@@ -102,9 +102,9 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
-      /Your Spotlight[\s\S]*?Live community spotlight[\s\S]*?Sharing matters\.[\s\S]*?\{spotlightQueueTotal \|\| spotlights\.length\} live or queued\.[\s\S]*?debugId="dashboard\.spotlight\.guide\.toggle"[\s\S]*?spotlightGuideOpen \? \([\s\S]*?Rotates every \{SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL\} seconds\./,
+      /Your Spotlight[\s\S]*?Live community spotlight[\s\S]*?debugId="dashboard\.spotlight\.guide\.toggle"[\s\S]*?Sharing matters\.[\s\S]*?\{spotlightQueueTotal \|\| spotlights\.length\} live or queued\.[\s\S]*?spotlightGuideOpen \? "Close" : "Open"[\s\S]*?spotlightGuideOpen \? \([\s\S]*?Rotates every \{SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL\} seconds\./,
     message:
-      "Dashboard Spotlight must keep live count inside Sharing matters and rotation timing inside Learn More, not as permanent header chips.",
+      "Dashboard Spotlight must keep the Sharing matters row as the open/close action surface, with live count inside the row and rotation timing inside the opened details.",
   },
   {
     pattern:

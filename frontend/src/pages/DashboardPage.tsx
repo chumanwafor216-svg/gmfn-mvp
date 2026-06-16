@@ -9373,16 +9373,35 @@ export default function DashboardPage() {
                   lineHeight: isPhone ? 1.38 : 1.55,
                 }}
               >
-                <div
-                  style={{
+                <StableButton
+                  debugId="dashboard.spotlight.guide.toggle"
+                  type="button"
+                  onClick={toggleSpotlightGuide}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={dashboardStableActionFrame({
+                    width: "100%",
+                    minWidth: 0,
+                    minHeight: isPhone ? 68 : 72,
+                    padding: isPhone ? "0 2px" : "0 4px",
+                    border: "0",
+                    borderRadius: isPhone ? 14 : 16,
+                    background: "transparent",
+                    boxShadow: "none",
+                    color: "#35516B",
+                    cursor: "pointer",
                     display: "grid",
                     gridTemplateColumns: isPhone
                       ? "auto minmax(0, 1fr) auto"
                       : "auto minmax(0, 1fr) 1px auto",
                     gap: isPhone ? 10 : 14,
                     alignItems: "center",
-                    minWidth: 0,
-                  }}
+                    justifyContent: "stretch",
+                    textAlign: "left",
+                    letterSpacing: 0,
+                    touchAction: "manipulation",
+                    userSelect: "none",
+                  })}
+                  aria-expanded={spotlightGuideOpen}
                 >
                   <span
                     aria-hidden="true"
@@ -9434,11 +9453,7 @@ export default function DashboardPage() {
                       }}
                     />
                   ) : null}
-                  <StableButton
-                    debugId="dashboard.spotlight.guide.toggle"
-                    type="button"
-                    onClick={toggleSpotlightGuide}
-                    onPointerDown={consumeDashboardPointerEvent}
+                  <span
                     style={dashboardStableActionFrame({
                       width: "auto",
                       minWidth: isPhone ? 82 : 112,
@@ -9464,12 +9479,12 @@ export default function DashboardPage() {
                       whiteSpace: "nowrap",
                     })}
                   >
-                    <span>{spotlightGuideOpen ? "Close" : "Learn more"}</span>
+                    <span>{spotlightGuideOpen ? "Close" : "Open"}</span>
                     <span aria-hidden="true" style={{ fontSize: isPhone ? 20 : 23 }}>
                       &gt;
                     </span>
-                  </StableButton>
-                </div>
+                  </span>
+                </StableButton>
                 {spotlightGuideOpen ? (
                   <div
                     style={{
