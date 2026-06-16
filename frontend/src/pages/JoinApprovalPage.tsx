@@ -159,35 +159,39 @@ function normalizedStatus(value?: string | null): NormalizedStatus {
 function statusTone(status: NormalizedStatus) {
   if (status === "approved") {
     return {
-      bg: "#ECFDF5",
-      border: "1px solid #A7F3D0",
-      text: "#065F46",
+      bg: "linear-gradient(180deg, rgba(9,48,39,0.98) 0%, rgba(8,35,58,0.97) 100%)",
+      border: "1px solid rgba(124,240,170,0.38)",
+      text: "#7CF0AA",
+      helper: "#D9FBE6",
       title: "Approved",
     };
   }
 
   if (status === "pending") {
     return {
-      bg: "#EFF6FF",
-      border: "1px solid #BFDBFE",
-      text: "#1D4ED8",
+      bg: "linear-gradient(180deg, rgba(14,48,92,0.98) 0%, rgba(8,35,58,0.97) 100%)",
+      border: "1px solid rgba(123,181,255,0.38)",
+      text: "#BFD8FF",
+      helper: "#D7E6FA",
       title: "Pending",
     };
   }
 
   if (status === "rejected") {
     return {
-      bg: "#FEF2F2",
-      border: "1px solid #FECACA",
-      text: "#991B1B",
+      bg: "linear-gradient(180deg, rgba(83,20,30,0.98) 0%, rgba(8,35,58,0.97) 100%)",
+      border: "1px solid rgba(254,202,202,0.38)",
+      text: "#FFD0D0",
+      helper: "#F8D8D8",
       title: "Rejected",
     };
   }
 
   return {
-    bg: "#F8FAFC",
-    border: "1px solid #E2E8F0",
-    text: "#475569",
+    bg: "linear-gradient(180deg, rgba(37,52,71,0.98) 0%, rgba(8,35,58,0.97) 100%)",
+    border: "1px solid rgba(214,226,239,0.24)",
+    text: "#E6EEF8",
+    helper: "#C8D8EA",
     title: "Unknown",
   };
 }
@@ -567,7 +571,7 @@ export default function JoinApprovalPage() {
                 {tone.title}
               </div>
 
-              <div style={{ marginTop: 10, ...helperText(), color: "#35516B" }}>
+              <div style={{ marginTop: 10, ...helperText(), color: tone.helper }}>
                 {helperMessage}
               </div>
 

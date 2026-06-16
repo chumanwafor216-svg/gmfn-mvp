@@ -63,6 +63,7 @@
     "audit:finance-signals-readiness-lane": "node tools/audit-finance-signals-readiness-lane.mjs",
     "audit:admin-ops-actions": "node tools/audit-admin-ops-actions.mjs",
     "audit:member-entry-actions": "node tools/audit-member-entry-actions.mjs",
+    "audit:join-approval-contrast": "node tools/audit-join-approval-contrast.mjs",
     "audit:entry-flow-polish": "node tools/audit-entry-flow-polish.mjs",
     "audit:entry-copy-response": "node tools/audit-entry-copy-response.mjs",
     "audit:existing-community-invite-line": "node tools/audit-existing-community-invite-line.mjs",

@@ -1,3 +1,62 @@
+## 2026-06-16 - Join Approval Whitewash Fix + Sign-In Truth Check
+
+- Trigger:
+  - owner sent phone screenshots showing:
+    - `/login` accepting a GSN ID/password but then warning that the live system
+      could not open the member session;
+    - `/join-approval/:requestId` approved-status page looking pale/washed out
+      and hard to read on phone.
+- Confirmed sign-in truth:
+  - `frontend/src/pages/LoginPage.tsx` already exposes `Activate membership`
+    from the sign-in form.
+  - the screenshot's exact warning is not the normal "wrong button / activation
+    pending" path. It appears after `loginAndStore()` accepts credentials and
+    the page then calls `/auth/me` through `getMeWithTokenRetry()`.
+  - therefore the honest reading is: credentials were accepted, but the
+    follow-up session/member-record check failed or could not be read on the
+    live site/browser path. That points to live API/session/CORS/token-read
+    behavior, stale deployment, or a transient network/backend issue more than
+    simply the tester pressing the wrong button.
+  - if the tester has never finished activation, the right instruction remains:
+    use `Activate membership` first, then sign in. But this screenshot alone
+    does not prove that was the only cause.
+- Fix:
+  - updated `frontend/src/pages/JoinApprovalPage.tsx` so approved, pending,
+    rejected, and unknown status cards use dark institutional gradients with
+    high-contrast status/helper colors instead of light semantic cards mixed
+    with dark-page label/chip styling.
+  - added `frontend/tools/audit-join-approval-contrast.mjs` and wired
+    `npm run audit:join-approval-contrast` into `frontend/package.json` so the
+    washed-out approved palette is caged.
+- Routes/screens affected:
+  - `/join-approval/:requestId` visual/status readability only.
+  - `/login` was inspected, but not changed.
+- Verification:
+  - `npm run audit:join-approval-contrast` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:entry-flow-polish` passed.
+  - `npm exec -- eslint src\pages\JoinApprovalPage.tsx tools\audit-join-approval-contrast.mjs` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:entry-copy-response` passed.
+  - `npm run build` passed.
+  - local Vite is running at `http://127.0.0.1:5180` for manual inspection.
+- Visual verification limitation:
+  - the in-app Browser connector returned `Browser is not available: iab`;
+  - Playwright is installed but its browser binary is missing;
+  - no system Chrome/Edge executable was found in the usual install paths;
+  - therefore this pass does not include an honest rendered screenshot review.
+- Remaining truth:
+  - this fixes the known washed-out approval status code path and adds a guard,
+    but it is not a literal visual audit of every app page.
+  - a true app-wide whitewash sweep still requires either a working local
+    browser/screenshot path or owner phone review route by route.
+  - if the live sign-in warning repeats after the latest frontend is deployed,
+    inspect the live `/auth/login` -> `/auth/me` sequence with the actual
+    token/session response. Do not blame the user or the activation button
+    without that evidence.
+
 ## 2026-06-15 - Android Play Protect PWA Install Mitigation
 
 - Trigger:
