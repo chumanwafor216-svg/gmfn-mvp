@@ -1310,12 +1310,18 @@ export default function ShopGalleryPage() {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("block") || query.get("slot"));
   }, [location.search]);
-  const routeClanId = useMemo(() => {
+  const explicitRouteClanId = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return positiveNumber(
       query.get("clan_id") || query.get("community_id") || query.get("community")
     );
   }, [location.search]);
+  const routeClanId = useMemo(() => {
+    if (explicitRouteClanId > 0) return explicitRouteClanId;
+
+    const signedInSelectedClanId = positiveNumber(getSelectedClanId());
+    return getAccessToken() && signedInSelectedClanId > 0 ? signedInSelectedClanId : 0;
+  }, [explicitRouteClanId]);
   const publicShopReturnPath = useMemo(() => {
     const path = `${location.pathname || ""}${location.search || ""}${
       location.hash || ""
@@ -1573,11 +1579,15 @@ export default function ShopGalleryPage() {
       );
     }
 
-    async function loadPublicShop(cleanedGmfnId: string) {
+    async function loadPublicShop(
+      cleanedGmfnId: string,
+      options: { useCommunityScope?: boolean } = {}
+    ) {
       if (!cleanedGmfnId) return null;
 
+      const useCommunityScope = options.useCommunityScope !== false;
       const publicShopRes = await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
-        clan_id: routeClanId > 0 ? routeClanId : undefined,
+        clan_id: useCommunityScope && routeClanId > 0 ? routeClanId : undefined,
         product_id: routeProductId > 0 ? routeProductId : undefined,
         product_limit: 100,
         broadcast_limit: 24,
@@ -1669,6 +1679,20 @@ export default function ShopGalleryPage() {
           publicShopRes = await loadPublicShop(cleanedGmfnId);
         } catch (err: any) {
           const message = safeStr(err?.message);
+          if (
+            routeClanId > 0 &&
+            explicitRouteClanId <= 0 &&
+            isDisconnectedPublicShopError(message)
+          ) {
+            publicShopRes = await loadPublicShop(cleanedGmfnId, {
+              useCommunityScope: false,
+            }).catch(() => null);
+            if (publicShopRes) {
+              applyPublicShop(publicShopRes, clanRes, effectiveGmfnId);
+              return;
+            }
+          }
+
           const refreshKey = publicShopReconnectAttemptKey(cleanedGmfnId);
           const canAttemptRefresh =
             cleanedGmfnId &&
@@ -1753,7 +1777,7 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityRefresh);
       }
     };
-  }, [gmfnId, routeClanId, routeProductId, shopReconnectRetryKey]);
+  }, [explicitRouteClanId, gmfnId, routeClanId, routeProductId, shopReconnectRetryKey]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);

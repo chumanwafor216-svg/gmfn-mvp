@@ -1,3 +1,49 @@
+## 2026-06-17 - Public Shop Spotlight Uses Signed-In Community Context
+
+- Trigger:
+  - owner asked to check what was still uncommitted/unpushed before manually
+    triggering deploy;
+  - owner then reported Dashboard Spotlight and the Public Shop Spotlight
+    extension did not behave the same for the same signed-in shop context.
+- Repo truth before this fix:
+  - `git status --short` was clean;
+  - local `HEAD` and remote `origin/main` both pointed to
+    `24faa5fcfe73bcf2b4b6f784432a4d3de424a02d`;
+  - nothing was uncommitted or unpushed at the start of this check.
+- Confirmed source truth:
+  - Dashboard loads Spotlight from the signed-in community/feed context via
+    `/marketplace/broadcasts`;
+  - Public Shop loads its mini Spotlight from
+    `/marketplace/public/shop/{gmfn_id}`;
+  - that public-shop endpoint already accepts `clan_id`, but
+    `ShopGalleryPage` only sent it when the URL explicitly contained
+    `?clan_id=...`;
+  - signed-in "my public shop" openings without a query string could therefore
+    fall back to the shop's default/home public context and miss the same
+    Spotlight feed shown on Dashboard.
+- Changed:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - Public Shop now uses the explicit URL community first;
+    - if no explicit community is present and the user is signed in, it uses
+      the stored selected community id when calling
+      `/marketplace/public/shop/{gmfn_id}`;
+    - if that implicit signed-in community is stale or not visible for the
+      shop, it falls back to the normal public-shop scope so external links do
+      not break;
+    - explicit `?clan_id=...` links remain strict.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - `npm --prefix frontend run build` first hit sandbox `spawn EPERM`; rerun
+    with approved escalation passed.
+- Unabated truth:
+  - this is a frontend route-context fix using an existing backend contract,
+    not a backend API change;
+  - it should align signed-in Public Shop Spotlight with Dashboard when both
+    are meant to represent the selected community;
+  - it does not change unauthenticated external public-shop links into global
+    cross-community discovery.
+
 ## 2026-06-17 - Shop Billboard Save Stabilized
 
 - Trigger:
