@@ -1,3 +1,93 @@
+## 2026-06-17 - Shop Billboard Save Stabilized
+
+- Trigger:
+  - owner reported the Public Shop / Shop Gallery Tools button for adding the
+    shop name to the Shop billboard was "very jumpy";
+  - owner reiterated that Spotlight and membership corrections must happen at
+    system level, with page-level work limited to presentation/stability.
+- Confirmed source truth:
+  - `frontend/src/pages/ShopControlPage.tsx` saves Shop billboard/details
+    through the real marketplace shop API:
+    - `POST /api/marketplace/shops` when no shop row exists;
+    - `PATCH /api/marketplace/shops/{shop.id}` when the shop row exists.
+  - The old success path then immediately called
+    `setActiveOwnerLayer("overview")`, so the system save could succeed but
+    the page snapped away from the billboard editor. That was a frontend
+    stability problem around a system-backed action, not a fake page-only shop
+    name.
+- Changed:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - Shop details save now keeps `activeOwnerLayer` on `shop-details`;
+    - success message now says `Shop billboard details saved on the system.`;
+    - Save Shop Details and Manage Products buttons now use fixed
+      `stableHeight` values in the billboard action rail.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated the guardrail so audits now protect the no-jump billboard save
+      behavior instead of enforcing the old auto-close.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - `npm --prefix frontend run build` first failed inside the sandbox with
+    Vite/esbuild `spawn EPERM`; rerun with approved escalation passed.
+- Unabated truth:
+  - this fixes the jump caused by closing the editor after save;
+  - this does not, by itself, prove live production membership/Spotlight
+    records are repaired. Those backend changes are still local until
+    committed, pushed, and deployed.
+
+## 2026-06-17 - Membership Count Truth Split For Spotlight/Join Review
+
+- Trigger:
+  - owner reported that `GMFN-U-66E6A380` had a live Spotlight, but the
+    Spotlight did not appear to rotate as expected;
+  - owner then noticed the same community/member flow appeared to show only
+    two members in one place while another surface suggested five people.
+- Live/API truth checked:
+  - `GET https://gmfn-api.onrender.com/marketplace/public/shop/GMFN-U-66E6A380?product_limit=1&broadcast_limit=24`
+    returned active shop `id=3`, `clan_id=5`, and active free Spotlight
+    broadcast `id=17`;
+  - the broadcast expires on `2026-06-17T23:59:59+00:00` and uses video
+    `/uploads/marketplace/videos/20260617172257_2f2cb1c2dcc13848.webm`;
+  - therefore the upload/publish worked. The remaining issue is membership /
+    feed scope / rotation source, not media upload.
+- Confirmed source truth:
+  - Spotlight capacity uses raw active `clan_memberships` rows where
+    `left_at IS NULL` in `gmfn_backend/app/api/routes/marketplace.py`;
+  - join-request approval already calls `ensure_membership()` in
+    `gmfn_backend/app/api/routes/clans.py`, so approval is intended to create
+    real backend membership before activation;
+  - join-review counts deliberately exclude not-yet-activated users via
+    `_active_reviewer_memberships()`, so a newly admitted but not activated
+    member can exist in `clan_memberships` while not increasing the visible
+    reviewer/approval count.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `GET /clans/{clan_id}/members` now returns all active admitted
+      memberships in `items`;
+    - added `active_membership_total`, `reviewer_items`, and `reviewer_total`
+      so callers can distinguish admitted members from activated reviewers;
+    - join-request row/status payloads now include
+      `active_membership_count` and `active_reviewer_count` while preserving
+      existing `active_member_count` as the reviewer-count compatibility field.
+  - `gmfn_backend/tests/test_clan_members.py`
+    - added coverage proving admitted-but-not-activated members appear in
+      membership totals but not reviewer totals.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - extended live review count coverage to prove three admitted memberships
+      can still mean two activated reviewers.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_clan_members.py gmfn_backend\tests\test_join_requests.py::test_join_request_status_reports_live_review_counts_and_activated_reviewers`.
+  - Passed `python -m compileall -q gmfn_backend\app\api\routes\clans.py`.
+- Unabated truth:
+  - this does not force global Spotlight rotation across every shop. Free
+    Spotlight is still bounded by community/feed scope;
+  - this makes the membership truth observable so the next check can compare
+    admitted members, activated reviewers, and Spotlight capacity honestly;
+  - frontend labels may still need a follow-up pass so pages do not call
+    reviewer count simply `Active` when the owner expects admitted membership.
+
 ## 2026-06-16 - Dashboard Spotlight Speaker Restored In Frame
 
 - Trigger:

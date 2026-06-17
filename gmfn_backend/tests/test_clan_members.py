@@ -24,6 +24,55 @@ def test_list_clan_members_admin_ok(client, override_current_user, seed_clan_adm
     assert len(items) >= 1
 
 
+def test_list_clan_members_separates_admitted_members_from_reviewers(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, role, gmfn_id)
+                VALUES (
+                    2,
+                    'pending-member@example.com',
+                    'PENDING_APPROVAL',
+                    'user',
+                    'GMFN-U-PENDING'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (
+                    clan_id,
+                    user_id,
+                    role,
+                    personal_pool_balance
+                )
+                VALUES (1, 2, 'user', 0)
+                """
+            )
+        )
+
+    r = client.get("/clans/1/members")
+    assert r.status_code == 200, r.text
+    data = r.json()
+
+    assert data["total"] == 2
+    assert data["active_membership_total"] == 2
+    assert data["member_capacity_used"] == 2
+    assert data["reviewer_total"] == 1
+    assert [item["gmfn_id"] for item in data["items"]] == [
+        None,
+        "GMFN-U-PENDING",
+    ]
+    assert len(data["reviewer_items"]) == 1
+
+
 def test_add_member_admin_ok(client, override_current_user, seed_clan_admin_membership, seed_user2_non_member):
     payload = {"user_id": 2, "role": "member"}
     r = client.post("/clans/1/members", json=payload)

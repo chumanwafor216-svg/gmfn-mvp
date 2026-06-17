@@ -2116,6 +2116,8 @@ def test_join_request_status_reports_live_review_counts_and_activated_reviewers(
     data = res.json()
     assert data["status"] == "pending"
     assert data["active_member_count"] == 2
+    assert data["active_membership_count"] == 3
+    assert data["active_reviewer_count"] == 2
     assert data["required_approvals"] == 1
     assert data["approvals"] == 0
     assert data["rejects"] == 0

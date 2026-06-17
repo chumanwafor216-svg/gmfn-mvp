@@ -644,6 +644,10 @@ def _current_join_status(
     *,
     join_request: ClanJoinRequest,
 ) -> dict[str, Any]:
+    active_membership_count = _active_clan_member_count(
+        db,
+        clan_id=int(join_request.clan_id),
+    )
     reviewer_rows = _active_reviewer_memberships(
         db,
         clan_id=int(join_request.clan_id),
@@ -665,11 +669,11 @@ def _current_join_status(
     )
     total_votes = len(votes)
 
-    active_members = len(reviewer_rows)
+    active_reviewers = len(reviewer_rows)
     required = max(
         1,
         int(
-            (Decimal(active_members) * JOIN_APPROVAL_RATIO).to_integral_value(
+            (Decimal(active_reviewers) * JOIN_APPROVAL_RATIO).to_integral_value(
                 rounding="ROUND_CEILING"
             )
         ),
@@ -680,7 +684,9 @@ def _current_join_status(
         "rejects": rejects,
         "neutrals": neutrals,
         "total_votes": total_votes,
-        "active_member_count": active_members,
+        "active_member_count": active_reviewers,
+        "active_membership_count": active_membership_count,
+        "active_reviewer_count": active_reviewers,
         "required_approvals": required,
         "threshold_ratio": str(JOIN_APPROVAL_RATIO),
         "eligible_reviewers": [
@@ -754,6 +760,8 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "neutrals": stats["neutrals"],
         "total_votes": stats["total_votes"],
         "active_member_count": stats["active_member_count"],
+        "active_membership_count": stats["active_membership_count"],
+        "active_reviewer_count": stats["active_reviewer_count"],
         "required_approvals": stats["required_approvals"],
         "threshold_ratio": stats["threshold_ratio"],
         "eligible_reviewers": stats["eligible_reviewers"],
@@ -1049,6 +1057,8 @@ def _join_request_status_payload(
         "neutrals": stats["neutrals"],
         "total_votes": stats["total_votes"],
         "active_member_count": stats["active_member_count"],
+        "active_membership_count": stats["active_membership_count"],
+        "active_reviewer_count": stats["active_reviewer_count"],
         "required_approvals": stats["required_approvals"],
         "threshold_ratio": stats["threshold_ratio"],
         "eligible_reviewers": stats["eligible_reviewers"],
@@ -3086,16 +3096,29 @@ def list_members(
         current_user=current_user,
     )
 
-    members = [
+    member_rows = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
+        .all()
+    )
+    reviewer_members = [
         membership
         for membership, _user in _active_reviewer_memberships(db, clan_id=int(clan_id))
     ]
 
-    items = [_member_row(db, m) for m in members]
+    items = [_member_row(db, m) for m in member_rows]
+    reviewer_items = [_member_row(db, m) for m in reviewer_members]
     capacity = _community_member_capacity_snapshot(db, clan_id=int(clan_id))
     return {
         "items": items,
         "total": len(items),
+        "active_membership_total": len(items),
+        "reviewer_items": reviewer_items,
+        "reviewer_total": len(reviewer_items),
         "community_code": _community_code(clan_id),
         "member_capacity_included": capacity["included"],
         "member_capacity_extra": capacity["extra"],

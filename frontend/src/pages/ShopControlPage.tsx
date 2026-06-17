@@ -2108,8 +2108,8 @@ export default function ShopControlPage() {
       setWhatsApp(firstTruthy(updated?.whatsapp_number));
       setTelegramHandle(firstTruthy(updated?.telegram_handle));
       setImageUrlInput(firstTruthy(updated?.image_url));
-      setActiveOwnerLayer("overview");
-      showNotice("success", "Shop details saved. Shop details control closed.");
+      setActiveOwnerLayer("shop-details");
+      showNotice("success", "Shop billboard details saved on the system.");
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Shop details could not be saved.");
     } finally {
@@ -4197,6 +4197,7 @@ export default function ShopControlPage() {
             busy={savingShop}
             busyLabel="Saving..."
             fullWidth
+            stableHeight={isCompact ? 64 : 56}
             debugId="shop-control.details.save"
           >
             {shopActionsLocked ? "Review Identity First" : "Save Shop Details"}
@@ -4206,6 +4207,7 @@ export default function ShopControlPage() {
             to={routes.shopAssets}
             kind="secondary"
             fullWidth
+            stableHeight={isCompact ? 64 : 56}
             debugId="shop-control.details.manage-products"
           >
             Manage Products
