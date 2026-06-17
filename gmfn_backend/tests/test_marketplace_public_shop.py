@@ -1459,7 +1459,68 @@ def test_my_marketplace_shop_returns_owner_public_gallery_blocks(
     assert public_slot_map == slot_map
 
 
-def test_shop_spotlight_publish_targets_only_the_shop_community(
+def test_marketplace_shop_list_counts_member_global_shop_in_each_membership_community(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-LISTSHOP'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Origin community', 'Origin Marketplace', 'LISTSHOP1'),
+                    (2, 'Second community', 'Second Marketplace', 'LISTSHOP2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'ONE GLOBAL SHOP', 'Visible wherever owner belongs', 1
+                )
+                """
+            )
+        )
+
+    res = client.get("/marketplace/shops?clan_id=2&only_active=true")
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["clan_id"] == 2
+    assert body["total"] == 1
+    assert len(body["items"]) == 1
+    assert body["items"][0]["name"] == "ONE GLOBAL SHOP"
+    assert body["items"][0]["gmfn_id"] == "GMFN-U-LISTSHOP"
+
+
+def test_shop_spotlight_publish_targets_all_eligible_owner_communities(
     client,
     override_current_user_user,
 ):
@@ -1524,8 +1585,9 @@ def test_shop_spotlight_publish_targets_only_the_shop_community(
     body = res.json()
 
     assert body["ok"] is True
-    assert body["propagated_count"] == 1
-    assert body["propagated_clan_ids"] == [1]
+    assert body["propagated_count"] == 2
+    assert body["propagated_clan_ids"] == [1, 2]
+    assert body["skipped_capacity_clan_ids"] == []
 
     with engine.begin() as conn:
         rows = conn.execute(
@@ -1538,7 +1600,122 @@ def test_shop_spotlight_publish_targets_only_the_shop_community(
             )
         ).fetchall()
 
-    assert [int(row[0]) for row in rows] == [1]
+    assert [int(row[0]) for row in rows] == [1, 2]
+
+
+def test_shop_spotlight_publish_skips_full_community_and_uses_open_community(
+    client,
+    override_current_user_user,
+    monkeypatch,
+):
+    _ensure_marketplace_tables()
+    fixed_now = datetime(2026, 6, 17, 12, 0, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(marketplace_routes, "_now_utc", lambda: fixed_now)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-SPOTLIGHT'),
+                    (2, 'other@example.com', 'hashed', 'Other Owner', 'user', 'GMFN-U-OTHER')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Golden boys', 'Golden boys Marketplace', 'SPOTLIGHT1'),
+                    (2, 'Aberdeen city ICA', 'Aberdeen city ICA Marketplace', 'SPOTLIGHT2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0),
+                    (3, 1, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES
+                    (1, 1, 1, 'CHUMA INTERNATIONAL SHOP', 'All kinds of goods', 1),
+                    (2, 1, 2, 'OTHER SHOP', 'Already live', 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message, image_url,
+                    priority_mode, visibility_scope, expires_at, created_at
+                ) VALUES
+                (
+                    1, 1, 2, 2, 'Already live', '/uploads/marketplace/images/other.jpg',
+                    'free', 'direct_communities', :expires_at, :created_at
+                ),
+                (
+                    2, 2, 2, 2, 'Paid reach should not consume free quota',
+                    '/uploads/marketplace/images/paid.jpg',
+                    'paid', 'marketplace_repost', :expires_at, :created_at
+                )
+                """
+            ),
+            {
+                "expires_at": fixed_now + timedelta(days=1),
+                "created_at": fixed_now - timedelta(minutes=5),
+            },
+        )
+
+    res = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Fresh spotlight",
+            "image_url": "/uploads/marketplace/images/live-spotlight.jpg",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["ok"] is True
+    assert body["propagated_count"] == 1
+    assert body["propagated_clan_ids"] == [2]
+    assert body["skipped_capacity_clan_ids"] == [1]
+    assert body["skipped_capacity_count"] == 1
+
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT clan_id, message
+                FROM marketplace_broadcasts
+                ORDER BY id ASC
+                """
+            )
+        ).fetchall()
+
+    assert [(int(row[0]), row[1]) for row in rows] == [
+        (1, "Already live"),
+        (2, "Paid reach should not consume free quota"),
+        (2, "Fresh spotlight"),
+    ]
 
 
 def test_shop_spotlight_publish_ignores_stale_requested_clan_for_owned_shop(
@@ -1744,6 +1921,24 @@ def test_paid_spotlight_requires_unused_subscription_credit(
                 """
             )
         )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message, image_url,
+                    priority_mode, visibility_scope, expires_at, created_at
+                ) VALUES (
+                    1, 1, 1, 1, 'Free lane already full',
+                    '/uploads/marketplace/images/free-full.jpg',
+                    'free', 'direct_communities', :expires_at, :created_at
+                )
+                """
+            ),
+            {
+                "expires_at": datetime.now(timezone.utc) + timedelta(days=1),
+                "created_at": datetime.now(timezone.utc) - timedelta(minutes=5),
+            },
+        )
 
     blocked = client.post(
         "/marketplace/broadcasts",
@@ -1796,6 +1991,7 @@ def test_paid_spotlight_requires_unused_subscription_credit(
     )
     assert published.status_code == 200, published.text
     assert published.json()["item"]["priority_mode"] == "paid"
+    assert published.json()["item"]["visibility_scope"] == "direct_communities"
 
     status_after = client.get("/marketplace/shops/1/spotlight-status")
     assert status_after.status_code == 200, status_after.text
@@ -1837,6 +2033,126 @@ def test_paid_spotlight_requires_unused_subscription_credit(
 
     assert int(entitlement[0]) == 1
     assert int(usage_count) == 1
+
+
+def test_network_repost_does_not_block_direct_subscription_spotlight(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setenv("SECRET_KEY", "pytest-repost-direct-paid-secret")
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'seller@example.com', 'hashed', 'Seller One', 'user', 'GMFN-U-PAIDMIX'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code, community_code)
+                VALUES
+                    (1, 'Source Community', 'Source Marketplace', 'PAIDMIX1', 'GMFN-C-000001'),
+                    (2, 'Target Community', 'Target Marketplace', 'PAIDMIX2', 'GMFN-C-000002')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Seller Public Shop', 'Trusted products', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, visibility_mode, is_active
+                ) VALUES (
+                    1, 1, 1, 1, 'Fresh Rice', '[BLOCK:5] Bag of rice',
+                    '25000', 'NGN', '/uploads/marketplace/images/rice.jpg',
+                    'community_visible', 1
+                )
+                """
+            )
+        )
+        now = datetime.now(timezone.utc)
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    2, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-MIX'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    token = create_access_token({"sub": "seller@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    repost = client.post(
+        "/marketplace/products/1/repost",
+        json={"target_community_code": "GMFN-C-000002", "duration_days": 1},
+        headers=headers,
+    )
+    assert repost.status_code == 200, repost.text
+    assert repost.json()["broadcast"]["visibility_scope"] == "marketplace_repost"
+
+    status_after_repost = client.get("/marketplace/shops/1/spotlight-status", headers=headers)
+    assert status_after_repost.status_code == 200, status_after_repost.text
+    assert status_after_repost.json()["available_paid_credits"] == 1
+    assert status_after_repost.json()["active_paid_spotlights"] == 0
+    assert status_after_repost.json()["can_publish_paid_spotlight"] is True
+
+    direct_paid = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Direct paid spotlight",
+            "priority_mode": "paid",
+            "visibility_scope": "direct_communities",
+        },
+        headers=headers,
+    )
+    assert direct_paid.status_code == 200, direct_paid.text
+    assert direct_paid.json()["item"]["visibility_scope"] == "direct_communities"
+
+    status_after_direct = client.get("/marketplace/shops/1/spotlight-status", headers=headers)
+    assert status_after_direct.status_code == 200, status_after_direct.text
+    assert status_after_direct.json()["available_paid_credits"] == 0
+    assert status_after_direct.json()["active_paid_spotlights"] == 1
+    assert status_after_direct.json()["can_publish_paid_spotlight"] is False
 
 
 def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(

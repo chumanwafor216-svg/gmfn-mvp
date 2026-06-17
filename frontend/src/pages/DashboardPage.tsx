@@ -3145,6 +3145,7 @@ export default function DashboardPage() {
 
       try {
         const res = await getMarketplaceBroadcasts({
+          clan_id: null,
           active_only: true,
           limit: 20,
         });
@@ -3203,6 +3204,7 @@ export default function DashboardPage() {
         }
 
         const recentRes = await getMarketplaceBroadcasts({
+          clan_id: null,
           active_only: false,
           limit: 5,
         });

@@ -605,6 +605,7 @@ def _count_active_spotlights_for_clan(
         db.query(MarketplaceBroadcast)
         .filter(
             MarketplaceBroadcast.clan_id == int(clan_id),
+            MarketplaceBroadcast.priority_mode != SPOTLIGHT_PAID,
             (MarketplaceBroadcast.expires_at.is_(None))
             | (MarketplaceBroadcast.expires_at > current_time),
         )
@@ -623,6 +624,7 @@ def _count_active_paid_spotlights_for_shop(
         db.query(MarketplaceBroadcast)
         .filter(MarketplaceBroadcast.shop_id == int(shop_id))
         .filter(MarketplaceBroadcast.priority_mode == SPOTLIGHT_PAID)
+        .filter(MarketplaceBroadcast.visibility_scope != "marketplace_repost")
         .filter(
             (MarketplaceBroadcast.expires_at.is_(None))
             | (MarketplaceBroadcast.expires_at > current_time),
@@ -3139,18 +3141,28 @@ def create_marketplace_broadcast(
     if expires_at <= _now_utc():
         raise HTTPException(status_code=400, detail="expires_at must be in the future")
 
-    target_clan_ids = (
-        [int(resolved_clan_id)]
-        if shop is not None
-        else _get_active_clan_ids_for_user(
+    if shop is not None:
+        if priority_mode != SPOTLIGHT_PAID and visibility_scope == "direct_communities":
+            target_clan_ids = [
+                int(clan_id)
+                for clan_id in _get_active_clan_ids_for_user(
+                    db=db,
+                    user_id=int(current_user.id),
+                )
+                if _shop_is_visible_in_clan(db, shop=shop, clan_id=int(clan_id))
+            ]
+        else:
+            target_clan_ids = [int(resolved_clan_id)]
+    else:
+        target_clan_ids = _get_active_clan_ids_for_user(
             db=db,
             user_id=int(current_user.id),
         )
-    )
     if not target_clan_ids:
         raise HTTPException(status_code=400, detail="No active community memberships found")
 
     current_time = _now_utc()
+    skipped_capacity_clan_ids: list[int] = []
 
     if priority_mode == SPOTLIGHT_PAID:
         if not shop:
@@ -3181,6 +3193,7 @@ def create_marketplace_broadcast(
                 detail="A paid spotlight is already active for this shop. Wait for it to end before starting another one.",
             )
     elif not _spotlight_capacity_pilot_override_active(current_time):
+        available_target_clan_ids: list[int] = []
         for clan_id in target_clan_ids:
             active_count = _count_active_spotlights_for_clan(
                 db=db,
@@ -3192,10 +3205,31 @@ def create_marketplace_broadcast(
                 clan_id=int(clan_id),
             )
             if active_count >= max_allowed:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Spotlight capacity reached for community {clan_id}. Wait for an active spotlight to expire.",
+                skipped_capacity_clan_ids.append(int(clan_id))
+                continue
+            available_target_clan_ids.append(int(clan_id))
+
+        if not available_target_clan_ids:
+            detail = (
+                "Spotlight capacity reached for all eligible communities. "
+                "Wait for an active spotlight to expire or use paid boost."
+            )
+            if len(skipped_capacity_clan_ids) == 1:
+                detail = (
+                    f"Spotlight capacity reached for community {skipped_capacity_clan_ids[0]}. "
+                    "Wait for an active spotlight to expire or use paid boost."
                 )
+            raise HTTPException(status_code=400, detail=detail)
+
+        target_clan_ids = available_target_clan_ids
+
+    if not target_clan_ids:
+        if skipped_capacity_clan_ids:
+            raise HTTPException(
+                status_code=400,
+                detail="Spotlight capacity reached for all eligible communities. Wait for an active spotlight to expire or use paid boost.",
+            )
+        raise HTTPException(status_code=400, detail="No eligible community spotlight placements found")
 
     created_at = _now_utc()
     created_items: list[MarketplaceBroadcast] = []
@@ -3271,6 +3305,7 @@ def create_marketplace_broadcast(
                 "expires_at": item.expires_at.isoformat() if item.expires_at else None,
                 "propagated_to_all_active_clans": True,
                 "propagated_clan_count": len(target_clan_ids),
+                "skipped_capacity_clan_ids": skipped_capacity_clan_ids,
                 "reason": "marketplace_broadcast_created",
             },
             commit=False,
@@ -3289,6 +3324,8 @@ def create_marketplace_broadcast(
         "items": [_broadcast_out(db, x) for x in created_items],
         "propagated_clan_ids": target_clan_ids,
         "propagated_count": len(created_items),
+        "skipped_capacity_clan_ids": skipped_capacity_clan_ids,
+        "skipped_capacity_count": len(skipped_capacity_clan_ids),
         "spotlight_capacity_pilot_override_active": _spotlight_capacity_pilot_override_active(),
     }
 

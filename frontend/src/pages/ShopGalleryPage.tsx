@@ -12,6 +12,7 @@ import {
   createMarketplaceShop,
   getAccessToken,
   getCurrentClan,
+  getMarketplaceBroadcasts,
   listMyClans,
   getMe,
   getPublicMarketplaceShopByGmfnId,
@@ -1472,7 +1473,12 @@ export default function ShopGalleryPage() {
   useEffect(() => {
     let alive = true;
 
-    function applyPublicShop(publicShopRes: any, clanRes: any, cleanedGmfnId: string) {
+    function applyPublicShop(
+      publicShopRes: any,
+      clanRes: any,
+      cleanedGmfnId: string,
+      viewerSpotlightRows?: any[] | null
+    ) {
       const normalizedShop = normalizeShop(
         publicShopRes?.item || publicShopRes,
         cleanedGmfnId,
@@ -1524,6 +1530,10 @@ export default function ShopGalleryPage() {
         publicShopRes?.primaryBroadcast,
         ...rowsOf<any>(publicShopRes?.broadcasts),
       ].filter(Boolean);
+      const spotlightBroadcasts =
+        Array.isArray(viewerSpotlightRows) && viewerSpotlightRows.length > 0
+          ? viewerSpotlightRows
+          : publicBroadcasts;
 
       const relevantBroadcast =
         (publicShopRes?.primary_broadcast
@@ -1543,7 +1553,7 @@ export default function ShopGalleryPage() {
           }) || null;
 
       if (!alive) return;
-      const normalizedBroadcasts = publicBroadcasts
+      const normalizedBroadcasts = spotlightBroadcasts
         .map((row) => normalizeBroadcast(row))
         .filter(Boolean)
         .filter(broadcastIsActive)
@@ -1594,6 +1604,24 @@ export default function ShopGalleryPage() {
       });
 
       return publicShopRes;
+    }
+
+    async function loadViewerSpotlightRows() {
+      if (!getAccessToken()) return null;
+
+      const res = await getMarketplaceBroadcasts({
+        clan_id: null,
+        active_only: true,
+        limit: 24,
+      }).catch(() => null);
+
+      const items = Array.isArray(res)
+        ? res
+        : Array.isArray((res as any)?.items)
+        ? (res as any).items
+        : [];
+
+      return items.length > 0 ? items : null;
     }
 
     async function refreshOwnerShop(cleanedGmfnId: string, clanRes: any) {
@@ -1674,9 +1702,11 @@ export default function ShopGalleryPage() {
         let effectiveGmfnId = cleanedGmfnId;
         const clanRes = await getCurrentClan().catch(() => null);
         let publicShopRes: any = null;
+        let viewerSpotlightRows: any[] | null = null;
 
         try {
           publicShopRes = await loadPublicShop(cleanedGmfnId);
+          viewerSpotlightRows = await loadViewerSpotlightRows();
         } catch (err: any) {
           const message = safeStr(err?.message);
           if (
@@ -1688,7 +1718,13 @@ export default function ShopGalleryPage() {
               useCommunityScope: false,
             }).catch(() => null);
             if (publicShopRes) {
-              applyPublicShop(publicShopRes, clanRes, effectiveGmfnId);
+              viewerSpotlightRows = await loadViewerSpotlightRows();
+              applyPublicShop(
+                publicShopRes,
+                clanRes,
+                effectiveGmfnId,
+                viewerSpotlightRows
+              );
               return;
             }
           }
@@ -1717,6 +1753,7 @@ export default function ShopGalleryPage() {
           effectiveGmfnId = refreshedGmfnId;
           replacePublicShopAddress(refreshedGmfnId);
           publicShopRes = await loadPublicShop(effectiveGmfnId);
+          viewerSpotlightRows = await loadViewerSpotlightRows();
           if (alive) {
             setNotice({
               tone: "success",
@@ -1727,7 +1764,7 @@ export default function ShopGalleryPage() {
           }
         }
 
-        applyPublicShop(publicShopRes, clanRes, effectiveGmfnId);
+        applyPublicShop(publicShopRes, clanRes, effectiveGmfnId, viewerSpotlightRows);
       } catch (err: any) {
         if (!alive) return;
         const message = safeStr(err?.message);

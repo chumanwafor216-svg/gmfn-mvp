@@ -1,3 +1,221 @@
+## 2026-06-17 - Spotlight Repair Batch Ready Locally, Not Pushed
+
+- Trigger:
+  - owner asked to continue after the Spotlight model, membership cross-check,
+    and paid/repost separation work;
+  - current task was to finish the local handoff and keep the batch ready for
+    an explicit publish/deploy decision.
+- Current local state:
+  - one local commit on `main` is ahead of `origin/main`;
+  - the batch has not been pushed or deployed in this session;
+  - publish only when the owner explicitly says the current batch is ready.
+- Batch behavior now covered:
+  - one GSN/GMFN ID equals one shop and one shop-owned Spotlight advert;
+  - free Spotlight publishing places that shop advert into every eligible
+    active community where the owner is a member and the shop is visible;
+  - free quota is checked per community, so full communities are skipped while
+    open communities still receive the placement;
+  - paid/repost Spotlight rows do not consume free community quota;
+  - Network Repost (`visibility_scope = "marketplace_repost"`) no longer
+    blocks direct paid Subscription Spotlight (`visibility_scope =
+    "direct_communities"`);
+  - Dashboard Spotlight and signed-in Public Shop Spotlight now read from the
+    same authenticated all-active-communities feed.
+- Final verification performed:
+  - Passed targeted backend Spotlight batch:
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_targets_all_eligible_owner_communities gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_skips_full_community_and_uses_open_community gmfn_backend\tests\test_marketplace_public_shop.py::test_marketplace_shop_list_counts_member_global_shop_in_each_membership_community gmfn_backend\tests\test_marketplace_public_shop.py::test_product_repost_requires_paid_credit_and_creates_target_marketplace_spotlight gmfn_backend\tests\test_marketplace_public_shop.py::test_paid_spotlight_requires_unused_subscription_credit gmfn_backend\tests\test_marketplace_public_shop.py::test_network_repost_does_not_block_direct_subscription_spotlight gmfn_backend\tests\test_marketplace_public_shop.py::test_paid_spotlight_blocks_second_active_run_even_with_unused_credit`
+    with `7 passed`.
+  - Passed membership separation check:
+    `python -m pytest -q gmfn_backend\tests\test_clan_members.py::test_list_clan_members_separates_admitted_members_from_reviewers`.
+  - Passed compile check:
+    `python -m compileall -q gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py gmfn_backend\tests\test_clan_members.py`.
+  - Passed frontend audits:
+    `npm --prefix frontend run audit:protected-button-freeze`,
+    `npm --prefix frontend run audit:shop-gallery-button-inventory`,
+    `npm --prefix frontend run audit:dashboard-button-inventory`, and
+    `npm --prefix frontend run audit:button-stability`.
+  - `npm --prefix frontend run build` failed inside sandbox with Windows/esbuild
+    `spawn EPERM`; rerun as approved `npm run build` from `frontend/` passed.
+- Verification limitation:
+  - full `gmfn_backend\tests\test_marketplace_public_shop.py` still could not
+    be completed because pytest temp fixtures hit Windows `PermissionError`
+    before affected tests could run;
+  - this remains an environment/temp-folder setup problem, not a known
+    Spotlight assertion failure.
+- Unabated truth:
+  - the implementation still uses repeated `marketplace_broadcasts` rows as
+    per-community placements for one shop advert; a cleaner future data model
+    would split shop advert identity from placement rows;
+  - the current patch is enough for the pilot rule the owner described, but it
+    should be tested on the real pilot accounts after deployment because live
+    production membership data may still differ from local fixtures.
+
+## 2026-06-17 - Spotlight System Model Rebuilt Around Shop-Owned Ad + Community Slots
+
+- Trigger:
+  - owner clarified the intended Spotlight behavior after the initial
+    community-scope diagnosis:
+    - one GSN/GMFN number equals one shop;
+    - the Spotlight advert belongs to that one shop;
+    - free Spotlight exposure is placed into the communities where that shop
+      owner is an active member;
+    - each community still has its own free billboard quota;
+    - paid/repost Spotlight is exposure beyond the normal community coverage or
+      priority when the free quota is unavailable;
+    - Dashboard Spotlight and Public Shop Spotlight must read the same
+      billboard feed, with Public Shop acting only as an extension.
+- Backend changed:
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - free shop Spotlight publishing now targets all active communities where
+      the shop owner is a member and the shop is visible;
+    - free community capacity is evaluated per target community;
+    - if some communities are full and others are open, the backend now creates
+      placements in the open communities and reports the full ones in
+      `skipped_capacity_clan_ids`;
+    - if all eligible communities are full, the backend returns a clear capacity
+      error advising the owner to wait or use paid boost;
+    - free capacity counting now excludes paid/repost Spotlight rows by
+      ignoring `priority_mode = "paid"`.
+- Frontend changed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - Dashboard active and fallback Spotlight reads now explicitly request
+      `clan_id: null`, which uses the backend's authenticated all-active-clans
+      feed instead of the stored selected community only.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - signed-in Public Shop loads shop identity/products from the public-shop
+      endpoint, but loads its rotating mini Spotlight rows from the same
+      authenticated `/marketplace/broadcasts` feed used by Dashboard;
+    - unauthenticated external public-shop links still use the public-shop
+      endpoint's normal community/public Spotlight response.
+- Tests changed:
+  - `gmfn_backend/tests/test_marketplace_public_shop.py`
+    - replaced the old expectation that a shop Spotlight targets only the
+      shop's original community;
+    - added coverage for all eligible owner communities;
+    - added coverage proving a full community is skipped while an open
+      community still receives the Spotlight;
+    - added a paid/repost row to prove paid Spotlight does not consume free
+      quota.
+- Verification:
+  - Passed targeted backend tests:
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_targets_all_eligible_owner_communities gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_skips_full_community_and_uses_open_community gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_ignores_stale_requested_clan_for_owned_shop gmfn_backend\tests\test_marketplace_public_shop.py::test_free_spotlight_capacity_reached_is_suspended_for_test_week gmfn_backend\tests\test_marketplace_public_shop.py::test_product_repost_requires_paid_credit_and_creates_target_marketplace_spotlight`.
+  - Passed `python -m compileall -q gmfn_backend\app\api\routes\marketplace.py`.
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:dashboard-button-inventory`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - `npm --prefix frontend run build` failed in sandbox with Windows/esbuild
+    `spawn EPERM`; rerun as approved `npm run build` from `frontend/` passed.
+- Verification limitation:
+  - full `gmfn_backend\tests\test_marketplace_public_shop.py` did not complete
+    because pytest could not create/use temporary folders on this Windows
+    machine (`PermissionError` under the default temp root and under attempted
+    local/C:\tmp basetemp paths);
+  - the failures were setup/temp-fixture errors, not assertion failures from
+    the Spotlight code;
+  - 17 tests in that file passed before the temp-fixture failures, and the
+    specific changed Spotlight tests passed.
+- Unabated truth:
+  - this still uses duplicated `marketplace_broadcasts` rows as community
+    placements for one shop advert; a future cleaner data model would separate
+    `spotlight_ad` from `spotlight_placement`, but no migration was introduced
+    in this pilot slice;
+  - this is local and unpushed unless the owner explicitly asks to publish the
+    current batch, matching the active pilot pipeline-saving policy.
+
+## 2026-06-17 - Marketplace Membership And Shop Visibility Cross-Check
+
+- Trigger:
+  - owner asked to continue after the shop-owned Spotlight repair plan;
+  - Round 3 was to confirm whether the Marketplace member/shop counts were a
+    backend truth problem or a page interpretation problem.
+- Confirmed source truth:
+  - `GET /clans/{clan_id}/members` now returns all active admitted memberships
+    in `items`, with `active_membership_total` separate from
+    `reviewer_total`;
+  - `frontend/src/pages/MarketplacePage.tsx` uses `rowsOf(membersRes)`, and
+    `rowsOf()` correctly reads `membersRes.items`;
+  - the Marketplace header count `{memberRows.length} visible members` is
+    therefore driven by the backend membership list, not by the collapsed UI
+    subset;
+  - on phone, Marketplace intentionally shows only the first 3 member cards and
+    puts the rest under `More visible members`, so `3 more tucked away` means
+    `6 total - 3 shown`, not missing backend members;
+  - `GET /marketplace/shops?clan_id=...` is membership-driven through
+    `_shop_is_visible_in_clan()`, so a member's one global shop is visible in
+    every community where that shop owner is an active member.
+- Tests changed:
+  - `gmfn_backend/tests/test_marketplace_public_shop.py`
+    - added
+      `test_marketplace_shop_list_counts_member_global_shop_in_each_membership_community`
+      proving a shop created in one community appears in another community's
+      shop list when the owner belongs to both communities.
+- Verification:
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_marketplace_shop_list_counts_member_global_shop_in_each_membership_community gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_targets_all_eligible_owner_communities gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_skips_full_community_and_uses_open_community`.
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_clan_members.py::test_list_clan_members_separates_admitted_members_from_reviewers`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `python -m compileall -q gmfn_backend\tests\test_marketplace_public_shop.py`.
+- Verification limitation:
+  - `test_shop_gallery_products_follow_owner_across_membership_communities`
+    was not rerun successfully because it uses pytest `tmp_path`, and this
+    machine is still throwing Windows temp-directory `PermissionError` before
+    test execution;
+  - this is the same environment limitation seen in the earlier full
+    public-shop test-file run, not an assertion failure.
+- Unabated truth:
+  - this round found no additional production code defect in Marketplace's
+    membership/shop count path;
+  - if production still shows the older `2 members` behavior for a community
+    that should have 5 or 6, the likely cause is that the backend membership
+    fix is not deployed live yet or the specific live user is looking at a
+    different selected community context.
+
+## 2026-06-17 - Paid Spotlight And Network Repost Separation
+
+- Trigger:
+  - Round 4 of the Spotlight repair plan was to verify the paid/repost model:
+    free Spotlight is natural community coverage, while paid/repost extends or
+    prioritizes exposure beyond the free quota.
+- Confirmed source truth:
+  - `POST /marketplace/products/{product_id}/repost` already implements
+    Network Spotlight:
+    - requires the shop owner;
+    - requires paid `spotlight_priority` credits;
+    - targets a different community by id/code;
+    - creates a paid `MarketplaceBroadcast` with
+      `visibility_scope = "marketplace_repost"`;
+    - does not require the shop owner to belong to the target community.
+  - direct paid Subscription Spotlight uses `POST /marketplace/broadcasts`
+    with `priority_mode = "paid"` and
+    `visibility_scope = "direct_communities"`.
+- Backend changed:
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - `_count_active_paid_spotlights_for_shop()` now excludes
+      `visibility_scope = "marketplace_repost"`;
+    - this keeps a Network Repost from falsely closing the direct
+      Subscription Spotlight publisher for the same shop;
+    - the direct paid publisher still blocks a second active direct paid run.
+- Tests changed:
+  - `gmfn_backend/tests/test_marketplace_public_shop.py`
+    - extended direct paid Spotlight coverage so it proves paid publishing
+      still works when the free community lane is already full;
+    - added
+      `test_network_repost_does_not_block_direct_subscription_spotlight`,
+      proving a paid Network Repost consumes one paid credit but does not count
+      as an active direct paid spotlight.
+- Verification:
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_product_repost_requires_paid_credit_and_creates_target_marketplace_spotlight gmfn_backend\tests\test_marketplace_public_shop.py::test_paid_spotlight_requires_unused_subscription_credit gmfn_backend\tests\test_marketplace_public_shop.py::test_network_repost_does_not_block_direct_subscription_spotlight gmfn_backend\tests\test_marketplace_public_shop.py::test_paid_spotlight_blocks_second_active_run_even_with_unused_credit`.
+  - Passed
+    `python -m compileall -q gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`.
+- Unabated truth:
+  - this does not create a new payment product or new UI lane;
+  - it clarifies the existing two paid uses so the system can support both:
+    Network Repost for beyond-normal-coverage placement and direct paid
+    Subscription Spotlight for priority/direct publishing.
+
 ## 2026-06-17 - Public Shop Spotlight Uses Signed-In Community Context
 
 - Trigger:
