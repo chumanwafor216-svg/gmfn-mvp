@@ -1,3 +1,35 @@
+## 2026-06-17 - Spotlight Batch Pushed, Backend Render Deploy Blocked By Missing API Key
+
+- Trigger:
+  - owner said to continue after the verified local Spotlight batch was ready.
+- Published state:
+  - pushed `main` from `0359655` to
+    `c4d35fb9621be48ff2fd901ed0856040e368098e`;
+  - commit message: `Fix shop-owned spotlight placement and feeds`;
+  - GitHub `Backend Tests` for the pushed commit passed:
+    run `27713112183`.
+- Render workflow attempt:
+  - manually triggered `.github/workflows/render-deploy.yml` on `main` with
+    `deploy_api=true`;
+  - workflow run: `27713195353`;
+  - frontend deploy hook accepted the request and returned Render deploy id
+    `dep-d8pf1kkvikkc739il1a0`;
+  - backend deploy did not run because the workflow requires `RENDER_API_KEY`
+    for exact-commit gmfn-api deploys, and that secret is not configured.
+- Required next deployment action:
+  - configure GitHub secret `RENDER_API_KEY` and preferably
+    `RENDER_API_SERVICE_ID`, then rerun `Trigger Render Deploy` with
+    `deploy_api=true`;
+  - or deploy `gmfn-api` manually from Render and verify the live API identity
+    contracts afterward.
+- Unabated truth:
+  - frontend deploy was accepted by Render;
+  - backend deploy was not accepted and cannot be claimed deployed from this
+    workflow run;
+  - because this Spotlight fix changes backend behavior, the live pilot may not
+    show the fixed Spotlight/membership behavior until gmfn-api is deployed to
+    the same commit.
+
 ## 2026-06-17 - Spotlight Repair Batch Ready Locally, Not Pushed
 
 - Trigger:
