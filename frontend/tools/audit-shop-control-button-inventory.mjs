@@ -363,6 +363,16 @@ assertShopContains(
   "Shop Control Picture + video choice must show both picture and video 3D meaning icons."
 );
 
+assertShopContains(
+  /function inputStyle\(\): React\.CSSProperties \{[\s\S]*?minHeight: 48,[\s\S]*?fontFamily: "inherit",[\s\S]*?fontSize: 16,[\s\S]*?lineHeight: 1\.35,[\s\S]*?appearance: "none",[\s\S]*?WebkitAppearance: "none",[\s\S]*?touchAction: "manipulation",[\s\S]*?overflowAnchor: "none"/,
+  "Shop Control native text fields must keep a system-level stable mobile input style to prevent browser focus zoom and tap jump."
+);
+
+assertShopContains(
+  /function textAreaStyle\(\): React\.CSSProperties \{[\s\S]*?\.\.\.inputStyle\(\),[\s\S]*?minHeight: 96,[\s\S]*?resize: "none",[\s\S]*?overflow: "auto",[\s\S]*?lineHeight: 1\.45/,
+  "Shop Control textareas must keep fixed resize behavior so the shop details card does not move under touch."
+);
+
 if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
   findings.push({
     file: shopControlFile,

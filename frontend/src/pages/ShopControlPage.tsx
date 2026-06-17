@@ -581,15 +581,21 @@ function controlGrid(isCompact: boolean, minWidth = 138): React.CSSProperties {
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: 44,
+    minHeight: 48,
     borderRadius: 14,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
     padding: "11px 12px",
-    fontSize: 14,
+    fontFamily: "inherit",
+    fontSize: 16,
+    lineHeight: 1.35,
     color: "#0B1F33",
     outline: "none",
     boxSizing: "border-box",
+    appearance: "none",
+    WebkitAppearance: "none",
+    touchAction: "manipulation",
+    overflowAnchor: "none",
   };
 }
 
@@ -597,8 +603,9 @@ function textAreaStyle(): React.CSSProperties {
   return {
     ...inputStyle(),
     minHeight: 96,
-    resize: "vertical",
-    lineHeight: 1.6,
+    resize: "none",
+    overflow: "auto",
+    lineHeight: 1.45,
   };
 }
 

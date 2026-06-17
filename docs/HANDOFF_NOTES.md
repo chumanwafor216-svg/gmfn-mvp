@@ -1,3 +1,45 @@
+## 2026-06-17 - Shop Control Field Tap Stability Repaired Locally
+
+- Trigger:
+  - owner reported the Shop Control / Shop Details page is still jumpy on
+    phone, especially the Shop name field, while the WhatsApp number field is
+    more usable;
+  - owner asked for a system-level fix, not a page-local patch.
+- Confirmed source cause:
+  - `frontend/src/pages/ShopControlPage.tsx` uses one shared `inputStyle()` and
+    `textAreaStyle()` helper across Shop Details, Spotlight setup, ROSCA,
+    meeting, and package fields;
+  - the helper used `fontSize: 14` and did not force inherited font family;
+  - on mobile browsers, fields below 16px can trigger focus zoom/layout jump,
+    and textarea defaults/resizing can make the card move under touch.
+- Changed:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - raised shared native field minimum height from `44` to `48`;
+    - raised shared native field font size from `14` to `16`;
+    - added `fontFamily: "inherit"` and stable line height;
+    - removed browser-native appearance quirks with `appearance` /
+      `WebkitAppearance`;
+    - added `touchAction: "manipulation"` and `overflowAnchor: "none"`;
+    - changed Shop Control textarea resize from `vertical` to `none` with
+      controlled overflow so the card does not shift under touch.
+  - `frontend/tools/audit-shop-control-button-inventory.mjs`
+    - now cages the shared Shop Control input and textarea stability contract.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - `npm --prefix frontend run build` hit the known Windows/esbuild sandbox
+    `spawn EPERM`; reran approved `npm run build` from `frontend/` and it
+    passed.
+- Verification limitation:
+  - attempted in-app Browser route verification, but Browser reported `iab` is
+    unavailable in this session, so no live tap/visual browser check was
+    completed.
+- Unabated truth:
+  - this is the correct system-level frontend repair for the class of jump
+    caused by mobile focus zoom and textarea resizing;
+  - it still needs owner phone review after deployment because the reported
+    symptom is physical touch behavior on the real phone/browser.
+
 ## 2026-06-17 - Spotlight System Contract Caged Locally
 
 - Trigger:
