@@ -46,6 +46,8 @@ The protected freeze band covers:
 - Dashboard route action contracts and phone button geometry.
 - Community Home route action contracts, compact rows, app-shell tap rescue, and
   phone button geometry.
+- Shop Control route action contracts, native field stability, and focused-task
+  shell controls.
 - Action Inbox / Notifications button inventory.
 - Cover, Login, Create Community, Join Entry, Join Pending, Join Approval,
   Member Activation, Profile, and My GSN and I member-entry action traceability.
@@ -84,5 +86,5 @@ intentional freeze update before continuing.
 
 The protected freeze is source-level and audit-level. It does not prove that the
 physical phone experience is perfect. The product owner has judged Community
-Home and Dashboard close enough for now, roughly usable enough to shield while
-the team turns to the more unstable Marketplace page.
+Home, Dashboard, and Shop Control close enough for now, roughly usable enough to
+shield while the team turns to the next unstable page family.

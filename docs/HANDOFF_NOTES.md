@@ -1,3 +1,26 @@
+## 2026-06-17 - Shop Control Field Stability Added To Protected Freeze
+
+- Trigger:
+  - owner confirmed the Shop Control page is now OK on phone and asked to cage
+    it so it stays steady.
+- Changed:
+  - `frontend/tools/audit-protected-button-freeze.mjs`
+    - now includes `audit-shop-control-button-inventory.mjs` as a protected
+      freeze-band audit.
+  - `docs/FREEZE_POLICY.md`
+    - explicitly freezes Shop Control action inventory and shared native field
+      stability;
+    - warns not to reduce field font size below `16px`, restore textarea
+      vertical resizing, remove inherited field font, change Shop Control
+      action counts, or alter focused-task shell controls without an
+      intentional Shop Control stability audit update.
+  - `docs/BUTTON_STABILITY_FREEZE.md`
+    - adds Shop Control to the protected freeze band and current truth.
+- Unabated truth:
+  - this is a cage around the confirmed fix, not another visual redesign;
+  - future changes can still intentionally alter Shop Control, but they must
+    update the route-local audit and protected freeze expectation deliberately.
+
 ## 2026-06-17 - Shop Control Field Tap Stability Repaired Locally
 
 - Trigger:

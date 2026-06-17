@@ -48,6 +48,10 @@ const protectedAudits = [
     script: "audit-community-join-requests-layout.mjs",
   },
   {
+    label: "shop control button and field inventory",
+    script: "audit-shop-control-button-inventory.mjs",
+  },
+  {
     label: "action inbox button inventory",
     script: "audit-notifications-button-inventory.mjs",
   },
@@ -106,5 +110,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "\nProtected button freeze audit passed: Dashboard, Community Home, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, shared tap guard, and global stable-action hygiene are still caged."
+  "\nProtected button freeze audit passed: Dashboard, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, shared tap guard, and global stable-action hygiene are still caged."
 );
