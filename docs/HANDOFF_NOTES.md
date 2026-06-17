@@ -1,3 +1,40 @@
+## 2026-06-17 - Spotlight System Contract Caged Locally
+
+- Trigger:
+  - owner asked to cage/protect the whole Spotlight line before moving to
+    another task.
+- Changed:
+  - `frontend/tools/audit-spotlight-system-feed.mjs`
+    - new source audit protecting the Spotlight system contract:
+      - free shop Spotlight must target every active eligible community where
+        the one-shop owner is visible;
+      - free quota must be checked per community, skipping full communities
+        while still placing into open communities;
+      - publish responses must expose skipped-capacity community ids/counts;
+      - paid/repost rows must not consume free quota;
+      - Network Repost must not count as active direct paid Subscription
+        Spotlight;
+      - Dashboard active/recent Spotlight and signed-in Public Shop Spotlight
+        must keep using the authenticated all-active-communities feed;
+      - backend regression tests for those rules must remain present.
+  - `frontend/package.json`
+    - added `audit:spotlight-system-feed`.
+  - `docs/FREEZE_POLICY.md`
+    - records the Spotlight placement/quota/repost/feed parity cage and names
+      the protected files/contracts.
+- Verification:
+  - Passed `npm --prefix frontend run audit:spotlight-system-feed`.
+  - Passed `npm --prefix frontend run audit:spotlight-controls`.
+  - Passed `npm --prefix frontend run audit:spotlight-quota`.
+  - Passed targeted backend regressions:
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_targets_all_eligible_owner_communities gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_spotlight_publish_skips_full_community_and_uses_open_community gmfn_backend\tests\test_marketplace_public_shop.py::test_network_repost_does_not_block_direct_subscription_spotlight gmfn_backend\tests\test_marketplace_public_shop.py::test_paid_spotlight_requires_unused_subscription_credit gmfn_backend\tests\test_marketplace_public_shop.py::test_paid_spotlight_blocks_second_active_run_even_with_unused_credit`
+    with `5 passed`.
+- Unabated truth:
+  - this is a regression cage, not a new runtime feature;
+  - it protects the source shape and required tests, but live pilot behavior
+    still depends on gmfn-api being deployed to the backend fix commit or a
+    later commit.
+
 ## 2026-06-17 - Spotlight Batch Pushed, Backend Render Deploy Blocked By Missing API Key
 
 - Trigger:
