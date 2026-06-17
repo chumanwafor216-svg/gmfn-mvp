@@ -36,6 +36,16 @@
   - this does not, by itself, prove live production membership/Spotlight
     records are repaired. Those backend changes are still local until
     committed, pushed, and deployed.
+- Deploy status:
+  - committed and pushed to `main` as `909b42c` on 2026-06-17;
+  - GitHub Actions `Trigger Render Deploy` run `27709484942` accepted the
+    frontend deploy hook for commit `909b42c`;
+  - the same run failed before API deploy because GitHub secret
+    `RENDER_API_KEY` is not configured, and the workflow intentionally refuses
+    backend deploys through the older API deploy hook;
+  - therefore frontend deploy may proceed, but the backend membership-count
+    API fix is not confirmed live until `RENDER_API_KEY`/`RENDER_API_SERVICE_ID`
+    are configured or gmfn-api is deployed manually from Render.
 
 ## 2026-06-17 - Membership Count Truth Split For Spotlight/Join Review
 
