@@ -4479,7 +4479,7 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         "community_evidence_currentness_label": evidence_currentness_label,
         "community_evidence_currentness_scope": evidence_currentness_scope,
         "status": community.status,
-        "public_record": "Recorded in GSN",
+        "public_record": "Verified in GSN",
         "domain_label": "GSN Community ID Domain",
         "domain_status": "Recorded community domain",
         "domain_lifecycle_status": "recorded",

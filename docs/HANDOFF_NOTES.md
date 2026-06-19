@@ -102,6 +102,28 @@
     - `npm exec -- eslint` on the touched App/API/community/TrustSlip files
       passed;
     - `npm run build` from `frontend/` passed.
+  - fourth push `3cba75f` reduced GitHub `Backend Tests` to one failure:
+    `tests/test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases`
+    expected public community records to keep the legacy contract string
+    `Verified in GSN`, but the API returned `Recorded in GSN`.
+  - restored only `public_record` in
+    `gmfn_backend/app/services/community_confirmation_service.py` to
+    `Verified in GSN`; left `domain_lifecycle_label` as `Recorded in GSN`
+    because that newer domain lifecycle wording is separate from the old
+    public record contract.
+  - local caveat:
+    - the working tree's uncommitted
+      `gmfn_backend/tests/test_community_confirmation_relay.py` differs from
+      `HEAD` and currently expects `Recorded in GSN`, so the exact local test
+      fails against the CI-directed fix.
+    - `git show HEAD:gmfn_backend/tests/test_community_confirmation_relay.py`
+      and GitHub run `27844560304` both confirm `main` expects
+      `Verified in GSN`.
+  - local verification after the final string fix:
+    - `.venv\Scripts\python.exe -m pytest -q tests\test_community_member_verifications.py tests\test_database_metadata.py`
+      passed (`33 passed`);
+    - `git diff --check -- gmfn_backend\app\services\community_confirmation_service.py`
+      passed.
 
 ## 2026-06-19 - Member Witness Request UI Proof Against Disposable Backend
 
