@@ -10,11 +10,17 @@ from typing import Any, Dict, Optional
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.core.auth import is_user_activation_pending
+from app.core.trust_event_types import (
+    PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES,
+    TrustEventType,
+)
 from app.db.bank_models import ExpectedPayment
 from app.db.verification_models import IdentityVerificationCheck
 from app.db.models import (
     Clan,
     ClanMembership,
+    CommunityMemberVerification,
     EntryPhoneVerification,
     TrustEvent,
     TrustSlip,
@@ -24,6 +30,7 @@ from app.db.models import (
 from app.services.liquidity_engine_service import build_user_liquidity_profile
 from app.services.loan_readiness_service import build_loan_readiness_plan
 from app.services.trust_score_service import compute_trust_breakdown
+from app.services.community_confirmation_service import public_community_verification
 
 try:
     from app.services.trust_graph_service import build_trust_graph  # type: ignore
@@ -32,6 +39,7 @@ except Exception:
 
 
 SNAPSHOT_VERSION = "trustslip-snapshot/v2"
+PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES = PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES
 
 
 def _now_utc() -> datetime:
@@ -47,6 +55,61 @@ def _safe_str(value: Any, default: str = "") -> str:
         return default
     s = str(value).strip()
     return s if s else default
+
+
+def _aware_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _membership_renewal_status(valid_until: datetime | None, *, now: datetime | None = None) -> str:
+    if valid_until is None:
+        return "not_started"
+    current = _aware_utc(now) or _now_utc()
+    expiry = _aware_utc(valid_until)
+    if expiry is None:
+        return "not_started"
+    if expiry < current:
+        return "expired"
+    if expiry <= current + timedelta(days=30):
+        return "renewal_due"
+    return "active"
+
+
+def _membership_renewal_status_text(status: str) -> str:
+    return {
+        "active": "Active",
+        "renewal_due": "Renewal Due",
+        "expired": "Expired",
+        "not_started": "Not Started",
+    }.get(_safe_str(status, "not_started").lower(), "Not Started")
+
+
+def _membership_currentness_reading(status: str) -> tuple[str, str]:
+    normalized = _safe_str(status, "not_started").lower()
+    if normalized == "active":
+        return (
+            "Current witness window",
+            "The member's witness evidence is within its recorded validity window. "
+            "Read it beside the TrustSlip, community activity, and public member credential before a serious decision.",
+        )
+    if normalized == "renewal_due":
+        return (
+            "Renewal due soon",
+            "The member's witness evidence is nearing renewal. Ask for a fresh member credential, TrustSlip, or live community confirmation before a serious decision.",
+        )
+    if normalized == "expired":
+        return (
+            "Witness evidence expired",
+            "The member's witness evidence is past its recorded validity window. Ask for renewed witnesses or live community confirmation before relying on the claim.",
+        )
+    return (
+        "Witness renewal not started",
+        "This active membership record has no current witness validity window. Ask for member witnesses, TrustSlip, or live community confirmation before a serious decision.",
+    )
 
 
 def _safe_decimal_str(value: Any, default: str = "0.00") -> str:
@@ -275,7 +338,7 @@ def _personal_commitment_discipline(db: Session, *, user_id: int) -> Dict[str, A
     else:
         plain = (
             "This person has started or updated personal commitments, but completion evidence is not visible yet. "
-            "Use this as early follow-through evidence, not final proof."
+            "Use this as early follow-through evidence, not final confirmation."
         )
 
     return {
@@ -495,6 +558,68 @@ def _cci_explainer(score: Any, band: Any) -> Dict[str, Any]:
     }
 
 
+def _public_activity_category(event_type: Any) -> str:
+    text = _safe_str(event_type).lower()
+    if not text:
+        return "Community activity"
+    if "verification" in text or "verified" in text or "confirmation" in text or text in {
+        "clan_joined",
+        "community_member_joined",
+    }:
+        return "Community verification"
+    if "market" in text or "shop" in text or "spotlight" in text or "demand" in text:
+        return "Trusted trade"
+    if "rosca" in text or "contribution" in text or "pool" in text or "payment" in text:
+        return "Contribution records"
+    if "loan" in text or "guarantor" in text or "support" in text:
+        return "Support and borrowing"
+    if "repay" in text or "settle" in text:
+        return "Repayment discipline"
+    return "Community activity"
+
+
+def _community_activity_summary(db: Session, *, user_id: int, clan_id: int) -> Dict[str, Any]:
+    if not user_id or not clan_id:
+        return {
+            "community_activity_count": 0,
+            "community_activity_latest_at": None,
+            "community_activity_categories": [],
+            "community_activity_label": "No community activity recorded yet",
+        }
+
+    base_query = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.clan_id == int(clan_id))
+        .filter(TrustEvent.subject_user_id == int(user_id))
+        .filter(~TrustEvent.event_type.in_(PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES))
+    )
+    activity_count = base_query.count()
+    latest_rows = (
+        base_query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(100)
+        .all()
+    )
+    categories: list[str] = []
+    for row in latest_rows:
+        category = _public_activity_category(getattr(row, "event_type", None))
+        if category not in categories:
+            categories.append(category)
+        if len(categories) >= 6:
+            break
+
+    latest_at = getattr(latest_rows[0], "created_at", None) if latest_rows else None
+    return {
+        "community_activity_count": activity_count,
+        "community_activity_latest_at": latest_at.isoformat() if latest_at else None,
+        "community_activity_categories": categories,
+        "community_activity_label": (
+            "Community activity recorded"
+            if activity_count
+            else "No community activity recorded yet"
+        ),
+    }
+
+
 def _community_context(
     db: Session,
     *,
@@ -507,7 +632,13 @@ def _community_context(
     unique_counterparties: Any,
 ) -> Dict[str, Any]:
     membership = None
-    if clan_id:
+    community_is_active = (
+        clan is not None
+        and str(getattr(clan, "status", "") or "active").strip().lower() == "active"
+    )
+    holder = db.get(User, int(user_id)) if user_id else None
+    holder_is_active_account = not is_user_activation_pending(holder)
+    if clan_id and community_is_active and holder_is_active_account:
         membership = (
             db.query(ClanMembership)
             .filter(
@@ -520,20 +651,92 @@ def _community_context(
 
     active_member_count = 0
     total_member_count = 0
-    if clan_id:
-        active_member_count = (
-            db.query(ClanMembership)
+    witness_count = 0
+    witness_valid_until = None
+    next_witness_renewal_at = None
+    if clan_id and community_is_active:
+        now = _now_utc()
+        active_membership_rows = (
+            db.query(ClanMembership, User)
+            .join(User, User.id == ClanMembership.user_id)
             .filter(
                 ClanMembership.clan_id == int(clan_id),
                 ClanMembership.left_at.is_(None),
             )
-            .count()
+            .all()
+        )
+        active_member_ids = {
+            int(membership_row.user_id)
+            for membership_row, member_user in active_membership_rows
+            if not is_user_activation_pending(member_user)
+        }
+        active_member_count = sum(
+            1
+            for _membership_row, member_user in active_membership_rows
+            if not is_user_activation_pending(member_user)
         )
         total_member_count = (
             db.query(ClanMembership)
             .filter(ClanMembership.clan_id == int(clan_id))
             .count()
         )
+        witness_rows = []
+        if membership is not None:
+            witness_rows = (
+                db.query(CommunityMemberVerification)
+                .filter(CommunityMemberVerification.clan_id == int(clan_id))
+                .filter(CommunityMemberVerification.subject_user_id == int(user_id))
+                .filter(CommunityMemberVerification.status == "active")
+                .filter(CommunityMemberVerification.withdrawn_at.is_(None))
+                .all()
+            )
+        eligible_witness_rows = [
+            row
+            for row in witness_rows
+            if int(row.subject_user_id) in active_member_ids
+            and int(row.verifier_user_id) in active_member_ids
+        ]
+        current_witness_rows = [
+            row
+            for row in eligible_witness_rows
+            if (
+                _aware_utc(getattr(row, "valid_until", None)) is None
+                or _aware_utc(getattr(row, "valid_until", None)) >= now
+            )
+        ]
+        witness_count = len(current_witness_rows)
+        witness_valid_until = max(
+            [row.valid_until for row in current_witness_rows if row.valid_until is not None],
+            default=max(
+                [row.valid_until for row in eligible_witness_rows if row.valid_until is not None],
+                default=None,
+            ),
+        )
+        next_witness_renewal_at = min(
+            [row.valid_until for row in current_witness_rows if row.valid_until is not None],
+            default=None,
+        )
+    witness_renewal_status = _membership_renewal_status(witness_valid_until)
+    next_witness_renewal_status = _membership_renewal_status(next_witness_renewal_at)
+    currentness_label, currentness_scope = _membership_currentness_reading(
+        witness_renewal_status
+    )
+
+    if witness_count >= 10:
+        witness_strength = "community_established"
+        witness_strength_label = "Community Established"
+    elif witness_count >= 6:
+        witness_strength = "strongly_verified"
+        witness_strength_label = "Strongly Verified"
+    elif witness_count >= 3:
+        witness_strength = "community_verified"
+        witness_strength_label = "Community Verified"
+    elif witness_count >= 1:
+        witness_strength = "lightly_verified"
+        witness_strength_label = "Lightly Verified"
+    else:
+        witness_strength = "joined"
+        witness_strength_label = "Joined / Unverified"
 
     role = _safe_str(getattr(membership, "role", None), "member")
     community_code = (
@@ -548,17 +751,68 @@ def _community_context(
     if active_groups:
         human_density += f"; visible across {active_groups} active community context"
         human_density += "" if str(active_groups) == "1" else "s"
+    activity_summary = _community_activity_summary(db, user_id=user_id, clan_id=clan_id)
+    community_public_record = public_community_verification(
+        db,
+        community_key=str(int(clan_id)),
+    )
 
     return {
         "community_name": community_name,
         "community_global_id": community_code,
         "community_code": community_code,
+        "community_public_face_status": community_public_record.get(
+            "community_public_face_status"
+        ),
+        "community_public_face_label": community_public_record.get(
+            "community_public_face_label"
+        ),
+        "official_affiliate_status": community_public_record.get(
+            "official_affiliate_status"
+        ),
+        "official_affiliate_label": community_public_record.get(
+            "official_affiliate_label"
+        ),
+        "community_evidence_currentness_status": community_public_record.get(
+            "community_evidence_currentness_status"
+        ),
+        "community_evidence_currentness_label": community_public_record.get(
+            "community_evidence_currentness_label"
+        ),
+        "community_evidence_currentness_scope": community_public_record.get(
+            "community_evidence_currentness_scope"
+        ),
         "holder_role": role,
         "current_user_is_active_member": bool(membership),
         "active_member_count": active_member_count,
         "total_member_count": total_member_count,
         "active_community_count": active_clan_count,
         "sponsor_count": sponsor_count,
+        "member_witness_count": witness_count,
+        "membership_strength": witness_strength,
+        "membership_strength_label": witness_strength_label,
+        "membership_renewal_status": witness_renewal_status,
+        "membership_renewal_status_label": _membership_renewal_status_text(witness_renewal_status),
+        "membership_valid_until": witness_valid_until.isoformat() if witness_valid_until else None,
+        "next_witness_renewal_at": (
+            next_witness_renewal_at.isoformat() if next_witness_renewal_at else None
+        ),
+        "next_witness_renewal_status": next_witness_renewal_status,
+        "next_witness_renewal_status_label": _membership_renewal_status_text(
+            next_witness_renewal_status
+        ),
+        "membership_currentness_label": currentness_label,
+        "membership_currentness_scope": currentness_scope,
+        "member_witness_public_note": (
+            "GSN shows witness strength as a count and status label. Private verifier names are not exposed here."
+        ),
+        "community_activity_count": activity_summary["community_activity_count"],
+        "community_activity_latest_at": activity_summary["community_activity_latest_at"],
+        "community_activity_categories": activity_summary["community_activity_categories"],
+        "community_activity_label": activity_summary["community_activity_label"],
+        "community_activity_public_note": (
+            "GSN shows broad activity categories only. Raw Trust Event details and private notes are not exposed here."
+        ),
         "unique_counterparties": unique_counterparties,
         "human_density_label": human_density,
         "plain_language": (
@@ -1037,6 +1291,14 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
         "expires_at": payload.get("expires_at"),
         "expiry_policy": payload.get("expiry_policy", "weekly"),
         "phone_verified": payload.get("phone_verified", False),
+        "next_witness_renewal_at": payload.get("next_witness_renewal_at"),
+        "next_witness_renewal_status": payload.get("next_witness_renewal_status"),
+        "next_witness_renewal_status_label": payload.get("next_witness_renewal_status_label"),
+        "membership_currentness_label": payload.get("membership_currentness_label"),
+        "membership_currentness_scope": payload.get("membership_currentness_scope"),
+        "community_evidence_currentness_status": payload.get("community_evidence_currentness_status"),
+        "community_evidence_currentness_label": payload.get("community_evidence_currentness_label"),
+        "community_evidence_currentness_scope": payload.get("community_evidence_currentness_scope"),
         "merchant_summary": merchant_summary,
         "not_a_bank_guarantee": True,
         "no_auto_debit": True,
@@ -1052,6 +1314,16 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
             "expires_at": merchant_summary.get("expires_at"),
             "expiry_policy": merchant_summary.get("expiry_policy", "weekly"),
             "phone_verified": merchant_summary.get("phone_verified", False),
+            "next_witness_renewal_at": merchant_summary.get("next_witness_renewal_at"),
+            "next_witness_renewal_status": merchant_summary.get("next_witness_renewal_status"),
+            "next_witness_renewal_status_label": merchant_summary.get(
+                "next_witness_renewal_status_label"
+            ),
+            "membership_currentness_label": merchant_summary.get("membership_currentness_label"),
+            "membership_currentness_scope": merchant_summary.get("membership_currentness_scope"),
+            "community_evidence_currentness_status": merchant_summary.get("community_evidence_currentness_status"),
+            "community_evidence_currentness_label": merchant_summary.get("community_evidence_currentness_label"),
+            "community_evidence_currentness_scope": merchant_summary.get("community_evidence_currentness_scope"),
         }
         base.pop("profile_image_url", None)
         base.pop("identity_context", None)
@@ -1063,6 +1335,20 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
         base["cci_score"] = payload.get("cci_score")
         base["cci_band"] = payload.get("cci_band")
         base["sponsor_count"] = payload.get("sponsor_count")
+        base["community_activity_count"] = payload.get("community_activity_count")
+        base["community_activity_latest_at"] = payload.get("community_activity_latest_at")
+        base["community_activity_categories"] = payload.get("community_activity_categories")
+        base["community_activity_label"] = payload.get("community_activity_label")
+        base["next_witness_renewal_at"] = payload.get("next_witness_renewal_at")
+        base["next_witness_renewal_status"] = payload.get("next_witness_renewal_status")
+        base["next_witness_renewal_status_label"] = payload.get(
+            "next_witness_renewal_status_label"
+        )
+        base["membership_currentness_label"] = payload.get("membership_currentness_label")
+        base["membership_currentness_scope"] = payload.get("membership_currentness_scope")
+        base["community_evidence_currentness_status"] = payload.get("community_evidence_currentness_status")
+        base["community_evidence_currentness_label"] = payload.get("community_evidence_currentness_label")
+        base["community_evidence_currentness_scope"] = payload.get("community_evidence_currentness_scope")
         base["merchant_summary"] = {
             "gmfn_id": merchant_summary.get("gmfn_id"),
             "code": merchant_summary.get("code"),
@@ -1075,8 +1361,23 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
             "profile_image_url": merchant_summary.get("profile_image_url"),
             "community": merchant_summary.get("community"),
             "community_global_id": merchant_summary.get("community_global_id"),
+            "community_code": merchant_summary.get("community_code"),
+            "community_evidence_currentness_status": merchant_summary.get("community_evidence_currentness_status"),
+            "community_evidence_currentness_label": merchant_summary.get("community_evidence_currentness_label"),
+            "community_evidence_currentness_scope": merchant_summary.get("community_evidence_currentness_scope"),
             "holder_role": merchant_summary.get("holder_role"),
             "active_member_count": merchant_summary.get("active_member_count"),
+            "community_activity_count": merchant_summary.get("community_activity_count"),
+            "community_activity_latest_at": merchant_summary.get("community_activity_latest_at"),
+            "community_activity_categories": merchant_summary.get("community_activity_categories"),
+            "community_activity_label": merchant_summary.get("community_activity_label"),
+            "membership_currentness_label": merchant_summary.get("membership_currentness_label"),
+            "membership_currentness_scope": merchant_summary.get("membership_currentness_scope"),
+            "next_witness_renewal_at": merchant_summary.get("next_witness_renewal_at"),
+            "next_witness_renewal_status": merchant_summary.get("next_witness_renewal_status"),
+            "next_witness_renewal_status_label": merchant_summary.get(
+                "next_witness_renewal_status_label"
+            ),
             "band": merchant_summary.get("band"),
             "cci_explainer": merchant_summary.get("cci_explainer") or cci_explainer,
             "expires_at": merchant_summary.get("expires_at"),
@@ -1356,16 +1657,16 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "passport_verification_label": entry_verification_context["passport_verification_label"],
         "community_identity_confirmed": community_identity_confirmed,
         "community_identity_label": (
-            "Identity confirmed by active community membership"
+            "Active community membership recorded"
             if community_identity_confirmed
-            else "Community identity confirmation not shown"
+            else "Community membership record not shown"
         ),
         "identity_evidence_summary": identity_evidence_summary,
         "identity_verified": phone_verified or community_identity_confirmed,
         "identity_status_label": (
-            "Phone and community membership are verified; recorded evidence is building"
+            "Phone verified; active community membership recorded; other evidence is building"
             if phone_verified and community_identity_confirmed and identity_evidence_summary["score"] >= 55
-            else "Phone and community membership are verified"
+            else "Phone verified; active community membership recorded"
             if phone_verified and community_identity_confirmed
             else "Identity evidence recorded; verification still pending"
             if identity_evidence_summary["score"] >= 35
@@ -1375,7 +1676,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         ),
         "plain_language": (
             "Use the photo, name, GSN ID, phone status, bank-record status, and community membership as identity signals. "
-            "Recorded evidence helps readiness, but only verified evidence should be treated as confirmed proof."
+            "Recorded evidence helps readiness, but only verified evidence should be treated as confirmed evidence."
         ),
     }
     owner = {
@@ -1450,7 +1751,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
 
     evidence_summary["human_terms"] = {
         "support_finance_trade": (
-            "Use the trust band, CCI, trust limit, sponsor signals, and current validity to judge whether this person has enough visible trust evidence for the decision in front of you."
+            "Use the trust band, CCI, trust limit signal, sponsor signals, and current validity to judge whether this person has enough visible trust evidence for the decision in front of you."
         ),
         "follow_through": (
             "Use contribution records, repayment records, last release, and last full repayment to see whether the person tends to finish what they start."
@@ -1500,7 +1801,31 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "community_identity_label": identity_context["community_identity_label"],
         "community_global_id": community_context.get("community_global_id"),
         "community_code": community_context.get("community_code"),
+        "community_public_face_status": community_context.get("community_public_face_status"),
+        "community_public_face_label": community_context.get("community_public_face_label"),
+        "official_affiliate_status": community_context.get("official_affiliate_status"),
+        "official_affiliate_label": community_context.get("official_affiliate_label"),
+        "community_evidence_currentness_status": community_context.get("community_evidence_currentness_status"),
+        "community_evidence_currentness_label": community_context.get("community_evidence_currentness_label"),
+        "community_evidence_currentness_scope": community_context.get("community_evidence_currentness_scope"),
         "holder_role": community_context.get("holder_role"),
+        "member_witness_count": community_context.get("member_witness_count"),
+        "membership_strength": community_context.get("membership_strength"),
+        "membership_strength_label": community_context.get("membership_strength_label"),
+        "membership_renewal_status": community_context.get("membership_renewal_status"),
+        "membership_renewal_status_label": community_context.get("membership_renewal_status_label"),
+        "membership_valid_until": community_context.get("membership_valid_until"),
+        "next_witness_renewal_at": community_context.get("next_witness_renewal_at"),
+        "next_witness_renewal_status": community_context.get("next_witness_renewal_status"),
+        "next_witness_renewal_status_label": community_context.get(
+            "next_witness_renewal_status_label"
+        ),
+        "membership_currentness_label": community_context.get("membership_currentness_label"),
+        "membership_currentness_scope": community_context.get("membership_currentness_scope"),
+        "community_activity_count": community_context.get("community_activity_count"),
+        "community_activity_latest_at": community_context.get("community_activity_latest_at"),
+        "community_activity_categories": community_context.get("community_activity_categories"),
+        "community_activity_label": community_context.get("community_activity_label"),
         "community_member_count": community_context.get("active_member_count"),
         "active_member_count": community_context.get("active_member_count"),
         "total_member_count": community_context.get("total_member_count"),
@@ -1539,6 +1864,14 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "profile_image_url": getattr(user, "profile_image_url", None) if user else None,
             "community": community,
             "community_global_id": community_context.get("community_global_id"),
+            "community_code": community_context.get("community_code"),
+            "community_public_face_status": community_context.get("community_public_face_status"),
+            "community_public_face_label": community_context.get("community_public_face_label"),
+            "official_affiliate_status": community_context.get("official_affiliate_status"),
+            "official_affiliate_label": community_context.get("official_affiliate_label"),
+            "community_evidence_currentness_status": community_context.get("community_evidence_currentness_status"),
+            "community_evidence_currentness_label": community_context.get("community_evidence_currentness_label"),
+            "community_evidence_currentness_scope": community_context.get("community_evidence_currentness_scope"),
             "holder_role": community_context.get("holder_role"),
             "active_member_count": community_context.get("active_member_count"),
             "band": summary.get("band"),
@@ -1571,6 +1904,23 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "official_id_label": entry_verification_context["official_id_label"],
             "community_identity_confirmed": community_identity_confirmed,
             "community_identity_label": identity_context["community_identity_label"],
+            "member_witness_count": community_context.get("member_witness_count"),
+            "membership_strength": community_context.get("membership_strength"),
+            "membership_strength_label": community_context.get("membership_strength_label"),
+            "membership_renewal_status": community_context.get("membership_renewal_status"),
+            "membership_renewal_status_label": community_context.get("membership_renewal_status_label"),
+            "membership_valid_until": community_context.get("membership_valid_until"),
+            "next_witness_renewal_at": community_context.get("next_witness_renewal_at"),
+            "next_witness_renewal_status": community_context.get("next_witness_renewal_status"),
+            "next_witness_renewal_status_label": community_context.get(
+                "next_witness_renewal_status_label"
+            ),
+            "membership_currentness_label": community_context.get("membership_currentness_label"),
+            "membership_currentness_scope": community_context.get("membership_currentness_scope"),
+            "community_activity_count": community_context.get("community_activity_count"),
+            "community_activity_latest_at": community_context.get("community_activity_latest_at"),
+            "community_activity_categories": community_context.get("community_activity_categories"),
+            "community_activity_label": community_context.get("community_activity_label"),
         },
         "merchant_visibility_level": saved_level,
         "visibility_options": ["minimal", "standard", "detailed"],
@@ -1581,7 +1931,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "not_a_bank_guarantee": True,
         "no_auto_debit": True,
         "disclaimer": (
-            "Community-backed integrity limit. "
+            "Community-backed integrity signal. "
             "Not a bank guarantee. No auto-debit. "
             "TrustSlip is a portable summary derived from GSN trust history."
         ),

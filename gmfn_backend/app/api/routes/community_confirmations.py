@@ -25,6 +25,7 @@ from app.services.community_confirmation_service import (
     list_confirmation_review_cases,
     list_my_confirmation_contact_settings,
     list_confirmation_inbox,
+    public_community_member_verification,
     public_community_verification,
     public_confirmation_outcome,
     record_confirmation_decision,
@@ -625,6 +626,24 @@ def verify_public_community(
     _throttle_public(request, "community_verify_public", max_requests=80)
     try:
         return public_community_verification(db, community_key=community_key)
+    except Exception as exc:
+        raise _service_error(exc) from exc
+
+
+@router.get("/verify/community/{community_key}/member/{member_key}")
+def verify_public_community_member(
+    community_key: str,
+    member_key: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    _throttle_public(request, "community_member_verify_public", max_requests=80)
+    try:
+        return public_community_member_verification(
+            db,
+            community_key=community_key,
+            member_key=member_key,
+        )
     except Exception as exc:
         raise _service_error(exc) from exc
 

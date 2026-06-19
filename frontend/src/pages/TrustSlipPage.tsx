@@ -24,6 +24,7 @@ import TrustSlipReaderBlock from "../components/TrustSlipReaderBlock";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
 import { resolveSharedProfileImage } from "../lib/profileImage";
+import { publicCommunityMemberCredentialPath } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
@@ -70,6 +71,18 @@ type MerchantSummary = {
   community_global_id?: string | null;
   holder_role?: string | null;
   active_member_count?: string | number | null;
+  member_witness_count?: string | number | null;
+  membership_strength_label?: string | null;
+  membership_renewal_status_label?: string | null;
+  membership_valid_until?: string | null;
+  next_witness_renewal_at?: string | null;
+  next_witness_renewal_status_label?: string | null;
+  membership_currentness_label?: string | null;
+  membership_currentness_scope?: string | null;
+  community_activity_count?: string | number | null;
+  community_activity_latest_at?: string | null;
+  community_activity_categories?: string[] | null;
+  community_activity_label?: string | null;
   cci_explainer?: Record<string, any> | null;
   identity_status_label?: string | null;
   bank_verified?: boolean | null;
@@ -97,6 +110,18 @@ type MerchantView = {
   community_global_id?: string | null;
   holder_role?: string | null;
   active_member_count?: string | number | null;
+  member_witness_count?: string | number | null;
+  membership_strength_label?: string | null;
+  membership_renewal_status_label?: string | null;
+  membership_valid_until?: string | null;
+  next_witness_renewal_at?: string | null;
+  next_witness_renewal_status_label?: string | null;
+  membership_currentness_label?: string | null;
+  membership_currentness_scope?: string | null;
+  community_activity_count?: string | number | null;
+  community_activity_latest_at?: string | null;
+  community_activity_categories?: string[] | null;
+  community_activity_label?: string | null;
   band?: string | null;
   trust_limit?: string | null;
   currency?: string | null;
@@ -232,6 +257,18 @@ type TrustSlipSummary = {
   holder_role?: string | null;
   community_member_count?: string | number | null;
   active_member_count?: string | number | null;
+  member_witness_count?: string | number | null;
+  membership_strength_label?: string | null;
+  membership_renewal_status_label?: string | null;
+  membership_valid_until?: string | null;
+  next_witness_renewal_at?: string | null;
+  next_witness_renewal_status_label?: string | null;
+  membership_currentness_label?: string | null;
+  membership_currentness_scope?: string | null;
+  community_activity_count?: string | number | null;
+  community_activity_latest_at?: string | null;
+  community_activity_categories?: string[] | null;
+  community_activity_label?: string | null;
   total_member_count?: string | number | null;
 };
 
@@ -268,6 +305,15 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function firstStringList(...values: any[]): string[] {
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+    const items = value.map((item) => safeStr(item)).filter(Boolean);
+    if (items.length) return items;
+  }
+  return [];
 }
 
 function safeDateTime(x: any): string {
@@ -1411,7 +1457,7 @@ export default function TrustSlipPage() {
       : "Preparing";
   const trustSlipStatusNote =
     rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
-      ? "This TrustSlip exists, but the current public proof window has passed. Refresh or generate a current TrustSlip before asking anyone to rely on it."
+      ? "This TrustSlip exists, but the current public record window has passed. Refresh or generate a current TrustSlip before asking anyone to rely on it."
       : rawTrustSlipStatus === "revoked" || rawTrustSlipStatus === "frozen"
       ? "Do not rely on this TrustSlip until the status is cleared and a fresh verification record is available."
       : trustSlipCode
@@ -1490,6 +1536,108 @@ export default function TrustSlipPage() {
     summary?.active_clan_count,
     communityContext?.active_community_count
   );
+  const memberWitnessCount = firstTruthy(
+    summary?.member_witness_count,
+    summary?.merchant_view?.member_witness_count,
+    summary?.merchant_view?.merchant_summary?.member_witness_count,
+    summary?.merchant_summary?.member_witness_count,
+    communityContext?.member_witness_count
+  );
+  const membershipStrengthLabel = firstTruthy(
+    summary?.membership_strength_label,
+    summary?.merchant_view?.membership_strength_label,
+    summary?.merchant_view?.merchant_summary?.membership_strength_label,
+    summary?.merchant_summary?.membership_strength_label,
+    communityContext?.membership_strength_label
+  );
+  const membershipRenewalStatusLabel = firstTruthy(
+    summary?.membership_renewal_status_label,
+    summary?.merchant_view?.membership_renewal_status_label,
+    summary?.merchant_view?.merchant_summary?.membership_renewal_status_label,
+    summary?.merchant_summary?.membership_renewal_status_label,
+    communityContext?.membership_renewal_status_label
+  );
+  const membershipValidUntil = firstTruthy(
+    summary?.membership_valid_until,
+    summary?.merchant_view?.membership_valid_until,
+    summary?.merchant_view?.merchant_summary?.membership_valid_until,
+    summary?.merchant_summary?.membership_valid_until,
+    communityContext?.membership_valid_until
+  );
+  const nextWitnessRenewalAt = firstTruthy(
+    summary?.next_witness_renewal_at,
+    summary?.merchant_view?.next_witness_renewal_at,
+    summary?.merchant_view?.merchant_summary?.next_witness_renewal_at,
+    summary?.merchant_summary?.next_witness_renewal_at,
+    communityContext?.next_witness_renewal_at
+  );
+  const nextWitnessRenewalStatusLabel = firstTruthy(
+    summary?.next_witness_renewal_status_label,
+    summary?.merchant_view?.next_witness_renewal_status_label,
+    summary?.merchant_view?.merchant_summary?.next_witness_renewal_status_label,
+    summary?.merchant_summary?.next_witness_renewal_status_label,
+    communityContext?.next_witness_renewal_status_label,
+    "Not Started"
+  );
+  const membershipCurrentnessLabel = firstTruthy(
+    summary?.membership_currentness_label,
+    summary?.merchant_view?.membership_currentness_label,
+    summary?.merchant_view?.merchant_summary?.membership_currentness_label,
+    summary?.merchant_summary?.membership_currentness_label,
+    communityContext?.membership_currentness_label,
+    "Witness renewal not started"
+  );
+  const membershipCurrentnessScope = firstTruthy(
+    summary?.membership_currentness_scope,
+    summary?.merchant_view?.membership_currentness_scope,
+    summary?.merchant_view?.merchant_summary?.membership_currentness_scope,
+    summary?.merchant_summary?.membership_currentness_scope,
+    communityContext?.membership_currentness_scope,
+    "This active membership record has no current witness validity window. Ask for member witnesses, TrustSlip, or live community confirmation before a serious decision."
+  );
+  const communityActivityCount = firstTruthy(
+    summary?.community_activity_count,
+    summary?.merchant_view?.community_activity_count,
+    summary?.merchant_view?.merchant_summary?.community_activity_count,
+    summary?.merchant_summary?.community_activity_count,
+    communityContext?.community_activity_count
+  );
+  const communityActivityLatestAt = firstTruthy(
+    summary?.community_activity_latest_at,
+    summary?.merchant_view?.community_activity_latest_at,
+    summary?.merchant_view?.merchant_summary?.community_activity_latest_at,
+    summary?.merchant_summary?.community_activity_latest_at,
+    communityContext?.community_activity_latest_at
+  );
+  const communityActivityCategories = firstStringList(
+    summary?.community_activity_categories,
+    summary?.merchant_view?.community_activity_categories,
+    summary?.merchant_view?.merchant_summary?.community_activity_categories,
+    summary?.merchant_summary?.community_activity_categories,
+    communityContext?.community_activity_categories
+  );
+  const communityActivityLabel = firstTruthy(
+    summary?.community_activity_label,
+    summary?.merchant_view?.community_activity_label,
+    summary?.merchant_view?.merchant_summary?.community_activity_label,
+    summary?.merchant_summary?.community_activity_label,
+    communityContext?.community_activity_label
+  );
+  const memberWitnessSignal =
+    memberWitnessCount && membershipStrengthLabel
+      ? `${membershipStrengthLabel}; ${memberWitnessCount} member witness${
+          memberWitnessCount === "1" ? "" : "es"
+        }`
+      : "not shown";
+  const communityActivitySignal = communityActivityCount
+    ? `${communityActivityCount} community activity event${
+        communityActivityCount === "1" ? "" : "s"
+      }${
+        communityActivityCategories.length
+          ? ` across ${communityActivityCategories.join(", ")}`
+          : ""
+      }`
+    : "not shown";
   const visibleEvidencePoints =
     numericCount(summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count) +
     numericCount(summary?.active_clan_count) +
@@ -1562,8 +1710,8 @@ export default function TrustSlipPage() {
     summary?.merchant_summary?.community_identity_label,
     identityContext?.community_identity_label,
     communityIdentityConfirmed
-      ? "Identity confirmed by active community membership"
-      : "Community identity confirmation not shown"
+      ? "Active community membership recorded"
+      : "Community membership record not shown"
   );
   const cciMeaning = firstTruthy(cciExplainer?.meaning, cciExplainer?.plain_language);
   const lastReleaseText = safeDateTime(summary?.last_release_at) || "Not shown";
@@ -1584,7 +1732,7 @@ export default function TrustSlipPage() {
       title: "Can this person be trusted for support, contribution, finance, or trade?",
       answer: hasBlockingTrustSlipState
         ? "Not from this TrustSlip alone. Ask for a fresh TrustSlip or the fuller Trust Passport before any risky decision."
-        : `The visible reading is ${merchantBand} (${merchantBandLabel}), with TrustSlip limit ${merchantTrustLimit} ${merchantCurrency} and cross-community consistency ${cciScore} / ${cciBand}. This supports a careful decision; it is not an automatic approval.`,
+        : `The visible reading is ${merchantBand} (${merchantBandLabel}), with TrustSlip limit signal ${merchantTrustLimit} ${merchantCurrency} and cross-community consistency ${cciScore} / ${cciBand}. This supports a careful decision; it is not an automatic approval.`,
     },
     {
       title: "Do they follow through?",
@@ -1602,14 +1750,18 @@ export default function TrustSlipPage() {
       title: "Are they stable inside a real community?",
       answer: `Community shown: ${communityName}. Role: ${holderRole}. Active members shown: ${
         activeMemberCount || "not shown"
-      }. Sponsor signals: ${summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count ?? "not shown"}.`,
+      }. Member-witness strength: ${memberWitnessSignal}. Community activity evidence: ${communityActivitySignal}. Sponsor signals: ${
+        summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count ?? "not shown"
+      }. Evidence currentness: ${membershipCurrentnessLabel}. Next witness renewal: ${
+        safeDateTime(nextWitnessRenewalAt) || nextWitnessRenewalAt || "not shown"
+      } (${nextWitnessRenewalStatusLabel}).`,
     },
     {
-      title: "Is there verified history behind what they claim?",
+      title: "Is there checkable history behind what they claim?",
       answer:
         safeStr(summary?.code || summary?.verification_code || summary?.merchant_view?.code)
           ? "A TrustSlip code and verification route exist. For a higher-risk decision, ask for the Trust Passport, Trust Events, or direct community confirmation."
-          : "The TrustSlip code is not ready yet, so the reader cannot verify the portable claim from this page alone.",
+          : "The TrustSlip code is not ready yet, so the reader cannot check the portable claim from this page alone.",
     },
   ];
   const briefDecisionAnswers = [
@@ -1617,7 +1769,7 @@ export default function TrustSlipPage() {
       label: "Trust decision",
       value: hasBlockingTrustSlipState
         ? "Do not rely yet. Ask for a refreshed TrustSlip before support, goods, money, work, or referral."
-        : `Use carefully. Reading ${merchantBand} (${merchantBandLabel}); limit ${merchantTrustLimit} ${merchantCurrency}; cross-community consistency ${cciScore} / ${cciBand}.`,
+        : `Use carefully. Reading ${merchantBand} (${merchantBandLabel}); trust-limit signal ${merchantTrustLimit} ${merchantCurrency}; cross-community consistency ${cciScore} / ${cciBand}.`,
     },
     {
       label: "Follow-through",
@@ -1631,10 +1783,14 @@ export default function TrustSlipPage() {
       label: "Community stability",
       value: `${communityName}. Role: ${holderRole}. Active members: ${
         activeMemberCount || "not shown"
-      }. Sponsors: ${summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count ?? "not shown"}.`,
+      }. Member witnesses: ${memberWitnessSignal}. Sponsors: ${
+        summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count ?? "not shown"
+      }. Currentness: ${membershipCurrentnessLabel}. Next witness renewal: ${
+        safeDateTime(nextWitnessRenewalAt) || nextWitnessRenewalAt || "not shown"
+      } (${nextWitnessRenewalStatusLabel}).`,
     },
     {
-      label: "Verified history",
+      label: "Checkable history",
       value: trustSlipCode
         ? "A verification code exists. For higher risk, also ask for Trust Passport or Trust Events."
         : "No current verification code is shown yet.",
@@ -1656,14 +1812,14 @@ export default function TrustSlipPage() {
       : "NEEDS REFRESH";
   const trustSlipStatusTone = trustSlipValidNow ? "valid" : "refresh";
   const decisionSummaryText = hasBlockingTrustSlipState
-    ? "Do not rely on this TrustSlip until it is refreshed and verified again."
+    ? "Do not rely on this TrustSlip until it is refreshed and checked again."
     : ["D", "E"].includes(trustSlipBandLetter)
       ? "Use with caution but acceptable for low-risk support and trade decisions."
       : "Usable for low-risk checking, with normal judgement and verification.";
   const trustSlipReadingRows = [
     {
       icon: "shield" as GsnIconName,
-      label: "Identity verified",
+      label: "Identity evidence",
       status:
         merchantViewPhoneVerified && (bankVerified || communityIdentityConfirmed)
           ? "Strong"
@@ -1709,14 +1865,14 @@ export default function TrustSlipPage() {
     },
     {
       icon: "document" as GsnIconName,
-      label: "Verified history",
+      label: "Checkable history",
       status: trustSlipCode ? "Limited" : "Not ready",
     },
   ];
   const trustSlipUseCases: Array<[GsnIconName, string]> = [
     ["community", "Community-backed support conversations"],
     ["briefcase", "Small trade or low-risk trust checks"],
-    ["shop", "Merchant review before release"],
+    ["shop", "Merchant review before a trade decision"],
     ["search", "First-look trust screening"],
   ];
   const trustSlipLimits = [
@@ -1749,6 +1905,14 @@ export default function TrustSlipPage() {
   const communityVerifyPath = communityVerifyKey
     ? `/verify/community/${encodeURIComponent(communityVerifyKey)}`
     : "";
+  const memberCredentialPath = publicCommunityMemberCredentialPath({
+    communityKey: communityVerifyKey || communityRef,
+    memberKey: gmfnId,
+  });
+  const memberCredentialUrl = useMemo(
+    () => toFrontendAbsoluteUrl(memberCredentialPath),
+    [memberCredentialPath]
+  );
   const communityRelayAvailable = Boolean(communityConfirmation?.relay_available);
   const communityPulseAvailable = Boolean(
     communityConfirmation?.instant_pulse_available || communityRelayAvailable
@@ -1861,6 +2025,7 @@ export default function TrustSlipPage() {
         cciBand,
         expiresAt: safeDateTime(summary?.expires_at) || "Not stated",
         verifyUrl,
+        memberCredentialUrl,
       }),
       "TrustSlip snapshot copied.",
       "TrustSlip snapshot is not ready yet."
@@ -2014,7 +2179,7 @@ export default function TrustSlipPage() {
                     background: "rgba(246,215,122,0.08)",
                   }}
                 >
-                  <GsnLegacyIcon name="proof" size={40} />
+                  <GsnLegacyIcon name="evidence" size={40} />
                 </span>
                 <span>GSN</span>
               </div>
@@ -2099,7 +2264,7 @@ export default function TrustSlipPage() {
               <div style={{ display: "grid", gap: isCompact ? 10 : 0 }}>
                 {[
                   ["id", "GSN ID", gmfnId],
-                  ["shield", "Verified member", merchantViewPhoneVerified ? "Yes" : "Not fully shown"],
+                  ["shield", "Identity check", merchantViewPhoneVerified ? "Phone verified" : "Not fully shown"],
                   ["community", "Community", communityName],
                   ["hash", "Community ID", communityRef],
                 ].map(([icon, label, value]) => (
@@ -2148,7 +2313,7 @@ export default function TrustSlipPage() {
               {[
                 [merchantViewPhoneVerified, merchantViewPhoneVerified ? "Phone verified" : "Phone not verified"],
                 [true, communityIdentityLabel],
-                [Boolean(identityStatusLabel), identityStatusLabel || "Phone and community membership are verified"],
+                [Boolean(identityStatusLabel), identityStatusLabel || "Phone verified; community membership recorded"],
                 [Boolean(bankVerified), bankVerificationLabel],
                 [Boolean(passportVerified), passportVerificationLabel],
               ].map(([ok, label]) => (
@@ -2465,7 +2630,7 @@ export default function TrustSlipPage() {
               </div>
               {[
                 ["Trust band", `${merchantBand} - ${merchantBandLabel}`],
-                ["Trust limit", `${merchantTrustLimit} ${merchantCurrency}`],
+                ["Trust limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
                 ["Evidence depth", trustSlipEvidenceLanguage.label],
               ].map(([label, value]) => (
                 <div
@@ -2849,7 +3014,7 @@ export default function TrustSlipPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText(), color: "#D7E3F1" }}>
-              Profile image is not identity proof. Community membership is shown;
+              Profile image is not identity evidence. Community membership is shown;
               government ID and affordability are not certified by this TrustSlip.
             </div>
 
@@ -2940,7 +3105,7 @@ export default function TrustSlipPage() {
               label="What this does"
               what="This portable reading summarizes the trust state that other people can verify from your current TrustSlip."
               why="It keeps the main public trust signals, document codes, and issue window visible in one place before you share or verify anything."
-              next="Read the band, visible TrustSlip limit, cross-community consistency, and issue window here first, then use the TrustSlip code or verify route when needed."
+              next="Read the band, visible TrustSlip limit signal, cross-community consistency, and issue window here first, then use the TrustSlip code or verify route when needed."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -2972,7 +3137,7 @@ export default function TrustSlipPage() {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Visible TrustSlip limit</div>
+                <div style={sectionLabel()}>Visible TrustSlip limit signal</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -3096,7 +3261,7 @@ export default function TrustSlipPage() {
             </div>
 
             <div style={{ marginTop: 12, ...documentMetaCard("#F8FBFF") }}>
-              <div style={sectionLabel()}>What verification confirms</div>
+              <div style={sectionLabel()}>What verification checks</div>
               <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
                 Verification checks this TrustSlip code, holder reference, status,
                 visibility, and issue window. It does not confirm government ID,
@@ -3171,6 +3336,19 @@ export default function TrustSlipPage() {
               holderRole={holderRole}
               activeMemberCount={activeMemberCount}
               activeCommunityCount={activeCommunityCount}
+              memberWitnessCount={memberWitnessCount}
+              membershipStrengthLabel={membershipStrengthLabel}
+              membershipRenewalStatusLabel={membershipRenewalStatusLabel}
+              membershipValidUntil={membershipValidUntil}
+              nextWitnessRenewalAt={nextWitnessRenewalAt}
+              nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+              membershipCurrentnessLabel={membershipCurrentnessLabel}
+              membershipCurrentnessScope={membershipCurrentnessScope}
+              memberCredentialPath={memberCredentialPath}
+              communityActivityCount={communityActivityCount}
+              communityActivityLatestAt={communityActivityLatestAt}
+              communityActivityCategories={communityActivityCategories}
+              communityActivityLabel={communityActivityLabel}
               sponsorCount={summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count}
               phoneVerified={merchantViewPhoneVerified}
               identityStatusLabel={identityStatusLabel}
@@ -3230,7 +3408,7 @@ export default function TrustSlipPage() {
               compact={isCompact}
               items={trustDocumentUseCases}
               title="Which trust question should stay in TrustSlip?"
-              intro="Stay here when the task is carrying concise outward-facing proof. Move outward to public verification for current validity, or back inward to Trust Passport and Identity & Integrity when the fuller story matters."
+              intro="Stay here when the task is carrying a concise outward-facing record. Move outward to public verification for current validity, or back inward to Trust Passport and Identity & Integrity when the fuller story matters."
             />
           </div>
         ) : null}
@@ -3253,7 +3431,7 @@ export default function TrustSlipPage() {
           <div>
             <div style={sectionLabel()}>Merchant verification</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Use this when someone outside GSN needs to check whether this TrustSlip is current and safe to rely on.
+              Use this when someone outside GSN needs to check whether this TrustSlip is current enough to review.
             </div>
           </div>
 
@@ -3359,7 +3537,7 @@ export default function TrustSlipPage() {
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                {merchantViewVerified ? "Merchant view verified." : "Merchant view not verified yet."}{" "}
+                {merchantViewVerified ? "Merchant view checked." : "Merchant view not checked yet."}{" "}
                 {merchantViewActive ? "Merchant view active." : "Merchant view not active yet."}{" "}
                 {merchantViewPhoneVerified ? "Phone verified." : "Phone not verified or not shown."}
               </div>

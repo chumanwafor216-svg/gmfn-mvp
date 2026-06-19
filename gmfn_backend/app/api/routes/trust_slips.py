@@ -6,16 +6,17 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from html import escape
 from typing import Any, Dict, Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, is_user_activation_pending
 from app.core.rate_limit import client_ip, rate_limiter
 from app.db.database import get_db
-from app.db.models import MarketplaceShop, TrustSlip, User
+from app.db.models import Clan, ClanMembership, MarketplaceShop, TrustSlip, User
 from app.services.feature_entitlements_service import has_active_feature
 from app.services.community_confirmation_service import build_community_confirmation_summary
 from app.services.trust_events_services import log_trust_event
@@ -125,7 +126,7 @@ def _mask_email(email: Optional[str]) -> Optional[str]:
 
 def _looks_like_public_identity_code(value: Any) -> bool:
     text = _safe_str(value).upper()
-    return bool(re.match(r"^(GMFN|GSN|GMFM)-U-", text))
+    return bool(re.match(r"^(GMFN|GSN|GMFM)-(U|P)-", text))
 
 
 def _public_holder_name(holder: Optional[User], *fallbacks: Any) -> str:
@@ -176,6 +177,77 @@ def _lite_page_url(code: str, level: Optional[str] = None) -> str:
     if level in {"minimal", "standard", "detailed"}:
         return f"{base}?level={level}"
     return base
+
+
+def _safe_public_path_key(value: Any) -> str:
+    text = _safe_str(value)
+    if not text:
+        return ""
+    blocked = {
+        "n/a",
+        "na",
+        "none",
+        "null",
+        "hidden",
+        "not shown",
+        "not available",
+        "-",
+    }
+    if text.lower() in blocked:
+        return ""
+    return text
+
+
+def _member_credential_page_url(*, community_key: Any, member_key: Any) -> str:
+    community = _safe_public_path_key(community_key)
+    member = _safe_public_path_key(member_key)
+    if not community or not member:
+        return ""
+    if not _looks_like_public_identity_code(member):
+        return ""
+    community_path = quote(community, safe="")
+    member_path = quote(member, safe="")
+    return f"/verify/community/{community_path}/member/{member_path}"
+
+
+def _member_credential_page_for_holder(
+    db: Session,
+    *,
+    clan: Optional[Clan],
+    holder: Optional[User],
+) -> str:
+    if clan is None or holder is None:
+        return ""
+    if str(getattr(clan, "status", "") or "active").strip().lower() != "active":
+        return ""
+    if is_user_activation_pending(holder):
+        return ""
+
+    clan_id = int(getattr(clan, "id", 0) or 0)
+    holder_id = int(getattr(holder, "id", 0) or 0)
+    if clan_id <= 0 or holder_id <= 0:
+        return ""
+
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == clan_id,
+            ClanMembership.user_id == holder_id,
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if membership is None:
+        return ""
+
+    community_key = (
+        _safe_str(getattr(clan, "community_code", None))
+        or f"GSN-COM-{clan_id:04d}"
+    )
+    return _member_credential_page_url(
+        community_key=community_key,
+        member_key=getattr(holder, "gmfn_id", None),
+    )
 
 
 def _qr_png_bytes(url: str) -> bytes:
@@ -854,6 +926,35 @@ def verify_trust_slip_public(
     identity_context = merchant_view_out.get("identity_context") or {}
     community_context = merchant_view_out.get("community_context") or {}
     cci_explainer = merchant_view_out.get("cci_explainer") or {}
+    member_credential_page = _member_credential_page_for_holder(
+        db,
+        clan=db.get(Clan, int(getattr(slip, "clan_id", 0) or 0)),
+        holder=holder,
+    )
+    if member_credential_page:
+        merchant_view_out["member_credential_page"] = member_credential_page
+    membership_currentness_label = (
+        merchant_view_out.get("membership_currentness_label")
+        or merchant_summary.get("membership_currentness_label")
+        or full_summary.get("membership_currentness_label")
+        or community_context.get("membership_currentness_label")
+    )
+    membership_currentness_scope = (
+        merchant_view_out.get("membership_currentness_scope")
+        or merchant_summary.get("membership_currentness_scope")
+        or full_summary.get("membership_currentness_scope")
+        or community_context.get("membership_currentness_scope")
+    )
+    if membership_currentness_label:
+        merchant_view_out["membership_currentness_label"] = membership_currentness_label
+        merchant_view_out.setdefault("merchant_summary", {})[
+            "membership_currentness_label"
+        ] = membership_currentness_label
+    if membership_currentness_scope:
+        merchant_view_out["membership_currentness_scope"] = membership_currentness_scope
+        merchant_view_out.setdefault("merchant_summary", {})[
+            "membership_currentness_scope"
+        ] = membership_currentness_scope
     community_confirmation: Dict[str, Any] = {}
     try:
         community_confirmation = build_community_confirmation_summary(
@@ -873,6 +974,7 @@ def verify_trust_slip_public(
         "verification_token": slip.code,
         "verification_code": slip.code,
         "public_verify_url": _verify_page_url(slip.code, visibility_level),
+        "member_credential_page": member_credential_page or None,
         "holder_name": display_name,
         "display_name": display_name,
         "profile_image_url": merchant_view_out.get("profile_image_url") if visibility_level != "minimal" else None,
@@ -913,6 +1015,8 @@ def verify_trust_slip_public(
         "cci_band": top_level_cci_band,
         "sponsor_count": top_level_sponsor_count,
         "phone_verified": bool(top_level_phone_verified),
+        "membership_currentness_label": membership_currentness_label,
+        "membership_currentness_scope": membership_currentness_scope,
         "visibility_level": visibility_level,
         "last_release_at": last_release_at_value,
         "last_full_repayment_at": merchant_view_out.get("last_full_repayment_at"),
@@ -926,7 +1030,7 @@ def verify_trust_slip_public(
         "lite_page": _lite_page_url(slip.code, visibility_level),
         "verified_at": _now_utc().isoformat(),
         "offline_note": "If network drops, screenshot this page. Use the code to re-verify later.",
-        "verification_note": "GSN is non-custodial. This verifies TrustSlip validity only.",
+        "verification_note": "GSN is non-custodial. This checks TrustSlip public validity only.",
         "disclaimer": merchant_view_out.get("disclaimer")
         or "TrustSlip is a decision aid, not a bank guarantee, not auto-debit, and not automatic approval.",
         "snapshot_version": snapshot.get("snapshot_version"),
@@ -968,15 +1072,26 @@ def trust_slip_share_text_public(
     visibility_level = _safe_visibility_level(holder, level) if holder else "standard"
     verify_page = _verify_page_url(code, visibility_level)
     holder_gmfn_id = getattr(holder, "gmfn_id", None) if holder else None
+    clan_id = int(getattr(slip, "clan_id", 0) or 0)
+    clan = db.get(Clan, clan_id) if clan_id else None
+    member_credential_page = _member_credential_page_for_holder(
+        db,
+        clan=clan,
+        holder=holder,
+    )
 
     text = (
         f"TrustSlip verify: {verify_page}  Code: {code}  "
         f"GSN ID: {holder_gmfn_id or 'N/A'}  Visibility: {visibility_level}  Status: {msg}"
     )
+    if member_credential_page:
+        text = f"{text}  Member credential: {member_credential_page}"
+    text = f"{text}  Evidence only: not credit approval, payment instruction, or release permission."
 
     return {
         "code": code,
         "verify_page": verify_page,
+        "member_credential_page": member_credential_page or None,
         "gmfn_id": holder_gmfn_id,
         "merchant_visibility_level": visibility_level,
         "merchant_verify_active": bool(merchant_verify_active),
@@ -1025,6 +1140,17 @@ def trust_slip_verify_lite_page(
     trust_limit = _safe_str(merchant_summary.get("trust_limit") or full_summary.get("trust_limit"))
     currency = _safe_str(merchant_summary.get("currency") or full_summary.get("currency"))
     holder_gmfn_id = _safe_str(merchant_summary.get("gmfn_id") or getattr(holder, "gmfn_id", None), "N/A")
+    member_credential_page = _member_credential_page_for_holder(
+        db,
+        clan=db.get(Clan, int(getattr(slip, "clan_id", 0) or 0)),
+        holder=holder,
+    )
+    member_credential_row = (
+        '<div class="row"><b>Member credential</b>'
+        f'<span><a href="{_html(member_credential_page)}">Open scoped credential</a></span></div>'
+        if member_credential_page
+        else ""
+    )
     expires_text = _display_datetime(
         merchant_summary.get("expires_at") or full_summary.get("expires_at"),
         "No expiry",
@@ -1104,6 +1230,8 @@ def trust_slip_verify_lite_page(
       }}
       .row b {{ color: #07172C; }}
       .row span {{ text-align: right; overflow-wrap: anywhere; }}
+      .row a {{ color: #0B63D1; font-weight: 1000; text-decoration: none; }}
+      .row a:hover {{ text-decoration: underline; }}
       .muted {{ margin-top: 12px; font-size: 13px; color: #64748B; font-weight: 750; line-height: 1.45; }}
       code {{ background:#F1F7FF; padding:2px 6px; border-radius:6px; }}
     </style>
@@ -1119,11 +1247,12 @@ def trust_slip_verify_lite_page(
         <div class="badge">{_html(msg)}</div>
         <div class="note">{_html(action_text)}</div>
         <div class="row"><b>Status</b><span>{_html(status_label)}</span></div>
-        <div class="row"><b>Trust Limit</b><span>{_html(trust_limit)} {_html(currency)}</span></div>
+        <div class="row"><b>Trust Limit Signal</b><span>{_html(trust_limit)} {_html(currency)}</span></div>
         <div class="row"><b>Code</b><span><code>{_html(code)}</code></span></div>
         <div class="row"><b>GSN ID</b><span><code>{_html(holder_gmfn_id)}</code></span></div>
         <div class="row"><b>Visibility</b><span>{_html(visibility_level)}</span></div>
         <div class="row"><b>Expires</b><span>{_html(expires_text)}</span></div>
+        {member_credential_row}
         <div class="muted">Checked at: {_html(verified_text)}. If network drops, screenshot this page and re-check the code later.</div>
       </section>
     </main>
@@ -1269,6 +1398,22 @@ def trust_slip_verify_page(
         band_part = f" ({_band_with_label(cci_band)})" if cci_band else ""
         cci_value = f"{_safe_str(merchant_summary.get('cci_score'))}{band_part}"
         cci_row = f'<div class="row"><b>Cross-community consistency</b><span>{_html(cci_value)}</span></div>'
+    member_credential_page = _member_credential_page_for_holder(
+        db,
+        clan=db.get(Clan, int(getattr(slip, "clan_id", 0) or 0)),
+        holder=holder,
+    )
+    member_credential_row = (
+        '<div class="row"><b>Member credential</b>'
+        f'<span><a href="{_html(member_credential_page)}">Open scoped credential</a></span></div>'
+        if member_credential_page
+        else ""
+    )
+    member_credential_action = (
+        f'<a class="btn secondary" href="{_html(member_credential_page)}">Member credential</a>'
+        if member_credential_page
+        else ""
+    )
 
     status_label = {
         "active": "Current",
@@ -1509,6 +1654,12 @@ def trust_slip_verify_page(
         font-weight: 800;
       }}
       .row b {{ color: var(--navy); }}
+      .row a {{
+        color: #0B63D1;
+        font-weight: 1000;
+        text-decoration: none;
+      }}
+      .row a:hover {{ text-decoration: underline; }}
       .muted {{
         color: var(--muted);
         font-size: 13px;
@@ -1622,7 +1773,7 @@ def trust_slip_verify_page(
         <div class="card"><div class="label">GSN ID</div><div class="value">{_html(holder_gmfn_id)}</div></div>
         <div class="card"><div class="label">TrustSlip code</div><div class="value">{_html(code)}</div></div>
         <div class="card"><div class="label">Status</div><div class="value">{_html(status_label)}</div></div>
-        <div class="card"><div class="label">Trust limit shown</div><div class="value">{_html(trust_limit)} {_html(currency)}</div></div>
+        <div class="card"><div class="label">Trust limit signal</div><div class="value">{_html(trust_limit)} {_html(currency)}</div></div>
         <div class="card"><div class="label">Trust band</div><div class="value">{_html(band)}</div></div>
       </div>
 
@@ -1636,7 +1787,9 @@ def trust_slip_verify_page(
         <div class="row"><b>Expires</b><span>{_html(expires_text)}</span></div>
         <div class="row"><b>Not a bank guarantee</b><span>Yes</span></div>
         <div class="row"><b>No auto-debit</b><span>Yes</span></div>
+        <div class="row"><b>Not credit approval</b><span>Yes</span></div>
         {cci_row}
+        {member_credential_row}
       </div>
 
       <div class="row muted">
@@ -1646,6 +1799,7 @@ def trust_slip_verify_page(
       <div class="actions noprint">
         <a class="btn" href="{print_link}">Print / save PDF</a>
         <a class="btn secondary" href="{lite_link}">Lite view</a>
+        {member_credential_action}
         <a class="btn warning" href="{holder_refresh_link}">Request current TrustSlip</a>
       </div>
 
@@ -1661,9 +1815,10 @@ def trust_slip_verify_page(
       </div>
 
       <div class="muted" style="margin-top:16px;">
-        Evidence note: GSN is non-custodial. This page verifies TrustSlip validity only.
+        Evidence note: GSN is non-custodial. This page checks TrustSlip public validity only.
         It is not a payment guarantee, not automatic lending, not auto-debit, and not a replacement
-        for formal identity, medical, legal, or regulatory checks.
+        for formal identity, medical, legal, or regulatory checks. It is not permission to release
+        goods or money without current context.
       </div>
       </section>
       <div class="footer">GSN Trust Architecture - public evidence first, private detail protected, decision left with the reader.</div>
@@ -1740,6 +1895,11 @@ def trust_slip_share_bundle(
     merchant_summary = merchant_view.get("merchant_summary") or {}
     verify_page = _verify_page_url(code, visibility_level)
     holder_gmfn_id = merchant_summary.get("gmfn_id") or getattr(holder, "gmfn_id", None)
+    member_credential_page = _member_credential_page_for_holder(
+        db,
+        clan=db.get(Clan, int(getattr(slip, "clan_id", 0) or 0)),
+        holder=holder,
+    )
     trust_limit = merchant_summary.get("trust_limit") or full_summary.get("trust_limit")
     currency = merchant_summary.get("currency") or full_summary.get("currency")
     expires_text = _display_datetime(
@@ -1748,21 +1908,27 @@ def trust_slip_share_bundle(
     )
 
     whatsapp_lines = [
-        "Please verify TrustSlip before releasing goods:",
+        "Please verify TrustSlip before making a trade decision:",
         verify_page,
         f"Code: {code}",
         f"GSN ID: {holder_gmfn_id or 'N/A'}",
         f"Visibility: {visibility_level}",
-        f"Trust Limit: {trust_limit} {currency}",
+        f"Trust limit signal: {trust_limit} {currency}",
         f"Expires: {expires_text}",
         f"Status: {msg}",
+        "Evidence only - not approval to release goods, credit, or money.",
     ]
+    if member_credential_page:
+        whatsapp_lines.append(f"Member credential: {member_credential_page}")
     whatsapp_text = "\n".join(whatsapp_lines)
 
     sms_text = (
         f"Verify TrustSlip: {verify_page} | Code: {code} | GSN ID: {holder_gmfn_id or 'N/A'} | "
-        f"Visibility: {visibility_level} | Limit: {trust_limit} {currency} | Expires: {expires_text}"
+        f"Visibility: {visibility_level} | Limit signal: {trust_limit} {currency} | Expires: {expires_text} | "
+        "Evidence only, not release approval"
     )
+    if member_credential_page:
+        sms_text = f"{sms_text} | Member credential: {member_credential_page}"
 
     return {
         "code": code,
@@ -1771,6 +1937,7 @@ def trust_slip_share_bundle(
         "merchant_verify_active": bool(merchant_verify_active),
         "verify_page": verify_page,
         "lite_page": _lite_page_url(code, visibility_level),
+        "member_credential_page": member_credential_page or None,
         "expires_at": expires_text,
         "merchant_message": msg,
         "merchant_view": merchant_view,

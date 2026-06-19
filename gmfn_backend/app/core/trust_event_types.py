@@ -25,6 +25,12 @@ class TrustEventType:
     # -------------------------
     CLAN_JOINED = "clan_joined"
     CLAN_JOIN_VIA_INVITE = "clan_join_via_invite"
+    COMMUNITY_MEMBER_VERIFICATION_REQUESTED = "community_member_verification_requested"
+    COMMUNITY_MEMBER_VERIFICATION_APPROVED = "community_member_verification_approved"
+    COMMUNITY_MEMBER_VERIFICATION_DECLINED = "community_member_verification_declined"
+    COMMUNITY_MEMBER_VERIFIED = "community_member_verified"
+    COMMUNITY_MEMBER_VERIFICATION_WITHDRAWN = "community_member_verification_withdrawn"
+    COMMUNITY_EXTERNAL_REGISTRATION_RECORDED = "community_external_registration_recorded"
 
     # -------------------------
     # Loan lifecycle
@@ -50,3 +56,12 @@ class TrustEventType:
     # System signals
     # -------------------------
     TRUST_RECALCULATED = "trust_recalculated"
+
+
+PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES = {
+    TrustEventType.COMMUNITY_MEMBER_VERIFICATION_REQUESTED,
+    TrustEventType.COMMUNITY_MEMBER_VERIFICATION_APPROVED,
+    TrustEventType.COMMUNITY_MEMBER_VERIFICATION_DECLINED,
+    TrustEventType.COMMUNITY_MEMBER_VERIFICATION_WITHDRAWN,
+    TrustEventType.COMMUNITY_EXTERNAL_REGISTRATION_RECORDED,
+}

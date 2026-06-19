@@ -89,6 +89,19 @@
     migration uses as its `down_revision`.
   - staged `gmfn_backend/alembic/versions/20260618_add_community_domain_affiliations.py`
     to restore the migration chain.
+  - third push `7b41e16` restored the graph but exposed missing public
+    evidence-surface files in CI:
+    - trust event constants for member verification/request/external
+      registration;
+    - public scoped member credential route;
+    - TrustSlip member credential links;
+    - community confirmation summary filtering for activation-pending members.
+  - staged the linked backend/frontend evidence-surface files and verified:
+    - `.venv\Scripts\python.exe -m pytest -q tests\test_community_member_verifications.py tests\test_database_metadata.py`
+      passed (`33 passed`);
+    - `npm exec -- eslint` on the touched App/API/community/TrustSlip files
+      passed;
+    - `npm run build` from `frontend/` passed.
 
 ## 2026-06-19 - Member Witness Request UI Proof Against Disposable Backend
 

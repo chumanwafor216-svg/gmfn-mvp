@@ -38,6 +38,19 @@ export type TrustSlipVerifyRecord = {
   community_member_count?: string | number | null;
   active_member_count?: string | number | null;
   total_member_count?: string | number | null;
+  community_activity_count?: string | number | null;
+  community_activity_latest_at?: string | null;
+  community_activity_categories?: string[] | null;
+  community_activity_label?: string | null;
+  next_witness_renewal_at?: string | null;
+  next_witness_renewal_status?: string | null;
+  next_witness_renewal_status_label?: string | null;
+  membership_currentness_label?: string | null;
+  membership_currentness_scope?: string | null;
+  community_evidence_currentness_status?: string | null;
+  community_evidence_currentness_label?: string | null;
+  community_evidence_currentness_scope?: string | null;
+  member_credential_page?: string | null;
   phone_verified?: boolean | null;
   merchant_verify_active?: boolean | null;
   visibility_level?: string | null;
@@ -294,6 +307,87 @@ export function normalizeTrustSlipVerification(
     total_member_count: firstNumberLike(
       src?.total_member_count,
       communityContext?.total_member_count
+    ),
+    community_activity_count: firstNumberLike(
+      src?.community_activity_count,
+      merchantView?.community_activity_count,
+      merchantSummary?.community_activity_count,
+      communityContext?.community_activity_count
+    ),
+    community_activity_latest_at: firstTruthy(
+      src?.community_activity_latest_at,
+      merchantView?.community_activity_latest_at,
+      merchantSummary?.community_activity_latest_at,
+      communityContext?.community_activity_latest_at
+    ),
+    community_activity_categories: Array.isArray(src?.community_activity_categories)
+      ? src.community_activity_categories
+      : Array.isArray(merchantView?.community_activity_categories)
+        ? merchantView.community_activity_categories
+        : Array.isArray(merchantSummary?.community_activity_categories)
+          ? merchantSummary.community_activity_categories
+          : Array.isArray(communityContext?.community_activity_categories)
+            ? communityContext.community_activity_categories
+            : [],
+    community_activity_label: firstTruthy(
+      src?.community_activity_label,
+      merchantView?.community_activity_label,
+      merchantSummary?.community_activity_label,
+      communityContext?.community_activity_label
+    ),
+    next_witness_renewal_at: firstTruthy(
+      src?.next_witness_renewal_at,
+      merchantView?.next_witness_renewal_at,
+      merchantSummary?.next_witness_renewal_at,
+      communityContext?.next_witness_renewal_at
+    ),
+    next_witness_renewal_status: firstTruthy(
+      src?.next_witness_renewal_status,
+      merchantView?.next_witness_renewal_status,
+      merchantSummary?.next_witness_renewal_status,
+      communityContext?.next_witness_renewal_status
+    ),
+    next_witness_renewal_status_label: firstTruthy(
+      src?.next_witness_renewal_status_label,
+      merchantView?.next_witness_renewal_status_label,
+      merchantSummary?.next_witness_renewal_status_label,
+      communityContext?.next_witness_renewal_status_label
+    ),
+    membership_currentness_label: firstTruthy(
+      src?.membership_currentness_label,
+      merchantView?.membership_currentness_label,
+      merchantSummary?.membership_currentness_label,
+      communityContext?.membership_currentness_label
+    ),
+    membership_currentness_scope: firstTruthy(
+      src?.membership_currentness_scope,
+      merchantView?.membership_currentness_scope,
+      merchantSummary?.membership_currentness_scope,
+      communityContext?.membership_currentness_scope
+    ),
+    community_evidence_currentness_status: firstTruthy(
+      src?.community_evidence_currentness_status,
+      merchantView?.community_evidence_currentness_status,
+      merchantSummary?.community_evidence_currentness_status,
+      communityContext?.community_evidence_currentness_status
+    ),
+    community_evidence_currentness_label: firstTruthy(
+      src?.community_evidence_currentness_label,
+      merchantView?.community_evidence_currentness_label,
+      merchantSummary?.community_evidence_currentness_label,
+      communityContext?.community_evidence_currentness_label
+    ),
+    community_evidence_currentness_scope: firstTruthy(
+      src?.community_evidence_currentness_scope,
+      merchantView?.community_evidence_currentness_scope,
+      merchantSummary?.community_evidence_currentness_scope,
+      communityContext?.community_evidence_currentness_scope
+    ),
+    member_credential_page: firstTruthy(
+      src?.member_credential_page,
+      merchantView?.member_credential_page,
+      merchantSummary?.member_credential_page,
+      communityContext?.member_credential_page
     ),
     phone_verified: firstBoolean(
       src?.phone_verified,

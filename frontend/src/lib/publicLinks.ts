@@ -3,6 +3,15 @@ const DEFAULT_PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com";
 export const PUBLIC_SHOP_DIARIES_ANCHOR = "shop-diaries";
 export const PUBLIC_SHOP_VAULT_ANCHOR = "private-vault";
 const SUSPENDED_PUBLIC_FRONTEND_HOSTS = new Set(["frontend.onrender.com"]);
+const UNREADY_PUBLIC_CREDENTIAL_KEYS = new Set([
+  "awaiting issue",
+  "not available",
+  "not shown",
+  "not stated",
+  "pending",
+  "protected",
+  "protected member reference",
+]);
 
 function cleanText(value: unknown): string {
   return String(value ?? "").trim();
@@ -242,6 +251,25 @@ export function publicShopPath(gmfnId: string): string {
 export function publicShopUrl(gmfnId: string): string {
   const path = publicShopPath(gmfnId);
   return path ? shareablePublicFrontendUrl(path) : "";
+}
+
+export function publicCommunityMemberCredentialPath(params: {
+  communityKey?: string | number | null;
+  memberKey?: string | number | null;
+}): string {
+  const communityKey = cleanText(params.communityKey);
+  const memberKey = cleanText(params.memberKey);
+  if (!communityKey || !memberKey) return "";
+  if (
+    UNREADY_PUBLIC_CREDENTIAL_KEYS.has(communityKey.toLowerCase()) ||
+    UNREADY_PUBLIC_CREDENTIAL_KEYS.has(memberKey.toLowerCase())
+  ) {
+    return "";
+  }
+
+  return `/verify/community/${encodeURIComponent(communityKey)}/member/${encodeURIComponent(
+    memberKey
+  )}`;
 }
 
 export function publicShopDiariesPath(gmfnId: string): string {

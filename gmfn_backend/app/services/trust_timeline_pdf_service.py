@@ -317,7 +317,7 @@ def _draw_trustslip_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any])
         c,
         y,
         "3. TrustSlip Portability Summary",
-        "Portable authorization snapshot intended for verification, evidence, and merchant confidence.",
+        "Portable evidence snapshot intended for verification, context, and careful merchant judgement.",
     )
 
     col_gap = 10 * mm
@@ -339,7 +339,7 @@ def _draw_trustslip_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any])
 
     disclaimer = _safe_str(
         trustslip.get("disclaimer"),
-        "Community-backed integrity limit. Not a bank guarantee. No auto-debit.",
+        "Community-backed integrity signal. Not a bank guarantee. No auto-debit.",
     )
     y = _draw_wrapped_block(
         c,

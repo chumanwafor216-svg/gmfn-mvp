@@ -9,11 +9,18 @@ from sqlalchemy import case, func, or_
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
+from app.core.auth import is_user_activation_pending
+from app.core.trust_event_types import (
+    PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES,
+    TrustEventType,
+)
 from app.db.models import (
     Clan,
     ClanJoinRequest,
     ClanJoinVote,
     ClanMembership,
+    CommunityDomainAffiliation,
+    CommunityMemberVerification,
     CommunityConfirmationContact,
     CommunityConfirmationDecision,
     CommunityConfirmationOutcome,
@@ -59,6 +66,7 @@ VALID_CONFIRMATION_REQUEST_STATUSES = {
     "closed",
     "under_review",
 }
+PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES = PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES
 VALID_CONFIRMATION_REVIEW_STATUSES = {
     "open",
     "in_review",
@@ -202,6 +210,13 @@ def _build_requester_callback(
         and bool(normalized_contact)
         and bool(consent)
     )
+    evidence_scope = (
+        "This public credential shows an active membership record under this Community ID "
+        "plus aggregate member-witness strength and broad community activity evidence. "
+        "It does not expose verifier names, private notes, phone numbers, shop details, "
+        "payment records, or credit approval."
+    )
+
     return {
         "requested": requested,
         "channel": normalized_channel if requested else "none",
@@ -239,14 +254,23 @@ def _public_requester_callback(summary: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _active_member_count(db: Session, community_id: int) -> int:
-    return int(
-        db.query(func.count(ClanMembership.id))
+def _active_membership_rows(db: Session, community_id: int) -> list[ClanMembership]:
+    rows = (
+        db.query(ClanMembership, User)
+        .join(User, User.id == ClanMembership.user_id)
         .filter(ClanMembership.clan_id == int(community_id))
         .filter(ClanMembership.left_at.is_(None))
-        .scalar()
-        or 0
+        .all()
     )
+    return [
+        membership
+        for membership, user in rows
+        if not is_user_activation_pending(user)
+    ]
+
+
+def _active_member_count(db: Session, community_id: int) -> int:
+    return len(_active_membership_rows(db, int(community_id)))
 
 
 def _sponsor_signal_count(db: Session, community_id: int, subject_user_id: int) -> int:
@@ -340,12 +364,7 @@ def ensure_default_confirmation_contacts(
     subject_user_id: Optional[int] = None,
     commit: bool = False,
 ) -> int:
-    members = (
-        db.query(ClanMembership)
-        .filter(ClanMembership.clan_id == int(community_id))
-        .filter(ClanMembership.left_at.is_(None))
-        .all()
-    )
+    members = _active_membership_rows(db, int(community_id))
     created = 0
     now = _now_utc()
 
@@ -395,18 +414,23 @@ def _eligible_contact_count(
     subject_user_id: Optional[int] = None,
     instant: bool = False,
 ) -> int:
-    query = (
-        db.query(func.count(CommunityConfirmationContact.id))
+    rows = (
+        db.query(CommunityConfirmationContact, User)
+        .join(User, User.id == CommunityConfirmationContact.user_id)
         .filter(CommunityConfirmationContact.community_id == int(community_id))
         .filter(CommunityConfirmationContact.active.is_(True))
         .filter(CommunityConfirmationContact.can_receive_relay_requests.is_(True))
         .filter(CommunityConfirmationContact.opted_out_at.is_(None))
     )
     if instant:
-        query = query.filter(CommunityConfirmationContact.can_receive_instant_pulse.is_(True))
+        rows = rows.filter(CommunityConfirmationContact.can_receive_instant_pulse.is_(True))
     if subject_user_id is not None:
-        query = query.filter(CommunityConfirmationContact.user_id != int(subject_user_id))
-    return int(query.scalar() or 0)
+        rows = rows.filter(CommunityConfirmationContact.user_id != int(subject_user_id))
+    return sum(
+        1
+        for _contact, user in rows.all()
+        if not is_user_activation_pending(user)
+    )
 
 
 def _eligible_confirmation_contacts(
@@ -418,7 +442,8 @@ def _eligible_confirmation_contacts(
     limit: Optional[int] = None,
 ) -> list[CommunityConfirmationContact]:
     query = (
-        db.query(CommunityConfirmationContact)
+        db.query(CommunityConfirmationContact, User)
+        .join(User, User.id == CommunityConfirmationContact.user_id)
         .filter(CommunityConfirmationContact.community_id == int(community_id))
         .filter(CommunityConfirmationContact.user_id != int(subject_user_id))
         .filter(CommunityConfirmationContact.active.is_(True))
@@ -432,9 +457,14 @@ def _eligible_confirmation_contacts(
         CommunityConfirmationContact.last_active_at.desc().nullslast(),
         CommunityConfirmationContact.id.asc(),
     )
+    rows = [
+        (contact, user)
+        for contact, user in query.all()
+        if not is_user_activation_pending(user)
+    ]
     if limit is not None:
-        query = query.limit(max(1, int(limit)))
-    return list(query.all())
+        rows = rows[: max(1, int(limit))]
+    return [contact for contact, _user in rows]
 
 
 def _notify_confirmation_contacts(
@@ -629,14 +659,34 @@ def build_community_confirmation_summary(
             "plain_language": "This community could not be found for confirmation.",
         }
 
+    community_status = str(getattr(community, "status", "") or "active").strip().lower()
+    if community_status != "active":
+        return {
+            "community_status": community_status,
+            "community_name": getattr(community, "name", None),
+            "community_id": int(community_id),
+            "community_code": getattr(community, "community_code", None),
+            "approval_type": "Response-based community confirmation",
+            "active_member_count": _active_member_count(db, int(community_id)),
+            "contactable_reference_count": 0,
+            "sponsor_signal_count": 0,
+            "last_community_confirmation": None,
+            "relay_available": False,
+            "confirmation_schema_available": True,
+            "instant_pulse_available": False,
+            "request_action": None,
+            "plain_language": (
+                "This community record is visible in GSN, but live member "
+                "confirmation is not available because the community is not active."
+            ),
+        }
+
     if subject_user_id is not None:
         ensure_default_confirmation_contacts(
             db,
             community_id=int(community_id),
             subject_user_id=int(subject_user_id),
         )
-
-    community_status = str(getattr(community, "status", "") or "active")
 
     try:
         policy = get_or_create_confirmation_policy(db, community_id=int(community_id))
@@ -731,6 +781,15 @@ def create_confirmation_request(
 
     if not subject_user_id or not community_id:
         raise ValueError("subject_user_id and community_id are required")
+
+    community = db.query(Clan).filter(Clan.id == int(community_id)).first()
+    community_status = str(getattr(community, "status", "") or "").strip().lower()
+    if not community or community_status != "active":
+        raise ValueError("Community is not active for live confirmation")
+
+    subject = db.query(User).filter(User.id == int(subject_user_id)).first()
+    if is_user_activation_pending(subject):
+        raise ValueError("Subject is not an active member of this community")
 
     membership = (
         db.query(ClanMembership)
@@ -886,6 +945,9 @@ def _request_eligible_for_responder(
 ) -> bool:
     if int(request.subject_user_id) == int(responder_user_id):
         return False
+    responder = db.query(User).filter(User.id == int(responder_user_id)).first()
+    if is_user_activation_pending(responder):
+        return False
 
     contact = (
         db.query(CommunityConfirmationContact)
@@ -920,6 +982,10 @@ def _request_eligible_for_responder(
 
 
 def list_confirmation_inbox(db: Session, *, responder_user_id: int) -> Dict[str, Any]:
+    responder = db.query(User).filter(User.id == int(responder_user_id)).first()
+    if is_user_activation_pending(responder):
+        return {"items": [], "total": 0}
+
     ensure_contacts_for_user_communities(db, user_id=int(responder_user_id))
     now = _now_utc()
     rows = (
@@ -955,6 +1021,10 @@ def list_confirmation_inbox(db: Session, *, responder_user_id: int) -> Dict[str,
 
 
 def ensure_contacts_for_user_communities(db: Session, *, user_id: int) -> None:
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if is_user_activation_pending(user):
+        return
+
     memberships = (
         db.query(ClanMembership)
         .filter(ClanMembership.user_id == int(user_id))
@@ -1147,6 +1217,10 @@ def _require_confirmation_policy_admin(
     actor_user_id: int,
     actor_role: Optional[str] = None,
 ) -> ClanMembership:
+    actor = db.query(User).filter(User.id == int(actor_user_id)).first()
+    if is_user_activation_pending(actor):
+        raise PermissionError("Community admin role required")
+
     membership = (
         db.query(ClanMembership)
         .filter(ClanMembership.clan_id == int(community_id))
@@ -2415,6 +2489,9 @@ def _can_manage_confirmation_request(
     actor_user_id: int,
     actor_role: Optional[str] = None,
 ) -> bool:
+    actor = db.query(User).filter(User.id == int(actor_user_id)).first()
+    if is_user_activation_pending(actor):
+        return False
     if _is_platform_admin(actor_role):
         return True
     if request.requester_user_id and int(request.requester_user_id) == int(actor_user_id):
@@ -2448,6 +2525,9 @@ def _is_community_admin_for_confirmation(
     actor_user_id: int,
     actor_role: Optional[str] = None,
 ) -> bool:
+    actor = db.query(User).filter(User.id == int(actor_user_id)).first()
+    if is_user_activation_pending(actor):
+        return False
     if _is_platform_admin(actor_role):
         return True
     membership = (
@@ -2723,11 +2803,6 @@ def _review_case_public_item(
         "request_id": int(review_case.request_id),
         "decision_id": int(review_case.decision_id) if review_case.decision_id else None,
         "community_id": int(review_case.community_id),
-        "subject_user_id": int(review_case.subject_user_id),
-        "opened_by_user_id": int(review_case.opened_by_user_id),
-        "assigned_to_user_id": (
-            int(review_case.assigned_to_user_id) if review_case.assigned_to_user_id else None
-        ),
         "status": review_case.status,
         "review_reason": review_case.review_reason,
         "resolution": review_case.resolution,
@@ -2760,6 +2835,11 @@ def _review_case_public_item(
         "private_contacts_exposed": False,
     }
     if include_private_note:
+        item["subject_user_id"] = int(review_case.subject_user_id)
+        item["opened_by_user_id"] = int(review_case.opened_by_user_id)
+        item["assigned_to_user_id"] = (
+            int(review_case.assigned_to_user_id) if review_case.assigned_to_user_id else None
+        )
         item["reviewer_note"] = review_case.reviewer_note
         item["resolution_note"] = review_case.resolution_note
         item["evidence_summary"] = review_case.evidence_summary
@@ -3698,6 +3778,8 @@ def public_confirmation_outcome(db: Session, *, public_token: str) -> Dict[str, 
         or str(summary.get("confidence_level") or "")
         or "pending"
     )
+    subject = db.query(User).filter(User.id == int(request.subject_user_id)).first()
+    subject_public_reference = str(getattr(subject, "gmfn_id", "") or "").strip()
 
     return {
         "request_id": int(request.id),
@@ -3709,7 +3791,8 @@ def public_confirmation_outcome(db: Session, *, public_token: str) -> Dict[str, 
         "community_name": getattr(community, "name", None),
         "community_id": int(request.community_id),
         "community_code": getattr(community, "community_code", None),
-        "subject_user_id": int(request.subject_user_id),
+        "subject_public_reference": subject_public_reference or "Protected member reference",
+        "subject_reference_type": "gsn_id" if subject_public_reference else "protected",
         "review_case": _review_case_public_item(
             review_case,
             include_private_note=False,
@@ -3813,6 +3896,330 @@ def _find_public_community(db: Session, *, community_key: str) -> Clan:
     return community
 
 
+def _public_member_key_candidates(member_key: str) -> list[str]:
+    raw = str(member_key or "").strip()
+    upper = raw.upper()
+    candidates: list[str] = []
+
+    def add(value: str) -> None:
+        item = str(value or "").strip()
+        if item and item not in candidates:
+            candidates.append(item)
+
+    add(raw)
+    add(upper)
+    if upper.startswith("GSN-"):
+        add(f"GMFN-{upper[4:]}")
+    if upper.startswith("GMFN-"):
+        add(f"GSN-{upper[5:]}")
+    return candidates
+
+
+def _find_public_member(db: Session, *, member_key: str) -> User:
+    key = str(member_key or "").strip()
+    candidates = _public_member_key_candidates(key)
+    user = None
+    if key.isdigit():
+        user = db.query(User).filter(User.id == int(key)).first()
+    if not user and candidates:
+        upper_candidates = [candidate.upper() for candidate in candidates]
+        user = db.query(User).filter(func.upper(User.gmfn_id).in_(upper_candidates)).first()
+    if not user:
+        raise ValueError("Member not found")
+    return user
+
+
+def _verification_strength_label(active_count: int) -> str:
+    if active_count >= 10:
+        return "community_established"
+    if active_count >= 6:
+        return "strongly_verified"
+    if active_count >= 3:
+        return "community_verified"
+    if active_count >= 1:
+        return "lightly_verified"
+    return "joined"
+
+
+def _verification_strength_text(active_count: int) -> str:
+    return {
+        "community_established": "Community Established",
+        "strongly_verified": "Strongly Verified",
+        "community_verified": "Community Verified",
+        "lightly_verified": "Lightly Verified",
+        "joined": "Joined / Unverified",
+    }[_verification_strength_label(active_count)]
+
+
+def _membership_renewal_status(valid_until: Optional[datetime], *, now: Optional[datetime] = None) -> str:
+    if valid_until is None:
+        return "not_started"
+    current = _to_aware(now) or _now_utc()
+    expiry = _to_aware(valid_until)
+    if expiry is None:
+        return "not_started"
+    if expiry < current:
+        return "expired"
+    if expiry <= current + timedelta(days=30):
+        return "renewal_due"
+    return "active"
+
+
+def _membership_renewal_status_text(status: str) -> str:
+    return {
+        "active": "Active",
+        "renewal_due": "Renewal Due",
+        "expired": "Expired",
+        "not_started": "Not Started",
+    }.get(str(status or "not_started").strip().lower(), "Not Started")
+
+
+def _public_activity_category(event_type: Any) -> str:
+    text = str(event_type or "").strip().lower()
+    if not text:
+        return "Community activity"
+    if "verification" in text or "verified" in text or "confirmation" in text or text in {"clan_joined"}:
+        return "Community verification"
+    if "loan" in text or "guarantor" in text or "support" in text:
+        return "Support and borrowing"
+    if "repay" in text or "settle" in text:
+        return "Repayment discipline"
+    if "market" in text or "shop" in text or "spotlight" in text or "demand" in text:
+        return "Trusted trade"
+    if "rosca" in text or "contribution" in text or "pool" in text or "payment" in text:
+        return "Contribution records"
+    return "Community activity"
+
+
+def public_community_member_verification(
+    db: Session,
+    *,
+    community_key: str,
+    member_key: str,
+) -> Dict[str, Any]:
+    community = _find_public_community(db, community_key=community_key)
+    community_status = str(getattr(community, "status", "") or "active").strip().lower()
+    if community_status != "active":
+        raise ValueError("Community not found")
+    member = _find_public_member(db, member_key=member_key)
+    membership = (
+        db.query(ClanMembership)
+        .filter(ClanMembership.clan_id == int(community.id))
+        .filter(ClanMembership.user_id == int(member.id))
+        .filter(ClanMembership.left_at.is_(None))
+        .first()
+    )
+    if not membership:
+        raise ValueError("Member not found in this community")
+    if is_user_activation_pending(member):
+        raise ValueError("Member not found in this community")
+
+    now = _now_utc()
+    active_member_rows = (
+        db.query(ClanMembership, User)
+        .join(User, User.id == ClanMembership.user_id)
+        .filter(ClanMembership.clan_id == int(community.id))
+        .filter(ClanMembership.left_at.is_(None))
+        .all()
+    )
+    active_member_ids = {
+        int(row.user_id)
+        for row, user in active_member_rows
+        if not is_user_activation_pending(user)
+    }
+    rows = (
+        db.query(CommunityMemberVerification)
+        .filter(CommunityMemberVerification.clan_id == int(community.id))
+        .filter(CommunityMemberVerification.subject_user_id == int(member.id))
+        .filter(CommunityMemberVerification.status == "active")
+        .filter(CommunityMemberVerification.withdrawn_at.is_(None))
+        .all()
+    )
+    eligible_rows = [
+        row
+        for row in rows
+        if int(row.subject_user_id) in active_member_ids
+        and int(row.verifier_user_id) in active_member_ids
+    ]
+    current_rows = [
+        row
+        for row in eligible_rows
+        if _to_aware(getattr(row, "valid_until", None)) is None
+        or _to_aware(getattr(row, "valid_until", None)) >= now
+    ]
+    active_count = len(current_rows)
+    latest_valid_until = max(
+        [row.valid_until for row in current_rows if row.valid_until is not None],
+        default=max([row.valid_until for row in eligible_rows if row.valid_until is not None], default=None),
+    )
+    next_witness_renewal_at = min(
+        [row.valid_until for row in current_rows if row.valid_until is not None],
+        default=None,
+    )
+    next_witness_renewal_status = _membership_renewal_status(
+        next_witness_renewal_at,
+        now=now,
+    )
+    renewal_status = _membership_renewal_status(latest_valid_until, now=now)
+    strength = _verification_strength_label(active_count)
+    display_name = str(getattr(member, "display_name", "") or "").strip()
+    member_gsn_id = getattr(member, "gmfn_id", None) or f"GMFN-P-{int(member.id):06d}"
+    community_code = getattr(community, "community_code", None) or f"GMFN-C-{int(community.id):06d}"
+    community_public_record = public_community_verification(
+        db,
+        community_key=community_code,
+    )
+    activity_count = (
+        db.query(func.count(TrustEvent.id))
+        .filter(TrustEvent.clan_id == int(community.id))
+        .filter(TrustEvent.subject_user_id == int(member.id))
+        .filter(~TrustEvent.event_type.in_(PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES))
+        .scalar()
+        or 0
+    )
+    activity_rows = (
+        db.query(TrustEvent.event_type, TrustEvent.created_at)
+        .filter(TrustEvent.clan_id == int(community.id))
+        .filter(TrustEvent.subject_user_id == int(member.id))
+        .filter(~TrustEvent.event_type.in_(PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES))
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(100)
+        .all()
+    )
+    latest_activity_at = activity_rows[0].created_at if activity_rows else None
+    activity_categories: list[str] = []
+    for row in activity_rows:
+        category = _public_activity_category(row.event_type)
+        if category not in activity_categories:
+            activity_categories.append(category)
+
+    strength_text = _verification_strength_text(active_count)
+    renewal_text = _membership_renewal_status_text(renewal_status)
+    activity_total = int(activity_count)
+    if renewal_status == "expired":
+        trust_reading_label = "Membership evidence needs renewal"
+    elif active_count >= 10 and activity_total > 0:
+        trust_reading_label = "Community-established member evidence"
+    elif active_count >= 6 and activity_total > 0:
+        trust_reading_label = "Strong community member evidence"
+    elif active_count >= 3:
+        trust_reading_label = "Community member evidence"
+    elif active_count >= 1:
+        trust_reading_label = "Light community member evidence"
+    else:
+        trust_reading_label = "Active membership; witness evidence not started"
+    trust_reading_scope = (
+        f"Inside {community.name}, this credential shows active membership, "
+        f"{strength_text}, {renewal_text.lower()} renewal status, and "
+        f"{activity_total} broad community activity event(s). It is "
+        "community-scoped evidence for judgement, not a universal trust score, "
+        "guarantee, credit approval, or transaction permission."
+    )
+    if renewal_status == "active":
+        currentness_label = "Current witness window"
+        currentness_scope = (
+            "The member's witness evidence is within its recorded validity "
+            "window. Still read witness strength, community activity, "
+            "TrustSlip, and the community record together before a serious "
+            "decision."
+        )
+    elif renewal_status == "renewal_due":
+        currentness_label = "Renewal due soon"
+        currentness_scope = (
+            "The member's witness evidence is nearing renewal. Ask for a "
+            "fresh member credential, TrustSlip, or live community "
+            "confirmation before a serious decision."
+        )
+    elif renewal_status == "expired":
+        currentness_label = "Witness evidence expired"
+        currentness_scope = (
+            "The member's witness evidence is past its recorded validity "
+            "window. Ask for renewed witnesses or live community confirmation "
+            "before relying on the claim."
+        )
+    else:
+        currentness_label = "Witness renewal not started"
+        currentness_scope = (
+            "This active membership record has no current witness validity "
+            "window. Ask for member witnesses, TrustSlip, or live community "
+            "confirmation before a serious decision."
+        )
+    evidence_scope = (
+        "This public credential shows an active membership record under this "
+        "Community ID plus aggregate member-witness strength and broad "
+        "community activity evidence. It does not expose verifier names, "
+        "private notes, phone numbers, shop details, payment records, or "
+        "credit approval."
+    )
+
+    return {
+        "community_name": community.name,
+        "community_id": int(community.id),
+        "community_code": community_code,
+        "community_public_face_status": community_public_record.get(
+            "community_public_face_status"
+        ),
+        "community_public_face_label": community_public_record.get(
+            "community_public_face_label"
+        ),
+        "official_affiliate_status": community_public_record.get(
+            "official_affiliate_status"
+        ),
+        "official_affiliate_label": community_public_record.get(
+            "official_affiliate_label"
+        ),
+        "community_evidence_currentness_status": community_public_record.get(
+            "community_evidence_currentness_status"
+        ),
+        "community_evidence_currentness_label": community_public_record.get(
+            "community_evidence_currentness_label"
+        ),
+        "community_evidence_currentness_scope": community_public_record.get(
+            "community_evidence_currentness_scope"
+        ),
+        "member_gsn_id": member_gsn_id,
+        "member_display_name": display_name or "GSN member",
+        "membership_status": "active",
+        "membership_role": getattr(membership, "role", None) or "member",
+        "public_label": (
+            "Verified Community Member"
+            if active_count >= 3
+            else "Active Community Member; Witness Strength Limited"
+        ),
+        "member_witness_count": active_count,
+        "membership_strength": strength,
+        "membership_strength_label": strength_text,
+        "membership_renewal_status": renewal_status,
+        "membership_renewal_status_label": renewal_text,
+        "membership_valid_until": latest_valid_until.isoformat() if latest_valid_until else None,
+        "next_witness_renewal_at": (
+            next_witness_renewal_at.isoformat() if next_witness_renewal_at else None
+        ),
+        "next_witness_renewal_status": next_witness_renewal_status,
+        "next_witness_renewal_status_label": _membership_renewal_status_text(
+            next_witness_renewal_status
+        ),
+        "community_activity_count": activity_total,
+        "community_activity_latest_at": (
+            latest_activity_at.isoformat() if latest_activity_at else None
+        ),
+        "community_activity_categories": activity_categories[:6],
+        "community_activity_label": (
+            "Community activity recorded"
+            if int(activity_count) > 0
+            else "No community activity recorded yet"
+        ),
+        "community_trust_reading_label": trust_reading_label,
+        "community_trust_reading_scope": trust_reading_scope,
+        "membership_currentness_label": currentness_label,
+        "membership_currentness_scope": currentness_scope,
+        "evidence_scope": evidence_scope,
+        "proof_scope": evidence_scope,
+        "privacy_note": "Private verifier names and private member contact details are not shown.",
+        "decision_note": "Use this as membership evidence, not as a guarantee or automatic transaction approval.",
+    }
+
+
 def _community_confirmation_relay_recipient_ids(
     db: Session,
     *,
@@ -3825,6 +4232,10 @@ def _community_confirmation_relay_recipient_ids(
             normalized_id = int(user_id)
         except (TypeError, ValueError):
             normalized_id = 0
+        if normalized_id > 0:
+            user = db.get(User, normalized_id)
+            if is_user_activation_pending(user):
+                return
         if normalized_id > 0 and normalized_id not in recipients:
             recipients.append(normalized_id)
 
@@ -3851,8 +4262,51 @@ def _community_confirmation_relay_recipient_ids(
     return recipients
 
 
+def _community_public_type(community: Clan) -> tuple[str, str, str]:
+    text = " ".join(
+        str(value or "").lower()
+        for value in (
+            getattr(community, "name", None),
+            getattr(community, "description", None),
+            getattr(community, "marketplace_name", None),
+            getattr(community, "marketplace_description", None),
+        )
+    )
+    checks = [
+        ("market_association", "Market association", ("market", "trader", "traders", "line", "shop")),
+        ("church", "Church / religious group", ("church", "parish", "ministry", "chapel", "mosque")),
+        ("cooperative", "Cooperative", ("cooperative", "co-op", "thrift", "credit union")),
+        ("town_union", "Town union", ("town union", "village", "age grade", "kindred")),
+        ("student_association", "Student association", ("student", "university", "college", "campus")),
+        ("diaspora_association", "Diaspora association", ("diaspora", "abroad", "uk", "london", "usa")),
+        ("social_club", "Social club", ("club", "rotary", "lions", "association")),
+    ]
+    for key, label, needles in checks:
+        if any(needle in text for needle in needles):
+            return key, label, "Inferred from public community text"
+    return "organized_community", "Organized community", "Default public category"
+
+
+def _community_record_is_active(community: Optional[Clan]) -> bool:
+    return str(getattr(community, "status", "") or "").strip().lower() == "active"
+
+
 def public_community_verification(db: Session, *, community_key: str) -> Dict[str, Any]:
     community = _find_public_community(db, community_key=community_key)
+    approved_affiliation = (
+        db.query(CommunityDomainAffiliation)
+        .filter(CommunityDomainAffiliation.affiliate_clan_id == int(community.id))
+        .filter(CommunityDomainAffiliation.status == "approved")
+        .order_by(CommunityDomainAffiliation.decided_at.desc().nullslast(), CommunityDomainAffiliation.id.desc())
+        .first()
+    )
+    parent_community = (
+        db.get(Clan, int(approved_affiliation.parent_clan_id))
+        if approved_affiliation is not None
+        else None
+    )
+    community_is_active = _community_record_is_active(community)
+    parent_is_active = _community_record_is_active(parent_community)
     summary = build_community_confirmation_summary(
         db,
         community_id=int(community.id),
@@ -3860,19 +4314,204 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
     )
     recipient_ids = _community_confirmation_relay_recipient_ids(db, community=community)
     confirmation_ready = bool(summary.get("confirmation_schema_available", True))
-    relay_available = bool(confirmation_ready and (summary.get("relay_available") or recipient_ids))
+    relay_available = bool(
+        community_is_active
+        and confirmation_ready
+        and (summary.get("relay_available") or recipient_ids)
+    )
 
-    return {
+    official_affiliate_status = "not_asserted"
+    official_affiliate_label = "No parent-domain affiliate claim on this record"
+    official_affiliate_note = (
+        "This public record does not certify that any subgroup, line, shop "
+        "cluster, or independent group has been accepted under this "
+        "community domain. Parent-domain acknowledgement needs its own "
+        "record."
+    )
+    parent_domain = None
+    if (
+        approved_affiliation is not None
+        and parent_community is not None
+        and community_is_active
+        and parent_is_active
+    ):
+        official_affiliate_status = "approved"
+        parent_code = getattr(parent_community, "community_code", None) or f"GMFN-C-{int(parent_community.id):06d}"
+        official_affiliate_label = "Acknowledged affiliate under parent domain"
+        official_affiliate_note = (
+            f"This community has been acknowledged as an affiliate "
+            f"under {parent_community.name} ({parent_code})."
+        )
+        parent_domain = {
+            "community_id": int(parent_community.id),
+            "community_code": parent_code,
+            "community_name": parent_community.name,
+            "affiliation_id": int(approved_affiliation.id),
+            "decided_at": getattr(approved_affiliation, "decided_at", None),
+        }
+    elif approved_affiliation is not None and parent_community is not None:
+        official_affiliate_status = "not_current"
+        parent_code = getattr(parent_community, "community_code", None) or f"GMFN-C-{int(parent_community.id):06d}"
+        official_affiliate_label = "Parent-domain acknowledgement not current"
+        official_affiliate_note = (
+            f"GSN has a historical approved affiliation under "
+            f"{parent_community.name} ({parent_code}), but this public record "
+            "does not treat it as current because the affiliate or parent "
+            "community domain is not active."
+        )
+        parent_domain = {
+            "community_id": int(parent_community.id),
+            "community_code": parent_code,
+            "community_name": parent_community.name,
+            "affiliation_id": int(approved_affiliation.id),
+            "decided_at": getattr(approved_affiliation, "decided_at", None),
+            "current": False,
+        }
+
+    domain_evidence_scope = "Community ID is the record anchor. The name is a display label."
+    community_type, community_type_label, community_type_source = _community_public_type(community)
+    public_face_status = (
+        "affiliate_acknowledged_record"
+        if official_affiliate_status == "approved"
+        else "basic_public_record"
+    )
+    public_face_label = (
+        "Affiliate acknowledged public record"
+        if official_affiliate_status == "approved"
+        else "Basic public record"
+    )
+    public_face_scope = (
+        "Shows Community ID, public status, inferred community type, domain stage, "
+        "affiliate claim, and controlled relay availability. It is not a full "
+        "community profile, member list, service guarantee, or community health report."
+    )
+    next_evidence_label = (
+        "Use controlled confirmation before relying on a claim"
+        if relay_available
+        else "Ask for scoped member or group evidence"
+    )
+    next_evidence_scope = (
+        "If a person, shop, line, or subgroup claims this community identity, ask "
+        "for a scoped member credential, TrustSlip, acknowledged affiliate record, "
+        "or controlled community confirmation. Do not rely on the display name alone."
+    )
+    record_started_at = _to_aware(getattr(community, "created_at", None))
+    record_started_date = record_started_at.date().isoformat() if record_started_at else None
+    record_started_label = (
+        f"GSN record since {record_started_date}"
+        if record_started_date
+        else "GSN record date not shown"
+    )
+    record_started_scope = (
+        "This is the date this community record entered GSN. It is not the date "
+        "the real-world community was founded or formally registered."
+    )
+    mobility_label = "Portable Community ID anchor"
+    mobility_scope = (
+        "Use this Community ID alongside scoped member credentials, TrustSlips, "
+        "acknowledged affiliate records, or controlled confirmations when trust needs "
+        "to travel outside the original room. The Community ID alone does not "
+        "transfer trust or approve a transaction."
+    )
+    reader_decision_label = "First check, not final decision"
+    reader_decision_scope = (
+        "Use this record to see whether a Community ID resolves to a recorded "
+        "GSN community. For serious trade, lending, membership, shop, line, "
+        "welfare, or affiliate decisions, ask for current scoped evidence before "
+        "acting."
+    )
+    if not community_is_active:
+        evidence_currentness_status = "inactive_record"
+        evidence_currentness_label = "Community record is not active"
+        evidence_currentness_scope = (
+            "This Community ID resolves to a GSN record, but the community "
+            "record is not active. Treat it as historical or unavailable "
+            "public evidence until current scoped evidence is supplied."
+        )
+    elif official_affiliate_status == "approved":
+        evidence_currentness_status = "current_parent_acknowledgement"
+        evidence_currentness_label = "Current parent-domain acknowledgement"
+        evidence_currentness_scope = (
+            "This record has a current parent-domain acknowledgement and an "
+            "active affiliate community record. Still ask for scoped member, "
+            "shop, subgroup, TrustSlip, or controlled confirmation evidence "
+            "before a serious decision."
+        )
+    elif official_affiliate_status == "not_current":
+        evidence_currentness_status = "historical_parent_acknowledgement"
+        evidence_currentness_label = "Parent-domain acknowledgement not current"
+        evidence_currentness_scope = (
+            "GSN has a historical approved affiliation record, but it is not "
+            "current because the affiliate or parent domain is not active. "
+            "Ask for fresh scoped evidence before relying on the claim."
+        )
+    else:
+        evidence_currentness_status = "active_basic_record"
+        evidence_currentness_label = "Active recorded Community ID"
+        evidence_currentness_scope = (
+            "This Community ID resolves to an active GSN community record. "
+            "Parent-domain acknowledgement and member-level proof still need "
+            "separate current scoped evidence."
+        )
+
+    payload = {
         "community_name": community.name,
         "community_id": int(community.id),
         "community_code": community.community_code,
+        "community_type": community_type,
+        "community_type_label": community_type_label,
+        "community_type_source": community_type_source,
+        "community_public_face_status": public_face_status,
+        "community_public_face_label": public_face_label,
+        "community_public_face_scope": public_face_scope,
+        "community_next_evidence_label": next_evidence_label,
+        "community_next_evidence_scope": next_evidence_scope,
+        "community_record_started_at": (
+            record_started_at.isoformat() if record_started_at else None
+        ),
+        "community_record_started_label": record_started_label,
+        "community_record_started_scope": record_started_scope,
+        "community_mobility_label": mobility_label,
+        "community_mobility_scope": mobility_scope,
+        "community_reader_decision_label": reader_decision_label,
+        "community_reader_decision_scope": reader_decision_scope,
+        "community_evidence_currentness_status": evidence_currentness_status,
+        "community_evidence_currentness_label": evidence_currentness_label,
+        "community_evidence_currentness_scope": evidence_currentness_scope,
         "status": community.status,
-        "public_record": "Verified in GSN",
+        "public_record": "Recorded in GSN",
+        "domain_label": "GSN Community ID Domain",
+        "domain_status": "Recorded community domain",
+        "domain_lifecycle_status": "recorded",
+        "domain_lifecycle_label": "Recorded in GSN",
+        "domain_lifecycle_note": (
+            "GSN has a community ID record for this community. Paid protected "
+            "domain ownership, parent-domain control, and affiliate approval "
+            "are not asserted by this public record yet."
+        ),
+        "domain_evidence_scope": domain_evidence_scope,
+        "domain_proof_scope": domain_evidence_scope,
+        "membership_credential_status": (
+            "Member, shop, and group credentials are not exposed on this public page"
+        ),
+        "official_affiliate_status": official_affiliate_status,
+        "official_affiliate_label": official_affiliate_label,
+        "official_affiliate_note": official_affiliate_note,
+        "parent_domain": parent_domain,
+        "group_affiliation_status": (
+            "Affiliate groups must be acknowledged under the parent domain"
+        ),
+        "public_limitation": (
+            "This record shows the community identity recorded in GSN. It does not "
+            "automatically verify every person, shop, line, or subgroup using "
+            "the community name."
+        ),
         "member_confirmation": "By controlled request only",
         "relay_available": relay_available,
         "relay_availability": "Available" if relay_available else "Not available",
         "request_confirmation_available": relay_available,
     }
+    return payload
 
 
 def request_public_community_verification_confirmation(
@@ -3883,6 +4522,9 @@ def request_public_community_verification_confirmation(
     requester_external_label: Optional[str] = None,
 ) -> Dict[str, Any]:
     community = _find_public_community(db, community_key=community_key)
+    community_status = str(getattr(community, "status", "") or "").strip().lower()
+    if community_status != "active":
+        raise ValueError("Community is not active for live confirmation")
     try:
         ensure_default_confirmation_contacts(
             db,

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useParams } from "react-router-dom";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import PageTopNav from "../components/PageTopNav";
@@ -18,7 +19,45 @@ type CommunityVerifyRecord = {
   community_name?: string | null;
   community_id?: number | string | null;
   community_code?: string | null;
+  community_type?: string | null;
+  community_type_label?: string | null;
+  community_type_source?: string | null;
+  community_public_face_status?: string | null;
+  community_public_face_label?: string | null;
+  community_public_face_scope?: string | null;
+  community_next_evidence_label?: string | null;
+  community_next_evidence_scope?: string | null;
+  community_record_started_at?: string | null;
+  community_record_started_label?: string | null;
+  community_record_started_scope?: string | null;
+  community_mobility_label?: string | null;
+  community_mobility_scope?: string | null;
+  community_reader_decision_label?: string | null;
+  community_reader_decision_scope?: string | null;
+  community_evidence_currentness_status?: string | null;
+  community_evidence_currentness_label?: string | null;
+  community_evidence_currentness_scope?: string | null;
   status?: string | null;
+  domain_label?: string | null;
+  domain_status?: string | null;
+  domain_lifecycle_status?: string | null;
+  domain_lifecycle_label?: string | null;
+  domain_lifecycle_note?: string | null;
+  domain_evidence_scope?: string | null;
+  domain_proof_scope?: string | null;
+  membership_credential_status?: string | null;
+  official_affiliate_status?: string | null;
+  official_affiliate_label?: string | null;
+  official_affiliate_note?: string | null;
+  parent_domain?: {
+    community_id?: number | string | null;
+    community_code?: string | null;
+    community_name?: string | null;
+    affiliation_id?: number | string | null;
+    decided_at?: string | null;
+  } | null;
+  group_affiliation_status?: string | null;
+  public_limitation?: string | null;
   relay_available?: boolean | null;
   relay_availability?: string | null;
   public_record?: string | null;
@@ -112,7 +151,42 @@ function normalizeRecord(raw: any): CommunityVerifyRecord {
     community_name: firstTruthy(src.community_name, src.name),
     community_id: src.community_id ?? src.id ?? null,
     community_code: firstTruthy(src.community_code),
+    community_type: firstTruthy(src.community_type),
+    community_type_label: firstTruthy(src.community_type_label),
+    community_type_source: firstTruthy(src.community_type_source),
+    community_public_face_status: firstTruthy(src.community_public_face_status),
+    community_public_face_label: firstTruthy(src.community_public_face_label),
+    community_public_face_scope: firstTruthy(src.community_public_face_scope),
+    community_next_evidence_label: firstTruthy(src.community_next_evidence_label),
+    community_next_evidence_scope: firstTruthy(src.community_next_evidence_scope),
+    community_record_started_at: firstTruthy(src.community_record_started_at),
+    community_record_started_label: firstTruthy(src.community_record_started_label),
+    community_record_started_scope: firstTruthy(src.community_record_started_scope),
+    community_mobility_label: firstTruthy(src.community_mobility_label),
+    community_mobility_scope: firstTruthy(src.community_mobility_scope),
+    community_reader_decision_label: firstTruthy(src.community_reader_decision_label),
+    community_reader_decision_scope: firstTruthy(src.community_reader_decision_scope),
+    community_evidence_currentness_status: firstTruthy(src.community_evidence_currentness_status),
+    community_evidence_currentness_label: firstTruthy(src.community_evidence_currentness_label),
+    community_evidence_currentness_scope: firstTruthy(src.community_evidence_currentness_scope),
     status: firstTruthy(src.status),
+    domain_label: firstTruthy(src.domain_label),
+    domain_status: firstTruthy(src.domain_status),
+    domain_lifecycle_status: firstTruthy(src.domain_lifecycle_status),
+    domain_lifecycle_label: firstTruthy(src.domain_lifecycle_label),
+    domain_lifecycle_note: firstTruthy(src.domain_lifecycle_note),
+    domain_evidence_scope: firstTruthy(src.domain_evidence_scope, src.domainEvidenceScope),
+    domain_proof_scope: firstTruthy(src.domain_proof_scope),
+    membership_credential_status: firstTruthy(src.membership_credential_status),
+    official_affiliate_status: firstTruthy(src.official_affiliate_status),
+    official_affiliate_label: firstTruthy(src.official_affiliate_label),
+    official_affiliate_note: firstTruthy(src.official_affiliate_note),
+    parent_domain:
+      src.parent_domain && typeof src.parent_domain === "object"
+        ? src.parent_domain
+        : null,
+    group_affiliation_status: firstTruthy(src.group_affiliation_status),
+    public_limitation: firstTruthy(src.public_limitation),
     relay_available: Boolean(src.relay_available),
     relay_availability: firstTruthy(src.relay_availability),
     public_record: firstTruthy(src.public_record),
@@ -249,6 +323,7 @@ export default function CommunityVerifyPage() {
   }
 
   const communityName = firstTruthy(record?.community_name, "GSN community");
+  const communityAnchor = firstTruthy(record?.community_code, record?.community_id, "Not shown");
   const status = safeStr(record?.status).toLowerCase() || "unknown";
   const active = status === "active";
   const relayAvailable = Boolean(record?.relay_available);
@@ -256,8 +331,170 @@ export default function CommunityVerifyPage() {
     record?.relay_availability,
     relayAvailable ? "Available" : "Not available"
   );
-  const publicRecord = firstTruthy(record?.public_record, "Verified in GSN");
   const requestConfirmationAvailable = Boolean(record?.request_confirmation_available);
+  const publicRecord = firstTruthy(record?.public_record, "Recorded in GSN");
+  const domainStatus = firstTruthy(record?.domain_status, "Recorded community domain");
+  const communityTypeLabel = firstTruthy(
+    record?.community_type_label,
+    record?.community_type ? labelize(record.community_type) : "",
+    "Organized community"
+  );
+  const communityTypeSource = firstTruthy(
+    record?.community_type_source,
+    "Best current public reading, not formal registration"
+  );
+  const publicFaceLabel = firstTruthy(
+    record?.community_public_face_label,
+    "Basic public record"
+  );
+  const publicFaceScope = firstTruthy(
+    record?.community_public_face_scope,
+    "Shows Community ID, public status, inferred community type, domain stage, affiliate claim, and controlled relay availability. It is not a full community profile, member list, service guarantee, or community health report."
+  );
+  const nextEvidenceLabel = firstTruthy(
+    record?.community_next_evidence_label,
+    requestConfirmationAvailable
+      ? "Use controlled confirmation before relying on a claim"
+      : "Ask for scoped member or group evidence"
+  );
+  const nextEvidenceScope = firstTruthy(
+    record?.community_next_evidence_scope,
+    "If a person, shop, line, or subgroup claims this community identity, ask for a scoped member credential, TrustSlip, acknowledged affiliate record, or controlled community confirmation. Do not rely on the display name alone."
+  );
+  const recordStartedLabel = firstTruthy(
+    record?.community_record_started_label,
+    "GSN record date not shown"
+  );
+  const recordStartedScope = firstTruthy(
+    record?.community_record_started_scope,
+    "This is the date this community record entered GSN. It is not the date the real-world community was founded or formally registered."
+  );
+  const mobilityLabel = firstTruthy(
+    record?.community_mobility_label,
+    "Portable Community ID anchor"
+  );
+  const mobilityScope = firstTruthy(
+    record?.community_mobility_scope,
+    "Use this Community ID alongside scoped member credentials, TrustSlips, acknowledged affiliate records, or controlled confirmations when trust needs to travel outside the original room. The Community ID alone does not transfer trust or approve a transaction."
+  );
+  const readerDecisionLabel = firstTruthy(
+    record?.community_reader_decision_label,
+    "First check, not final decision"
+  );
+  const readerDecisionScope = firstTruthy(
+    record?.community_reader_decision_scope,
+    "Use this record to see whether a Community ID resolves to a recorded GSN community. For serious trade, lending, membership, shop, line, welfare, or affiliate decisions, ask for current scoped evidence before acting."
+  );
+  const evidenceCurrentnessLabel = firstTruthy(
+    record?.community_evidence_currentness_label,
+    active ? "Active recorded Community ID" : "Community record is not active"
+  );
+  const evidenceCurrentnessScope = firstTruthy(
+    record?.community_evidence_currentness_scope,
+    active
+      ? "This Community ID resolves to an active GSN community record. Parent-domain acknowledgement and member-level proof still need separate current scoped evidence."
+      : "This Community ID resolves to a GSN record, but the community record is not active. Treat it as historical or unavailable public evidence until current scoped evidence is supplied."
+  );
+  const evidenceCurrentnessStatus = safeStr(
+    record?.community_evidence_currentness_status
+  );
+  const evidenceCurrentnessTone: "good" | "warn" | "info" =
+    evidenceCurrentnessStatus.includes("inactive") ||
+    evidenceCurrentnessStatus.includes("historical")
+      ? "warn"
+      : evidenceCurrentnessStatus.includes("parent")
+        ? "good"
+        : "info";
+  const domainLifecycleLabel = firstTruthy(
+    record?.domain_lifecycle_label,
+    "Recorded in GSN"
+  );
+  const domainLifecycleNote = firstTruthy(
+    record?.domain_lifecycle_note,
+    "GSN has a community ID record for this community. Paid protected domain ownership, parent-domain control, and affiliate approval are not asserted by this public record yet."
+  );
+  const domainEvidenceScope = firstTruthy(
+    record?.domain_evidence_scope,
+    record?.domain_proof_scope,
+    "Community ID is the record anchor. The name is a display label."
+  );
+  const membershipCredentialStatus = firstTruthy(
+    record?.membership_credential_status,
+    "Member, shop, and group credentials are not exposed on this public page"
+  );
+  const officialAffiliateLabel = firstTruthy(
+    record?.official_affiliate_label,
+    "No parent-domain affiliate claim on this record"
+  );
+  const officialAffiliateNote = firstTruthy(
+    record?.official_affiliate_note,
+    "This public record does not certify that any subgroup, line, shop cluster, or independent group has been accepted under this community domain. Parent-domain acknowledgement needs its own record."
+  );
+  const parentDomain = record?.parent_domain || null;
+  const parentDomainLabel = firstTruthy(
+    parentDomain?.community_name,
+    parentDomain?.community_code
+  );
+  const groupAffiliationStatus = firstTruthy(
+    record?.group_affiliation_status,
+    "Affiliate groups must be acknowledged under the parent domain"
+  );
+  const publicLimitation = firstTruthy(
+    record?.public_limitation,
+    "This record shows the community identity recorded in GSN. It does not automatically verify every person, shop, line, or subgroup using the community name."
+  );
+  const claimBoundaryScope =
+    "A person, shop, line, subgroup, or affiliate sharing this community record still needs its own scoped member credential, TrustSlip, acknowledged affiliate record, or controlled confirmation. This page is the community anchor, not their private membership record.";
+  const communityReading = [
+    {
+      title: "Trust anchor",
+      body: `${domainStatus}. ${domainEvidenceScope} Names are display labels; the Community ID is what the reader should check.`,
+      tone: "good" as const,
+    },
+    {
+      title: "What this means",
+      body: `${publicRecord}. ${publicFaceScope}`,
+      tone: "info" as const,
+    },
+    {
+      title: "Evidence currentness",
+      body: `${evidenceCurrentnessLabel}. ${evidenceCurrentnessScope}`,
+      tone: evidenceCurrentnessTone,
+    },
+    {
+      title: "What remains unchecked",
+      body: publicLimitation,
+      tone: "warn" as const,
+    },
+    {
+      title: "Claim boundary",
+      body: claimBoundaryScope,
+      tone: "warn" as const,
+    },
+    {
+      title: "Hidden by design",
+      body: "Private member lists, raw phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page.",
+      tone: "info" as const,
+    },
+    {
+      title: "Next safe step",
+      body: requestConfirmationAvailable
+        ? "Use controlled confirmation when you need a live answer from the community."
+        : "Ask for a member credential, TrustSlip, or fresh community confirmation before relying on a person or subgroup claim.",
+      tone: "info" as const,
+    },
+    {
+      title: "Reader decision",
+      body: `${readerDecisionLabel}. ${readerDecisionScope}`,
+      tone: "info" as const,
+    },
+  ];
+  const confirmationActionTitle = requestConfirmationAvailable
+    ? "Controlled confirmation available"
+    : "Controlled confirmation not available yet";
+  const confirmationActionBody = requestConfirmationAvailable
+    ? "Use Request confirmation when you need a current answer from the community without exposing private member contacts."
+    : "This community cannot receive controlled confirmation from this public page yet. Ask for a scoped member credential, TrustSlip, acknowledged affiliate record, or fresh community evidence before acting.";
 
   async function requestConfirmation() {
     if (!requestConfirmationAvailable) {
@@ -340,7 +577,7 @@ export default function CommunityVerifyPage() {
                     textTransform: "uppercase",
                   }}
                 >
-                  Public community record
+                  Public community domain record
                 </span>
                 <h1
                   style={{
@@ -447,10 +684,102 @@ export default function CommunityVerifyPage() {
                   <h2 style={{ ...sectionTitle(), fontSize: "clamp(26px, 6vw, 44px)" }}>
                     {communityName}
                   </h2>
+                  <div
+                    style={{
+                      borderRadius: 20,
+                      background:
+                        "linear-gradient(180deg, rgba(6,24,39,0.98) 0%, rgba(11,45,74,0.98) 100%)",
+                      color: "#F7FAFF",
+                      border: "1px solid rgba(214,170,69,0.34)",
+                      padding: 14,
+                      display: "grid",
+                      gridTemplateColumns: "auto minmax(0, 1fr)",
+                      gap: 12,
+                      alignItems: "center",
+                      boxShadow: "0 14px 34px rgba(6,24,39,0.18)",
+                    }}
+                  >
+                    {communityVerifyIconBadge("records-folder", 42, "amber")}
+                    <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                      <span
+                        style={{
+                          color: "#F2C766",
+                          fontSize: 12,
+                          fontWeight: 1000,
+                          letterSpacing: 0.7,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        Community ID anchor
+                      </span>
+                      <strong
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: "clamp(18px, 5vw, 26px)",
+                          lineHeight: 1.08,
+                          fontWeight: 1000,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {communityAnchor}
+                      </strong>
+                      <span style={{ color: "#C8D8EA", fontSize: 13, fontWeight: 800 }}>
+                        Check this ID first. The community name is display text, not the trust anchor.
+                      </span>
+                    </div>
+                  </div>
                   <p style={{ ...helperText(), color: "#1F3145", maxWidth: 720 }}>
-                    This QR page confirms that the community exists in GSN. It does not
-                    expose member records or direct contacts.
+                    This QR page opens the GSN community ID record. It does not
+                    automatically verify every person, shop, line, or subgroup using
+                    the community name.
                   </p>
+                  <div
+                    style={{
+                      borderRadius: 20,
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(8,35,58,0.10)",
+                      padding: 12,
+                      display: "grid",
+                      gap: 10,
+                      boxShadow: "0 10px 24px rgba(6,24,39,0.05)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      {communityVerifyIconBadge("certificate-seal", 38, "navy")}
+                      <div style={{ display: "grid", gap: 2 }}>
+                        <h3
+                          style={{
+                            margin: 0,
+                            color: "#07172C",
+                            fontSize: 17,
+                            fontWeight: 1000,
+                          }}
+                        >
+                          Public reading
+                        </h3>
+                        <p style={{ ...helperText(), fontSize: 13 }}>
+                          Use this record to check the Community ID, then ask for
+                          member or group evidence where needed.
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      {communityReading.map((item) => (
+                        <EvidenceScopeCard
+                          key={item.title}
+                          title={item.title}
+                          body={item.body}
+                          tone={item.tone}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <div
                     style={{
                       display: "grid",
@@ -461,11 +790,82 @@ export default function CommunityVerifyPage() {
                     <InfoTile
                       icon="records-folder"
                       label="Community ID"
-                      value={firstTruthy(record.community_code, record.community_id)}
+                      value={communityAnchor}
+                    />
+                    <InfoTile
+                      icon="community-building"
+                      label="Community type"
+                      value={communityTypeLabel}
                     />
                     <InfoTile icon="trust-shield" label="Status" value={labelize(record.status)} />
+                    <InfoTile icon="certificate-seal" label="Domain stage" value={domainLifecycleLabel} />
+                    <InfoTile icon="trust-shield" label="Currentness" value={evidenceCurrentnessLabel} />
+                    <InfoTile icon="community-building" label="Affiliate claim" value={officialAffiliateLabel} />
+                    {parentDomainLabel ? (
+                      <InfoTile
+                        icon="records-folder"
+                        label="Parent domain"
+                        value={parentDomainLabel}
+                      />
+                    ) : null}
                     <InfoTile icon="public-globe" label="Public record" value={publicRecord} />
+                    <InfoTile icon="records-folder" label="Public face" value={publicFaceLabel} />
+                    <InfoTile icon="certificate-seal" label="GSN record" value={recordStartedLabel} />
+                    <InfoTile icon="trust-shield" label="Next evidence" value={nextEvidenceLabel} />
                     <InfoTile icon="phone-contact" label="Relay" value={relayAvailability} />
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                      gap: 10,
+                    }}
+                  >
+                    <EvidenceScopeCard
+                      title="Domain stage"
+                      body={domainLifecycleNote}
+                      tone="info"
+                    />
+                    <EvidenceScopeCard
+                      title="What this shows"
+                      body={`${domainStatus}. ${domainEvidenceScope}`}
+                      tone="good"
+                    />
+                    <EvidenceScopeCard
+                      title="Public face"
+                      body={publicFaceScope}
+                      tone="info"
+                    />
+                    <EvidenceScopeCard
+                      title="GSN record date"
+                      body={recordStartedScope}
+                      tone="info"
+                    />
+                    <EvidenceScopeCard
+                      title="Next evidence to request"
+                      body={nextEvidenceScope}
+                      tone="good"
+                    />
+                    <EvidenceScopeCard
+                      title="Trust mobility"
+                      body={`${mobilityLabel}. ${mobilityScope}`}
+                      tone="info"
+                    />
+                    <EvidenceScopeCard
+                      title="Community type"
+                      body={`${communityTypeLabel}. ${communityTypeSource}. This is a public reading, not ownership, membership, or parent-domain approval.`}
+                      tone="info"
+                    />
+                    <EvidenceScopeCard
+                      title="What still needs credential evidence"
+                      body={membershipCredentialStatus}
+                      tone="warn"
+                    />
+                    <EvidenceScopeCard
+                      title="Group affiliation"
+                      body={`${groupAffiliationStatus}. ${officialAffiliateNote}`}
+                      tone="info"
+                    />
                   </div>
                   <div
                     style={{
@@ -474,6 +874,11 @@ export default function CommunityVerifyPage() {
                       gap: 12,
                     }}
                   >
+                    <EvidenceScopeCard
+                      title={confirmationActionTitle}
+                      body={confirmationActionBody}
+                      tone={requestConfirmationAvailable ? "good" : "warn"}
+                    />
                     <PrimaryButton
                       debugId="community-verify.request-confirmation"
                       stableHeight={58}
@@ -492,6 +897,46 @@ export default function CommunityVerifyPage() {
                   </div>
                   <div
                     style={{
+                      ...sectionCard("#FFFFFF"),
+                      display: "grid",
+                      gridTemplateColumns: "96px minmax(0, 1fr)",
+                      gap: 14,
+                      alignItems: "center",
+                      boxShadow: "0 10px 28px rgba(6,24,39,0.05)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 92,
+                        height: 92,
+                        borderRadius: 18,
+                        border: "1px solid rgba(8,35,58,0.14)",
+                        background: "#FFFFFF",
+                        display: "grid",
+                        placeItems: "center",
+                        padding: 8,
+                      }}
+                    >
+                      <QRCodeSVG
+                        value={publicLink}
+                        size={74}
+                        bgColor="#FFFFFF"
+                        fgColor="#07172C"
+                        level="M"
+                        marginSize={1}
+                      />
+                    </div>
+                    <div>
+                      <h2 style={{ margin: 0, color: "#07172C", fontSize: 17, fontWeight: 1000 }}>
+                        Scan to reopen this community record
+                      </h2>
+                      <p style={{ margin: "7px 0 0", ...helperText() }}>
+                        The QR opens this same public Community ID Domain record. It does not reveal private member lists, verifier names, phone numbers, or shop details.
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
                       borderRadius: 18,
                       background:
                         "linear-gradient(180deg, rgba(234,247,238,0.96) 0%, rgba(246,252,248,0.98) 100%)",
@@ -506,9 +951,32 @@ export default function CommunityVerifyPage() {
                       Privacy protection
                     </h2>
                     <p style={{ ...helperText(), color: "#1F3145" }}>
-                      Visitors see identity, public status, and relay availability only.
-                      Confirmation still uses a controlled request.
+                      {publicLimitation} Visitors see identity, public status, and relay
+                      availability only. Confirmation still uses a controlled request.
                     </p>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <EvidenceScopeCard
+                        title="Public view only"
+                        body="This page shows the community anchor and public evidence boundary. It is not the private member or admin record."
+                        tone="info"
+                      />
+                      <EvidenceScopeCard
+                        title="Member credentials stay separate"
+                        body="A person, shop, line, or group still needs its own scoped credential, TrustSlip, acknowledged affiliate record, or controlled confirmation."
+                        tone="warn"
+                      />
+                      <EvidenceScopeCard
+                        title="Admin evidence stays private"
+                        body="Custodian notes, external-registration references, disputes, witness details, and private contacts are not exposed on this public page."
+                        tone="info"
+                      />
+                    </div>
                   </div>
                   <SecondaryButton
                     debugId="community-verify.refresh"
@@ -531,6 +999,52 @@ export default function CommunityVerifyPage() {
           <TrustPaperSecurityFooter text="Community-first verification. Public status only." />
         </article>
       </div>
+    </div>
+  );
+}
+
+function EvidenceScopeCard({
+  title,
+  body,
+  tone,
+}: {
+  title: string;
+  body: string;
+  tone: "good" | "warn" | "info";
+}) {
+  const toneStyles = {
+    good: {
+      background: "#ECFDF3",
+      border: "rgba(46,155,98,0.18)",
+      title: "#166534",
+    },
+    warn: {
+      background: "#FFF7E6",
+      border: "rgba(245,158,11,0.22)",
+      title: "#92400E",
+    },
+    info: {
+      background: "#EAF3FF",
+      border: "rgba(11,99,209,0.16)",
+      title: "#073E83",
+    },
+  }[tone];
+
+  return (
+    <div
+      style={{
+        borderRadius: 18,
+        background: toneStyles.background,
+        border: `1px solid ${toneStyles.border}`,
+        padding: 12,
+        display: "grid",
+        gap: 6,
+      }}
+    >
+      <h3 style={{ margin: 0, color: toneStyles.title, fontSize: 15, fontWeight: 1000 }}>
+        {title}
+      </h3>
+      <p style={{ ...helperText(), color: "#1F3145", fontSize: 13 }}>{body}</p>
     </div>
   );
 }

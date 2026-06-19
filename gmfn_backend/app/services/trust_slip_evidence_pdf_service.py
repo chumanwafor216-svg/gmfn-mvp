@@ -194,8 +194,8 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     elements.append(Spacer(1, 0.25 * inch))
     elements.append(
         Paragraph(
-            "Disclaimer: This TrustSlip is a community-backed integrity limit. "
-            "It is not a bank guarantee and does not auto-debit any guarantor.",
+            "Disclaimer: This TrustSlip is a community-backed integrity signal. "
+            "It is not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
             styles["Normal"],
         )
     )

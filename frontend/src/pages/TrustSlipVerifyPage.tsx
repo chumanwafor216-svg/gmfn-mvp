@@ -399,6 +399,20 @@ export default function TrustSlipVerifyPage() {
     holderRole,
     activeMemberCount,
     activeCommunityCount,
+    memberWitnessCount,
+    membershipStrengthLabel,
+    membershipRenewalStatusLabel,
+    membershipValidUntil,
+    nextWitnessRenewalAt,
+    nextWitnessRenewalStatusLabel,
+    membershipCurrentnessLabel,
+    membershipCurrentnessScope,
+    communityEvidenceCurrentnessLabel,
+    communityEvidenceCurrentnessScope,
+    communityActivityCount,
+    communityActivityLatestAt,
+    communityActivityCategories,
+    communityActivityLabel,
     identityStatusLabel,
     cciMeaning,
     phoneVerified,
@@ -431,6 +445,7 @@ export default function TrustSlipVerifyPage() {
     communityPulseAvailable,
     communityConfirmationText,
     communityConfirmationRows,
+    memberCredentialPath,
     statusLabel,
     issuedAtLabel,
     expiresAtLabel,
@@ -938,41 +953,56 @@ export default function TrustSlipVerifyPage() {
       ) : null}
 
       {noPublicCodeSupplied ? null : (
-      <TrustSlipVerifyPublicPaper
-        compact={isCompact}
-        validNow={validNow}
-        publicValidityLabel={publicValidityLabel}
-        bannerDetail={banner.detail}
-        profileImageUrl={profileImageUrl}
-        holderName={holderName}
-        gsnId={gmfnId}
-        communityLabel={communityLabel}
-        visibleBand={visibleBand}
-        visibleBandLabel={visibleBandLabel}
-        visibleBandMeaning={visibleBandMeaning}
-        visibleEvidenceLabel={visibleEvidenceLabel}
-        publicVisibleScore={publicVisibleScore}
-        compactTrustLimit={compactTrustLimit}
-        issuedAtLabel={issuedAtLabel}
-        expiresAtLabel={expiresAtLabel}
-        resolvedCode={resolvedCode}
-        verifyPath={verifyPath}
-        verifyUrl={verifyUrl}
-        quickTrustAnswers={quickTrustAnswers}
-        communityRelayAvailable={communityRelayAvailable}
-        communityPulseAvailable={communityPulseAvailable}
-        communityConfirmationText={communityConfirmationText}
-        communityConfirmationRows={communityConfirmationRows}
-        confirmationOutcome={confirmationOutcome}
-        confirmationResult={confirmationResult}
-        confirmationPublicPath={confirmationPublicPath}
-        confirmationBusy={confirmationBusy}
-        canRequestCommunityPulse={Boolean(firstTruthy(record?.code, resolvedCode))}
-        onRequestCommunityPulse={(draft) => {
-          void requestCommunityPulse(draft);
-        }}
-        publicActions={publicTrustSlipActions}
-      />
+        <TrustSlipVerifyPublicPaper
+          compact={isCompact}
+          validNow={validNow}
+          publicValidityLabel={publicValidityLabel}
+          bannerDetail={banner.detail}
+          profileImageUrl={profileImageUrl}
+          holderName={holderName}
+          gsnId={gmfnId}
+          communityLabel={communityLabel}
+          memberWitnessCount={memberWitnessCount}
+          membershipStrengthLabel={membershipStrengthLabel}
+          membershipRenewalStatusLabel={membershipRenewalStatusLabel}
+          membershipValidUntil={membershipValidUntil}
+          nextWitnessRenewalAt={nextWitnessRenewalAt}
+          nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+          membershipCurrentnessLabel={membershipCurrentnessLabel}
+          membershipCurrentnessScope={membershipCurrentnessScope}
+          communityEvidenceCurrentnessLabel={communityEvidenceCurrentnessLabel}
+          communityEvidenceCurrentnessScope={communityEvidenceCurrentnessScope}
+          memberCredentialPath={memberCredentialPath}
+          communityActivityCount={communityActivityCount}
+          communityActivityLatestAt={communityActivityLatestAt}
+          communityActivityCategories={communityActivityCategories}
+          communityActivityLabel={communityActivityLabel}
+          visibleBand={visibleBand}
+          visibleBandLabel={visibleBandLabel}
+          visibleBandMeaning={visibleBandMeaning}
+          visibleEvidenceLabel={visibleEvidenceLabel}
+          publicVisibleScore={publicVisibleScore}
+          compactTrustLimit={compactTrustLimit}
+          issuedAtLabel={issuedAtLabel}
+          expiresAtLabel={expiresAtLabel}
+          resolvedCode={resolvedCode}
+          verifyPath={verifyPath}
+          verifyUrl={verifyUrl}
+          quickTrustAnswers={quickTrustAnswers}
+          communityRelayAvailable={communityRelayAvailable}
+          communityPulseAvailable={communityPulseAvailable}
+          communityConfirmationText={communityConfirmationText}
+          communityConfirmationRows={communityConfirmationRows}
+          confirmationOutcome={confirmationOutcome}
+          confirmationResult={confirmationResult}
+          confirmationPublicPath={confirmationPublicPath}
+          confirmationBusy={confirmationBusy}
+          canRequestCommunityPulse={Boolean(firstTruthy(record?.code, resolvedCode))}
+          onRequestCommunityPulse={(draft) => {
+            void requestCommunityPulse(draft);
+          }}
+          publicActions={publicTrustSlipActions}
+        />
       )}
       {noPublicCodeSupplied ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
@@ -1050,6 +1080,17 @@ export default function TrustSlipVerifyPage() {
         holderRole={holderRole}
         activeMemberCount={activeMemberCount}
         activeCommunityCount={activeCommunityCount}
+        memberWitnessCount={memberWitnessCount}
+        membershipStrengthLabel={membershipStrengthLabel}
+        membershipRenewalStatusLabel={membershipRenewalStatusLabel}
+        membershipValidUntil={membershipValidUntil}
+        nextWitnessRenewalAt={nextWitnessRenewalAt}
+        nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+        memberCredentialPath={memberCredentialPath}
+        communityActivityCount={communityActivityCount}
+        communityActivityLatestAt={communityActivityLatestAt}
+        communityActivityCategories={communityActivityCategories}
+        communityActivityLabel={communityActivityLabel}
         sponsorCount={sponsorCount}
         phoneVerifiedRaw={record?.phone_verified}
         identityStatusLabel={identityStatusLabel}

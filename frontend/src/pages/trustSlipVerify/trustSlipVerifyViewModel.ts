@@ -1,5 +1,8 @@
 import { resolveSharedProfileImage } from "../../lib/profileImage";
-import { publicFrontendUrl } from "../../lib/publicLinks";
+import {
+  publicCommunityMemberCredentialPath,
+  publicFrontendUrl,
+} from "../../lib/publicLinks";
 import {
   getTrustBandLanguage,
   getTrustBandShortLabel,
@@ -40,6 +43,20 @@ export type TrustSlipVerifyViewModel = {
   holderRole: string;
   activeMemberCount: string;
   activeCommunityCount: string;
+  memberWitnessCount: string;
+  membershipStrengthLabel: string;
+  membershipRenewalStatusLabel: string;
+  membershipValidUntil: string;
+  nextWitnessRenewalAt: string;
+  nextWitnessRenewalStatusLabel: string;
+  membershipCurrentnessLabel: string;
+  membershipCurrentnessScope: string;
+  communityEvidenceCurrentnessLabel: string;
+  communityEvidenceCurrentnessScope: string;
+  communityActivityCount: string;
+  communityActivityLatestAt: string;
+  communityActivityCategories: string[];
+  communityActivityLabel: string;
   identityStatusLabel: string;
   cciMeaning: string;
   phoneVerified: string;
@@ -75,6 +92,7 @@ export type TrustSlipVerifyViewModel = {
   communityPulseAvailable: boolean;
   communityConfirmationText: string;
   communityConfirmationRows: Array<[string, string]>;
+  memberCredentialPath: string;
   statusLabel: string;
   issuedAtLabel: string;
   expiresAtLabel: string;
@@ -104,6 +122,15 @@ function firstNumberLike(...values: any[]): number | null {
     if (!Number.isNaN(n)) return n;
   }
   return null;
+}
+
+function firstStringList(...values: any[]): string[] {
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+    const items = value.map((item) => safeStr(item)).filter(Boolean);
+    if (items.length) return items;
+  }
+  return [];
 }
 
 function safeDateTime(x: any): string {
@@ -171,6 +198,76 @@ export function buildTrustSlipVerifyViewModel({
     communityContext?.active_member_count
   );
   const activeCommunityCount = firstTruthy(communityContext?.active_community_count);
+  const memberWitnessCount = firstTruthy(
+    record?.member_witness_count,
+    communityContext?.member_witness_count
+  );
+  const membershipStrengthLabel = firstTruthy(
+    record?.membership_strength_label,
+    communityContext?.membership_strength_label
+  );
+  const membershipRenewalStatusLabel = firstTruthy(
+    record?.membership_renewal_status_label,
+    communityContext?.membership_renewal_status_label
+  );
+  const membershipValidUntil = firstTruthy(
+    record?.membership_valid_until,
+    communityContext?.membership_valid_until
+  );
+  const nextWitnessRenewalAt = firstTruthy(
+    record?.next_witness_renewal_at,
+    communityContext?.next_witness_renewal_at
+  );
+  const nextWitnessRenewalStatusLabel = firstTruthy(
+    record?.next_witness_renewal_status_label,
+    communityContext?.next_witness_renewal_status_label,
+    "Not Started"
+  );
+  const membershipCurrentnessLabel = firstTruthy(
+    record?.membership_currentness_label,
+    communityContext?.membership_currentness_label,
+    "Witness renewal not started"
+  );
+  const membershipCurrentnessScope = firstTruthy(
+    record?.membership_currentness_scope,
+    communityContext?.membership_currentness_scope,
+    "This active membership record has no current witness validity window. Ask for member witnesses, TrustSlip, or live community confirmation before a serious decision."
+  );
+  const communityEvidenceCurrentnessLabel = firstTruthy(
+    record?.community_evidence_currentness_label,
+    communityContext?.community_evidence_currentness_label,
+    "Active recorded Community ID"
+  );
+  const communityEvidenceCurrentnessScope = firstTruthy(
+    record?.community_evidence_currentness_scope,
+    communityContext?.community_evidence_currentness_scope,
+    "This Community ID resolves to an active GSN community record. Parent-domain acknowledgement and member-level proof still need separate current scoped evidence."
+  );
+  const communityActivityCount = firstTruthy(
+    record?.community_activity_count,
+    communityContext?.community_activity_count
+  );
+  const communityActivityLatestAt = firstTruthy(
+    record?.community_activity_latest_at,
+    communityContext?.community_activity_latest_at
+  );
+  const communityActivityCategories = firstStringList(
+    record?.community_activity_categories,
+    communityContext?.community_activity_categories
+  );
+  const communityActivityLabel = firstTruthy(
+    record?.community_activity_label,
+    communityContext?.community_activity_label
+  );
+  const communityActivitySignal = communityActivityCount
+    ? `${communityActivityCount} community activity event${
+        communityActivityCount === "1" ? "" : "s"
+      }${
+        communityActivityCategories.length
+          ? ` across ${communityActivityCategories.join(", ")}`
+          : ""
+      }`
+    : "not shown";
   const identityStatusLabel = firstTruthy(
     record?.identity_status_label,
     identityContext?.identity_status_label
@@ -253,17 +350,19 @@ export function buildTrustSlipVerifyViewModel({
     {
       title: "Are they stable inside a real community?",
       answer:
-        communityLabel !== "Not stated"
-          ? `Community shown: ${communityLabel}. Phone: ${phoneVerified}. Sponsor count: ${
-              sponsorCount === null ? "not shown" : sponsorCount
-            }.`
-          : "Community stability is not clear from this public paper.",
+    communityLabel !== "Not stated"
+      ? `Community shown: ${communityLabel}. Phone: ${phoneVerified}. Member-witness strength: ${
+          membershipStrengthLabel || "not shown"
+        }. Evidence currentness: ${membershipCurrentnessLabel}. Community activity evidence: ${communityActivitySignal}. Sponsor count: ${
+          sponsorCount === null ? "not shown" : sponsorCount
+        }.`
+      : "Community stability is not clear from this public paper.",
     },
     {
-      title: "Is there verified history behind the claim?",
+      title: "Is there checkable history behind the claim?",
       answer:
         snapshotLabel === "Snapshot recorded"
-          ? `A saved TrustSlip snapshot exists. It proves the reading was recorded, not that every claim is guaranteed. Snapshot: ${firstTruthy(
+          ? `A saved TrustSlip snapshot exists. It shows the reading was recorded, not that every claim is guaranteed. Snapshot: ${firstTruthy(
               record?.snapshot_version,
               "shown"
             )}.`
@@ -272,7 +371,7 @@ export function buildTrustSlipVerifyViewModel({
   ];
   const readerVerdict = hasBlockingState
     ? "Do not rely on this TrustSlip by itself. Ask for a fresh TrustSlip or live community confirmation."
-    : `This is a current public reading for ${holderName}. Use it as evidence, then match your risk to the proof shown.`;
+    : `This is a current public reading for ${holderName}. Use it as evidence, then match your risk to the record shown.`;
 
   const verifyPath = resolvedCode ? `/t/${encodeURIComponent(resolvedCode)}` : "";
   const verifyUrl = resolvedCode ? publicFrontendUrl(verifyPath) : "";
@@ -300,15 +399,17 @@ export function buildTrustSlipVerifyViewModel({
       "community-building",
       "Are they stable inside a real community?",
       communityLabel !== "Not stated"
-        ? "Community context is visible."
+        ? communityActivityCount
+          ? "Community context and activity evidence are visible."
+          : "Community context is visible."
         : "Stability is not shown.",
     ],
     [
       "trust-shield",
-      "Is there verified history behind the claim?",
+      "Is there checkable history behind the claim?",
       snapshotLabel === "Snapshot recorded"
         ? "A recorded snapshot exists."
-        : "No verified history is visible.",
+        : "No checkable history is visible.",
     ],
   ];
   const communityConfirmation = record?.community_confirmation || null;
@@ -321,6 +422,14 @@ export function buildTrustSlipVerifyViewModel({
   const communityVerifyPath = communityVerifyKey
     ? `/verify/community/${encodeURIComponent(communityVerifyKey)}`
     : "";
+  const derivedMemberCredentialPath = publicCommunityMemberCredentialPath({
+    communityKey: communityVerifyKey,
+    memberKey: firstTruthy(record?.gmfn_id, isAppRoute ? me?.gmfn_id : null),
+  });
+  const memberCredentialPath = firstTruthy(
+    record?.member_credential_page,
+    derivedMemberCredentialPath
+  );
   const communityRelayAvailable = Boolean(communityConfirmation?.relay_available);
   const communityPulseAvailable = Boolean(
     communityConfirmation?.instant_pulse_available || communityRelayAvailable
@@ -365,6 +474,20 @@ export function buildTrustSlipVerifyViewModel({
     holderRole,
     activeMemberCount,
     activeCommunityCount,
+    memberWitnessCount,
+    membershipStrengthLabel,
+    membershipRenewalStatusLabel,
+    membershipValidUntil,
+    nextWitnessRenewalAt,
+    nextWitnessRenewalStatusLabel,
+    membershipCurrentnessLabel,
+    membershipCurrentnessScope,
+    communityEvidenceCurrentnessLabel,
+    communityEvidenceCurrentnessScope,
+    communityActivityCount,
+    communityActivityLatestAt,
+    communityActivityCategories,
+    communityActivityLabel,
     identityStatusLabel,
     cciMeaning,
     phoneVerified,
@@ -397,6 +520,7 @@ export function buildTrustSlipVerifyViewModel({
     communityPulseAvailable,
     communityConfirmationText,
     communityConfirmationRows,
+    memberCredentialPath,
     statusLabel: firstTruthy(
       record?.status,
       record?.verification_status,

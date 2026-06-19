@@ -51,6 +51,21 @@ type TrustSlipVerifyPublicPaperProps = {
   holderName: string;
   gsnId: string;
   communityLabel: string;
+  memberWitnessCount?: string | number | null;
+  membershipStrengthLabel?: string | null;
+  membershipRenewalStatusLabel?: string | null;
+  membershipValidUntil?: string | null;
+  nextWitnessRenewalAt?: string | null;
+  nextWitnessRenewalStatusLabel?: string | null;
+  membershipCurrentnessLabel?: string | null;
+  membershipCurrentnessScope?: string | null;
+  communityEvidenceCurrentnessLabel?: string | null;
+  communityEvidenceCurrentnessScope?: string | null;
+  memberCredentialPath?: string | null;
+  communityActivityCount?: string | number | null;
+  communityActivityLatestAt?: string | null;
+  communityActivityCategories?: string[] | null;
+  communityActivityLabel?: string | null;
   visibleBand: string;
   visibleBandLabel: string;
   visibleBandMeaning: string;
@@ -95,6 +110,14 @@ function rowValue(rows: Array<[string, string]>, label: string): string {
 function positiveNumber(value: unknown): number {
   const n = Number(safeText(value));
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function dateLabel(value: unknown): string {
+  const text = safeText(value);
+  if (!text) return "";
+  const parsed = new Date(text);
+  if (!Number.isFinite(parsed.getTime())) return text;
+  return parsed.toLocaleDateString();
 }
 
 function lockedActionFrame(compact: boolean): React.CSSProperties {
@@ -360,6 +383,59 @@ function paperIconBadge(
   );
 }
 
+function PublicReadingTile({
+  icon,
+  label,
+  title,
+  text,
+  tone = "neutral",
+}: {
+  icon: Gsn3DIconKey;
+  label: string;
+  title: string;
+  text: string;
+  tone?: "trust" | "warning" | "neutral";
+}) {
+  const background =
+    tone === "trust" ? "#EEF9F1" : tone === "warning" ? "#FFF7E6" : "#F8FBFF";
+  const color =
+    tone === "trust" ? "#166534" : tone === "warning" ? "#92400E" : "#0B63D1";
+
+  return (
+    <div
+      style={{
+        ...innerCard(background),
+        padding: 10,
+        minHeight: 132,
+        display: "grid",
+        alignContent: "start",
+        gap: 7,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          color,
+          fontSize: 11,
+          fontWeight: 1000,
+          textTransform: "uppercase",
+        }}
+      >
+        {paperIconBadge(icon, tone, 30)}
+        <span>{label}</span>
+      </div>
+      <strong style={{ color: "#07172C", fontSize: 14, fontWeight: 1000, lineHeight: 1.2 }}>
+        {title}
+      </strong>
+      <p style={{ margin: 0, color: "#334155", fontSize: 12, fontWeight: 820, lineHeight: 1.42 }}>
+        {text}
+      </p>
+    </div>
+  );
+}
+
 function paperDataRow(): React.CSSProperties {
   return {
     display: "grid",
@@ -383,6 +459,21 @@ export default function TrustSlipVerifyPublicPaper({
   holderName,
   gsnId,
   communityLabel,
+  memberWitnessCount,
+  membershipStrengthLabel,
+  membershipRenewalStatusLabel,
+  membershipValidUntil,
+  nextWitnessRenewalAt,
+  nextWitnessRenewalStatusLabel,
+  membershipCurrentnessLabel,
+  membershipCurrentnessScope,
+  communityEvidenceCurrentnessLabel,
+  communityEvidenceCurrentnessScope,
+  memberCredentialPath,
+  communityActivityCount,
+  communityActivityLatestAt,
+  communityActivityCategories,
+  communityActivityLabel,
   visibleBand,
   visibleBandLabel,
   visibleBandMeaning,
@@ -420,7 +511,46 @@ export default function TrustSlipVerifyPublicPaper({
       ? `GSN can see ${activeMemberCount || "the"} active member${activeMemberCount === 1 ? "" : "s"}, but no eligible responders are set up for this public check yet. A community owner must enable confirmation contacts before this button can open.`
       : !communityPulseAvailable
         ? "Community confirmation is not enabled for this paper yet. Open the community record and check the public community status first."
-        : "";
+      : "";
+  const memberWitnessLabel = firstTruthy(membershipStrengthLabel, "Not shown");
+  const memberWitnessCountLabel = firstTruthy(memberWitnessCount, "0");
+  const memberWitnessEvidence = `${memberWitnessLabel} (${memberWitnessCountLabel} witness${
+    memberWitnessCountLabel === "1" ? "" : "es"
+  })`;
+  const memberWitnessRenewal = firstTruthy(membershipRenewalStatusLabel, "Not Started");
+  const memberWitnessValidity = dateLabel(membershipValidUntil);
+  const nextWitnessRenewal = dateLabel(nextWitnessRenewalAt);
+  const nextWitnessRenewalStatus = firstTruthy(
+    nextWitnessRenewalStatusLabel,
+    "Not Started"
+  );
+  const memberWitnessCurrentness = firstTruthy(
+    membershipCurrentnessLabel,
+    "Witness renewal not started"
+  );
+  const memberWitnessCurrentnessScope = firstTruthy(
+    membershipCurrentnessScope,
+    "This active membership record has no current witness validity window. Ask for member witnesses, TrustSlip, or live community confirmation before a serious decision."
+  );
+  const communityRecordCurrentness = firstTruthy(
+    communityEvidenceCurrentnessLabel,
+    "Active recorded Community ID"
+  );
+  const communityRecordCurrentnessScope = firstTruthy(
+    communityEvidenceCurrentnessScope,
+    "This Community ID resolves to an active GSN community record. Parent-domain acknowledgement and member-level proof still need separate current scoped evidence."
+  );
+  const communityActivityCountLabel = firstTruthy(communityActivityCount, "0");
+  const communityActivityCategoriesLabel = Array.isArray(communityActivityCategories)
+    ? communityActivityCategories.map((item) => safeText(item)).filter(Boolean).join(", ")
+    : "";
+  const communityActivityEvidence = `${firstTruthy(
+    communityActivityLabel,
+    "No community activity recorded yet"
+  )} (${communityActivityCountLabel} event${
+    communityActivityCountLabel === "1" ? "" : "s"
+  })`;
+  const communityActivityLatest = dateLabel(communityActivityLatestAt);
   const callbackNeedsConsent = callbackChannel !== "none" && safeText(callbackContact);
   const callbackBlocked = Boolean(callbackNeedsConsent && !callbackConsent);
   const requesterCallback = confirmationOutcome?.requester_callback || null;
@@ -775,7 +905,7 @@ export default function TrustSlipVerifyPublicPaper({
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
-                  <div style={sectionLabel()}>Trust limit</div>
+                  <div style={sectionLabel()}>Trust limit signal</div>
                   <div style={{ marginTop: 6, color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
                     {compactTrustLimit}
                   </div>
@@ -840,12 +970,55 @@ export default function TrustSlipVerifyPublicPaper({
                 ))}
               </div>
 
+              <div style={{ marginTop: 12, ...innerCard("#FFFFFF"), padding: 12 }}>
+                <div style={{ ...sectionLabel(), color: "#07172C" }}>Public reading</div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  <PublicReadingTile
+                    icon="trust-shield"
+                    label="Validity check"
+                    title={validNow ? "Current public slip" : "Do not rely on this alone"}
+                    text={`${publicValidityLabel}. This checks the public TrustSlip status for this code now. It does not open the holder's private Trust Passport.`}
+                    tone={validNow ? "trust" : "warning"}
+                  />
+                  <PublicReadingTile
+                    icon="certificate-seal"
+                    label="Supporting evidence"
+                    title={memberWitnessCurrentness}
+                    text={`Member witness: ${memberWitnessEvidence}. Witness currentness: ${memberWitnessCurrentnessScope} Community record: ${communityRecordCurrentness}. ${communityRecordCurrentnessScope} Community activity: ${communityActivityEvidence}. Use the member credential when available for scoped community evidence.`}
+                    tone="neutral"
+                  />
+                  <PublicReadingTile
+                    icon="records-folder"
+                    label="Next safe step"
+                    title="Evidence, not approval"
+                    text="Use this as evidence for judgement, not as a guarantee, credit approval, payment instruction, or evidence that every claim is true."
+                    tone="warning"
+                  />
+                </div>
+              </div>
+
               <div style={{ marginTop: 12, ...innerCard("#F8FBFF"), padding: 12 }}>
                 <div style={{ ...sectionLabel(), color: "#07172C" }}>At a glance</div>
                 {[
                   ["Visible band", visibleBand],
                   ["Visible score", publicVisibleScore],
-                  ["Trust limit", compactTrustLimit],
+                  ["Trust limit signal", compactTrustLimit],
+                  ["Member witness", memberWitnessEvidence],
+                  ["Community record", communityRecordCurrentness],
+                  ["Witness renewal", memberWitnessRenewal],
+                  ["Witness valid until", memberWitnessValidity || "Not shown"],
+                  ["Next witness renewal", nextWitnessRenewal || "Not shown"],
+                  ["Next witness status", nextWitnessRenewalStatus],
+                  ["Community activity", communityActivityEvidence],
+                  ["Activity categories", communityActivityCategoriesLabel || "Not shown"],
+                  ["Latest activity", communityActivityLatest || "Not shown"],
                   ["Issued", issuedAtLabel],
                   ["Expires", expiresAtLabel],
                   ["Verification code", resolvedCode || "Not available"],
@@ -855,6 +1028,22 @@ export default function TrustSlipVerifyPublicPaper({
                     <strong style={{ color: "#07172C", textAlign: "right" }}>{value}</strong>
                   </div>
                 ))}
+                {memberCredentialPath ? (
+                  <StableCtaLink
+                    to={memberCredentialPath}
+                    kind="soft"
+                    stableHeight={48}
+                    debugId="trust-slip-verify.public.open-member-credential"
+                    style={{
+                      marginTop: 10,
+                      width: "100%",
+                      borderRadius: 12,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    Open member credential
+                  </StableCtaLink>
+                ) : null}
               </div>
             </div>
           </div>
