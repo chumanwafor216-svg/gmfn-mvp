@@ -42,7 +42,20 @@
     <script>
       (function () {
         try {
+          var params = new URLSearchParams(window.location.search);
+          var entryFrom = String(params.get("entry_from") || "")
+            .trim()
+            .toLowerCase();
+
           if (window.location.hostname.toLowerCase() !== "frontend.onrender.com") {
+            if (window.location.pathname === "/welcome" && entryFrom !== "cover") {
+              params.delete("entry_from");
+              window.location.replace(
+                "/cover" +
+                  (params.toString() ? "?" + params.toString() : "") +
+                  window.location.hash
+              );
+            }
             return;
           }
 

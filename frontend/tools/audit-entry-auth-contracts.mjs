@@ -89,6 +89,12 @@ assertContains(
 );
 
 assertContains(
+  "index.html",
+  /var params = new URLSearchParams\(window\.location\.search\);[\s\S]*?entryFrom[\s\S]*?window\.location\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?params\.delete\("entry_from"\)[\s\S]*?window\.location\.replace\([\s\S]*?"\/cover"/,
+  "The production HTML shell must redirect bare /welcome to Cover before the React bundle loads."
+);
+
+assertContains(
   "src/pages/CoverPage.tsx",
   /const storedMatch = matchEntryMode\(normalizeValue\(readStorage\(ENTRY_MODE_KEY\)\)\);[\s\S]*if \(storedMatch\) return storedMatch;/,
   "Plain cover visits must preserve stored create/invite/approved intent instead of overwriting it as general."

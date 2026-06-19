@@ -12,9 +12,12 @@
     - added a server-side redirect for bare `/welcome` to `/cover`.
     - preserves `/welcome?entry_from=cover` so the Cover Continue button can
       still enter the Welcome guide intentionally.
+  - `frontend/index.html`
+    - added a pre-React redirect for bare `/welcome` to `/cover` so static/CDN
+      delivery cannot show Welcome before the bundle loads.
   - `frontend/tools/audit-entry-auth-contracts.mjs`
-    - added a production-server guard so bare `/welcome` cannot silently become
-      a first screen again.
+    - added production server and HTML-shell guards so bare `/welcome` cannot
+      silently become a first screen again.
 - Unabated truth:
   - if a phone still shows Welcome after this Render deploy, the most likely
     cause is a cached tab or old installed shortcut asking for stale content;
