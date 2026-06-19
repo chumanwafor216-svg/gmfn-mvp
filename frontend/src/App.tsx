@@ -306,7 +306,7 @@ function PublicSessionReset() {
     return <RouteFallback />;
   }
 
-  return <Navigate to="/cover" replace />;
+  return <Navigate to="/welcome" replace />;
 }
 
 function GlobalSessionResetGate(props: { children: React.ReactNode }) {
@@ -465,7 +465,7 @@ function RedirectUnknownRoute() {
     location.hash
   );
 
-  return <Navigate to={appAliasTarget || appFallbackTarget || "/cover"} replace />;
+  return <Navigate to={appAliasTarget || appFallbackTarget || "/welcome"} replace />;
 }
 
 function RedirectToCover(props: {
@@ -563,7 +563,7 @@ export default function App() {
       <GlobalSessionResetGate>
         <RememberAuthenticatedAppRoute />
         <Routes>
-          <Route path="/" element={<Navigate to="/cover" replace />} />
+          <Route path="/" element={<Navigate to="/welcome" replace />} />
           <Route path="/reset" element={<PublicSessionReset />} />
 
       <Route

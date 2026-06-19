@@ -521,7 +521,7 @@ function safeDateTime(value: unknown): string {
   return parsed.toLocaleString();
 }
 
-function featureProofLine(
+function featureEvidenceLine(
   payment: ExpectedPaymentRecord | null | undefined,
   options: {
     active: boolean;
@@ -609,6 +609,22 @@ function textAreaStyle(): React.CSSProperties {
   };
 }
 
+const SHOP_CONTROL_SOFT_PLACEHOLDER_CLASS = "shop-control-soft-placeholder";
+
+function ShopControlFieldPolish() {
+  return (
+    <style>
+      {`
+        .${SHOP_CONTROL_SOFT_PLACEHOLDER_CLASS}::placeholder {
+          color: rgba(82, 101, 121, 0.42);
+          font-weight: 500;
+          opacity: 1;
+        }
+      `}
+    </style>
+  );
+}
+
 function statTile(): React.CSSProperties {
   return {
     borderRadius: 18,
@@ -676,6 +692,22 @@ function apiUrl(path: string): string {
   return `${apiBase()}${cleanPath}`;
 }
 
+function shopControlRequestErrorMessage(error: any): string {
+  const message = safeStr(error?.message || error);
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("load failed")
+  ) {
+    return (
+      "GSN could not reach the server from this browser. " +
+      "Check that the phone is on the same WiFi and the local backend is running, then try again."
+    );
+  }
+  return message || "Shop Control could not complete that request.";
+}
+
 async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   const headers = new Headers(init?.headers || {});
@@ -687,11 +719,16 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(apiUrl(path), {
-    ...init,
-    headers,
-    credentials: "include",
-  });
+  let res: Response;
+  try {
+    res = await fetch(apiUrl(path), {
+      ...init,
+      headers,
+      credentials: "include",
+    });
+  } catch (err: any) {
+    throw new Error(shopControlRequestErrorMessage(err));
+  }
 
   const text = await res.text();
   const contentType = String(res.headers.get("content-type") || "").toLowerCase();
@@ -819,6 +856,12 @@ export default function ShopControlPage() {
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
+  const identityLockNotice = shopActionsLocked
+    ? firstTruthy(
+        continuityReview.reason,
+        "Identity continuity needs review before protected shop actions can run."
+      )
+    : "";
   const effectiveShopClanId = Number(shop?.clan_id || selectedClanId || 0);
   const routes = useMemo(
     () => ({
@@ -1477,9 +1520,9 @@ export default function ShopControlPage() {
     [activeSpotlights]
   );
 
-  const vaultProofText = useMemo(
+  const vaultEvidenceText = useMemo(
     () =>
-      featureProofLine(latestVaultPayment, {
+      featureEvidenceLine(latestVaultPayment, {
         active: vaultProducts.length > 0 || vaultLinks.length > 0,
         activeText:
           "Vault is active. You can now add private offers and share access links.",
@@ -1491,9 +1534,9 @@ export default function ShopControlPage() {
     [latestVaultPayment, vaultLinks.length, vaultProducts.length]
   );
 
-  const merchantVerifyProofText = useMemo(
+  const merchantVerifyEvidenceText = useMemo(
     () =>
-      featureProofLine(latestMerchantVerifyPayment, {
+      featureEvidenceLine(latestMerchantVerifyPayment, {
         active: Boolean(trustSlipFeature?.merchant_verify_active),
         activeText:
           "Shop verification is active. Visitors can now rely on your verification page.",
@@ -1505,9 +1548,9 @@ export default function ShopControlPage() {
     [latestMerchantVerifyPayment, trustSlipFeature?.merchant_verify_active]
   );
 
-  const spotlightProofText = useMemo(
+  const spotlightEvidenceText = useMemo(
     () =>
-      featureProofLine(latestSpotlightPayment, {
+      featureEvidenceLine(latestSpotlightPayment, {
         active: activePaidSpotlights.length > 0,
         activeText:
           "Paid spotlight is active. Your shop now has priority visibility.",
@@ -2491,8 +2534,17 @@ export default function ShopControlPage() {
         source_shop_name: firstTruthy(createdSpotlight?.source_shop_name, activeShop.name),
       };
 
+      const propagatedCount = Number(
+        createRes?.propagated_count ||
+          (Array.isArray(createRes?.propagated_clan_ids)
+            ? createRes.propagated_clan_ids.length
+            : 0)
+      );
+      const communityPlacementText =
+        propagatedCount > 1 ? ` into ${propagatedCount} community feeds` : "";
       const successMessage =
         `${spotlightPriorityMode === "paid" ? "Paid" : "Free"} spotlight published` +
+        communityPlacementText +
         `${videoUrl ? " with short video." : "."}`;
 
       clearSpotlightDraft();
@@ -2514,7 +2566,7 @@ export default function ShopControlPage() {
         });
       } catch (refreshErr: any) {
         const refreshMessage =
-          safeStr(refreshErr?.message) ||
+          shopControlRequestErrorMessage(refreshErr) ||
           "Spotlight published, but the page could not refresh immediately.";
         setSpotlightPublishFeedback({
           tone: "info",
@@ -2524,7 +2576,7 @@ export default function ShopControlPage() {
       }
     } catch (err: any) {
       const errorMessage =
-        safeStr(err?.message) || "Spotlight could not be created.";
+        shopControlRequestErrorMessage(err) || "Spotlight could not be created.";
       setSpotlightPublishFeedback({
         tone: "error",
         text: errorMessage,
@@ -3162,6 +3214,7 @@ export default function ShopControlPage() {
   if (spotlightWorkflowSection) {
     return (
       <div style={institutionalBlueRailShell(isCompact)}>
+        <ShopControlFieldPolish />
         <PageTopNav
           sectionLabel="Spotlight Portal"
           title={spotlightPortalTitle}
@@ -3171,6 +3224,11 @@ export default function ShopControlPage() {
           backTo={routes.shop}
           backLabel="Shop Control"
         />
+        {identityLockNotice ? (
+          <div style={noticeCard("info")}>
+            Identity review is needed before protected shop actions can run. {identityLockNotice}
+          </div>
+        ) : null}
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
         {spotlightWorkflowSection}
       </div>
@@ -3179,6 +3237,7 @@ export default function ShopControlPage() {
 
   return (
     <div style={institutionalBlueRailShell(isCompact)}>
+      <ShopControlFieldPolish />
       <PageTopNav
         sectionLabel="Focused Task"
         title="Shop Control"
@@ -3188,6 +3247,12 @@ export default function ShopControlPage() {
         backTo={routes.marketplace}
         backLabel="Marketplace"
       />
+
+      {identityLockNotice ? (
+        <div style={noticeCard("info")}>
+          Identity review is needed before protected shop actions can run. {identityLockNotice}
+        </div>
+      ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
@@ -3487,7 +3552,7 @@ export default function ShopControlPage() {
               </SubtleButton>
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
-              {vaultProofText}
+              {vaultEvidenceText}
             </div>
           </div>
 
@@ -3537,7 +3602,7 @@ export default function ShopControlPage() {
                 </>
               ) : null}
             </div>
-            <div style={{ marginTop: 10, ...helperText() }}>{merchantVerifyProofText}</div>
+            <div style={{ marginTop: 10, ...helperText() }}>{merchantVerifyEvidenceText}</div>
             <div style={{ marginTop: 12, ...helperText() }}>Start or renew verification</div>
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <PrimaryButton
@@ -3688,7 +3753,7 @@ export default function ShopControlPage() {
               </SecondaryButton>
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
-              {spotlightProofText}
+              {spotlightEvidenceText}
             </div>
           </div>
 
@@ -4076,6 +4141,7 @@ export default function ShopControlPage() {
                     Summary
                   </div>
                   <textarea
+                    className={SHOP_CONTROL_SOFT_PLACEHOLDER_CLASS}
                     value={meetingSummary}
                     onChange={(event) => setMeetingSummary(event.target.value)}
                     style={{ ...textAreaStyle(), marginTop: 6 }}
@@ -4087,6 +4153,7 @@ export default function ShopControlPage() {
                     Decisions
                   </div>
                   <textarea
+                    className={SHOP_CONTROL_SOFT_PLACEHOLDER_CLASS}
                     value={meetingDecisions}
                     onChange={(event) => setMeetingDecisions(event.target.value)}
                     style={{ ...textAreaStyle(), marginTop: 6 }}
@@ -4108,6 +4175,7 @@ export default function ShopControlPage() {
                     Attendance count
                   </div>
                   <input
+                    className={SHOP_CONTROL_SOFT_PLACEHOLDER_CLASS}
                     value={meetingAttendanceCount}
                     onChange={(event) => setMeetingAttendanceCount(event.target.value)}
                     style={{ ...inputStyle(), marginTop: 6 }}

@@ -22,6 +22,7 @@ from app.db.models import (
 )
 from app.db.notification_models import Notification
 from app.main import app
+import app.api.routes.community_confirmations as community_confirmation_routes
 import app.services.community_confirmation_service as community_confirmation_service
 from app.services.community_confirmation_service import build_community_confirmation_summary
 from app.services.trust_score_service import compute_trust_breakdown
@@ -569,6 +570,48 @@ def test_public_community_verify_degrades_when_confirmation_schema_missing(
     assert "active_member_count" not in data
     assert "hidden_by_design" not in data
     assert "community_confirmation_policies" not in response.text
+    assert "SELECT" not in response.text
+
+def test_public_verification_routes_do_not_leak_missing_schema_sql(
+    client: TestClient,
+    monkeypatch,
+):
+    def missing_domain_table(*args, **kwargs):
+        raise OperationalError(
+            "SELECT community_domain_affiliations.id FROM community_domain_affiliations",
+            {"community_id": 1},
+            Exception("no such table: community_domain_affiliations"),
+        )
+
+    monkeypatch.setattr(
+        community_confirmation_routes,
+        "public_community_verification",
+        missing_domain_table,
+    )
+
+    response = client.get("/verify/community/GSN-C-000001")
+    assert response.status_code == 503, response.text
+    assert "refresh the server database setup" in response.text
+    assert "community_domain_affiliations" not in response.text
+    assert "SELECT" not in response.text
+
+    def missing_member_table(*args, **kwargs):
+        raise OperationalError(
+            "SELECT community_member_verifications.id FROM community_member_verifications",
+            {"community_id": 1, "member_id": 1},
+            Exception("no such table: community_member_verifications"),
+        )
+
+    monkeypatch.setattr(
+        community_confirmation_routes,
+        "public_community_member_verification",
+        missing_member_table,
+    )
+
+    response = client.get("/verify/community/GSN-C-000001/member/GMFN-U-000001")
+    assert response.status_code == 503, response.text
+    assert "refresh the server database setup" in response.text
+    assert "community_member_verifications" not in response.text
     assert "SELECT" not in response.text
 
 

@@ -1,3 +1,79 @@
+## 2026-06-19 - Public Verification Leak, Welcome Default, And Phone Dev Recovery
+
+- Trigger:
+  - owner reported phone screenshots where public member/community verification
+    pages showed raw SQLite `no such table` errors.
+  - owner also asked the app to open from Welcome rather than Cover.
+  - owner reported Shop Control placeholder text looking too much like filled
+    content, faint identity-locked actions, and Spotlight publish showing
+    `Failed to fetch` / confusing count behavior.
+- Changed:
+  - `gmfn_backend/app/api/routes/community_confirmations.py`
+    - broadened public verification `OperationalError` handling so missing
+      `community_domain_affiliations`, `community_member_verifications`, and
+      `community_member_verification_requests` schema errors return a safe
+      503 setup message instead of raw SQL.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - added a regression proving public community and member verification
+      routes do not leak missing-table SQL text.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - added a frontend guard so stale local servers cannot display raw
+      SQLite/SQL text in public error cards.
+  - `frontend/src/App.tsx`
+    - changed anonymous root/session-reset/unknown fallback from `/cover` to
+      `/welcome`, while leaving direct `/cover` available.
+  - `frontend/tools/audit-route-fallthrough.mjs`
+    - updated the route fallthrough cage to assert the new Welcome fallback
+      while preserving app-alias and authenticated `/app` recovery checks.
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - made meeting summary/decision/attendance placeholders visibly lighter so
+      examples do not look pre-filled.
+    - added an identity-review notice when protected shop actions are locked.
+    - replaced bare Spotlight `Failed to fetch` with a plain server-reachability
+      message.
+    - Spotlight success text now says when one publish is placed into multiple
+      community feeds, rather than implying multiple uploads.
+- Local phone/dev recovery:
+  - local API DB `gmfn_backend/gmfn.db` was behind at
+    `20260516_add_community_confirmation_review_sla_policy`.
+  - ran Alembic with `GMFN_DEV_MODE=1` to upgrade the local SQLite DB to
+    `20260619_member_witness_pending_pair_guard`.
+  - restarted the backend on `http://0.0.0.0:8012`.
+  - verified:
+    - `http://127.0.0.1:8012/health` returns `{"ok":true,"dev_mode":true}`;
+    - `http://127.0.0.1:5301/health` returns backend health through Vite;
+    - `http://192.168.1.13:5301/health` returns backend health through Vite;
+    - `http://127.0.0.1:8012/verify/community/1` returns a public JSON record
+      instead of raw SQL.
+  - `5173` remains the wrong/stale phone port in this session; `5301` is the
+    working phone URL.
+- Verification:
+  - backend targeted regression:
+    - `.venv\Scripts\python.exe -m pytest -q tests\test_community_confirmation_relay.py::test_public_verification_routes_do_not_leak_missing_schema_sql`
+      passed.
+  - frontend:
+    - `npm --prefix frontend run audit:shop-control-button-inventory` passed.
+    - `npm --prefix frontend run audit:protected-button-freeze` passed.
+    - `npm --prefix frontend run build` passed.
+  - browser fallback:
+    - in-app Browser was unavailable (`iab` unavailable).
+    - used headless Playwright outside the sandbox after sandboxed launch hit
+      Windows `spawn EPERM`.
+    - confirmed `http://127.0.0.1:5301/` redirects to
+      `http://127.0.0.1:5301/welcome`.
+    - confirmed `http://127.0.0.1:5301/verify/community/1` visible text does
+      not include `sqlite`, `OperationalError`, `SELECT`, or
+      `community_domain_affiliations`.
+- Unabated truth:
+  - the first two screenshots were caused by the local dev DB being stale,
+    not by the live Render API after the `bd79f9d` deploy confirmation.
+  - the code now also prevents raw SQL leakage if a future local/prod schema
+    drift happens.
+  - the Spotlight backend intentionally fans one shop publish into all eligible
+    owner communities; the UI wording was clarified, but the frozen placement
+    rule was not changed.
+
 ## 2026-06-19 - Member Witness Finish-Up, Guidance Guard, And Phone Lane Recovery
 
 - Trigger:

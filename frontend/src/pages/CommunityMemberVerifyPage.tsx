@@ -62,6 +62,24 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function publicVerificationErrorMessage(error: any): string {
+  const message = safeStr(error?.message || error);
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("sqlite") ||
+    lower.includes("operationalerror") ||
+    lower.includes("no such table") ||
+    lower.includes("[sql:") ||
+    lower.includes("select ")
+  ) {
+    return (
+      "This public credential check is temporarily unavailable on this server. " +
+      "GSN needs to refresh the server database setup before this check can run."
+    );
+  }
+  return message || "This membership credential could not be loaded.";
+}
+
 function dateLabel(value: any): string {
   const text = safeStr(value);
   if (!text) return "Not shown";
@@ -305,7 +323,7 @@ export default function CommunityMemberVerifyPage() {
       setCredential(normalizeCredential(result));
     } catch (err: any) {
       setCredential(null);
-      setError(err?.message || "This membership credential could not be loaded.");
+      setError(publicVerificationErrorMessage(err));
     } finally {
       setLoading(false);
     }

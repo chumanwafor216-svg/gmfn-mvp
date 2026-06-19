@@ -177,12 +177,21 @@ def _service_error(exc: Exception) -> HTTPException:
         return HTTPException(status_code=403, detail=str(exc))
     if isinstance(exc, OperationalError):
         message = str(exc).lower()
-        if "no such table" in message and "community_confirmation_" in message:
+        missing_public_verification_schema = (
+            "no such table" in message
+            and (
+                "community_confirmation_" in message
+                or "community_domain_affiliations" in message
+                or "community_member_verifications" in message
+                or "community_member_verification_requests" in message
+            )
+        )
+        if missing_public_verification_schema:
             return HTTPException(
                 status_code=503,
                 detail=(
-                    "Community confirmation is temporarily unavailable on this server. "
-                    "The GSN owner needs to refresh the server database setup."
+                    "Community verification is temporarily unavailable on this server. "
+                    "GSN needs to refresh the server database setup before this public check can run."
                 ),
             )
     message = str(exc) or "Community confirmation request failed"

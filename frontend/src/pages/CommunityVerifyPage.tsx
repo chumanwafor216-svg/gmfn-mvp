@@ -82,6 +82,24 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function publicVerificationErrorMessage(error: any): string {
+  const message = safeStr(error?.message || error);
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("sqlite") ||
+    lower.includes("operationalerror") ||
+    lower.includes("no such table") ||
+    lower.includes("[sql:") ||
+    lower.includes("select ")
+  ) {
+    return (
+      "This public community check is temporarily unavailable on this server. " +
+      "GSN needs to refresh the server database setup before this public record can run."
+    );
+  }
+  return message || "Community verification could not be loaded.";
+}
+
 function labelize(value: any): string {
   const text = safeStr(value).replace(/[_-]+/g, " ");
   if (!text) return "Not shown";
@@ -296,7 +314,7 @@ export default function CommunityVerifyPage() {
       setRecord(normalizeRecord(result));
     } catch (err: any) {
       setRecord(null);
-      setError(err?.message || "Community verification could not be loaded.");
+      setError(publicVerificationErrorMessage(err));
     } finally {
       setLoading(false);
     }
