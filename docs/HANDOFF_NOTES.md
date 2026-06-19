@@ -1,3 +1,24 @@
+## 2026-06-19 - Bare Welcome Entry Forced Back To Cover
+
+- Trigger:
+  - owner reported the app still opened at Welcome, but could now go back to
+    Cover.
+- Finding:
+  - root `/` and the PWA manifest were already Cover-first, but any old phone
+    shortcut/tab that opened `/welcome` directly could still show Welcome as
+    the first screen.
+- Changed:
+  - `frontend/src/pages/CoverPage.tsx`
+    - Cover Continue now opens `/welcome?entry_from=cover`.
+  - `frontend/src/App.tsx`
+    - added `WelcomeEntryGate`; bare `/welcome` redirects to `/cover` while
+      `/welcome?entry_from=cover` remains reachable from Cover Continue.
+  - `frontend/tools/audit-entry-auth-contracts.mjs`
+    - added guards for Cover-marked Welcome entry and bare-Welcome fallback.
+- Unabated truth:
+  - direct `/welcome` is no longer a valid natural first screen. This is
+    intentional so stale phone shortcuts cannot bypass CoverPage.
+
 ## 2026-06-19 - PWA Icon Start Restored To Cover
 
 - Trigger:

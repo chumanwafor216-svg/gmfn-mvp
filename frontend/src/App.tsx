@@ -468,6 +468,29 @@ function RedirectUnknownRoute() {
   return <Navigate to={appAliasTarget || appFallbackTarget || "/cover"} replace />;
 }
 
+function WelcomeEntryGate(props: { children: React.ReactNode }) {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const entryFrom = String(params.get("entry_from") || "")
+    .trim()
+    .toLowerCase();
+
+  if (entryFrom !== "cover") {
+    params.delete("entry_from");
+    const nextSearch = params.toString();
+    const hash = location.hash || "";
+
+    return (
+      <Navigate
+        to={`/cover${nextSearch ? `?${nextSearch}` : ""}${hash}`}
+        replace
+      />
+    );
+  }
+
+  return <>{props.children}</>;
+}
+
 function RedirectToCover(props: {
   entry: EntryMode;
   sourceParam?: string;
@@ -578,7 +601,9 @@ export default function App() {
         path="/welcome"
         element={
           <PublicEntryGuard>
-            <WelcomePage />
+            <WelcomeEntryGate>
+              <WelcomePage />
+            </WelcomeEntryGate>
           </PublicEntryGuard>
         }
       />

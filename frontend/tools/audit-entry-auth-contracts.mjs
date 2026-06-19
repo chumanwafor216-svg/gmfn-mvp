@@ -72,6 +72,18 @@ assertContains(
 
 assertContains(
   "src/pages/CoverPage.tsx",
+  /function nextRouteForMode\(mode: EntryMode\): string \{[\s\S]*?return "\/welcome\?entry_from=cover";/,
+  "Cover Continue must mark Welcome as cover-entered so bare /welcome shortcuts return to Cover."
+);
+
+assertContains(
+  "src/App.tsx",
+  /function WelcomeEntryGate\(props: \{ children: React\.ReactNode \}\)[\s\S]*?params\.get\("entry_from"\)[\s\S]*?entryFrom !== "cover"[\s\S]*?<Navigate[\s\S]*?to=\{`\/cover\$\{nextSearch \? `\?\$\{nextSearch\}` : ""\}\$\{hash\}`\}[\s\S]*?<WelcomeEntryGate>[\s\S]*?<WelcomePage \/>[\s\S]*?<\/WelcomeEntryGate>/,
+  "Bare /welcome must return to Cover, while Cover-marked Welcome remains reachable."
+);
+
+assertContains(
+  "src/pages/CoverPage.tsx",
   /const storedMatch = matchEntryMode\(normalizeValue\(readStorage\(ENTRY_MODE_KEY\)\)\);[\s\S]*if \(storedMatch\) return storedMatch;/,
   "Plain cover visits must preserve stored create/invite/approved intent instead of overwriting it as general."
 );
