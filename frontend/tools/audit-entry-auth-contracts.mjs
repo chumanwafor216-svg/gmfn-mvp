@@ -83,6 +83,12 @@ assertContains(
 );
 
 assertContains(
+  "server.mjs",
+  /function welcomeShouldRedirectToCover\(url\)[\s\S]*?url\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?function coverRedirectLocation\(url\)[\s\S]*?params\.delete\("entry_from"\)[\s\S]*?return `\/cover\$\{search \? `\?\$\{search\}` : ""\}`[\s\S]*?if \(welcomeShouldRedirectToCover\(url\)\)[\s\S]*?Location: coverRedirectLocation\(url\)[\s\S]*?"Cache-Control": "no-store"/,
+  "Render must redirect bare /welcome to Cover before React loads, while allowing Cover-marked Welcome."
+);
+
+assertContains(
   "src/pages/CoverPage.tsx",
   /const storedMatch = matchEntryMode\(normalizeValue\(readStorage\(ENTRY_MODE_KEY\)\)\);[\s\S]*if \(storedMatch\) return storedMatch;/,
   "Plain cover visits must preserve stored create/invite/approved intent instead of overwriting it as general."

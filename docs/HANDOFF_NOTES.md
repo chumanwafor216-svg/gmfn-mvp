@@ -1,3 +1,26 @@
+## 2026-06-19 - Render Welcome Route Forced Server-Side To Cover
+
+- Trigger:
+  - owner reported the local phone connection now opens at CoverPage, but the
+    Render version still opens at Welcome.
+- Finding:
+  - client routing, root `/`, and PWA manifest were already Cover-first, but
+    Render's Node server still served `/welcome` through the SPA fallback before
+    React could redirect.
+- Changed:
+  - `frontend/server.mjs`
+    - added a server-side redirect for bare `/welcome` to `/cover`.
+    - preserves `/welcome?entry_from=cover` so the Cover Continue button can
+      still enter the Welcome guide intentionally.
+  - `frontend/tools/audit-entry-auth-contracts.mjs`
+    - added a production-server guard so bare `/welcome` cannot silently become
+      a first screen again.
+- Unabated truth:
+  - if a phone still shows Welcome after this Render deploy, the most likely
+    cause is a cached tab or old installed shortcut asking for stale content;
+    the server route itself should no longer accept bare `/welcome` as natural
+    entry.
+
 ## 2026-06-19 - Bare Welcome Entry Forced Back To Cover
 
 - Trigger:

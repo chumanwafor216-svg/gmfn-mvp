@@ -353,6 +353,20 @@ function send(res, status, body, contentType, extraHeaders = {}) {
   res.end(body);
 }
 
+function welcomeShouldRedirectToCover(url) {
+  const entryFrom = String(url.searchParams.get("entry_from") || "")
+    .trim()
+    .toLowerCase();
+  return url.pathname === "/welcome" && entryFrom !== "cover";
+}
+
+function coverRedirectLocation(url) {
+  const params = new URLSearchParams(url.searchParams);
+  params.delete("entry_from");
+  const search = params.toString();
+  return `/cover${search ? `?${search}` : ""}`;
+}
+
 function safeStaticPath(urlPathname) {
   try {
     const decoded = decodeURIComponent(urlPathname);
@@ -381,6 +395,14 @@ async function serveStaticOrFallback(res, urlPathname) {
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", publicFrontendOrigin);
+    if (welcomeShouldRedirectToCover(url)) {
+      send(res, 302, "Redirecting to GSN Cover", "text/plain; charset=utf-8", {
+        Location: coverRedirectLocation(url),
+        "Cache-Control": "no-store",
+      });
+      return;
+    }
+
     const match = url.pathname.match(/^\/shop\/([^/]+)(?:\/share-card\.png)?$/);
     if (match && url.pathname.endsWith("/share-card.png")) {
       await serveShareCardProxy(res, decodeURIComponent(match[1]), url.searchParams);
