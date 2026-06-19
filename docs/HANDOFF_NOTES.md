@@ -151,6 +151,19 @@
     - `.venv\Scripts\python.exe -m pytest -q tests\test_database_metadata.py tests\test_community_member_verifications.py`
       passed (`34 passed`);
     - `git diff --check` passed for the migration/model/test files.
+  - published the identifier fix as commit `bd79f9d`
+    (`Fix member witness Postgres index names`).
+  - GitHub `Backend Tests` run `27845615020` passed for `bd79f9d`.
+  - owner-provided Render dashboard confirmation shows:
+    - API service `gmfn-api` (`srv-d7h2c8ugvqtc73eshtd0`);
+    - URL `https://gmfn-api.onrender.com`;
+    - `Deploy live for bd79f9d: Fix member witness Postgres index names`
+      at June 19, 2026 8:54 PM.
+  - unabated truth:
+    - Render UI confirms the API deploy is live on `bd79f9d`;
+    - Codex could not independently fetch
+      `https://gmfn-api.onrender.com/health` from this environment because
+      local/external probes failed before returning an HTTP response.
 
 ## 2026-06-19 - Member Witness Request UI Proof Against Disposable Backend
 
