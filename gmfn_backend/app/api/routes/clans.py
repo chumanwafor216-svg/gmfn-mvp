@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import secrets
+import hashlib
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, List, Optional
@@ -12,6 +13,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.services.notification_service import create_notification
 from app.core.auth import get_current_user, is_user_activation_pending, oauth2_scheme
@@ -31,6 +33,10 @@ from app.db.models import (
     ClanJoinRequest,
     ClanJoinVote,
     ClanMembership,
+    CommunityDomainAffiliation,
+    CommunityMemberVerification,
+    CommunityMemberVerificationRequest,
+    TrustEvent,
     User,
 )
 from app.db.verification_models import IdentityVerificationCheck
@@ -208,6 +214,46 @@ class InviteSettingsUpdateIn(BaseModel):
 
 class ClanInviteCreateBody(BaseModel):
     relationship_evidence: Optional[ClanInviteRelationshipEvidence] = None
+
+
+class CommunityAffiliationRequestIn(BaseModel):
+    parent_community_key: str = Field(..., min_length=1, max_length=64)
+    request_note: Optional[str] = Field(default=None, max_length=500)
+
+
+class CommunityAffiliationDecisionIn(BaseModel):
+    decision: str = Field(..., min_length=3, max_length=24)
+    decision_note: Optional[str] = Field(default=None, max_length=500)
+
+
+class CommunityExternalRegistrationRecordIn(BaseModel):
+    registration_type: str = Field(default="CAC", max_length=40)
+    registration_reference: Optional[str] = Field(default=None, max_length=120)
+    registered_name: Optional[str] = Field(default=None, max_length=180)
+    issuing_body: Optional[str] = Field(default=None, max_length=120)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
+class CommunityMemberVerificationIn(BaseModel):
+    subject_user_id: int
+    claim_label: Optional[str] = Field(default=None, max_length=160)
+    verification_note: Optional[str] = Field(default=None, max_length=500)
+
+
+class CommunityMemberVerificationRequestIn(BaseModel):
+    verifier_user_id: int
+    claim_label: Optional[str] = Field(default=None, max_length=160)
+    request_note: Optional[str] = Field(default=None, max_length=500)
+
+
+class CommunityMemberVerificationRequestDecisionIn(BaseModel):
+    decision: str = Field(..., max_length=24)
+    one_time_code: Optional[str] = Field(default=None, max_length=16)
+    response_note: Optional[str] = Field(default=None, max_length=500)
+
+
+class CommunityMemberVerificationWithdrawIn(BaseModel):
+    reason: Optional[str] = Field(default=None, max_length=500)
 
 
 class JoinApplicationIn(BaseModel):
@@ -413,6 +459,522 @@ def _member_row(db: Session, m: ClanMembership) -> dict[str, Any]:
         "personal_pool_balance": str(m.personal_pool_balance or Decimal("0")),
         "created_at": m.created_at,
     }
+
+
+def _verification_strength_label(active_count: int) -> str:
+    count = max(0, int(active_count or 0))
+    if count >= 10:
+        return "community_established"
+    if count >= 6:
+        return "strongly_verified"
+    if count >= 3:
+        return "community_verified"
+    if count >= 1:
+        return "lightly_verified"
+    return "joined"
+
+
+def _verification_strength_text(active_count: int) -> str:
+    return {
+        "community_established": "Community Established",
+        "strongly_verified": "Strongly Verified",
+        "community_verified": "Community Verified",
+        "lightly_verified": "Lightly Verified",
+        "joined": "Joined / Unverified",
+    }[_verification_strength_label(active_count)]
+
+
+def _aware_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _membership_renewal_status(valid_until: datetime | None, *, now: datetime | None = None) -> str:
+    if valid_until is None:
+        return "not_started"
+    current = _aware_utc(now) or datetime.now(timezone.utc)
+    expiry = _aware_utc(valid_until)
+    if expiry is None:
+        return "not_started"
+    if expiry < current:
+        return "expired"
+    if expiry <= current + timedelta(days=30):
+        return "renewal_due"
+    return "active"
+
+
+def _membership_renewal_status_text(status: str) -> str:
+    return {
+        "active": "Active",
+        "renewal_due": "Renewal Due",
+        "expired": "Expired",
+        "not_started": "Not Started",
+    }.get(_safe_str(status, "not_started").lower(), "Not Started")
+
+
+def _member_witness_can_renew(valid_until: datetime | None, *, now: datetime) -> bool:
+    return _membership_renewal_status(valid_until, now=now) in {"renewal_due", "expired"}
+
+
+def _member_verification_payload(
+    db: Session,
+    row: CommunityMemberVerification,
+    *,
+    include_private_fields: bool = False,
+) -> dict[str, Any]:
+    subject = db.get(User, int(row.subject_user_id))
+    verifier = db.get(User, int(row.verifier_user_id))
+    payload = {
+        "id": int(row.id),
+        "community_id": int(row.clan_id),
+        "community_code": _community_code(row.clan_id),
+        "subject_user_id": int(row.subject_user_id),
+        "subject_gsn_id": _safe_str(getattr(subject, "gmfn_id", None)) or None,
+        "subject_display_name": _member_display(subject),
+        "verifier_user_id": int(row.verifier_user_id),
+        "verifier_gsn_id": _safe_str(getattr(verifier, "gmfn_id", None)) or None,
+        "verifier_display_name": _member_display(verifier),
+        "status": _safe_str(row.status, "active").lower(),
+        "verification_year": int(row.verification_year),
+        "claim_label": _safe_str(row.claim_label) or None,
+        "source": _safe_str(row.source, "member_witness"),
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
+        "valid_until": row.valid_until,
+        "withdrawn_at": row.withdrawn_at,
+    }
+    if include_private_fields:
+        payload["verification_note"] = _safe_str(row.verification_note) or None
+        payload["withdrawal_reason"] = _safe_str(row.withdrawal_reason) or None
+    return payload
+
+
+def _member_verification_summary(
+    db: Session,
+    *,
+    clan_id: int,
+    subject_user_id: int,
+) -> dict[str, Any]:
+    now = datetime.now(timezone.utc)
+    active_member_rows = (
+        db.query(ClanMembership, User)
+        .join(User, User.id == ClanMembership.user_id)
+        .filter(ClanMembership.clan_id == int(clan_id))
+        .filter(ClanMembership.left_at.is_(None))
+        .all()
+    )
+    active_member_ids = {
+        int(membership.user_id)
+        for membership, user in active_member_rows
+        if not is_user_activation_pending(user)
+    }
+    rows = (
+        db.query(CommunityMemberVerification)
+        .filter(CommunityMemberVerification.clan_id == int(clan_id))
+        .filter(CommunityMemberVerification.subject_user_id == int(subject_user_id))
+        .order_by(CommunityMemberVerification.created_at.desc(), CommunityMemberVerification.id.desc())
+        .all()
+    )
+    eligible_rows = [
+        row
+        for row in rows
+        if _safe_str(getattr(row, "status", None), "active").lower() == "active"
+        and getattr(row, "withdrawn_at", None) is None
+        and int(row.verifier_user_id) in active_member_ids
+        and int(row.subject_user_id) in active_member_ids
+    ]
+    active_rows = [
+        row
+        for row in eligible_rows
+        if (_aware_utc(getattr(row, "valid_until", None)) is None or _aware_utc(getattr(row, "valid_until", None)) >= now)
+    ]
+    active_count = len(active_rows)
+    latest_valid_until = max(
+        [row.valid_until for row in active_rows if row.valid_until is not None],
+        default=max(
+            [
+                row.valid_until
+                for row in eligible_rows
+                if row.valid_until is not None
+            ],
+            default=None,
+        ),
+    )
+    next_witness_renewal_at = min(
+        [row.valid_until for row in active_rows if row.valid_until is not None],
+        default=None,
+    )
+    next_witness_renewal_status = _membership_renewal_status(
+        next_witness_renewal_at,
+        now=now,
+    )
+    renewal_status = _membership_renewal_status(latest_valid_until, now=now)
+    return {
+        "community_id": int(clan_id),
+        "community_code": _community_code(clan_id),
+        "subject_user_id": int(subject_user_id),
+        "active_verification_count": active_count,
+        "total_verification_count": len(rows),
+        "strength": _verification_strength_label(active_count),
+        "strength_label": _verification_strength_text(active_count),
+        "public_label": (
+            "Verified Community Member"
+            if active_count >= 3
+            else "Community Membership Not Fully Verified"
+        ),
+        "renewal_status": renewal_status,
+        "renewal_status_label": _membership_renewal_status_text(renewal_status),
+        "valid_until": latest_valid_until,
+        "next_witness_renewal_at": next_witness_renewal_at,
+        "next_witness_renewal_status": next_witness_renewal_status,
+        "next_witness_renewal_status_label": _membership_renewal_status_text(
+            next_witness_renewal_status
+        ),
+        "items": [_member_verification_payload(db, row) for row in rows],
+    }
+
+
+def _member_verification_request_payload(
+    db: Session,
+    row: CommunityMemberVerificationRequest,
+    *,
+    include_one_time_code: bool = False,
+) -> dict[str, Any]:
+    subject = db.get(User, int(row.subject_user_id))
+    verifier = db.get(User, int(row.verifier_user_id))
+    requester = db.get(User, int(row.requested_by_user_id))
+    payload = {
+        "id": int(row.id),
+        "community_id": int(row.clan_id),
+        "community_code": _community_code(row.clan_id),
+        "subject_user_id": int(row.subject_user_id),
+        "subject_gsn_id": _safe_str(getattr(subject, "gmfn_id", None)) or None,
+        "subject_display_name": _member_display(subject),
+        "verifier_user_id": int(row.verifier_user_id),
+        "verifier_gsn_id": _safe_str(getattr(verifier, "gmfn_id", None)) or None,
+        "verifier_display_name": _member_display(verifier),
+        "requested_by_user_id": int(row.requested_by_user_id),
+        "requester_gsn_id": _safe_str(getattr(requester, "gmfn_id", None)) or None,
+        "requester_display_name": _member_display(requester),
+        "public_token": row.public_token,
+        "status": _safe_str(row.status, "pending").lower(),
+        "claim_label": _safe_str(row.claim_label) or None,
+        "request_note": _safe_str(row.request_note) or None,
+        "response_note": _safe_str(row.response_note) or None,
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
+        "expires_at": row.expires_at,
+        "decided_at": row.decided_at,
+        "resulting_verification_id": (
+            int(row.resulting_verification_id) if row.resulting_verification_id else None
+        ),
+        "approval_path": (
+            f"/app/community-confirmations/policy?community_id={int(row.clan_id)}"
+            f"&member_witness_request={quote(row.public_token)}"
+        ),
+    }
+    if include_one_time_code:
+        payload["one_time_code"] = row.one_time_code
+    return payload
+
+
+def _member_witness_approval_token() -> str:
+    return secrets.token_urlsafe(18)
+
+
+def _member_witness_one_time_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def _has_current_member_witness_standing(
+    db: Session,
+    *,
+    clan_id: int,
+    user_id: int,
+    now: datetime,
+) -> bool:
+    active_member_rows = (
+        db.query(ClanMembership, User)
+        .join(User, User.id == ClanMembership.user_id)
+        .filter(ClanMembership.clan_id == int(clan_id))
+        .filter(ClanMembership.left_at.is_(None))
+        .all()
+    )
+    active_member_ids = {
+        int(membership.user_id)
+        for membership, user in active_member_rows
+        if not is_user_activation_pending(user)
+    }
+    if int(user_id) not in active_member_ids:
+        return False
+
+    rows = (
+        db.query(CommunityMemberVerification)
+        .filter(CommunityMemberVerification.clan_id == int(clan_id))
+        .filter(CommunityMemberVerification.subject_user_id == int(user_id))
+        .filter(CommunityMemberVerification.status == "active")
+        .filter(CommunityMemberVerification.withdrawn_at.is_(None))
+        .all()
+    )
+    for row in rows:
+        if int(row.verifier_user_id) not in active_member_ids:
+            continue
+        valid_until = _aware_utc(getattr(row, "valid_until", None))
+        if valid_until is None or valid_until >= now:
+            return True
+    return False
+
+
+def _member_witness_community_is_active(clan: Clan) -> bool:
+    return _safe_str(getattr(clan, "status", None), "active").lower() == "active"
+
+
+def _require_member_witness_active_community(clan: Clan) -> None:
+    if not _member_witness_community_is_active(clan):
+        raise HTTPException(
+            status_code=403,
+            detail="Member witness verification is only available for active communities",
+        )
+
+
+def _is_activation_ready_user(db: Session, user_id: int) -> bool:
+    user = db.get(User, int(user_id))
+    return bool(user is not None and not is_user_activation_pending(user))
+
+
+def _community_domain_is_active(clan: Clan) -> bool:
+    return _safe_str(getattr(clan, "status", None), "active").lower() == "active"
+
+
+def _require_active_domain_admin(
+    db: Session,
+    clan_ctx: tuple,
+    *,
+    action_label: str = "community domain action",
+) -> tuple[Clan, ClanMembership, User]:
+    clan, membership, current_user = _require_clan_admin(clan_ctx)
+    if not _is_activation_ready_user(db, int(current_user.id)):
+        raise HTTPException(
+            status_code=403,
+            detail=f"Only activated community admins can manage this {action_label}",
+        )
+    if not _community_domain_is_active(clan):
+        raise HTTPException(
+            status_code=403,
+            detail=f"This {action_label} is only available for active community domains",
+        )
+    return clan, membership, current_user
+
+
+def _member_witness_yearly_limit(verifier_role: str) -> int:
+    return 100 if _safe_str(verifier_role).lower() == "admin" else 20
+
+
+def _member_witness_yearly_count(
+    db: Session,
+    *,
+    clan_id: int,
+    verifier_user_id: int,
+    year: int,
+    exclude_subject_user_id: Optional[int] = None,
+) -> int:
+    query = (
+        db.query(CommunityMemberVerification)
+        .filter(CommunityMemberVerification.clan_id == int(clan_id))
+        .filter(CommunityMemberVerification.verifier_user_id == int(verifier_user_id))
+        .filter(CommunityMemberVerification.verification_year == int(year))
+    )
+    if exclude_subject_user_id is not None:
+        query = query.filter(
+            CommunityMemberVerification.subject_user_id != int(exclude_subject_user_id)
+        )
+    return int(query.count())
+
+
+def _member_witness_pending_request_count(
+    db: Session,
+    *,
+    clan_id: int,
+    verifier_user_id: int,
+    year: int,
+    now: datetime,
+    exclude_subject_user_id: Optional[int] = None,
+) -> int:
+    query = (
+        db.query(CommunityMemberVerificationRequest)
+        .filter(CommunityMemberVerificationRequest.clan_id == int(clan_id))
+        .filter(CommunityMemberVerificationRequest.verifier_user_id == int(verifier_user_id))
+        .filter(CommunityMemberVerificationRequest.status == "pending")
+        .filter(CommunityMemberVerificationRequest.expires_at >= _aware_utc(now))
+    )
+    if exclude_subject_user_id is not None:
+        query = query.filter(
+            CommunityMemberVerificationRequest.subject_user_id != int(exclude_subject_user_id)
+        )
+    return int(query.count())
+
+
+def _member_witness_reserved_count(
+    db: Session,
+    *,
+    clan_id: int,
+    verifier_user_id: int,
+    year: int,
+    now: datetime,
+    exclude_subject_user_id: Optional[int] = None,
+) -> int:
+    return _member_witness_yearly_count(
+        db,
+        clan_id=clan_id,
+        verifier_user_id=verifier_user_id,
+        year=year,
+        exclude_subject_user_id=exclude_subject_user_id,
+    ) + _member_witness_pending_request_count(
+        db,
+        clan_id=clan_id,
+        verifier_user_id=verifier_user_id,
+        year=year,
+        now=now,
+        exclude_subject_user_id=exclude_subject_user_id,
+    )
+
+
+def _record_member_verification_for_verifier(
+    db: Session,
+    *,
+    clan: Clan,
+    subject_user_id: int,
+    verifier_user_id: int,
+    verifier_membership: ClanMembership,
+    claim_label: Optional[str] = None,
+    verification_note: Optional[str] = None,
+    source: str = "member_witness",
+) -> tuple[CommunityMemberVerification, str]:
+    subject_user_id = int(subject_user_id)
+    verifier_user_id = int(verifier_user_id)
+    _require_member_witness_active_community(clan)
+    if subject_user_id == verifier_user_id:
+        raise HTTPException(status_code=400, detail="A member cannot verify themselves")
+
+    subject_membership = _is_active_membership(
+        db,
+        clan_id=int(clan.id),
+        user_id=subject_user_id,
+    )
+    if subject_membership is None:
+        raise HTTPException(status_code=404, detail="Subject is not an active member of this community")
+    if not _is_activation_ready_user(db, subject_user_id):
+        raise HTTPException(status_code=404, detail="Subject is not an active member of this community")
+    if not _is_activation_ready_user(db, verifier_user_id):
+        raise HTTPException(status_code=403, detail="Only activated community members can verify another member")
+
+    now = datetime.now(timezone.utc)
+    year = int(now.year)
+    verifier_role = _safe_str(getattr(verifier_membership, "role", None)).lower()
+    verifier_is_admin = verifier_role == "admin"
+    if not verifier_is_admin and not _has_current_member_witness_standing(
+        db,
+        clan_id=int(clan.id),
+        user_id=verifier_user_id,
+        now=now,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "This verifier must have current community witness standing before "
+                "they can verify another member. Ask a community admin or already "
+                "verified member to stand for this person."
+            ),
+        )
+
+    existing = (
+        db.query(CommunityMemberVerification)
+        .filter(CommunityMemberVerification.clan_id == int(clan.id))
+        .filter(CommunityMemberVerification.subject_user_id == subject_user_id)
+        .filter(CommunityMemberVerification.verifier_user_id == verifier_user_id)
+        .first()
+    )
+
+    existing_valid_until = _aware_utc(getattr(existing, "valid_until", None)) if existing else None
+    existing_is_current = (
+        existing is not None
+        and _safe_str(existing.status).lower() == "active"
+        and existing.withdrawn_at is None
+        and (existing_valid_until is None or existing_valid_until >= now)
+    )
+    if existing_is_current:
+        if not _member_witness_can_renew(existing_valid_until, now=now):
+            return existing, "You already have an active witness confirmation for this member."
+
+    yearly_limit = _member_witness_yearly_limit(verifier_role)
+    reserved_this_year = _member_witness_reserved_count(
+        db,
+        clan_id=int(clan.id),
+        verifier_user_id=verifier_user_id,
+        year=year,
+        now=now,
+        exclude_subject_user_id=subject_user_id,
+    )
+
+    if reserved_this_year >= yearly_limit:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This verifier has reached the current yearly member-witness limit. "
+                "Ask another active community member with witness standing to stand for this person."
+            ),
+        )
+
+    note = _safe_str(verification_note)[:500] or None
+    claim = _safe_str(claim_label)[:160] or None
+    valid_until = now + timedelta(days=365)
+
+    if existing is None:
+        row = CommunityMemberVerification(
+            clan_id=int(clan.id),
+            subject_user_id=subject_user_id,
+            verifier_user_id=verifier_user_id,
+            status="active",
+            verification_year=year,
+            verification_note=note,
+            claim_label=claim,
+            source=_safe_str(source, "member_witness")[:32],
+            valid_until=valid_until,
+        )
+        db.add(row)
+    else:
+        row = existing
+        row.status = "active"
+        row.verification_year = year
+        row.verification_note = note
+        row.claim_label = claim
+        row.source = _safe_str(source, "member_witness")[:32]
+        row.valid_until = valid_until
+        row.withdrawn_at = None
+        row.withdrawal_reason = None
+        row.updated_at = now
+
+    db.flush()
+    log_trust_event(
+        db,
+        event_type=TrustEventType.COMMUNITY_MEMBER_VERIFIED,
+        clan_id=int(clan.id),
+        actor_user_id=verifier_user_id,
+        subject_user_id=subject_user_id,
+        meta={
+            "reason": "community_member_witness_confirmation",
+            "claim_label": claim,
+            "source": _safe_str(source, "member_witness"),
+            "valid_until": valid_until.isoformat(),
+        },
+        dedupe_key=f"community-member-verified-{int(row.id)}-{year}",
+        commit=False,
+        refresh=False,
+    )
+    return row, "Member witness confirmation recorded."
 
 
 def _is_last_admin(db: Session, *, clan_id: int) -> bool:
@@ -634,6 +1196,101 @@ def _clan_from_community_code(
             return db.get(Clan, int(suffix))
 
     return None
+
+
+def _clan_from_community_key(db: Session, community_key: Optional[str]) -> Optional[Clan]:
+    key = _safe_str(community_key).upper()
+    if not key:
+        return None
+
+    if key.isdigit():
+        return db.get(Clan, int(key))
+
+    clan = db.query(Clan).filter(Clan.community_code == key).first()
+    if clan is not None:
+        return clan
+
+    for prefix in ("GMFN-C-", "GSN-C-", "GMFM-C-"):
+        if key.startswith(prefix):
+            suffix = key[len(prefix) :].strip()
+            if suffix.isdigit():
+                return db.get(Clan, int(suffix))
+
+    return None
+
+
+def _community_affiliation_payload(row: CommunityDomainAffiliation) -> dict[str, Any]:
+    parent = getattr(row, "parent", None)
+    affiliate = getattr(row, "affiliate", None)
+    return {
+        "id": int(row.id),
+        "parent_community_id": int(row.parent_clan_id),
+        "parent_community_code": _community_code(row.parent_clan_id, clan=parent),
+        "parent_community_name": getattr(parent, "name", None),
+        "affiliate_community_id": int(row.affiliate_clan_id),
+        "affiliate_community_code": _community_code(row.affiliate_clan_id, clan=affiliate),
+        "affiliate_community_name": getattr(affiliate, "name", None),
+        "status": _safe_str(row.status, "pending"),
+        "request_note": getattr(row, "request_note", None),
+        "decision_note": getattr(row, "decision_note", None),
+        "requested_by_user_id": int(row.requested_by_user_id),
+        "decided_by_user_id": (
+            int(row.decided_by_user_id)
+            if getattr(row, "decided_by_user_id", None) is not None
+            else None
+        ),
+        "created_at": getattr(row, "created_at", None),
+        "updated_at": getattr(row, "updated_at", None),
+        "decided_at": getattr(row, "decided_at", None),
+    }
+
+
+def _external_registration_fingerprint(
+    *,
+    registration_type: str,
+    registration_reference: Optional[str],
+    registered_name: Optional[str],
+    issuing_body: Optional[str],
+) -> Optional[str]:
+    raw_parts = [
+        registration_type,
+        registration_reference or "",
+        registered_name or "",
+        issuing_body or "",
+    ]
+    normalized = "|".join(_safe_str(part).strip().upper() for part in raw_parts)
+    if not normalized.strip("|"):
+        return None
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:24]
+
+
+def _external_registration_record_payload(row: TrustEvent) -> dict[str, Any]:
+    meta = getattr(row, "meta", None) or {}
+    if not isinstance(meta, dict):
+        meta = {}
+    return {
+        "id": int(row.id),
+        "event_type": row.event_type,
+        "community_id": int(row.clan_id) if row.clan_id is not None else None,
+        "recorded_by_user_id": int(row.actor_user_id),
+        "status": "recorded",
+        "registration_type": _safe_str(meta.get("registration_type"), "CAC"),
+        "registration_reference_recorded": bool(meta.get("registration_reference_present")),
+        "registered_name_recorded": bool(meta.get("registered_name_present")),
+        "issuing_body": _safe_str(meta.get("issuing_body")) or None,
+        "note_recorded": bool(meta.get("note_present")),
+        "evidence_fingerprint": _safe_str(meta.get("evidence_fingerprint")) or None,
+        "raw_reference_stored": bool(meta.get("raw_reference_stored")),
+        "record_detail_storage": _safe_str(meta.get("record_detail_storage")),
+        "record_purpose": "supporting_domain_claim_evidence",
+        "verification_effect": "none",
+        "public_exposure": "private_admin_record_only",
+        "boundary": (
+            "Recorded supporting evidence only. This is not GSN verification, "
+            "not current leadership evidence, not community consent, and not member belonging."
+        ),
+        "created_at": getattr(row, "created_at", None),
+    }
 
 
 _ensure_user_gmfn_id = ensure_user_gmfn_id
@@ -1319,7 +1976,7 @@ def _build_invite_text(
         [
             "",
             "We have already built trust by knowing, helping, lending, supporting, and standing for one another.",
-            "GSN helps make that trust visible, recordable, and useful, so the good things people do for each other can become proof for tomorrow.",
+            "GSN helps make that trust visible, recordable, and useful, so the good things people do for each other can become a trust record for tomorrow.",
             "With GSN, a trusted circle can trade, support small needs, lend, borrow, repay, and build a clearer record of reliability.",
             "Over time, those records can help members carry their good name further, even beyond the people who already know them.",
             "",
@@ -3018,6 +3675,851 @@ def get_join_request_status(
 
     req = _mark_activation_opened_if_needed(db, req=req)
     return _join_request_status_payload(db, request, req)
+
+
+@router.get("/{clan_id}/member-verifications/summary", response_model=dict[str, Any])
+def get_member_verification_summary(
+    clan_id: int,
+    subject_user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, membership, _current_user = clan_ctx
+    if (
+        membership is None
+        or getattr(membership, "left_at", None) is not None
+        or not _is_activation_ready_user(db, int(current_user.id))
+    ):
+        raise HTTPException(status_code=403, detail="Only active community members can view this summary")
+    _require_member_witness_active_community(clan)
+
+    subject_membership = _is_active_membership(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(subject_user_id),
+    )
+    if subject_membership is None:
+        raise HTTPException(status_code=404, detail="Subject is not an active member of this community")
+    if not _is_activation_ready_user(db, int(subject_user_id)):
+        raise HTTPException(status_code=404, detail="Subject is not an active member of this community")
+
+    return {
+        "ok": True,
+        "membership": _member_row(db, subject_membership),
+        "verification_summary": _member_verification_summary(
+            db,
+            clan_id=int(clan.id),
+            subject_user_id=int(subject_user_id),
+        ),
+    }
+
+
+@router.post("/{clan_id}/member-verification-requests", response_model=dict[str, Any])
+def create_member_verification_request(
+    clan_id: int,
+    payload: CommunityMemberVerificationRequestIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, subject_membership, _current_user = clan_ctx
+    if (
+        subject_membership is None
+        or getattr(subject_membership, "left_at", None) is not None
+        or not _is_activation_ready_user(db, int(current_user.id))
+    ):
+        raise HTTPException(status_code=403, detail="Only active community members can request member verification")
+    _require_member_witness_active_community(clan)
+
+    verifier_user_id = int(payload.verifier_user_id)
+    subject_user_id = int(current_user.id)
+    if verifier_user_id == subject_user_id:
+        raise HTTPException(status_code=400, detail="A member cannot request self-verification")
+
+    verifier_membership = _is_active_membership(
+        db,
+        clan_id=int(clan.id),
+        user_id=verifier_user_id,
+    )
+    if verifier_membership is None or not _is_activation_ready_user(db, verifier_user_id):
+        raise HTTPException(status_code=404, detail="Verifier is not an active member of this community")
+
+    now = datetime.now(timezone.utc)
+    verifier_role = _safe_str(getattr(verifier_membership, "role", None)).lower()
+    if verifier_role != "admin" and not _has_current_member_witness_standing(
+        db,
+        clan_id=int(clan.id),
+        user_id=verifier_user_id,
+        now=now,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "This verifier must have current community witness standing before "
+                "they can verify another member. Ask a community admin or already "
+                "verified member to stand for this person."
+            ),
+        )
+
+    existing_verification = (
+        db.query(CommunityMemberVerification)
+        .filter(CommunityMemberVerification.clan_id == int(clan.id))
+        .filter(CommunityMemberVerification.subject_user_id == subject_user_id)
+        .filter(CommunityMemberVerification.verifier_user_id == verifier_user_id)
+        .first()
+    )
+    existing_valid_until = (
+        _aware_utc(getattr(existing_verification, "valid_until", None))
+        if existing_verification is not None
+        else None
+    )
+    if (
+        existing_verification is not None
+        and _safe_str(existing_verification.status, "active").lower() == "active"
+        and existing_verification.withdrawn_at is None
+        and (existing_valid_until is None or existing_valid_until >= now)
+        and not _member_witness_can_renew(existing_valid_until, now=now)
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This verifier already has a current witness confirmation for this member. "
+                "Renew it when the current witness window is due or expired."
+            ),
+        )
+    existing = (
+        db.query(CommunityMemberVerificationRequest)
+        .filter(CommunityMemberVerificationRequest.clan_id == int(clan.id))
+        .filter(CommunityMemberVerificationRequest.subject_user_id == subject_user_id)
+        .filter(CommunityMemberVerificationRequest.verifier_user_id == verifier_user_id)
+        .filter(CommunityMemberVerificationRequest.status == "pending")
+        .order_by(
+            CommunityMemberVerificationRequest.created_at.desc(),
+            CommunityMemberVerificationRequest.id.desc(),
+        )
+        .first()
+    )
+    if existing is not None and _aware_utc(existing.expires_at) and _aware_utc(existing.expires_at) < now:
+        existing.status = "expired"
+        existing.updated_at = now
+        db.flush()
+        existing = None
+
+    reserved_this_year = _member_witness_reserved_count(
+        db,
+        clan_id=int(clan.id),
+        verifier_user_id=verifier_user_id,
+        year=int(now.year),
+        now=now,
+        exclude_subject_user_id=subject_user_id
+        if existing_verification is not None or existing is not None
+        else None,
+    )
+    if reserved_this_year >= _member_witness_yearly_limit(verifier_role):
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This verifier has reached the current yearly member-witness limit. "
+                "Ask another active community member with witness standing to stand for this person."
+            ),
+        )
+
+    if existing is not None:
+        return {
+            "ok": True,
+            "message": "A pending witness request already exists for this verifier.",
+            "request": _member_verification_request_payload(
+                db,
+                existing,
+                include_one_time_code=True,
+            ),
+        }
+
+    row = CommunityMemberVerificationRequest(
+        clan_id=int(clan.id),
+        subject_user_id=subject_user_id,
+        verifier_user_id=verifier_user_id,
+        requested_by_user_id=subject_user_id,
+        public_token=_member_witness_approval_token(),
+        one_time_code=_member_witness_one_time_code(),
+        status="pending",
+        claim_label=_safe_str(payload.claim_label)[:160] or None,
+        request_note=_safe_str(payload.request_note)[:500] or None,
+        expires_at=now + timedelta(hours=72),
+    )
+    db.add(row)
+    db.flush()
+    log_trust_event(
+        db,
+        event_type=TrustEventType.COMMUNITY_MEMBER_VERIFICATION_REQUESTED,
+        clan_id=int(clan.id),
+        actor_user_id=subject_user_id,
+        subject_user_id=subject_user_id,
+        meta={
+            "reason": "community_member_witness_requested",
+            "request_id": int(row.id),
+            "verifier_user_id": verifier_user_id,
+            "claim_label": row.claim_label,
+            "expires_at": _aware_utc(row.expires_at).isoformat() if row.expires_at else None,
+        },
+        dedupe_key=f"community-member-verification-requested-{int(row.id)}",
+        commit=False,
+        refresh=False,
+    )
+    try:
+        db.commit()
+        db.refresh(row)
+    except IntegrityError as exc:
+        db.rollback()
+        existing_after_race = (
+            db.query(CommunityMemberVerificationRequest)
+            .filter(CommunityMemberVerificationRequest.clan_id == int(clan.id))
+            .filter(CommunityMemberVerificationRequest.subject_user_id == subject_user_id)
+            .filter(CommunityMemberVerificationRequest.verifier_user_id == verifier_user_id)
+            .filter(CommunityMemberVerificationRequest.status == "pending")
+            .order_by(
+                CommunityMemberVerificationRequest.created_at.desc(),
+                CommunityMemberVerificationRequest.id.desc(),
+            )
+            .first()
+        )
+        if existing_after_race is not None:
+            return {
+                "ok": True,
+                "message": "A pending witness request already exists for this verifier.",
+                "request": _member_verification_request_payload(
+                    db,
+                    existing_after_race,
+                    include_one_time_code=True,
+                ),
+            }
+        raise HTTPException(
+            status_code=409,
+            detail="GSN could not reserve this witness request. Try again.",
+        ) from exc
+    return {
+        "ok": True,
+        "message": "Member witness request created. Share the approval link or one-time code with the verifier.",
+        "request": _member_verification_request_payload(
+            db,
+            row,
+            include_one_time_code=True,
+        ),
+    }
+
+
+@router.get("/{clan_id}/member-verification-requests/{public_token}", response_model=dict[str, Any])
+def get_member_verification_request(
+    clan_id: int,
+    public_token: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, membership, _current_user = clan_ctx
+    if (
+        membership is None
+        or getattr(membership, "left_at", None) is not None
+        or not _is_activation_ready_user(db, int(current_user.id))
+    ):
+        raise HTTPException(status_code=403, detail="Only active community members can view this request")
+    _require_member_witness_active_community(clan)
+    row = (
+        db.query(CommunityMemberVerificationRequest)
+        .filter(CommunityMemberVerificationRequest.clan_id == int(clan.id))
+        .filter(CommunityMemberVerificationRequest.public_token == _safe_str(public_token))
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Member witness request not found")
+
+    is_admin = _safe_str(getattr(membership, "role", None)).lower() == "admin"
+    if int(current_user.id) not in {int(row.subject_user_id), int(row.verifier_user_id)} and not is_admin:
+        raise HTTPException(status_code=403, detail="Only the subject, verifier, or community admin can view this request")
+
+    now = datetime.now(timezone.utc)
+    if _safe_str(row.status).lower() == "pending" and _aware_utc(row.expires_at) and _aware_utc(row.expires_at) < now:
+        row.status = "expired"
+        row.updated_at = now
+        db.commit()
+        db.refresh(row)
+
+    return {
+        "ok": True,
+        "request": _member_verification_request_payload(
+            db,
+            row,
+            include_one_time_code=int(current_user.id)
+            in {int(row.subject_user_id), int(row.requested_by_user_id)},
+        ),
+    }
+
+
+@router.post("/{clan_id}/member-verification-requests/{public_token}/decision", response_model=dict[str, Any])
+def decide_member_verification_request(
+    clan_id: int,
+    public_token: str,
+    payload: CommunityMemberVerificationRequestDecisionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, verifier_membership, _current_user = clan_ctx
+    _require_member_witness_active_community(clan)
+    row = (
+        db.query(CommunityMemberVerificationRequest)
+        .filter(CommunityMemberVerificationRequest.clan_id == int(clan.id))
+        .filter(CommunityMemberVerificationRequest.public_token == _safe_str(public_token))
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Member witness request not found")
+    if int(row.verifier_user_id) != int(current_user.id):
+        raise HTTPException(status_code=403, detail="Only the assigned verifier can decide this request")
+    if (
+        verifier_membership is None
+        or getattr(verifier_membership, "left_at", None) is not None
+        or not _is_activation_ready_user(db, int(current_user.id))
+    ):
+        raise HTTPException(status_code=403, detail="Only active community members can verify another member")
+    if not _is_activation_ready_user(db, int(row.subject_user_id)):
+        raise HTTPException(status_code=404, detail="Subject is not an active member of this community")
+
+    now = datetime.now(timezone.utc)
+    if _safe_str(row.status).lower() != "pending":
+        return {
+            "ok": True,
+            "message": f"This witness request is already {row.status}.",
+            "request": _member_verification_request_payload(db, row),
+            "verification_summary": _member_verification_summary(
+                db,
+                clan_id=int(clan.id),
+                subject_user_id=int(row.subject_user_id),
+            ),
+        }
+    if _aware_utc(row.expires_at) and _aware_utc(row.expires_at) < now:
+        row.status = "expired"
+        row.updated_at = now
+        db.commit()
+        db.refresh(row)
+        raise HTTPException(status_code=410, detail="This member witness request has expired")
+
+    provided_code = _safe_str(payload.one_time_code)
+    if provided_code != _safe_str(row.one_time_code):
+        raise HTTPException(status_code=400, detail="The one-time witness code is incorrect")
+
+    decision = _safe_str(payload.decision).lower()
+    response_note = _safe_str(payload.response_note)[:500] or None
+    if decision not in {"approve", "approved", "decline", "declined", "reject", "rejected"}:
+        raise HTTPException(status_code=400, detail="Decision must be approve or decline")
+
+    if decision in {"decline", "declined", "reject", "rejected"}:
+        row.status = "declined"
+        row.response_note = response_note
+        row.decided_at = now
+        row.updated_at = now
+        log_trust_event(
+            db,
+            event_type=TrustEventType.COMMUNITY_MEMBER_VERIFICATION_DECLINED,
+            clan_id=int(clan.id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(row.subject_user_id),
+            meta={
+                "reason": "community_member_witness_declined",
+                "request_id": int(row.id),
+                "response_note_present": bool(response_note),
+            },
+            dedupe_key=f"community-member-verification-declined-{int(row.id)}",
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+        db.refresh(row)
+        return {
+            "ok": True,
+            "message": "Member witness request declined.",
+            "request": _member_verification_request_payload(db, row),
+            "verification_summary": _member_verification_summary(
+                db,
+                clan_id=int(clan.id),
+                subject_user_id=int(row.subject_user_id),
+            ),
+        }
+
+    verification, message = _record_member_verification_for_verifier(
+        db,
+        clan=clan,
+        subject_user_id=int(row.subject_user_id),
+        verifier_user_id=int(current_user.id),
+        verifier_membership=verifier_membership,
+        claim_label=row.claim_label,
+        verification_note=response_note or row.request_note,
+        source="member_witness_request",
+    )
+    row.status = "approved"
+    row.response_note = response_note
+    row.decided_at = now
+    row.updated_at = now
+    row.resulting_verification_id = int(verification.id)
+    log_trust_event(
+        db,
+        event_type=TrustEventType.COMMUNITY_MEMBER_VERIFICATION_APPROVED,
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(row.subject_user_id),
+        meta={
+            "reason": "community_member_witness_request_approved",
+            "request_id": int(row.id),
+            "verification_id": int(verification.id),
+            "response_note_present": bool(response_note),
+        },
+        dedupe_key=f"community-member-verification-approved-{int(row.id)}",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(row)
+    db.refresh(verification)
+    return {
+        "ok": True,
+        "message": message,
+        "request": _member_verification_request_payload(db, row),
+        "verification": _member_verification_payload(
+            db,
+            verification,
+            include_private_fields=True,
+        ),
+        "verification_summary": _member_verification_summary(
+            db,
+            clan_id=int(clan.id),
+            subject_user_id=int(row.subject_user_id),
+        ),
+    }
+
+
+@router.post("/{clan_id}/member-verifications", response_model=dict[str, Any])
+def record_member_verification(
+    clan_id: int,
+    payload: CommunityMemberVerificationIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, verifier_membership, _current_user = clan_ctx
+    if (
+        verifier_membership is None
+        or getattr(verifier_membership, "left_at", None) is not None
+        or not _is_activation_ready_user(db, int(current_user.id))
+    ):
+        raise HTTPException(status_code=403, detail="Only active community members can verify another member")
+
+    subject_user_id = int(payload.subject_user_id)
+    row, message = _record_member_verification_for_verifier(
+        db,
+        clan=clan,
+        subject_user_id=subject_user_id,
+        verifier_user_id=int(current_user.id),
+        verifier_membership=verifier_membership,
+        claim_label=payload.claim_label,
+        verification_note=payload.verification_note,
+        source="member_witness",
+    )
+    db.commit()
+    db.refresh(row)
+
+    return {
+        "ok": True,
+        "message": message,
+        "verification": _member_verification_payload(
+            db,
+            row,
+            include_private_fields=True,
+        ),
+        "verification_summary": _member_verification_summary(
+            db,
+            clan_id=int(clan.id),
+            subject_user_id=subject_user_id,
+        ),
+    }
+
+
+@router.post("/{clan_id}/member-verifications/{verification_id}/withdraw", response_model=dict[str, Any])
+def withdraw_member_verification(
+    clan_id: int,
+    verification_id: int,
+    payload: CommunityMemberVerificationWithdrawIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, membership, _current_user = clan_ctx
+    if (
+        membership is None
+        or getattr(membership, "left_at", None) is not None
+        or not _is_activation_ready_user(db, int(current_user.id))
+    ):
+        raise HTTPException(status_code=403, detail="Only active community members can withdraw verification")
+
+    row = db.get(CommunityMemberVerification, int(verification_id))
+    if row is None or int(row.clan_id) != int(clan.id):
+        raise HTTPException(status_code=404, detail="Member verification not found")
+
+    is_admin = _safe_str(getattr(membership, "role", None)).lower() == "admin"
+    if int(row.verifier_user_id) != int(current_user.id) and not is_admin:
+        raise HTTPException(status_code=403, detail="Only the verifier or a community admin can withdraw this record")
+
+    if _safe_str(row.status).lower() != "withdrawn":
+        now = datetime.now(timezone.utc)
+        row.status = "withdrawn"
+        row.withdrawn_at = now
+        row.updated_at = now
+        row.withdrawal_reason = _safe_str(payload.reason)[:500] or "Verifier withdrew support."
+        log_trust_event(
+            db,
+            event_type=TrustEventType.COMMUNITY_MEMBER_VERIFICATION_WITHDRAWN,
+            clan_id=int(clan.id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(row.subject_user_id),
+            meta={
+                "reason": "community_member_witness_withdrawn",
+                "verification_id": int(row.id),
+                "withdrawal_reason": row.withdrawal_reason,
+            },
+            dedupe_key=f"community-member-verification-withdrawn-{int(row.id)}",
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+        db.refresh(row)
+
+    return {
+        "ok": True,
+        "message": "Member witness confirmation withdrawn.",
+        "verification": _member_verification_payload(
+            db,
+            row,
+            include_private_fields=True,
+        ),
+        "verification_summary": _member_verification_summary(
+            db,
+            clan_id=int(clan.id),
+            subject_user_id=int(row.subject_user_id),
+        ),
+    }
+
+
+@router.get("/{clan_id}/domain-affiliations", response_model=dict[str, Any])
+def list_domain_affiliations(
+    clan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, _membership, _current_user = _require_active_domain_admin(
+        db,
+        clan_ctx,
+        action_label="domain affiliation listing",
+    )
+
+    incoming = (
+        db.query(CommunityDomainAffiliation)
+        .filter(CommunityDomainAffiliation.parent_clan_id == int(clan.id))
+        .order_by(CommunityDomainAffiliation.created_at.desc(), CommunityDomainAffiliation.id.desc())
+        .all()
+    )
+    outgoing = (
+        db.query(CommunityDomainAffiliation)
+        .filter(CommunityDomainAffiliation.affiliate_clan_id == int(clan.id))
+        .order_by(CommunityDomainAffiliation.created_at.desc(), CommunityDomainAffiliation.id.desc())
+        .all()
+    )
+
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "incoming": [_community_affiliation_payload(row) for row in incoming],
+        "outgoing": [_community_affiliation_payload(row) for row in outgoing],
+    }
+
+
+@router.post("/{affiliate_clan_id}/domain-affiliation-requests", response_model=dict[str, Any])
+def request_domain_affiliation(
+    affiliate_clan_id: int,
+    payload: CommunityAffiliationRequestIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(affiliate_clan_id),
+        current_user=current_user,
+    )
+    affiliate, _membership, _current_user = _require_active_domain_admin(
+        db,
+        clan_ctx,
+        action_label="domain affiliation request",
+    )
+
+    parent = _clan_from_community_key(db, payload.parent_community_key)
+    if parent is None or _is_default_clan_name(getattr(parent, "name", None)):
+        raise HTTPException(status_code=404, detail="Parent community domain not found")
+    if not _community_domain_is_active(parent):
+        raise HTTPException(status_code=403, detail="Parent community domain is not active")
+    if int(parent.id) == int(affiliate.id):
+        raise HTTPException(status_code=400, detail="A community cannot affiliate under itself")
+
+    existing = (
+        db.query(CommunityDomainAffiliation)
+        .filter(CommunityDomainAffiliation.parent_clan_id == int(parent.id))
+        .filter(CommunityDomainAffiliation.affiliate_clan_id == int(affiliate.id))
+        .first()
+    )
+    now = datetime.now(timezone.utc)
+    note = _safe_str(payload.request_note)[:500] or None
+
+    if existing is None:
+        row = CommunityDomainAffiliation(
+            parent_clan_id=int(parent.id),
+            affiliate_clan_id=int(affiliate.id),
+            requested_by_user_id=int(current_user.id),
+            status="pending",
+            request_note=note,
+        )
+        db.add(row)
+    else:
+        row = existing
+        if _safe_str(row.status).lower() == "approved":
+            return {
+                "ok": True,
+                "message": "This group is already an acknowledged affiliate under the parent domain.",
+                "affiliation": _community_affiliation_payload(row),
+            }
+        row.status = "pending"
+        row.request_note = note
+        row.requested_by_user_id = int(current_user.id)
+        row.decided_by_user_id = None
+        row.decision_note = None
+        row.decided_at = None
+        row.updated_at = now
+
+    db.commit()
+    db.refresh(row)
+    return {
+        "ok": True,
+        "message": "Affiliation request sent to the parent community domain.",
+        "affiliation": _community_affiliation_payload(row),
+    }
+
+
+@router.post("/{parent_clan_id}/domain-affiliation-requests/{affiliation_id}/decision", response_model=dict[str, Any])
+def decide_domain_affiliation(
+    parent_clan_id: int,
+    affiliation_id: int,
+    payload: CommunityAffiliationDecisionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(parent_clan_id),
+        current_user=current_user,
+    )
+    parent, _membership, _current_user = _require_active_domain_admin(
+        db,
+        clan_ctx,
+        action_label="domain affiliation decision",
+    )
+
+    row = db.get(CommunityDomainAffiliation, int(affiliation_id))
+    if row is None or int(row.parent_clan_id) != int(parent.id):
+        raise HTTPException(status_code=404, detail="Affiliation request not found")
+
+    decision = _safe_str(payload.decision).lower().replace("-", "_")
+    if decision in {"approve", "approved"}:
+        status = "approved"
+        affiliate = db.get(Clan, int(row.affiliate_clan_id))
+        if affiliate is None or not _community_domain_is_active(affiliate):
+            raise HTTPException(status_code=403, detail="Affiliate community domain is not active")
+    elif decision in {"reject", "rejected", "decline", "declined"}:
+        status = "rejected"
+    elif decision in {"revoke", "revoked", "suspend", "suspended"}:
+        status = "revoked"
+    else:
+        raise HTTPException(status_code=400, detail="Decision must be approve, reject, or revoke")
+
+    now = datetime.now(timezone.utc)
+    row.status = status
+    row.decided_by_user_id = int(current_user.id)
+    row.decision_note = _safe_str(payload.decision_note)[:500] or None
+    row.decided_at = now
+    row.updated_at = now
+    db.commit()
+    db.refresh(row)
+
+    return {
+        "ok": True,
+        "message": f"Affiliation {status}.",
+        "affiliation": _community_affiliation_payload(row),
+    }
+
+
+@router.get("/{clan_id}/external-registration-records", response_model=dict[str, Any])
+def list_external_registration_evidence(
+    clan_id: int,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
+    if not _is_activation_ready_user(db, int(current_user.id)):
+        raise HTTPException(status_code=403, detail="Only activated community admins can list external registration evidence")
+    safe_limit = max(1, min(int(limit or 20), 100))
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.clan_id == int(clan.id))
+        .filter(TrustEvent.event_type == TrustEventType.COMMUNITY_EXTERNAL_REGISTRATION_RECORDED)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(safe_limit)
+        .all()
+    )
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "items": [_external_registration_record_payload(row) for row in rows],
+        "boundary": (
+            "External registration records are supporting evidence only. "
+            "They do not verify the community, prove current leadership, or prove member belonging."
+        ),
+    }
+
+
+@router.post("/{clan_id}/external-registration-records", response_model=dict[str, Any])
+def record_external_registration_evidence(
+    clan_id: int,
+    payload: CommunityExternalRegistrationRecordIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    clan_ctx = _resolve_target_clan_membership(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    clan, _membership, _current_user = _require_active_domain_admin(
+        db,
+        clan_ctx,
+        action_label="external registration evidence record",
+    )
+
+    registration_type = _safe_str(payload.registration_type, "CAC")[:40] or "CAC"
+    registration_reference = _safe_str(payload.registration_reference)[:120] or None
+    registered_name = _safe_str(payload.registered_name)[:180] or None
+    issuing_body = _safe_str(payload.issuing_body)[:120] or None
+    note = _safe_str(payload.note)[:500] or None
+
+    if not any([registration_reference, registered_name, issuing_body, note]):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Record at least one external registration detail. "
+                "This records supporting evidence only; it does not verify the community."
+            ),
+        )
+
+    evidence_fingerprint = _external_registration_fingerprint(
+        registration_type=registration_type,
+        registration_reference=registration_reference,
+        registered_name=registered_name,
+        issuing_body=issuing_body,
+    )
+    has_structured_registration_detail = any(
+        [registration_reference, registered_name, issuing_body]
+    )
+    dedupe_key = (
+        f"external-registration:{int(clan.id)}:{evidence_fingerprint}"
+        if evidence_fingerprint and has_structured_registration_detail
+        else None
+    )
+
+    meta = {
+        "reason": "community_external_registration_recorded",
+        "registration_type": registration_type,
+        "registration_reference_present": bool(registration_reference),
+        "registered_name_present": bool(registered_name),
+        "issuing_body": issuing_body,
+        "note_present": bool(note),
+        "evidence_fingerprint": evidence_fingerprint,
+        "raw_reference_stored": False,
+        "record_detail_storage": "fingerprint_and_presence_only",
+        "record_purpose": "supporting_domain_claim_evidence",
+        "status": "recorded",
+        "verification_effect": "none",
+        "public_exposure": "private_admin_record_only",
+        "boundary": (
+            "Recorded supporting evidence only. Not GSN verification, current leadership evidence, "
+            "community consent, shop ownership, or member belonging."
+        ),
+    }
+
+    event = log_trust_event(
+        db,
+        event_type=TrustEventType.COMMUNITY_EXTERNAL_REGISTRATION_RECORDED,
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta=meta,
+        dedupe_key=dedupe_key,
+        commit=True,
+        refresh=True,
+    )
+
+    return {
+        "ok": True,
+        "message": (
+            "External registration evidence recorded. "
+            "This is not GSN verification and is not public Community ID evidence."
+        ),
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "record": _external_registration_record_payload(event),
+    }
+
 
 @router.get("/{clan_id}/invite/settings", response_model=dict[str, Any])
 def get_invite_settings(

@@ -65,6 +65,24 @@
     the request package was not repeated because the dev-server restart path
     began hanging and the in-app browser surface was unavailable in this
     session (`iab` unavailable).
+- Post-push CI correction:
+  - first push `0393122` failed GitHub `Backend Tests` because it included
+    `tests/test_database_metadata.py` without the still-uncommitted member
+    witness model/migration/route files that register
+    `community_member_verification_requests`.
+  - staged the missing member-witness implementation set:
+    - `frontend/src/App.tsx`;
+    - `frontend/src/lib/api.ts`;
+    - `frontend/src/pages/CommunityMemberVerifyPage.tsx`;
+    - `gmfn_backend/app/api/routes/clans.py`;
+    - `gmfn_backend/app/db/models.py`;
+    - `gmfn_backend/alembic/versions/20260618_add_community_member_verifications.py`;
+    - `gmfn_backend/alembic/versions/20260619_add_community_member_verification_requests.py`;
+    - `gmfn_backend/alembic/versions/20260619_add_member_witness_pending_pair_guard.py`;
+    - `gmfn_backend/tests/test_community_member_verifications.py`.
+  - local full `pytest tests` reached the suite but Windows denied access to
+    pytest's temp cleanup directory; targeted member-witness and metadata tests
+    passed after staging the missing files.
 
 ## 2026-06-19 - Member Witness Request UI Proof Against Disposable Backend
 

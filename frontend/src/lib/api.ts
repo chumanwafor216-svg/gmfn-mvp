@@ -2102,6 +2102,18 @@ export async function getPublicCommunityVerification(
   );
 }
 
+export async function getPublicCommunityMemberVerification(
+  communityKey: string | number,
+  memberKey: string | number
+): Promise<any> {
+  return httpJson(
+    `/verify/community/${encodeURIComponent(String(communityKey))}/member/${encodeURIComponent(
+      String(memberKey)
+    )}`,
+    "GET"
+  );
+}
+
 export async function requestPublicCommunityVerificationConfirmation(
   communityKey: string | number,
   payload: {
@@ -2114,6 +2126,206 @@ export async function requestPublicCommunityVerificationConfirmation(
     {
       requester_external_label: payload.requester_external_label || undefined,
     }
+  );
+}
+
+export async function getCommunityDomainAffiliations(
+  communityId: number | string
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/domain-affiliations`,
+    "GET",
+    undefined,
+    { header_clan_id: Number(communityId) || undefined }
+  );
+}
+
+export async function requestCommunityDomainAffiliation(
+  affiliateCommunityId: number | string,
+  payload: {
+    parent_community_key: string;
+    request_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(affiliateCommunityId))}/domain-affiliation-requests`,
+    "POST",
+    {
+      parent_community_key: payload.parent_community_key,
+      request_note: payload.request_note || undefined,
+    },
+    { header_clan_id: Number(affiliateCommunityId) || undefined }
+  );
+}
+
+export async function decideCommunityDomainAffiliation(
+  parentCommunityId: number | string,
+  affiliationId: number | string,
+  payload: {
+    decision: "approve" | "reject" | "revoke";
+    decision_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(
+      String(parentCommunityId)
+    )}/domain-affiliation-requests/${encodeURIComponent(String(affiliationId))}/decision`,
+    "POST",
+    {
+      decision: payload.decision,
+      decision_note: payload.decision_note || undefined,
+    },
+    { header_clan_id: Number(parentCommunityId) || undefined }
+  );
+}
+
+export type CommunityExternalRegistrationEvidencePayload = {
+  registration_type?: string | null;
+  registration_reference?: string | null;
+  registered_name?: string | null;
+  issuing_body?: string | null;
+  note?: string | null;
+};
+
+export async function listCommunityExternalRegistrationEvidence(
+  communityId: number | string,
+  limit?: number
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/external-registration-records${buildQuery({
+      limit: limit || undefined,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: Number(communityId) || undefined }
+  );
+}
+
+export async function recordCommunityExternalRegistrationEvidence(
+  communityId: number | string,
+  payload: CommunityExternalRegistrationEvidencePayload
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/external-registration-records`,
+    "POST",
+    {
+      registration_type: payload.registration_type || undefined,
+      registration_reference: payload.registration_reference || undefined,
+      registered_name: payload.registered_name || undefined,
+      issuing_body: payload.issuing_body || undefined,
+      note: payload.note || undefined,
+    },
+    { header_clan_id: Number(communityId) || undefined }
+  );
+}
+
+export async function getCommunityMemberVerificationSummary(
+  communityId: number | string,
+  subjectUserId: number | string
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/member-verifications/summary${buildQuery({
+      subject_user_id: subjectUserId,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: Number(communityId) || undefined }
+  );
+}
+
+export async function recordCommunityMemberVerification(
+  communityId: number | string,
+  payload: {
+    subject_user_id: number | string;
+    claim_label?: string | null;
+    verification_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/member-verifications`,
+    "POST",
+    {
+      subject_user_id: Number(payload.subject_user_id),
+      claim_label: payload.claim_label || undefined,
+      verification_note: payload.verification_note || undefined,
+    },
+    { header_clan_id: Number(communityId) || undefined }
+  );
+}
+
+export async function withdrawCommunityMemberVerification(
+  communityId: number | string,
+  verificationId: number | string,
+  payload: {
+    reason?: string | null;
+  } = {}
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(
+      String(communityId)
+    )}/member-verifications/${encodeURIComponent(String(verificationId))}/withdraw`,
+    "POST",
+    {
+      reason: payload.reason || undefined,
+    },
+    { header_clan_id: Number(communityId) || undefined }
+  );
+}
+
+export async function createCommunityMemberVerificationRequest(
+  communityId: number | string,
+  payload: {
+    verifier_user_id: number | string;
+    claim_label?: string | null;
+    request_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/member-verification-requests`,
+    "POST",
+    {
+      verifier_user_id: Number(payload.verifier_user_id),
+      claim_label: payload.claim_label || undefined,
+      request_note: payload.request_note || undefined,
+    },
+    { header_clan_id: Number(communityId) || undefined }
+  );
+}
+
+export async function getCommunityMemberVerificationRequest(
+  communityId: number | string,
+  publicToken: string
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(
+      String(communityId)
+    )}/member-verification-requests/${encodeURIComponent(String(publicToken))}`,
+    "GET",
+    undefined,
+    { header_clan_id: Number(communityId) || undefined }
+  );
+}
+
+export async function decideCommunityMemberVerificationRequest(
+  communityId: number | string,
+  publicToken: string,
+  payload: {
+    decision: "approve" | "decline" | string;
+    one_time_code?: string | null;
+    response_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(
+      String(communityId)
+    )}/member-verification-requests/${encodeURIComponent(String(publicToken))}/decision`,
+    "POST",
+    {
+      decision: payload.decision,
+      one_time_code: payload.one_time_code || undefined,
+      response_note: payload.response_note || undefined,
+    },
+    { header_clan_id: Number(communityId) || undefined }
   );
 }
 

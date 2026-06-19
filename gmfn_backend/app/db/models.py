@@ -191,6 +191,255 @@ class ClanMembership(Base):
     )
 
 
+class CommunityDomainAffiliation(Base):
+    __tablename__ = "community_domain_affiliations"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "parent_clan_id",
+            "affiliate_clan_id",
+            name="uq_community_domain_affiliation_parent_affiliate",
+        ),
+        Index("ix_community_domain_affiliations_parent_status", "parent_clan_id", "status"),
+        Index("ix_community_domain_affiliations_affiliate_status", "affiliate_clan_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    parent_clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    affiliate_clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    requested_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    decided_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        default="pending",
+        server_default="pending",
+        nullable=False,
+        index=True,
+    )
+    request_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    decided_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    parent = relationship("Clan", foreign_keys=[parent_clan_id])
+    affiliate = relationship("Clan", foreign_keys=[affiliate_clan_id])
+    requester = relationship("User", foreign_keys=[requested_by_user_id])
+    decider = relationship("User", foreign_keys=[decided_by_user_id])
+
+
+class CommunityMemberVerification(Base):
+    __tablename__ = "community_member_verifications"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "clan_id",
+            "subject_user_id",
+            "verifier_user_id",
+            name="uq_community_member_verification_once",
+        ),
+        Index(
+            "ix_community_member_verifications_subject_status",
+            "clan_id",
+            "subject_user_id",
+            "status",
+        ),
+        Index(
+            "ix_community_member_verifications_verifier_year",
+            "clan_id",
+            "verifier_user_id",
+            "verification_year",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    subject_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    verifier_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    verification_year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    verification_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    claim_label: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    source: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="member_witness",
+        server_default="member_witness",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    valid_until: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    withdrawn_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    withdrawal_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    clan = relationship("Clan", foreign_keys=[clan_id])
+    subject = relationship("User", foreign_keys=[subject_user_id])
+    verifier = relationship("User", foreign_keys=[verifier_user_id])
+
+
+class CommunityMemberVerificationRequest(Base):
+    __tablename__ = "community_member_verification_requests"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "public_token",
+            name="uq_community_member_verification_request_token",
+        ),
+        Index(
+            "ix_community_member_verification_requests_subject_status",
+            "clan_id",
+            "subject_user_id",
+            "status",
+        ),
+        Index(
+            "uq_community_member_verification_requests_pending_pair",
+            "clan_id",
+            "subject_user_id",
+            "verifier_user_id",
+            unique=True,
+            sqlite_where=text("status = 'pending'"),
+            postgresql_where=text("status = 'pending'"),
+        ),
+        Index(
+            "ix_community_member_verification_requests_verifier_status",
+            "clan_id",
+            "verifier_user_id",
+            "status",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    subject_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    verifier_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    requested_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    resulting_verification_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_member_verifications.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    public_token: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    one_time_code: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+        index=True,
+    )
+    claim_label: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    request_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    response_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    decided_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    clan = relationship("Clan", foreign_keys=[clan_id])
+    subject = relationship("User", foreign_keys=[subject_user_id])
+    verifier = relationship("User", foreign_keys=[verifier_user_id])
+    requester = relationship("User", foreign_keys=[requested_by_user_id])
+    resulting_verification = relationship(
+        "CommunityMemberVerification",
+        foreign_keys=[resulting_verification_id],
+    )
+
+
 class Loan(Base):
     __tablename__ = "loans"
 
