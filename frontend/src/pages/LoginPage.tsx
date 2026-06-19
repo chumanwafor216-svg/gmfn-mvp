@@ -1000,16 +1000,6 @@ export default function LoginPage() {
               <div>
                 <div
                   style={{
-                    ...labelText(),
-                    color: "rgba(248,251,255,0.92)",
-                    letterSpacing: 0.2,
-                  }}
-                >
-                  Phone number, email, or GSN ID
-                </div>
-                <div
-                  style={{
-                    marginTop: 9,
                     display: "grid",
                     gridTemplateColumns: "42px minmax(0, 1fr)",
                     alignItems: "center",
@@ -1031,6 +1021,7 @@ export default function LoginPage() {
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    aria-label="Phone number, email, or GSN ID"
                     placeholder="Enter phone, email, or GSN ID"
                     autoComplete="username"
                     style={{
@@ -1048,16 +1039,6 @@ export default function LoginPage() {
               <div>
                 <div
                   style={{
-                    ...labelText(),
-                    color: "rgba(248,251,255,0.92)",
-                    letterSpacing: 0.2,
-                  }}
-                >
-                  Password
-                </div>
-                <div
-                  style={{
-                    marginTop: 9,
                     display: "grid",
                     gridTemplateColumns: "42px minmax(0, 1fr)",
                     alignItems: "center",
@@ -1080,6 +1061,7 @@ export default function LoginPage() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    aria-label="Password"
                     placeholder="Enter your password"
                     autoComplete="current-password"
                     style={{
@@ -1128,70 +1110,6 @@ export default function LoginPage() {
             </div>
             </div>
           </form>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact ? "52px minmax(0, 1fr)" : "64px minmax(0, 1fr)",
-              gap: 16,
-              alignItems: "center",
-              borderRadius: 24,
-              border: "1px solid rgba(220,231,243,0.16)",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
-              boxShadow:
-                "0 20px 36px rgba(0,8,18,0.18), inset 0 1px 0 rgba(255,255,255,0.09)",
-              padding: isCompact ? "15px 16px" : "18px 20px",
-              boxSizing: "border-box",
-              width: "100%",
-              maxWidth: "100%",
-              overflow: "hidden",
-            }}
-          >
-            <div
-              style={{
-                width: isCompact ? 50 : 58,
-                height: isCompact ? 50 : 58,
-                borderRadius: 999,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(8,25,43,0.58)",
-                border: "1px solid rgba(243,208,106,0.28)",
-                color: "#F3D06A",
-                fontSize: isCompact ? 12 : 13,
-                fontWeight: 1000,
-                letterSpacing: 0.6,
-              }}
-              aria-hidden="true"
-            >
-              SEC
-            </div>
-            <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: isCompact ? 16 : 19,
-                  fontWeight: 1000,
-                  lineHeight: 1.22,
-                  color: "#F8FBFF",
-                  overflowWrap: "normal",
-                  wordBreak: "normal",
-                }}
-              >
-                Your identity stays protected.
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 800,
-                  color: "rgba(226,232,240,0.70)",
-                  lineHeight: 1.45,
-                }}
-              >
-                Secure sign-in / Trusted access
-              </div>
-            </div>
-          </div>
 
           <GsnInstallPrompt
             tone="dark"
