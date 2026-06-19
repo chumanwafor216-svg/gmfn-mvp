@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 14;
-const expectedRenderedActions = 22;
+const expectedSourceActions = 17;
+const expectedRenderedActions = 25;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -102,10 +102,14 @@ for (const action of actions) {
 
 const expectedOrder = [
   "trust-score.lane.${lane.key}",
+  "trust-score.identity-evidence-meter.toggle",
   "trust-score.complete-identification",
   "trust-score.open-public-community-record",
   "debugId={item.debugId}",
   "trust-score.repair-next-step",
+  "trust-score.community-lane.open-public-community-record",
+  "trust-score.community-lane.open-member-credential",
+  "trust-score.community-lane.ask-for-witness",
   "debugId={item.debugId}",
   "trust-score.refresh",
   "trust-score.copy-snapshot",

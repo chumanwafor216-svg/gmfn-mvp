@@ -1,3 +1,7987 @@
+## 2026-06-19 - Member Witness Finish-Up, Guidance Guard, And Phone Lane Recovery
+
+- Trigger:
+  - finished the member-witness request lane after the browser proof exposed
+    non-blocking admin-only guidance errors.
+  - recovered the local phone-facing frontend after the phone could no longer
+    reach the app.
+- Changed:
+  - `frontend/src/lib/guidance.ts`
+    - `buildGuidanceSnapshot()` now resolves `getMe()`, `getCurrentClan()`,
+      and settings first.
+    - the shared guidance layer now calls `/admin/trust-events/recent` only
+      when the viewer appears to have platform-admin access (`role`,
+      `account_role`, `user_role`, or `permissions` includes `admin`).
+    - ordinary members receive an empty trust-events input for guidance instead
+      of making a forbidden admin request.
+  - `gmfn_backend/app/db/engine.py`
+    - remains on canonical `app.db.base.Base`, fixing fresh dev schema metadata
+      for core clan/member verification tables.
+  - `gmfn_backend/tests/test_database_metadata.py`
+    - remains the regression guard for the unified metadata path.
+- Phone/local recovery:
+  - backend health on `http://127.0.0.1:8012/health` returned
+    `{"ok":true,"dev_mode":true}`.
+  - the frontend that was reachable on laptop was bound to
+    `127.0.0.1:5301`, which a phone cannot reach.
+  - stopped that local-only Vite listener and restarted Vite with
+    `--host 0.0.0.0 --port 5301`.
+  - verified:
+    - `http://127.0.0.1:5301/` returned `200`;
+    - `http://192.168.1.13:5301/` returned `200`;
+    - `http://127.0.0.1:5301/health` returned backend health through the Vite
+      proxy.
+  - current phone URL is `http://192.168.1.13:5301/`.
+- Verification:
+  - frontend:
+    - `npm exec -- eslint src/lib/guidance.ts src/pages/CommunityConfirmationPolicyPage.tsx`
+      passed.
+    - `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`
+      passed.
+    - `npm --prefix frontend run audit:trust-passport-button-inventory`
+      passed.
+    - `npm --prefix frontend run audit:trust-actions` passed.
+    - `npm run build` from `frontend/` passed.
+    - HTTP probe to
+      `http://192.168.1.13:5301/app/community-confirmations/policy?community_id=1#member-witness`
+      returned `200`.
+    - `http://127.0.0.1:5301/health` returned backend health through the Vite
+      proxy.
+  - backend:
+    - `.venv\Scripts\python.exe -m pytest -q tests\test_database_metadata.py tests\test_community_member_verifications.py::test_member_witness_request_requires_verifier_with_current_standing tests\test_community_member_verifications.py::test_member_witness_request_decision_rechecks_verifier_current_standing tests\test_community_member_verifications.py::test_member_witness_surfaces_require_active_community`
+      passed (`4 passed`).
+  - whitespace:
+    - `git diff --check` passed for the touched frontend guidance/policy,
+      audit, backend metadata, and handoff files. Git only reported existing
+      LF-to-CRLF warnings.
+- Unabated truth:
+  - the phone-facing dev URL is reachable from this machine and should be
+    reachable from a phone on the same WiFi, but no physical-phone tap-through
+    has been observed by Codex after the recovery.
+  - `5173` is not the current working phone URL; Vite reported a stale
+    `Port 5173 is already in use` condition while HTTP probes to `5173` failed.
+  - the older disposable-browser proof below was done before the guidance
+    guard; targeted checks pass after the guard, but a full browser replay of
+    the request package was not repeated because the dev-server restart path
+    began hanging and the in-app browser surface was unavailable in this
+    session (`iab` unavailable).
+
+## 2026-06-19 - Member Witness Request UI Proof Against Disposable Backend
+
+- Trigger:
+  - continued from the fresh-schema backend proof.
+  - remaining gap was browser/UI proof without mutating the stale shared
+    `gmfn_backend/gmfn.db`.
+- Temporary proof setup:
+  - seeded disposable SQLite DB `gmfn_backend/runtime_browser_member_witness_20260619.db`
+    with:
+    - active community `1`;
+    - admin/verifier user `1`;
+    - ordinary member/requester user `2`.
+  - started temporary backend on `http://127.0.0.1:8023` with
+    `DATABASE_URL=sqlite:///./runtime_browser_member_witness_20260619.db`,
+    `GMFN_DEV_MODE=1`, and `GMFN_AUTO_CREATE_SCHEMA=1`.
+  - started temporary Vite frontend on `http://127.0.0.1:5302` with
+    `VITE_API_BASE_URL=http://127.0.0.1:8023`.
+  - used headless Microsoft Edge through Playwright after sandboxed launch hit
+    Windows `spawn EPERM`.
+  - used a real JWT for `browser-member@example.com`, not the dev fallback
+    admin token.
+- UI proof:
+  - opened
+    `/app/community-confirmations/policy?community_id=1#member-witness`.
+  - selected admin/verifier user `1` from the member witness picker.
+  - clicked `Ask for witness`.
+  - confirmed:
+    - page heading was `Ask a known member to stand for you`;
+    - `Request ready` appeared;
+    - `One-time code` appeared;
+    - `Share package` appeared;
+    - `Ask for witness` was enabled before the click;
+    - admin policy/domain/contact sections were not visible;
+    - screenshot saved at `C:\tmp\member-witness-request-package-ui.png`.
+- Cleanup:
+  - stopped the temporary backend/frontend servers.
+  - removed the generated disposable DB and smoke logs from the worktree.
+- Unabated truth:
+  - this is local headless Edge proof against a disposable backend, not a real
+    phone and not a pilot user/community.
+  - browser console showed two `403 Admin only` errors from
+    `/admin/trust-events/recent?limit=80&clan_id=1` for the non-admin member.
+    They did not block the witness request package, but the page still attempts
+    that admin-only read in member focus mode.
+  - the shared local `gmfn_backend/gmfn.db` is still stale and still not a valid
+    live proof target until migrated or replaced.
+
+## 2026-06-19 - Member Witness Request Runtime Proof On Fresh Schema
+
+- Trigger:
+  - continued after proving the shared local `gmfn.db` was stale and could not
+    support an honest runtime witness-request smoke.
+  - tried to run a disposable fresh-schema proof and found the dev schema
+    creation path was also split across two SQLAlchemy metadata bases.
+- Root cause found:
+  - core models such as `User`, `Clan`, `ClanMembership`,
+    `CommunityMemberVerification`, and `CommunityMemberVerificationRequest`
+    register on `app.db.base.Base`.
+  - `app.db.database.Base` came from `app.db.engine.Base`, a separate
+    `declarative_base()`.
+  - dev startup imports `Base` from `app.db.database`, so fresh dev schema
+    creation only saw database/engine-base model families such as bank and
+    identity tables, not core clan/member tables.
+- Changed:
+  - `gmfn_backend/app/db/engine.py`
+    - removes the separate `declarative_base()`.
+    - imports and re-exports the canonical `app.db.base.Base` instead.
+    - this keeps `app.db.database.Base`, bank/identity/revenue model imports,
+      core models, Alembic metadata, and dev startup schema creation on one
+      metadata object.
+  - `gmfn_backend/tests/test_database_metadata.py`
+    - adds a regression guard that `app.db.database.Base is app.db.base.Base`.
+    - requires representative core, witness, bank, and identity tables to be
+      registered on the same metadata object.
+- Runtime proof:
+  - used a disposable repo-local SQLite DB, then removed it after the proof.
+  - seeded an active community with two active members:
+    - user `1` as admin/verifier;
+    - user `2` as ordinary member/requester.
+  - exercised the real FastAPI app through `TestClient`:
+    - `GET /clans/1/members` returned `200` with `total: 2`;
+    - `POST /clans/1/member-verification-requests` returned `200`;
+    - response message was `Member witness request created. Share the approval
+      link or one-time code with the verifier.`;
+    - request status was `pending`;
+    - public token and one-time code were present;
+    - `GET /clans/1/member-verification-requests/{public_token}` returned
+      `200` with pending status for the verifier;
+    - `POST /clans/1/member-verification-requests/{public_token}/decision`
+      with the one-time code returned `200`;
+    - approval message was `Member witness confirmation recorded.`;
+    - resulting verification status was `active`;
+    - `GET /clans/1/member-verifications/summary?subject_user_id=2` returned
+      `200` with `active_verification_count: 1`.
+- Verified:
+  - Passed `.venv\Scripts\python.exe -m pytest -q
+    tests\test_database_metadata.py` from `gmfn_backend/`.
+  - Passed
+    `.venv\Scripts\python.exe -m pytest -q
+    tests\test_community_member_verifications.py::test_member_witness_request_requires_verifier_with_current_standing
+    tests\test_community_member_verifications.py::test_member_witness_request_decision_rechecks_verifier_current_standing
+    tests\test_community_member_verifications.py::test_member_witness_surfaces_require_active_community`
+    from `gmfn_backend/`.
+  - Passed `.venv\Scripts\python.exe -m pytest -q
+    tests\test_reconciliation_integrity.py tests\test_rosca_engine.py` from
+    `gmfn_backend/`.
+  - Confirmed with `GMFN_DEV_MODE=1` that:
+    - `app.db.database.Base is app.db.base.Base`;
+    - `clan_memberships` is in `database.Base.metadata.tables`;
+    - `bank_events` is in `database.Base.metadata.tables`.
+- Unabated truth:
+  - this proves the backend request/approval/summary path against a disposable
+    fresh schema, not the stale shared `gmfn_backend/gmfn.db`.
+  - the shared local DB still needs migration before browser proof against
+    `127.0.0.1:8012` can honestly show the full member-witness flow.
+  - this does not change witness business rules, verifier eligibility, annual
+    renewal, billing, notifications, or frontend screen structure.
+
+## 2026-06-19 - Member Witness Runtime Proof Blocked By Stale Local DB
+
+- Trigger:
+  - continued from the phone-width member-witness focus smoke.
+  - the prior smoke proved layout and reachable controls, but not successful
+    witness-request creation.
+- Confirmed from running local backend:
+  - `GET http://127.0.0.1:8012/health` returns `{"ok":true,"dev_mode":true}`.
+  - `GET /clans/1/members` with a dummy dev token returns only one active
+    member in community `1`, the fallback admin user.
+  - `GET /clans/1/member-verifications/summary?subject_user_id=2` returns
+    `403` with `Member witness verification is only available for active
+    communities`.
+  - public community verification for `GMFN-C-000001` currently fails in the
+    running local DB with `sqlite3.OperationalError: no such table:
+    community_domain_affiliations`.
+  - Alembic inspection with `GMFN_DEV_MODE=1` shows the local SQLite database is
+    still at `20260516_add_community_confirmation_review_sla_policy`.
+  - repository migration head is `20260619_member_witness_pending_pair_guard`.
+- Verified in isolated test DB:
+  - Passed
+    `.venv\Scripts\python.exe -m pytest -q
+    tests\test_community_member_verifications.py::test_member_witness_request_requires_verifier_with_current_standing
+    tests\test_community_member_verifications.py::test_member_witness_request_decision_rechecks_verifier_current_standing
+    tests\test_community_member_verifications.py::test_member_witness_surfaces_require_active_community`
+    from `gmfn_backend/`.
+  - Result: `3 passed`.
+- Unabated truth:
+  - the backend contract is covered in tests, but the live local dev database is
+    not migrated far enough to prove the runtime QR/OTP member-witness request
+    path end to end.
+  - the local browser smoke should not be upgraded from "layout proof" to
+    "workflow proof" until the local DB is migrated or a fresh migrated dev DB
+    with at least two active community members is used.
+  - I did not run `alembic upgrade head` or mutate `gmfn_backend/gmfn.db` in
+    this continuation because that would alter shared local state while several
+    migration files are still untracked in the worktree.
+
+## 2026-06-19 - Member Witness Focus Lane Phone Smoke Added
+
+- Trigger:
+  - the prior handoff correctly said the member-witness focus lane had not been
+    visually proven on a phone-width browser surface.
+  - local route review showed the lane was no longer admin-shaped, but the
+    first focus viewport still put explanation tiles before the actual
+    witness-request controls.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - keeps the member-witness focus lane member-facing with the section label
+      `Member witness request`.
+    - changes the focused section title/body to the member task:
+      `Ask a known member to stand for you`.
+    - reorders the focused mobile lane so `Choose witness`, `Check strength`,
+      and the primary `Ask for witness` action appear before the meaning tiles.
+    - leaves the normal policy/admin view order and primary `Stand for member`
+      behavior intact.
+- Visual smoke:
+  - the in-app Browser plugin could not be used because the `iab` browser
+    surface was unavailable in this session.
+  - used local Playwright with installed Microsoft Edge instead.
+  - Vite had to be started elevated on `http://127.0.0.1:5301/` after
+    sandboxed dev-server startup hit Windows/esbuild `spawn EPERM`.
+  - screenshot saved at `C:\tmp\member-witness-focus-selected.png`.
+  - phone viewport proof used a dummy local dev token, selected community `1`,
+    and the backend's dev-mode fallback user.
+  - confirmed in that smoke:
+    - focus route loaded `/app/community-confirmations/policy?community_id=1#member-witness`;
+    - member-facing heading was visible;
+    - admin policy/domain/contact sections were not visible;
+    - after choosing a member, the `Ask for witness` button was enabled inside
+      the phone viewport.
+- Verified:
+  - Passed `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx
+    src/pages/TrustScorePage.tsx` from `frontend/`.
+  - Passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is local headless Edge visual proof, not a real phone and not a real
+    pilot user/community session.
+  - the dummy local community returned the backend/dev warning
+    `Member witness verification is only available for active communities`
+    during member selection, so the smoke proves layout and reachable controls,
+    not successful witness-request creation.
+  - the global companion prompt can still overlay this route unless dismissed or
+    disabled for the smoke.
+  - no backend witness permissions, renewal jobs, notification queues, billing,
+    or new route contracts changed in this slice.
+
+## 2026-06-19 - Member Witness Focus Mode No Longer Opens As Admin Policy
+
+- Trigger:
+  - continued the previous Trust Passport witness slice.
+  - `TrustScorePage` now routes members to
+    `/app/community-confirmations/policy?community_id=...#member-witness`,
+    but the focused page still opened with an admin-shaped hero and visible
+    policy/domain/contact controls.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - changes the focus-mode hero from the admin "Who can answer for this
+      community?" framing to a member-facing witness task:
+      - `Ask a known member to stand for you` for normal `#member-witness`;
+      - `Respond to a witness request` for member-witness request tokens.
+    - hides the admin-only policy switch, Community ID Domain affiliation,
+      eligible response pool, and responder-inbox privacy sections while the
+      page is opened in member-witness focus mode.
+    - adds a focused `Witness request review` panel above the member picker for
+      request-token links, including the one-time code field, optional response
+      note, `Record witness`, `Decline`, and `Copy link` actions.
+    - changes the token auto-scroll target to the focused request-review panel
+      and uses non-smooth scrolling so the shared mobile tap-stability audit
+      does not flag a post-tap moving target.
+  - `frontend/tools/audit-trust-passport-community-confirmation-lane.mjs`
+    - updates the Trust Passport Community Confirmation lane guard to reflect
+      the current eight-card community evidence package: Community, Community
+      ID, Community record, Activity evidence, Witness currentness, Next
+      witness renewal, Public record, and Member credential.
+    - requires the lane to preserve stable public-record, member-credential,
+      and ask-for-witness actions.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - updates the accepted Trust Passport action inventory from 14 to 17 source
+      actions / 25 expected rendered roots, explicitly including the identity
+      evidence toggle and the three Community lane actions.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updates a stale TrustSlip Verify public-paper currentness guard to match
+      the current `Witness currentness` and `Community record` supporting
+      evidence wording.
+- Verified:
+  - Passed `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx
+    src/pages/TrustScorePage.tsx` from `frontend/`.
+  - Passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched focused-page/audit/handoff files;
+    Git only reported existing LF-to-CRLF working-copy warnings.
+- Unabated truth:
+  - this is a focused frontend UX and audit-guard continuation only.
+  - it does not create a new member witness route, change backend witness
+    permissions, add automatic renewal reminders, or prove the lane visually on
+    a real phone/browser screenshot.
+  - the working tree was already heavily dirty before this continuation, so a
+    future commit must stage only the files that belong to the intended batch.
+
+## 2026-06-19 - Trust Passport Opens Member Witness Request Lane
+
+- Trigger:
+  - the QR/OTP member-witness request workflow already exists inside
+    `CommunityConfirmationPolicyPage`.
+  - Trust Passport showed witness currentness and member credential evidence,
+    but did not give a direct route into the existing "ask members to stand for
+    me" workflow.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - imports `APP_ROUTES`.
+    - builds a community-scoped path to
+      `/app/community-confirmations/policy?community_id=...#member-witness`.
+    - adds a compact `Ask for witness` action beside `Open community record`
+      and `Open member credential` in the Trust Passport Community lane.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - adds the `member-witness` anchor to the existing member witness records
+      section so the Trust Passport action lands on the live QR/OTP witness
+      workflow.
+    - watches `#member-witness` and witness-request links, then scrolls to the
+      witness section after the lazy route and async page data settle.
+    - switches the top navigation and short guide into a member-witness focus
+      mode when the page is opened through the witness anchor or a witness
+      request token, while leaving the normal policy page behavior unchanged.
+    - skips admin-only policy, domain-affiliation, and external-registration
+      loaders in member-witness focus mode so ordinary active members do not
+      see a misleading admin-access error before using the witness workflow.
+    - makes `Ask for witness` the primary action in member-witness focus mode,
+      while preserving `Stand for member` as the primary action on the normal
+      policy/admin view.
+- Verified:
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched Trust Passport/handoff files;
+    Git only reported existing LF-to-CRLF working-copy warnings on frontend
+    files.
+- Unabated truth:
+  - this does not create a new witness flow; it exposes the existing one from
+    the trust surface.
+  - the witness workflow still lives inside a policy/admin-named page, so the
+    next UX improvement is to make that lane feel more member-facing without
+    breaking the admin policy controls.
+
+## 2026-06-19 - Trust Passport Carries Next Witness Renewal
+
+- Trigger:
+  - TrustSlip, the public TrustSlip verifier, and public member credentials now
+    expose the earliest active witness renewal signal.
+  - Trust Passport still read mostly as an overall score/story surface, so the
+    private decision view and copied Trust Passport snapshot could miss the
+    next maintenance point in a member-backed community record.
+- Changed:
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - accepts community activity, witness currentness, and next-witness renewal
+      fields.
+    - includes witness currentness and next witness renewal in the community
+      stability question, helpful signals, and pressure signals.
+    - returns the fields through the identity view model for the page cards.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - Trust Passport snapshots can include community activity, witness
+      currentness, next witness renewal, and the member credential link.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - normalizes community activity, membership currentness, and next-witness
+      renewal fields from TrustSlip summary, merchant summary, or community
+      context.
+    - passes those fields into the Trust Passport view model and copyable
+      snapshot.
+    - adds compact Community lane rows for activity evidence, witness
+      currentness, next witness renewal, and the member credential public
+      record.
+- Verified:
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched Trust Passport/handoff files;
+    Git only reported existing LF-to-CRLF working-copy warnings on frontend
+    files.
+  - Confirmed backend health still answers at
+    `http://192.168.1.13:8012/health` with `{"ok":true,"dev_mode":true}`.
+  - Confirmed frontend dev server answers on the fallback phone URL
+    `http://192.168.1.13:5199/` with status `200`.
+- Unabated truth:
+  - this is Trust Passport data/UI/snapshot plumbing for already available
+    community verification signals.
+  - it does not add automatic renewal reminders, witness queues, QR/OTP
+    witness collection, renewal billing, verifier weighting, or screenshot QA.
+
+## 2026-06-19 - TrustSlip Reader Shows Next Witness Renewal
+
+- Trigger:
+  - the backend and public TrustSlip verifier already carried the
+    next-witness renewal signal.
+  - the signed-in TrustSlip reader block still only showed overall renewal and
+    currentness, so a member could miss the earliest witness renewal date before
+    sharing a TrustSlip.
+- Changed:
+  - `frontend/src/components/TrustSlipReaderBlock.tsx`
+    - accepts `nextWitnessRenewalAt` and `nextWitnessRenewalStatusLabel`.
+    - shows a compact `Next witness` pill and includes next-renewal text beside
+      witness validity and renewal status.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - reads next-witness renewal fields from top-level TrustSlip payload,
+      merchant view, merchant summary, or community context.
+    - passes the fields into the TrustSlip reader block.
+    - includes next-witness renewal in the community-stability decision text.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - accepts and forwards the same fields to the shared TrustSlip reader block.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - passes the existing verify-page view-model fields into the private
+      evidence reader block.
+- Verified:
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is UI/data plumbing for an existing payload signal.
+  - it does not add automatic reminders, renewal buttons, annual prompt queues,
+    push notifications, paid renewal, or verifier-quality weighting.
+
+## 2026-06-19 - Next Witness Renewal Signal
+
+- Trigger:
+  - continued implementation of member-backed community verification as living
+    trust evidence.
+  - a member could have several active witnesses where the overall validity was
+    still active, but one witness record was already close to renewal.
+- Gap found:
+  - `membership_valid_until` intentionally uses the latest active witness
+    validity so the overall member evidence does not collapse early.
+  - that hides the earliest active witness renewal date, which is the real next
+    maintenance point for a living community record.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - member verification summaries now return `next_witness_renewal_at`,
+      `next_witness_renewal_status`, and
+      `next_witness_renewal_status_label`.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public member credentials now expose the same next-witness renewal signal.
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - TrustSlip community context, top-level payload, merchant summary, and
+      standard/minimal visibility views now carry the next-witness renewal
+      signal.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - public member credentials show compact `Next witness renewal` and
+      `Next witness status` facts.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+    - normalizes the new next-witness renewal fields from top-level,
+      merchant-view, merchant-summary, or community-context payloads.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - exposes the new fields to the TrustSlip verify paper view model.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - passes the new fields into the public TrustSlip paper.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - shows compact `Next witness renewal` and `Next witness status` facts.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - strengthened public member credential coverage so overall renewal remains
+      `active` while earliest witness renewal can be `Renewal Due`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_public_member_credential_shows_aggregate_membership_without_private_witnesses`
+    from `gmfn_backend/`.
+    - result: `1 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `60 passed`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched backend/frontend/test/handoff
+    files; Git only reported existing LF-to-CRLF working-copy warnings on some
+    frontend files.
+  - Confirmed local phone targets still answer:
+    - frontend `http://192.168.1.13:5173/` returned `200`;
+    - backend `http://192.168.1.13:8012/health` returned
+      `{"ok":true,"dev_mode":true}`.
+- Unabated truth:
+  - this adds a maintenance signal, not automatic renewal reminders, push
+    notifications, staff queues, paid renewal billing, or visual browser QA.
+  - the in-app Browser surface was unavailable earlier in this session, so this
+    slice is verified by tests/build/phone URL health, not by screenshot review.
+
+## 2026-06-19 - Member Witness Renewal Due Window
+
+- Trigger:
+  - continued implementation of member-backed community verification as living
+    trust evidence.
+  - the backend already had yearly witness limits and expiry-based renewal, but
+    renewal could not happen until the witness evidence had expired.
+- Gap found:
+  - the system labels witness evidence as `Renewal Due` inside the final 30
+    days, but duplicate-current checks still blocked renewal during that window.
+  - this could force a member's evidence to lapse before renewal was allowed.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `_member_witness_can_renew`.
+    - direct member-witness recording now refreshes an existing witness row when
+      it is expired or inside the renewal-due window.
+    - member witness requests now allow a renewal request when the existing
+      witness row is inside the renewal-due window.
+    - duplicate current witness confirmations remain blocked while the witness
+      window is active and not due.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added request-based renewal coverage for the renewal-due window.
+    - added direct-record renewal coverage for the renewal-due window.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_member_witness_request_rejects_duplicate_current_witness_but_allows_expired_renewal
+    tests/test_community_member_verifications.py::test_member_witness_request_allows_renewal_due_window
+    tests/test_community_member_verifications.py::test_member_witness_can_renew_expired_existing_witness_record
+    tests/test_community_member_verifications.py::test_member_witness_direct_record_refreshes_renewal_due_window`
+    from `gmfn_backend/`.
+    - result: `4 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `60 passed`.
+  - Passed `git diff --check` for the touched backend/test/handoff files.
+  - Confirmed local phone targets still answer:
+    - frontend `http://192.168.1.13:5173/` returned `200`;
+    - backend `http://192.168.1.13:8012/health` returned
+      `{"ok":true,"dev_mode":true}`.
+- Unabated truth:
+  - this is a backend behavior improvement only.
+  - it does not add automatic reminder notifications, background renewal jobs,
+    paid verification packages, or field-agent assisted renewal UI.
+
+## 2026-06-19 - TrustSlip Carries Community Record Currentness
+
+- Trigger:
+  - after member credentials started showing community-record currentness, the
+    next portable proof gap was TrustSlip.
+  - TrustSlip already carried member witness currentness and community activity,
+    but not the currentness of the Community ID record behind those claims.
+- Changed:
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - `_community_context` now reuses `public_community_verification` by clan id
+      and carries community public-face, affiliate, and evidence-currentness
+      fields.
+    - TrustSlip top-level payload and merchant summary now include community
+      evidence currentness.
+    - standard/minimal merchant visibility views preserve the same
+      currentness fields.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - strengthened TrustSlip assertions for active basic Community ID records.
+    - strengthened TrustSlip assertions for current parent-domain
+      acknowledgement.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+    - normalizes community evidence currentness from top-level, merchant view,
+      merchant summary, or community context.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - adds community evidence currentness to the TrustSlip verify view model.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - passes community evidence currentness into the public paper.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - shows the community record currentness in the supporting-evidence reading
+      and in the at-a-glance facts.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_public_member_credential_shows_aggregate_membership_without_private_witnesses
+    tests/test_community_member_verifications.py::test_public_member_credential_shows_parent_domain_currentness
+    tests/test_community_member_verifications.py::test_backend_trustslip_verify_page_links_scoped_member_credential`
+    from `gmfn_backend/`.
+    - result: `3 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `58 passed`.
+  - Passed `npm run build` from `frontend/`.
+  - Confirmed local phone targets still answer:
+    - frontend `http://192.168.1.13:5173/` returned `200`;
+    - backend `http://192.168.1.13:8012/health` returned
+      `{"ok":true,"dev_mode":true}`.
+  - In-app Browser smoke was not completed because the `iab` browser surface
+    was unavailable in this session.
+- Unabated truth:
+  - this makes TrustSlip more honest as portable community evidence.
+  - it still does not turn TrustSlip into a bank guarantee, credit approval,
+    CAC verification, protected-domain ownership proof, or permission to
+    release goods or money.
+
+## 2026-06-19 - Member Credential Shows Community Record Currentness
+
+- Trigger:
+  - phone testing is available again and implementation resumed after stopping
+    wording-only work.
+  - public member credentials needed to show whether the Community ID record
+    behind the member proof is basic, current parent-domain acknowledged, or
+    otherwise stale.
+- Gap found:
+  - `public_community_verification` already exposes community evidence
+    currentness.
+  - `public_community_member_verification` showed membership/witness
+    currentness, but not the currentness of the community record anchoring that
+    member credential.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - `public_community_member_verification` now reuses the public community
+      verification reading and returns:
+      - `community_public_face_status`;
+      - `community_public_face_label`;
+      - `official_affiliate_status`;
+      - `official_affiliate_label`;
+      - `community_evidence_currentness_status`;
+      - `community_evidence_currentness_label`;
+      - `community_evidence_currentness_scope`.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - strengthened the basic public member credential assertions.
+    - added parent-domain currentness coverage for a member credential under an
+      acknowledged affiliate.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - normalizes and displays community record currentness inside the existing
+      public reading.
+    - adds compact facts for community record and affiliate status.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_public_member_credential_shows_aggregate_membership_without_private_witnesses
+    tests/test_community_member_verifications.py::test_public_member_credential_shows_parent_domain_currentness`
+    from `gmfn_backend/`.
+    - result: `2 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `58 passed`.
+  - Passed `npm run build` from `frontend/`.
+  - Confirmed local phone targets still answer:
+    - frontend `http://192.168.1.13:5173/` returned `200`;
+    - backend `http://192.168.1.13:8012/health` returned
+      `{"ok":true,"dev_mode":true}`.
+- Unabated truth:
+  - this does not make a basic Community ID equal protected domain ownership.
+  - it does not make CAC/external registration a verification authority.
+  - it only makes the member proof tell the reader the status of the community
+    record it depends on.
+
+## 2026-06-19 - Community Verify Page Shows Evidence Currentness
+
+- Trigger:
+  - backend public community verification now exposes community evidence
+    currentness, but the public React page needed to render it.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added `community_evidence_currentness_status`,
+      `community_evidence_currentness_label`, and
+      `community_evidence_currentness_scope` to the public record shape.
+    - renders the currentness reading inside the existing public reading grid.
+    - adds a compact `Currentness` info tile without changing the page route or
+      creating a new screen.
+- Verified:
+  - Passed `npm run build` from `frontend/`.
+  - Browser/visual smoke was not completed:
+    - the in-app Browser surface was unavailable in this session;
+    - local Vite start attempts on `5173`, `5174`, and `5300` did not produce a
+      reachable local page in this environment.
+- Unabated truth:
+  - this is a presentation of backend evidence state, not a new authority
+    claim.
+  - it does not make an active Community ID equal parent-domain approval,
+    protected membership, CAC verification, or trade/lending approval.
+
+## 2026-06-19 - Public Community Evidence Currentness Reading
+
+- Trigger:
+  - continued implementation of the Community Public Face contract.
+  - the spec says outsiders should see public evidence currentness for the
+    community record itself, not only member witness currentness.
+- Gap found:
+  - public community verification already exposed public-face status,
+    parent-domain acknowledgement, record-started date, next evidence guidance,
+    and reader-decision scope.
+  - it did not expose a compact currentness reading for the community public
+    evidence state.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - `public_community_verification` now returns:
+      - `community_evidence_currentness_status`;
+      - `community_evidence_currentness_label`;
+      - `community_evidence_currentness_scope`.
+    - current states are derived from existing data only:
+      - inactive community record;
+      - current parent-domain acknowledgement;
+      - historical parent-domain acknowledgement;
+      - active basic Community ID record.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - strengthened public community verification assertions for active basic
+      records and inactive records.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - strengthened assertions for current and historical parent-domain
+      acknowledgement states.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases
+    tests/test_community_confirmation_relay.py::test_public_community_verify_does_not_offer_relay_for_inactive_community
+    tests/test_community_domain_affiliations.py::test_public_community_verification_shows_approved_parent_domain_affiliation
+    tests/test_community_domain_affiliations.py::test_public_community_verification_marks_inactive_affiliation_not_current`
+    from `gmfn_backend/`.
+    - result: `4 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `57 passed`.
+- Unabated truth:
+  - this is still a scoped public reading, not a community health score.
+  - it does not add new public profile fields, member lists, legal status, CAC
+    verification, or service guarantees.
+
+## 2026-06-19 - External Registration Structured Evidence Dedupe Guard
+
+- Trigger:
+  - continued implementation of CAC/external registration as recorded
+    supporting evidence, not GSN verification.
+- Bug found:
+  - the same structured registration evidence could be recorded repeatedly as
+    separate Trust Events.
+  - this could make supporting evidence look heavier than it really is.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - external registration records now use a fingerprint-based `dedupe_key`
+      when structured details are present (`registration_reference`,
+      `registered_name`, or `issuing_body`).
+    - note-only records are not deduped by registration type alone, because two
+      notes may describe different supporting evidence.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - added
+      `test_external_registration_structured_evidence_is_deduped_by_fingerprint`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_domain_affiliations.py::test_external_registration_structured_evidence_is_deduped_by_fingerprint`
+    from `gmfn_backend/`.
+    - result: `1 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `57 passed`.
+- Unabated truth:
+  - this does not make CAC a verification authority.
+  - it only prevents repeated structured evidence from inflating the internal
+    supporting-evidence record.
+
+## 2026-06-19 - Member Witness Duplicate Current Request Guard
+
+- Trigger:
+  - continued implementation of the member-backed verification workflow.
+  - direct verification already reused a current witness record, but the request
+    route could still create a pending request for the same subject/verifier
+    pair.
+- Bug found:
+  - `POST /clans/{clan_id}/member-verification-requests` could reserve a new
+    pending request even when the assigned verifier already had a current active
+    witness confirmation for that member.
+  - this created unnecessary pending work and could confuse renewal/currentness
+    tracking.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - request creation now rejects duplicate current witness requests with
+      `409`.
+    - expired witness rows can still be renewed through a fresh pending request.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_member_witness_request_rejects_duplicate_current_witness_but_allows_expired_renewal`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_member_witness_request_rejects_duplicate_current_witness_but_allows_expired_renewal`
+    from `gmfn_backend/`.
+    - result: `1 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `56 passed`.
+- Unabated truth:
+  - this blocks noisy duplicate current requests.
+  - it does not introduce early renewal before expiry; current behavior still
+    renews once the previous witness window has expired.
+
+## 2026-06-19 - Domain Affiliation Listing Active-Admin Guard
+
+- Trigger:
+  - continued implementation of the paid/verified community-domain package.
+  - domain-affiliation request and decision routes already required activated
+    admins and active domains, but listing needed the same boundary.
+- Bug found:
+  - `GET /clans/{clan_id}/domain-affiliations` used the older admin guard.
+  - activation-pending admins, or admins of inactive domains, could still list
+    domain-affiliation records even though other domain-management actions were
+    blocked.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - domain-affiliation listing now uses `_require_active_domain_admin`.
+    - this aligns listing with request, decision, and external registration
+      evidence routes.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - added
+      `test_domain_affiliation_listing_requires_active_domain_and_activated_admin`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_domain_affiliations.py::test_domain_affiliation_listing_requires_active_domain_and_activated_admin`
+    from `gmfn_backend/`.
+    - result: `1 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `55 passed`.
+- Unabated truth:
+  - this is a management-access guard, not a public-page change.
+  - public historical affiliation evidence remains governed by the public
+    currentness checks already added earlier.
+
+## 2026-06-19 - Member Witness Standing Chain Integrity Guard
+
+- Trigger:
+  - continued implementation of community verification as live trust
+    infrastructure.
+  - after current witness strength was tightened, the next integrity question
+    was whether a member with stale standing could still verify other people.
+- Bug found:
+  - non-admin verifier eligibility checked whether the verifier had an
+    active/unexpired witness row.
+  - it did not confirm that the person who gave that verifier standing was
+    still a current, activation-ready member of the same community.
+  - this meant stale witness standing could continue to propagate verification
+    power.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `_has_current_member_witness_standing` now requires the standing subject
+      and standing verifier to both be current, activation-ready community
+      members before the standing can authorize a new witness action.
+    - the same helper protects direct member verification and member witness
+      request creation.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_stale_member_witness_standing_cannot_verify_next_member`.
+    - added
+      `test_member_witness_request_decision_rechecks_verifier_current_standing`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_stale_member_witness_standing_cannot_verify_next_member`
+    from `gmfn_backend/`.
+    - result: `1 passed`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_stale_member_witness_standing_cannot_verify_next_member
+    tests/test_community_member_verifications.py::test_member_witness_request_decision_rechecks_verifier_current_standing`
+    from `gmfn_backend/`.
+    - result: `2 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `54 passed`.
+- Unabated truth:
+  - this still allows normal member-to-member verification after a member has
+    valid current standing.
+  - it stops witness authority from flowing through a pending or departed
+    backer.
+  - it does not solve social collusion by itself; audit trails, yearly limits,
+    and dispute/withdrawal controls still matter.
+
+## 2026-06-19 - Current Witness Strength Verifier Eligibility Guard
+
+- Trigger:
+  - continued implementation of community proof as verifiable trust
+    infrastructure, not only a wording change.
+  - member witness strength appears in the internal summary, public scoped
+    member credential, and TrustSlip.
+- Bug found:
+  - current witness strength could count an active/unexpired witness record even
+    when the verifier had later become activation-pending or had left the
+    community.
+  - that made old witness history look like current community-backed strength.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - member witness summary now counts current strength only when both subject
+      and verifier are current, activation-ready members of the community.
+    - validity fallback now uses only eligible witness rows.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public scoped member credential now uses the same active-member and
+      activation-ready eligibility boundary before counting witness strength.
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - TrustSlip community context now uses the same eligibility boundary for
+      `member_witness_count`, membership strength, and witness currentness.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_member_witness_strength_excludes_inactive_or_pending_verifiers`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_member_witness_strength_excludes_inactive_or_pending_verifiers`
+    from `gmfn_backend/`.
+    - result: `1 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `52 passed`.
+  - Passed `git diff --check -- gmfn_backend\app\api\routes\clans.py
+    gmfn_backend\app\services\community_confirmation_service.py
+    gmfn_backend\app\services\trust_slips_services.py
+    gmfn_backend\tests\test_community_member_verifications.py`.
+- Unabated truth:
+  - old witness rows are not deleted.
+  - they remain useful as history and audit evidence.
+  - they no longer inflate current witness strength if the verifier or subject
+    is no longer an active, activation-ready member of that community.
+
+## 2026-06-19 - Public Community Affiliate Currentness Guard
+
+- Trigger:
+  - continued implementation of the public community face as the outsider-facing
+    trust infrastructure proof surface.
+- Bug found:
+  - public community verification treated any approved domain-affiliation row as
+    current parent-domain acknowledgement.
+  - if the parent or affiliate community later became inactive, the public page
+    could still say the affiliate was acknowledged under the parent domain.
+  - controlled public confirmation recipients could include activation-pending
+    accounts from old owner/admin membership rows.
+  - public community verification could still show controlled relay as
+    available for an inactive community if owner/admin recipient rows existed.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification now treats approved affiliation as current
+      only when both affiliate and parent community records are active.
+    - stale approved affiliation rows are exposed as
+      `official_affiliate_status = "not_current"` with a clear currentness
+      boundary instead of `approved`.
+    - `parent_domain.current` is set to `False` for stale/historical
+      affiliations.
+    - controlled public community confirmation recipient selection now skips
+      activation-pending users.
+    - public community verification now only reports relay availability when
+      the community itself is active.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - added
+      `test_public_community_verification_marks_inactive_affiliation_not_current`.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - added
+      `test_public_community_confirmation_request_skips_activation_pending_recipients`.
+    - added
+      `test_public_community_verify_does_not_offer_relay_for_inactive_community`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py::test_public_community_verify_does_not_offer_relay_for_inactive_community
+    tests/test_community_domain_affiliations.py::test_public_community_verification_marks_inactive_affiliation_not_current
+    tests/test_community_confirmation_relay.py::test_public_community_confirmation_request_skips_activation_pending_recipients`
+    from `gmfn_backend/`.
+    - result: `3 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `51 passed`.
+- Unabated truth:
+  - this does not delete old approved affiliation records.
+  - it stops GSN from presenting stale affiliation as current public trust
+    evidence when a parent or affiliate domain is inactive.
+  - it also stops inactive communities from advertising live controlled relay
+    on the public proof page.
+
+## 2026-06-19 - Community Domain Affiliation Active-Domain Guard
+
+- Trigger:
+  - continued implementation of the verified community-domain model.
+  - domain affiliation is powerful evidence because it lets a subgroup claim
+    parent-domain acknowledgement.
+- Bug found:
+  - domain-affiliation request/decision routes trusted admin membership rows but
+    did not fully guard against:
+    - activation-pending admins using stale admin rows;
+    - inactive affiliate communities requesting parent-domain acknowledgement;
+    - inactive parent domains accepting affiliate claims;
+    - a parent approving a closed affiliate domain.
+  - external registration evidence recording also needed the same activated
+    admin and active-domain boundary while remaining supporting evidence only.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added active-domain admin guard for domain-management actions.
+    - affiliate-domain requests now require an activated affiliate admin, active
+      affiliate domain, and active parent domain.
+    - parent-domain decisions now require an activated parent admin and active
+      parent domain.
+    - approving an affiliation now requires the affiliate domain to still be
+      active; rejection/revocation can still record the parent decision.
+    - external registration evidence recording now requires activated admin and
+      active domain.
+    - external registration evidence listing now rejects activation-pending
+      admins while preserving the "supporting evidence, not verification"
+      boundary.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - added
+      `test_domain_affiliation_requires_active_domains_and_activated_admins`.
+    - added `test_parent_cannot_approve_closed_affiliate_domain`.
+    - added
+      `test_external_registration_record_requires_active_domain_and_activated_admin`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_domain_affiliations.py::test_domain_affiliation_requires_active_domains_and_activated_admins
+    tests/test_community_domain_affiliations.py::test_parent_cannot_approve_closed_affiliate_domain
+    tests/test_community_domain_affiliations.py::test_external_registration_record_requires_active_domain_and_activated_admin`
+    from `gmfn_backend/`.
+    - result: `3 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `48 passed`.
+- Unabated truth:
+  - this prevents stale or inactive communities from gaining new
+    parent-domain acknowledgement in GSN.
+  - CAC/external registration remains recorded supporting evidence only; it is
+    still not treated as GSN verification.
+
+## 2026-06-19 - Member Witness Active-Community Activation Guard
+
+- Trigger:
+  - continued implementation of the trust-infrastructure gap, focused on the
+    member-witness lane that records who a person is trustwise inside a
+    verifiable community.
+- Bug found:
+  - member-witness routes were mostly checking active membership rows, but not
+    always checking that:
+    - the community itself was active;
+    - the actor, subject, or verifier account was activation-ready;
+    - a stale pending QR/OTP witness request could not be approved after the
+      assigned verifier became activation-pending.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added member-witness-local active-community and activation-ready helpers.
+    - direct witness recording now requires an active community, active subject,
+      and activated verifier.
+    - member-witness summary, request creation, request view, request decision,
+      direct record, and withdrawal now fail closed for activation-pending
+      actors where they mutate or access the witness lane.
+    - request creation rejects activation-pending subjects and verifiers using
+      database user state, not lightweight auth-object assumptions.
+    - request decision rejects stale approvals when the assigned verifier has
+      become activation-pending.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added `test_member_witness_surfaces_require_active_community`.
+    - added
+      `test_member_witness_request_rejects_activation_pending_subject_or_verifier`.
+    - added
+      `test_pending_assigned_verifier_cannot_decide_member_witness_request`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py::test_member_witness_surfaces_require_active_community
+    tests/test_community_member_verifications.py::test_member_witness_request_rejects_activation_pending_subject_or_verifier
+    tests/test_community_member_verifications.py::test_pending_assigned_verifier_cannot_decide_member_witness_request`
+    from `gmfn_backend/`.
+    - result: `3 passed`.
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `45 passed`.
+- Unabated truth:
+  - this is a real implementation guard, not a wording pass.
+  - it keeps new or approved member-witness evidence from being created through
+    closed communities, pending subjects, pending verifiers, or stale pending
+    packages.
+  - old witness records are not deleted here; public and TrustSlip surfaces
+    already have separate active-community/pending-user guards.
+
+## 2026-06-19 - Community Confirmation Pending-Member Relay Guard
+
+- Trigger:
+  - continued trust-infrastructure implementation after tightening public
+    member credentials and TrustSlip credential links.
+- Bug found:
+  - community confirmation active-member counts and default relay-contact
+    bootstrap used `left_at is null` only.
+  - activation-pending placeholder users could inflate the public
+    `active_member_count` and be considered for relay contact setup.
+  - stale relay contacts for activation-pending users could still see inbox
+    requests or attempt to respond.
+  - pending placeholder contacts could consume a limited delivery slot before
+    the service filtered pending users out.
+  - activation-pending users could still pass some route-local policy/admin or
+    review-management checks if they had old membership rows.
+  - live confirmation requests could still be attempted against non-active
+    communities or activation-pending subjects if old membership rows existed.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - added `_active_membership_rows(...)`.
+    - `_active_member_count(...)` now excludes activation-pending users.
+    - `ensure_default_confirmation_contacts(...)` now seeds contacts from the
+      same activation-ready membership set.
+    - eligible contact counts and delivery-contact selection now exclude
+      activation-pending users.
+    - delivery-contact limits are applied after pending contacts are removed,
+      so placeholder contacts cannot crowd out real active responders.
+    - inbox, responder eligibility, contact bootstrap, policy admin, request
+      management, and community-admin confirmation checks now fail closed for
+      activation-pending actors.
+    - community confirmation summaries now return `relay_available=False` for
+      non-active communities instead of bootstrapping live contacts.
+    - `create_confirmation_request(...)` now requires an active community and a
+      non-pending subject before creating a relay package.
+    - public community confirmation requests now reject non-active communities.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_community_confirmation_summary_excludes_activation_pending_members`.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - added
+      `test_activation_pending_responder_cannot_use_stale_confirmation_contact`.
+    - added
+      `test_pending_contact_does_not_consume_limited_delivery_slot`.
+    - added `test_live_confirmation_request_requires_active_community`.
+    - added
+      `test_live_confirmation_request_rejects_activation_pending_subject`.
+    - corrected the public affiliate-note expectation to match the current
+      parent-domain acknowledgement wording.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_confirmation_relay.py
+    tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `42 passed`.
+  - Passed `git diff --check` for the touched backend service/test/handoff
+    files.
+- Unabated truth:
+  - this corrects the public/community-confirmation summary, default contact
+    bootstrap, relay responder path, limited delivery selection, and live
+    request eligibility for inactive communities/pending subjects.
+  - there may still be other route-local `left_at is null` membership checks in
+    the wider app that need separate, careful review before changing them.
+
+## 2026-06-19 - TrustSlip Member Credential Link Eligibility Guard
+
+- Trigger:
+  - continued trust-infrastructure implementation after public member
+    credentials were hardened against activation-pending users and non-active
+    communities.
+- Bug found:
+  - TrustSlip verify/share/page surfaces built scoped member credential links
+    from stored community/member codes alone.
+  - that could still advertise a member credential link for an
+    activation-pending holder or a closed/dormant community, even though the
+    public credential route now fails closed.
+- Changed:
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - added `_member_credential_page_for_holder(...)`.
+    - the helper requires:
+      - active community status;
+      - non-activation-pending holder account;
+      - current active membership row;
+      - valid public GSN ID.
+    - JSON verify, share text, lite page, full public page, and WhatsApp/SMS
+      package now use this helper instead of raw code-derived URL building.
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - TrustSlip community context now treats non-active communities and
+      activation-pending holders as no active member standing.
+    - witness strength is only counted for a real active holder membership.
+    - active member count excludes activation-pending placeholder users.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added pending-holder and closed-community TrustSlip regression tests.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `25 passed`.
+  - Passed `git diff --check` for the touched TrustSlip route/service/test
+    files.
+- Unabated truth:
+  - TrustSlip can still exist for a holder, but it will not advertise a scoped
+    member credential unless the holder really has current active membership in
+    an active community.
+  - this does not remove the TrustSlip itself; it prevents overclaiming the
+    community-membership credential link.
+
+## 2026-06-19 - Public Member Credential Active-Community Guard
+
+- Trigger:
+  - continued public member credential implementation pass.
+- Bug found:
+  - the public member credential required an active membership row, but did not
+    require the parent community itself to still be active.
+  - a closed/dormant community could therefore anchor an "active" member
+    credential if the membership row remained.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - `public_community_member_verification(...)` now fails closed unless the
+      parent community status is `active`.
+    - this is intentionally scoped to the member credential route; the broader
+      public community face can still show recorded community status.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added `test_public_member_credential_requires_active_community`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `23 passed`.
+  - Passed `git diff --check` for the touched backend service/test/handoff
+    files.
+- Unabated truth:
+  - this does not delete or hide closed community records globally.
+  - it only prevents a non-active community from presenting a member as an
+    active community credential.
+
+## 2026-06-19 - Public Member Credential Activation-Pending Guard
+
+- Trigger:
+  - continued implementation pass on the public member credential, which should
+    tactically show who a person is trustwise inside one verifiable community.
+- Bug found:
+  - `public_community_member_verification(...)` required `left_at is null`, but
+    did not fail closed for activation-pending placeholder users.
+  - that could let a pending applicant/placeholder appear as an active public
+    community member if a membership row existed.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - imports `is_user_activation_pending`.
+    - returns the same "Member not found in this community" boundary for
+      activation-pending users as for non-members, avoiding public exposure.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_public_member_credential_rejects_activation_pending_member`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `22 passed`.
+  - Passed `git diff --check` for the touched backend service/test files.
+- Unabated truth:
+  - this protects the public credential surface from placeholder membership
+    rows.
+  - it does not audit every other route that uses `left_at is null`; it fixes
+    the public trust credential surface we are actively implementing now.
+
+## 2026-06-19 - Member Witness QR/OTP Live Status Correction
+
+- Trigger:
+  - continued implementation pass after the member-witness QR/OTP request path,
+    verifier-standing gate, yearly cap, pending-capacity reservation, and
+    database uniqueness guard were verified.
+- Bug found:
+  - `CommunityConfirmationPolicyPage` still told operators that QR/OTP response
+    was not live in the member-witness lane, even though the assigned-verifier
+    package flow is now implemented.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - replaced the stale helper sentence with the current boundary:
+      QR/OTP response is live through the assigned verifier package;
+      assisted field-agent capture, yearly renewal prompts, and paid
+      member-witness packages remain follow-ups.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated the guard so this lane must keep the QR/OTP-live truth while
+      preserving the witness-record framing.
+- Verified:
+  - Passed `npm run audit:trust-actions` from `frontend/`.
+  - Passed `npm run audit:link-contracts` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched frontend/audit/handoff files.
+- Unabated truth:
+  - this is a small copy correction, but it is implementation-critical because
+    the screen was contradicting the live behavior.
+  - assisted field capture and paid packaging are still not implemented here.
+
+## 2026-06-19 - Pending Witness Request Database Uniqueness Guard
+
+- Trigger:
+  - continued race-safety review of the member-witness request flow.
+- Bug found:
+  - route code checked for an existing pending request, but the database did not
+    enforce one pending request per community/subject/verifier pair.
+  - concurrent requests could create duplicate pending QR/OTP packages before
+    route-level idempotency saw the first one.
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added partial unique index
+      `uq_community_member_verification_requests_pending_pair` on
+      `(clan_id, subject_user_id, verifier_user_id)` where `status = pending`.
+  - `gmfn_backend/alembic/versions/20260619_add_community_member_verification_requests.py`
+    - creates the same partial unique pending-pair index for SQLite/Postgres.
+    - checks for duplicate pending pairs before creating the guard.
+    - if the request table already exists but the guard is missing, the
+      migration adds it.
+    - downgrade drops the guard only when present.
+  - `gmfn_backend/alembic/versions/20260619_add_member_witness_pending_pair_guard.py`
+    - follow-up migration for already-upgraded environments.
+    - adds the same pending-pair guard when the table already exists and the
+      index is missing.
+    - refuses to add the guard if duplicate pending pairs already exist.
+    - no-ops safely when the earlier migration already created the index.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - imports `IntegrityError`.
+    - request creation catches a duplicate-pending race and returns the existing
+      pending request instead of surfacing a server error.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_database_rejects_duplicate_pending_member_witness_request_pair`.
+    - proves duplicate pending rows are rejected at the database level while a
+      non-pending row for the same pair can still exist.
+- Verified:
+  - Passed `python -m pytest -q
+    tests/test_community_member_verifications.py::test_database_rejects_duplicate_pending_member_witness_request_pair`
+    from `gmfn_backend/`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `21 passed`.
+  - Passed `npm run audit:trust-actions` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for touched backend/migration/test files.
+  - Migration smoke on temporary SQLite DB:
+    - `alembic upgrade head` passed.
+    - `alembic downgrade 20260619_member_verification_requests` passed.
+    - re-upgrade to `head` passed.
+    - `alembic current` reported
+      `20260619_member_witness_pending_pair_guard (head)`.
+    - temporary DB removed.
+- Unabated truth:
+  - before this fix, route-level idempotency was not enough under concurrent
+    request creation.
+  - now the database protects the invariant too.
+
+## 2026-06-19 - Member Witness Process Events Excluded From Public Activity
+
+- Trigger:
+  - continued review of the public member credential and TrustSlip activity
+    signals.
+- Bug found:
+  - QR/OTP witness approval logs three TrustEvents:
+    - `community_member_verification_requested`
+    - `community_member_verified`
+    - `community_member_verification_approved`
+  - public member activity counted all non-excluded events.
+  - result: one witness request approval could appear as three public community
+    activity events.
+- Changed:
+  - `gmfn_backend/app/core/trust_event_types.py`
+    - `PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES` now excludes process events:
+      requested, approved, declined, and withdrawn.
+    - public activity still counts the actual
+      `community_member_verified` witness event.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_member_witness_request_process_events_do_not_inflate_public_activity`.
+    - proves the internal TrustEvent ledger keeps all three process events.
+    - proves public member credential and TrustSlip count only one public
+      community activity event.
+- Verified:
+  - Passed `python -m pytest -q
+    tests/test_community_member_verifications.py::test_member_witness_request_process_events_do_not_inflate_public_activity`
+    from `gmfn_backend/`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `20 passed`.
+  - Passed `git diff --check` for the touched backend files.
+- Unabated truth:
+  - before this fix, the public activity signal could be inflated by internal
+    workflow events.
+  - now public activity better represents substantive member evidence, not
+    request mechanics.
+
+## 2026-06-19 - Member Witness Summary Hides Private Notes
+
+- Trigger:
+  - continued privacy review of member-witness withdrawal and summary behavior.
+- Bug found:
+  - `get_member_verification_summary()` can be viewed by any active community
+    member.
+  - the item payload included `verification_note` and `withdrawal_reason`.
+  - public credential pages were already safe, but the authenticated summary
+    still exposed more private witness context than necessary.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `_member_verification_payload()` now defaults to hiding private fields.
+    - direct action responses for record/approve/withdraw pass
+      `include_private_fields=True` so the actor still sees immediate details.
+    - general summary items no longer include `verification_note` or
+      `withdrawal_reason`.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - regression proves direct record response includes the actor's private
+      note.
+    - regression proves the general member-witness summary does not expose
+      `verification_note`, `withdrawal_reason`, or their raw text.
+- Verified:
+  - Passed `python -m pytest -q
+    tests/test_community_member_verifications.py::test_members_can_record_and_withdraw_member_witness_verification`
+    from `gmfn_backend/`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `19 passed`.
+  - Passed `git diff --check` for the touched backend files.
+- Unabated truth:
+  - before this fix, the public page was safe but the authenticated summary was
+    too revealing for ordinary community members.
+
+## 2026-06-19 - Prior-Year Pending Witness Requests Reserve Current Capacity
+
+- Trigger:
+  - devil's-advocate review of the pending witness-request capacity logic.
+- Bug found:
+  - pending request reservations were filtered by `created_at >= Jan 1` for the
+    current year.
+  - a request created near year-end but still unexpired after January 1 could be
+    approved in the new year, but was not reserving current-year verifier
+    capacity.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `_member_witness_pending_request_count()` now counts any pending,
+      unexpired request for the verifier, regardless of when it was created.
+    - expired requests still do not reserve capacity.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_unexpired_prior_year_pending_request_reserves_current_capacity`.
+    - proves a still-valid pending request with prior-year `created_at` blocks
+      another request and direct witness when it reserves the final slot.
+- Verified:
+  - Passed `python -m pytest -q
+    tests/test_community_member_verifications.py::test_unexpired_prior_year_pending_request_reserves_current_capacity`
+    from `gmfn_backend/`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `19 passed`.
+  - Passed `git diff --check` for the touched backend files.
+- Unabated truth:
+  - before this fix, the verifier cap had a year-boundary loophole for pending
+    requests created before January 1 but still valid after January 1.
+
+## 2026-06-19 - Pending Witness Requests Reserve Verifier Capacity
+
+- Trigger:
+  - continued implementation review of the member-witness yearly cap.
+  - gap found after adding cap checks to QR/OTP request creation.
+- Bug found:
+  - completed witness records counted toward the yearly verifier cap.
+  - pending, unexpired witness requests did not count.
+  - result: a verifier with one slot left could receive several pending
+    QR/OTP packages; only the first successful response would work and the rest
+    would become dead-end requests.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `_member_witness_pending_request_count()`.
+    - added `_member_witness_reserved_count()` to combine completed witness
+      records plus pending, unexpired request reservations for the same year.
+    - direct witness recording and witness request creation now both use
+      reserved capacity.
+    - duplicate pending requests for the same subject/verifier do not consume a
+      second slot.
+    - approving the pending request for the reserved subject still works because
+      the direct-record path excludes the subject currently being recorded.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added `test_pending_member_witness_request_reserves_verifier_capacity`.
+    - proves one pending request reserves the final slot.
+    - proves duplicate request returns the same token.
+    - proves another subject cannot create a new request or direct witness while
+      the final slot is reserved.
+    - proves the reserved pending request can still be approved.
+- Verified:
+  - Passed `python -m pytest -q
+    tests/test_community_member_verifications.py::test_pending_member_witness_request_reserves_verifier_capacity`
+    from `gmfn_backend/`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `18 passed`.
+  - Passed `git diff --check` for the touched backend files.
+- Unabated truth:
+  - before this fix, pending request packages could oversubscribe a verifier's
+    annual capacity.
+  - this closes that dead-end package path without blocking the package that
+    legitimately reserved the final slot.
+
+## 2026-06-19 - Witness Request Creation Respects Yearly Verifier Cap
+
+- Trigger:
+  - continued implementation review of the member-witness QR/OTP request path.
+  - gap found after enforcing verifier standing at request creation.
+- Bug found:
+  - direct witness recording enforced the yearly verifier cap.
+  - witness request creation did not enforce that cap, so a member could create
+    a share package for a verifier who had already reached the yearly limit.
+  - the request would only fail later when the verifier tried to respond.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added shared `_member_witness_yearly_limit()` and
+      `_member_witness_yearly_count()` helpers.
+    - direct witness recording now uses the shared helper.
+    - witness request creation now blocks capped verifiers before creating a
+      public token or one-time code.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added
+      `test_member_witness_request_creation_respects_yearly_verifier_limit`.
+    - proves no `CommunityMemberVerificationRequest` row is created when the
+      assigned verifier is already capped.
+- Verified:
+  - Passed `python -m pytest -q
+    tests/test_community_member_verifications.py::test_member_witness_request_creation_respects_yearly_verifier_limit`
+    from `gmfn_backend/`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `17 passed`.
+  - Passed `git diff --check` for the touched backend files.
+- Unabated truth:
+  - before this fix, a verifier at their yearly cap could still receive dead-end
+    witness request packages.
+  - now the cap is enforced before direct witness recording and before QR/OTP
+    request creation.
+
+## 2026-06-19 - Witness Request Creation Requires Verifier Standing
+
+- Trigger:
+  - follow-up implementation pass after adding the member-witness standing gate.
+  - gap found: a member could create a QR/OTP witness request for a verifier
+    who did not yet have standing; the verifier was only blocked later when
+    trying to respond.
+- Bug found:
+  - unusable witness requests could be created.
+  - this would confuse members because the requester could share a package that
+    the assigned verifier could not complete.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `create_member_verification_request()` now checks the assigned verifier's
+      standing before creating a token/code.
+    - community admins can still receive bootstrap requests.
+    - ordinary verifiers must already have current witness standing.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added `test_member_witness_request_requires_verifier_with_current_standing`.
+    - proves unverified ordinary verifier is blocked at request creation.
+    - proves admin bootstrap request works.
+    - proves verified ordinary member can receive a request.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - added `memberWitnessErrorMessage()`.
+    - member-witness record/request/decision errors now translate standing and
+      yearly-limit backend rejections into clear next steps.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added a guard requiring the page to keep the rule-specific guidance.
+- Verified:
+  - Passed `python -m pytest -q
+    tests/test_community_member_verifications.py::test_member_witness_request_requires_verifier_with_current_standing`
+    from `gmfn_backend/`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `16 passed`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx
+    tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - before this fix, the system could create dead-end witness requests.
+  - now the same trust-standing rule is enforced at both direct witness record
+    time and request creation time.
+
+## 2026-06-19 - Member Witness Yearly Cap Counts Withdrawn Records
+
+- Trigger:
+  - devil's-advocate review of the verifier-limit implementation after adding
+    the witness-standing gate.
+- Bug found:
+  - the yearly verifier cap counted only active, non-withdrawn witness records.
+  - a bad verifier could verify up to the cap, withdraw records, and keep
+    verifying more members in the same year.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - yearly cap now counts witness records for that verifier/community/year
+      even if some were later withdrawn.
+    - renewing/reusing the same subject row is excluded from the cap count so
+      annual renewal of the same person is not treated as a new person.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - extended the yearly-limit regression to withdraw one record and prove the
+      verifier still cannot exceed the yearly cap.
+- Verified:
+  - Passed `python -m pytest -q
+    tests/test_community_member_verifications.py::test_member_witness_yearly_limit_blocks_verification_factory`
+    from `gmfn_backend/`.
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `15 passed`.
+- Unabated truth:
+  - before this fix, the cap looked correct but could be bypassed through
+    withdrawal cycling.
+  - this keeps withdrawal useful for correction without making it a loophole.
+
+## 2026-06-19 - Member Witness Standing Gate
+
+- Trigger:
+  - implementation gap found during verifier-limit review.
+  - owner's trust model says a person should verify others only after they are
+    already known/verified inside the same community, with admins able to seed
+    the first witnesses.
+- Bug found:
+  - any active community member could verify another active member.
+  - that meant an unverified ordinary member could become a verifier
+    immediately, which was too loose for the GSN community-trust model.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `_has_current_member_witness_standing()`.
+    - ordinary members must now have at least one current, active,
+      non-withdrawn witness record in the same community before verifying
+      another member.
+    - community admins can still bootstrap witness confirmations.
+    - existing yearly verifier limits remain: 20 for ordinary verified members,
+      100 for admins.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added coverage blocking an unverified ordinary verifier.
+    - added coverage proving an admin can bootstrap a member and that newly
+      verified member can then verify another member.
+    - adjusted existing member-witness tests so their verifier prerequisites
+      match the stricter rule.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `15 passed`.
+- Unabated truth:
+  - before this fix, the model was still too open to verification factories.
+  - this is the first real enforcement that "members verify members" means
+    "members with current standing verify members," not merely "any joined
+    account can verify."
+
+## 2026-06-19 - Public Member Activity Evidence Rule Centralized
+
+- Trigger:
+  - implementation review of the public community-member credential and
+    TrustSlip member credential link path.
+  - owner direction remained: implementation first, incidental wording only
+    when attached to a real fix.
+- Risk checked:
+  - CAC/company registration must be recorded as supporting evidence only, not
+    counted or displayed as personal public member activity.
+  - the same public-activity exclusion rule existed in both
+    `community_confirmation_service.py` and `trust_slips_services.py`, creating
+    drift risk.
+- Changed:
+  - `gmfn_backend/app/core/trust_event_types.py`
+    - added `PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES`.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - now imports the shared exclusion set for public community-member
+      credentials.
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - now imports the same shared exclusion set for TrustSlip community
+      activity summaries.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `13 passed`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-link-contracts.mjs` from `frontend/`.
+- Unabated truth:
+  - this is not a new feature. It is a damage-prevention cleanup so sensitive
+    supporting evidence remains consistently excluded from public member
+    activity surfaces.
+
+## 2026-06-19 - Member Witness Annual Renewal Fix
+
+- Trigger:
+  - implementation review after owner allowed incidental wording cleanup only
+    when attached to real implementation work.
+  - risk checked: annual member-witness renewal could stall if an expired
+    witness row was still marked `active`.
+- Bug found:
+  - `_record_member_verification_for_verifier()` returned an existing witness
+    row whenever `status == active` and `withdrawn_at is None`.
+  - it did not check `valid_until`.
+  - result: an expired active witness could not be renewed because the backend
+    answered `You already have an active witness confirmation for this member.`
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - existing witness rows are considered already-current only if they are
+      active, not withdrawn, and not past `valid_until`.
+    - expired existing rows can now be renewed/reused with a fresh validity
+      window and updated claim/note.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added `test_member_witness_can_renew_expired_existing_witness_record`.
+    - regression proves the same verifier can renew the same subject after the
+      old witness validity window expires.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+    - result: `13 passed`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx
+    tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - before this fix, the annual reverification model was not fully reliable.
+  - this keeps the existing single-row-per-verifier/member design and renews the
+    row instead of creating duplicate annual rows.
+
+## 2026-06-19 - Member Witness OTP Exposure Fix
+
+- Trigger:
+  - devil's-advocate implementation review of the member-witness request flow.
+- Bug found:
+  - `_member_verification_request_payload()` always returned `one_time_code`.
+  - because the assigned verifier can load the witness request, the verifier
+    could fetch the code directly from the API.
+  - that defeated the product rule that the one-time code must come from the
+    member/requester, not from the verifier's own request fetch.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - `_member_verification_request_payload()` now accepts
+      `include_one_time_code=False`.
+    - create/duplicate-pending responses still return the code to the requester
+      so they can share it.
+    - request fetch returns the code only when the signed-in user is the
+      subject/requester.
+    - verifier/admin fetches and decision responses do not expose the code by
+      default.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added regression coverage proving the requester can see the code and the
+      assigned verifier cannot fetch it from the request API.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - added `canShareMemberWitnessRequest`.
+    - requester-side QR/package/code controls now render only when the backend
+      actually returned a one-time code.
+    - verifier-side request review can still accept the code, but does not show
+      the hidden code package as `Not shown`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added a guard requiring requester-side package/code controls to be gated
+      by `canShareMemberWitnessRequest`.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_member_verifications.py
+    tests/test_community_domain_affiliations.py` from `gmfn_backend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx
+    src\pages\CommunityMemberVerifyPage.tsx src\lib\api.ts
+    tools\audit-link-contracts.mjs tools\audit-trust-actions.mjs` from
+    `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this was a real trust-flow bug, not wording.
+  - before this fix, the OTP did not provide the intended second-channel proof
+    between requester and verifier.
+
+## 2026-06-19 - Public Member Credential Route Guard
+
+- Trigger:
+  - continuing implementation hardening after confirming screen registration
+    and QR dependency support.
+- Checked:
+  - `CommunityMemberVerifyPage` is listed in `docs/SCREEN_REGISTRY.md`.
+  - `docs/SCREEN_SPECS.md` contains the public member credential page spec.
+  - `qrcode.react` is declared in `frontend/package.json`.
+  - `frontend/package-lock.json` already contains `qrcode.react`, and is not
+    currently modified.
+- Changed:
+  - `frontend/tools/audit-link-contracts.mjs`
+    - added a guard requiring the public member credential route
+      `/verify/community/:communityKey/member/:memberKey`.
+    - the guard also requires that route to bind to `CommunityMemberVerifyPage`
+      before the generic `/verify/community/:communityKey` route.
+- Verified:
+  - Passed `node tools\audit-link-contracts.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-link-contracts.mjs
+    tools\audit-trust-actions.mjs src\App.tsx
+    src\pages\CommunityMemberVerifyPage.tsx` from `frontend/`.
+- Unabated truth:
+  - this is a protection guard, not a new feature.
+  - it is still real implementation hardening because it blocks a future route
+    ordering regression that would break scoped member credential links.
+
+## 2026-06-19 - Community Verification Clean Staging Boundary
+
+- Trigger:
+  - after migration hardening, next risk was accidental staging of the whole
+    dirty repo.
+- Confirmed likely implementation-slice files:
+  - `frontend/src/App.tsx`
+  - `frontend/package.json`
+  - `frontend/src/lib/api.ts`
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+  - `frontend/tools/audit-link-contracts.mjs`
+  - `frontend/tools/audit-trust-actions.mjs`
+  - `gmfn_backend/app/api/routes/clans.py`
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+  - `gmfn_backend/app/core/trust_event_types.py`
+  - `gmfn_backend/app/db/models.py`
+  - `gmfn_backend/alembic/versions/20260618_add_community_domain_affiliations.py`
+  - `gmfn_backend/alembic/versions/20260618_add_community_member_verifications.py`
+  - `gmfn_backend/alembic/versions/20260619_add_community_member_verification_requests.py`
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+  - `docs/SCREEN_REGISTRY.md`
+  - `docs/SCREEN_SPECS.md`
+  - `docs/HANDOFF_NOTES.md`
+- Current status:
+  - those files are modified/untracked and should be staged deliberately if the
+    owner wants to publish this implementation slice.
+  - `frontend/package-lock.json` already contains `qrcode.react`; it is not
+    currently modified.
+  - no unresolved merge-conflict files were reported by
+    `git diff --name-only --diff-filter=U`.
+- Unabated truth:
+  - this slice is still large: the tracked subset alone is over ten thousand
+    inserted lines, mostly because `CommunityConfirmationPolicyPage` and
+    `audit-trust-actions.mjs` already absorbed a lot of the community-trust
+    implementation.
+  - do not run broad `git add .` in this repo state.
+
+## 2026-06-19 - Community Verification Migration Hardening Check
+
+- Trigger:
+  - owner said continue after stopping the wording loop.
+  - next real implementation risk was whether the new community-domain and
+    member-witness tables can actually migrate cleanly.
+- Checked:
+  - Alembic sees a single head:
+    - `20260619_member_verification_requests`
+  - New migration chain:
+    - `20260606_feature_entitlements`
+    - `20260618_community_domain_affiliations`
+    - `20260618_member_verifications`
+    - `20260619_member_verification_requests`
+  - Model/migration parity for:
+    - `community_domain_affiliations`
+    - `community_member_verifications`
+    - `community_member_verification_requests`
+- Verified:
+  - First smoke attempt against `sqlite:///C:/tmp/...` failed before running
+    migrations because SQLite could not open the file path.
+  - Retried with workspace-local temporary DB:
+    - `DATABASE_URL=sqlite:///./community_migration_smoke_20260619.db`
+  - Passed full `python -m alembic upgrade head`.
+  - Passed `python -m alembic downgrade 20260606_feature_entitlements`.
+  - Passed re-upgrade from `20260606_feature_entitlements` to `head`.
+  - `python -m alembic current` reported:
+    - `20260619_member_verification_requests (head)`
+  - Temporary DB was removed after the check.
+- Unabated truth:
+  - migration structure is sound for this SQLite smoke path.
+  - this does not prove production Postgres behavior, but the migrations use
+    ordinary create/drop table/index operations and are low risk compared with
+    schema-alter migrations.
+  - no app code was changed in this hardening pass.
+
+## 2026-06-19 - Stop Wording Loop, Verify Real Community Trust Implementation
+
+- Trigger:
+  - owner explicitly stopped the wording/positioning loop and ordered a return
+    to implementation only.
+- Confirmed implementation already present in the working tree:
+  - backend community domain affiliation workflow:
+    - affiliate requests acknowledgement from parent Community ID domain.
+    - parent admin can approve, reject, or revoke.
+    - approved affiliation appears on the public community verification record.
+  - backend external-registration evidence workflow:
+    - CAC/company-registration details are recorded as supporting evidence only.
+    - the public response does not expose raw CAC data or treat CAC as trust
+      verification.
+  - backend member-witness verification workflow:
+    - active community members can witness another active member.
+    - witness strength is aggregate and community-scoped.
+    - witness records have yearly validity/currentness.
+    - ordinary verifiers are capped at 20 member-witness records per year.
+    - witness records can be withdrawn.
+  - backend member-witness request workflow:
+    - a member can ask an assigned verifier for a witness response.
+    - the request has a public token, one-time code, expiry, and assigned-verifier
+      authorization.
+    - approval creates a member-witness verification and TrustEvents.
+  - public member credential workflow:
+    - `/verify/community/:communityKey/member/:memberKey` is routed in the
+      frontend.
+    - the page calls the public community-member credential endpoint.
+    - the public page shows aggregate membership/witness/activity evidence
+      without exposing private verifier names or notes.
+  - TrustSlip integration:
+    - backend TrustSlip verify/share/page payloads can link to the scoped member
+      credential page.
+- Verified:
+  - Passed `python -m pytest -q tests/test_community_domain_affiliations.py
+    tests/test_community_member_verifications.py` from `gmfn_backend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx
+    src\pages\CommunityMemberVerifyPage.tsx src\lib\api.ts
+    tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - no new code change was needed in this slice because the core implementation
+    already exists locally and passes focused checks.
+  - the remaining risk is repository hygiene: the implementation is mixed into
+    a very dirty worktree with many unrelated modified files and several
+    untracked implementation/test/migration files.
+  - next implementation work should be a narrow hardening pass, not more copy
+    rewrites: review/stage only the community-domain/member-verification files,
+    run migration checks, then commit the verified slice separately.
+
+## 2026-06-19 - CAC Recorded Support Terminology Check
+
+- Trigger:
+  - owner continued the app-update path.
+  - owner previously corrected the doctrine: CAC should be recorded, not
+    treated as verification.
+- Checked:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - external-registration panel already says CAC/company-registration evidence
+      is support for review only.
+    - it already says this does not verify leadership, membership, consent, or
+      public Community ID ownership.
+    - it already says GSN stores a fingerprint, not raw text.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - already cages the external-registration panel as supporting evidence only.
+- Changed:
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - changed one remaining `CAC verification` phrase to `CAC-backed trust
+      claim` so the gap audit does not sound like CAC itself verifies trust.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - `rg` found no remaining `CAC verification`, `CAC verified`, `verified by
+    CAC`, `Corporate Affairs verification`, or `corporate affairs verification`
+    phrases in `frontend/src` or `docs` outside this handoff.
+  - `git diff --check` on the touched docs reported no whitespace errors.
+- Unabated truth:
+  - no app runtime behavior changed in this slice because the app panel was
+    already aligned with the recorded-support doctrine.
+
+## 2026-06-19 - Trust Snapshot Current Evidence Language Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - copied trust snapshots already used `current evidence` in trust-band
+    guidance, but weak consistency readings still ended with `Ask for current
+    confirmation.`
+- Changed:
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - changed weak/uncertain consistency snapshot guidance to `Ask for current
+      evidence.`
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now requires consistency snapshots to ask for current evidence.
+    - now blocks reintroducing `Ask for current confirmation`.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - recorded the snapshot language correction.
+- Verification:
+  - Passed `node tools\audit-institutional-evidence-surfaces.mjs` from
+    `frontend/`.
+  - Passed `node tools\audit-institutional-proof-surfaces.mjs` from
+    `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\lib\trustDocumentSnapshots.ts
+    tools\audit-institutional-proof-surfaces.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - `git diff --check` on the touched slice reported only existing LF-to-CRLF
+    warnings on the two frontend files, with no whitespace errors.
+- Unabated truth:
+  - this only changes copied snapshot language.
+  - it does not calculate new evidence, add a confirmation workflow, or change
+    TrustSlip/Trust Passport backend data.
+
+## 2026-06-19 - TrustSlip Verify Action Guide Reading Boundary Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - the TrustSlip Verify action guide footer still said printing the page
+    carried the current public `confirmation`, which is stronger than the
+    current evidence/record doctrine.
+- Changed:
+  - `frontend/src/lib/trustDocumentActionGuide.ts`
+    - changed the TrustSlip Verify footer to say printing carries the current
+      public reading, not a public confirmation.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires that wording so the action guide stays inside evidence
+      language.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - recorded this TrustSlip Verify reader-boundary correction.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-institutional-evidence-surfaces.mjs` from
+    `frontend/`.
+  - Passed `node tools\audit-institutional-proof-surfaces.mjs` from
+    `frontend/`.
+  - Passed `npm exec -- eslint src\lib\trustDocumentActionGuide.ts
+    tools\audit-trust-actions.mjs src\components\GsnSnapshotPaperCard.tsx
+    tools\audit-institutional-proof-surfaces.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - `git diff --check` on the touched slice reported only existing LF-to-CRLF
+    warnings on the frontend files, with no whitespace errors.
+- Unabated truth:
+  - this only changes one guidance sentence.
+  - it does not change TrustSlip validity rules, backend verification, or
+    community confirmation logic.
+
+## 2026-06-19 - Visual Snapshot Footer Fallback Trust Infrastructure Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - copied snapshot papers had already moved to the trust-infrastructure
+    footer, but the shared visual snapshot card fallback still said `Trusted
+    marketplace. Real people. Real value.`
+- Changed:
+  - `frontend/src/components/GsnSnapshotPaperCard.tsx`
+    - changed the default visual snapshot footer fallback to:
+      `Global Support Network (GSN). Trust infrastructure for organized
+      communities.`
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now requires the visual snapshot card fallback footer to keep the same
+      trust-infrastructure positioning.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - recorded the visual snapshot footer fallback correction.
+- Verification:
+  - Passed `node tools\audit-institutional-evidence-surfaces.mjs` from
+    `frontend/`.
+  - Passed `node tools\audit-institutional-proof-surfaces.mjs` from
+    `frontend/`.
+  - Passed `npm exec -- eslint src\components\GsnSnapshotPaperCard.tsx
+    tools\audit-institutional-proof-surfaces.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - `git diff --check` on the touched slice reported only existing LF-to-CRLF
+    warnings on the two frontend files, with no whitespace errors.
+- Unabated truth:
+  - this only fixes the fallback used when a snapshot card has no parsed footer.
+  - it does not remove every marketplace tagline from commerce-specific pages,
+    and it does not redesign the visual paper card.
+
+## 2026-06-19 - Shared Snapshot Footer Trust Infrastructure Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - after moving Trust Passport copied snapshots to the shared paper helper,
+    the shared copied-paper footer still described GSN as a `Trusted
+    marketplace`, which is too narrow for the trust-infrastructure positioning.
+- Changed:
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - changed the shared copied snapshot footer to:
+      `Global Support Network (GSN). Trust infrastructure for organized
+      communities.`
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now requires the shared snapshot footer to keep the trust-infrastructure
+      positioning.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Trust Mobility implementation and ledger notes.
+- Verification:
+  - Passed `node tools\audit-institutional-evidence-surfaces.mjs` from
+    `frontend/`.
+  - Passed `node tools\audit-institutional-proof-surfaces.mjs` from
+    `frontend/`.
+  - Passed `npm exec -- eslint src\lib\gsnSnapshotPaper.ts
+    src\lib\trustDocumentSnapshots.ts
+    tools\audit-institutional-proof-surfaces.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this changes the footer language for shared copied text packages only.
+  - it does not redesign visual paper cards, QA PDFs, or convert every
+    remaining copy/share surface.
+
+## 2026-06-19 - Trust Passport Snapshot Shared Paper Helper Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - the gap ledger says evidence-package consistency is still thin.
+  - `trustDocumentSnapshots.ts` already used the shared GSN headed-paper helper
+    for Identity, CCI, TrustSlip, and TrustSlip Verify snapshots, but Trust
+    Passport still hand-built its own headed-paper string.
+- Changed:
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - converted `buildTrustPassportSnapshot()` to use
+      `buildGsnSnapshotPaper()`.
+    - preserved the same Trust Passport facts, witness-currentness lines,
+      member credential link, privacy note, and limitation note.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - now requires Trust Passport copied snapshots to use the shared paper
+      helper.
+    - now blocks reintroducing a hand-built `return [` Trust Passport paper.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated Personal Trust Layer and Trust Mobility ledger notes.
+- Verification:
+  - Passed `node tools\audit-institutional-evidence-surfaces.mjs` from
+    `frontend/`.
+  - Passed `node tools\audit-institutional-proof-surfaces.mjs` from
+    `frontend/`.
+  - Passed `npm exec -- eslint src\lib\trustDocumentSnapshots.ts
+    tools\audit-institutional-proof-surfaces.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not finish all evidence package consistency work.
+  - it does not visually QA PDFs, convert every share/copy surface, or create
+    new public community institution evidence.
+  - it only removes one drift point in the copied trust snapshot family.
+
+## 2026-06-19 - Marketplace Trusted Trade Evidence Boundary Pass
+
+- Trigger:
+  - owner continued the app-update path after the Public Shop trade-decision
+    boundary passed.
+  - Marketplace still needed a light trust-first cue in the trade lane itself,
+    without turning the compact lane into TrustSlip, CCI, or Trust Passport.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - updated the `Trusted Trade` helper text.
+    - it now says to open the shop record for current evidence before trade,
+      credit, goods, or money move.
+  - `frontend/tools/audit-marketplace-trusted-trade-lane.mjs`
+    - now requires that current-evidence-before-trade boundary in the Trusted
+      Trade lane.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Trusted Commerce ledger row and implementation notes.
+- Verification:
+  - Passed `node tools\audit-marketplace-trusted-trade-lane.mjs` from
+    `frontend/`.
+  - Passed `node tools\audit-marketplace-front-package.mjs` from `frontend/`.
+  - Passed `node tools\audit-marketplace-trust-pill.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-marketplace-trusted-trade-lane.mjs
+    src\pages\MarketplacePage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend/`.
+- Unabated truth:
+  - this does not add a new verification flow, TrustSlip shortcut, payment
+    protection, dispute process, or merchant-risk decision engine.
+  - it only makes the existing Marketplace trade lane less likely to read as
+    ordinary commerce without current trust evidence.
+
+## 2026-06-19 - Public Shop Trade Decision Boundary Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - after tightening public community and member evidence pages, the commerce
+    surface needed the same real-life warning before trade, credit, or money
+    movement.
+- Changed:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - added a compact `Before goods or money move` note inside the public
+      shop verification panel.
+    - the note tells buyers to read shop ID, Community ID, current TrustSlip,
+      and community confirmation together before credit, goods, or money move.
+    - it states that the panel is evidence for judgement, not approval to
+      release goods or credit.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires Public Shop to keep that trade-decision boundary visible.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Trusted Commerce ledger row and implementation notes.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-spotlight-system-feed.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\ShopGalleryPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not add escrow, payment safety, merchant subscription checks,
+    new TrustSlip generation, live community response logic, or a legal trade
+    guarantee.
+  - it only makes the public shop trust panel harder to misread as permission
+    to release goods, credit, or money.
+
+## 2026-06-19 - Community Verify Claim Boundary Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - after tightening the public member credential, the public community record
+    needed the matching warning that a shared community link anchors the
+    community only, not every person or subgroup claiming it.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added a `Claim boundary` card to the public reading.
+    - the card says a person, shop, line, subgroup, or affiliate sharing the
+      community record still needs its own scoped member credential, TrustSlip,
+      acknowledged affiliate record, or controlled confirmation.
+    - the card also says the public page is the community anchor, not their
+      private membership record.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires Community Verify to keep this separation between the public
+      community anchor and individual/group claims.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Community Public Face ledger row with this claim-boundary
+      pass.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\CommunityVerifyPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not create member credentials, affiliate acceptance, public
+    service fields, community health, or a richer public profile.
+  - it only prevents a community record link from being misread as evidence for
+    every person, shop, line, subgroup, or affiliate using the community name.
+
+## 2026-06-19 - Community Member Credential Witness Currentness Boundary
+
+- Trigger:
+  - owner continued the app-update path.
+  - after adding the reader-decision card, the public credential still needed a
+    stronger warning that stale or weak witness evidence should not be read as
+    strong current trust.
+- Changed:
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - strengthened the `Evidence currentness` reading card.
+    - it now says low, missing, expired, withdrawn, or disputed witness evidence
+      should be treated as weaker evidence until renewed.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the public member credential to keep that witness-currentness
+      boundary visible.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Member witness evidence ledger row with the stale/weak
+      witness boundary.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\CommunityMemberVerifyPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not add annual renewal prompts, verifier-quality scoring,
+    withdrawal workflow, dispute workflow, or backend recalculation.
+  - it only prevents the public credential from making stale or weak witness
+    evidence look stronger than it is.
+
+## 2026-06-19 - Community Member Credential Reader Decision Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - after the member/Community ID scope anchor, the public credential still
+    needed a clearer real-life reader decision for trade, credit, and support
+    situations.
+- Changed:
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - added a `Before goods or money move` reading card.
+    - the card tells the reader to check the Community ID, witness strength,
+      renewal, activity summary, TrustSlip, and live community confirmation
+      together.
+    - if one of those signals is missing or stale, the card tells the reader to
+      ask for fresh evidence first.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the careful reader-decision card to remain on the public
+      member credential.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Member witness evidence ledger row with this reader-decision
+      pass while leaving the deeper verification-flow gaps open.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\CommunityMemberVerifyPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not authorize lending, release of goods, payment, credit, or
+    parent-domain membership.
+  - it is a public reading guardrail only.
+
+## 2026-06-19 - Community Member Credential Scope Anchor Pass
+
+- Trigger:
+  - owner continued the app-update path after clarifying that GSN should
+    present who a person is trustwise inside a verifiable community.
+  - `CommunityMemberVerifyPage` already had scoped evidence language, but the
+    visible page still needed a stronger top-level anchor tying one member GSN
+    ID to one Community ID before the trust reading.
+- Changed:
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - added a compact `Community-scoped credential` anchor band near the top of
+      the public credential.
+    - the band shows the member GSN ID and Community ID as the reading anchors.
+    - the copy says to read this member only inside this Community ID and not as
+      a universal trust score, transaction approval, or parent-domain membership
+      claim.
+    - reused the same anchored values in the fact grid.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the member credential page to keep the visible member/Community
+      ID scope anchor and non-universal-trust boundary.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Member witness evidence ledger row to record this presentation
+      pass while keeping the remaining QR/OTP, weighting, renewal, assisted
+      witness, and abuse-review gaps open.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\CommunityMemberVerifyPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not add verifier-quality weighting, annual renewal prompts,
+    offline assisted witnessing, payment/recoupment flow, or new backend logic.
+  - it only makes the existing public member credential harder to misread as
+    universal trust or approval.
+
+## 2026-06-19 - Community Verify Confirmation Action Honesty Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - after the visible ID anchor pass, the public page still needed clearer
+    action honesty around controlled confirmation, especially when the relay is
+    not available.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added a compact controlled-confirmation guidance card beside the public
+      actions.
+    - when confirmation is available, it explains that the request asks for a
+      current answer without exposing private member contacts.
+    - when confirmation is unavailable, it tells the reader to ask for a scoped
+      member credential, TrustSlip, acknowledged affiliate record, or fresh
+      community evidence before acting.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires Community Verify to explain both the available and
+      unavailable controlled-confirmation states.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Community Public Face ledger row to record the action-honesty
+      pass while keeping the route incomplete overall.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\CommunityVerifyPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not create a new confirmation path or backend capability.
+  - it only makes the current public page more honest about what a visitor can
+    do now and what evidence they should ask for next.
+
+## 2026-06-19 - Community Verify Visible ID Anchor Pass
+
+- Trigger:
+  - owner continued the app-update path.
+  - after the public reading order pass, the page still visually led with the
+    community name while the doctrine says Community ID is the trust anchor.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added a visible `Community ID anchor` band near the top of the public
+      community record, directly under the community name.
+    - the band shows the current community code/id and tells the reader to
+      check this ID first.
+    - the copy explicitly says the community name is display text, not the
+      trust anchor.
+    - reused the same anchor value in the existing Community ID fact tile.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires Community Verify to surface the Community ID anchor and keep
+      the display-name limitation.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Community Public Face ledger row to record the visible ID
+      anchor pass while keeping the route incomplete overall.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\CommunityVerifyPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this still does not create a community public profile, health metric,
+    public score, backend payload field, or legal/official verification.
+  - it only makes the current public community verification page show the
+    existing Community ID as the visible trust anchor.
+
+## 2026-06-19 - Community Verify Public Reading Order Pass
+
+- Trigger:
+  - owner continued after confirming the work is app-update first, playbook
+    later.
+  - the Community Public Face spec says the public page should lead with the
+    anchor, then show what the evidence means, what is hidden, and the safe
+    next action.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - public reading now follows the Community Public Face order:
+      - Trust anchor;
+      - What this means;
+      - What remains unchecked;
+      - Hidden by design;
+      - Next safe step;
+      - Reader decision.
+    - kept private member lists, raw phone numbers, verifier names, witness
+      details, disputes, and admin records out of the public page.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires this public reading order and hidden-private-evidence
+      boundary.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Community Public Face ledger row to say the reading order has
+      begun moving into the app, but full route QA and future safe fields still
+      remain.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\CommunityVerifyPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is still presentation work on the public verification page.
+  - it does not add a community reputation score, community health metric,
+    backend payload field, schema change, or playbook material.
+
+## 2026-06-19 - Community Verify Public Face Anchor Pass
+
+- Trigger:
+  - owner continued after the Community Public Face spec was added.
+  - next safe step was to begin implementing `/verify/community/:communityKey`
+    against the spec using existing data only.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - changed the first public reading card to `Trust anchor`.
+    - explicitly says names are display labels and the Community ID is what the
+      reader should check.
+    - expanded the existing privacy section into a compact public/member/admin
+      boundary:
+      - public view only;
+      - member credentials stay separate;
+      - admin evidence stays private.
+    - did not expose CAC, private contacts, witness details, disputes, member
+      lists, or raw registration references on the public page.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Community Verify page to keep the anchor-first reading
+      and public/member/admin privacy boundary.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - updated the Community Public Face ledger row: spec exists and the public
+      page implementation has begun, but full QA and future safe fields remain.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs
+    src\pages\CommunityVerifyPage.tsx` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is not a full Community Public Face completion.
+  - it is a route-local presentation pass only; no backend payload, schema,
+    community health metric, public score, or new public field was added.
+
+## 2026-06-19 - Community Public Face Spec Added
+
+- Trigger:
+  - owner continued after the trust-infrastructure completion ledger.
+  - the gap audit said the next safest step was to write a Community Public Face
+    spec before adding fields or redesigning the public community verification
+    page.
+- Changed:
+  - `docs/GSN_COMMUNITY_PUBLIC_FACE_SPEC_2026-06-19.md`
+    - added the docs-first product contract for the Community Public Face.
+    - defines the anchor rule: names are not the trust anchor; Community ID,
+      protected Community ID Domain, or parent-domain acknowledged affiliate
+      records are the trust anchors.
+    - defines public, signed-in member, and admin/custodian variants.
+    - keeps CAC/external registration as recorded context, not GSN
+      verification by itself.
+    - blocks public scores, rankings, financial guarantees, legal-authority
+      claims, private member exposure, and CAC-as-trust shortcuts.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - now points to the new spec and updates the Community Public Face ledger
+      row: spec exists, implementation still remains.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now includes the new spec in doctrine wording checks and requires the
+      anchor rule, public/member/admin variants, CAC boundary, and not-finished
+      truth to remain present.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs` from
+    `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed direct trailing-whitespace checks on the new Community Public Face
+    spec.
+- Unabated truth:
+  - this does not add public fields, backend payload changes, or UI changes.
+  - the Community Public Face is better defined now, but it is not implemented
+    to the new spec yet.
+
+## 2026-06-19 - Trust Infrastructure Completion Ledger Added
+
+- Trigger:
+  - owner continued after the final doctrine closing-summary boundary.
+  - the workstream had reduced many wording and doctrine risks, but the repo
+    still needed a blunt checkpoint separating what is actually closed from
+    what remains as product/UI/data work.
+- Changed:
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - added `Completion Ledger` covering overclaim guardrails, personal trust,
+      Community Public Face, parent-domain affiliation, member witness
+      evidence, community operating evidence, trusted commerce, trust mobility,
+      adoption playbook, and later data/model work.
+    - explicitly states that the gap challenge is not finished: doctrine harm
+      is lower, but Community Public Face, community trust summary,
+      Marketplace trust-first hierarchy, evidence package consistency, and
+      adoption briefs still need work.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the gap audit to keep this completion ledger and its
+      not-finished boundary.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs` from
+    `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for touched files, with the existing frontend
+    LF-to-CRLF warning only.
+- Unabated truth:
+  - this does not add runtime behavior, public fields, or backend logic.
+  - it gives the next sessions a truth map so we do not confuse strategic
+    wording safety with completed trust-infrastructure product capability.
+
+## 2026-06-19 - Final Doctrine Closing Summary Boundary Added
+
+- Trigger:
+  - owner continued after asking whether the gap work was done.
+  - the closing summary in `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    still said `Personal verification records the person`, `Internal group
+    verification records local belonging`, and `Official membership
+    credential...`. The reframe playbook also said members `verify one another`
+    and can claim `official standing`. Those phrases contradicted the safer
+    model now used throughout the public/admin surfaces.
+- Changed:
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - final doctrine now closes with personal identity evidence, internal
+      belonging evidence, parent-domain acknowledged affiliation, and protected
+      membership credentials.
+    - minimum label list now says `protected member credential` and
+      `parent-domain acknowledged affiliate`.
+  - `docs/GSN_REFRAME_WORKSHOP_AND_MARKET_ENTRY_PLAYBOOK_2026-06-18.md`
+    - package summary now says members record witness evidence for one another
+      and groups claim acknowledged standing only after parent-domain
+      acknowledgement.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now blocks the old closing-summary and reframe-playbook phrases.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - recorded the closing-summary boundary.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs` from
+    `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for touched files, with the existing frontend
+    LF-to-CRLF warning only.
+- Unabated truth:
+  - this does not add the missing Community Public Face fields or finish the
+    full page-by-page MVP scoring.
+  - it does remove a harmful contradiction from the product doctrine: the final
+    summary now matches the evidence/credential/acknowledgement model we have
+    been building.
+
+## 2026-06-19 - Internal Belonging Evidence Doctrine Boundary Added
+
+- Trigger:
+  - owner selected the next continuation after the Verified Domain
+    Official-Language boundary.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md` still said a group
+    may `verify members internally`, and described an `Official community
+    membership credential` showing a person is `officially verified`. That was
+    still too broad for the trust-infrastructure doctrine: internal groups can
+    record local belonging/witness evidence, but protected-domain membership
+    credentials are issued through the protected Community ID system.
+- Changed:
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - renamed `Official community membership credential` to `Protected
+      community membership credential`.
+    - replaced internal member-verification language with local
+      belonging-evidence and witness-recording language.
+    - changed broad verification/audit/support wording to credential and
+      witness-record wording where the context is internal evidence.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now blocks the old internal-member-verification phrases from the verified
+      community domain doctrine.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - recorded the boundary between internal group evidence and protected
+      membership credentials.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs` from
+    `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for touched files, with the existing frontend
+    LF-to-CRLF warning only.
+- Unabated truth:
+  - this does not create new membership logic, change verifier limits, change
+    backend credential calculations, rename API statuses, or alter
+    parent-domain affiliation behavior.
+  - it prevents the doctrine from implying that any subgroup can independently
+    issue protected-domain membership verification.
+
+## 2026-06-19 - Verified Domain Doctrine Official-Language Boundary Added
+
+- Trigger:
+  - owner continued after the Member Witness Evidence Helper boundary.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md` still used broad
+    `official` wording in the protected-domain doctrine: official groups,
+    official custodians, official parent body, official association standing,
+    official affiliation, official umbrella recognition, and official
+    membership credential. That could leak into product/sales language and make
+    GSN sound like a legal or political certifier instead of a protected
+    Community ID and evidence-record system.
+- Changed:
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - replaced broad official-status language with protected-domain,
+      recognized-custodian, witness-evidence, and parent-domain
+      acknowledgement wording.
+    - `Verified Affiliate Group under...` is now `Parent-domain acknowledged
+      affiliate under...`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now blocks the old broad official-status phrases from the verified
+      community domain doctrine.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - recorded the doctrine boundary.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs` from
+    `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for touched files, with the existing frontend
+    LF-to-CRLF warning only.
+- Unabated truth:
+  - this is a doctrine and audit-cage update only. It does not change backend
+    status names, API contracts, affiliation logic, legal-registration records,
+    payments, or public verification routes.
+  - GSN can still sell protected Community ID domains and parent-domain
+    acknowledgements, but the wording no longer pretends GSN is the legal or
+    political authority for a real-world institution.
+
+## 2026-06-19 - Member Witness Evidence Helper Boundary Added
+
+- Trigger:
+  - owner continued after the Operator Affiliate Status Scope boundary.
+  - `CommunityConfirmationPolicyPage` still had a no-member helper saying the
+    lane records `member-backed community verification`. That could make a
+    witness event sound like full community verification instead of one
+    recorded witness-evidence input.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - no-member helper now says the lane records `member-backed witness
+      evidence`, not paid parent-domain affiliation.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - member-witness audit now requires the safer phrase and blocks the old
+      broad `member-backed community verification` wording.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    and `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - doctrine now names this as a member-backed witness evidence workflow.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for touched files, with the existing frontend
+    LF-to-CRLF warnings only.
+- Unabated truth:
+  - this does not change witness request storage, verifier decisions,
+    membership credential calculations, renewal logic, parent-domain
+    affiliation, or public payloads.
+  - it only keeps the visible/admin wording honest: witness records support a
+    trust reading; they are not the whole verification by themselves.
+
+## 2026-06-19 - Operator Affiliate Status Scope Boundary Added
+
+- Trigger:
+  - owner continued after the Public Affiliate Claim Scope boundary.
+  - `CommunityConfirmationPolicyPage` still told operators that a parent
+    Community ID Domain must acknowledge a group before GSN shows it as an
+    `official affiliate`. That was too broad for the current doctrine, because
+    the signed-in admin lane should match the public boundary: parent-domain
+    acknowledgement records an affiliate relationship; it does not certify all
+    legal, member, shop, loan, payment, or subgroup claims.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - parent-domain affiliation helper now says GSN shows the group as a
+      `parent-domain acknowledged affiliate`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - parent-domain affiliation audit now requires the safer phrase and blocks
+      `official affiliate` in that lane.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    and `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - added the operator-copy boundary to the trust-infrastructure doctrine.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for touched files, with the existing frontend
+    LF-to-CRLF warnings only.
+- Unabated truth:
+  - this does not change affiliation requests, backend statuses, decision
+    values, parent-domain permissions, public payload fields, payment logic, or
+    legal registration handling.
+  - it only tightens operator-facing language so acknowledgement is not read as
+    broad official certification.
+
+## 2026-06-19 - Public Affiliate Claim Scope Boundary Added
+
+- Trigger:
+  - owner continued after the Public Affiliate Acknowledgement boundary.
+  - public Community Verification still used `No official affiliate claim on
+    this record` and `Affiliate approval needs its own parent-domain
+    acknowledgement` when no affiliate claim existed. That wording could sound
+    like GSN is policing legal official status instead of recording whether a
+    parent Community ID has acknowledged an affiliate record.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - no-claim affiliate fallback now says `No parent-domain affiliate claim
+      on this record`.
+    - no-claim affiliate note now says parent-domain acknowledgement needs its
+      own record.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - backend public community verification payload uses the same scoped
+      no-claim wording.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires parent-domain affiliate claim wording and blocks the older
+      broad `official affiliate claim` / `Affiliate approval` fallback.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    and `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - doctrine now says parent-domain acknowledged affiliate instead of
+      official affiliate/approval for this lane.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityVerifyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `python -m pytest -q tests\test_community_domain_affiliations.py`
+    from `gmfn_backend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for touched files, with the existing frontend
+    LF-to-CRLF warnings only.
+- Unabated truth:
+  - this does not rename the `official_affiliate_*` API fields, change stored
+    affiliation statuses, alter parent-domain routes, create legal identity
+    verification, or change who can acknowledge/reject/revoke affiliate
+    requests.
+  - it only tightens public and doctrine wording so the record is read as
+    parent-domain acknowledgement evidence, not a broad official certification.
+
+## 2026-06-19 - Public Affiliate Acknowledgement Boundary Added
+
+- Trigger:
+  - owner continued after the Parent-Domain Acknowledgement wording boundary.
+  - public Community Verification and backend public payload strings still said
+    `approved affiliate record(s)` and `Approved affiliate under parent
+    domain`. That conflicted with the new doctrine that a parent Community ID
+    acknowledges an affiliate record, not every downstream human or transaction
+    claim.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - next-evidence fallback now asks for an `acknowledged affiliate record`.
+    - trust-mobility fallback now says `acknowledged affiliate records`.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification payload now says `Acknowledged affiliate
+      under parent domain`.
+    - affiliate note now says the community has been acknowledged as an
+      affiliate.
+    - next-evidence and mobility scopes now say acknowledged affiliate records.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - already-linked parent-domain message now says acknowledged affiliate.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - updated public payload expectations to acknowledged affiliate wording
+      while preserving `official_affiliate_status == "approved"`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now cages public affiliate acknowledgement wording across the React
+      fallback and backend payload.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    and `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - updated public-reader doctrine from approved affiliate records to
+      acknowledged affiliate records.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityVerifyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `python -m pytest -q tests\test_community_domain_affiliations.py`
+    from `gmfn_backend/`.
+- Unabated truth:
+  - this does not change the stored affiliation status value, database schema,
+    parent-domain approval endpoint, access rules, affiliation state machine,
+    public route shape, or paid-domain mechanics.
+  - it only changes public/operator language so an acknowledged affiliate is
+    read as a parent-domain relationship record, not a blanket certification of
+    people, shops, loans, payments, or subgroups.
+
+## 2026-06-19 - Parent-Domain Acknowledgement Wording Boundary Added
+
+- Trigger:
+  - owner continued after the Community Witness Record wording boundary.
+  - the parent-domain affiliation lane inside `CommunityConfirmationPolicyPage`
+    still used visible `Approved affiliate`, `Approval says`, `Approve only
+    groups`, `Approving...`, and `Approve` action wording. In the GSN domain
+    model, this can sound broader than intended: the parent body acknowledges
+    an affiliate under its Community ID; it does not verify every person, shop,
+    line, payment, loan, or subgroup claim inside that affiliate.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - parent-domain decision fallback copy now says affiliation
+      acknowledgement/rejection/revocation recorded.
+    - meaning tile now says `Acknowledged affiliate`.
+    - scope note now says `Acknowledgement says the parent domain accepts this
+      group`.
+    - incoming-request helper now says `Acknowledge only groups...`.
+    - pending action now displays `Acknowledge` with `Acknowledging...` busy
+      text.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires parent-domain acknowledgement wording and blocks the older
+      broad approval labels for this lane.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not change the backend affiliation status, API decision value,
+    request/approve/reject/revoke mechanics, public affiliate status, route
+    contracts, or parent-domain permission logic.
+  - the internal decision may still be `approve`; the visible product language
+    now says acknowledgement because the parent domain is accepting an
+    affiliate record, not certifying every downstream claim.
+
+## 2026-06-19 - Community Witness Record Wording Boundary Added
+
+- Trigger:
+  - owner continued after the Community Witness Response boundary.
+  - the same `CommunityConfirmationPolicyPage` member-witness lane still used
+    visible `Member witness verification`, `Member to verify`, `Ask to verify
+    me`, and `verification packages` wording. That could make a member witness
+    record sound like broad GSN verification rather than one digitally recorded
+    human witness event.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - loading/error text now says witness records and witness-strength summary.
+    - section label now says `Member witness records`.
+    - member selector accessibility label now says `Member for witness`.
+    - request button now says `Ask for witness`.
+    - not-live note now says `paid member-witness packages`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the witness-record wording boundary and blocks the old
+      broad verification labels in this lane.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - Step 4 now reads as member-backed witness records, response flow, and
+      witness standing rather than broad verification/approval.
+  - `docs/SCREEN_SPECS.md`
+    - Community Confirmation Policy requirements now describe member-witness
+      records, response packages, response links, and one witness event.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not rename backend models, API functions, debug ids, field ids,
+    status badge names, witness summary data, verifier limits, or membership
+    credential outputs.
+  - it only clarifies the user-facing and doctrine language: the lane records
+    human witness events that contribute to evidence strength; it does not
+    perform blanket identity, community, shop, loan, payment, or parent-domain
+    verification.
+
+## 2026-06-19 - Community Witness Response Boundary Added
+
+- Trigger:
+  - owner continued after the Trust Command Centre admin-reading boundary.
+  - the next community-verification wording risk was the member witness request
+    lane inside `CommunityConfirmationPolicyPage`: it still used visible
+    `approval link`, `Approve witness`, `one-time approval`, and `Scan to
+    approve` wording. That could make one member witness response sound like
+    official parent-domain approval or transaction authority.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - witness request notices now say `witness response`, `response link`, and
+      `response package`.
+    - the verifier review lane now says the verifier responds to a request,
+      not approves a request.
+    - the one-time code field now reads as a witness response code.
+    - the approve-path button now displays `Record witness`.
+    - witness explainer tiles now say `Witness response` and explain that a
+      recorded response is one witness event only.
+    - QR/request package copy now says `response lane`, `Scan to respond`, and
+      `Copy response link`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the witness-response wording boundary and blocks the old
+      witness approval-style labels from this lane.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not change the backend request decision enum, public token
+    behavior, one-time code validation, verifier assignment, member witness
+    storage, affiliation approval, parent-domain approval, or any transaction
+    authority.
+  - the backend may still use the internal `approve` decision value for
+    compatibility; the user-facing doctrine now presents the action as a
+    member witness response/record, not broad approval.
+
+## 2026-06-19 - Trust Command Centre Admin Reading Boundary Added
+
+- Trigger:
+  - owner continued after the Demand Box need-resolution boundary.
+  - the next admin/trust wording risk was `TrustCommandCentrePage`: the
+    executive next-action copy still used `Confirm` for system/exposure access,
+    incomplete-loan guidance still said `approval progress`, and the exposure
+    summary used broad `exposed`, `Available`, and `could not be confirmed`
+    wording.
+- Changed:
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - system-health next action now says `Check database and service health`.
+    - exposure-access next action now says `Check community-admin exposure
+      access`.
+    - incomplete-loan next action now says `Review pledge progress and
+      coverage`.
+    - exposure stat now says `exposure reading`, `Buffer`, and `could not be
+      loaded`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Trust Command Centre admin-reading boundary and blocks
+      the old broad confirmation/approval/exposed wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\TrustCommandCentrePage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change command-centre data loading, route targets, exposure
+    totals, pilot readiness, system health, bank summaries, loan summaries, or
+    admin permissions.
+  - it only makes the command-centre overview honest: it gives admin readings
+    and next checks, not final confirmation, broad loan approval, or proof that
+    exposure is personally established.
+
+## 2026-06-19 - Demand Box Need Resolution Boundary Added
+
+- Trigger:
+  - owner continued after the Community Confirmation Outcome resolved-status
+    boundary.
+  - the next trusted-commerce wording risk was `DemandBoxPage`: the personal
+    demand guidance said to cancel a request when the need is `settled`. In a
+    finance-adjacent trust product, this can sound like payment settlement
+    rather than ordinary demand closure.
+- Changed:
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - guidance now says cancel the request when the need is `resolved`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the resolved wording and blocks `need is settled`.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\DemandBoxPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change demand creation, demand fulfillment, cancellation
+    behavior, marketplace routing, trust-credit preference handling, or any
+    payment/finance state.
+  - it only makes Demand Box vocabulary cleaner: non-finance demand closure is
+    resolved, not settled.
+
+## 2026-06-19 - Community Confirmation Outcome Resolved Status Boundary Added
+
+- Trigger:
+  - owner continued after the Exposure risk-reading boundary.
+  - the next trust-surface risk was `CommunityConfirmationOutcomePage`: the
+    signed-in provider follow-up action showed `Mark settled`, and its note
+    said the provider marked the confirmation decision as settled. In GSN this
+    can be mistaken for financial settlement or final legal truth, even though
+    the route is recording a provider decision follow-up on a community
+    confirmation trail.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - added `decisionStatusLabel`, which displays internal `settled` decision
+      status as `Resolved`.
+    - provider follow-up button now says `Mark resolved`.
+    - provider decision note now says the confirmation decision was resolved
+      after review.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the resolved-status boundary and blocks `Mark settled` from
+      the provider-facing outcome UI.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationOutcomePage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change the API status value, backend decision status updates,
+    review-case creation, issue reporting, provider decision recording,
+    community responses, or trust-event storage.
+  - it only makes the outcome UI honest: a provider follow-up can be resolved
+    on the evidence trail, but this page is not financial settlement, court
+    proof, or final truth for every claim.
+
+## 2026-06-19 - Exposure Risk Reading Boundary Added
+
+- Trigger:
+  - owner continued after the Admin Incomplete Loans pledge coverage boundary.
+  - the next admin/support risk was `ExposureAdminPage` and `ExposurePage`:
+    exposure copy still used `locked money`, `pool confirmation`, broad
+    `Approved` queue language, and an older formula for `approved guarantees`.
+    That could make exposure readings sound like settlement, release authority,
+    or payment proof.
+- Changed:
+  - `frontend/src/pages/ExposureAdminPage.tsx`
+    - top guidance now says exposure is a practical risk reading, not
+      settlement, release authority, or evidence that money moved.
+    - overview copy now says `locked pledge coverage`, `pending pool review`,
+      and `bank pressure`.
+    - pressure copy now says locked pledge coverage readings rather than
+      locked money.
+    - incomplete-loan queue detail now says `Pledge decisions`.
+    - pool queue title now says `Pending pool finance review`.
+    - Bank Console route helper now says review bank events, pool finance
+      review, and money-path records.
+  - `frontend/src/pages/ExposurePage.tsx`
+    - old formula copy now frames exposure as a recorded risk reading from
+      locked pledge coverage minus release records, not settlement, release
+      authority, or evidence that money moved.
+  - `frontend/tools/audit-admin-ops-actions.mjs`
+    - now requires the exposure risk-reading boundary.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now also cages the same boundary in the central trust audit.
+- Verification:
+  - Passed `node tools\audit-admin-ops-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\ExposureAdminPage.tsx src\pages\ExposurePage.tsx tools\audit-admin-ops-actions.mjs tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change exposure calculations, overdue detection, CCI loading,
+    default-event loading, route targets, finance records, release records,
+    settlement state, or money movement.
+  - it only makes exposure honest: exposure is a risk/concentration reading
+    from recorded pledge coverage and release records, not proof that money
+    moved or that release has been authorized.
+
+## 2026-06-19 - Admin Incomplete Loans Pledge Coverage Boundary Added
+
+- Trigger:
+  - owner continued after the Bank Console reconciliation boundary.
+  - the next admin/support risk was `AdminIncompleteLoansPage`: the queue used
+    `Approved guarantors`, `Missing approvals`, and `Approval progress`, which
+    could make an incomplete support item sound like the whole loan had been
+    approved.
+- Changed:
+  - `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+    - copied loan snapshots now say `Pledge decisions` and `Pending pledge
+      responses`.
+    - queue summary now says `Missing pledge decisions`.
+    - page guidance now states the screen is an admin review queue and does
+      not approve the whole loan, authorize release, or show that money moved.
+    - visible row labels now say `Pledge progress` and `Pledge decisions`.
+    - coverage wording now says `Locked pledge coverage` and `Pledge coverage
+      already recorded`, avoiding custody or settlement overclaim.
+  - `frontend/tools/audit-admin-ops-actions.mjs`
+    - now requires the Admin Incomplete Loans pledge/coverage boundary.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now also cages the same boundary in the central trust audit.
+- Verification:
+  - Passed `node tools\audit-admin-ops-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\AdminIncompleteLoansPage.tsx tools\audit-admin-ops-actions.mjs tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change incomplete-loan loading, guarantor counts, coverage
+    math, auto-cancel timers, loan summary routing, finance routing, approval
+    state, release authority, or money movement.
+  - it only makes the admin queue honest: it shows pledge-decision progress and
+    pledge coverage review, not whole-loan approval or settlement.
+
+## 2026-06-19 - Bank Console Reconciliation Boundary Added
+
+- Trigger:
+  - owner continued after the System Operations finance queue boundary.
+  - the next finance risk was `BankConsolePage`: reconciliation feedback said
+    `Reconciliation complete`, counted broad `confirmed` items, and warned
+    against treating the rail as `settled`, which could make a matching run
+    sound like settlement completion or evidence that money moved.
+- Changed:
+  - `frontend/src/pages/BankConsolePage.tsx`
+    - reconciliation feedback now says `Reconciliation run recorded`.
+    - result counts now say `finance-confirmed` instead of broad `confirmed`.
+    - review guidance now says unmatched/mismatched items must be reviewed
+      before treating a rail as `settlement-ready`.
+    - clean-run feedback now states the run is not settlement or evidence that
+      money moved.
+    - page guidance now says review matched records and check for a matched
+      record, rather than confirm matches or check whether the event matched.
+  - `frontend/tools/audit-finance-actions.mjs`
+    - now requires the Bank Console reconciliation boundary.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now also cages the same Bank Console boundary in the central trust audit.
+- Verification:
+  - Passed `node tools\audit-finance-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\BankConsolePage.tsx tools\audit-finance-actions.mjs tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change bank ingest, bank matching, reconciliation results,
+    expected-payment statuses, settlement rails, finance permissions, or money
+    movement.
+  - it only makes Bank Console honest: reconciliation records a matching
+    review; it is not settlement completion or evidence that money moved.
+
+## 2026-06-19 - System Operations Finance Queue Boundary Added
+
+- Trigger:
+  - owner continued after the Guarantor Earnings record boundary.
+  - the next admin/finance risk was `SystemOperationsPage`: operational focus
+    text used `finance reading as settled`, pool `confirmation`, expectations
+    `settle`, and incomplete-loan `Approved` count language that could make an
+    admin queue reading sound like settlement, payment confirmation, or broad
+    loan approval.
+- Changed:
+  - `frontend/src/pages/SystemOperationsPage.tsx`
+    - unmatched-bank guidance now says reconcile before treating the finance
+      reading as `settlement-ready`, not settled.
+    - pool-event guidance now says items are waiting for finance review, not
+      broad confirmation.
+    - expected-payment guidance now says expectations clear through finance
+      evidence.
+    - incomplete-loan signal rows now say `Pledge decisions x/y` instead of
+      broad `Approved x/y`.
+    - pool signal rows now say `Pool finance review pending`.
+  - `frontend/tools/audit-admin-ops-actions.mjs`
+    - now requires the System Operations finance queue boundary.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now also cages the same System Operations queue boundary in the central
+      trust audit.
+- Verification:
+  - Passed `node tools\audit-admin-ops-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\SystemOperationsPage.tsx tools\audit-admin-ops-actions.mjs tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change admin queue loading, bank matching, pool review
+    actions, incomplete-loan calculations, guarantor status parsing, finance
+    reconciliation, settlement, or money movement.
+  - it only makes System Operations honest: the page shows operational review
+    readings and queue signals, not final settlement, payment confirmation, or
+    broad approval.
+
+## 2026-06-19 - Guarantor Earnings Record Boundary Added
+
+- Trigger:
+  - owner continued after the Payment Rails status boundary.
+  - the next support/payout risk was `GuarantorEarningsPage`: it already said
+    earned guarantor value is not an automatic payout, but visible summary
+    labels still said `Settled` / `EARNED` in ways that could read as payout or
+    settlement completion.
+- Changed:
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+    - copied earnings snapshot now says `closed-support records` instead of
+      `settled items`.
+    - visible badge now says `Closed-support records` instead of broad
+      `Settled`.
+    - recent item amount label now says `RECORDED EARNED VALUE` instead of
+      broad `EARNED`.
+    - pending guidance now says closed-support records create clearer earnings.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the guarantor earnings record boundary and blocks broad
+      settlement/earned labels.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - now extends the existing Guarantor Earnings payout-truth cage to require
+      closed-support records and recorded earned value wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-loans-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\GuarantorEarningsPage.tsx tools\audit-trust-actions.mjs tools\audit-loans-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change guarantor earning calculations, loan status parsing,
+    payout routes, withdrawal approval, finance settlement, or money movement.
+  - it only makes Guarantor Earnings honest: the page reports recorded earned
+    value and closed-support records, but it does not pay or settle anything.
+
+## 2026-06-19 - Payment Rails Status Boundary Added
+
+- Trigger:
+  - owner continued after the Vault quote/payment boundary.
+  - the next finance risk was `PaymentRailsPage`: it was already read-only, but
+    `Active` rail counters could still be read as payment approval, settlement
+    confirmation, or money-movement readiness.
+- Changed:
+  - `frontend/src/pages/PaymentRailsPage.tsx`
+    - current-reading detail now states that rail status is not payment
+      approval, settlement confirmation, or evidence that money moved.
+    - visible counters now say `Status-active`, `Inbound status-active`, and
+      `Outbound status-active`.
+    - summary explainer now says status-active rail readings do not approve
+      payment or settlement.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Payment Rails status boundary and blocks broad active
+      rail labels.
+  - `frontend/tools/audit-finance-banking-rails-lane.mjs`
+    - now also requires the rail-status boundary inside the existing Banking
+      Rails lane audit.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-finance-banking-rails-lane.mjs` from
+    `frontend/`.
+  - Passed `npm exec -- eslint src\pages\PaymentRailsPage.tsx tools\audit-trust-actions.mjs tools\audit-finance-banking-rails-lane.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change rail parsing, active-status logic, finance routing,
+    payment instructions, settlement, bank matching, or money movement.
+  - it only makes Payment Rails honest: rail status is intelligence for
+    choosing a guided route, not approval or settlement evidence.
+
+## 2026-06-19 - Vault Quote Payment Boundary Added
+
+- Trigger:
+  - owner continued after the Payout Destination approval boundary.
+  - the next commerce/payment risk was `VaultControlPage`: quote and slot copy
+    mixed `confirmed quote`, `paid slots`, and `paid blocks unlock` language in
+    a way that could blur quote agreement, payment-code generation, and
+    payment-confirmed Vault access.
+- Changed:
+  - `frontend/src/pages/VaultControlPage.tsx`
+    - quote action feedback now says `Vault quote agreed` and explicitly says
+      quote agreement is not payment confirmation.
+    - payment preview now says bank or finance reconciliation must confirm
+      payment before Vault blocks become available.
+    - slot labels now say `active Vault slots` / `Active position` rather than
+      broad `paid slots` / `Paid position`.
+    - empty state now says bank transfer alone is not enough; Vault blocks
+      become available only after payment confirmation.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Vault quote/payment/access boundary and blocks the old
+      broad quote-confirmed / paid-block-unlock wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-vault-control-button-inventory.mjs` from
+    `frontend/`.
+  - Passed `npm exec -- eslint src\pages\VaultControlPage.tsx tools\audit-trust-actions.mjs tools\audit-vault-control-button-inventory.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change Vault slot entitlement logic, expected-payment
+    records, payment-code generation, bank matching, finance reconciliation,
+    private block links, media upload, or marketplace product behavior.
+  - it only makes Vault Control honest: agreeing to a quote prepares a payment
+    code; payment confirmation is what makes blocks available.
+
+## 2026-06-19 - Payout Destination Approval Boundary Added
+
+- Trigger:
+  - owner continued after the Withdrawal request execution boundary.
+  - the next payout risk was `PayoutDetailsPage`: `ready for approved
+    withdrawals` copy could make a saved destination record sound like
+    withdrawal approval or payout execution.
+- Changed:
+  - `frontend/src/pages/PayoutDetailsPage.tsx`
+    - page subtitle now says the page saves the destination record for the
+      Money Out route.
+    - ready-state guidance now says the destination record is ready for Money
+      Out, but does not approve or execute a withdrawal.
+    - copied payout summary now carries the same boundary: destination record,
+      not approval or execution.
+  - `frontend/tools/audit-payout-details-protocol.mjs`
+    - now requires the destination-record approval/execution boundary.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now also cages the same Payout Details boundary beside the other
+      trust/finance action boundaries.
+- Verification:
+  - Passed `node tools\audit-payout-details-protocol.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\PayoutDetailsPage.tsx tools\audit-payout-details-protocol.mjs tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change payout destination persistence, withdrawal approval,
+    Money Out routing, payout rails, backend settlement records, or money
+    movement.
+  - it only makes Payout Details honest: a saved destination is a record the
+    withdrawal route can use later, not approval or payout execution.
+
+## 2026-06-19 - Withdrawal Request Execution Boundary Added
+
+- Trigger:
+  - owner continued after the Finance release-record boundary.
+  - the next money-out risk was `WithdrawalInstructionsPage`: a success message
+    said the direct withdrawal was waiting for community confirmation before
+    money movement was complete, which could make community confirmation sound
+    like payout execution.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - direct-withdrawal success copy now says the request was recorded, and
+      that community confirmation is review evidence while payout execution
+      and money movement are not complete here.
+    - pre-submit helper now says to review amount, rail, and payout account
+      before submitting a request instead of using broad confirmation language.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Withdrawal request execution boundary and blocks the old
+      community-confirmation/money-movement completion wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\WithdrawalInstructionsPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change withdrawal request creation, community confirmation,
+    payout rails, payout execution, backend settlement records, or money
+    movement.
+  - it only makes Money Out honest: the route records a request and prepares
+    review evidence; it does not complete payout execution by itself.
+
+## 2026-06-19 - Finance Release Record Boundary Added
+
+- Trigger:
+  - owner continued after the Finance reconciliation confirmation boundary.
+  - the next finance/support risk was `FinancePage`: release totals used broad
+    `Guarantees released`, `Total released`, and `Released total` wording that
+    could read as page-level release authority instead of recorded exposure or
+    liquidity readings.
+- Changed:
+  - `frontend/src/pages/FinancePage.tsx`
+    - guarantor exposure totals now say `Guarantee release records` and
+      explain that Finance reports the record; it does not release exposure by
+      itself.
+    - support-backed and community-money context rows now say `Recorded
+      releases` and `Recorded release total`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Finance release-record boundary and blocks the old broad
+      release-total wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\FinancePage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change guarantor exposure data, release calculations,
+    backend finance records, loan closure, guarantee release authority, or
+    money movement.
+  - it only makes the Finance page honest: release figures shown here are
+    records/readings, not an action or authority created by the page.
+
+## 2026-06-19 - Finance Reconciliation Confirmation Boundary Added
+
+- Trigger:
+  - owner continued after the Revenue Allocation settlement boundary.
+  - the next finance/support risk was `FinancePage`: expected-payment and money
+    event rows used broad `Confirmed` wording, and one helper said the user
+    could use the service a payment unlocked.
+- Changed:
+  - `frontend/src/pages/FinancePage.tsx`
+    - expected-payment state now says `Finance confirmed` instead of broad
+      `Confirmed`.
+    - next-action guidance now says finance shows the payment as confirmed and
+      the related service should be used only where its route says it is
+      available.
+    - waiting-payment guidance now says exact references help finance
+      reconcile the payment.
+    - reconciliation badges, dates, and money-event history now use
+      `Finance confirmed` labels.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Finance reconciliation confirmation boundary and blocks
+      the old broad confirmation/service-entitlement wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\FinancePage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change expected-payment statuses, bank matching, finance
+    reconciliation, service unlock logic, backend records, or money movement.
+  - it only makes the Finance page honest: confirmation shown here is a finance
+    record/reconciliation signal, not a general entitlement by itself.
+
+## 2026-06-19 - Revenue Allocation Settlement Boundary Added
+
+- Trigger:
+  - owner continued after the Money In payment declaration boundary.
+  - the next finance/support risk was `RevenueAllocationPage`: plain
+    `Net disbursed` and allocation wording could read as settlement evidence
+    instead of a returned allocation reading.
+- Changed:
+  - `frontend/src/pages/RevenueAllocationPage.tsx`
+    - net-disbursed labels now say `Net disbursed preview`.
+    - summary, detail, and copied-summary rows now state that the allocation is
+      a returned allocation reading only, not payment instruction, settlement
+      confirmation, or evidence that money moved.
+    - helper text now says settlement still needs finance evidence.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Revenue Allocation settlement boundary and blocks plain
+      `Net disbursed` wording on that preview screen.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\RevenueAllocationPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change allocation math, backend finance records, settlement
+    status, disbursement status, payment instructions, money movement, or
+    finance permissions.
+  - it only makes the Revenue Allocation page honest: returned split figures
+    are not settlement evidence.
+
+## 2026-06-19 - Money In Payment Declaration Boundary Added
+
+- Trigger:
+  - owner continued after the Loan Summary revenue-preview boundary.
+  - the next finance/support risk was `PaymentInstructionsPage`: `Confirm paid`
+    and payment-confirmation copy could make a member's declaration sound like
+    confirmed receipt or bank/admin reconciliation.
+- Changed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - member action wording now says `Declare paid` instead of `Confirm paid`.
+    - route guidance now says declaring payment does not confirm money
+      received.
+    - success notice now says the payment declaration was recorded and is
+      waiting for reconciliation to confirm the money trail.
+    - status/step/helper labels now use declaration language for member action
+      and reserve matched/reconciliation language for actual receipt evidence.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Money In declaration boundary and blocks old
+      confirmation-like user-facing wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\PaymentInstructionsPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change money-in instruction generation, local task state,
+    settlement rails, bank matching, finance reconciliation, backend records,
+    or actual receipt confirmation.
+  - it only makes the Money In presentation honest: the member declares they
+    paid; reconciliation or matched events confirm the money trail.
+
+## 2026-06-19 - Loan Summary Revenue Preview Boundary Added
+
+- Trigger:
+  - owner continued after the Loan Summary guarantor pledge boundary.
+  - the next finance/support risk was `LoanSummaryPage`: `Revenue allocation
+    preview` and `Net disbursed` figures could be read as payment instruction,
+    settlement confirmation, or proof that money already moved.
+- Changed:
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - revenue allocation preview clusters now state that allocation preview is
+      not payment instruction, settlement confirmation, or evidence that money
+      has moved.
+    - visible net-disbursed labels now say `Net disbursed preview`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Loan Summary revenue-preview boundary and blocks plain
+      `Net disbursed` wording on that preview screen.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\LoanSummaryPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change revenue allocation math, backend finance records,
+    disbursement state, payment instructions, settlement rails, or money
+    movement.
+  - it only makes the Loan Summary preview honest: preview figures help people
+    understand a possible split; they are not evidence of actual settlement.
+
+## 2026-06-19 - Loan Summary Guarantor Pledge Boundary Added
+
+- Trigger:
+  - owner continued after the Repayment reconciliation-authority boundary.
+  - the next finance/support risk was `LoanSummaryPage`: guarantor decision
+    actions and success copy used broad approval wording that could sound like
+    whole-loan approval or release authority.
+- Changed:
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - guarantor decision success feedback now says a guarantor pledge decision
+      was recorded and is not whole-loan approval or release authority.
+    - the guarantor decision guide now says `Approve pledge` / decline only
+      the rows that are ready, and scopes the action as a pledge decision.
+    - the visible count/copy package wording now says `Approved pledges`
+      instead of `Approved guarantors`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Loan Summary pledge-decision boundary and blocks the old
+      broad guarantor-approval wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\LoanSummaryPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change `decideLoanGuarantor`, backend guarantor statuses,
+    loan approval, loan release, repayment state, locked pledge accounting, or
+    finance permissions.
+  - it only makes the Loan Summary presentation honest: the row action records
+    a guarantor pledge decision for the support item.
+
+## 2026-06-19 - Repayment Reconciliation Authority Boundary Added
+
+- Trigger:
+  - owner continued after the Loan Workbench fit-approval boundary.
+  - the next finance/support risk was `RepaymentPage`: payment instructions,
+    full-balance repayment, and result-state copy could sound as if declaring a
+    payment closes a loan or releases guarantor exposure.
+- Changed:
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - top guidance now says the route does not confirm money received, close a
+      loan, or release guarantor exposure.
+    - full-balance guidance now says only admin or finance reconciliation can
+      confirm closure and release guarantor exposure.
+    - result guidance now says repayment should be waiting or confirmed by
+      admin or finance reconciliation.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Repayment reconciliation-authority boundary and blocks
+      the old broad wait/closure wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\RepaymentPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change repayment instruction generation, expected-payment
+    records, backend reconciliation, loan closure, guarantor release, finance
+    permissions, or money movement.
+  - it only makes the repayment route honest: a member can declare payment,
+    but reconciliation confirms the money trail and any resulting release.
+
+## 2026-06-19 - Loan Workbench Fit Approval Boundary Added
+
+- Trigger:
+  - owner continued after the Guarantor Inbox pledge-approval boundary.
+  - the next finance/support risk was `LoanWorkbenchPage`: suggested guarantor
+    rows, suggested pledges, and `Approved` counts could be read as guarantor
+    or loan approval if the page did not state the boundary.
+- Changed:
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+    - top guidance now says workbench readings and suggested pledges are
+      decision support only, not loan approval, guarantor approval, or release
+      authority for goods, credit, or money.
+    - guarantor-fit lane now says fit rows do not approve a guarantor or
+      authorize release.
+    - suggested-guarantor history now says `Past pledge approvals` instead of
+      the broader `Approved`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Workbench approval/release boundary and blocks the old
+      broad confirmation/approved-count wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\LoanWorkbenchPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change suggested-guarantor data, backend recommendation
+    logic, loan state, guarantor approval status, pledge locking, released
+    amount display, or finance permissions.
+  - it only makes the Workbench presentation honest: fit and pledge suggestions
+    help people decide; they are not approval or release authority.
+
+## 2026-06-19 - Guarantor Inbox Pledge Approval Boundary Added
+
+- Trigger:
+  - owner continued after Loan Readiness and Loan Suggestions approval
+    boundaries were added.
+  - the next finance/support risk was `GuarantorInboxPage`: a broad `Approve`
+    button and `Support approved` success message could be read as whole-loan
+    approval or permission to release value.
+- Changed:
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+    - pending guarantor action label now says `Approve pledge` / `Approving
+      pledge`.
+    - success notice now says the pledge response is recorded, but is not loan
+      approval or money-release authority.
+    - page guidance now says approving in the inbox records a guarantor pledge
+      response only, not loan approval or authorization to release goods,
+      credit, or money.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the Guarantor Inbox pledge-response boundary and blocks the
+      old broad approval wording from returning.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\GuarantorInboxPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change `decideLoanGuarantor`, backend status values,
+    guarantor locking, loan approval state, money release, or finance policy.
+  - it only scopes what the human action means: a guarantor approves their
+    pledge response, not the whole loan.
+
+## 2026-06-19 - Loan Readiness And Suggestions Approval Boundary Added
+
+- Trigger:
+  - owner continued after Demand Box trust-credit wording was scoped.
+  - the next finance/support risk was `Loan Readiness` and `Loan Suggestions`:
+    readiness and fit guidance could sound like GSN approval if the page did
+    not state the boundary plainly.
+- Changed:
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+    - changed `Readiness decides...` to `Readiness helps you decide...`.
+    - the screen guidance now says Support Readiness is decision support only,
+      not loan approval, guarantor approval, or authority to release goods,
+      credit, or money.
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+    - the screen guidance now says fit suggestions are decision support only,
+      not guarantor approval, loan approval, or authority to release goods,
+      credit, or money.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires those approval-boundary sentences and blocks the old
+      `Readiness decides whether` phrasing.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\LoanReadinessPage.tsx src\pages\LoanSuggestionsPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change loan readiness scoring, guarantor suggestions,
+    approval state, money release, backend permissions, or lending policy.
+  - it only prevents the UI from overclaiming what readiness/fit evidence
+    means.
+
+## 2026-06-19 - Demand Trust-Credit Preference Boundary Added
+
+- Trigger:
+  - owner continued after public member credential claim scope was tightened.
+  - the next trusted-commerce risk was Demand Box: `Trust credit allowed` could
+    sound like GSN had approved a credit release, instead of simply recording
+    the requester's openness to trust-based terms.
+- Changed:
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - the create-demand checkbox now says `Open to trust credit where
+      appropriate`.
+    - demand badges now say `Open to trust credit` instead of `Trust credit
+      allowed`.
+    - the responder guidance now says trust-credit openness is a request
+      preference, not approval to release goods, credit, or money.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires that Demand Box release-approval boundary and blocks the old
+      `Trust credit allowed` / `Allow trust credit where appropriate` wording.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\DemandBoxPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change the `allow_trust_credit` backend field, demand
+    creation behavior, marketplace request status logic, or any credit
+    approval process.
+  - it makes the commerce wording safer: trust credit is a preference to
+    discuss, not GSN permission to release goods or money.
+
+## 2026-06-19 - Public Member Credential Claim Boundary Added
+
+- Trigger:
+  - owner continued after responder answer scope was tightened.
+  - the next trust-infrastructure risk was the public community-member
+    credential: one reading card was titled `Confirmed`, which could make
+    scoped membership evidence sound broader than it is.
+- Changed:
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - the public reading card title now says `Record shown` instead of
+      `Confirmed`.
+    - the public reading now states that the credential does not certify shop,
+      line, subgroup, payment, loan, or parent-domain approval claims.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires that claim boundary and blocks the old `Confirmed` card
+      title.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityMemberVerifyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only an existing Windows
+    line-ending warning appeared for the audit file.
+- Unabated truth:
+  - this does not add new member credential data, parent-domain approval,
+    shop/line affiliation checks, payment checks, or loan approval checks.
+  - it keeps the public member credential scoped: membership record plus
+    witness/activity evidence, not certification of every related claim.
+
+## 2026-06-19 - Responder Answer Scope Boundary Added
+
+- Trigger:
+  - owner continued after the review-case authority boundary.
+  - the next trust-infrastructure risk was the responder lane in Community
+    Confirmation Inbox: `Confirm {member}` and `Can confirm` could sound like
+    certification instead of one responder's accountable answer.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - responder cards now say `Answer about {member}` instead of
+      `Confirm {member}`.
+    - the positive response category now says `Can support` instead of
+      `Can confirm`.
+    - the request context now states that the responder's answer records what
+      they personally know, not parent-domain certification or a
+      whole-community vote.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the responder-scope sentence and blocks the old
+      certification-like labels.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationInboxPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not change response values, backend scoring, public outcome
+    aggregation, or responder eligibility.
+  - it makes the responder lane match the actual trust model: each response is
+    personal/community knowledge evidence, not official domain certification.
+
+## 2026-06-19 - Review Case Authority Boundary Added
+
+- Trigger:
+  - owner continued after member-witness currentness was made explicit.
+  - the next trust-infrastructure risk was the Community Confirmation Inbox
+    review lane: reviewers could read a resolution as broad certification or
+    as permission for a trade/credit decision if the page did not state the
+    boundary.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - review cases now state that a review resolution changes GSN's trust
+      reading only.
+    - the same note says it is not parent-domain certification, legal
+      approval, or permission to release goods, credit, or money.
+    - the visible resolution label `Confirmed clean` is now `No issue found`;
+      the backend value stays `confirmed_clean`.
+    - the positive trust impact helper now says review evidence supports a
+      positive trust signal, rather than saying the review confirms the person
+      behaved well.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the review-case authority boundary and blocks the absolute
+      clean-person language from returning.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationInboxPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not add new review evidence logic, legal adjudication,
+    parent-domain certification, transaction approval, or money-release
+    controls.
+  - it makes the reviewer surface more honest: review outcomes are internal
+    GSN trust-reading decisions based on available evidence.
+
+## 2026-06-19 - Member Witness Currentness Boundary Added
+
+- Trigger:
+  - owner continued after the member-witness review authority boundary.
+  - the next trust-infrastructure risk was the witness-strength summary:
+    strength could be read as permanent if the page did not say that witness
+    records are time-bound and can weaken through expiry, withdrawal, or
+    dispute.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - the `Current witness strength` lane now says witness strength is current
+      only while witness records remain active and inside their validity window.
+    - expired, withdrawn, or disputed witness records are now described as
+      weaker evidence until renewed.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the renewal/withdrawal/dispute currentness boundary.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not add automated renewal prompts, dispute adjudication,
+    verifier scoring, or parent-domain certification.
+  - it makes the operator-facing witness-strength reading more honest:
+    community witness evidence is living evidence, not permanent proof.
+
+## 2026-06-19 - Member Witness Review Authority Boundary Added
+
+- Trigger:
+  - owner continued after public Community Confirmation limitation language was
+    tightened.
+  - the next trust-infrastructure risk was the member-witness review lane:
+    a verifier approval could be misread as parent-domain authority if the UI
+    does not say the scope plainly.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - the witness request review text now says approval records one witness
+      event, not parent-domain approval or a guarantee for every claim.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires that witness-review authority boundary.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the member-witness authority boundary.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - records the same checkpoint.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationPolicyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not add verifier quality scoring, parent-domain payment capture,
+    or official membership issuance.
+  - it prevents one important confusion: one member witness can support a
+    member credential, but it is not the same as the parent domain certifying
+    the person, shop, line, payment, loan, or claim.
+
+## 2026-06-19 - Community Confirmation Limitation Language Tightened
+
+- Trigger:
+  - owner continued after response-count scope was added to the public
+    Community Confirmation outcome.
+  - the next small risk was the final reader guidance: `real community record`
+    could sound stronger than a recorded GSN anchor, and the limitation list did
+    not yet repeat that the outcome is not a whole-community vote.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - `Why a reader may use this` now says the outcome is linked to a recorded
+      GSN community record.
+    - `What this does not mean` now includes `Not a whole-community vote.`
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires both phrases so public Community Confirmation cannot drift
+      into whole-community decision language.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the limitation-language tightening.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - records the same checkpoint.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationOutcomePage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this is still presentation discipline, not new confirmation logic.
+  - it makes the public paper more honest: GSN shows scoped response evidence,
+    not a legal guarantee or community-wide vote.
+
+## 2026-06-19 - Community Confirmation Response Scope Boundary Added
+
+- Trigger:
+  - owner continued after the Public Shop member-currentness boundary.
+  - the next trust-infrastructure risk was the public Community Confirmation
+    outcome: response counts can be misread as the whole community voting unless
+    the page states the count scope.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - the public `Community response` helper now says responses are counted
+      against the contacts asked, not as a whole-community vote.
+    - the pending simple reading now says how many requested contacts responded
+      instead of implying how many active members in the whole community
+      responded.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires the public outcome page to keep requested-contact response
+      scope visible.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the response-count scope boundary.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - records the same checkpoint.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\CommunityConfirmationOutcomePage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not build fuller instant-confirmation responder policy or new
+    response scoring.
+  - it prevents one harmful misunderstanding: a public outcome with three
+    responses is not the same as three votes from the whole community.
+
+## 2026-06-19 - Public Shop Member Currentness Boundary Added
+
+- Trigger:
+  - owner continued after Marketplace local trust currentness boundary was
+    added.
+  - the next trusted-commerce risk was Public Shop: an outside buyer could read
+    shop/community IDs as enough to judge the owner, even though member-witness
+    currentness lives in fuller evidence.
+- Changed:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - the `Shop verification` panel now says shop and community IDs do not show
+      member-witness currentness by themselves.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - now requires that Public Shop boundary so the page keeps asking buyers to
+      use current evidence rather than relying on ID presence alone.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the Public Shop member-currentness boundary.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - records the same trusted-commerce checkpoint.
+- Verification:
+  - Passed `node tools\audit-shop-gallery-button-inventory.mjs` from
+    `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `node tools\audit-spotlight-system-feed.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not add a new seller currentness field to Public Shop.
+  - it prevents a harmful reader mistake: a shop ID, owner ID, or Community ID
+    is an anchor for asking better questions, not fresh member-witness evidence
+    by itself.
+
+## 2026-06-19 - Marketplace Local Trust Currentness Boundary Added
+
+- Trigger:
+  - owner continued the trust-infrastructure gap work after Trust Passport
+    witness currentness was added.
+  - the next commerce risk was Marketplace: the local trust pill must not be
+    mistaken for member-level witness freshness.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - the expanded `Local Marketplace Trust` summary now states that
+      member-level witness currentness belongs in the fuller evidence routes,
+      not the local marketplace summary.
+  - `frontend/tools/audit-marketplace-trust-pill.mjs`
+    - now requires that boundary text while still forbidding the compact Trust
+      pill from becoming a route launcher or full evidence surface.
+  - `frontend/tools/audit-marketplace-front-package.mjs`
+    - now requires the Marketplace front package to keep that same boundary.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the Marketplace currentness-boundary adjustment.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - records the checkpoint under the verified community domain package notes.
+- Verification:
+  - Passed `node tools\audit-marketplace-trust-pill.mjs` from `frontend/`.
+  - Passed `node tools\audit-marketplace-front-package.mjs` from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\MarketplacePage.tsx tools\audit-marketplace-trust-pill.mjs tools\audit-marketplace-front-package.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this does not add member-witness currentness data to Marketplace.
+  - it prevents a harmful overclaim: Marketplace local trust is community-local
+    commerce context; member witness freshness still belongs in the fuller
+    evidence routes.
+
+## 2026-06-19 - Trust Passport Witness Currentness Added
+
+- Trigger:
+  - owner continued after signed-in TrustSlip currentness was added.
+  - the next safe gap was Trust Passport: it already reads TrustSlip community
+    activity and member credential links, but it did not yet show whether the
+    member-witness evidence is current.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - added TrustSlip summary typing for `membership_currentness_label` and
+      `membership_currentness_scope`;
+    - reads currentness from TrustSlip top-level, merchant summary, or
+      community context;
+    - adds a `Witness currentness` card to the Trust Passport Community
+      Confirmation lane;
+    - passes currentness into the copied Trust Passport snapshot.
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - carries currentness through the Trust Passport identity/community view
+      model;
+    - includes currentness in the community-stability reading, helps-trust
+      list, and pressure signals when currentness needs care.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - copied Trust Passport snapshots now include `Witness currentness` and a
+      currentness note.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires Trust Passport page, view model, and copied snapshot to keep
+      currentness visible.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records Trust Passport currentness alignment.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the Trust Passport currentness checkpoint.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\TrustScorePage.tsx src\lib\trustPassportViewModel.ts src\lib\trustDocumentSnapshots.ts tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this still does not build automated renewal prompts, verifier quality
+    scoring, paid renewal, dispute handling, or assisted field-agent workflows.
+  - it aligns the fuller Trust Passport story with the currentness truth already
+    shown on TrustSlip and public member credentials.
+
+## 2026-06-19 - Signed-In TrustSlip Currentness Reading Added
+
+- Trigger:
+  - owner continued the trust-infrastructure gap work after TrustSlip public
+    evidence currentness was added.
+  - the next safe gap was the signed-in TrustSlip holder/reader view: the public
+    verifier could show currentness, but the member should also see whether the
+    community-witness evidence is current before sharing.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - added TrustSlip summary typing for `membership_currentness_label` and
+      `membership_currentness_scope`;
+    - reads currentness from top-level TrustSlip, merchant view, merchant
+      summary, or community context;
+    - includes currentness in the four-question community-stability answer and
+      the compact decision answer;
+    - passes currentness into the signed-in reader block.
+  - `frontend/src/components/TrustSlipReaderBlock.tsx`
+    - shows a compact `Currentness` chip beside witness/renewal/activity
+      context;
+    - adds an `Evidence currentness` line explaining the current witness window
+      boundary without exposing private verifier names.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the signed-in TrustSlip page and reader block to keep member
+      witness currentness visible.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the signed-in currentness reading as a trust-mobility
+      presentation improvement.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the holder/reader currentness checkpoint.
+- Verification:
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src\pages\TrustSlipPage.tsx src\components\TrustSlipReaderBlock.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the frontend files.
+- Unabated truth:
+  - this still does not build annual renewal prompts, paid verification,
+    verifier quality scoring, dispute handling, or assisted field-agent
+    workflows.
+  - it does close a presentation gap: a holder now sees the same currentness
+    truth that an outside TrustSlip reader can see.
+
+## 2026-06-19 - TrustSlip Evidence Currentness Added
+
+- Trigger:
+  - owner continued after public member evidence currentness.
+  - the next safe gap was trust mobility: a TrustSlip can travel, so the same
+    community-member witness currentness needs to travel with it instead of
+    being visible only on the standalone member credential page.
+- Changed:
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - added `_membership_currentness_reading(...)`;
+    - TrustSlip community context now returns:
+      `membership_currentness_label` and `membership_currentness_scope`;
+    - full TrustSlip payload, merchant summary, and standard public visibility
+      view now carry those fields.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - public TrustSlip verify JSON now preserves the same currentness fields
+      through the route-level response whitelist.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+    - normalizes the currentness fields from top-level, merchant view,
+      merchant summary, or community context.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - carries currentness through the public reader model and includes it in the
+      real-community quick answer.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - passes currentness into the public paper.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - shows currentness inside the existing `Supporting evidence` tile rather
+      than adding a bulky new section.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - covers currentness in TrustSlip community context, full payload, merchant
+      summary, and public verify JSON.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the TrustSlip payload/frontend bridge to keep currentness.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records TrustSlip currentness as a trust-mobility gap improvement.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the TrustSlip evidence-currentness checkpoint.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 8 tests passing.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/trustSlipVerifyData.ts src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not create automatic annual renewal prompts, paid verification,
+    dispute handling, verifier quality scoring, or live confirmation.
+  - it does make portable TrustSlip evidence more honest by showing whether the
+    member-witness evidence behind community standing is current.
+
+## 2026-06-19 - Public Member Evidence Currentness Added
+
+- Trigger:
+  - owner continued after the public member community trust reading.
+  - the next safe gap was the annual-reverification/currentness question:
+    a person may be known in a community, but outside readers also need to know
+    whether the witness evidence is current, due, expired, or not yet started.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - `public_community_member_verification(...)` now returns:
+      `membership_currentness_label` and `membership_currentness_scope`;
+    - the reading is derived from the existing membership renewal status;
+    - labels now distinguish current witness window, renewal due soon, expired
+      witness evidence, and witness renewal not started;
+    - wording keeps the boundary clear: currentness is evidence context before a
+      serious decision, not approval or a guarantee.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - public member credentials now show an `Evidence currentness` card beside
+      `Trust inside this community`;
+    - the fallback wording asks for witnesses, TrustSlip, or live community
+      confirmation when no current witness validity window exists.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - covers current witness windows and not-started witness renewal.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the backend payload and frontend card to keep the currentness
+      reading.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records currentness as a public member-credential gap improvement.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the evidence-currentness checkpoint.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 8 tests passing.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src/pages/CommunityMemberVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not create automatic annual reminders, weighted verifier quality,
+    legal verification, paid renewal, dispute handling, or a new verification
+    workflow.
+  - it does make the existing renewal clock visible in the exact place an
+    outside reader needs it: the person-in-community public credential.
+
+## 2026-06-19 - Public Member Community Trust Reading Added
+
+- Trigger:
+  - owner continued after the public Community ID reader-decision boundary.
+  - the next safe gap was to move from community-domain evidence to the
+    person-in-community question: who is this person trustwise inside this
+    particular verifiable community?
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - `public_community_member_verification(...)` now defines its public
+      `evidence_scope` locally inside the member credential function;
+    - public member credentials now return:
+      `community_trust_reading_label` and
+      `community_trust_reading_scope`;
+    - the reading combines active membership, member-witness strength, renewal
+      status, and broad community activity count;
+    - the reading explicitly says it is community-scoped evidence for
+      judgement, not a universal trust score, guarantee, credit approval, or
+      transaction permission.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - public member credentials now show `Trust inside this community` in the
+      public-reading section;
+    - the card uses the backend reading when available and falls back to the
+      same scoped wording.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - covers the trust reading for both a community-verified member and a
+      low-witness member with activity evidence.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the frontend and backend to keep the community-scoped trust
+      reading and its non-approval boundary.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the member-in-community trust reading as a gap improvement.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the community-scoped member trust reading checkpoint.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 8 tests passing.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src/pages/CommunityMemberVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched code slice; only an existing
+    Windows line-ending warning appeared for the frontend audit file.
+- Unabated truth:
+  - this does not create a universal trust score, weighted verifier scoring,
+    legal verification, credit decision, loan approval, shop ownership check, or
+    transaction permission.
+  - it is a strong presentation improvement because it reads existing evidence
+    together instead of forcing outsiders to interpret disconnected facts.
+
+## 2026-06-19 - Public Community Reader Decision Boundary Added
+
+- Trigger:
+  - owner continued after the public community trust-mobility note was added.
+  - the next safe outside-view gap was to tell readers what decision this public
+    Community ID page can support and where it must stop.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification now returns:
+      `community_reader_decision_label` and
+      `community_reader_decision_scope`;
+    - wording frames the public Community ID page as a first check, not a final
+      decision.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added a `Reader decision` card to the existing public-reading section;
+    - says serious trade, lending, membership, shop, line, welfare, or
+      affiliate decisions need current scoped evidence before action.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - covers the reader-decision boundary on the basic public community record
+      fixture.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - covers the same boundary on the approved-affiliate fixture.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the reader-decision boundary and keeps serious decisions tied to
+      current scoped evidence.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the reader-decision boundary as an outside-view improvement.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the reader-decision checkpoint.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched code slice; only existing
+    Windows line-ending warnings appeared for the two frontend files.
+- Unabated truth:
+  - this does not add a new trust calculation, legal decision, lending
+    permission, payment rule, membership approval, or community health score.
+  - it is still useful because it teaches outside readers how to use the public
+    Community ID page without treating it as the final answer for serious
+    real-world decisions.
+
+## 2026-06-19 - Public Community Trust Mobility Note Added
+
+- Trigger:
+  - owner continued after the public community GSN record-date signal was added.
+  - the next safe gap was to make the public Community Verification page express
+    the Trust Mobility layer: Community IDs help trust travel, but only as an
+    anchor beside scoped evidence.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification now returns:
+      `community_mobility_label` and `community_mobility_scope`;
+    - wording frames the Community ID beside scoped member credentials,
+      TrustSlips, approved affiliate records, or controlled confirmations;
+    - wording explicitly says the Community ID alone does not transfer trust or
+      approve a transaction.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added a `Trust mobility` evidence card on the public Community
+      Verification page;
+    - kept it out of the compact fact grid to avoid turning the public record
+      into a crowded dashboard.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - covers the mobility label and boundary wording on the public community
+      record fixture.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - covers the same boundary on the approved-affiliate fixture.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the public page to keep the trust-mobility note and prevents
+      language that turns Community ID into automatic trust transfer or
+      transaction approval.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records trust mobility as a public community presentation improvement.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the trust-mobility checkpoint.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched code slice; only existing
+    Windows line-ending warnings appeared for the two frontend files.
+- Unabated truth:
+  - this is presentation and public payload framing, not new governance logic.
+  - it does not create paid protected-domain purchase, official domain renewal,
+    verifier scoring, annual reverification prompts, dispute handling, or
+    transaction approval.
+  - it is still important because it makes the public Community ID page explain
+    how trust can travel without making the dangerous claim that the ID alone
+    is enough.
+
+## 2026-06-19 - Public Community GSN Record Date Added
+
+- Trigger:
+  - owner continued after the public community next-evidence path was added.
+  - the next safe public-face gap was to show a small record-age signal using
+    existing data, without pretending GSN knows when the real-world community
+    was founded or formally registered.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification now returns:
+      `community_record_started_at`, `community_record_started_label`, and
+      `community_record_started_scope`;
+    - label reads as `GSN record since YYYY-MM-DD` when the community
+      `created_at` date is available;
+    - scope says this is the date the community record entered GSN, not the
+      real-world founding or formal-registration date.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added `GSN record` to the compact fact grid;
+    - added a `GSN record date` evidence card with the same limitation.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - covers the public record date label and boundary wording.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - covers the same boundary on the approved-affiliate fixture.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the public page to keep `GSN record` and forbids framing the
+      record date as real-world founding or formal registration.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the GSN record-date signal as a public-face gap improvement.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the GSN record-date checkpoint.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched code slice; only existing
+    Windows line-ending warnings appeared for the two frontend files.
+- Unabated truth:
+  - this is not a years-active claim.
+  - it does not prove the community's age, legal registration age, or historic
+    continuity outside GSN.
+  - it is still useful because it makes the public record feel more anchored
+    while telling the viewer exactly what the date means.
+
+## 2026-06-19 - Public Community Next Evidence Path Added
+
+- Trigger:
+  - owner continued after the public community face scope was added.
+  - the next safe gap was not new verification logic, but making the public
+    Community Verification page tell an outside viewer what evidence to ask for
+    next before relying on a person, shop, line, or subgroup claim.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification now returns:
+      `community_next_evidence_label` and `community_next_evidence_scope`;
+    - when controlled relay is available, the label is
+      `Use controlled confirmation before relying on a claim`;
+    - when relay is unavailable, the label is
+      `Ask for scoped member or group evidence`;
+    - the scope tells visitors to ask for a scoped member credential,
+      TrustSlip, approved affiliate record, or controlled community
+      confirmation, and not to rely on the display name alone.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added `Next evidence` to the compact fact grid;
+    - added a `Next evidence to request` card in the public evidence section.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - covers both live-confirmation and unavailable-relay next-evidence labels.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - covers the approved-affiliate fixture's next-evidence path.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the public page to keep the `Next evidence` fact and the
+      display-name-alone warning.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the next-evidence path as workflow guidance, not approval.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the next-evidence path checkpoint.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched code slice; only existing
+    Windows line-ending warnings appeared for the two frontend files.
+- Unabated truth:
+  - this does not issue any credential by itself.
+  - it does not verify a member, shop, line, subgroup, loan, payment, or trade.
+  - it is still valuable because it prevents the public Community ID page from
+    being misused as the final answer when a real-world claim needs stronger
+    evidence.
+
+## 2026-06-19 - Public Community Face Scope Added
+
+- Trigger:
+  - owner continued the trust-infrastructure gap work after the public
+    community type reading was added.
+  - the next safe gap was to make the public community verification page read
+    more like a public community face without pretending GSN already has a full
+    community profile or health report.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification now returns:
+      `community_public_face_status`, `community_public_face_label`, and
+      `community_public_face_scope`;
+    - normal community records read as `Basic public record`;
+    - approved affiliate records read as `Affiliate acknowledged public record`;
+    - the scope explicitly says the page shows Community ID, public status,
+      inferred type, domain stage, affiliate claim, and controlled relay
+      availability, but not a full profile, member list, service guarantee, or
+      community health report.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added `Public face` to the compact fact grid;
+    - added a `Public face` evidence card explaining the current scope.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - covers the basic public-record state.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - covers the approved affiliate public-record state.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - requires the public page to keep the `Public face` fact and the scoped
+      non-health-report limitation.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records the public-face scope as a partial public-face gap closure.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the public-face scope checkpoint.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm exec -- eslint src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched code slice; only existing
+    Windows line-ending warnings appeared for the two frontend files.
+- Unabated truth:
+  - this is still presentation and payload framing, not new governance logic.
+  - it does not create a full public community profile, safe member statistics,
+    years-active record, services register, response-health score, or public
+    verification policy.
+  - it is useful because it tells outsiders what the current record is and,
+    just as importantly, what it is not.
+
+## 2026-06-19 - Public Community Type Reading Added
+
+- Trigger:
+  - owner continued the GSN trust-infrastructure gap work after the evidence
+    presentation verification checkpoint.
+  - the gap audit marks community type / community public face as a high-value
+    missing signal, but adding a schema-backed registration model would be too
+    large for a safe continuation slice.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - added a small `_community_public_type(...)` classifier for the public
+      community verification payload;
+    - exposes `community_type`, `community_type_label`, and
+      `community_type_source`;
+    - detects common organized-community contexts from existing public text:
+      market association, church/religious group, cooperative, town union,
+      student association, diaspora association, social club, or default
+      organized community;
+    - no schema, migration, payment, ownership, or permission change was added.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - public Community Verification now shows `Community type` beside
+      Community ID, status, domain stage, affiliate claim, public record, and
+      relay;
+    - adds a compact Community type evidence card that states the source and
+      says this is a public reading, not ownership, membership, or
+      parent-domain approval.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - covers the neutral `organized_community` fallback.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - covers the Onitsha-style market fixture as `market_association`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - cages the public page so `Community type` remains part of the compact
+      public verification record.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - records that the community-type gap now has an inferred public reading,
+      while schema-backed official type and measured type intelligence remain
+      future work.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - adds the inferred community-type reading to the implementation
+      checkpoints.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 16 tests passing.
+  - Passed `npm exec -- eslint src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`.
+  - Passed `node tools\audit-trust-actions.mjs` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched slice; only existing Windows
+    line-ending warnings appeared for the two frontend files.
+- Unabated truth:
+  - this is a presentation and payload bridge, not real formal classification.
+  - the type is inferred from existing public community text unless the backend
+    returns a stronger future source.
+  - it does not record CAC as verification, does not prove domain ownership,
+    does not prove every member/shop/subgroup, and does not implement paid
+    protected domain pricing or renewal logic.
+  - a proper future version should add a schema-backed community type selected
+    during community/domain setup, with admin review and audit trail.
+
+## 2026-06-19 - Trust Infrastructure Presentation Verification Checkpoint
+
+- Trigger:
+  - owner continued after the remaining evidence naming boundary was recorded.
+  - the honest next step was to verify that the trust/evidence presentation
+    workstream still passes its caged audits and frontend build, instead of
+    continuing low-value naming churn.
+- Verification:
+  - Passed `npm run audit:trust-actions` from `frontend/`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend/`.
+  - Passed `npm run audit:icon-protocol` from `frontend/`.
+  - Passed `npm run audit:protocol-readiness` from `frontend/`.
+  - Passed `npm run audit:link-contracts` from `frontend/`.
+  - Passed `npm run build` from `frontend/`.
+- Confirmed boundary:
+  - current docs outside `docs/HANDOFF_NOTES.md` were already clean for
+    standalone proof wording before this checkpoint.
+  - the frontend build produced the expected route chunks, including
+    `CommunityMemberVerifyPage`, `CommunityVerifyPage`, `TrustSlipPage`,
+    `TrustScorePage`, and `MarketplacePage`.
+- Unabated truth:
+  - this checkpoint did not add new trust-infrastructure logic.
+  - it confirms the presentation/doctrine cleanup is mechanically healthy.
+  - the next valuable continuation should move back to actual
+    trust-infrastructure gaps: community-domain lifecycle, member witness
+    verification workflow, public community/member credentials, or visual app
+    QA of the changed surfaces.
+
+## 2026-06-19 - Remaining Evidence Naming Boundary
+
+- Trigger:
+  - owner continued after the institutional evidence inventory filename bridge.
+  - a fresh repo scan showed the remaining `proof` hits are no longer live
+    product wording or current doctrine-doc wording.
+- Changed:
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - reworded the package-script registration failure message so it refers to
+      preserving the legacy command, not the legacy proof command.
+- Verification:
+  - Passed `npm run audit:evidence-surfaces` from `frontend/`.
+  - Passed `npm run audit:proof-surfaces` from `frontend/`.
+  - Passed `npm exec -- eslint tools\audit-institutional-proof-surfaces.mjs tools\audit-institutional-evidence-surfaces.mjs`
+    from `frontend/`.
+  - Passed `git diff --check` for the touched audit file, with only expected
+    LF-to-CRLF warnings.
+- Current boundary:
+  - Remaining `proof` references are expected in:
+    - legacy API compatibility fields such as `starter_proof_summary`,
+      `proof_scope`, `domain_proof_scope`, and `required_proof`;
+    - backend tests that prove those legacy aliases still work;
+    - forbidden-pattern audit regexes that intentionally catch old wording if
+      it returns to live code;
+    - the legacy `audit:proof-surfaces` command and old audit implementation
+      filename;
+    - the legacy `proof` icon alias and the frozen Dashboard dot mapping.
+- Unabated truth:
+  - there is no honest benefit in deleting these remaining references without a
+    planned compatibility migration or an explicit Dashboard/audit contract
+    change.
+  - the safest next product work is not more naming cleanup; it is either
+    implementing the trust-infrastructure gaps or verifying the changed
+    surfaces in the app.
+
+## 2026-06-19 - Institutional Evidence Inventory Filename Bridge
+
+- Trigger:
+  - owner continued the trust-infrastructure alignment work after audit
+    diagnostic language cleanup.
+  - the institutional surface inventory already used evidence doctrine inside
+    the document, but its active filename and references still used the old
+    proof-surface name.
+- Changed:
+  - `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+    - moved the full working inventory to the evidence-named path;
+    - added a canonical-path line at the top.
+  - `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md`
+    - kept the old path as a small legacy redirect so older references do not
+      break.
+  - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - changed the working inventory reference to the evidence-named path.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - changed source-truth and next-step references to the evidence-named
+      inventory path.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - changed the current-doctrine docs scan from the old inventory path to the
+      evidence-named inventory path.
+- Verification:
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs` from
+    `frontend/`.
+  - Passed `rg -n "\bproof\b|\bProof\b" docs -g "*.md" -g "!HANDOFF_NOTES.md"`
+    with no matches.
+  - Passed `git diff --check` for the touched docs/audit files, with only
+    expected LF-to-CRLF warnings.
+- Unabated truth:
+  - this is a filename/source-truth bridge, not a content rewrite.
+  - the old inventory path still exists intentionally as a compatibility
+    redirect. Removing it now would create avoidable broken references for
+    older notes or local habits.
+
+## 2026-06-19 - Trust Audit Diagnostic Language Cleanup
+
+- Trigger:
+  - owner continued the trust-infrastructure alignment work after the
+    institutional evidence audit command/wrapper compatibility pass.
+  - `frontend/tools/audit-trust-actions.mjs` still had diagnostic failure
+    messages that repeated old proof-style framing even though the regexes were
+    correctly guarding against that wording in live code.
+- Changed:
+  - `frontend/tools/audit-trust-actions.mjs`
+    - reworded audit failure messages from broad-proof/proof-surface language
+      to evidence, record, scoped credential, boundary, and blanket-certainty
+      language;
+    - preserved the forbidden-pattern regexes that intentionally search for
+      old proof wording in live frontend/backend/docs surfaces;
+    - preserved the historical
+      `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md` filename reference.
+- Verification:
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `npm exec -- eslint tools\audit-trust-actions.mjs` from
+    `frontend/`.
+  - Passed `git diff --check` for the touched audit file, with only expected
+    LF-to-CRLF warnings.
+- Unabated truth:
+  - this was audit diagnostic cleanup only. It did not change runtime behavior,
+    verification logic, or user-facing copy.
+  - remaining `proof` strings in `audit-trust-actions.mjs` are deliberate
+    detection patterns or historical filename references, not doctrine drift.
+
+## 2026-06-19 - Evidence Surface Audit Command Alias
+
+- Trigger:
+  - owner continued the trust-infrastructure alignment work after route-level
+    evidence icon cleanup.
+  - scans showed the institutional evidence audit still only had the legacy
+    `audit:proof-surfaces` npm command name, even though the live doctrine now
+    uses evidence/record/credential language.
+- Changed:
+  - `frontend/package.json`
+    - added `audit:evidence-surfaces` as the preferred command for the
+      institutional evidence surface audit, now pointing at the evidence-named
+      wrapper file;
+    - preserved `audit:proof-surfaces` as a legacy compatibility command that
+      runs the same audit script.
+  - `frontend/tools/audit-institutional-evidence-surfaces.mjs`
+    - added a preferred evidence-named audit entrypoint that delegates to the
+      legacy implementation.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - updated the package-script registration guard to require both the
+      preferred evidence command and the legacy proof command near
+      `audit:trust-actions`.
+- Verification:
+  - Passed `npm run audit:evidence-surfaces` from `frontend/`.
+  - Passed `npm run audit:proof-surfaces` from `frontend/`.
+  - Passed `node tools\audit-institutional-evidence-surfaces.mjs` from
+    `frontend/`.
+  - Passed `git diff --check` for the touched package/audit files, with only
+    expected LF-to-CRLF warnings.
+- Unabated truth:
+  - this does not remove the underlying legacy audit file. The filename
+    `audit-institutional-proof-surfaces.mjs` remains as a compatibility
+    artifact and the source implementation for now, because deleting or
+    renaming script files can break local commands, references, and workflow
+    habits.
+  - the old `audit:proof-surfaces` command remains intentionally so existing
+    developer muscle memory and any undocumented local usage do not break.
+
+## 2026-06-19 - Evidence Alias Compatibility Continuation
+
+- Trigger:
+  - owner continued the trust-infrastructure alignment work after the internal
+    evidence naming cleanup.
+  - previous scans showed several remaining `proof` fields are API contracts,
+    not just wording debt, so removing them directly would risk breaking
+    existing frontend/backend consumers.
+- Changed:
+  - `gmfn_backend/app/services/trust_score_service.py`
+    - added `starter_evidence_summary` as the preferred trust-score response
+      key;
+    - preserved `starter_proof_summary` as a compatibility alias with the same
+      payload.
+  - `gmfn_backend/app/api/routes/entry.py`
+    - entry completion now prefers `starter_evidence_summary` and falls back
+      to `starter_proof_summary`.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public member credential responses now emit both `evidence_scope` and
+      legacy `proof_scope`;
+    - public community verification responses now emit both
+      `domain_evidence_scope` and legacy `domain_proof_scope`.
+  - `frontend/src/pages/TrustPage.tsx`
+    - Trust Passport score explanation now reads `starter_evidence_summary`
+      first, with legacy `starter_proof_summary` fallback.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - public community record now reads `domain_evidence_scope` first, with
+      legacy `domain_proof_scope` fallback.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - public member credential now reads `evidence_scope` first, with legacy
+      `proof_scope` fallback.
+  - `gmfn_backend/app/api/routes/pilot_readiness.py`
+    - pilot evidence-pack checklist items now emit `required_evidence` while
+      preserving legacy `required_proof`;
+    - the checklist source items now use `required_evidence` directly, with
+      `required_proof` backfilled only as a compatibility alias.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - the evidence-pack checklist display now reads `required_evidence` first,
+      with `required_proof` fallback.
+  - `frontend/src/lib/entryDraft.ts`
+    - Create Entry draft storage now accepts and writes
+      `phoneVerificationEvidence` / `bankRecordEvidence` while preserving
+      legacy `phoneVerificationProof` / `bankRecordProof`;
+    - the Create Entry page still receives the legacy fields populated, so the
+      caged entry flow behavior is unchanged while newer evidence-named draft
+      keys can be introduced safely.
+  - Backend tests:
+    - `gmfn_backend/tests/test_community_confirmation_relay.py` now asserts the
+      new community domain evidence alias while keeping the legacy field check.
+    - `gmfn_backend/tests/test_entry_create.py` now asserts the new starter
+      evidence alias while keeping the legacy field check, including the later
+      identity-photo verify/reopen/needs-more/reverify/reject correction paths.
+    - `gmfn_backend/tests/test_protocol_readiness_status.py` now asserts that
+      `required_evidence` is present and matches the legacy checklist field.
+- Verification:
+  - Passed `npm exec -- eslint src/pages/CommunityVerifyPage.tsx src/pages/CommunityMemberVerifyPage.tsx src/pages/TrustPage.tsx`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_entry_create.py`
+    with 48 tests passing.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_entry_create.py`
+    with 36 tests passing after adding nested identity-photo alias assertions.
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `node frontend\tools\audit-link-contracts.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`
+    with 4 tests passing.
+  - Passed `npm exec -- eslint src/pages/TrustCommandCentrePage.tsx`.
+  - Passed `node frontend\tools\audit-protocol-readiness.mjs`.
+  - Passed `npm exec -- eslint src/lib/entryDraft.ts`.
+  - Passed `node frontend\tools\audit-entry-auth-contracts.mjs`.
+  - Passed `node frontend\tools\audit-member-entry-actions.mjs`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check`, with only expected LF-to-CRLF warnings across
+    the dirty worktree.
+- Unabated truth:
+  - this is a compatibility bridge, not a final removal of old names. The old
+    `proof` keys remain intentionally because existing clients may still depend
+    on them.
+  - CAC remains recorded supporting evidence only; it is not being treated as
+    verification by this step.
+  - the known pytest temp-permission issue from the public-shop suite remains
+    unresolved and should not be confused with these alias tests, which passed.
+
+## 2026-06-19 - Evidence Icon Alias Continuation
+
+- Trigger:
+  - owner continued after the docs proof-to-evidence cleanup.
+  - live-code scans showed the remaining frontend `proof` hits are mostly
+    technical icon keys, compatibility fields, tests, or route-level icon
+    contracts protected by existing audits.
+- Changed:
+  - `frontend/src/components/GsnLegacyIcon.tsx`
+    - added an `evidence` legacy icon alias that maps to the same
+      `certificate-seal` 3D asset as the legacy `proof` alias;
+    - preserved the old `proof` alias for backward compatibility and audited
+      route/button icon contracts.
+  - `frontend/src/components/TrustDocumentUseCases.tsx`
+    - switched the TrustSlip helper icon from `proof` to `evidence`.
+  - `frontend/src/components/TrustDocumentFamilyMap.tsx`
+    - switched the TrustSlip helper icon from `proof` to `evidence`.
+  - `frontend/src/components/TrustDocumentActionGuide.tsx`
+    - switched the Trust Passport helper icon from `proof` to `evidence`.
+- Verification:
+  - Passed `npm exec -- eslint src/components/GsnLegacyIcon.tsx src/components/TrustDocumentUseCases.tsx src/components/TrustDocumentFamilyMap.tsx src/components/TrustDocumentActionGuide.tsx`.
+  - Passed `node frontend\tools\audit-icon-protocol.mjs`.
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `git diff --check` for the touched frontend components, with only
+    expected LF-to-CRLF warnings.
+- Unabated truth:
+  - At this point in the workstream I had not yet rewritten route-level icon
+    keys such as Dashboard, Finance, Marketplace, Loans, Repayment, TrustSlip,
+    CCI, and TrustScore because several are protected by audits. The next
+    section records the later, narrower route-level icon continuation.
+
+## 2026-06-19 - Route-Level Evidence Icon Continuation
+
+- Trigger:
+  - owner continued the GSN trust-infrastructure alignment work after the
+    evidence icon alias bridge was added.
+  - route-level scans showed several user-facing pages still rendered the old
+    `proof` icon alias even though the safer product doctrine now presents
+    portable trust as evidence, records, and scoped credentials.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - switched the TrustSlip hero/helper icon from `proof` to `evidence`.
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - switched the Trust Passport action icon from `proof` to `evidence`.
+  - `frontend/src/pages/FinancePage.tsx`
+    - repayment/support ledger and receipt action icons now resolve to the
+      `evidence` alias.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - marketplace ledger/verify helper icons now resolve to the `evidence`
+      alias.
+  - `frontend/src/pages/LoansPage.tsx`
+    - loan/support route icon mapping now uses `evidence`.
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - repayment summary action icon now uses `evidence`.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport lane icons now use `evidence`.
+  - Audit guardrails updated:
+    - `frontend/tools/audit-icon-protocol.mjs`;
+    - `frontend/tools/audit-finance-button-inventory.mjs`;
+    - `frontend/tools/audit-marketplace-front-package.mjs`;
+    - `frontend/tools/audit-loans-actions.mjs`;
+    - `frontend/tools/audit-button-stability.mjs`;
+    - `frontend/tools/audit-trust-passport-lane-map.mjs`.
+- Verification:
+  - Passed `npm exec -- eslint` for the touched pages and audit scripts.
+  - Passed `node frontend\tools\audit-icon-protocol.mjs`.
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `node frontend\tools\audit-finance-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-front-package.mjs`.
+  - Passed `node frontend\tools\audit-loans-actions.mjs`.
+  - Passed `node frontend\tools\audit-trust-passport-lane-map.mjs`.
+  - Passed `node frontend\tools\audit-button-stability.mjs`.
+  - Passed `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is still a presentation/doctrine alignment step, not new verification
+    logic.
+  - the legacy `proof` icon alias remains in `GsnLegacyIcon` intentionally so
+    older caged surfaces and compatibility checks do not break.
+  - `frontend/src/pages/DashboardPage.tsx` still has a guarded `dot: "proof"`
+    mapping. I did not touch it because Dashboard action geometry and Market
+    Wisdom contracts are explicitly frozen/caged.
+  - `proof_scope`, `domain_proof_scope`, `starter_proof_summary`, and
+    `required_proof` remain as compatibility fields while the preferred
+    evidence-named aliases are now read first.
+  - `frontend/tools/audit-trust-actions.mjs` still contains many `proof`
+    phrases by design as negative-pattern guards. Those are not live user copy.
+
+## 2026-06-19 - Remaining Docs Proof-To-Evidence Completion
+
+- Trigger:
+  - owner continued the trust-infrastructure alignment work after pilot/RGU
+    evidence-path cleanup.
+  - a repo-wide docs scan still found standalone `proof` / `Proof` wording in
+    six non-handoff documents.
+- Changed:
+  - `docs/DEPLOYMENT_RENDER.md`
+    - changed deployment proof language to deployment evidence points/evidence.
+  - `docs/FRONTEND_ENDPOINT_EXPOSURE_AUDIT.md`
+    - changed finance and repayment proof visibility to evidence visibility.
+  - `docs/AMARA_STORYLINE_AUDIT_2026-05-29.md`
+    - changed portable current proof, final proof point, proof account,
+      joined-community proof, first-circle proof, portable proof, activity
+      behind proof, public proof, and final reader proof wording to evidence
+      language.
+  - `docs/AMARA_LINE_AUDIT_RUNBOOK_2026-05-29.md`
+    - changed proof visibility, public proof, portable proof, proof-line
+      actions, and numerical proof readings to evidence language.
+  - `docs/GSN_TRUSTSLIP_SCREEN_GAP_AUDIT_2026-05-15.md`
+    - changed the reader question from stronger proof to stronger evidence.
+  - `docs/GSN_TRUSTSLIP_ROSCA_RESEARCH_AUDIT_2026-05-15.md`
+    - changed strongest behavioral proof and stronger proof wording to
+      behavioral evidence / stronger evidence.
+- Verification:
+  - Passed `rg -n "\bproof\b|\bProof\b" docs -g "*.md" -g "!HANDOFF_NOTES.md"`
+    with no matches.
+  - Passed `git diff --check docs`.
+- Unabated truth:
+  - `docs/HANDOFF_NOTES.md` still contains older historical mentions of proof
+    because it is the session log. I did not rewrite the full historical log;
+    the current top sections now record evidence doctrine and compatibility.
+
+## 2026-06-19 - Active Benefit Docs Evidence Language Continuation
+
+- Trigger:
+  - owner continued the trust-infrastructure alignment work after the evidence
+    alias compatibility pass.
+  - active explanatory docs still had a few broad TrustSlip/proof statements
+    that could teach the wrong product promise.
+- Changed:
+  - `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md`
+    - changed TrustSlip from a proof layer/shareable proof to an evidence
+      layer/shareable evidence from the record;
+    - changed Trust Events from recording proof to recording evidence;
+    - changed marketplace/trust-passport copy from proof that follows a person
+      to evidence that follows them;
+    - changed `TrustSlip proves it quickly` to `TrustSlip shows it quickly`.
+  - `docs/GSN_INSTANT_COMMUNITY_CONFIRMATION_PROTOCOL_2026-05-15.md`
+    - changed TrustSlip from static proof to current evidence record.
+- Verification:
+  - Scanned current active doctrine docs for standalone `proof` / `Proof`
+    wording across:
+    - `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md`;
+    - `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`;
+    - `docs/APP_WIDE_AUDIT_PROTOCOL.md`;
+    - `docs/DESIGN_SYSTEM.md`;
+    - `docs/UX_ACCEPTANCE_CHECKLIST.md`;
+    - `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`;
+    - `docs/GSN_COMMUNITY_CONFIRMATION_RELAY_PROTOCOL_2026-05-15.md`;
+    - `docs/GSN_INSTANT_COMMUNITY_CONFIRMATION_PROTOCOL_2026-05-15.md`;
+    - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`.
+  - Passed `git diff --check` for the touched docs.
+- Unabated truth:
+  - older archive/demo docs still contain proof language. I did not rewrite
+    those because they are historical or demo-path notes, and changing them
+    wholesale could blur what was true at that time.
+
+## 2026-06-19 - Pilot And RGU Evidence Path Language Continuation
+
+- Trigger:
+  - owner continued the trust-infrastructure alignment work after the active
+    benefit-doc cleanup.
+  - pilot and RGU rehearsal/customer-discovery docs still framed the demo as a
+    proof path, which is stronger than the current GSN doctrine.
+- Changed:
+  - `docs/GSN_RGU_Customer_Discovery_Working_Plan.md`
+    - changed App Proof Path / Live app proof / Amara proof path wording to
+      App Evidence Path / live app evidence / Amara evidence path;
+    - changed `prove portable trust` to `show portable trust evidence`;
+    - changed community/sponsor proof wording to evidence wording.
+  - `docs/GSN_RGU_PHONE_PROOF_PATH_CHECKLIST.md`
+    - kept the filename unchanged but retitled the document internally as
+      `GSN RGU Phone Evidence Path Checklist`;
+    - changed laptop-side proof-path, workshop proof path, main local proof
+      example, proof line, and proof data wording to evidence-path/evidence
+      wording.
+  - `docs/GSN_RGU_APP_PROOF_PATH_AUDIT.md`
+    - kept the filename unchanged but retitled the document internally as
+      `GSN RGU App Evidence Path Audit`;
+    - changed workshop proof account/current proof state/proof path status to
+      evidence-account/current evidence state/evidence-path status;
+    - changed TrustSlip and merchant wording away from proof claims toward
+      evidence and current-state language.
+  - `docs/GSN_TRUSTSLIP_SHIP_READINESS_MANIFEST_2026-05-15.md`
+    - changed portable-trust proof path and local proof path language to
+      evidence path language;
+    - changed verified payment proof and deeper proof layer language to
+      payment evidence and deeper evidence layer.
+  - `docs/PILOT_TEST_FLOW_2026-04-21.md`
+    - changed the pilot purpose from proving to demonstrating;
+    - changed Phone Proof to Phone Evidence;
+    - changed payout destination proof and desktop-success proof wording to
+      recorded evidence / evidence wording.
+- Verification:
+  - Scanned the five touched pilot/RGU/manifest docs for standalone `proof` /
+    `Proof` wording; no hits remained.
+  - Passed `git diff --check` for the touched pilot/RGU/benefit docs.
+- Unabated truth:
+  - filenames with `PROOF_PATH` remain unchanged for now to avoid breaking
+    references. The internal doctrine is now evidence-path language.
+
+## 2026-06-19 - Evidence Internal Naming Cleanup Continuation
+
+- Trigger:
+  - owner continued the GSN trust-infrastructure alignment work after the
+    evidence guardrail pass.
+  - scans showed remaining `proof` wording in low-risk local helper names,
+    audit messages, test names, and one public-shop fallback status, while
+    contract fields and icon keys still legitimately used `proof`.
+- Changed:
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - renamed invitation paper internals from `InvitationProof` /
+      `proofLines` / `proofRendered` to `InvitationEvidence` /
+      `evidenceLines` / `evidenceRendered`;
+    - changed the internal React key from `invitation-proof-grid` to
+      `invitation-evidence-grid`.
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+    - updated the invite-paper guard to protect the evidence-grid helper names.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - changed remaining audit messages from proof-surface/proof-paper to
+      evidence-surface/evidence-paper while leaving the script name and npm
+      script contract untouched.
+  - Local frontend helper/counter naming:
+    - `frontend/src/pages/PayoutDetailsPage.tsx`
+      - `proofFeedback` -> `evidenceFeedback`.
+    - `frontend/src/pages/ShopControlPage.tsx`
+      - `featureProofLine` -> `featureEvidenceLine`;
+      - vault, merchant verification, and spotlight helper text variables now
+        use evidence naming.
+    - `frontend/src/pages/FinancePage.tsx`
+      - repayment/support proof counters now use record-count naming.
+    - `frontend/src/pages/TrustPage.tsx`
+      - starter proof local variables now use starter evidence naming while
+        preserving the backend `starter_proof_summary` response field.
+    - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+      - member/community public reading variables now use evidence naming.
+    - `frontend/src/pages/CommunityVerifyPage.tsx`
+      - local domain scope variable and card component now use evidence-scope
+        naming while preserving `domain_proof_scope`.
+    - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+      - local icon helper is now `evidenceIcon` while preserving the
+        `proof_scope` response field.
+  - Backend local/test naming:
+    - `gmfn_backend/app/api/routes/entry.py`
+      - renamed local `proof_bits` / `proof_text` to `evidence_bits` /
+        `evidence_text`.
+    - `gmfn_backend/tests/test_repayment_completion_service.py`
+      - renamed the repayment test from trust proof to trust evidence.
+    - `gmfn_backend/tests/test_reconciliation_integrity.py`
+      - changed the test clan name from `Repayment Proof Clan` to
+        `Repayment Evidence Clan`.
+    - `gmfn_backend/app/api/routes/marketplace.py`
+      - changed the public-shop fallback verification status from
+        `trust_proof_on_request` to `trust_evidence_on_request`.
+- Verification:
+  - Passed `npm exec -- eslint` for:
+    - `src/pages/PayoutDetailsPage.tsx`;
+    - `src/pages/ShopControlPage.tsx`;
+    - `src/pages/FinancePage.tsx`;
+    - `src/pages/TrustPage.tsx`;
+    - `src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`;
+    - `src/pages/CommunityVerifyPage.tsx`;
+    - `src/pages/CommunityMemberVerifyPage.tsx`.
+  - Passed `npm run build` from `frontend/`.
+  - Passed `node frontend\tools\audit-existing-community-invite-line.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `node frontend\tools\audit-link-contracts.mjs`.
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_repayment_completion_service.py gmfn_backend\tests\test_reconciliation_integrity.py`
+    with 8 tests passing.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py`
+    did not complete cleanly because pytest could not access its temp base:
+    first the default user temp folder failed with `PermissionError`, then a
+    custom `C:\tmp` base failed, and then a workspace relative temp base left
+    `pytest-public-shop-status-temp/` permission-locked. The run reached
+    `19 passed, 5 errors`; the errors were temp setup/cleanup permissions, not
+    assertion failures from the status rename.
+  - Passed `git diff --check` for this slice, with only expected LF-to-CRLF
+    warnings.
+- Unabated truth:
+  - the remaining `proof` hits are mostly API fields
+    (`starter_proof_summary`, `required_proof`, `proof_scope`,
+    `domain_proof_scope`), the legacy `proof` icon key, audit negative
+    patterns, or persisted entry-draft keys. Renaming those would require a
+    compatibility migration, not a safe wording cleanup.
+  - `git status` now warns on the pre-existing `.pytest_tmp/marketplace_public_shop/`
+    permission issue and the newly created `pytest-public-shop-status-temp/`
+    permission issue from the blocked test run.
+
+## 2026-06-19 - Evidence Guardrail Audit Alignment Continuation
+
+- Trigger:
+  - owner continued the GSN trust-infrastructure alignment work after the live
+    wording cleanup.
+  - focused scans showed several audit guardrails still expecting old `proof`
+    wording even where the live code and doctrine had already moved to
+    evidence/record/credential language.
+- Changed:
+  - `docs/GSN_ICON_MIGRATION.md`
+    - changed certificate, QR, public-surface, public-entry, and printable
+      package wording from proof language to evidence/record language.
+  - `frontend/tools/audit-icon-protocol.mjs`
+    - updated design-system and icon-migration expectations to use
+      `evidence/certificate` and `Public evidence and entry surfaces`;
+    - kept the technical `proof` icon key expectations because that key still
+      maps to the certificate-seal asset.
+  - `frontend/tools/audit-dashboard-actions.mjs`
+    - changed the Dashboard trust-card audit message from light proof icons to
+      light evidence icons;
+    - updated the Global ID card guard to protect the intentional
+      `Your GSN identity record across the network` wording instead of the old
+      broad `verified identity` wording.
+  - Marketplace audit guardrails:
+    - `frontend/tools/audit-marketplace-more-tools-lane.mjs`;
+    - `frontend/tools/audit-marketplace-trust-pill.mjs`;
+    - `frontend/tools/audit-marketplace-front-package.mjs`;
+    - `frontend/tools/audit-marketplace-button-inventory.mjs`;
+    - changed expected More / Community Tools, local trust, and search-helper
+      wording from proof routes to evidence routes.
+  - Finance, Trust Passport, Loans, and Shop guardrails:
+    - `frontend/tools/audit-finance-button-inventory.mjs`;
+    - `frontend/tools/audit-trust-passport-lane-map.mjs`;
+    - `frontend/tools/audit-trust-passport-front-package.mjs`;
+    - `frontend/tools/audit-loans-actions.mjs`;
+    - `frontend/tools/audit-link-contracts.mjs`;
+    - changed audit messages from proof surfaces/snapshots/icons to
+      evidence/certificate surfaces;
+    - updated the Trust Passport lane audit to protect `Trust limit signal`
+      rather than `Trust limit`, because the safer wording avoids implying a
+      bank-approved credit limit;
+    - updated the Public Shop link contract audit to match the current
+      `useCommunityScope` public-shop call and the `Request TrustSlip for
+      current evidence` option.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`,
+    `frontend/tools/audit-button-stability.mjs`, and
+    `frontend/tools/audit-protocol-readiness.mjs`
+    - aligned remaining audit messages and expected strings from proof-task /
+      proof-action language to evidence-task / evidence-action language.
+- Verification:
+  - Passed `node frontend\tools\audit-icon-protocol.mjs`.
+  - Passed `node frontend\tools\audit-dashboard-actions.mjs`.
+  - Passed `node frontend\tools\audit-button-stability.mjs`.
+  - Passed `node frontend\tools\audit-identity-integrity-front-package.mjs`.
+  - Passed `node frontend\tools\audit-protocol-readiness.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-more-tools-lane.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-trust-pill.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-front-package.mjs`.
+  - Passed `node frontend\tools\audit-marketplace-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-finance-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-trust-passport-lane-map.mjs`.
+  - Passed `node frontend\tools\audit-trust-passport-front-package.mjs`.
+  - Passed `node frontend\tools\audit-link-contracts.mjs`.
+  - Passed `node frontend\tools\audit-loans-actions.mjs`.
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `git diff --check` for the touched docs/audit files, with only the
+    expected LF-to-CRLF normalization warnings on audit files.
+- Unabated truth:
+  - this continuation mostly updates guardrails and documentation language; it
+    does not add new verification workflow logic.
+  - remaining `proof` hits still exist where they are technical icon keys,
+    historical filenames, negative forbidden-word audit patterns, or older
+    archive/planning docs. Renaming those would be a larger compatibility pass,
+    not a minimum safe adjustment.
+
+## 2026-06-19 - Current Docs Evidence Language Alignment
+
+- Trigger:
+  - owner continued the GSN trust-infrastructure workstream and had already
+    clarified that CAC should be recorded, not verification.
+  - continued doctrine now requires TrustSlip, community records, and public
+    pages to be framed as evidence/records/credentials, not broad proof or
+    guarantees.
+- Changed:
+  - `README.md`
+    - changed production-polish reference from proof-document presentation to
+      evidence-document presentation.
+  - `docs/PROJECT_PROTOCOL.md`
+    - changed institutional proof surfaces to institutional evidence surfaces;
+    - changed local phone testing from the default proof path to the default
+      validation path.
+  - `docs/SCREEN_SPECS.md`
+    - changed TrustSlip from portable proof layer to portable current-evidence
+      layer;
+    - changed public member credential and TrustSlip Verify specs from proof
+      language to credential/evidence language;
+    - changed identity task language from proof tasks/missing proof to evidence
+      tasks/missing evidence;
+    - changed Community Confirmation Policy witness, affiliation, CAC, and QR
+      language so pending requests, external registration, and witness events
+      are not treated as public proof.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - changed public proof/product wording to public evidence, credential, or
+      record wording;
+    - changed the public Community ID reading note from what the record
+      confirms to what the record shows;
+    - preserved `Verified Community Domain` as the product concept, while
+      keeping open join, CAC, and community context away from verification
+      claims.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - changed the gap doctrine from proof packages/proof paths to evidence
+      packages/evidence paths;
+    - changed CAC/public community language so CAC is supporting evidence and
+      not the record anchor;
+    - kept the old `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md` filename
+      unchanged because it is a real historical file path.
+  - `docs/GSN_REFRAME_WORKSHOP_AND_MARKET_ENTRY_PLAYBOOK_2026-06-18.md`
+    - changed growth/playbook language from proof paths, proof pages, and proof
+      packages to evidence paths, evidence pages, credential/evidence packages,
+      and public community evidence;
+    - preserved the main market-entry doctrine: GSN is trust infrastructure for
+      organized communities, with `GSN Verified Community Domain` as the
+      community package concept.
+  - `docs/GSN_PRODUCTION_POLISH_STANDARD.md`
+    - renamed the institutional paper standard from proof surfaces to evidence
+      surfaces, including community confirmation and borrowing/repayment
+      wording.
+  - `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md`
+    - kept the filename unchanged but retitled the document internally as
+      `GSN Institutional Evidence Surface Inventory`;
+    - changed visitor papers, TrustSlip snapshots, confirmation outcomes,
+      guarantor summaries, loan evidence PDFs, and admin summaries from proof
+      wording to evidence-paper wording.
+  - `docs/APP_WIDE_AUDIT_PROTOCOL.md`
+    - changed policy/proof and official-proof placeholder wording to
+      policy/evidence and official-evidence wording.
+  - `docs/DESIGN_SYSTEM.md`
+    - changed evidence/PDF surface, icon, one-screen snapshot, missing evidence,
+      and provider-confirmation wording away from broad proof claims.
+  - `docs/UX_ACCEPTANCE_CHECKLIST.md`
+    - changed production-polish and one-screen snapshot acceptance gates from
+      proof screens/items to evidence screens/items.
+  - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - changed pilot acceptance from required proof/proof surfaces to required
+      evidence/evidence surfaces;
+    - kept the historical inventory filename reference unchanged.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added a current-doctrine docs guard so ordinary broad `proof` wording in
+      the active evidence/record/credential docs fails the trust-action audit;
+    - the guard intentionally allows the historical
+      `INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md` filename because it is a real
+      path;
+    - expanded the docs guard to include the canonical skeleton and innovation
+      policy logic docs.
+  - `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+    - changed TrustSlip and merchant verification source-truth wording from
+      portable proof/checking proof to portable current evidence/checking
+      evidence.
+  - `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`
+    - changed TrustSlip from portable current proof to portable current
+      evidence;
+    - changed policy-proof wording to policy impact;
+    - changed the plain-language explanation from verified proof to verified
+      evidence view.
+- Verification:
+  - source-doc scan now finds `proof` only in the historical filename
+    `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md` across the touched current
+    doctrine docs.
+  - Passed `node frontend\tools\audit-trust-actions.mjs` with the new docs
+    guard.
+  - Passed `git diff --check` for touched docs and audit tool, with only the
+    expected LF-to-CRLF normalization warning on the audit file.
+- Unabated truth:
+  - this is doctrine/presentation alignment only; it does not implement the
+    remaining paid domain workflow, annual renewal prompts, verifier quotas,
+    weighted verifier quality, payment recovery, or dispute engine.
+  - older planning/archive docs may still contain proof language; the current
+    operational docs are the priority because they steer implementation.
+
+## 2026-06-19 - Live Evidence Wording Cleanup
+
+- Trigger:
+  - after the current doctrine docs were aligned, a live-source scan still
+    found old proof wording in a few active UI labels, copied invite wording,
+    backend test expectations, and audit contracts.
+- Changed:
+  - `frontend/src/lib/copy.ts`
+    - changed `Proof Pack (PDF)` to `Evidence Pack (PDF)`.
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - changed the demand form badge from `Proof optional` to
+      `Evidence optional`;
+    - changed `Proof from responder` to `Evidence from responder`;
+    - renamed local state from `responseProof` to `responseEvidence` while
+      keeping the generated description as `Response evidence expected`.
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - renamed the internal invite benefit list from
+      `JOIN_INVITE_PROOF_LINES` to `JOIN_INVITE_EVIDENCE_LINES`;
+    - kept the existing user-facing benefit copy, including
+      `checkable credibility evidence`.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - updated the backend TrustSlip verification page assertion to expect
+      `Open scoped credential`.
+  - `gmfn_backend/tests/test_protocol_readiness_status.py`
+    - updated protocol readiness expectations from proof wording to evidence
+      wording.
+  - `frontend/tools/audit-demand-box-front-package.mjs`
+  - `frontend/tools/audit-existing-community-invite-line.mjs`
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - `frontend/tools/audit-protocol-readiness.mjs`
+    - updated audit contracts/messages to protect evidence wording instead of
+      old proof wording.
+- Verification:
+  - Passed `node frontend\tools\audit-trust-actions.mjs`.
+  - Passed `node frontend\tools\audit-demand-box-front-package.mjs`.
+  - Passed `node frontend\tools\audit-existing-community-invite-line.mjs`.
+  - Passed `node frontend\tools\audit-protocol-readiness.mjs`.
+  - Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py gmfn_backend\tests\test_community_member_verifications.py`
+    with 12 tests passing.
+  - Root `npm run build` failed because the repository root has no
+    `package.json`; reran from `frontend`, which passed `npm run build`.
+- Unabated truth:
+  - internal icon names, script names, and negative audit guard patterns still
+    contain `proof` where they are technical identifiers or forbidden phrases;
+    those are not user-facing product claims.
+
+## 2026-06-19 - CAC Recorded Evidence Doctrine
+
+- Trigger:
+  - owner clarified that CAC should be recorded, not treated as verification.
+- Changed:
+  - `gmfn_backend/app/core/trust_event_types.py`
+    - added `community_external_registration_recorded`.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `POST /clans/{clan_id}/external-registration-records`;
+    - added private admin-only
+      `GET /clans/{clan_id}/external-registration-records`;
+    - community admins can record CAC/external registration evidence as
+      supporting domain-claim context;
+    - community admins can list the safe evidence history later;
+    - the event stores presence flags plus a stable fingerprint only, not raw
+      CAC/reference text or registered-name text;
+    - the Trust Event explicitly carries `verification_effect: none`.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - added coverage that admin recording/listing works, non-admin
+      recording/listing is blocked, raw registration text is not stored in
+      TrustEvent metadata, and the response keeps the not-verification boundary.
+    - added coverage that after external registration evidence is recorded,
+      public `GET /verify/community/{community_key}` still does not expose the
+      raw reference, raw registered name, evidence fingerprint, or
+      external-registration field names.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - excludes `community_external_registration_recorded` from the public
+      scoped member credential community-activity count and categories.
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - excludes `community_external_registration_recorded` from TrustSlip
+      community-activity count and categories;
+    - prevents a community-domain evidence record logged by an admin from
+      being presented as that admin's personal trust activity.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added coverage that external-registration evidence does not count as
+      personal public activity on the scoped member credential or TrustSlip,
+      while ordinary member verification activity still counts.
+  - `frontend/src/lib/api.ts`
+    - added `CommunityExternalRegistrationEvidencePayload`;
+    - added `listCommunityExternalRegistrationEvidence`;
+    - added `recordCommunityExternalRegistrationEvidence`;
+    - these helpers only wire the private admin evidence endpoints and do not
+      make CAC/external registration a public verification surface.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - added a compact `External registration evidence` panel inside the
+      parent-domain lane;
+    - admins can record CAC/company-registration type, issuing body, reference,
+      registered name, and note;
+    - the visible history shows safe facts only: type, fingerprint, date,
+      presence flags, and `no verification effect`;
+    - the page warns that this evidence does not prove leadership, membership,
+      consent, shop ownership, or public Community ID ownership.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - aligned the public page copy with the trust-action audit contract:
+      `Community Verification`, `Public QR check for community identity only`,
+      and `Community ID`;
+    - changed the public-record fallback from `Verified in GSN` to
+      `Recorded in GSN`;
+    - changed the community QR proof line from confirming a domain to opening
+      the GSN community ID record;
+    - changed `proof anchor`, `What this proves`, and
+      `This record confirms...` wording to `record anchor`,
+      `What this shows`, and record-showing language.
+    - this is copy/presentation alignment only and does not change public
+      verification data, relay behavior, or proof scope.
+    - changed `Public proof record`, member/group proof, credential proof, and
+      Community ID Domain proof wording to public community record/evidence
+      wording.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - changed public member proof fallback copy from confirming active
+      membership to showing an active membership record plus aggregate witness
+      strength.
+    - changed the public page title from `GSN member proof` to
+      `GSN member credential`;
+    - changed missing/error copy from `Credential not confirmed` to
+      `Credential not found`;
+    - changed the security footer from community member proof to community
+      member credential.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - changed the trust-front-desk copy from `verified community context` to
+      `recorded community context`.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - changed the public shop status strip from `Verified Community` to
+      `Community Record`;
+    - changed the detail from `Member review` to `ID check`;
+    - changed public shop trust-request copy from live proof/merchant proof
+      wording to current TrustSlip evidence and merchant verification record
+      wording;
+    - changed the verification drawer from `Hide proof` to `Hide evidence`;
+    - changed the Community ID helper from confirming the exact community to
+      pointing to the recorded community.
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - changed the Community Verification copied package limitation from
+      `verifies a public GSN community record only` to
+      `opens a public GSN community record only`;
+    - added `protected-domain approval` to the explicit list of things the
+      copied package is not.
+  - `frontend/src/lib/gmfnCapabilities.ts`
+    - changed `verified community behaviour` to
+      `recorded community-backed behaviour`.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - changed the yearly member-witness limit message from
+      `Ask another verified community member` to
+      `Ask another active community member with witness standing`.
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - changed TrustSlip identity status from
+      `Phone and community membership are verified` to
+      `Phone verified; active community membership recorded`;
+    - changed the community identity label from
+      `Identity confirmed by active community membership` to
+      `Active community membership recorded`.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed the holder fact label from `Verified member` to
+      `Identity check`;
+    - changed the fallback status from
+      `Phone and community membership are verified` to
+      `Phone verified; community membership recorded`.
+    - changed the community identity fallback from
+      `Identity confirmed by active community membership` to
+      `Active community membership recorded`.
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - changed the Trust Passport community identity fallback from
+      `Identity confirmed by active community membership` to
+      `Active community membership recorded`.
+    - changed Trust Passport question/status wording from verified-history
+      language to checkable-history language.
+    - changed the identity question from `Identity verified` to
+      `Identity evidence`.
+    - changed `community membership confirms this person is known` to
+      `active community membership is recorded for this person`.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed TrustSlip decision-helper wording from verified-history language
+      to checkable-history language.
+    - changed `Identity verified` to `Identity evidence`.
+    - changed `Merchant view verified` to `Merchant view checked`.
+    - changed `What verification confirms` to `What verification checks`.
+    - changed `concise outward-facing proof` to
+      `concise outward-facing record`.
+    - changed merchant verification helper copy from `safe to rely on` to
+      `current enough to review`.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - aligned trust-question icon keys with the new `Identity evidence` and
+      `Checkable history` labels.
+    - changed community/continuity visible badges from confirmed/not-confirmed
+      wording to recorded/pending/clean wording.
+    - changed the community-summary row from community confirmation to
+      community record language.
+    - changed missing-proof/evidence-row helper copy to missing evidence and
+      supporting evidence wording.
+  - `gmfn_backend/app/schemas/merchant_release.py`
+    - changed the schema comment from goods release based on a verified
+      TrustSlip to goods release after reviewing current TrustSlip evidence.
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changed `Your verified identity across the network` to
+      `Your GSN identity record across the network`.
+  - `gmfn_backend/app/api/routes/withdrawal_destinations.py`
+    - changed payout-destination TrustEvent copy from broad verified-identity
+      language to `phone-verified identity record`.
+  - `frontend/src/lib/trustDocumentFamilyMap.ts`
+    - changed `Portable proof` to `Portable record`;
+    - changed TrustSlip Verify copy from proving a code belongs to a valid
+      record to checking that a code points to a visible current record.
+  - `frontend/src/lib/trustDocumentUseCases.ts`
+    - changed TrustSlip use-case wording from short/portable proof to short
+      portable record.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - changed public TrustSlip status copy from confirming status to checking
+      status;
+    - changed community proof language to community record/evidence language.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - changed current public validity copy from confirming to checking.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - changed verified-history wording to checkable-history wording;
+    - changed saved snapshot wording from proving the reading was recorded to
+      showing the reading was recorded;
+    - changed reader verdict from matching risk to proof shown to matching risk
+      to the record shown.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - changed proof language in TrustSlip snapshot guidance to evidence/record
+      language.
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - changed `trust proof` wording to `trust evidence`.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - changed public TrustSlip verify note from verifying TrustSlip validity to
+      checking public TrustSlip validity.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - changed portable proof/community proof guidance to portable
+      record/community record wording.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changed `View proof` and trust proof wording to evidence/record wording.
+  - `frontend/src/pages/TrustTimelinePage.tsx`
+    - changed evidence-bundle helper copy from needing proof to needing
+      supporting evidence;
+    - changed review helper copy from saving proof to saving evidence.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - changed pilot-readiness visible labels from `Needs proof` to
+      `Needs evidence`;
+    - changed evidence-pack fallback copy from proof still needed to evidence
+      still needed;
+    - changed `Evidence proof to capture first` to
+      `Evidence to capture first`;
+    - changed missing required-proof fallback text to missing required
+      evidence while leaving the existing `required_proof` payload key intact
+      as a backend/frontend contract.
+  - `frontend/src/lib/dashboardUserGuidance.ts`
+    - changed Dashboard guidance from TrustSlip/proof language to
+      supporting-evidence and shareable-record language.
+  - `frontend/src/lib/gmfnCapabilities.ts`
+    - changed contribution tracking from visible proof to visible evidence;
+    - changed Portable Trust Identity from smaller proof to smaller evidence
+      record.
+  - `frontend/src/lib/marketWisdom.ts`
+    - changed steady proof to steady evidence.
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - changed `Do not stop here if you need proof` to
+      `Do not stop here if you need evidence`.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - changed `Names are not proof` to `Names are not enough`;
+    - changed `Not public proof yet` to `Not public record yet`.
+    - changed witness-policy tiles from proof labels to evidence/public
+      credential labels.
+  - `frontend/src/lib/guidance.ts`
+    - changed identity-proof guidance to identity-evidence guidance.
+  - `frontend/src/lib/identityEvidenceCompletion.ts`
+    - changed rejected photo/selfie follow-up from clearer identity proof to
+      clearer identity evidence.
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - changed founder onboarding copy from optional/phone/SMS proof wording to
+      optional evidence, phone evidence session, SMS evidence, and founder
+      evidence wording.
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - changed demand-response proof expectations to response-evidence
+      expectations.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - changed helper labels from `Show proof` / TrustSlip proof / proof routes
+      to evidence/TrustSlip evidence/evidence routes.
+  - `frontend/src/pages/TrustPage.tsx`
+    - changed legacy starter identity proof language to starter evidence
+      language.
+  - `frontend/src/lib/trustBandLanguage.ts`
+    - changed trust-band decision helper copy from asking for more/current/
+      stronger proof to asking for stronger evidence;
+    - changed `This is not proof of bad behaviour` to a safer record-reading
+      explanation that avoids making broad proof claims.
+  - `frontend/src/lib/joinInviteMessaging.ts`
+    - changed invite-benefit copy from Trust Passport/TrustSlip as proof of
+      credibility to checkable credibility evidence.
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`
+    - changed public capability copy from carrying a good name as proof to
+      carrying it as a checkable record;
+    - changed Trust Passport route detail from proof to evidence.
+  - `frontend/src/pages/SystemOperationsPage.tsx`
+    - changed admin/pilot copy from clearer proof and phone proof to clearer
+      evidence and phone evidence.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - changed phone-proof, missing-proofs, next-proof-step, portable-proof,
+      and community-proof wording to phone evidence, evidence steps,
+      portable records, and community records.
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - changed remaining identity, repayment, and trade helper copy from proof
+      wording to evidence/record wording.
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changed `TrustSlip keeps later proof` and `Response proof expected` to
+      later evidence / response evidence wording.
+  - `gmfn_backend/app/api/routes/entry.py`
+    - changed entry/onboarding response messages from phone/bank proof and
+      starter identity proofs to phone/bank evidence and starter identity
+      evidence.
+  - `gmfn_backend/app/api/routes/entry_verification.py`
+    - changed signed-in phone verification success copy from phone proof to
+      phone evidence.
+  - `gmfn_backend/app/api/routes/admin.py`
+    - changed pilot-intake/admin identity-review copy from phone/photo proof
+      to phone/photo evidence.
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - changed public-shop marketplace message from live TrustSlip proof to
+      current TrustSlip evidence and a fresh check.
+  - `gmfn_backend/app/services/trust_score_service.py`
+    - changed TrustScore API explanation copy from onboarding proofs/starter
+      identity proofs to onboarding evidence/starter identity evidence.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - changed public TrustSlip HTML member link from `Open scoped proof` to
+      `Open scoped credential`.
+  - `gmfn_backend/app/api/routes/withdrawal_destinations.py`
+    - changed payout destination messages from payout proof to payout
+      evidence.
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - changed TrustSlip service plain language from final/confirmed proof to
+      final confirmation / confirmed evidence.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - changed scoped credential helper from supporting proof to supporting
+      evidence.
+  - `gmfn_backend/app/core/trust_policy.py`
+    - changed onboarding identity proof labels to onboarding identity
+      evidence labels.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - changed community/domain product copy from leadership proof,
+      public Community ID proof, and proof-for-tomorrow language to
+      leadership evidence, public Community ID evidence, and trust-record
+      language.
+  - `frontend/src/lib/trustDocumentGuide.ts`
+    - changed Trust Passport guidance from public-proof context/meaning to
+      public-record context/meaning and evidence search keywords.
+  - `frontend/src/lib/gsnIconAssets.ts`
+    - changed icon metadata from proof paper/public proof/QR proof record to
+      evidence paper/public record/QR evidence record wording.
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - changed copied community/shop limitation notes from `proof that...` /
+      `proof the offer...` wording to evidence-boundary wording.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - changed public TrustSlip Verify boundary copy from proof-that-every-claim
+      language to evidence-boundary language.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed the profile-image disclaimer from identity proof to identity
+      evidence.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - changed the TrustSlip intent search keyword from proof to evidence.
+  - `gmfn_backend/app/api/routes/pilot_readiness.py`
+    - changed pilot-readiness status labels, acceptance rules, TrustSlip
+      presentation, repayment validation, evidence-pack, and next-step copy
+      from proof wording to evidence/validation wording while leaving existing
+      payload keys such as `required_proof` unchanged.
+  - `gmfn_backend/app/api/routes/protocol_status.py`
+    - changed protocol status labels, truth statement, and next-priority copy
+      from proof wording to evidence/validation wording.
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - changed proof-surface/portable-proof guidance to evidence-surface and
+      portable-record wording.
+  - `frontend/src/components/TrustDocumentFamilyMap.tsx`
+    - changed the default map intro from portable proof to portable record.
+  - `frontend/src/lib/marketWisdom.ts`
+    - changed `Carry one clean proof` / `Portable proof...` to clean portable
+      trust record wording.
+  - `frontend/src/lib/gsnIconAssets.ts`
+    - changed icon metadata from proof/share and proof paper wording to
+      public record/evidence paper wording.
+  - `gmfn_backend/app/api/routes/pilot_readiness.py`
+    - changed pilot-readiness proof-surface/proof-package wording to
+      evidence-surface/evidence-package/public-record wording.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added a regression guard for the CAC/external-registration evidence
+      boundary:
+      API helpers must stay private/admin-oriented;
+      the admin policy page must frame the evidence as support only and show
+      fingerprint/presence facts;
+      the public Community Verification page must not expose CAC/company
+      registration fields or raw registration terms.
+    - added a guard that the public Community Verification fallback must remain
+      `Recorded in GSN`, not `Verified in GSN`.
+    - added guards that Marketplace and Public Shop must not claim a verified
+      community from context/Community ID presence alone.
+    - added public-shop guards against `Trust proof on request`, live-proof
+      TrustSlip requests, merchant-verification proof wording, `Hide proof`,
+      and `Community ID confirms` wording.
+    - added a guard that copied Community Verification packages must frame the
+      link as opening a public community record, not verifying it.
+    - added guards that TrustSlip must not present phone verification plus
+      active community membership as a fully verified member identity.
+    - added TrustSlip guards against `What verification confirms`,
+      `concise outward-facing proof`, and `safe to rely on`.
+    - added TrustScore guards against broad community/continuity confirmation
+      labels and missing-proof helper wording.
+    - added TrustTimeline and TrustCommandCentre guards against broad proof
+      wording in evidence-bundle and pilot-readiness UI.
+    - added shared guidance guards against proof phrasing in Dashboard
+      guidance, capability copy, Market Wisdom, and CCI helper copy.
+    - added guards against member/community public pages and witness-policy
+      tiles using proof wording where the UI should say credential, record, or
+      evidence.
+    - added guards against onboarding, Demand Box, Marketplace helper, and
+      legacy Trust page proof wording where the UI should say evidence.
+    - extended the shared guidance guard to cover Trust Band, join-invite,
+      `MyGMFNAndI`, and System Operations proof wording.
+    - extended proof-to-evidence guards for Identity & Integrity, Dashboard,
+      Trust Passport view-model helper copy, and entry onboarding messages.
+    - added backend/API guards for entry verification, admin, marketplace,
+      TrustScore, TrustSlip HTML, payout destination, TrustSlip service, and
+      community confirmation outcome proof-to-evidence wording.
+    - added guards for trust-policy labels, community/domain product copy,
+      Trust Document Guide wording, and GSN icon metadata proof-to-evidence
+      wording.
+    - updated copied-paper limitation guard from proof to evidence wording;
+    - added guards against proof-that-every-claim, proof-the-offer, profile
+      image identity-proof, and Marketplace proof-keyword regressions.
+    - added guards that pilot readiness/protocol status copy must use
+      evidence/validation wording instead of broad proof wording.
+    - added a guard that Trust Passport view-model fallbacks must not describe
+      active community membership as identity verification.
+    - added guards against `Identity verified`, `Verified history`,
+      `Merchant view verified`, `community membership confirms`, and
+      `verified TrustSlip` wording in the relevant TrustSlip/Trust Passport
+      and merchant-release surfaces.
+    - added guards against broad `verified identity` language on Dashboard and
+      payout-destination copy.
+    - added guards against public proof wording that says a QR page confirms
+      the GSN community ID domain or that a member credential confirms active
+      membership broadly.
+    - added guards against `proof anchor`, `What this proves`, and
+      `This record confirms the community identity` language on public
+      community proof surfaces.
+    - added guards against TrustSlip Verify/document-family copy using
+      `portable proof`, `public proof`, `trust proof`, `community proof`,
+      `proves whether`, `confirmed validity`, or `View proof` wording.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added the same shared-package guard for institutional headed-paper copy.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - changed public community verification `public_record` from
+      `Verified in GSN` to `Recorded in GSN`.
+    - changed public scoped member credential `proof_scope` from confirming
+      active membership to showing an active membership record, aggregate
+      member-witness strength, and broad community activity evidence.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - updated public community verification expectation to `Recorded in GSN`.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - updated public community verification alias expectation to
+      `Recorded in GSN`.
+  - `docs/SCREEN_SPECS.md`
+    - documented the external-registration evidence panel and privacy boundary
+      for `CommunityConfirmationPolicyPage`.
+    - documented that `CommunityVerifyPage` should use `Recorded in GSN` as
+      the safe public-record fallback unless a later protected-domain status
+      explicitly proves official verification.
+    - documented safe Marketplace/Public Shop community wording:
+      `recorded community context` and `Community Record` unless stronger
+      protected-domain proof exists.
+    - documented that copied/shareable community record packages must say the
+      link opens or checks a public community record, not that the package
+      itself verifies the record or proves protected-domain approval.
+    - changed Community ID proof-anchor wording to record-anchor wording and
+      framed `CommunityVerifyPage` as a public record check that shows a
+      community domain record.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - added CAC doctrine:
+      CAC/company-registration details are recorded supporting evidence only;
+      CAC can support parent-domain claim review, but is not GSN verification
+      by itself;
+      CAC does not prove active market membership, current leadership,
+      community consent, shop ownership, or member belonging.
+    - recorded that public Community Verification default wording now says
+      `Recorded in GSN`, not `Verified in GSN`.
+    - recorded that Marketplace/Public Shop status wording now avoids verified
+      community claims from context alone.
+    - recorded that copied Community Verification packages now say the link
+      opens a public record only.
+    - changed the core doctrine from `Community ID is proof` to `Community ID
+      is the record anchor`, and softened the layer descriptions from
+      `proves` to `shows` or `records` where the claim is evidence-based.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - added the CAC/company-registration correction and separated external
+      registration record from community verification.
+    - changed the should-have summary from `verified community identity` to
+      `recorded and protected community identity`.
+  - `docs/GSN_REFRAME_WORKSHOP_AND_MARKET_ENTRY_PLAYBOOK_2026-06-18.md`
+    - added the field/sales guardrail:
+      record CAC as supporting evidence, do not sell it as GSN verification.
+  - `docs/GSN_COMMUNITY_CONFIRMATION_RELAY_PROTOCOL_2026-05-15.md`
+    - changed old public TrustSlip examples from `part of a verified community`
+      to `recorded community membership evidence`.
+  - `docs/GSN_RGU_Customer_Discovery_Working_Plan.md`
+    - changed the evidence ranking prompt from `verified community membership`
+      to `recorded community membership evidence`.
+  - `docs/BENEFIT_LED_PAGE_EXPLANATIONS_2026-04-21.md`
+    - changed `verified community behaviour` to
+      `recorded community-backed behaviour`.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - changed `already-verified community members` in the applicant witness
+      step to `community members with active verification standing`.
+  - `docs/SCREEN_SPECS.md`
+    - added the CommunityVerifyPage rule that CAC/external registration
+      numbers must not be presented as GSN verification, current leadership
+      proof, community consent, member belonging, or the public Community ID
+      formula.
+  - `docs/HANDOFF_NOTES.md`
+    - corrected older `CAC/company-registry validation` wording to
+      `CAC/company-registration recording`.
+- Routes/screens affected:
+  - backend:
+    `POST /clans/{clan_id}/external-registration-records`;
+  - backend:
+    `GET /clans/{clan_id}/external-registration-records`;
+  - frontend API helper layer:
+    `frontend/src/lib/api.ts`;
+  - authenticated admin page:
+    `/app/community-confirmations/policy`, implemented by
+    `CommunityConfirmationPolicyPage`;
+  - documentation/spec layer for future CommunityVerifyPage and
+    community-domain work;
+  - public scoped member credential data:
+    `GET /verify/community/{community_key}/member/{member_key}`;
+  - TrustSlip payload community-activity summaries.
+- Verification:
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_domain_affiliations.py`;
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\services\trust_slips_services.py gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py`
+    with 12 tests;
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py`
+    with 16 tests;
+  - passed:
+    `npm exec -- eslint src/lib/api.ts` from `frontend/`;
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx src/lib/api.ts`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/` after public-shop proof-to-evidence
+    wording cleanup;
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs`;
+  - passed:
+    `npm exec -- eslint src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`;
+  - passed:
+    `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/`;
+  - passed:
+    `npm exec -- eslint src/pages/ShopGalleryPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after public-shop proof-to-evidence wording cleanup;
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after public-shop
+    proof-to-evidence wording cleanup;
+  - passed:
+    `npm exec -- eslint src/lib/gsnSnapshotPaper.ts tools/audit-trust-actions.mjs tools/audit-institutional-proof-surfaces.mjs`
+    from `frontend/`;
+  - passed:
+    `node frontend\tools\audit-institutional-proof-surfaces.mjs`;
+  - passed:
+    `rg -n "verifies a public GSN community record" frontend/src docs --glob '!frontend/dist/**'`
+    with only the historical handoff change note remaining, not live source.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\clans.py`;
+  - passed:
+    `npm exec -- eslint src/lib/gmfnCapabilities.ts` from `frontend/`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py -k yearly_limit`
+    with 1 test;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `rg -n "verified community behaviour|part of a verified community|Ask another verified community member|verified community membership|verified community identity|already-verified community members" frontend/src gmfn_backend/app docs --glob '!frontend/dist/**'`
+    with only historical handoff change notes remaining, not live source.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\trust_slips_services.py`;
+  - passed:
+    `npm exec -- eslint src/pages/TrustSlipPage.tsx src/lib/trustPassportViewModel.ts tools/audit-trust-actions.mjs`
+    from `frontend/`;
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 8 tests;
+  - passed:
+    `rg -n "Phone and community membership are verified|Identity confirmed by active community membership|Verified member" frontend/src gmfn_backend/app --glob '!frontend/dist/**'`
+    with no matches in live backend/frontend source.
+  - passed:
+    `npm run build` from `frontend/` after TrustSlip identity wording
+    alignment.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\schemas\merchant_release.py`;
+  - passed:
+    `npm exec -- eslint src\pages\TrustSlipPage.tsx src\lib\trustPassportViewModel.ts src\pages\TrustScorePage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`;
+  - passed:
+    `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after TrustScore record/evidence wording cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after TrustScore
+    record/evidence wording cleanup.
+  - passed:
+    `npm run build` from `frontend/` after TrustScore record/evidence wording
+    cleanup.
+  - passed:
+    `npm exec -- eslint src/pages/TrustCommandCentrePage.tsx src/pages/TrustTimelinePage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after command-centre/timeline evidence wording cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after
+    command-centre/timeline evidence wording cleanup.
+  - passed:
+    `npm run build` from `frontend/` after command-centre/timeline evidence
+    wording cleanup.
+  - passed:
+    `npm exec -- eslint src/lib/dashboardUserGuidance.ts src/lib/gmfnCapabilities.ts src/lib/marketWisdom.ts src/pages/CCIReadingPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after shared-guidance proof-to-evidence wording cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after shared-guidance
+    proof-to-evidence wording cleanup.
+  - passed:
+    `npm run build` from `frontend/` after shared-guidance proof-to-evidence
+    wording cleanup.
+  - passed:
+    `npm exec -- eslint src/pages/CommunityMemberVerifyPage.tsx src/pages/CommunityVerifyPage.tsx src/pages/CommunityConfirmationPolicyPage.tsx src/lib/guidance.ts src/lib/identityEvidenceCompletion.ts tools/audit-trust-actions.mjs`
+    from `frontend/` after public credential/community-record wording cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after public
+    credential/community-record wording cleanup.
+  - passed:
+    `npm run build` from `frontend/` after public credential/community-record
+    wording cleanup.
+  - passed:
+    `npm exec -- eslint src/pages/CreateEntryPage.tsx src/pages/DemandBoxPage.tsx src/pages/MarketplacePage.tsx src/pages/TrustPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after onboarding/Demand/Marketplace/legacy Trust
+    proof-to-evidence wording cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after
+    onboarding/Demand/Marketplace/legacy Trust proof-to-evidence wording
+    cleanup.
+  - passed:
+    `npm run build` from `frontend/` after
+    onboarding/Demand/Marketplace/legacy Trust proof-to-evidence wording
+    cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after checkable-history and
+    TrustSlip-evidence wording alignment.
+  - passed:
+    `rg -n "verified TrustSlip|Identity verified|Verified history|Merchant view verified|Phone and community membership are verified|Identity confirmed by active community membership|Verified member|community membership confirms" frontend\src gmfn_backend\app --glob '!frontend/dist/**'`
+    with no matches in live backend/frontend source.
+  - passed:
+    `npm run build` from `frontend/` after the checkable-history and
+    merchant-release wording alignment.
+  - passed:
+    `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after TrustSlip verification-check wording cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after TrustSlip
+    verification-check wording cleanup.
+  - passed:
+    `npm run build` from `frontend/` after TrustSlip verification-check
+    wording cleanup.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\withdrawal_destinations.py`;
+  - passed:
+    `npm exec -- eslint src\pages\DashboardPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`;
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after broad
+    verified-identity wording alignment.
+  - passed:
+    `rg -n "verified identity|Verified identity|Your verified identity|against your verified identity" frontend\src gmfn_backend\app --glob '!frontend/dist/**'`
+    with only safe negative/provider wording and
+    `phone-verified identity record` remaining.
+  - passed:
+    `npm run build` from `frontend/` after Dashboard and payout-destination
+    identity wording alignment.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\community_confirmation_service.py`;
+  - passed:
+    `npm exec -- eslint src\pages\CommunityVerifyPage.tsx src\pages\CommunityMemberVerifyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/`;
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after community/member
+    public proof record-wording alignment.
+  - passed:
+    `rg -n "confirms active membership|confirms the GSN community ID domain|This confirms active membership" frontend\src gmfn_backend\app --glob '!frontend/dist/**'`
+    with no matches in live backend/frontend source.
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_confirmation_relay.py`
+    with 20 tests.
+  - passed:
+    `npm run build` from `frontend/` after community/member public proof
+    record-wording alignment.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py`;
+  - passed:
+    `npm exec -- eslint src\pages\CommunityVerifyPage.tsx src\pages\CommunityMemberVerifyPage.tsx tools\audit-trust-actions.mjs`
+    from `frontend/` after record-anchor wording.
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\tests\test_community_member_verifications.py`
+    with 20 tests after record-anchor wording.
+  - passed:
+    `rg -n "proof anchor|This record confirms the community identity|What this proves|confirms the GSN community ID domain|It proves the community domain record|Community ID is proof|Personal verification proves|group verification proves|affiliation proves" frontend\src gmfn_backend\app docs\SCREEN_SPECS.md docs\GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md --glob '!frontend/dist/**'`
+    with no matches.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs`;
+  - passed:
+    `npm run build` from `frontend/` after record-anchor wording.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\api\routes\pilot_readiness.py`;
+  - passed:
+    `npm exec -- eslint src\lib\marketWisdom.ts src\lib\trustDocumentActionGuide.ts src\lib\trustDocumentFamilyMap.ts src\lib\trustDocumentUseCases.ts src\lib\trustDocumentSnapshots.ts src\lib\gsnSnapshotPaper.ts src\pages\CommunityMemberVerifyPage.tsx src\pages\IdentityIntegrityPage.tsx src\pages\TrustScorePage.tsx src\pages\TrustSlipPage.tsx src\pages\trustSlipVerify\TrustSlipVerifyPublicPaper.tsx src\pages\trustSlipVerify\TrustSlipVerifyPrivateEvidence.tsx src\pages\trustSlipVerify\trustSlipVerifyViewModel.ts tools\audit-trust-actions.mjs`
+    from `frontend/`;
+  - passed:
+    `rg -n "Portable proof|portable proof|Carry one clean proof|proof surface|proof paper|proof packages|proof surfaces|public proof|trust proof|community proof|View proof|Names are not proof|verifies TrustSlip validity only|confirms current public validity|confirms the public TrustSlip status|proves whether|It proves the reading" frontend\src gmfn_backend\app --glob '!frontend/dist/**'`
+    with no matches.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs`;
+  - passed:
+    `npm run build` from `frontend/` after TrustSlip Verify/document-family
+    proof-to-record wording cleanup.
+  - passed:
+    `npm run build` from `frontend/` after Marketplace/Public Shop wording
+    alignment.
+  - passed:
+    `npm exec -- eslint src/lib/trustBandLanguage.ts src/lib/joinInviteMessaging.ts src/pages/MyGMFNAndIPage.tsx src/pages/SystemOperationsPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after shared/admin proof-to-evidence wording cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after extending the shared
+    proof-to-evidence guard.
+  - passed:
+    `npm run build` from `frontend/` after Trust Band, invite, MyGMFNAndI, and
+    System Operations wording cleanup.
+  - passed:
+    `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx src/lib/trustPassportViewModel.ts src/pages/DashboardPage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after Identity/Dashboard/Trust Passport proof-to-evidence
+    wording cleanup.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\entry.py` after entry
+    onboarding message cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after extending guards for
+    Identity, Dashboard, Trust Passport, and entry onboarding copy.
+  - passed:
+    `npm run build` from `frontend/` after Identity, Dashboard, Trust Passport,
+    and entry onboarding wording cleanup.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\entry_verification.py gmfn_backend\app\api\routes\admin.py gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\api\routes\withdrawal_destinations.py gmfn_backend\app\services\trust_score_service.py gmfn_backend\app\services\trust_slips_services.py`
+    after backend/API proof-to-evidence wording cleanup.
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after community confirmation outcome and audit guard
+    cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after backend/API
+    proof-to-evidence guards were added.
+  - passed:
+    `npm run build` from `frontend/` after backend/API and outcome wording
+    cleanup.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\core\trust_policy.py gmfn_backend\app\api\routes\clans.py`
+    after trust-policy/community-domain wording cleanup.
+  - passed:
+    `npm exec -- eslint src/lib/trustDocumentGuide.ts src/lib/gsnIconAssets.ts tools/audit-trust-actions.mjs`
+    from `frontend/` after Trust Document Guide/icon metadata wording cleanup.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after adding guards for
+    trust-policy, community-domain, Trust Document Guide, and icon metadata
+    proof-to-evidence wording.
+  - passed:
+    `npm run build` from `frontend/` after trust-policy/community-domain and
+    guide/icon wording cleanup.
+  - passed:
+    `npm exec -- eslint src/lib/gsnSnapshotPaper.ts src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/TrustSlipPage.tsx src/pages/MarketplacePage.tsx tools/audit-trust-actions.mjs`
+    from `frontend/` after public-paper/TrustSlip/Marketplace boundary wording
+    cleanup.
+  - passed:
+    `rg -n 'proof that every claim is true|proof the offer is still available|Profile image is not identity proof|"proof", "verify"' frontend\src\lib\gsnSnapshotPaper.ts frontend\src\pages\trustSlipVerify\TrustSlipVerifyPublicPaper.tsx frontend\src\pages\TrustSlipPage.tsx frontend\src\pages\MarketplacePage.tsx`
+    with no matches.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after public-paper,
+    TrustSlip, and Marketplace boundary guards were updated.
+  - passed:
+    `npm run build` from `frontend/` after public-paper, TrustSlip, and
+    Marketplace boundary wording cleanup.
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\pilot_readiness.py gmfn_backend\app\api\routes\protocol_status.py`
+    after pilot-readiness/protocol wording cleanup.
+  - passed:
+    `npm exec -- eslint tools/audit-trust-actions.mjs` from `frontend/` after
+    adding pilot-readiness/protocol proof-to-evidence guards.
+  - passed:
+    `node frontend\tools\audit-trust-actions.mjs` after
+    pilot-readiness/protocol copy guards were added.
+  - passed:
+    `npm run build` from `frontend/` after pilot-readiness/protocol wording
+    cleanup.
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `npm exec -- eslint tools/audit-trust-actions.mjs src/pages/CommunityConfirmationPolicyPage.tsx src/pages/CommunityVerifyPage.tsx src/lib/api.ts`
+    from `frontend/`;
+  - searched active docs for CAC/company-registration wording and confirmed the
+    new rule is explicit.
+  - passed:
+    `git diff --check` with line-ending warnings only.
+  - passed:
+    `rg -n "Verified in GSN" gmfn_backend frontend/src --glob '!frontend/dist/**'`
+    with no matches in live backend/frontend public surfaces.
+- Unabated truth:
+  - this does not add raw CAC document upload/storage, admin review workflow,
+    registry lookup, or fraud checking;
+  - because TrustEvent metadata appears in multiple audit/evidence surfaces, raw
+    CAC details should wait for a proper private evidence table/vault;
+  - recording external registration evidence still creates a TrustEvent for
+    audit trail purposes, but the public member credential and TrustSlip now
+    deliberately exclude that event type from personal community activity;
+  - a public community record now says `Recorded in GSN` because `Verified in
+    GSN` was too strong for unclaimed or not-yet-protected community domains;
+  - Marketplace and Public Shop now avoid implying verified-community status
+    from Community ID/context presence alone;
+  - copied Community Verification packages now avoid implying that the package
+    itself verifies the community record;
+  - live capability copy and backend witness-limit copy now distinguish
+    recorded/community-backed evidence from broad verified-community claims;
+  - TrustSlip identity copy now treats active community membership as recorded
+    membership evidence, not full identity/member verification;
+  - it prevents a dangerous overclaim:
+    CAC is useful recorded evidence, but GSN verification must still come from
+    Community ID governance, parent-domain acknowledgement, member
+    credentials, witness evidence, renewal, dispute handling, and audit trail.
+
+## 2026-06-19 - Marketplace Trust-First Front Desk
+
+- Trigger:
+  - owner asked to continue after proof-boundary wording cleanup;
+  - the trust-infrastructure gap audit identifies Marketplace as built but
+    still needing trust-first presentation.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added a compact `Community trust front desk` strip above the work lanes;
+    - the strip uses existing safe page state only:
+      Community ID, local trust, trust evidence count, visible members, visible
+      shops, and active support records;
+    - it frames the page as work inside one recorded community context before
+      money, support, or trade moves.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that Marketplace must show a compact community trust front desk
+      before work lanes.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the trusted-commerce implementation checkpoint.
+- Routes/screens affected:
+  - authenticated Marketplace route:
+    `/app/marketplace` implemented by `MarketplacePage`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/MarketplacePage.tsx` from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is presentation/hierarchy only;
+  - it does not change marketplace APIs, selected-community logic, shop logic,
+    ROSCA, support requests, public links, payment instructions, or trust score
+    computation;
+  - it improves the first impression, but Marketplace still needs deeper
+    guided-surface QA before we call the whole page finished.
+
+## 2026-06-19 - Shared Snapshot Limitation Wording Cleanup
+
+- Trigger:
+  - owner asked to continue the trust-infrastructure proof-boundary cleanup
+    after backend TrustSlip PDFs were aligned.
+- Changed:
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - changed the default GSN snapshot limitation from vague `approval` wording
+      to explicit `credit approval`, `payment instruction`, and `automatic
+      debit authority` boundaries;
+    - tightened the community verification package limitation so the public
+      community record is not read as a bank guarantee, credit approval, or
+      proof that every claim is true;
+    - tightened the Vault invitation limitation so access is not read as a
+      guarantee or credit approval.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - changed the Trust Passport snapshot limitation from vague `approval`
+      wording to explicit `credit approval`, `payment instruction`, and
+      `automatic debit authority` boundaries.
+- Routes/screens affected:
+  - copied/shared GSN snapshot text generated by `gsnSnapshotPaper`;
+  - copied Trust Passport snapshot text generated by
+    `trustDocumentSnapshots`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/lib/gsnSnapshotPaper.ts src/lib/trustDocumentSnapshots.ts`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only;
+  - passed:
+    `rg -n "Not a bank guarantee, approval|Not a bank guarantee or approval|bank guarantee, approval|guarantee, approval" frontend\src\lib\gsnSnapshotPaper.ts frontend\src\lib\trustDocumentSnapshots.ts`
+    with no old vague limitation matches.
+- Unabated truth:
+  - this is shared copy only;
+  - it does not change invites, community verification, Vault access,
+    payment-instruction generation, Trust Passport computation, or TrustSlip
+    computation;
+  - it makes reusable proof text more legally and commercially careful by
+    naming the exact things GSN evidence is not.
+
+## 2026-06-19 - TrustSlip PDF Boundary Wording Cleanup
+
+- Trigger:
+  - owner asked to continue the TrustSlip/trust-infrastructure proof boundary
+    cleanup after backend merchant guidance was aligned.
+- Changed:
+  - `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+    - changed `Portable authorization snapshot` to
+      `Portable evidence snapshot`;
+    - changed the default PDF disclaimer from
+      `Community-backed integrity limit` to
+      `Community-backed integrity signal`.
+  - `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+    - changed the PDF disclaimer from `community-backed integrity limit` to
+      `community-backed integrity signal`;
+    - added explicit boundary wording that the TrustSlip is not credit
+      approval, a payment instruction, or automatic debit authority.
+- Routes/screens affected:
+  - backend-generated Trust Timeline PDFs;
+  - backend-generated TrustSlip evidence PDFs.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\trust_timeline_pdf_service.py gmfn_backend\app\services\trust_slip_evidence_pdf_service.py`;
+  - passed:
+    `rg -n "authorization snapshot|integrity limit|Community-backed integrity limit" gmfn_backend\app\services\trust_timeline_pdf_service.py gmfn_backend\app\services\trust_slip_evidence_pdf_service.py`
+    with no old wording matches.
+- Unabated truth:
+  - this is PDF copy only;
+  - it does not change PDF generation mechanics, trust event data, TrustSlip
+    values, scoring, or expiry;
+  - it removes the most dangerous phrase in this slice:
+    `authorization snapshot`, because TrustSlip must be evidence for judgement,
+    not authorization to release goods, money, or credit.
+
+## 2026-06-19 - Backend Merchant Guidance Limit Signal Cleanup
+
+- Trigger:
+  - owner asked to continue the trust-infrastructure alignment after frontend
+    TrustSlip runtime copy was cleaned up.
+- Changed:
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - changed generated TrustSlip human guidance from bare `trust limit` to
+      `trust limit signal`;
+    - changed payload disclaimer from `Community-backed integrity limit` to
+      `Community-backed integrity signal`.
+  - `gmfn_backend/app/api/routes/merchant_verify.py`
+    - changed public merchant verification disclaimer from
+      `Community-backed integrity limit` to
+      `Community-backed integrity signal`.
+- Routes/screens affected:
+  - backend TrustSlip payload generation;
+  - public merchant verification endpoint:
+    `GET /trust-slips/merchant/verify/{token}`;
+  - any frontend surface that renders these backend-provided guidance strings.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\trust_slips_services.py gmfn_backend\app\api\routes\merchant_verify.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 7 tests;
+  - passed:
+    `rg -n "trust limit,|integrity limit|Community-backed integrity limit" gmfn_backend\app\services\trust_slips_services.py gmfn_backend\app\api\routes\merchant_verify.py`
+    with no old wording matches.
+- Unabated truth:
+  - this is wording only;
+  - it does not alter merchant tokens, TrustSlip limits, scoring, expiry,
+    identity verification, or payment behavior;
+  - it reduces legal and commercial misunderstanding by making the backend
+    phrase the amount as a signal, not a release authority or approval.
+
+## 2026-06-19 - TrustSlip Runtime Copy Limit Signal Cleanup
+
+- Trigger:
+  - owner asked to continue after Trust Passport and TrustSlip visible amount
+    wording was aligned to `trust limit signal`.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed reader-facing decision answers from bare `TrustSlip limit` /
+      `limit` wording to `TrustSlip limit signal` / `trust-limit signal`;
+    - preserved the existing TrustSlip decision surface and evidence model.
+  - `frontend/src/components/TrustSlipReaderBlock.tsx`
+    - changed the reader block label from `Trust limit shown` to
+      `Trust limit signal`.
+  - `frontend/src/lib/trustDocumentActionGuide.ts`
+    - changed the copy-snapshot guidance from `trust limit` to
+      `trust-limit signal`.
+- Routes/screens affected:
+  - authenticated TrustSlip:
+    `TrustSlipPage`;
+  - reusable reader explanation block:
+    `TrustSlipReaderBlock`;
+  - Trust Document action guide copy.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/TrustSlipPage.tsx src/components/TrustSlipReaderBlock.tsx src/lib/trustDocumentActionGuide.ts`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only;
+  - passed:
+    `rg -n 'TrustSlip limit|Trust limit shown|holder, band, trust limit|Trust limit"' frontend/src --glob '!dist/**'`
+    with no old bare wording matches.
+- Unabated truth:
+  - this is still copy and presentation discipline only;
+  - it does not change TrustSlip computation, merchant summary data, community
+    witness data, loan logic, or payment behavior;
+  - it tightens the public meaning of the amount so a reader sees it as a
+    signal inside evidence, not a permission to release goods, money, or
+    credit.
+
+## 2026-06-19 - Trust Passport Limit Signal Wording
+
+- Trigger:
+  - owner asked to continue after frontend TrustSlip amount wording was aligned
+    to `trust limit signal`.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changed Trust Passport institutional row label from `Trust limit` to
+      `Trust limit signal`;
+    - changed the Finance Discipline card title to `Trust limit signal`;
+    - clarified the card detail so the amount is evidence context, not an
+      approval limit;
+    - changed the Finance Discipline lane description from `Limit` to
+      `Limit signal`.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that Trust Passport Finance Discipline must label visible trust
+      amounts as evidence/limit signals, not approved limits.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - authenticated Trust Passport surface implemented by `TrustScorePage`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/TrustScorePage.tsx` from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is wording only;
+  - it does not change trust score computation, finance capacity, guarantee
+    capacity, loan readiness, TrustSlip limits, or payment behavior;
+  - it makes Trust Passport consistent with the TrustSlip proof boundary:
+    visible amounts are evidence signals, not approval limits.
+
+## 2026-06-19 - Frontend TrustSlip Limit Signal Wording
+
+- Trigger:
+  - owner asked to continue after backend TrustSlip share wording was tightened.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed `Merchant review before release` to
+      `Merchant review before a trade decision`;
+    - changed owner-facing TrustSlip summary labels from bare `Trust limit`
+      wording to `Trust limit signal`;
+    - updated the explanation text to say `visible TrustSlip limit signal`.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - changed public TrustSlip proof labels to `Trust limit signal`.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - changed private evidence TrustSlip amount label to
+      `Trust limit signal`.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the frontend TrustSlip label rule.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - authenticated TrustSlip:
+    `TrustSlipPage`;
+  - public TrustSlip verifier paper:
+    `TrustSlipVerifyPublicPaper`;
+  - private evidence section on the TrustSlip verifier:
+    `TrustSlipVerifyPrivateEvidence`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is wording only;
+  - it does not change TrustSlip limit calculation, merchant verification,
+    credit logic, or release logging;
+  - it reduces the chance that users read a visible trust amount as an approved
+    release limit.
+
+## 2026-06-19 - Backend TrustSlip Share Boundary
+
+- Trigger:
+  - owner asked to continue after the frontend copied TrustSlip snapshots were
+    tightened.
+- Changed:
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - public TrustSlip share-text now appends an explicit boundary:
+      evidence only, not credit approval, payment instruction, or release
+      permission;
+    - backend TrustSlip Lite paper now labels the amount row as
+      `Trust Limit Signal`;
+    - backend full TrustSlip paper now labels the card as `Trust limit signal`,
+      adds a `Not credit approval` row, and extends the evidence note so the
+      page is not read as permission to release goods or money;
+    - authenticated WhatsApp/SMS share bundle now says to verify before making
+      a trade decision rather than before releasing goods, labels the amount as
+      a trust-limit signal, and adds evidence-only boundary text.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added a regression assertion that public share text carries the
+      evidence-only boundary.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that backend-rendered TrustSlip papers and WhatsApp/SMS share
+      bundles must not frame the trust amount as release permission.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - backend public TrustSlip share text:
+    `GET /trust-slips/verify/{code}/share-text`;
+  - backend public TrustSlip Lite/full papers:
+    `GET /trust-slips/verify/{code}/lite` and
+    `GET /trust-slips/verify/{code}/page`;
+  - authenticated TrustSlip share bundle:
+    `GET /trust-slips/{code}/share`.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 7 tests;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is wording and proof-surface safety only;
+  - it does not change TrustSlip eligibility, validity, limits, merchant
+    subscription checks, release logging, payment handling, or credit logic;
+  - it reduces a real misuse risk: people reading `Trust Limit` plus WhatsApp
+    wording as permission to release goods, credit, or money.
+
+## 2026-06-19 - TrustSlip Snapshot Reader Boundary
+
+- Trigger:
+  - owner asked to continue after the public TrustSlip verifier gained a
+    public reading.
+- Changed:
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - copied authenticated TrustSlip snapshots now label the trust limit as a
+      signal rather than a bare approval-style limit;
+    - copied TrustSlip snapshots now include an explicit reader boundary:
+      use the TrustSlip as decision evidence beside current community proof,
+      not as an instruction to release money or goods;
+    - copied public TrustSlip verification snapshots now include the same
+      reader boundary before lending, selling on credit, or releasing money;
+    - both TrustSlip snapshot builders now use a stronger limitation statement
+      that separates GSN evidence from bank guarantee, credit approval, payment
+      instruction, legal promise, or automatic debit.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that copied/exported TrustSlip snapshots must carry the same
+      proof boundary as the on-screen TrustSlip proof.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - authenticated TrustSlip copy/share snapshot from `TrustSlipPage`;
+  - public TrustSlip verification copy/share snapshot from
+    `TrustSlipVerifyPage`;
+  - shared snapshot helper only; no backend, scoring, validity, or membership
+    logic changed.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/lib/trustDocumentSnapshots.ts` from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is copy/export safety only;
+  - it does not add verifier quality, annual renewal, paid community-domain
+    ownership, dispute handling, credit approval, or stronger TrustSlip logic;
+  - it reduces the chance that a copied TrustSlip gets treated as authority to
+    lend, sell on credit, release goods, or release money without current
+    context.
+
+## 2026-06-19 - TrustSlip Verify Public Reading Strip
+
+- Trigger:
+  - owner asked to continue after the domain-affiliation lane meaning strip.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - added a compact `Public reading` strip after quick trust answers;
+    - the strip separates TrustSlip validity, supporting scoped community
+      evidence, and next safe reader action;
+    - added a route-local `PublicReadingTile` helper using existing paper icon
+      and card language.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that TrustSlipVerifyPage must show a public reading separating
+      validity, scoped community evidence, and next safe action.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - public TrustSlip verifier:
+    `/trust-slip/verify/:code`, `/verify/trust-slip/:code`, and compatible
+    aliases implemented by `TrustSlipVerifyPage`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/TrustSlipVerifyPage.tsx`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is presentation clarity only;
+  - it does not change TrustSlip validity, scoring, membership verification,
+    community activity collection, or live community confirmation logic;
+  - it reduces the chance that a valid TrustSlip is overread as a guarantee,
+    credit approval, payment instruction, or proof that every claim is true.
+
+## 2026-06-19 - Domain Affiliation Lane Meaning Strip
+
+- Trigger:
+  - owner asked to continue the trust-infrastructure alignment after the
+    member-witness lane received a meaning strip.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - added a compact three-part meaning strip to the Community ID Domain
+      affiliation lane:
+      Community ID is the proof anchor, pending request is not public proof,
+      and approved affiliate means group acknowledgement rather than automatic
+      verification of every person/shop/payment/loan claim inside the group;
+    - reused the route-local `MeaningTile` helper from the member-witness lane.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the domain-affiliation meaning strip and the rule that display
+      name similarity must not be treated as parent-community authority.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - authenticated policy/admin surface:
+    `CommunityConfirmationPolicyPage`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx` from
+    `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is a presentation/doctrine guardrail only;
+  - it does not create paid domain purchase, official custodian onboarding,
+    CAC/company-registration recording, affiliation fees, or affiliation
+    renewal;
+  - it reduces the chance that a requested or approved group affiliation is
+    overread as proof of every member or transaction under that group.
+
+## 2026-06-19 - Member Witness Lane Meaning Strip
+
+- Trigger:
+  - owner asked to continue the trust-infrastructure alignment after the public
+    confirmation outcome received a public reading.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - added a compact three-part meaning strip to the Member witness
+      verification lane:
+      request is not proof yet, approval is one witness event, and public
+      credential link is the safer shareable proof;
+    - added a local `MeaningTile` helper using the page's existing icon and
+      card language.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the member-witness meaning strip and the rule that witness
+      approval must not be framed as proof of every shop, payment, loan,
+      parent-domain affiliation, or legal responsibility claim.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - authenticated policy/admin surface:
+    `CommunityConfirmationPolicyPage`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx` from
+    `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is a presentation/doctrine guardrail only;
+  - it does not change verifier eligibility, yearly verifier caps, weighted
+    verifier quality, annual renewal, assisted field-agent capture, or payment
+    recovery;
+  - it makes the admin/verifier lane less likely to overclaim what a single
+    member-backed witness can prove.
+
+## 2026-06-19 - Community Confirmation Outcome Public Reading
+
+- Trigger:
+  - owner asked to continue the trust-infrastructure proof-surface alignment.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - replaced the separated simple-reading and reader-decision blocks with a
+      compact `Public reading` block;
+    - the reading separates: aggregate community response, unconfirmed
+      private/transaction claims, and next safe action;
+    - the page still uses the same public outcome payload and aggregate
+      response counts, without exposing private contacts, verifier names, phone
+      numbers, shop details, payment records, or credit approval.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that CommunityConfirmationOutcomePage must show this public
+      reading and must not convert response evidence into a payment instruction
+      or credit approval.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - frontend public community confirmation outcome:
+    `/confirm/community/outcome/:token`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx` from
+    `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is presentation clarity only;
+  - it does not create stronger verifier quality, annual renewal,
+    parent-domain affiliation, dispute handling, or transaction approval;
+  - it reduces the risk that a public confirmation result is misread as a
+    guarantee.
+
+## 2026-06-19 - Community Member Credential Public Reading
+
+- Trigger:
+  - owner asked to continue after CommunityVerifyPage gained a public reading
+    for Community ID proof boundaries.
+- Changed:
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - added a compact `Public reading` block that separates:
+      confirmed scoped membership evidence, unconfirmed private/transaction
+      claims, and next safe action;
+    - the reading uses existing credential fields and does not expose verifier
+      names, private notes, phone numbers, shop details, payment records, loan
+      details, or credit approval.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that CommunityMemberVerifyPage must show a public reading with
+      scoped proof, limitations, and next safe action.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - frontend public member credential:
+    `/verify/community/:communityKey/member/:memberKey`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/CommunityMemberVerifyPage.tsx` from
+    `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is presentation clarity only;
+  - it does not change membership verification, witness strength, renewal,
+    Trust Events, TrustSlip validity, or transaction approval;
+  - it makes the credential harder to misuse as a universal guarantee.
+
+## 2026-06-19 - Community Verify Public Reading
+
+- Trigger:
+  - owner asked to continue after the TrustSlip/member credential proof bridge
+    was wired through the public verifier.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added a compact `Public reading` block that separates:
+      confirmed Community ID proof, unconfirmed person/group/shop claims, and
+      the next safe action;
+    - the new reading uses existing backend fields only: domain status, proof
+      scope, public limitation, and relay availability.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that CommunityVerifyPage must show a public reading with
+      confirmed proof, unconfirmed claims, and next safe action.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - frontend public community verifier:
+    `/verify/community/:communityKey`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/CommunityVerifyPage.tsx` from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is presentation clarity, not a new community-health score;
+  - it does not add community type, official ownership, payment, affiliation,
+    member proof, shop proof, or live confirmation logic;
+  - it should make the public page harder to overclaim by clearly saying what
+    the Community ID record does and does not prove.
+
+## 2026-06-19 - Public TrustSlip Verifier Consumes Member Credential Link
+
+- Trigger:
+  - owner asked to continue after public TrustSlip JSON began returning the
+    scoped member credential link.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+    - public TrustSlip verification records now normalize
+      `member_credential_page` from the top-level payload, `merchant_view`,
+      merchant summary, or community context.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - TrustSlipVerifyPage now prefers the backend-provided
+      `member_credential_page` before deriving a fallback from Community ID and
+      member GSN ID.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the React verifier consumption rule.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - frontend public TrustSlip verifier:
+    `/trust-slip/verify/:code`, `/verify/trust-slip/:code`, and compatible
+    aliases implemented by TrustSlipVerifyPage.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/trustSlipVerify/trustSlipVerifyData.ts src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/TrustSlipVerifyPage.tsx`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `git diff --check` with line-ending warnings only.
+- Unabated truth:
+  - this is a presentation-link alignment only;
+  - it does not change TrustSlip validity, membership verification, community
+    status, witness logic, or trust scoring;
+  - if the backend omits the link, the UI still uses the older local fallback
+    path when enough safe keys are available.
+
+## 2026-06-19 - Public TrustSlip JSON Returns Member Credential Link
+
+- Trigger:
+  - owner asked to continue after public TrustSlip share-text began carrying
+    the scoped public member credential link.
+- Changed:
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - public `GET /trust-slips/verify/{code}` now returns
+      `member_credential_page` when Community ID/key and holder GSN ID/key can
+      be safely resolved;
+    - the same link is also copied into `merchant_view.member_credential_page`
+      so existing JSON consumers that read merchant-view data can find it.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - extended the TrustSlip regression test to prove direct public JSON carries
+      the member credential link at both locations for a `GMFN-P-*` member
+      reference.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the public JSON member-credential link rule.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - backend public TrustSlip JSON verification:
+    `GET /trust-slips/verify/{code}`;
+  - no frontend route changed in this slice.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 7 tests.
+- Unabated truth:
+  - this is additive JSON context, not a change in TrustSlip validity;
+  - it does not expose witness names, private notes, or payment/loan details;
+  - direct API consumers still need to treat the link as scoped supporting
+    proof, not approval or guarantee.
+
+## 2026-06-19 - Public TrustSlip Share Text Links To Member Credential
+
+- Trigger:
+  - owner asked to continue after backend TrustSlip Lite began linking to the
+    scoped public member credential.
+- Changed:
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - public `GET /trust-slips/verify/{code}/share-text` now returns
+      `member_credential_page` when the TrustSlip's community code and holder
+      GSN ID/key can be safely resolved;
+    - the generated `text` now includes `Member credential: ...` when that
+      scoped public proof link exists;
+    - the endpoint uses the TrustSlip `clan_id` plus the `Clan.community_code`
+      instead of rebuilding the full TrustSlip snapshot, keeping the share-text
+      route lightweight.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - extended the TrustSlip paper regression test to prove public share-text
+      carries the same member credential link for a `GMFN-P-*` member reference.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the public share-text member-credential link rule.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - backend public TrustSlip share text:
+    `GET /trust-slips/verify/{code}/share-text`;
+  - no frontend route changed in this slice.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 7 tests.
+- Unabated truth:
+  - this aligns public text sharing with the full paper, Lite paper, and
+    authenticated share bundle;
+  - it does not change who is verified, expose witness names, or make the link
+    a guarantee;
+  - the route now reads the community record for its code, but it does not run
+    the heavier aligned TrustSlip snapshot path.
+
+## 2026-06-19 - Backend TrustSlip Lite Links To Member Credential
+
+- Trigger:
+  - owner asked to continue after the full backend TrustSlip verification paper
+    began linking to the scoped public member credential.
+- Changed:
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - backend-rendered `GET /trust-slips/verify/{code}/lite` now shows a
+      `Member credential` row when both Community ID/key and holder GSN ID/key
+      are usable;
+    - the Lite page reuses the same backend member-credential URL helper as the
+      full paper and authenticated share bundle.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - extended the TrustSlip paper regression test to prove the Lite paper also
+      links to `/verify/community/{communityKey}/member/{memberKey}` for a
+      `GMFN-P-*` member reference.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that backend TrustSlip Lite may carry the same scoped member
+      credential link.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - updated the implementation checkpoint to include Lite.
+- Routes/screens affected:
+  - backend public TrustSlip Lite paper:
+    `GET /trust-slips/verify/{code}/lite`;
+  - backend public TrustSlip full paper remains
+    `GET /trust-slips/verify/{code}/page`.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 7 tests.
+- Unabated truth:
+  - this aligns the fast/offline-friendly Lite proof with the fuller paper;
+  - it does not make Lite a complete Trust Passport, does not expose witness
+    names, and does not create credit approval;
+  - the link still appears only when safe Community ID and member GSN ID values
+    are present.
+
+## 2026-06-19 - Backend TrustSlip Paper Links To Member Credential
+
+- Trigger:
+  - owner asked to continue after TrustSlip sharing began carrying the public
+    member credential link.
+- Changed:
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - backend-rendered `GET /trust-slips/verify/{code}/page` now shows a
+      `Member credential` row and compact action when both Community ID/key and
+      holder GSN ID/key are usable;
+    - the shared backend helper now accepts current public member references
+      using `GMFN/GSN/GMFM-P-*` as well as `GMFN/GSN/GMFM-U-*`, matching the
+      existing public member credential route and tests.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added a regression test proving the backend TrustSlip verification paper
+      links to `/verify/community/{communityKey}/member/{memberKey}` for a
+      `GMFN-P-*` member reference.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the backend TrustSlip paper member-credential link rule.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the implementation checkpoint.
+- Routes/screens affected:
+  - backend public TrustSlip verification paper:
+    `GET /trust-slips/verify/{code}/page`;
+  - backend TrustSlip print route indirectly reuses the same paper content;
+  - backend member credential route remains
+    `/verify/community/{communityKey}/member/{memberKey}`.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`
+    with 7 tests.
+- Unabated truth:
+  - this closes a presentation gap in the backend-rendered proof paper;
+  - it does not strengthen membership, create a new verifier, expose witness
+    names, or make TrustSlip a guarantee;
+  - it only lets readers move from a TrustSlip paper to the scoped public
+    membership credential when the IDs are real enough to build the link.
+
+## 2026-06-19 - TrustSlip Sharing Carries Member Credential Link
+
+- Trigger:
+  - owner asked to continue after Trust Passport copied snapshots began carrying
+    the public member credential link.
+- Changed:
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - copied TrustSlip snapshots now support an optional
+      `Member credential link` line.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - owner TrustSlip copy action now builds an absolute member credential URL
+      from the existing community/member credential path and passes it into the
+      copied TrustSlip snapshot.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - authenticated TrustSlip share bundle now returns
+      `member_credential_page` when the Community ID/key and holder GSN ID/key
+      are usable;
+    - WhatsApp and SMS share text now include the member credential link when
+      available.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that copied TrustSlip snapshots and authenticated share bundles
+      may include the member credential link only when usable keys are present.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the TrustSlip sharing-to-public-member-credential bridge.
+- Routes/screens affected:
+  - frontend `/app/trust-slip`;
+  - backend `GET /trust-slips/{code}/share`;
+  - copied TrustSlip snapshot text;
+  - authenticated TrustSlip WhatsApp/SMS share package.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/TrustSlipPage.tsx src/lib/trustDocumentSnapshots.ts`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`.
+- Unabated truth:
+  - this does not change TrustSlip scoring, membership verification, backend
+    proof logic, or public verification permissions;
+  - it only makes TrustSlip sharing carry the same scoped member credential
+    bridge already visible in the proof surfaces;
+  - the link is omitted when it cannot be safely built, and it remains
+    supporting proof rather than a guarantee or credit approval.
+
+## 2026-06-19 - Trust Passport Snapshot Carries Member Credential Link
+
+- Trigger:
+  - owner asked to continue after Trust Passport began linking to the public
+    member credential on-screen.
+- Changed:
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - copied Trust Passport snapshots now support an optional
+      `Member credential link` line.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport now passes an absolute member credential URL into the
+      copied snapshot when the scoped proof path exists.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that copied Trust Passport snapshots may include the member
+      credential link only when usable keys are present.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the snapshot proof-link checkpoint.
+- Routes/screens affected:
+  - frontend `/app/trust` / TrustPassportPage alias implemented by
+    `TrustScorePage`;
+  - copied Trust Passport snapshot text only.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/TrustScorePage.tsx src/lib/trustDocumentSnapshots.ts`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not change proof logic or public verification behavior;
+  - it only makes the copied Trust Passport text carry the same scoped member
+    credential link already visible on screen;
+  - the link is omitted when it cannot be safely built.
+
+## 2026-06-19 - Trust Passport Links To Public Member Credential
+
+- Trigger:
+  - owner asked to continue after Trust Passport began showing
+    community-scoped activity context.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport now builds a public member credential path from the same
+      Community ID/key and member GSN ID used by public verification;
+    - Community Confirmation lane now includes a `Member credential` proof card;
+    - added lane-level `Open community record` and `Open member credential`
+      actions with visible blocker messages when the needed IDs are missing.
+  - `docs/SCREEN_SPECS.md`
+    - recorded that Trust Passport may link to `CommunityMemberVerifyPage` only
+      when both usable keys are present.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the Trust Passport-to-public-member-credential bridge.
+- Routes/screens affected:
+  - frontend `/app/trust` / TrustPassportPage alias implemented by
+    `TrustScorePage`;
+  - public member credential route remains
+    `/verify/community/:communityKey/member/:memberKey`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/TrustScorePage.tsx`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`.
+- Unabated truth:
+  - this does not add new verification logic; it exposes the public proof path
+    that was already built;
+  - the link is deliberately blocked when either the Community ID or GSN ID is
+    placeholder/unusable;
+  - the member credential remains supporting proof, not a replacement for the
+    fuller Trust Passport, TrustSlip verification, or live community
+    confirmation.
+
+## 2026-06-19 - Trust Passport Shows Community Activity Context
+
+- Trigger:
+  - owner asked to continue after TrustSlip began carrying community-scoped
+    activity evidence.
+- Changed:
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - Trust Passport view model now accepts aggregate community activity count,
+      latest date, categories, and label;
+    - community stability and the helps/pressure lists now account for
+      community-scoped activity evidence without treating it as a guarantee.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport normalizes the activity fields already returned through
+      TrustSlip summary/community context;
+    - the Community Confirmation lane now includes an `Activity evidence` card
+      showing count, broad categories, and latest activity date;
+    - copied Trust Passport snapshots now include aggregate community activity
+      summary, categories, and latest date where available.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - Trust Passport snapshot builder now supports safe aggregate community
+      activity lines.
+  - `docs/SCREEN_SPECS.md`
+    - recorded Trust Passport's activity-evidence rule and privacy boundary.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded that Trust Passport now consumes the same aggregate activity
+      evidence as contextual proof.
+- Routes/screens affected:
+  - frontend `/app/trust` / TrustPassportPage alias implemented by
+    `TrustScorePage`;
+  - copied Trust Passport snapshot text.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/TrustScorePage.tsx src/lib/trustPassportViewModel.ts src/lib/trustDocumentSnapshots.ts`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is intentionally frontend-only because TrustSlip already carries the
+    aggregate evidence from the backend;
+  - it makes Trust Passport tell the fuller community story, but it still does
+    not expose raw Trust Events, private notes, verifier identities, payment
+    records, shop details, or loan details;
+  - activity count remains evidence depth, not a moral score, credit approval,
+    or universal guarantee.
+
+## 2026-06-19 - TrustSlip Carries Community Activity Evidence
+
+- Trigger:
+  - owner confirmed the goal is to present who a person is trustwise inside a
+    particular verifiable community, based on that person's community-backed
+    activity.
+- Changed:
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - TrustSlip community context now includes aggregate Trust Event activity
+      scoped to the same `Community ID` and holder;
+    - added `community_activity_count`, `community_activity_latest_at`,
+      `community_activity_categories`, and `community_activity_label`;
+    - maps raw event types into broad public categories only;
+    - standard merchant visibility now allows the aggregate activity summary
+      through, so public QR/code verification can show it.
+  - `frontend/src/components/TrustSlipReaderBlock.tsx`
+    - the shared reader block now shows community activity evidence beside
+      witness strength, renewal, Community ID, and community density.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - owner TrustSlip reader now passes and explains activity evidence as part
+      of the "stable inside a real community" decision question.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - public TrustSlip Verify now passes activity evidence into both the public
+      paper and the private/deeper evidence reader.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+    - public verification normalizer now preserves aggregate activity fields
+      from root payload, merchant view, merchant summary, or community context.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - public decision language now includes community activity evidence without
+      treating it as a guarantee.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - public paper at-a-glance now includes activity count, broad categories,
+      and latest activity date.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - private/deeper evidence surface now uses the shared activity-aware reader.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - now proves TrustSlip includes aggregate activity evidence and does not
+      expose raw `event_type`.
+- Routes/screens affected:
+  - backend TrustSlip payload/visibility service;
+  - frontend `/app/trust-slip`;
+  - frontend public TrustSlip verify routes using `TrustSlipVerifyPage`;
+  - shared `TrustSlipReaderBlock`.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\trust_slips_services.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - passed:
+    `npm exec -- eslint src/components/TrustSlipReaderBlock.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/trustSlipVerifyData.ts src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`.
+- Unabated truth:
+  - this turns TrustSlip into a better portable community proof, not a public
+    event feed;
+  - activity count is evidence depth only, not a moral score, credit approval,
+    or automatic proof of reliability;
+  - raw event types, private notes, verifier identities, shop details, payment
+    records, and loan details remain outside the public proof.
+
+## 2026-06-19 - Public Member Credential Adds Community Activity Evidence
+
+- Trigger:
+  - owner clarified that the target is to present who a person is trustwise in
+    a particular community based on that person's activity in a verifiable
+    community.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community-member credential now includes aggregate Trust Event
+      activity scoped to the same `Community ID` and member;
+    - added `community_activity_count`, `community_activity_latest_at`,
+      `community_activity_categories`, and `community_activity_label`;
+    - maps raw event types into broad public categories such as community
+      verification, trusted trade, contribution records, support and borrowing,
+      and repayment discipline.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - public credential now shows activity event count, latest activity date,
+      and a `Community activity evidence` card;
+    - activity evidence is presented as broad categories only.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - public credential test now proves aggregate activity evidence appears
+      while raw event types and private witness details stay hidden.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the activity evidence fields and privacy boundary.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded aggregate activity evidence as implemented for public member
+      credentials.
+- Routes/screens affected:
+  - backend `GET /verify/community/{community_key}/member/{member_key}`;
+  - frontend `/verify/community/:communityKey/member/:memberKey`.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\services\community_confirmation_service.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `npm exec -- eslint src/pages/CommunityMemberVerifyPage.tsx src/pages/CommunityConfirmationPolicyPage.tsx`
+    from `frontend/`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - passed:
+    `npm run build` from `frontend/`.
+- Unabated truth:
+  - this is the first direct bridge from community activity records into the
+    public member credential;
+  - it is deliberately aggregate and category-based, not a public event feed;
+  - it does not prove creditworthiness, reveal payment records, expose shop
+    details, expose private notes, or make trust universal outside the named
+    community.
+
+## 2026-06-19 - Member Witness Request Gets QR Share Package
+
+- Trigger:
+  - owner confirmed that GSN should tactically present who a person is
+    trustwise in a particular community based on activity and verifiable
+    community evidence, then asked to continue.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - added a QR code to the member-witness `Request ready` card;
+    - the QR opens the authenticated approval lane for the assigned verifier;
+    - added a visible one-time code tile and assigned-verifier tile;
+    - added `Share package`, `Copy approval link`, and `Copy one-time code`
+      actions;
+    - `Share package` uses the browser/native share sheet where available and
+      falls back to copying the full request package.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the QR/share package and the rule that it is not public proof or
+      a reusable verifier code.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - updated implementation status from link/code only to QR approval package
+      with share/copy fallback.
+- Routes/screens affected:
+  - frontend `/app/community-confirmations/policy`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx`
+    from `frontend/`;
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\clans.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - `git diff --check` passed with CRLF conversion warnings only.
+- Unabated truth:
+  - this makes the member-witness request far more usable in a real market or
+    church setting, because a verifier can scan the request and receive the
+    code from the applicant;
+  - it still does not add a camera scanner inside GSN, offline elder capture,
+    field-agent assisted attestation, weighted verifier quality, dispute
+    handling, or annual renewal reminders;
+  - the QR opens an authenticated approval task. It is not public proof and it
+    does not verify the member until the assigned verifier approves with the
+    one-time code.
+
+## 2026-06-19 - Member Witness Request UI Wired Into Policy Page
+
+- Trigger:
+  - owner asked to continue the GSN trust-infrastructure gap work after the
+    backend member-witness request spine was added.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - member-witness request `approval_path` now includes `community_id` so a
+      verifier opens the approval lane in the right community context.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - reads `community_id` and `member_witness_request` from the URL;
+    - loads a pending member-witness request when the request token is present;
+    - lets a signed-in member choose an active member and create an
+      applicant-bound witness request;
+    - shows copy actions for the approval link and one-time code;
+    - shows approve/decline controls only when the page was opened through a
+      witness-request link;
+    - approval or decline calls the backend request-decision route and refreshes
+      the selected member's witness strength when available.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the witness-request approval lane, one-time code input, and the
+      boundary that creating a request is not itself verification.
+- Routes/screens affected:
+  - frontend `/app/community-confirmations/policy`;
+  - backend `POST /clans/{clan_id}/member-verification-requests`;
+  - backend `GET /clans/{clan_id}/member-verification-requests/{public_token}`;
+  - backend
+    `POST /clans/{clan_id}/member-verification-requests/{public_token}/decision`.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\clans.py gmfn_backend\app\db\models.py gmfn_backend\app\core\trust_event_types.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx src/lib/api.ts`
+    from `frontend/`;
+  - passed:
+    `npm run build` from `frontend/`;
+  - `git diff --check` passed with CRLF conversion warnings only.
+- Unabated truth:
+  - this is now a usable signed-in request/link/code approval lane, but it is
+    still not the final field-ready QR scanner experience;
+  - it does not add assisted offline elder capture, paid domain-package
+    billing, annual renewal reminders, weighted verifier quality, or dispute
+    adjudication;
+  - because the request route is authenticated, a verifier still needs to be
+    signed in as the assigned verifier before approval will work.
+
+## 2026-06-19 - Member Witness Request Approval Spine Added
+
+- Trigger:
+  - owner asked to continue the GSN trust-infrastructure gap work after public
+    proof links and QR surfaces were connected.
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added `CommunityMemberVerificationRequest`;
+    - stores applicant/subject, nominated verifier, requester, short-lived
+      public token, one-time code, status, expiry, decision note, and resulting
+      verification link.
+  - `gmfn_backend/alembic/versions/20260619_add_community_member_verification_requests.py`
+    - migration creates the durable request table and indexes.
+  - `gmfn_backend/app/core/trust_event_types.py`
+    - added request, approval, and decline trust-event types for
+      member-witness verification requests.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `POST /clans/{clan_id}/member-verification-requests`;
+    - added `GET /clans/{clan_id}/member-verification-requests/{public_token}`;
+    - added
+      `POST /clans/{clan_id}/member-verification-requests/{public_token}/decision`;
+    - approving a request creates or reactivates the normal
+      `CommunityMemberVerification` row using the same active-member,
+      no-self-verification, and yearly verifier-limit rules as direct witness
+      verification.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added coverage that only the assigned verifier can approve;
+    - added one-time code validation;
+    - added approval replay safety;
+    - added expiry coverage.
+  - `frontend/src/lib/api.ts`
+    - added API helpers for creating, reading, approving, and declining
+      member-witness verification requests.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - recorded the backend request/approval spine as implemented.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\db\models.py gmfn_backend\app\api\routes\clans.py gmfn_backend\app\core\trust_event_types.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py`.
+- Unabated truth:
+  - this is the first backend spine for one-time/applicant-bound
+    member-witness approval;
+  - it still does not add the final phone-ready QR screen, applicant share UI,
+    verifier approval screen, assisted field-agent capture, offline elder
+    attestation, payment/domain recovery, weighted verifier quality, or dispute
+    workflow;
+  - the one-time code currently travels in the API response so a frontend/share
+    flow can present it to the nominated verifier. Do not treat this as a
+    polished production UX yet.
+
+## 2026-06-18 - Community Confirmation Outcome Gets QR Return Proof
+
+- Trigger:
+  - owner asked to continue the GSN trust-infrastructure public proof work.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - added a QR code in the `Result return` section;
+    - the QR reopens the same public confirmation outcome link;
+    - the page explicitly says the QR does not expose private responder
+      contacts, verifier names, phone numbers, or payment details;
+    - the member reference now prefers the public GSN member reference instead
+      of showing an internal subject database ID;
+    - when both Community ID/key and public GSN member reference are present,
+      the page now offers `Open member credential` as supporting proof.
+  - `frontend/src/lib/publicLinks.ts`
+    - blocks `Protected` and `Protected member reference` from becoming public
+      member credential URLs.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community confirmation outcomes now return
+      `subject_public_reference` and `subject_reference_type`;
+    - the public outcome no longer returns raw `subject_user_id`;
+    - public review-case payloads no longer include subject/opened-by/assigned
+      internal user IDs unless the caller is using the signed-in private review
+      path.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - asserts that the public outcome includes the subject GSN reference and
+      does not expose `subject_user_id`.
+  - `docs/SCREEN_SPECS.md`
+    - added a `CommunityConfirmationOutcomePage` public proof spec and privacy
+      boundary.
+- Unabated truth:
+  - this improves portability of the existing public outcome only;
+  - it does not create a new verification state, guarantee completion, approve
+    lending/credit, expose private responders, or add QR/OTP member witness
+    approval;
+  - the member credential link is supporting proof only and the outcome remains
+    evidence for judgement, not automatic trust.
+
+## 2026-06-18 - Community ID Domain Public Record Gets QR Proof
+
+- Trigger:
+  - owner asked to continue after TrustSlip and member credential proof surfaces
+    were connected.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added a QR code that reopens the same public
+      `/verify/community/:communityKey` Community ID Domain proof page;
+    - the QR card explicitly says it does not reveal private member lists,
+      verifier names, phone numbers, or shop details.
+  - `docs/SCREEN_SPECS.md`
+    - added a `CommunityVerifyPage` public verification spec and privacy
+      boundary.
+- Unabated truth:
+  - this improves trust mobility/presentation only;
+  - it does not verify every member, shop, line, subgroup, affiliate, payment,
+    or credit decision under the community name;
+  - it does not create paid domain purchase, QR/OTP member witness approval,
+    offline assisted capture, weighted scoring, annual renewal prompts, or
+    dispute handling.
+
+## 2026-06-18 - TrustSlip Proofs Now Link To Public Member Credential
+
+- Trigger:
+  - owner asked to continue after the public community-member credential page
+    was added.
+- Changed:
+  - `frontend/src/lib/publicLinks.ts`
+    - added `publicCommunityMemberCredentialPath` for
+      `/verify/community/:communityKey/member/:memberKey`;
+    - blocks placeholder anchors such as `Pending`, `Not shown`, and
+      `Awaiting issue`.
+  - `frontend/src/components/TrustSlipReaderBlock.tsx`
+    - now shows a compact `Open member credential` link when a TrustSlip has
+      both the community proof anchor and holder GSN ID.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - passes the member credential path into the signed-in TrustSlip reader.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - derives the same member credential path for public/private TrustSlip
+      verify views.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - passes the path into public paper and private evidence components.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - passes the path into the shared reader block.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - shows `Open member credential` inside the existing At-a-glance proof
+      area instead of adding another major public action button.
+  - `docs/SCREEN_SPECS.md`
+    - documented the TrustSlipVerifyPage member-credential link boundary.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - now normalizes `community_id` as well as `community_code` for the
+      displayed Community ID;
+    - now shows a QR code that reopens the same public member credential link.
+- Unabated truth:
+  - this is a proof-navigation improvement only;
+  - it does not change witness verification rules, QR/OTP approval, assisted
+    offline capture, payment/domain packages, weighted scoring, disputes, or
+    backend data contracts;
+  - the credential still proves active membership plus aggregate witness
+    strength only, not credit approval or guaranteed trust.
+
+## 2026-06-18 - Public Community Member Credential Page Added
+
+- Trigger:
+  - owner asked to continue after member-witness renewal status was made
+    truthful.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - added public community-member credential builder anchored by Community
+      ID/key and member GSN/GMFN ID/key;
+    - returns active membership, role, aggregate witness count, strength label,
+      renewal status, and valid-until date;
+    - does not return verifier names, verifier GSN IDs, private notes, phone
+      numbers, email addresses, shop details, payment records, or credit
+      approval.
+  - `gmfn_backend/app/api/routes/community_confirmations.py`
+    - added public `GET /verify/community/{community_key}/member/{member_key}`;
+    - uses the existing public verification rate limiter.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added public credential coverage;
+    - verifies GSN alias lookup works and inactive membership returns a
+      not-found style response.
+  - `frontend/src/lib/api.ts`
+    - added `getPublicCommunityMemberVerification`.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - new public proof page for one member under one Community ID.
+  - `frontend/src/App.tsx`
+    - added `/verify/community/:communityKey/member/:memberKey`.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - selected-member witness lane can now copy the public member credential
+      link when the member has a visible GSN ID.
+  - `docs/SCREEN_REGISTRY.md`
+    - registered `CommunityMemberVerifyPage`.
+  - `docs/SCREEN_SPECS.md`
+    - added `CommunityMemberVerifyPage` purpose, required content, and privacy
+      boundary;
+    - updated `CommunityConfirmationPolicyPage` to include the copy credential
+      link action.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\app\services\community_confirmation_service.py`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - passed:
+    `npm exec -- eslint src/App.tsx src/lib/api.ts src/pages/CommunityMemberVerifyPage.tsx src/pages/CommunityConfirmationPolicyPage.tsx`
+    from `frontend/`.
+  - `git diff --check` passed with CRLF conversion warnings only;
+  - sandboxed `npm --prefix frontend run build` reached Vite and hit the known
+    Windows/esbuild `spawn EPERM`;
+  - approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this creates the first public membership credential page;
+  - it is still not a QR/OTP witness approval flow, assisted offline elder
+    capture flow, paid domain package, weighted verifier-quality engine, or
+    dispute workflow;
+  - it confirms membership and aggregate witness strength only. It must not be
+    sold as credit approval, identity-document verification, or a guarantee.
+
+## 2026-06-18 - Member Witness Renewal Status Made Truthful
+
+- Trigger:
+  - owner asked to continue the GSN trust-infrastructure upgrade after the
+    member-witness admin lane was added.
+- Changed:
+  - `gmfn_backend/app/api/routes/clans.py`
+    - member-witness summary now derives `renewal_status` and
+      `renewal_status_label` from existing `valid_until` dates;
+    - expired active-status witness rows no longer count toward current
+      witness strength.
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - TrustSlip community context now exposes
+      `membership_renewal_status` and `membership_renewal_status_label`;
+    - TrustSlip witness count/strength ignores expired witness confirmations.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - member witness lane now shows the renewal label beside strength,
+      witness count, public label, and valid-until date.
+  - TrustSlip proof readers:
+    - `frontend/src/components/TrustSlipReaderBlock.tsx`;
+    - `frontend/src/pages/TrustSlipPage.tsx`;
+    - `frontend/src/pages/TrustSlipVerifyPage.tsx`;
+    - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`;
+    - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`;
+    - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`;
+    - now show aggregate witness renewal status without exposing verifier
+      names.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - added expiry coverage so an expired witness clock drops current strength
+      back to `joined`.
+  - `docs/SCREEN_SPECS.md`
+    - recorded the renewal-status rule for the policy page.
+- Verification:
+  - passed:
+    `python -m compileall -q gmfn_backend\app\api\routes\clans.py gmfn_backend\app\services\trust_slips_services.py`;
+  - passed:
+    `npm exec -- eslint src/components/TrustSlipReaderBlock.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustSlipPage.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/CommunityConfirmationPolicyPage.tsx`
+    from `frontend/`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`.
+  - `git diff --check` passed with CRLF conversion warnings only;
+  - sandboxed `npm --prefix frontend run build` hit the known Windows/esbuild
+    `spawn EPERM`;
+  - approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this makes the annual witness clock visible and harder to overclaim;
+  - it does not create reminder notifications, QR/OTP renewal approval,
+    assisted offline renewal capture, payment/domain packages, weighted
+    verifier quality, public membership credential pages, or dispute workflow;
+  - renewal strength still uses count of current active witness confirmations,
+    not the final quality-weighted institutional score.
+
+## 2026-06-18 - Member Witness Verification Lane Added To Policy Page
+
+- Trigger:
+  - owner asked to continue after TrustSlip proof surfaces began showing
+    aggregate member-witness strength.
+- Changed:
+  - `frontend/src/lib/api.ts`
+    - added `getCommunityMemberVerificationSummary`;
+    - added `recordCommunityMemberVerification`;
+    - added `withdrawCommunityMemberVerification`.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - now loads active community members using the existing
+      `GET /clans/{clan_id}/members` route;
+    - added a compact `Member witness verification` lane;
+    - admins can choose an active member, check current witness strength, and
+      record the signed-in user's own witness confirmation;
+    - the lane shows aggregate strength label, active witness count, public
+      label, validity date, and recent witness records;
+    - active witness rows expose a `Withdraw witness` action, with backend
+      still enforcing that only the original verifier or an admin may withdraw.
+  - `docs/SCREEN_SPECS.md`
+    - updated `CommunityConfirmationPolicyPage` to include the member witness
+      lane and its boundaries.
+- Routes affected:
+  - frontend `/app/community-confirmations/policy`;
+  - backend `GET /clans/{clan_id}/members`;
+  - backend `GET /clans/{clan_id}/member-verifications/summary`;
+  - backend `POST /clans/{clan_id}/member-verifications`;
+  - backend
+    `POST /clans/{clan_id}/member-verifications/{verification_id}/withdraw`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx src/lib/api.ts`
+    from `frontend/`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - sandboxed `npm --prefix frontend run build` hit the known Windows/esbuild
+    `spawn EPERM`;
+  - approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this makes the existing backend member-witness route usable from the app;
+  - it is still an admin/deep-policy lane, not the final public member QR flow;
+  - it records the signed-in user's own witness, not an offline elder's witness
+    on their behalf;
+  - QR/OTP witness approval, assisted field-agent capture, annual renewal
+    prompts, paid community domain packages, weighted verifier quality, public
+    membership credential pages, and dispute workflows are still not built.
+
+## 2026-06-18 - TrustSlip Surfaces Now Show Member-Witness Strength
+
+- Trigger:
+  - owner asked to continue the GSN trust-infrastructure upgrade after the
+    durable community member witness backend spine was added.
+- Changed:
+  - `frontend/src/components/TrustSlipReaderBlock.tsx`
+    - added aggregate member-witness display inside the Community context card;
+    - shows membership strength label, witness count, and validity date when
+      available;
+    - explicitly says private verifier names are not exposed.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - signed-in TrustSlip reader now reads `member_witness_count`,
+      `membership_strength_label`, and `membership_valid_until` from the
+      TrustSlip summary, merchant view, merchant summary, or community context;
+    - the plain decision guide now includes member-witness strength in the
+      community stability answer.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - public verify model now carries member-witness count, strength label, and
+      valid-until values.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - public and private TrustSlip verify panels now receive the aggregate
+      member-witness values.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - private evidence reader passes the aggregate witness fields into the
+      shared TrustSlip reader block.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - public TrustSlip paper shows `Member witness` and `Witness valid until`
+      in the at-a-glance proof rows.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/components/TrustSlipReaderBlock.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/TrustSlipPage.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    from `frontend/`;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - sandboxed `npm --prefix frontend run build` hit the known Windows/esbuild
+    `spawn EPERM`;
+  - approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - TrustSlip now presents community member-backed verification as safe
+    aggregate proof;
+  - verifier names are still private;
+  - this still does not implement QR/OTP witness approval, assisted field-agent
+    capture, paid domain purchase, annual renewal prompts, weighted verifier
+    quality, public membership credential pages, or dispute/recalculation
+    workflows;
+  - current strength still depends mainly on active witness count, so do not
+    sell it as the final institutional trust score.
+
+## 2026-06-18 - Community Member Witness Verification Backend Spine Added
+
+- Trigger:
+  - owner asked to continue after the Community ID Domain affiliation admin
+    lane;
+  - next trust-infrastructure gap was durable member-backed community
+    verification, separate from open join and separate from parent-domain group
+    affiliation.
+- Confirmed from code before change:
+  - `ClanMembership` proves active membership/join state only;
+  - existing community confirmation requests are live/request-specific and do
+    not create a durable annual membership credential;
+  - TrustSlip already reads sponsor/community signals, but no durable
+    member-witness table existed for "these community members stood for this
+    person."
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added `CommunityMemberVerification`;
+    - records community, subject user, verifier user, status, verification
+      year, note, claim label, source, validity window, withdrawal time, and
+      withdrawal reason;
+    - unique `(clan_id, subject_user_id, verifier_user_id)` keeps one verifier
+      from repeatedly inflating the same subject.
+  - `gmfn_backend/alembic/versions/20260618_add_community_member_verifications.py`
+    - migration creates the `community_member_verifications` table and indexes.
+  - `gmfn_backend/app/core/trust_event_types.py`
+    - added `community_member_verified`;
+    - added `community_member_verification_withdrawn`.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `GET /clans/{clan_id}/member-verifications/summary`;
+    - added `POST /clans/{clan_id}/member-verifications`;
+    - added
+      `POST /clans/{clan_id}/member-verifications/{verification_id}/withdraw`;
+    - active community members can witness another active member;
+    - self-verification is blocked;
+    - ordinary members are capped at 20 active witness confirmations per year;
+    - admins currently have a higher cap of 100;
+    - withdrawal can be done by the original verifier or a community admin.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - verifies member witness creation, strength labels, withdrawal, and yearly
+      cap.
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - added implementation checkpoints.
+- Private strength labels now returned:
+  - `joined`;
+  - `lightly_verified`;
+  - `community_verified`;
+  - `strongly_verified`;
+  - `community_established`.
+- Verification:
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py`;
+  - passed:
+    `python -m compileall -q gmfn_backend\app\db\models.py gmfn_backend\app\api\routes\clans.py gmfn_backend\app\core\trust_event_types.py`.
+- Unabated truth:
+  - this is the first durable member-backed verification backend spine;
+  - it still does not implement one-time QR/code, app approval links, staff
+    assisted offline capture, annual renewal prompts, public membership
+    credential pages, weighted verifier quality, disputes, pricing, or
+    recalculation after multiple withdrawals;
+    - strength currently uses active witness count only, so it must not be sold
+      as the final institutional trust score.
+
+### TrustSlip Community Context Hook
+
+- Changed after the initial backend spine:
+  - `gmfn_backend/app/services/trust_slips_services.py`
+    - TrustSlip community context now reads active
+      `CommunityMemberVerification` rows for the holder in the selected
+      community;
+    - adds `member_witness_count`, `membership_strength`,
+      `membership_strength_label`, and `membership_valid_until` to
+      `community_context`;
+    - promotes the same safe fields to the main TrustSlip payload and merchant
+      summary;
+    - does not expose private verifier names.
+  - `gmfn_backend/tests/test_community_member_verifications.py`
+    - now asserts TrustSlip community context reflects member-witness count and
+      strength after withdrawal.
+- Verification:
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - passed:
+    `python -m compileall -q gmfn_backend\app\db\models.py gmfn_backend\app\api\routes\clans.py gmfn_backend\app\core\trust_event_types.py gmfn_backend\app\services\trust_slips_services.py`.
+
+## 2026-06-18 - Community Domain Affiliation Admin Lane Added
+
+- Trigger:
+  - owner asked to continue bringing GSN up to the trust-infrastructure gap
+    challenge after the backend parent-domain affiliation foundation was added.
+- Changed:
+  - `frontend/src/lib/api.ts`
+    - added `getCommunityDomainAffiliations`;
+    - added `requestCommunityDomainAffiliation`;
+    - added `decideCommunityDomainAffiliation`.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - added a compact `Community ID Domain affiliation` lane on the already
+      registered admin/policy page;
+    - affiliate community admins can enter a parent Community ID and send an
+      acknowledgement request;
+    - parent community admins can see incoming requests and approve, reject, or
+      revoke them;
+    - the lane uses Community ID/code as the proof anchor, not display name.
+  - `docs/SCREEN_SPECS.md`
+    - documented the CommunityConfirmationPolicyPage responsibility and
+      boundary for parent-domain affiliation.
+- Routes affected:
+  - frontend `/app/community-confirmations/policy`;
+  - backend `GET /clans/{clan_id}/domain-affiliations`;
+  - backend `POST /clans/{affiliate_clan_id}/domain-affiliation-requests`;
+  - backend
+    `POST /clans/{parent_clan_id}/domain-affiliation-requests/{affiliation_id}/decision`.
+- Verification:
+  - passed:
+    `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx src/lib/api.ts`
+    from `frontend/`;
+  - sandboxed `npm --prefix frontend run build` hit the known Windows/esbuild
+    `spawn EPERM`;
+  - approved elevated `npm run build` from `frontend/` passed;
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`.
+- Unabated truth:
+  - admins now have a usable UI lane for official group-to-parent
+    acknowledgement;
+  - this still does not implement payment/domain purchase, member-backed
+    QR/OTP verification, verifier limits, annual reverification, withdrawal, or
+    dispute recalculation;
+  - an approved affiliation certifies only the affiliate group relationship to
+    the parent domain, not every member or shop inside that group.
+
+## 2026-06-18 - Minimal Parent-Domain Affiliation Foundation Added
+
+- Trigger:
+  - owner asked to continue after the public affiliate-claim boundary;
+  - previous checkpoint identified that real parent-domain acknowledgement
+    needs a data model, because `Clan` has no parent/child or affiliate
+    relationship today.
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added `CommunityDomainAffiliation`;
+    - records `parent_clan_id`, `affiliate_clan_id`, requester, decider,
+      status, request/decision notes, and timestamps;
+    - unique parent/affiliate pair prevents duplicate relationship rows.
+  - `gmfn_backend/alembic/versions/20260618_add_community_domain_affiliations.py`
+    - migration creates `community_domain_affiliations` with indexes and
+      foreign keys.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added `GET /clans/{clan_id}/domain-affiliations` for community admins to
+      see incoming/outgoing parent-domain affiliation records;
+    - added `POST /clans/{affiliate_clan_id}/domain-affiliation-requests` so
+      an affiliate community admin can request acknowledgement under a parent
+      Community ID Domain;
+    - added
+      `POST /clans/{parent_clan_id}/domain-affiliation-requests/{affiliation_id}/decision`
+      so a parent community admin can approve, reject, or revoke the
+      affiliation;
+    - lookup uses Community ID/code/numeric id, not display name.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification now detects when the queried community is
+      an approved affiliate under a parent domain;
+    - when approved, public verification returns `official_affiliate_status:
+      approved`, parent domain details, and an approved-affiliate note;
+    - otherwise it still returns `not_asserted`.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - public Community ID Domain page can show `Parent domain` when the backend
+      returns an approved parent-domain affiliation.
+  - `gmfn_backend/tests/test_community_domain_affiliations.py`
+    - new focused tests for request -> parent approval -> list;
+    - verifies public community verification exposes approved parent-domain
+      affiliation.
+- Verification:
+  - passed:
+    `python -m pytest -q gmfn_backend\tests\test_community_domain_affiliations.py gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - passed:
+    `python -m compileall -q gmfn_backend\app\db\models.py gmfn_backend\app\api\routes\clans.py gmfn_backend\app\services\community_confirmation_service.py`;
+  - sandboxed frontend build hit the known Windows/esbuild `spawn EPERM`;
+  - approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this creates the first real backend parent-domain affiliation foundation;
+  - it does not yet add frontend admin screens for requesting/deciding
+    affiliation;
+  - it does not add payments, domain ownership purchase, member-backed QR
+    verification, verifier limits, annual renewal, withdrawal, or dispute
+    recalculation;
+  - this is intentionally only the official group-to-parent acknowledgement
+    spine.
+
+## 2026-06-18 - Affiliate Claim Boundary Added To Public Community Verification
+
+- Trigger:
+  - owner asked to continue after the Community ID Domain lifecycle update;
+  - next planned safe slice was group-affiliation truth without adding schema or
+    pretending the full affiliation workflow exists.
+- Confirmed from code:
+  - `Clan` currently has `community_code`, normal lifecycle `status`, creator,
+    invites, memberships, join requests, and join votes;
+  - no parent/child community relationship, paid domain owner field, official
+    affiliate status field, line/shop cluster affiliation field, or subgroup
+    acknowledgement model exists yet.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public `/verify/community/{community_key}` now returns
+      `official_affiliate_status`, `official_affiliate_label`, and
+      `official_affiliate_note`;
+    - current value is deliberately `not_asserted`.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - public `/verify/community/:communityKey` now shows `Affiliate claim:
+      No official affiliate claim on this record`;
+    - the group-affiliation proof card now explains that a subgroup, line, shop
+      cluster, or independent group needs its own parent-domain
+      acknowledgement before it can claim official status under the Community
+      ID Domain.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - asserts the new affiliate-claim boundary fields.
+- Route affected:
+  - public frontend route `/verify/community/:communityKey`;
+  - backend route `/verify/community/{community_key}`.
+- Verification:
+  - passed targeted backend tests:
+    `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - sandboxed frontend build hit the known Windows/esbuild `spawn EPERM`;
+  - approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this still does not create real affiliate groups;
+  - it prevents the current public record from overclaiming affiliation before
+    the parent-domain acknowledgement workflow and data model exist;
+  - the next real feature slice should introduce a minimal affiliation model
+    only after deciding whether it belongs in `Clan`, a new
+    `CommunityDomainAffiliation` table, or a separate domain package workflow.
+
+## 2026-06-18 - Community Domain Lifecycle Stage Added To Public Verification
+
+- Trigger:
+  - owner asked to continue updating GSN to reflect the Verified Community
+    Domain reality and said to stop at a sensible checkpoint.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public `/verify/community/{community_key}` now returns
+      `domain_lifecycle_status`, `domain_lifecycle_label`, and
+      `domain_lifecycle_note`;
+    - current no-schema lifecycle is deliberately `recorded`, not paid,
+      protected, claimed, or officially parent-controlled.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - public `/verify/community/:communityKey` now shows `Domain stage:
+      Recorded in GSN`;
+    - adds a domain-stage proof card explaining that GSN has a community ID
+      record, but paid protected domain ownership, parent-domain control, and
+      affiliate approval are not asserted by this public record yet.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - asserts the new lifecycle fields in the public community verification
+      contract.
+- Route affected:
+  - public frontend route `/verify/community/:communityKey`;
+  - backend route `/verify/community/{community_key}`.
+- Verification:
+  - passed targeted backend tests:
+    `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - sandboxed frontend build again hit the known Windows/esbuild `spawn EPERM`;
+  - approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - the current `Clan` model has `community_code` and normal lifecycle
+    `status`, but no paid/protected-domain ownership field;
+  - therefore existing public community records must be described as
+    `Recorded in GSN`, not as paid protected domains;
+  - this prevents overclaiming while preparing the later lifecycle states:
+    observed, protected, claimed, verified, disputed, suspended.
+
+## 2026-06-18 - Community Verify Page Reflects Community ID Domain Reality
+
+- Trigger:
+  - owner said to update GSN so it reflects the new Verified Community Domain
+    reality, after agreeing that public join, personal verification, group
+    membership, parent-domain affiliation, and official membership credential
+    must stay distinct.
+- Changed:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - public community verification now returns explicit domain/proof labels:
+      `domain_label`, `domain_status`, `domain_proof_scope`,
+      `membership_credential_status`, `group_affiliation_status`, and
+      `public_limitation`;
+    - no schema change, no payment logic, no verifier-limit logic, and no
+      credential issuance logic were added.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - public `/verify/community/:communityKey` now presents the record as a
+      `Community ID Domain`;
+    - explains that the Community ID is the proof anchor and the name is only a
+      display label;
+    - explicitly says the public page does not automatically verify every
+      person, shop, line, subgroup, or affiliate using the community name;
+    - adds proof-scope cards for what the page proves, what still needs
+      credential proof, and group affiliation;
+    - keeps privacy/controlled relay language and existing copy/refresh/request
+      confirmation actions.
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+    - extended the public community verification contract test to assert the
+      new domain/proof labels.
+- Route affected:
+  - public frontend route `/verify/community/:communityKey`;
+  - backend route `/verify/community/{community_key}`.
+- Verification:
+  - passed targeted backend tests:
+    `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases gmfn_backend\tests\test_community_confirmation_relay.py::test_public_community_verify_degrades_when_confirmation_schema_missing`;
+  - sandboxed `npm --prefix frontend run build` hit the known Windows/esbuild
+    `spawn EPERM`;
+  - reran approved elevated `npm run build` from `frontend/` and it passed.
+- Unabated truth:
+  - this is the first visible/runtime alignment only;
+  - GSN still does not yet implement paid domain ownership, affiliate group
+    approval, member-backed QR verification, verifier limits, annual renewal,
+    or withdrawal/dispute recalculation;
+  - the page now tells the truth about that boundary instead of overclaiming.
+
+## 2026-06-18 - Verified Community Domain Spec Added
+
+- Trigger:
+  - owner finalized the community-domain model for GSN after working through
+    market realities: public QR onboarding, personal verification, member-backed
+    verification, parent-domain affiliation, paid domain protection, group
+    affiliation, yearly renewal, verifier limits, assisted verification for
+    old-school trusted people, and community revenue recovery.
+- Changed:
+  - `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+    - new no-code source-of-truth spec for `GSN Verified Community Domain`;
+    - separates personal identity, internal group membership, parent-domain
+      group affiliation, and official community membership credential;
+    - defines the business model where a parent community may pay for the
+      protected domain and recover cost through group affiliation/member
+      verification, while GSN may run observed/unclaimed public community
+      records without overclaiming official endorsement;
+    - defines open public QR join as access, not proof;
+    - defines member-backed verification using one-time QR/code/app approval,
+      verifier eligibility, verifier limits, weighted verification strength,
+      renewal, withdrawal, dispute, and audit trail;
+    - defines group creation as free/independent first, with official parent
+      status only after parent-domain acknowledgement;
+    - defines small trust circles inside large communities and assisted
+      verification for respected non-digital members;
+    - defines safe public proof and privacy boundaries.
+  - `docs/GSN_REFRAME_WORKSHOP_AND_MARKET_ENTRY_PLAYBOOK_2026-06-18.md`
+    - now points to the Verified Community Domain spec as follow-up source
+      truth;
+    - adds the concrete community package under the trust-infrastructure
+      reframe.
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - now points to the Verified Community Domain spec;
+    - clarifies that the community gap is specifically the missing separation
+      between free join, personal verification, internal group membership,
+      parent-domain affiliation, and official membership credential.
+- Core doctrine:
+  - `Name is display. Community ID is proof. Membership credential is
+    belonging.`
+  - `Open join gives access. Personal verification proves the person. Internal
+    group verification proves local belonging. Parent-domain affiliation proves
+    the group belongs to the larger community. Official membership credential
+    makes that trust visible, renewable, and portable.`
+  - `Witnesses do not sell verification. They support verification. The
+    protected community domain issues verification.`
+- Next safest implementation step:
+  - map this spec against the current MVP objects/routes before coding:
+    community IDs, public community verification, invites/share links/QR,
+    membership/join requests, Trust Events, TrustSlip, Trust Passport, and
+    community confirmation;
+  - then make the minimum UI/API adjustments needed to label current states
+    honestly as joined/unverified, verified member, verified affiliate,
+    protected domain, or observed/unclaimed community.
+- Unabated truth:
+  - this is still documentation/spec work only;
+  - no runtime behavior changed;
+  - do not claim the MVP already has full domain affiliation, verifier limits,
+    renewal, weighted member-backed verification, or paid community-domain
+    recovery workflows until those are implemented and tested.
+
+## 2026-06-18 - Trust Infrastructure Gap Audit Added
+
+- Trigger:
+  - owner asked to find the gap between the trust infrastructure GSN should
+    have, based on the attached/reframe documents, and what the current MVP
+    already has.
+- Changed:
+  - `docs/GSN_TRUST_INFRASTRUCTURE_GAP_AUDIT_2026-06-18.md`
+    - compares should-have trust infrastructure against current MVP surfaces,
+      backend services, frontend pages, and documented protocols;
+    - classifies gaps as built, partly built, documented-but-thin, missing, or
+      do-not-claim-yet;
+    - identifies the main truth: member-level trust infrastructure is strong,
+      while community-institution proof is the largest strategic gap;
+    - maps gaps across personal trust, community trust, community operating,
+      trusted commerce, and trust mobility layers;
+    - names P0/P1/P2/P3 priorities and a minimum adjustment sequence.
+- Confirmed truth:
+  - Personal Trust / TrustSlip / Trust Passport / public TrustSlip verification
+    are largely built and exposed.
+  - Community verification exists through `/verify/community/:communityKey`,
+    backend `/verify/community/{community_key}`, `CommunityVerifyPage`, and
+    community confirmation services, but the public community institution
+    profile is still thin.
+  - Community type classification was not found as a reliable core `Clan`
+    field in the checked model; do not claim church/market/cooperative
+    comparative intelligence yet.
+  - Liquidity, loan readiness, confirmation, finance, shop, marketplace, demand,
+    Vault, and proof-package helpers already provide many trust infrastructure
+    ingredients, but the current presentation can still read as separate app
+    modules.
+- Highest-priority gap:
+  - Community Public Face / Community Trust Summary / Community Health:
+    define public, signed-in member, and admin/internal variants before adding
+    new data fields or UI.
+- Unabated truth:
+  - this is still documentation/strategy work only;
+  - no runtime code changed;
+  - the gap is not "no MVP"; the gap is that GSN's community-institution proof
+    layer is weaker than its personal proof layer.
+
+## 2026-06-18 - GSN Trust Infrastructure Reframe Playbook Added
+
+- Trigger:
+  - owner reframed GSN away from "an app" and toward "trust infrastructure for
+    organized communities";
+  - requested a current MVP comparison, gap analysis, minimum adjustments, and
+    playbook/book foundation.
+- Changed:
+  - `docs/GSN_REFRAME_WORKSHOP_AND_MARKET_ENTRY_PLAYBOOK_2026-06-18.md`
+    - defines GSN as trust infrastructure for organized communities;
+    - maps the current MVP against five layers:
+      personal trust, community trust, community operating, trusted commerce,
+      and trust mobility;
+    - compares current surfaces/routes including Dashboard, Community Home,
+      Marketplace, Trust Passport, TrustSlip, public community verification,
+      Shop/Public Shop, Finance, Loans and Support, Demand Box, and Admin;
+    - identifies presentation gaps versus new logic gaps;
+    - lays out target-market playbooks for apprenticeship networks, market
+      associations, cooperatives, churches, town unions, social clubs,
+      universities, and diaspora associations;
+    - includes a book structure for `GSN Market Entry Blueprint: Trust
+      Infrastructure For Organized Communities`.
+- Confirmed truth:
+  - existing canonical docs already support the larger trust-infrastructure
+    thesis through one global member ID, one community ID, Trust Passport,
+    TrustSlip, merchant/public verification, community-governed commerce, and
+    cumulative finance/trust readings;
+  - the biggest gap identified is not core backend logic, but presentation,
+    public community proof, community-first onboarding, trust-first marketplace
+    framing, and market-specific adoption language.
+- Unabated truth:
+  - this is a strategy/documentation checkpoint only;
+  - no frontend or backend runtime behavior changed;
+  - product-market fit is not proven by the reframe, and future claims must
+    separate confirmed system capability from pilot evidence and vision.
+
 ## 2026-06-17 - Shop Control Field Stability Added To Protected Freeze
 
 - Trigger:

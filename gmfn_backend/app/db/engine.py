@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
+
+from app.db.base import Base
 
 
 def _truthy(value: str | None) -> bool:
@@ -32,5 +33,3 @@ engine = create_engine(
     connect_args=connect_args,
     future=True,
 )
-
-Base = declarative_base()

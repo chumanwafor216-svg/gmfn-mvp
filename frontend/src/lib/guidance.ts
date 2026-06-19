@@ -226,6 +226,13 @@ function getGuidanceVoice(settings: any): GuidanceVoice {
   return "balanced";
 }
 
+function hasPlatformAdminAccess(me: any): boolean {
+  const role = safeStr(me?.role || me?.account_role || me?.user_role).toLowerCase();
+  const permissions = Array.isArray(me?.permissions) ? me.permissions : [];
+
+  return role === "admin" || permissions.includes("admin");
+}
+
 function normalizeLoanRow(raw: any): any | null {
   if (!raw) return null;
 
@@ -862,10 +869,10 @@ function buildIdentityEvidenceNotices(params: {
       ? "Open payout details"
       : "Open Trust Passport";
   const title = isRepair
-    ? "Identity proof needs follow-up"
+    ? "Identity evidence needs follow-up"
     : completion.score <= 35
       ? "Strengthen your identity evidence"
-      : "Add the next identity proof";
+      : "Add the next identity evidence";
   const detailLead =
     params.voice === "direct"
       ? `${completion.label}: ${completion.score}%.`
@@ -873,7 +880,7 @@ function buildIdentityEvidenceNotices(params: {
   const routeHint =
     primary === "bank"
       ? "Use payout details to record bank or wallet evidence."
-      : "Trust Passport shows what is recorded and what still needs proof.";
+      : "Trust Passport shows what is recorded and what still needs evidence.";
   const detail =
     primary === "bank"
       ? `${detailLead} ${routeHint}`
@@ -2244,9 +2251,20 @@ function buildWeeklyFocus(params: {
 export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
   const selectedClanId = Number(getSelectedClanId() || 0);
 
+  const [me, currentClan, mySettingsRaw] = await Promise.all([
+    getMe().catch(() => null),
+    getCurrentClan().catch(() => null),
+    getMySettings().catch(() => null),
+  ]);
+
+  const trustEventsPromise = hasPlatformAdminAccess(me)
+    ? listTrustEvents({
+        clan_id: selectedClanId || undefined,
+        limit: 80,
+      }).catch(() => null)
+    : Promise.resolve({ items: [], total: 0 });
+
   const [
-    me,
-    currentClan,
     notificationsRaw,
     guarantorInboxRaw,
     loansRaw,
@@ -2254,10 +2272,7 @@ export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
     trustEventsRaw,
     dailyInsight,
     myDemandsRaw,
-    mySettingsRaw,
   ] = await Promise.all([
-    getMe().catch(() => null),
-    getCurrentClan().catch(() => null),
     getMyNotifications(60, false).catch(() => ({ items: [] })),
     getLoanGuarantorInbox({
       clan_id: selectedClanId || undefined,
@@ -2266,10 +2281,7 @@ export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
     }).catch(() => ({ items: [] })),
     listMyLoans().catch(() => []),
     getTrustWhyMe().catch(() => null),
-    listTrustEvents({
-      clan_id: selectedClanId || undefined,
-      limit: 80,
-    }).catch(() => null),
+    trustEventsPromise,
     getDailyInsight().catch(() => null),
     listMarketplaceRequests({
       clan_id: selectedClanId || undefined,
@@ -2277,7 +2289,6 @@ export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
       status: "open",
       limit: 25,
     }).catch(() => []),
-    getMySettings().catch(() => null),
   ]);
 
   const voice = getGuidanceVoice(mySettingsRaw);

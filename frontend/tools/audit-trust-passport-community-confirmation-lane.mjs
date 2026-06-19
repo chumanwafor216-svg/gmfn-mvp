@@ -41,8 +41,8 @@ function assertContains(key, pattern, message, text) {
 
 assertContains(
   "trust",
-  /const communityConfirmationCards:[\s\S]*?"Community"[\s\S]*?"Community ID"[\s\S]*?"Community confirmation"[\s\S]*?"Public record"/,
-  "Community Confirmation lane must keep a plain card model for community, community ID, confirmation, and public-record readiness."
+  /const communityConfirmationCards:[\s\S]*?"Community"[\s\S]*?"Community ID"[\s\S]*?"Community record"[\s\S]*?"Activity evidence"[\s\S]*?"Witness currentness"[\s\S]*?"Next witness renewal"[\s\S]*?"Public record"[\s\S]*?"Member credential"/,
+  "Community Confirmation lane must keep a plain card model for community, Community ID, activity, witness currentness, renewal, public record, and member credential readiness."
 );
 
 assertContains(
@@ -65,8 +65,8 @@ assertContains(
 
 assertContains(
   "trust",
-  /debugId="trust-score\.open-public-community-record"[\s\S]*?Open public community record/,
-  "Community Confirmation lane work must preserve the single stable public community record action."
+  /debugId="trust-score\.community-lane\.open-public-community-record"[\s\S]*?Open community record[\s\S]*?debugId="trust-score\.community-lane\.open-member-credential"[\s\S]*?Open member credential[\s\S]*?debugId="trust-score\.community-lane\.ask-for-witness"[\s\S]*?Ask for witness/,
+  "Community Confirmation lane must preserve stable public record, member credential, and witness-request actions."
 );
 
 assertContains(
