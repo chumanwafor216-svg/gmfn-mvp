@@ -1,3 +1,26 @@
+## 2026-06-19 - Cover Page Default Restored
+
+- Trigger:
+  - owner clarified that GSN must open from `CoverPage`, not directly from
+    Welcome.
+- Changed:
+  - `frontend/src/App.tsx`
+    - restored anonymous root `/` to redirect to `/cover`.
+    - restored public session reset to return to `/cover`.
+    - restored unknown public-route fallback to `/cover` after app aliases and
+      authenticated app fallback are checked.
+  - `frontend/tools/audit-route-fallthrough.mjs`
+    - restored the route-fallthrough cage so future audits require Cover as the
+      public fallback.
+- Current entry truth:
+  - default public entry is now `CoverPage -> WelcomePage`.
+  - direct `/welcome` remains available.
+  - signed-in users who accidentally reach Cover/Welcome should still recover
+    to the remembered app route or Dashboard through `PublicEntryGuard`.
+- Unabated truth:
+  - the older handoff section below recorded a temporary Welcome default based
+    on the previous pilot instruction; this section supersedes that entry.
+
 ## 2026-06-19 - Public Verification Leak, Welcome Default, And Phone Dev Recovery
 
 - Trigger:
