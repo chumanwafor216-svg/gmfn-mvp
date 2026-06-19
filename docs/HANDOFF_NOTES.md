@@ -83,6 +83,12 @@
   - local full `pytest tests` reached the suite but Windows denied access to
     pytest's temp cleanup directory; targeted member-witness and metadata tests
     passed after staging the missing files.
+  - second push `113020a` failed GitHub `Backend Tests` because the Alembic
+    graph was missing untracked revision
+    `20260618_community_domain_affiliations`, which the member-verification
+    migration uses as its `down_revision`.
+  - staged `gmfn_backend/alembic/versions/20260618_add_community_domain_affiliations.py`
+    to restore the migration chain.
 
 ## 2026-06-19 - Member Witness Request UI Proof Against Disposable Backend
 
