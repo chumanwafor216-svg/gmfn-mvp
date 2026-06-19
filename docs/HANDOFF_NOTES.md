@@ -1,3 +1,25 @@
+## 2026-06-19 - PWA Icon Start Restored To Cover
+
+- Trigger:
+  - owner reported CoverPage was still not fixed after the live frontend route
+    check confirmed `https://gmfn-frontend.onrender.com/` opens `/cover`.
+- Finding:
+  - the React route default was fixed, but the install/PWA manifests still had
+    `start_url` set to `/app/dashboard?source=pwa`, so an installed phone icon
+    could bypass CoverPage.
+- Changed:
+  - `frontend/public/manifest.json`
+  - `frontend/public/manifest.webmanifest`
+    - changed `start_url` to `/cover?source=pwa`.
+  - `frontend/public/sw.js`
+    - bumped the service-worker cache from `gsn-pwa-shell-v9` to
+      `gsn-pwa-shell-v10`.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated the manifest guard so PWA start remains Cover-first.
+- Unabated truth:
+  - already-installed phone shortcuts may still need a hard refresh, cache
+    reset, or reinstall before the phone uses the new manifest start URL.
+
 ## 2026-06-19 - Cover Page Default Restored
 
 - Trigger:

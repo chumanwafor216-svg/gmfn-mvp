@@ -129,8 +129,8 @@ assertContains(
 
 assertContains(
   "public/manifest.json",
-  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/app\/dashboard\?source=pwa"[\s\S]*?"display": "browser"[\s\S]*?"display_override": \["browser"\][\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
-  "The shortcut manifest must keep the GSN identity, authenticated app start URL, browser display fallback, and standard phone icons."
+  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/cover\?source=pwa"[\s\S]*?"display": "browser"[\s\S]*?"display_override": \["browser"\][\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
+  "The shortcut manifest must keep the GSN identity, Cover-first app start URL, browser display fallback, and standard phone icons."
 );
 
 assertContains(
