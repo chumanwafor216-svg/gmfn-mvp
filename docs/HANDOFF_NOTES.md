@@ -137,6 +137,20 @@
   - local source already contained the matching type-surface fixes, but they
     were not part of `dbd7c5c`; after including them, `npm run build` from
     `frontend/` passed.
+  - API Render deploy logs later showed the backend pre-deploy failure was:
+    `sqlalchemy.exc.IdentifierError: Identifier 'ix_community_member_verification_requests_resulting_verification_id' exceeds maximum length of 63 characters`.
+  - shortened the member-witness request migration/model index names from the
+    long `ix_community_member_verification_requests_*` family to
+    `ix_cmv_requests_*`, and shortened the pending-pair index to
+    `uq_cmv_requests_pending_pair`.
+  - added a regression guard in
+    `gmfn_backend/tests/test_database_metadata.py` that scans the new
+    member-witness schema files for explicit `ix_`/`uq_`/`fk_` identifiers over
+    Postgres' 63-character limit.
+  - local backend verification after the identifier fix:
+    - `.venv\Scripts\python.exe -m pytest -q tests\test_database_metadata.py tests\test_community_member_verifications.py`
+      passed (`34 passed`);
+    - `git diff --check` passed for the migration/model/test files.
 
 ## 2026-06-19 - Member Witness Request UI Proof Against Disposable Backend
 

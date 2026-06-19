@@ -17,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 TABLE_NAME = "community_member_verification_requests"
-INDEX_NAME = "uq_community_member_verification_requests_pending_pair"
+INDEX_NAME = "uq_cmv_requests_pending_pair"
 
 
 def _has_table(bind, table_name: str) -> bool:

@@ -348,13 +348,13 @@ class CommunityMemberVerificationRequest(Base):
             name="uq_community_member_verification_request_token",
         ),
         Index(
-            "ix_community_member_verification_requests_subject_status",
+            "ix_cmv_requests_subject_status",
             "clan_id",
             "subject_user_id",
             "status",
         ),
         Index(
-            "uq_community_member_verification_requests_pending_pair",
+            "uq_cmv_requests_pending_pair",
             "clan_id",
             "subject_user_id",
             "verifier_user_id",
@@ -363,7 +363,7 @@ class CommunityMemberVerificationRequest(Base):
             postgresql_where=text("status = 'pending'"),
         ),
         Index(
-            "ix_community_member_verification_requests_verifier_status",
+            "ix_cmv_requests_verifier_status",
             "clan_id",
             "verifier_user_id",
             "status",

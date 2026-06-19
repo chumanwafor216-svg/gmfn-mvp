@@ -1,3 +1,6 @@
+import re
+from pathlib import Path
+
 from app.db.base import Base as CoreBase
 from app.db.database import Base as DatabaseBase
 
@@ -17,3 +20,36 @@ def test_database_base_uses_canonical_metadata_for_dev_schema_creation():
     assert "community_member_verification_requests" in tables
     assert "bank_events" in tables
     assert "identity_risk_signals" in tables
+
+
+def test_member_witness_schema_identifiers_fit_postgres_limit():
+    backend_root = Path(__file__).resolve().parents[1]
+    files = [
+        backend_root
+        / "alembic"
+        / "versions"
+        / "20260618_add_community_domain_affiliations.py",
+        backend_root
+        / "alembic"
+        / "versions"
+        / "20260618_add_community_member_verifications.py",
+        backend_root
+        / "alembic"
+        / "versions"
+        / "20260619_add_community_member_verification_requests.py",
+        backend_root
+        / "alembic"
+        / "versions"
+        / "20260619_add_member_witness_pending_pair_guard.py",
+        backend_root / "app" / "db" / "models.py",
+    ]
+    explicit_identifier = re.compile(r'"((?:ix|uq|fk)_[^"]+)"')
+    too_long = []
+
+    for path in files:
+        for match in explicit_identifier.finditer(path.read_text()):
+            identifier = match.group(1)
+            if len(identifier) > 63:
+                too_long.append(f"{path.name}: {len(identifier)} {identifier}")
+
+    assert too_long == []

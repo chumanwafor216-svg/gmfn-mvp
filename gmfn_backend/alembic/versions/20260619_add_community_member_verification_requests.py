@@ -17,7 +17,7 @@ branch_labels = None
 depends_on = None
 
 TABLE_NAME = "community_member_verification_requests"
-PENDING_PAIR_INDEX = "uq_community_member_verification_requests_pending_pair"
+PENDING_PAIR_INDEX = "uq_cmv_requests_pending_pair"
 
 
 def _has_table(table_name: str) -> bool:
@@ -133,62 +133,62 @@ def upgrade() -> None:
         ),
     )
     op.create_index(
-        "ix_community_member_verification_requests_clan_id",
+        "ix_cmv_requests_clan_id",
         TABLE_NAME,
         ["clan_id"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_subject_user_id",
+        "ix_cmv_requests_subject_user_id",
         TABLE_NAME,
         ["subject_user_id"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_verifier_user_id",
+        "ix_cmv_requests_verifier_user_id",
         TABLE_NAME,
         ["verifier_user_id"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_requested_by_user_id",
+        "ix_cmv_requests_requested_by_user_id",
         TABLE_NAME,
         ["requested_by_user_id"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_resulting_verification_id",
+        "ix_cmv_requests_resulting_verification_id",
         TABLE_NAME,
         ["resulting_verification_id"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_public_token",
+        "ix_cmv_requests_public_token",
         TABLE_NAME,
         ["public_token"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_one_time_code",
+        "ix_cmv_requests_one_time_code",
         TABLE_NAME,
         ["one_time_code"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_status",
+        "ix_cmv_requests_status",
         TABLE_NAME,
         ["status"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_created_at",
+        "ix_cmv_requests_created_at",
         TABLE_NAME,
         ["created_at"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_expires_at",
+        "ix_cmv_requests_expires_at",
         TABLE_NAME,
         ["expires_at"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_subject_status",
+        "ix_cmv_requests_subject_status",
         TABLE_NAME,
         ["clan_id", "subject_user_id", "status"],
     )
     op.create_index(
-        "ix_community_member_verification_requests_verifier_status",
+        "ix_cmv_requests_verifier_status",
         TABLE_NAME,
         ["clan_id", "verifier_user_id", "status"],
     )
@@ -205,51 +205,51 @@ def downgrade() -> None:
             table_name=TABLE_NAME,
         )
     op.drop_index(
-        "ix_community_member_verification_requests_verifier_status",
+        "ix_cmv_requests_verifier_status",
         table_name=TABLE_NAME,
     )
     op.drop_index(
-        "ix_community_member_verification_requests_subject_status",
+        "ix_cmv_requests_subject_status",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_expires_at",
+        "ix_cmv_requests_expires_at",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_created_at",
+        "ix_cmv_requests_created_at",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_status",
+        "ix_cmv_requests_status",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_one_time_code",
+        "ix_cmv_requests_one_time_code",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_public_token",
+        "ix_cmv_requests_public_token",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_resulting_verification_id",
+        "ix_cmv_requests_resulting_verification_id",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_requested_by_user_id",
+        "ix_cmv_requests_requested_by_user_id",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_verifier_user_id",
+        "ix_cmv_requests_verifier_user_id",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_subject_user_id",
+        "ix_cmv_requests_subject_user_id",
         table_name="community_member_verification_requests",
     )
     op.drop_index(
-        "ix_community_member_verification_requests_clan_id",
+        "ix_cmv_requests_clan_id",
         table_name="community_member_verification_requests",
     )
     op.drop_table("community_member_verification_requests")
