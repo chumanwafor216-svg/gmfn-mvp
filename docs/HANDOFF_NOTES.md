@@ -124,6 +124,19 @@
       passed (`33 passed`);
     - `git diff --check -- gmfn_backend\app\services\community_confirmation_service.py`
       passed.
+  - Render deploy `dep-d8qphbn41pts73954je0` for commit `dbd7c5c`
+    failed during the frontend TypeScript build, not during backend startup:
+    - `memberCredentialUrl` was passed to `buildTrustSlipSnapshot()` but was
+      missing from the committed `TrustSlipSnapshotParams` type;
+    - `evidence` was used as a `GsnIconName` but was missing from
+      `GsnLegacyIconName`;
+    - `memberWitnessCount` and related member-witness evidence props were
+      passed into `TrustSlipReaderBlock` and
+      `TrustSlipVerifyPrivateEvidence` but their committed prop types did not
+      include those fields.
+  - local source already contained the matching type-surface fixes, but they
+    were not part of `dbd7c5c`; after including them, `npm run build` from
+    `frontend/` passed.
 
 ## 2026-06-19 - Member Witness Request UI Proof Against Disposable Backend
 

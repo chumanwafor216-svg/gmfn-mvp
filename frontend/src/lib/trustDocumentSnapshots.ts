@@ -1,4 +1,4 @@
-import { buildGsnSnapshotPaper, gsnGeneratedAt } from "./gsnSnapshotPaper";
+import { buildGsnSnapshotPaper } from "./gsnSnapshotPaper";
 import { normalizeTrustBand } from "./trustBandLanguage";
 
 type IdentityIntegritySnapshotParams = {
@@ -34,6 +34,7 @@ type TrustSlipSnapshotParams = {
   cciBand: string;
   expiresAt: string;
   verifyUrl: string;
+  memberCredentialUrl?: string;
 };
 
 type TrustSlipVerifySnapshotParams = {
@@ -58,9 +59,17 @@ type TrustPassportSnapshotParams = {
   currentScore: string;
   openTrustClass: string;
   cciClass: string;
+  communityActivitySummary?: string;
+  communityActivityCategories?: string;
+  communityActivityLatest?: string;
+  membershipCurrentnessLabel?: string;
+  membershipCurrentnessScope?: string;
+  nextWitnessRenewalAt?: string;
+  nextWitnessRenewalStatusLabel?: string;
   trustSlipCode: string;
   nextStepLabel: string;
   verifyUrl: string;
+  memberCredentialUrl?: string;
 };
 
 function cleanLine(label: string, value: string) {
@@ -73,7 +82,7 @@ function friendlyTrustBand(raw: string): string {
   const band = normalizeTrustBand(text);
 
   if (!band) {
-    return text || "Building record - more proof needed.";
+    return text || "Building record - more evidence needed.";
   }
 
   const languageByBand: Record<string, string> = {
@@ -88,9 +97,9 @@ function friendlyTrustBand(raw: string): string {
     A: "check current details.",
     B: "verify before bigger decisions.",
     C: "ask for context.",
-    D: "use caution; ask for current proof.",
+    D: "use caution; ask for current evidence.",
     E: "do not rely on this alone.",
-    F: "ask for stronger proof first.",
+    F: "ask for stronger evidence first.",
   };
 
   return `${languageByBand[band]} (${band}) - ${guidanceByBand[band]}`;
@@ -116,7 +125,7 @@ function friendlyConsistency(raw: string): string {
   if (band === "C") {
     return `${friendlyTrustBand(band)} Ask for context.`;
   }
-  return `${friendlyTrustBand(band)} Ask for current confirmation.`;
+  return `${friendlyTrustBand(band)} Ask for current evidence.`;
 }
 
 export function buildIdentityIntegritySnapshot(
@@ -184,15 +193,24 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
     bodyLines: [
       cleanLine("Portable trust reading", friendlyTrustBand(params.merchantBand)),
       cleanLine(
-        "Trust limit",
+        "Trust limit signal",
         `${params.merchantCurrency} ${params.merchantTrustLimit}`
       ),
       cleanLine("Cross-community reading", friendlyConsistency(params.cciBand)),
       cleanLine("Expires", params.expiresAt),
       cleanLine("Verify link", params.verifyUrl),
+      params.memberCredentialUrl
+        ? cleanLine("Member credential link", params.memberCredentialUrl)
+        : "",
+      cleanLine(
+        "Reader boundary",
+        "Use this as decision evidence beside current community records. It is not an instruction to release money or goods."
+      ),
     ],
     privacyNote:
       "Privacy: public TrustSlip signals only. The private Trust Passport is not shown.",
+    limitationNote:
+      "Limitation: TrustSlip is GSN evidence only. Not a bank guarantee, credit approval, payment instruction, legal promise, or automatic debit.",
   });
 }
 
@@ -217,45 +235,64 @@ export function buildTrustSlipVerifySnapshot(
       cleanLine("Issued", params.issuedAt),
       cleanLine("Expires", params.expiresAt),
       cleanLine("Verify link", params.verifyUrl),
+      cleanLine(
+        "Reader boundary",
+        "Check current status and supporting community records before relying on it. This is not approval to lend, sell on credit, or release money."
+      ),
     ],
     privacyNote:
       "Privacy: permitted public TrustSlip fields only.",
+    limitationNote:
+      "Limitation: TrustSlip verification is GSN evidence only. Not a bank guarantee, credit approval, payment instruction, legal promise, or automatic debit.",
   });
 }
 
 export function buildTrustPassportSnapshot(
   params: TrustPassportSnapshotParams
 ) {
-  return [
-    "GLOBAL SUPPORT NETWORK (GSN)",
-    "",
-    "Title: GSN Trust Passport Snapshot",
-    "Purpose: Short trust summary for your decision.",
-    `Generated (UTC): ${gsnGeneratedAt()}`,
-    `Reference: ${params.gmfnId || "-"}`,
-    "",
-    "GSN record context",
-    cleanLine("Member", params.memberName || params.gmfnId),
-    cleanLine("GSN ID", params.gmfnId),
-    cleanLine("Community", params.communityName),
-    cleanLine("TrustSlip", params.trustSlipCode),
-    "",
-    "Record details",
-    cleanLine("Main reading", friendlyTrustBand(params.currentBand)),
-    cleanLine("Score", friendlyScore(params.currentScore)),
-    cleanLine("Community reading", friendlyTrustBand(params.openTrustClass)),
-    cleanLine("Wider-network reading", friendlyConsistency(params.cciClass)),
-    cleanLine("Next step", params.nextStepLabel),
-    "",
-    params.verifyUrl ? `Verification / action link: ${params.verifyUrl}` : "",
-    "Privacy: private evidence is not included.",
-    "Limitation: GSN record only. Not a bank guarantee, approval, or automatic debit.",
-    "",
-    "Footer: GSN. Trusted marketplace. Real people. Real value.",
-  ]
-    .filter((line, index, lines) => {
-      if (line !== "") return true;
-      return lines[index - 1] !== "";
-    })
-    .join("\n");
+  return buildGsnSnapshotPaper({
+    title: "GSN Trust Passport Snapshot",
+    purpose: "Short trust summary for your decision.",
+    reference: params.gmfnId,
+    link: params.verifyUrl,
+    context: [
+      { label: "Member", value: params.memberName || params.gmfnId },
+      { label: "GSN ID", value: params.gmfnId },
+      { label: "Community", value: params.communityName },
+      { label: "TrustSlip", value: params.trustSlipCode },
+    ],
+    bodyLines: [
+      cleanLine("Main reading", friendlyTrustBand(params.currentBand)),
+      cleanLine("Score", friendlyScore(params.currentScore)),
+      cleanLine("Community reading", friendlyTrustBand(params.openTrustClass)),
+      cleanLine("Wider-network reading", friendlyConsistency(params.cciClass)),
+      cleanLine("Community activity", params.communityActivitySummary || "Not shown"),
+      params.communityActivityCategories
+        ? cleanLine("Activity categories", params.communityActivityCategories)
+        : "",
+      params.communityActivityLatest
+        ? cleanLine("Latest community activity", params.communityActivityLatest)
+        : "",
+      cleanLine(
+        "Witness currentness",
+        params.membershipCurrentnessLabel || "Witness renewal not started"
+      ),
+      params.membershipCurrentnessScope
+        ? cleanLine("Currentness note", params.membershipCurrentnessScope)
+        : "",
+      params.nextWitnessRenewalAt
+        ? cleanLine(
+            "Next witness renewal",
+            `${params.nextWitnessRenewalAt} (${params.nextWitnessRenewalStatusLabel || "Not Started"})`
+          )
+        : "",
+      cleanLine("Next step", params.nextStepLabel),
+      params.memberCredentialUrl
+        ? cleanLine("Member credential link", params.memberCredentialUrl)
+        : "",
+    ],
+    privacyNote: "Privacy: private evidence is not included.",
+    limitationNote:
+      "Limitation: GSN record only. Not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
+  });
 }

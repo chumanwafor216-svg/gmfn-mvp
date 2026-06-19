@@ -1,5 +1,6 @@
 import React from "react";
 import TrustBandMeaningGuide from "./TrustBandMeaningGuide";
+import { StableCtaLink } from "./StableButton";
 
 type TrustSlipQuestion = {
   title: string;
@@ -16,6 +17,19 @@ type TrustSlipReaderBlockProps = {
   holderRole?: string | null;
   activeMemberCount?: string | number | null;
   activeCommunityCount?: string | number | null;
+  memberWitnessCount?: string | number | null;
+  membershipStrengthLabel?: string | null;
+  membershipRenewalStatusLabel?: string | null;
+  membershipValidUntil?: string | null;
+  nextWitnessRenewalAt?: string | null;
+  nextWitnessRenewalStatusLabel?: string | null;
+  membershipCurrentnessLabel?: string | null;
+  membershipCurrentnessScope?: string | null;
+  memberCredentialPath?: string | null;
+  communityActivityCount?: string | number | null;
+  communityActivityLatestAt?: string | null;
+  communityActivityCategories?: string[] | null;
+  communityActivityLabel?: string | null;
   sponsorCount?: string | number | null;
   phoneVerified?: boolean | null;
   identityStatusLabel?: string | null;
@@ -36,6 +50,19 @@ function clean(value: unknown, fallback = ""): string {
 function countLabel(value: unknown, fallback = "Not shown"): string {
   const text = clean(value);
   return text || fallback;
+}
+
+function dateLabel(value: unknown): string {
+  const text = clean(value);
+  if (!text) return "";
+  const parsed = new Date(text);
+  if (!Number.isFinite(parsed.getTime())) return text;
+  return parsed.toLocaleDateString();
+}
+
+function listLabel(value: unknown): string {
+  if (!Array.isArray(value)) return "";
+  return value.map((item) => clean(item)).filter(Boolean).join(", ");
 }
 
 function initials(name: string): string {
@@ -118,6 +145,19 @@ export default function TrustSlipReaderBlock({
   holderRole,
   activeMemberCount,
   activeCommunityCount,
+  memberWitnessCount,
+  membershipStrengthLabel,
+  membershipRenewalStatusLabel,
+  membershipValidUntil,
+  nextWitnessRenewalAt,
+  nextWitnessRenewalStatusLabel,
+  membershipCurrentnessLabel,
+  membershipCurrentnessScope,
+  memberCredentialPath,
+  communityActivityCount,
+  communityActivityLatestAt,
+  communityActivityCategories,
+  communityActivityLabel,
   sponsorCount,
   phoneVerified,
   identityStatusLabel,
@@ -144,6 +184,42 @@ export default function TrustSlipReaderBlock({
   const widerContext = `${countLabel(activeCommunityCount)} active community context${
     countLabel(activeCommunityCount) === "1" ? "" : "s"
   }; ${countLabel(sponsorCount)} sponsor signal${countLabel(sponsorCount) === "1" ? "" : "s"}`;
+  const memberWitnessText =
+    clean(membershipStrengthLabel) && clean(memberWitnessCount)
+      ? `${clean(membershipStrengthLabel)} from ${countLabel(memberWitnessCount, "0")} member witness${
+          countLabel(memberWitnessCount, "0") === "1" ? "" : "es"
+        }`
+      : "Member-witness strength not shown";
+  const validUntil = dateLabel(membershipValidUntil);
+  const validUntilText = validUntil
+    ? ` Valid until ${validUntil}.`
+    : "";
+  const nextRenewal = dateLabel(nextWitnessRenewalAt);
+  const nextRenewalText = nextRenewal
+    ? ` Next witness renewal: ${nextRenewal} (${clean(nextWitnessRenewalStatusLabel, "Not Started")}).`
+    : "";
+  const renewalText = clean(membershipRenewalStatusLabel)
+    ? ` Renewal status: ${clean(membershipRenewalStatusLabel)}.`
+    : "";
+  const currentnessText = clean(
+    membershipCurrentnessLabel,
+    "Witness renewal not started"
+  );
+  const currentnessScopeText = clean(
+    membershipCurrentnessScope,
+    "This active membership record has no current witness validity window. Ask for member witnesses, TrustSlip, or live community confirmation before a serious decision."
+  );
+  const activityCount = countLabel(communityActivityCount, "0");
+  const activityLatest = dateLabel(communityActivityLatestAt);
+  const activityCategories = listLabel(communityActivityCategories);
+  const activityText =
+    clean(communityActivityLabel) || "No community activity recorded yet";
+  const activityMeta = [
+    activityCategories ? `Categories: ${activityCategories}.` : "",
+    activityLatest ? `Latest activity: ${activityLatest}.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <section style={shell()}>
@@ -261,10 +337,53 @@ export default function TrustSlipReaderBlock({
             <span style={pill(false)}>
               Community ID: {clean(communityGlobalId, "Not shown")}
             </span>
+            <span style={pill(clean(memberWitnessCount) !== "" && clean(memberWitnessCount) !== "0")}>
+              {memberWitnessText}
+            </span>
+            <span style={pill(clean(membershipRenewalStatusLabel).toLowerCase() === "active")}>
+              Renewal: {clean(membershipRenewalStatusLabel, "Not Started")}
+            </span>
+            <span style={pill(clean(nextWitnessRenewalStatusLabel).toLowerCase() === "active")}>
+              Next witness: {nextRenewal || "Not shown"}
+            </span>
+            <span style={pill(currentnessText.toLowerCase().includes("current"))}>
+              Currentness: {currentnessText}
+            </span>
+            <span style={pill(clean(communityActivityCount) !== "" && clean(communityActivityCount) !== "0")}>
+              Activity: {activityCount}
+            </span>
           </div>
 
           <div style={{ marginTop: 10, ...body() }}>{communityDensity}</div>
           <div style={{ marginTop: 5, ...body() }}>{widerContext}</div>
+          <div style={{ marginTop: 5, ...body() }}>
+            Community activity evidence: {activityText}. {activityMeta}
+          </div>
+          <div style={{ marginTop: 5, ...body() }}>
+            GSN shows witness strength as a count and status label. Private verifier names are not exposed here.
+            {validUntilText}
+            {renewalText}
+            {nextRenewalText}
+          </div>
+          <div style={{ marginTop: 5, ...body() }}>
+            Evidence currentness: {currentnessScopeText}
+          </div>
+          {clean(memberCredentialPath) ? (
+            <StableCtaLink
+              to={clean(memberCredentialPath)}
+              kind="soft"
+              stableHeight={44}
+              debugId="trust-slip-reader.open-member-credential"
+              style={{
+                marginTop: 10,
+                width: "100%",
+                borderRadius: 12,
+                fontWeight: 1000,
+              }}
+            >
+              Open member credential
+            </StableCtaLink>
+          ) : null}
         </div>
       </div>
 
@@ -303,7 +422,7 @@ export default function TrustSlipReaderBlock({
             )}
           </div>
           <div style={{ marginTop: 8, ...body() }}>
-            Trust limit shown:{" "}
+            Trust limit signal:{" "}
             <b>
               {clean(trustLimit, "0.00")} {clean(currency)}
             </b>

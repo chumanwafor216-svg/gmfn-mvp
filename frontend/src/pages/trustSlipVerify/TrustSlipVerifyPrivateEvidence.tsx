@@ -37,6 +37,17 @@ type TrustSlipVerifyPrivateEvidenceProps = {
   holderRole?: string | null;
   activeMemberCount?: string | number | null;
   activeCommunityCount?: string | number | null;
+  memberWitnessCount?: string | number | null;
+  membershipStrengthLabel?: string | null;
+  membershipRenewalStatusLabel?: string | null;
+  membershipValidUntil?: string | null;
+  nextWitnessRenewalAt?: string | null;
+  nextWitnessRenewalStatusLabel?: string | null;
+  memberCredentialPath?: string | null;
+  communityActivityCount?: string | number | null;
+  communityActivityLatestAt?: string | null;
+  communityActivityCategories?: string[] | null;
+  communityActivityLabel?: string | null;
   sponsorCount?: string | number | null;
   phoneVerifiedRaw?: boolean | null;
   identityStatusLabel?: string | null;
@@ -286,6 +297,17 @@ export default function TrustSlipVerifyPrivateEvidence({
   holderRole,
   activeMemberCount,
   activeCommunityCount,
+  memberWitnessCount,
+  membershipStrengthLabel,
+  membershipRenewalStatusLabel,
+  membershipValidUntil,
+  nextWitnessRenewalAt,
+  nextWitnessRenewalStatusLabel,
+  memberCredentialPath,
+  communityActivityCount,
+  communityActivityLatestAt,
+  communityActivityCategories,
+  communityActivityLabel,
   sponsorCount,
   phoneVerifiedRaw,
   identityStatusLabel,
@@ -339,6 +361,17 @@ export default function TrustSlipVerifyPrivateEvidence({
         holderRole={holderRole}
         activeMemberCount={activeMemberCount}
         activeCommunityCount={activeCommunityCount}
+        memberWitnessCount={memberWitnessCount}
+        membershipStrengthLabel={membershipStrengthLabel}
+        membershipRenewalStatusLabel={membershipRenewalStatusLabel}
+        membershipValidUntil={membershipValidUntil}
+        nextWitnessRenewalAt={nextWitnessRenewalAt}
+        nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+        memberCredentialPath={memberCredentialPath}
+        communityActivityCount={communityActivityCount}
+        communityActivityLatestAt={communityActivityLatestAt}
+        communityActivityCategories={communityActivityCategories}
+        communityActivityLabel={communityActivityLabel}
         sponsorCount={sponsorCount}
         phoneVerified={phoneVerifiedRaw}
         identityStatusLabel={identityStatusLabel}
@@ -474,7 +507,7 @@ export default function TrustSlipVerifyPrivateEvidence({
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Trust limit</div>
+                <div style={sectionLabel()}>Trust limit signal</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                   {trustLimit || "Not shown"} {currency}
                 </div>
@@ -706,7 +739,7 @@ export default function TrustSlipVerifyPrivateEvidence({
             <div style={documentFooterLabel()}>Verification note</div>
             <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
               {verificationNote ||
-                "This confirms current public validity only. Trust Passport gives the fuller explanation."}
+                "This checks current public validity only. Trust Passport gives the fuller explanation."}
             </div>
           </div>
         </div>

@@ -16,6 +16,7 @@ export type GsnLegacyIconName =
   | "community"
   | "copy"
   | "document"
+  | "evidence"
   | "eye"
   | "financeInstitution"
   | "globe"
@@ -64,6 +65,7 @@ const GSN_LEGACY_ICON_MAP = {
   community: "community-building",
   copy: "qr-record",
   document: "records-folder",
+  evidence: "certificate-seal",
   eye: "public-globe",
   financeInstitution: "finance-bank-building",
   globe: "public-globe",
