@@ -1,3 +1,33 @@
+## 2026-06-20 - Render Build Failure Root Cause / Trust Passport View Model
+
+- Trigger:
+  - owner checked Render dashboard and showed deploys for `a37bb61`,
+    `14923f3`, `30214ed`, and `e74c72e` all failed with status 1 while
+    building.
+- Confirmed:
+  - GitHub deploy hook acceptance was real, but Render failed during build, so
+    the live site correctly stayed on the old asset bundle.
+  - A clean committed-tree reproduction of Render's frontend build failed at
+    `tsc -b` because `TrustScorePage.tsx` used newer Trust Passport fields
+    (`communityActivityCount`, `membershipCurrentnessLabel`,
+    `membershipCurrentnessScope`, `nextWitnessRenewalAt`,
+    `nextWitnessRenewalStatusLabel`) that were not yet present in the committed
+    `trustPassportViewModel.ts`.
+- Fix:
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - include the missing Trust Passport identity/activity/currentness fields in
+      the input and output types.
+    - include the same values in community stability wording, trust reasons, and
+      output identity object.
+- Verification:
+  - Clean archived `HEAD` plus this single file passed Render-equivalent
+    frontend build: `npm ci && npm run build`.
+- Unabated truth:
+  - the earlier local build passed because the local worktree already contained
+    this uncommitted file change. Render builds clean GitHub commits, so it
+    failed. Future deploy checks must reproduce from committed state or treat
+    local dirty-tree builds as insufficient evidence for Render.
+
 ## 2026-06-20 - TrustSlip Nested Identity Evidence Fallback
 
 - Trigger:

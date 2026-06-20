@@ -44,6 +44,14 @@ export type TrustPassportViewModel = {
     passportVerificationLabel: string;
     communityIdentityConfirmed: boolean;
     communityIdentityLabel: string;
+    communityActivityCount: string;
+    communityActivityLatestAt: string;
+    communityActivityCategories: string[];
+    communityActivityLabel: string;
+    membershipCurrentnessLabel: string;
+    membershipCurrentnessScope: string;
+    nextWitnessRenewalAt: string;
+    nextWitnessRenewalStatusLabel: string;
     identityVerified: boolean | null;
     identityStatusLabel: string;
     membershipStatus: "active" | "pending" | "inactive";
@@ -106,6 +114,14 @@ export type TrustPassportViewModelInput = {
   identityEvidenceLabel?: string | null;
   communityIdentityConfirmed?: boolean | null;
   communityIdentityLabel?: string | null;
+  communityActivityCount?: string | number | null;
+  communityActivityLatestAt?: string | null;
+  communityActivityCategories?: string[] | null;
+  communityActivityLabel?: string | null;
+  membershipCurrentnessLabel?: string | null;
+  membershipCurrentnessScope?: string | null;
+  nextWitnessRenewalAt?: string | null;
+  nextWitnessRenewalStatusLabel?: string | null;
   identityVerified?: boolean | null;
   identityStatusLabel?: string | null;
   hasSelectedCommunity?: boolean;
@@ -204,6 +220,32 @@ export function buildTrustPassportViewModel(
   const passportRecorded = input.passportRecorded === true || passportVerified;
   const officialIdRecorded = input.officialIdRecorded === true || passportRecorded;
   const communityIdentityConfirmed = input.communityIdentityConfirmed === true;
+  const communityActivityCount = numberValue(input.communityActivityCount);
+  const communityActivityCategories = Array.isArray(input.communityActivityCategories)
+    ? unique(input.communityActivityCategories)
+    : [];
+  const communityActivityLabel = clean(
+    input.communityActivityLabel,
+    communityActivityCount > 0
+      ? "Community activity recorded"
+      : "No community activity recorded yet"
+  );
+  const membershipCurrentnessLabel = clean(
+    input.membershipCurrentnessLabel,
+    "Witness renewal not started"
+  );
+  const membershipCurrentnessScope = clean(
+    input.membershipCurrentnessScope,
+    "This active membership record has no current witness validity window. Ask for member witnesses, TrustSlip, or live community confirmation before a serious decision."
+  );
+  const nextWitnessRenewalAt = clean(input.nextWitnessRenewalAt);
+  const nextWitnessRenewalStatusLabel = clean(
+    input.nextWitnessRenewalStatusLabel,
+    "Not Started"
+  );
+  const nextWitnessRenewalText = nextWitnessRenewalAt
+    ? ` Next witness renewal: ${nextWitnessRenewalAt} (${nextWitnessRenewalStatusLabel}).`
+    : "";
   const identityVerified =
     typeof input.identityVerified === "boolean" ? input.identityVerified : null;
   const membershipStatus =
@@ -235,7 +277,11 @@ export function buildTrustPassportViewModel(
   const followThroughStatus: TrustQuestionStatus =
     hasRepayment ? "Strong" : eventCountNumber > 0 ? "Mixed" : "Evidence still building";
   const communityStatus: TrustQuestionStatus =
-    activeClans > 0 && !weakBand ? "Stable" : activeClans > 0 ? "Needs current activity" : "Evidence still building";
+    activeClans > 0 && communityActivityCount > 0 && !weakBand
+      ? "Stable"
+      : activeClans > 0
+        ? "Needs current activity"
+        : "Evidence still building";
   const historyStatus: TrustQuestionStatus =
     hasVerifyCode && eventCountNumber > 0
       ? "Strong checkable history"
@@ -300,7 +346,11 @@ export function buildTrustPassportViewModel(
       status: communityStatus,
       meaning:
         activeClans > 0
-          ? "A community link is visible. Stability still depends on active standing, role, and member/sponsor confirmation."
+          ? communityActivityCount > 0
+            ? `This person has ${communityActivityCount} broad community activity event${
+                communityActivityCount === 1 ? "" : "s"
+              } recorded inside this community. Witness currentness: ${membershipCurrentnessLabel}.${nextWitnessRenewalText} Activity depth supports judgement, but it is not a guarantee.`
+            : `A community link is visible. Witness currentness: ${membershipCurrentnessLabel}.${nextWitnessRenewalText} Stability still depends on active standing, role, member/sponsor confirmation, and activity evidence.`
           : "A stable active community base is not visible enough yet.",
     },
     {
@@ -318,7 +368,19 @@ export function buildTrustPassportViewModel(
     !phoneVerified && phoneRecorded ? "phone number is recorded against this identity" : "",
     bankVerified ? "bank destination is verified" : "",
     !bankVerified && bankRecorded ? "bank or wallet details are recorded" : "",
-    communityIdentityConfirmed ? "community membership confirms this person is known in the community" : "",
+    communityIdentityConfirmed ? "active community membership is recorded for this person" : "",
+    communityActivityCount > 0
+      ? `${communityActivityCount} community activity event${
+          communityActivityCount === 1 ? "" : "s"
+        } recorded in this community`
+      : "",
+    communityActivityCategories.length
+      ? `community activity categories: ${communityActivityCategories.join(", ")}`
+      : "",
+    `witness currentness: ${membershipCurrentnessLabel}`,
+    nextWitnessRenewalAt
+      ? `next witness renewal: ${nextWitnessRenewalAt} (${nextWitnessRenewalStatusLabel})`
+      : "",
     passportVerified ? "official ID verification is visible" : "",
     !passportVerified && officialIdRecorded ? "official ID evidence is recorded for review" : "",
     hasRepayment ? "completed repayment evidence is visible" : "",
@@ -332,6 +394,13 @@ export function buildTrustPassportViewModel(
     lowData ? "limited evidence so far" : "",
     weakBand ? "visible evidence still needs strengthening" : "",
     recentEventCount <= 0 ? "no recent Trust Events are visible" : "",
+    communityActivityCount <= 0 ? "no community-scoped activity evidence is visible yet" : "",
+    membershipCurrentnessLabel.toLowerCase().includes("current")
+      ? ""
+      : `witness currentness needs care: ${membershipCurrentnessLabel}`,
+    nextWitnessRenewalStatusLabel.toLowerCase() === "renewal due"
+      ? `next witness renewal is due: ${nextWitnessRenewalAt || "date not shown"}`
+      : "",
     eventCountNumber <= 0 ? "no event-depth is visible" : "",
     phoneRecorded && !phoneVerified ? "phone is recorded but not network-verified yet" : "",
     bankRecorded && !bankVerified ? "bank details are recorded but not provider-verified yet" : "",
@@ -371,9 +440,17 @@ export function buildTrustPassportViewModel(
       communityIdentityLabel: clean(
         input.communityIdentityLabel,
         communityIdentityConfirmed
-          ? "Identity confirmed by active community membership"
-          : "Community identity confirmation not shown"
+          ? "Active community membership recorded"
+          : "Community membership record not shown"
       ),
+      communityActivityCount: String(communityActivityCount),
+      communityActivityLatestAt: clean(input.communityActivityLatestAt),
+      communityActivityCategories,
+      communityActivityLabel,
+      membershipCurrentnessLabel,
+      membershipCurrentnessScope,
+      nextWitnessRenewalAt,
+      nextWitnessRenewalStatusLabel,
       identityVerified,
       identityStatusLabel: clean(input.identityStatusLabel, "Identity status not shown"),
       membershipStatus,
