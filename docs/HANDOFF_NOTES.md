@@ -1,3 +1,31 @@
+## 2026-06-20 - Trust Passport Identity Overview Badge Cleanup
+
+- Trigger:
+  - owner called the current work a cleanup pass and asked to remove the small
+    `Snapshot 1` and `Photo clear` controls directly above `Identity Overview`
+    because their purpose was unclear and they added unnecessary visual noise.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - removed the decorative `Snapshot 1` and `Photo clear` chips from the
+      identity snapshot header.
+    - moved `Identity Overview` to the top of the text block beside the profile
+      photo so the snapshot starts with the actual identity heading.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - updated the Trust Passport snapshot guard to protect the cleaner header
+      and explicitly reject reintroducing the removed chips.
+- Verification:
+  - `npm run audit:trust-passport-button-inventory` passed from `frontend/`.
+  - `npm run audit:trust-passport-front-package` passed from `frontend/`.
+  - `npm run audit:trust-passport-lane-map` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-button-inventory.mjs`
+    passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - `frontend/src/pages/TrustScorePage.tsx` already had broader uncommitted
+    Trust Passport/community-credential work before this cleanup. This note
+    records only the removal of the two decorative chips.
+
 ## 2026-06-20 - Community Verification Guided Record Redesign
 
 - Trigger:

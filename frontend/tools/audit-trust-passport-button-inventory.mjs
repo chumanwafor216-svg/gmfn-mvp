@@ -166,8 +166,13 @@ assertContains(
 );
 
 assertContains(
-  /padding: isCompact \? 12 : 24[\s\S]*?minHeight: isCompact \? "min\(720px, calc\(100svh - 132px\)\)" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "88px minmax\(0, 1fr\)" : "132px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 88 : 132[\s\S]*?height: isCompact \? 88 : 132[\s\S]*?overflow: "hidden"[\s\S]*?Snapshot 1[\s\S]*?Photo clear[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "36px minmax\(0, 1fr\)"[\s\S]*?: "46px minmax\(0, 1fr\)"[\s\S]*?overviewIconBox\(isCompact\)/,
-  "Trust Passport identity overview must keep the portable snapshot package boundary, clear photo, and two-column fact grid."
+  /padding: isCompact \? 12 : 24[\s\S]*?minHeight: isCompact \? "min\(720px, calc\(100svh - 132px\)\)" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "88px minmax\(0, 1fr\)" : "132px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 88 : 132[\s\S]*?height: isCompact \? 88 : 132[\s\S]*?overflow: "hidden"[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "36px minmax\(0, 1fr\)"[\s\S]*?: "46px minmax\(0, 1fr\)"[\s\S]*?overviewIconBox\(isCompact\)/,
+  "Trust Passport identity overview must keep the portable snapshot package boundary and two-column fact grid without decorative status chips above the title."
+);
+
+assertNotContains(
+  /Snapshot 1|Photo clear/,
+  "Trust Passport identity overview must not restore the old decorative Snapshot 1 or Photo clear chips above the title."
 );
 
 assertContains(

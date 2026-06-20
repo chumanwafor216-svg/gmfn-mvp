@@ -2815,50 +2815,9 @@ export default function TrustScorePage() {
             </div>
 
             <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    minHeight: isCompact ? 24 : 30,
-                    borderRadius: 999,
-                    padding: isCompact ? "4px 8px" : "5px 10px",
-                    background: "linear-gradient(180deg, #F8E7B8 0%, #E8C875 100%)",
-                    border: "1px solid rgba(160,117,33,0.24)",
-                    color: "#4A3410",
-                    fontWeight: 1000,
-                    fontSize: isCompact ? 10.5 : 13,
-                    boxShadow: "0 10px 20px rgba(160,117,33,0.10)",
-                  }}
-                >
-                  <GsnLegacyIcon name="shield" size={isCompact ? 22 : 24} decorative />
-                  Snapshot 1
-                </div>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 5,
-                    minHeight: isCompact ? 24 : 30,
-                    borderRadius: 999,
-                    padding: isCompact ? "4px 8px" : "5px 10px",
-                    background: "linear-gradient(180deg, #EEF6FF 0%, #DCEBFF 100%)",
-                    border: "1px solid rgba(11,99,209,0.18)",
-                    color: "#073E83",
-                    fontWeight: 1000,
-                    fontSize: isCompact ? 10.5 : 13,
-                    boxShadow: "0 8px 16px rgba(11,99,209,0.08)",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <GsnLegacyIcon name="check" size={isCompact ? 22 : 24} decorative />
-                  Photo clear
-                </span>
-              </div>
               <h1
                 style={{
-                  margin: isCompact ? "5px 0 0" : "10px 0 0",
+                  margin: 0,
                   color: "#07172C",
                   fontSize: isCompact ? 27 : 36,
                   lineHeight: 1.03,
