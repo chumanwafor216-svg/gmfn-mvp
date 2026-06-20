@@ -765,6 +765,119 @@ function trustSlipTinyIconCircle(ok = true): React.CSSProperties {
   };
 }
 
+function trustSlipWatermarkLayer(): React.CSSProperties {
+  return {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    overflow: "hidden",
+    borderRadius: 14,
+    zIndex: 0,
+  };
+}
+
+function trustSlipWatermarkWord(compact = false): React.CSSProperties {
+  return {
+    position: "absolute",
+    right: compact ? -54 : -62,
+    top: compact ? 92 : 118,
+    transform: "rotate(-90deg)",
+    transformOrigin: "center",
+    color: "rgba(11,31,51,0.045)",
+    fontSize: compact ? 68 : 92,
+    lineHeight: 1,
+    fontWeight: 1000,
+    letterSpacing: 4,
+    textTransform: "uppercase",
+  };
+}
+
+function trustSlipWatermarkSeal(compact = false): React.CSSProperties {
+  return {
+    position: "absolute",
+    right: compact ? -78 : -96,
+    bottom: compact ? 42 : 28,
+    width: compact ? 220 : 300,
+    height: compact ? 220 : 300,
+    borderRadius: 999,
+    border: "18px solid rgba(11,99,209,0.035)",
+    boxShadow:
+      "inset 0 0 0 2px rgba(214,170,69,0.045), inset 0 0 0 42px rgba(234,243,255,0.18)",
+  };
+}
+
+function trustSlipOfficialWordmark(compact = false): React.CSSProperties {
+  return {
+    display: "inline-grid",
+    gridTemplateColumns: compact ? "42px minmax(0, 1fr)" : "48px minmax(0, 1fr)",
+    gap: 12,
+    alignItems: "center",
+    minWidth: 0,
+  };
+}
+
+function trustSlipOfficialIconBox(compact = false): React.CSSProperties {
+  return {
+    width: compact ? 42 : 48,
+    height: compact ? 42 : 48,
+    borderRadius: compact ? 13 : 15,
+    display: "grid",
+    placeItems: "center",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.065) 100%)",
+    border: "1px solid rgba(246,215,122,0.34)",
+    boxShadow:
+      "0 14px 30px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
+  };
+}
+
+function trustSlipSecurityMarkStyle(
+  tone: "active" | "expired" | "blocked" | "pending"
+): React.CSSProperties {
+  const palette = {
+    active: {
+      background:
+        "linear-gradient(180deg, rgba(46,155,98,0.98) 0%, rgba(18,101,60,0.98) 100%)",
+      border: "1px solid rgba(167,243,208,0.42)",
+      color: "#ECFDF5",
+      shadow: "0 14px 30px rgba(18,101,60,0.28)",
+    },
+    expired: {
+      background:
+        "linear-gradient(180deg, rgba(214,170,69,0.98) 0%, rgba(154,104,23,0.98) 100%)",
+      border: "1px solid rgba(252,211,77,0.42)",
+      color: "#FFF7E6",
+      shadow: "0 14px 30px rgba(154,104,23,0.24)",
+    },
+    blocked: {
+      background:
+        "linear-gradient(180deg, rgba(200,58,58,0.98) 0%, rgba(127,29,29,0.98) 100%)",
+      border: "1px solid rgba(254,202,202,0.42)",
+      color: "#FEF2F2",
+      shadow: "0 14px 30px rgba(127,29,29,0.24)",
+    },
+    pending: {
+      background:
+        "linear-gradient(180deg, rgba(35,103,209,0.98) 0%, rgba(11,62,120,0.98) 100%)",
+      border: "1px solid rgba(191,219,254,0.40)",
+      color: "#EAF3FF",
+      shadow: "0 14px 30px rgba(11,62,120,0.22)",
+    },
+  }[tone];
+
+  return {
+    display: "grid",
+    gridTemplateColumns: "34px minmax(0, 1fr)",
+    gap: 10,
+    alignItems: "center",
+    minHeight: 58,
+    borderRadius: 18,
+    padding: "10px 13px",
+    boxShadow: `${palette.shadow}, inset 0 1px 0 rgba(255,255,255,0.16)`,
+    ...palette,
+  };
+}
+
 function trustSlipIconBadge(
   name: GsnIconName,
   size = 28,
@@ -2025,7 +2138,30 @@ export default function TrustSlipPage() {
     : trustSlipPublicStatus === "Preparing"
       ? "PREPARING"
       : "NEEDS REFRESH";
-  const trustSlipStatusTone = trustSlipValidNow ? "valid" : "refresh";
+  const trustSlipSecurityTone: "active" | "expired" | "blocked" | "pending" =
+    rawTrustSlipStatus === "revoked" || rawTrustSlipStatus === "frozen"
+      ? "blocked"
+      : rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
+        ? "expired"
+        : trustSlipValidNow
+          ? "active"
+          : "pending";
+  const trustSlipSecurityLabel =
+    trustSlipSecurityTone === "active"
+      ? "Active"
+      : trustSlipSecurityTone === "expired"
+        ? "Expired"
+        : trustSlipSecurityTone === "blocked"
+          ? trustSlipPublicStatus
+          : "Pending";
+  const trustSlipSecurityCaption =
+    trustSlipSecurityTone === "active"
+      ? "Current public verification window"
+      : trustSlipSecurityTone === "expired"
+        ? "Refresh before anyone relies on it"
+        : trustSlipSecurityTone === "blocked"
+          ? "Do not rely until cleared"
+          : "Waiting for a public code";
   const trustSlipCodeLabel = trustSlipCode || "Awaiting issue";
   const trustSlipIssuedLabel =
     safeDateTime(summary?.issued_at) ||
@@ -2322,6 +2458,11 @@ export default function TrustSlipPage() {
             alignItems: "start",
           }}
         >
+          <div style={trustSlipWatermarkLayer()} aria-hidden="true">
+            <div style={trustSlipWatermarkWord(isCompact)}>GSN</div>
+            <div style={trustSlipWatermarkSeal(isCompact)} />
+          </div>
+
           {notice ? (
             <div style={{ gridColumn: "1 / -1" }}>
               <div style={noticeCard(notice.tone)}>{notice.text}</div>
@@ -2349,20 +2490,111 @@ export default function TrustSlipPage() {
               style={{ top: 58, right: 40, bottom: "auto" }}
             />
             <div style={{ position: "relative", zIndex: 1 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(230px, 0.72fr)",
+                  gap: 14,
+                  alignItems: "start",
+                }}
+              >
+                <div style={trustSlipOfficialWordmark(isCompact)}>
+                  <span style={trustSlipOfficialIconBox(isCompact)}>
+                    <GsnLegacyIcon name="shield" size={isCompact ? 38 : 44} />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: isCompact ? 30 : 40,
+                        lineHeight: 0.95,
+                        fontWeight: 1000,
+                        letterSpacing: 0,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      TrustSlip
+                    </div>
+                    <div
+                      style={{
+                        color: "#DCE8F4",
+                        fontSize: isCompact ? 13 : 15,
+                        fontWeight: 900,
+                        lineHeight: 1.15,
+                        marginTop: 4,
+                      }}
+                    >
+                      Portable Trust Summary
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 10,
+                    justifyItems: isCompact ? "start" : "end",
+                    textAlign: isCompact ? "left" : "right",
+                  }}
+                >
+                  <div style={trustSlipSecurityMarkStyle(trustSlipSecurityTone)}>
+                    <GsnLegacyIcon name={trustSlipSecurityTone === "expired" ? "refresh" : "shield"} size={32} />
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 18,
+                          fontWeight: 1000,
+                          lineHeight: 1,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {trustSlipSecurityLabel}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 4,
+                          fontSize: 11,
+                          fontWeight: 900,
+                          lineHeight: 1.15,
+                          opacity: 0.86,
+                        }}
+                      >
+                        {trustSlipSecurityCaption}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      color: "#DCE8F4",
+                      fontSize: 12,
+                      fontWeight: 1000,
+                      lineHeight: 1.35,
+                      letterSpacing: 0.4,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    GSN · Public View
+                    <br />
+                    <span style={{ color: "#AFC4D9", fontWeight: 850, textTransform: "none", letterSpacing: 0 }}>
+                      Record anchor {communityRef}
+                    </span>
+                  </div>
+                </div>
+              </div>
               <h1
                 style={{
-                  margin: 0,
+                  margin: "24px 0 0",
                   color: "#FFFFFF",
                   fontSize: isCompact ? 34 : 42,
                   lineHeight: 1.02,
                   fontWeight: 1000,
                 }}
               >
-                GSN TrustSlip
+                {holderName}
               </h1>
               <p
                 style={{
-                  margin: "16px 0 0",
+                  margin: "12px 0 0",
                   maxWidth: 430,
                   color: "#DCE8F4",
                   fontSize: isCompact ? 17 : 18,
@@ -2370,7 +2602,7 @@ export default function TrustSlipPage() {
                   fontWeight: 760,
                 }}
               >
-                Portable recorded trust snapshot. Check the code, then read recorded and verified signals separately.
+                Community: {communityName}. GSN ID: {gmfnId}. Check the code, then read recorded and verified signals separately.
               </p>
               <div
                 style={{
@@ -2426,13 +2658,14 @@ export default function TrustSlipPage() {
                   display: "grid",
                   gridTemplateColumns: isCompact
                     ? "1fr"
-                    : "repeat(3, minmax(0, 1fr))",
+                    : "repeat(4, minmax(0, 1fr))",
                   gap: 8,
                   marginTop: 18,
                   maxWidth: 620,
                 }}
               >
                 {[
+                  ["Security", trustSlipSecurityLabel],
                   ["Status", trustSlipPublicStatus],
                   ["Band", merchantBandDisplay],
                   ["Code", trustSlipCodeLabel],
@@ -2839,10 +3072,14 @@ export default function TrustSlipPage() {
                   padding: "18px 16px",
                   textAlign: "center",
                   background:
-                    trustSlipStatusTone === "valid"
-                      ? "linear-gradient(135deg, #2E9B62 0%, #1F8A4E 100%)"
-                      : "linear-gradient(135deg, #FFF7E6 0%, #FFE8B5 100%)",
-                  color: trustSlipStatusTone === "valid" ? "#FFFFFF" : "#92400E",
+                    trustSlipSecurityTone === "active"
+                      ? "linear-gradient(135deg, #2E9B62 0%, #12653C 100%)"
+                      : trustSlipSecurityTone === "expired"
+                        ? "linear-gradient(135deg, #D6AA45 0%, #9A6817 100%)"
+                        : trustSlipSecurityTone === "blocked"
+                          ? "linear-gradient(135deg, #C83A3A 0%, #7F1D1D 100%)"
+                          : "linear-gradient(135deg, #2367D1 0%, #0B3E78 100%)",
+                  color: "#FFFFFF",
                   fontSize: isCompact ? 28 : 36,
                   fontWeight: 1000,
                   letterSpacing: 0.5,
@@ -2850,10 +3087,30 @@ export default function TrustSlipPage() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 12,
+                  boxShadow:
+                    "0 16px 34px rgba(7,23,44,0.16), inset 0 1px 0 rgba(255,255,255,0.18)",
                 }}
               >
-                <GsnLegacyIcon name="shield" size={isCompact ? 42 : 52} />
-                {trustSlipStatusTitle}
+                <GsnLegacyIcon
+                  name={trustSlipSecurityTone === "expired" ? "refresh" : "shield"}
+                  size={isCompact ? 42 : 52}
+                />
+                <span>
+                  {trustSlipSecurityLabel}
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 5,
+                      color: "rgba(255,255,255,0.82)",
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: 900,
+                      letterSpacing: 1.2,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {trustSlipStatusTitle}
+                  </span>
+                </span>
               </div>
               <div
                 style={{

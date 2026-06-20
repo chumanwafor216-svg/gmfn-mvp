@@ -1,3 +1,36 @@
+## 2026-06-20 - TrustSlip Official Document Branding / Security Mark
+
+- Trigger:
+  - owner asked for the TrustSlip evidence document to look special and official,
+    with correct GSN icons, a GSN word/logo watermark, and visible security
+    marks for active or expired state.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - added a low-opacity GSN page watermark and seal-style background mark to
+      the active TrustSlip paper frame.
+    - changed the active hero from a plain app header into a document masthead:
+      TrustSlip wordmark, 3D GSN shield icon, `GSN · Public View`, record
+      anchor, and holder/community/GSN ID context.
+    - added a truth-bound security mark driven by the actual TrustSlip state:
+      `Active`, `Expired`, `Revoked`/`Frozen`, or `Pending`.
+    - upgraded the current-status panel into a security-stamp style block so a
+      reader can immediately see whether the document is current or needs
+      refresh.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx` passed.
+  - `git diff --check -- frontend/src/pages/TrustSlipPage.tsx` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed; built TrustSlip chunk:
+    `assets/TrustSlipPage-87lG-Yrn.js`.
+- Unabated truth:
+  - this is local source/build/audit verified. It is not Render-live until this
+    file and this handoff note are committed, pushed, and the manual Render
+    deploy is confirmed.
+  - browser visual verification was attempted through the in-app browser, but
+    that browser surface was unavailable in this session. A real phone
+    screenshot should still be checked after local refresh or Render deploy.
+
 ## 2026-06-20 - Render Build Failure Root Cause / Trust Passport View Model
 
 - Trigger:
