@@ -930,21 +930,21 @@ const appShellChecks = [
   },
   {
     label:
-      "Mobile app shell must keep the bottom rail visible while main content scrolls naturally",
+      "Mobile app shell must keep the bottom rail visible while main content keeps vertical drags contained",
     pattern:
-      /function mobileShell\(\): React\.CSSProperties[\s\S]*?minHeight: "100svh"[\s\S]*?height: "100svh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "auto" : undefined[\s\S]*?touchAction: isMobile \? "pan-y" : undefined[\s\S]*?minHeight: isMobile \? 0 : undefined/,
+      /function mobileShell\(\): React\.CSSProperties[\s\S]*?minHeight: "100svh"[\s\S]*?height: "100svh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "contain" : undefined[\s\S]*?touchAction: isMobile \? "pan-y pinch-zoom" : undefined[\s\S]*?minHeight: isMobile \? 0 : undefined/,
   },
   {
     label:
-      "Mobile overlays must not animate into a visible-but-tap-through closing state",
+      "Mobile overlays must not animate into a visible-but-tap-through closing state and must keep their own vertical scroll",
     pattern:
-      /function overlayBackdrop\([\s\S]*?transition: "none"[\s\S]*?function drawerPanel\([\s\S]*?transition: "none"[\s\S]*?function actionsPanel\([\s\S]*?transition: "none"/,
+      /function overlayBackdrop\([\s\S]*?transition: "none"[\s\S]*?function drawerPanel\([\s\S]*?overflowY: "auto"[\s\S]*?WebkitOverflowScrolling: "touch"[\s\S]*?overscrollBehaviorY: "contain"[\s\S]*?touchAction: "pan-y pinch-zoom"[\s\S]*?transition: "none"[\s\S]*?function actionsPanel\([\s\S]*?overflowY: "auto"[\s\S]*?WebkitOverflowScrolling: "touch"[\s\S]*?overscrollBehaviorY: "contain"[\s\S]*?touchAction: "pan-y pinch-zoom"[\s\S]*?transition: "none"/,
   },
   {
     label:
-      "Mobile bottom rail must scroll horizontally without scrollIntoView moving the page",
+      "Mobile bottom rail must scroll horizontally without stealing vertical page momentum",
     pattern:
-      /const bottomNav = mobileBottomNavRef\.current;[\s\S]*?bottomNav\.scrollTo\(\{[\s\S]*?left: Math\.max\(nextLeft, 0\),[\s\S]*?behavior: "auto",[\s\S]*?}\);/,
+      /function bottomNav\(\): React\.CSSProperties \{[\s\S]*?overflowX: "auto"[\s\S]*?overflowY: "hidden"[\s\S]*?WebkitOverflowScrolling: "touch"[\s\S]*?overscrollBehaviorX: "contain"[\s\S]*?overscrollBehaviorY: "none"[\s\S]*?touchAction: "pan-x pinch-zoom"[\s\S]*?const bottomNav = mobileBottomNavRef\.current;[\s\S]*?bottomNav\.scrollTo\(\{[\s\S]*?left: Math\.max\(nextLeft, 0\),[\s\S]*?behavior: "auto",[\s\S]*?}\);/,
   },
   {
     label:

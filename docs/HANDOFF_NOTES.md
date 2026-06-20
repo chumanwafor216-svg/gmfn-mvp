@@ -1,3 +1,72 @@
+## 2026-06-20 - Mobile Shell Scroll Rail Drag Repair
+
+- Trigger:
+  - owner reported the phone screen still had a glue-like drag, with up/down
+    scrolling sometimes behaving as if the bottom rail was blocking the page.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - changed the authenticated mobile page scroller from vertical overscroll
+      chaining to contained vertical scroll.
+    - made the bottom navigation rail explicitly horizontal-only for touch
+      panning, with vertical overscroll suppressed on the rail.
+    - gave the drawer and Tools panels contained native momentum scrolling so
+      open overlays do not hand drag momentum back to the page shell.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - updated the tap-stability guard to freeze the new mobile shell, rail, and
+      overlay scroll contract.
+- Verification:
+  - `npm run audit:tap-stability` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm run audit:global-action-debugids` passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is a CSS/touch-contract repair, not proof that every phone/browser drag
+    edge case is gone. The most honest next check is direct phone testing on
+    `http://192.168.1.13:5301/`, especially dragging from the bottom rail,
+    between rail buttons, and inside Menu/Tools overlays.
+
+## 2026-06-20 - Trust Passport Evidence Drawer Moved Below Identity Snapshot Actions
+
+- Trigger:
+  - owner asked for the Evidence button to sit somewhere it does not disturb the
+    `Identity Overview` screenshot, and for the controls inside Evidence to be
+    tighter.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - moved the identity evidence meter out from between the `Identity
+      Overview` title/photo block and the identity facts.
+    - placed it as a compact collapsed drawer below `Complete ID checks` and
+      `Open public community record`, so the snapshot reads title, facts,
+      status chips, and primary actions first.
+    - reduced the evidence drawer button height, dial size, chip padding, and
+      chip font size so opening Evidence no longer creates a tall card.
+  - `frontend/tools/audit-trust-passport-front-package.mjs`
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - updated the Trust Passport guards to protect the new placement: evidence
+      must stay collapsed after the snapshot actions instead of interrupting
+      the screenshot package.
+- Verification:
+  - `npm --prefix frontend run audit:trust-passport-front-package` passed.
+  - `npm --prefix frontend run audit:trust-passport-button-inventory` passed.
+  - `npm --prefix frontend run audit:trust-passport-lane-map` passed.
+  - `npm --prefix frontend run audit:protected-button-freeze` passed.
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-button-inventory.mjs`
+    passed from `frontend/`.
+  - `npm exec -- tsc -b --pretty false` passed from `frontend/`.
+  - `npm --prefix frontend run build` hit the known Windows/Vite/esbuild
+    sandbox `spawn EPERM`; rerunning `npm run build` from `frontend/` outside
+    the sandbox passed.
+- Unabated truth:
+  - `npm --prefix frontend run audit:trust-actions` was tried and failed on an
+    existing backend public-community wording check in
+    `gmfn_backend/app/services/community_confirmation_service.py`
+    (`Verified in GSN`). That was not part of this visual request and was not
+    changed in this pass.
+  - `frontend/src/pages/TrustScorePage.tsx` already had broader uncommitted
+    Trust Passport/community-evidence changes before this slice; this note
+    records only the evidence-drawer relocation and tightening.
+  - No commit, push, or deploy was performed.
+
 ## 2026-06-19 - Render Welcome Route Forced Server-Side To Cover
 
 - Trigger:
