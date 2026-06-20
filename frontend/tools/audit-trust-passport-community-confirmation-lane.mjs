@@ -59,8 +59,8 @@ assertContains(
 
 assertContains(
   "trust",
-  /communityConfirmationCards\.map\(\(\[label, value, detail, icon, status\]\) =>[\s\S]*?statusPillStyle\(status\)[\s\S]*?\{value\}[\s\S]*?\{detail\}/,
-  "Community Confirmation lane must render readiness cards with icons, status, value, and plain detail."
+  /communityConfirmationCards\.map\(\(\[label, value, detail, icon, status\]\) =>[\s\S]*?<EvidenceMeter status=\{status\}>[\s\S]*?\{status\}[\s\S]*?\{value\}[\s\S]*?\{detail\}/,
+  "Community Confirmation lane must render readiness cards with icons, raised inert meters, value, and plain detail."
 );
 
 assertContains(

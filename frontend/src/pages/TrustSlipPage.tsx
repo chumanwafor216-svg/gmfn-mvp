@@ -11,6 +11,7 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
+import EvidenceMeter from "../components/EvidenceMeter";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   TrustPaperSeal,
@@ -547,59 +548,6 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
-  };
-}
-
-function statusPillStyle(status: string): React.CSSProperties {
-  const text = safeStr(status).toLowerCase();
-  const positive =
-    text.includes("strong") ||
-    text.includes("verified") ||
-    text.includes("valid") ||
-    text.includes("acceptable") ||
-    text === "yes";
-  const pressure =
-    text.includes("caution") ||
-    text.includes("pressure") ||
-    text.includes("refresh") ||
-    text.includes("expired") ||
-    text.includes("limited") ||
-    text.includes("high");
-  const pending = text.includes("mixed") || text.includes("pending");
-
-  return {
-    display: "inline-flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 27,
-    borderRadius: 8,
-    padding: "4px 10px",
-    color: positive
-      ? "#166534"
-      : pressure
-        ? "#991B1B"
-        : pending
-          ? "#92400E"
-          : "#334155",
-    background: positive
-      ? "#EAF7EE"
-      : pressure
-        ? "#FFF1F2"
-        : pending
-          ? "#FFF7E6"
-          : "#F1F5F9",
-    border: `1px solid ${
-      positive
-        ? "rgba(46,155,98,0.18)"
-        : pressure
-          ? "rgba(200,58,58,0.18)"
-          : pending
-            ? "rgba(245,158,11,0.18)"
-            : "rgba(100,116,139,0.14)"
-    }`,
-    fontSize: 12,
-    fontWeight: 1000,
-    textAlign: "center",
   };
 }
 
@@ -2396,7 +2344,7 @@ export default function TrustSlipPage() {
                       }}
                     >
                       <span style={{ color: "#526579", fontWeight: 900 }}>{label}</span>
-                      <span style={statusPillStyle(String(value))}>{value}</span>
+                      <EvidenceMeter status={String(value)}>{value}</EvidenceMeter>
                     </div>
                   ))}
                 </div>
@@ -2463,9 +2411,11 @@ export default function TrustSlipPage() {
                         "Community responses will appear as an aggregate result when members answer."}
                     </div>
                     <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
-                      <span style={statusPillStyle(firstTruthy(confirmationResult?.community_confidence, "Pending"))}>
+                      <EvidenceMeter
+                        status={firstTruthy(confirmationResult?.community_confidence, "Pending")}
+                      >
                         Confidence: {firstTruthy(confirmationResult?.community_confidence, "Pending")}
-                      </span>
+                      </EvidenceMeter>
                       <span style={{ color: "#526579", fontWeight: 800, fontSize: 13 }}>
                         Sent: {confirmationResult?.requests_sent ?? 0}; Responses:{" "}
                         {confirmationResult?.responses_received ?? 0} of{" "}
@@ -2645,7 +2595,7 @@ export default function TrustSlipPage() {
                   }}
                 >
                   <span style={{ color: "#526579", fontWeight: 900 }}>{label}</span>
-                  <span style={statusPillStyle(String(value))}>{value}</span>
+                  <EvidenceMeter status={String(value)}>{value}</EvidenceMeter>
                 </div>
               ))}
               <div
@@ -2725,7 +2675,7 @@ export default function TrustSlipPage() {
                       {trustSlipIconBadge(item.icon, 28, item.status === "Ready" ? "green" : "blue")}
                       {item.label}
                     </span>
-                    <span style={statusPillStyle(item.status)}>{item.status}</span>
+                    <EvidenceMeter status={item.status}>{item.status}</EvidenceMeter>
                   </div>
                 ))}
               </div>

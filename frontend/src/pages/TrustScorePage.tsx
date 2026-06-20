@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
+import EvidenceMeter, {
+  evidenceMeterStyle,
+  stopInertMeterTap,
+} from "../components/EvidenceMeter";
 import PageTopNav from "../components/PageTopNav";
 import GSNBrandMark from "../components/GSNBrandMark";
 import {
@@ -631,59 +635,7 @@ function helperText(): React.CSSProperties {
 }
 
 function statusPillStyle(status: string): React.CSSProperties {
-  const text = safeStr(status).toLowerCase();
-  const positive =
-    text.includes("strong") ||
-    text.includes("stable") ||
-    text.includes("verified") ||
-    text.includes("ready") ||
-    text === "yes";
-  const pressure =
-    text.includes("check first") ||
-    text.includes("pressure") ||
-    text.includes("needs current") ||
-    text.includes("high");
-  const building = text.includes("building") || text.includes("limited");
-  const mixed = text.includes("mixed") || text.includes("pending") || building;
-
-  return {
-    display: "inline-flex",
-    justifyContent: "center",
-    alignItems: "center",
-    maxWidth: "100%",
-    minHeight: 26,
-    borderRadius: 8,
-    padding: "4px 10px",
-    fontSize: 12,
-    fontWeight: 1000,
-    color: positive
-      ? "#166534"
-      : pressure
-        ? "#92400E"
-        : mixed
-          ? "#073E83"
-          : "#334155",
-    background: positive
-      ? "#EAF7EE"
-      : pressure
-        ? "#FFF7E6"
-        : mixed
-          ? "#EEF6FF"
-          : "#F1F5F9",
-    border: `1px solid ${
-      positive
-        ? "rgba(46,155,98,0.16)"
-        : pressure
-          ? "rgba(245,158,11,0.22)"
-          : mixed
-            ? "rgba(11,99,209,0.16)"
-            : "rgba(100,116,139,0.14)"
-    }`,
-    textAlign: "center",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  };
+  return evidenceMeterStyle(status);
 }
 
 function titleCaseWords(value: string): string {
@@ -3074,6 +3026,7 @@ export default function TrustScorePage() {
                 </span>
               </span>
               <span
+                onClick={stopInertMeterTap}
                 style={{
                   ...statusPillStyle(identityEvidence.label),
                   padding: isCompact ? "5px 8px" : "5px 10px",
@@ -3358,6 +3311,7 @@ export default function TrustScorePage() {
                     <div style={{ marginTop: 7 }}>
                       <span
                         title={passportVm.verdict.evidenceMeaning}
+                        onClick={stopInertMeterTap}
                         style={{
                           ...statusPillStyle(passportVm.verdict.evidenceStatus),
                           minHeight: 24,
@@ -3441,6 +3395,7 @@ export default function TrustScorePage() {
                     "inset 0 1px 0 rgba(255,255,255,0.95), 0 12px 24px rgba(6,24,39,0.06)",
                 }}
                 aria-label="Trust grade rail"
+                onClick={stopInertMeterTap}
               >
                 {gradeLegend.map(([grade, label]) => {
                   const isActive = activeBand === grade;
@@ -3527,7 +3482,7 @@ export default function TrustScorePage() {
                       />
                       {item.title}
                     </span>
-                    <span style={statusPillStyle(item.status)}>{item.status}</span>
+                    <EvidenceMeter status={item.status}>{item.status}</EvidenceMeter>
                   </div>
                 ))}
               </div>
@@ -3905,7 +3860,7 @@ export default function TrustScorePage() {
                         {trustIconBadge(icon, 28, status === "Ready" ? "green" : "red")}
                         {label}
                       </span>
-                      <span style={statusPillStyle(status)}>{status}</span>
+                      <EvidenceMeter status={status}>{status}</EvidenceMeter>
                     </div>
                     <div
                       style={{
@@ -3954,7 +3909,7 @@ export default function TrustScorePage() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <span style={statusPillStyle(item.value)}>{item.value}</span>
+                    <EvidenceMeter status={item.value}>{item.value}</EvidenceMeter>
                     <SecondaryButton
                       onClick={() => openTrustRoute(item.to)}
                       stableHeight={isCompact ? 52 : 40}
@@ -4146,13 +4101,13 @@ export default function TrustScorePage() {
                 </SubtleButton>
               </div>
               <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={statusPillStyle(trustSlipStatus)}>
+                <EvidenceMeter status={trustSlipStatus}>
                   TrustSlip: {trustSlipStatus || "Pending"}
-                </span>
-                <span style={statusPillStyle(trustSlipCode ? "Ready" : "Limited")}>
+                </EvidenceMeter>
+                <EvidenceMeter status={trustSlipCode ? "Ready" : "Limited"}>
                   Code: {trustSlipCode || "Not stated"}
-                </span>
-                <span style={statusPillStyle("Limited")}>Expires: {expiresText}</span>
+                </EvidenceMeter>
+                <EvidenceMeter status="Limited">Expires: {expiresText}</EvidenceMeter>
               </div>
               {trustPassportSnapshotReady ? (
                 <>

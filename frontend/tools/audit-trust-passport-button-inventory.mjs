@@ -236,8 +236,8 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?alignItems: isCompact \? "start" : "center"[\s\S]*?GsnLegacyIcon[\s\S]*?statusPillStyle\(item\.status\)/,
-  "Trust Passport question rows must stack status pills under long labels on phone."
+  /import EvidenceMeter[\s\S]*?from "\.\.\/components\/EvidenceMeter"[\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?alignItems: isCompact \? "start" : "center"[\s\S]*?GsnLegacyIcon[\s\S]*?<EvidenceMeter status=\{item\.status\}>/,
+  "Trust Passport question rows must stack raised inert evidence meters under long labels on phone."
 );
 
 assertContains(

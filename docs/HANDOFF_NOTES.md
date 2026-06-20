@@ -1,3 +1,56 @@
+## 2026-06-20 - Raised Evidence Meter Protocol
+
+- Trigger:
+  - owner liked the raised A/B/C/D/E Trust Passport rail and asked to apply
+    that institutional 3D/inset treatment to non-clickable meters such as
+    `Limited evidence`, `Strong`, `Evidence still building`, `Stable`, and
+    TrustSlip status labels.
+  - owner also reported that some non-button surfaces feel tappable and can
+    behave like hidden navigation surfaces.
+- Changed:
+  - `frontend/src/components/EvidenceMeter.tsx`
+    - added a shared raised/inset evidence meter primitive for display-only
+      trust states.
+    - maps positive, pressure, building, and neutral states into institutional
+      gradients, borders, and inset shadows.
+    - stops click bubbling so inert meters do not accidentally activate a
+      parent action.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - moved Trust Passport status pills onto the shared raised meter style.
+    - converted `What this reading says`, Community Confirmation readiness,
+      trust-surface value chips, and TrustSlip mini-status labels to
+      `EvidenceMeter`.
+    - made the A/B/C/D/E grade rail absorb clicks as a display rail.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - moved TrustSlip public status rows and trust-reading status labels to
+      `EvidenceMeter`.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - now guards that Trust Passport question rows use raised inert evidence
+      meters.
+  - `frontend/tools/audit-trust-passport-community-confirmation-lane.mjs`
+    - now guards that Community Confirmation readiness cards use raised inert
+      meters.
+- Verification:
+  - `npm exec -- eslint src/components/EvidenceMeter.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipPage.tsx tools/audit-trust-passport-button-inventory.mjs tools/audit-trust-passport-community-confirmation-lane.mjs`
+    passed from `frontend/`.
+  - `npm run audit:trust-passport-button-inventory` passed from `frontend/`.
+  - `npm run audit:trust-passport-community-confirmation-lane` passed from
+    `frontend/`.
+  - `npm run audit:trust-actions` passed from `frontend/`.
+  - `npm run audit:trust-passport-front-package` passed from `frontend/`.
+  - `npm run audit:trust-passport-lane-map` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this pass improves the shared meter protocol on Trust Passport and
+    TrustSlip surfaces. It is not yet a full app-wide replacement of every
+    possible hand-styled chip in the product.
+  - existing TrustSlip/Trust Passport/public verification watermark surfaces
+    were inspected and already use GSN-style `TrustPaperWatermark` in key
+    public/screenshot areas. A deeper brand-watermark rollout across every
+    public paper should be a separate, screenshot-verified pass.
+  - no real phone screenshot was captured during this pass.
+
 ## 2026-06-20 - Public Verification and Verdict Layout Cleanup
 
 - Trigger:
