@@ -161,18 +161,44 @@ the product owner explicitly says not to publish:
 3. Fast-forward `main` to the same verified commit.
 4. Confirm that GitHub Actions started `Trigger Render Deploy` for the `main`
    push.
-5. Confirm one of these deployment proofs:
+5. Confirm one of these deployment evidence points:
    - `Trigger frontend deploy hook` completed successfully;
    - `Trigger frontend deploy through Render API` completed successfully;
    - Render auto-deploy is confirmed in the Render dashboard;
    - an owner-provided Render deploy hook was triggered out of band and returned
      a deploy id.
-6. Report the branch, commit SHA, GitHub Actions run, and Render deploy proof.
+6. Report the branch, commit SHA, GitHub Actions run, and Render deploy evidence.
 
 Never commit Render deploy hook URLs, API keys, or other deployment credentials
 to this repository. If a deploy hook is shared in chat for immediate pilot
 recovery, use it only as a one-time secret trigger and record only the returned
 deploy id, not the hook URL.
+
+## 4.3 Render parity / drift check
+
+The pilot phone should normally test Render, not the developer laptop. A local
+phone URL such as `192.168.x.x:5173` can prove a UI repair works locally, but it
+does not prove the public pilot has received it.
+
+Before treating a production screenshot as a new bug, confirm whether it is one
+of these states:
+
+- **Local only**: corrected in the worktree but not committed or pushed.
+- **Pushed, not deployed**: committed to GitHub but no Render deploy evidence.
+- **Deploy requested**: workflow/manual deploy started, but live Render has not
+  been checked yet.
+- **Render confirmed**: live Render is serving the corrected build.
+
+For every publish report, include:
+
+- branch and commit SHA;
+- whether the relevant worktree was clean or which files remained local-only;
+- GitHub Actions run id or Render deploy id when available;
+- whether the owner's Render screenshot is expected to match local testing yet.
+
+If local testing shows the correction but Render does not, call it deployment
+drift until the corrected commit is proven live on Render. Do not keep redesigning
+or re-fixing the same screen until the deploy path is checked.
 
 ## 5. Promote the first real admin
 

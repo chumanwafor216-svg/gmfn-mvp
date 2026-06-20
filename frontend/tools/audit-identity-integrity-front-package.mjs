@@ -41,7 +41,7 @@ assertContains(
 );
 
 assertContains(
-  /Stable identity, current status, and the next clean proof step\.[\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?gridTemplateColumns: isCompact \? "76px minmax\(0, 1fr\)" : "104px minmax\(0, 1fr\)"/,
+  /Stable identity, current status, and the next clean evidence step\.[\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?gridTemplateColumns: isCompact \? "76px minmax\(0, 1fr\)" : "104px minmax\(0, 1fr\)"/,
   "Identity Integrity front package must keep a compact phone header with a small photo anchor and short page subtitle."
 );
 
@@ -91,8 +91,13 @@ assertContains(
 );
 
 assertContains(
-  /data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 52 : 16[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}/,
-  "Identity Integrity must keep the proof tasks as compact SVG-led selectors, not a long exposed explanation stack."
+  /data-identity-integrity-copy-actions="true"[\s\S]*?identityCopyActionStyle\(Boolean\(gmfnId && gmfnId !== "Pending"\), "primary"\)[\s\S]*?Copy GSN ID[\s\S]*?identityCopyActionStyle\(Boolean\(trustSlipCode\), "secondary"\)[\s\S]*?Copy TrustSlip[\s\S]*?identityCopyActionStyle\(true, "subtle"\)[\s\S]*?Copy snapshot/,
+  "Identity Integrity copy actions must be clear aligned action tiles, not washed-out loose controls."
+);
+
+assertContains(
+  /data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 14 : 16[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}/,
+  "Identity Integrity must keep the evidence tasks as compact SVG-led selectors, not a long exposed explanation stack."
 );
 
 assertContains(
@@ -106,13 +111,28 @@ assertContains(
 );
 
 assertContains(
+  /function identityRecoveryPanel\([\s\S]*?boxShadow:[\s\S]*?function identityRecoveryInput\([\s\S]*?outlineColor: "#0B63D1"[\s\S]*?function identityRecoveryActionStyle\([\s\S]*?linear-gradient\(180deg, #0B63D1 0%, #073E83 45%, #031E42 100%\)/,
+  "Identity Integrity private recovery must use raised institutional panels, strong inputs, and dark primary actions instead of faded whitewashed controls."
+);
+
+assertContains(
+  /data-identity-integrity-recovery-setup="true"[\s\S]*?onSubmit=\{handleRecoverySetup\}[\s\S]*?onClick=\{\(event\) => event\.stopPropagation\(\)\}[\s\S]*?debugId="identity-integrity\.recovery-save"[\s\S]*?identityRecoveryActionStyle\(\)[\s\S]*?Save private recovery/,
+  "Identity Integrity recovery setup must stay on-page with explicit non-navigation submit behavior and a strong save action."
+);
+
+assertContains(
+  /data-identity-integrity-recovery-verify="true"[\s\S]*?onSubmit=\{handleRecoveryVerify\}[\s\S]*?onClick=\{\(event\) => event\.stopPropagation\(\)\}[\s\S]*?debugId="identity-integrity\.recovery-verify"[\s\S]*?identityRecoveryActionStyle\(\)[\s\S]*?Verify private recovery/,
+  "Identity Integrity recovery verification must stay on-page with explicit non-navigation submit behavior and a strong verify action."
+);
+
+assertContains(
   /IDENTITY_TASK_KEYS[\s\S]*?requestedIdentityTask[\s\S]*?completionMode[\s\S]*?identityTaskTarget\(task: IdentityTaskKey\)[\s\S]*?mode=complete/,
-  "Identity Integrity pending proof tasks must support focused completion deep links instead of dead actions."
+  "Identity Integrity pending evidence tasks must support focused completion deep links instead of dead actions."
 );
 
 assertContains(
   /data-identity-integrity-completion-target="true"[\s\S]*?Completion path[\s\S]*?activeTask\.completionSteps/,
-  "Identity Integrity active task must show the compact completion path for the selected proof."
+  "Identity Integrity active task must show the compact completion path for the selected evidence item."
 );
 
 assertContains(
@@ -181,5 +201,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Identity Integrity front package audit passed: compact 3D icon-led identity package and active proof task are caged."
+  "Identity Integrity front package audit passed: compact 3D icon-led identity package and active evidence task are caged."
 );

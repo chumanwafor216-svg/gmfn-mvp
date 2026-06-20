@@ -1,3 +1,146 @@
+## 2026-06-20 - Identity Integrity Private Recovery Polish / On-Page Guard
+
+- Trigger:
+  - owner reported Private Recovery challenge setup looked unpolished,
+    whitewashed, and button presses appeared to jump back to Welcome / close the
+    app instead of behaving like a serious on-page form.
+- Changed:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - added raised institutional recovery panels, stronger recovery input fields,
+      and dark icon-led primary actions.
+    - added client-side validation before API calls so all three private prompts
+      and answers must be filled before saving, and all three answers must be
+      filled before verification.
+    - stopped recovery form click/submit propagation and kept recovery setup /
+      verification open on-page after validation or API response.
+    - made the recovery collapse button explicitly `type="button"`.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+    - protects raised recovery panels, strong inputs/actions, and explicit
+      on-page setup/verify form behavior.
+- Verification:
+  - `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs`
+    passed from `frontend/`.
+  - `npm run audit:identity-integrity-front-package` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this fix is verified locally only. It has not reached Render until the
+    relevant files are committed, pushed, and Render is confirmed serving that
+    commit.
+  - the reported Welcome jump may also happen if the live Render session has an
+    expired/invalid token or is serving older backend/frontend code. This repair
+    removes page-local hidden navigation behavior; it does not prove the live
+    Render session token is healthy.
+
+## 2026-06-20 - Render Parity / Deployment Drift Protocol Added
+
+- Trigger:
+  - owner compared two phone screenshots and showed the local laptop URL
+    (`192.168.1.13:5301/...`) was ahead of Render, while Render remained behind.
+  - owner correctly identified the pilot risk: testers use Render, so a local
+    correction that is not committed, pushed, deployed, and confirmed can cause
+    repeated rework and false bug reports.
+- Changed:
+  - `docs/PROJECT_PROTOCOL.md`
+    - added `Render parity / deployment drift checkpoint`.
+    - future work must label visible repairs as `Local only`, `Pushed, not
+      deployed`, `Deploy requested`, or `Render confirmed`.
+    - future agents must check handoff notes, dirty worktree, intended Render
+      branch, GitHub Actions/Render evidence, and the live Render screen before
+      re-correcting an issue.
+  - `docs/DEPLOYMENT_RENDER.md`
+    - added `Render parity / drift check`.
+    - publish reports must include branch/commit, local-only leftovers, workflow
+      or Render deploy evidence, and whether Render should already match local.
+- Confirmed:
+  - `gh run list --workflow "Trigger Render Deploy" --limit 5` showed latest
+    manual `Trigger Render Deploy` on `main` completed successfully:
+    run `27870137115`, workflow_dispatch, `2026-06-20T11:43:37Z`.
+- Unabated truth:
+  - that successful workflow proves a manual deploy workflow ran on `main`; it
+    does not include any corrections still sitting uncommitted in the local
+    worktree.
+  - the Identity Integrity copy-action repair and Trust Passport freshness
+    repair remain local-only until they are intentionally committed/pushed and
+    Render is confirmed serving them.
+
+## 2026-06-20 - Identity Integrity Copy Action Clarity
+
+- Trigger:
+  - owner reported the Identity Integrity `Copy GSN ID` / `Copy TrustSlip`
+    controls looked whitewashed, faded, misaligned, and unclear as buttons
+    versus display units.
+- Changed:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - replaced the loose copy action row with a dedicated
+      `data-identity-integrity-copy-actions` grid.
+    - gave `Copy GSN ID`, `Copy TrustSlip`, and `Copy snapshot` matching
+      icon-led action tiles with stronger borders, shadows, ready/pending state
+      labels, and fixed button height.
+    - reduced the phone-only gap before the identity task switcher from 52px to
+      14px so the copy controls do not leave a broken-looking empty band.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+    - protects the new copy-action structure and tighter task-switcher spacing.
+- Verification:
+  - `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs`
+    passed from `frontend/`.
+  - `npm run audit:identity-integrity-front-package` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is source/build/audit verified, not phone-screenshot verified in this
+    turn.
+  - it is not pushed yet because the same working tree contains many unrelated
+    dirty changes, and staging whole files would risk publishing unrelated work.
+
+## 2026-06-20 - Trust Passport Identity Evidence Freshness Repair
+
+- Trigger:
+  - owner reported that after adding phone, bank, and passport/official ID
+    details several times, `Identity Overview` / `Complete ID Check` still did
+    not reflect or retain the recorded state after leaving and returning.
+- Confirmed from code:
+  - signed-in phone start writes `User.phone_e164` and a
+    `identity.phone_registered` Trust Event.
+  - signed-in phone confirm writes `User.phone_verified_at` and a
+    `identity.phone_verified` Trust Event.
+  - payout details write `UserPayoutDestination` and a
+    `identity.bank_destination_recorded` Trust Event.
+  - signed-in official ID writes `IdentityVerificationCheck` and a
+    `identity.official_id_recorded` Trust Event.
+  - backend tests already assert `/trust-slips/me` exposes these in
+    `identity_context`.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - added a route-local cache-busted TrustSlip summary read for
+      `/trust-slips/me/summary` and `/trust-slips/me`.
+    - made Trust Passport use that fresh network read before the normal API
+      helper wrappers, so `Identity Overview` is not fed by an old cached
+      summary after identity evidence changes.
+    - added focus, `pageshow`, and visibility-change refresh so returning from
+      Identity Integrity or Payout Details asks the backend for a fresh identity
+      summary.
+    - changed completion-row action labels so recorded-but-not-provider-verified
+      phone, bank/wallet, and official ID evidence is acknowledged as
+      `Confirm` / `Review` instead of continuing to read like the user has not
+      added anything.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx` passed from `frontend/`.
+  - `npm run audit:trust-passport-front-package` passed from `frontend/`.
+  - `npm run audit:trust-passport-button-inventory` passed from `frontend/`.
+  - `npm run audit:trust-actions` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+  - `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py -q`
+    passed: 16 tests.
+- Unabated truth:
+  - this repair fixes the stale Trust Passport read path. It does not prove the
+    owner’s live phone/browser session has the expected backend rows yet; if the
+    live user record still does not show recorded states after this build, the
+    next check should inspect the actual `/trust-slips/me` JSON for that account
+    and confirm whether the save requests are returning success or errors.
+  - no new backend schema or auth behavior was changed.
+
 ## 2026-06-20 - Raised Evidence Meter Protocol
 
 - Trigger:

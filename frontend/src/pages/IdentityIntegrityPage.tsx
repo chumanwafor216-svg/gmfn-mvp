@@ -406,6 +406,100 @@ function compactFactCard(): React.CSSProperties {
   };
 }
 
+function identityCopyActionStyle(
+  ready: boolean,
+  tone: "primary" | "secondary" | "subtle"
+): React.CSSProperties {
+  const primary = tone === "primary";
+  const subtle = tone === "subtle";
+  return {
+    justifyContent: "flex-start",
+    gap: 10,
+    borderRadius: 16,
+    paddingInline: 10,
+    border: ready
+      ? primary
+        ? "1px solid rgba(11,99,209,0.34)"
+        : "1px solid rgba(37,78,119,0.16)"
+      : "1px solid rgba(148,163,184,0.28)",
+    background: ready
+      ? primary
+        ? "linear-gradient(180deg, #0B63D1 0%, #073E83 100%)"
+        : "linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)"
+      : "linear-gradient(180deg, #F8FAFC 0%, #EEF2F7 100%)",
+    color: ready ? (primary ? "#FFFFFF" : "#07172C") : "#475569",
+    boxShadow: ready
+      ? primary
+        ? "0 14px 26px rgba(11,99,209,0.18), inset 0 1px 0 rgba(255,255,255,0.18)"
+        : "0 10px 22px rgba(7,23,44,0.08), inset 0 1px 0 rgba(255,255,255,0.84)"
+      : "inset 0 1px 0 rgba(255,255,255,0.72)",
+    opacity: 1,
+    cursor: ready || subtle ? "pointer" : "not-allowed",
+  };
+}
+
+function identityCopyIconBox(ready: boolean, active: boolean): React.CSSProperties {
+  return {
+    width: 36,
+    height: 36,
+    borderRadius: 13,
+    display: "grid",
+    placeItems: "center",
+    flex: "0 0 auto",
+    color: active ? "#FFFFFF" : ready ? "#0B63D1" : "#64748B",
+    background: active
+      ? "rgba(255,255,255,0.16)"
+      : ready
+        ? "linear-gradient(180deg, #EEF6FF 0%, #FFFFFF 100%)"
+        : "linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 100%)",
+    border: active ? "1px solid rgba(255,255,255,0.22)" : "1px solid rgba(123,161,204,0.22)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
+  };
+}
+
+function identityRecoveryPanel(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(37,78,119,0.14)",
+    background: bg,
+    padding: 14,
+    boxShadow:
+      "0 12px 24px rgba(7,23,44,0.055), inset 0 1px 0 rgba(255,255,255,0.82)",
+    overflow: "hidden",
+  };
+}
+
+function identityRecoveryInput(): React.CSSProperties {
+  return {
+    width: "100%",
+    marginTop: 10,
+    padding: "13px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(37,78,119,0.18)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+    color: "#07172C",
+    fontWeight: 800,
+    fontSize: 14,
+    boxSizing: "border-box",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+    outlineColor: "#0B63D1",
+  };
+}
+
+function identityRecoveryActionStyle(): React.CSSProperties {
+  return {
+    justifyContent: "center",
+    gap: 10,
+    borderRadius: 16,
+    border: "1px solid rgba(3,30,66,0.24)",
+    background: "linear-gradient(180deg, #0B63D1 0%, #073E83 45%, #031E42 100%)",
+    color: "#FFFFFF",
+    boxShadow:
+      "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.20)",
+    opacity: 1,
+  };
+}
+
 function sectionIconHeader(
   icon: GsnIconName,
   title: string,
@@ -1496,13 +1590,13 @@ export default function IdentityIntegrityPage() {
           ? "watch"
           : "pending",
       detail: identitySignals.phoneVerified
-        ? "Phone proof is already verified and visible to the identity layer."
+        ? "Phone evidence is already verified and visible to the identity layer."
         : identitySignals.phoneRecorded
-          ? "Phone number is recorded. Confirm the code to turn it into verified phone proof."
-          : "Enter your phone and confirm the signed-in code so this identity can carry phone proof.",
+          ? "Phone number is recorded. Confirm the code to turn it into verified phone evidence."
+          : "Enter your phone and confirm the signed-in code so this identity can carry phone evidence.",
       actionLabel: identitySignals.phoneVerified ? "Open TrustSlip" : "Use phone form",
       completionSteps: identitySignals.phoneVerified
-        ? ["Phone is already verified.", "Use TrustSlip when someone needs portable proof."]
+        ? ["Phone is already verified.", "Use TrustSlip when someone needs a portable record."]
         : [
             "Enter phone number.",
             "GSN records the number on this identity.",
@@ -1523,7 +1617,7 @@ export default function IdentityIntegrityPage() {
       completionSteps: [
         "Open the confirmation inbox.",
         "Review or request community confirmation.",
-        "Return here after the community proof updates.",
+        "Return here after the community record updates.",
       ],
       to: routes.communityConfirmations,
     },
@@ -1559,7 +1653,7 @@ export default function IdentityIntegrityPage() {
         ? "Open TrustSlip"
         : "Use ID form",
       completionSteps: identitySignals.officialIdReady
-        ? ["Official ID evidence is already recorded.", "Use TrustSlip when someone needs portable proof."]
+        ? ["Official ID evidence is already recorded.", "Use TrustSlip when someone needs a portable record."]
         : [
             "Choose passport, national ID, licence, or local official ID.",
             "Record reference, selfie, or ID photo evidence for review.",
@@ -1591,7 +1685,21 @@ export default function IdentityIntegrityPage() {
 
   async function handleRecoverySetup(e: React.FormEvent) {
     e.preventDefault();
+    e.stopPropagation();
     if (recoveryBusy) return;
+
+    const nextPrompts = recoveryPrompts.map((item) => ({
+      prompt: safeStr(item.prompt),
+      answer: safeStr(item.answer),
+    }));
+
+    if (nextPrompts.some((item) => !item.prompt || !item.answer)) {
+      setRecoveryError("Fill all three private prompts and answers before saving.");
+      setRecoverySuccess("");
+      setActiveIdentityTask("recovery");
+      setCollapsed((prev) => ({ ...prev, recovery: false }));
+      return;
+    }
 
     setRecoveryBusy(true);
     setRecoveryError("");
@@ -1599,14 +1707,13 @@ export default function IdentityIntegrityPage() {
 
     try {
       const payload = {
-        questions: recoveryPrompts.map((item) => ({
-          prompt: safeStr(item.prompt),
-          answer: safeStr(item.answer),
-        })),
+        questions: nextPrompts,
       };
 
       const out = await setupIdentityRecovery(payload);
       setIdentityRecovery(out || null);
+      setActiveIdentityTask("recovery");
+      setCollapsed((prev) => ({ ...prev, recovery: false }));
       setRecoveryPrompts([
         { prompt: "", answer: "" },
         { prompt: "", answer: "" },
@@ -1624,7 +1731,18 @@ export default function IdentityIntegrityPage() {
 
   async function handleRecoveryVerify(e: React.FormEvent) {
     e.preventDefault();
+    e.stopPropagation();
     if (recoveryBusy) return;
+
+    const answers = recoveryAnswers.map((item) => safeStr(item));
+
+    if (answers.some((item) => !item)) {
+      setRecoveryError("Answer all three private recovery prompts before checking.");
+      setRecoverySuccess("");
+      setActiveIdentityTask("recovery");
+      setCollapsed((prev) => ({ ...prev, recovery: false }));
+      return;
+    }
 
     setRecoveryBusy(true);
     setRecoveryError("");
@@ -1632,10 +1750,12 @@ export default function IdentityIntegrityPage() {
 
     try {
       const out = await verifyIdentityRecovery({
-        answers: recoveryAnswers.map((item) => safeStr(item)),
+        answers,
       });
       setIdentityRisk(out?.summary || null);
       setIdentityRecovery(out?.recovery || null);
+      setActiveIdentityTask("recovery");
+      setCollapsed((prev) => ({ ...prev, recovery: false }));
       if (out?.verified) {
         setRecoveryAnswers(["", "", ""]);
         setRecoverySuccess(
@@ -1900,8 +2020,8 @@ export default function IdentityIntegrityPage() {
       setPhoneVerificationId(null);
       setPhoneCode("");
       setPhoneOtpPreview("");
-      setPhoneTaskMessage(out?.message || "Phone proof is now verified and connected.");
-      showNotice("success", out?.message || "Phone proof is now connected.");
+      setPhoneTaskMessage(out?.message || "Phone evidence is now verified and connected.");
+      showNotice("success", out?.message || "Phone evidence is now connected.");
     } catch (err: any) {
       setPhoneTaskMessage(err?.message || "Phone code could not be confirmed.");
       showNotice("error", err?.message || "Phone code could not be confirmed.");
@@ -2065,7 +2185,7 @@ export default function IdentityIntegrityPage() {
       <PageTopNav
         sectionLabel="Identity & Integrity"
         title="Identity & Integrity"
-        subtitle="Stable identity, current status, and the next clean proof step."
+        subtitle="Stable identity, current status, and the next clean evidence step."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -2155,7 +2275,7 @@ export default function IdentityIntegrityPage() {
               {displayName}
             </div>
             <div style={{ marginTop: 6, ...compactHelperText() }}>
-              One stable person record. Finish the missing proofs one at a time.
+              One stable person record. Finish the missing evidence steps one at a time.
             </div>
           </div>
         </div>
@@ -2231,41 +2351,79 @@ export default function IdentityIntegrityPage() {
           ))}
         </div>
 
-        <CardActionRow minHeight={52} style={{ marginTop: isCompact ? 4 : 12 }}>
+        <div
+          data-identity-integrity-copy-actions="true"
+          style={{
+            marginTop: isCompact ? 12 : 14,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "repeat(3, minmax(0, 1fr))",
+            gap: isCompact ? 8 : 10,
+            alignItems: "stretch",
+          }}
+        >
           <PrimaryButton
             onClick={copyGmfnId}
             disabled={!gmfnId || gmfnId === "Pending"}
             stableHeight={isCompact ? 52 : 52}
-            minWidth={isCompact ? undefined : 132}
+            fullWidth
             debugId="identity-integrity.copy-gmfn-id"
+            style={identityCopyActionStyle(Boolean(gmfnId && gmfnId !== "Pending"), "primary")}
           >
-            Copy GSN ID
+            <span style={identityCopyIconBox(Boolean(gmfnId && gmfnId !== "Pending"), true)}>
+              <GsnLegacyIcon name="id" size={24} />
+            </span>
+            <span style={{ minWidth: 0, display: "grid", gap: 2, textAlign: "left" }}>
+              <span style={{ fontWeight: 1000, lineHeight: 1.05 }}>Copy GSN ID</span>
+              <span style={{ fontSize: 10.5, fontWeight: 900, opacity: 0.82 }}>
+                {gmfnId && gmfnId !== "Pending" ? "Ready" : "Pending issue"}
+              </span>
+            </span>
           </PrimaryButton>
 
           <SecondaryButton
             onClick={copyTrustSlipCode}
             disabled={!trustSlipCode}
             stableHeight={isCompact ? 52 : 52}
-            minWidth={isCompact ? undefined : 146}
+            fullWidth
             debugId="identity-integrity.copy-trust-slip-code"
+            style={identityCopyActionStyle(Boolean(trustSlipCode), "secondary")}
           >
-            Copy TrustSlip
+            <span style={identityCopyIconBox(Boolean(trustSlipCode), false)}>
+              <GsnLegacyIcon name="document" size={24} />
+            </span>
+            <span style={{ minWidth: 0, display: "grid", gap: 2, textAlign: "left" }}>
+              <span style={{ fontWeight: 1000, lineHeight: 1.05 }}>Copy TrustSlip</span>
+              <span style={{ fontSize: 10.5, fontWeight: 900, color: trustSlipCode ? "#617085" : "#64748B" }}>
+                {trustSlipCode ? "Ready" : "Not issued yet"}
+              </span>
+            </span>
           </SecondaryButton>
 
           <SubtleButton
             onClick={copyIdentitySnapshot}
             stableHeight={isCompact ? 52 : 52}
-            minWidth={isCompact ? undefined : 140}
+            fullWidth
             debugId="identity-integrity.copy-snapshot"
+            style={identityCopyActionStyle(true, "subtle")}
           >
-            Copy snapshot
+            <span style={identityCopyIconBox(true, false)}>
+              <GsnLegacyIcon name="copy" size={24} />
+            </span>
+            <span style={{ minWidth: 0, display: "grid", gap: 2, textAlign: "left" }}>
+              <span style={{ fontWeight: 1000, lineHeight: 1.05 }}>Copy snapshot</span>
+              <span style={{ fontSize: 10.5, fontWeight: 900, color: "#617085" }}>
+                Always available
+              </span>
+            </span>
           </SubtleButton>
-        </CardActionRow>
+        </div>
 
         <div
           data-identity-integrity-task-switcher="true"
           style={{
-            marginTop: isCompact ? 52 : 16,
+            marginTop: isCompact ? 14 : 16,
             display: "grid",
             gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
             gap: 8,
@@ -3051,6 +3209,7 @@ export default function IdentityIntegrityPage() {
               {recovery.configured ? "Configured" : "Not configured"}
             </span>
             <SubtleButton
+              type="button"
               onClick={() => toggleSection("recovery")}
               stableHeight={52}
               style={collapseToggle()}
@@ -3080,32 +3239,85 @@ export default function IdentityIntegrityPage() {
               gap: 12,
             }}
           >
-            <div style={innerCard("#F8FBFF")}>
-              <div style={sectionLabel()}>Recovery state</div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                {recovery.configured
-                  ? "Private recovery prompts are ready for serious continuity shifts."
-                  : "Set three private prompts so GSN can protect the owner during serious continuity changes."}
+            <div style={identityRecoveryPanel("#F8FBFF")}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "42px minmax(0, 1fr)",
+                  gap: 10,
+                  alignItems: "start",
+                }}
+              >
+                <span style={iconTile("#FFFFFF", recovery.configured ? identityIconTone("ready").bg : identityIconTone("watch").bg)}>
+                  <GsnLegacyIcon name="lock" size={34} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>Recovery state</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    {recovery.configured
+                      ? "Private recovery prompts are ready for serious continuity shifts."
+                      : "Set three private prompts so GSN can protect the owner during serious continuity changes."}
+                  </div>
+                </span>
               </div>
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div style={helperText()}>
-                  Failed attempts: <b>{recovery.failedAttempts}</b>
-                </div>
-                <div style={helperText()}>
-                  Last verified:{" "}
-                  <b>{recovery.lastVerifiedAt ? safeDateTime(recovery.lastVerifiedAt) : "Not yet"}</b>
-                </div>
-                <div style={helperText()}>
-                  Locked until:{" "}
-                  <b>{recovery.lockedUntil ? safeDateTime(recovery.lockedUntil) : "Not locked"}</b>
-                </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {[
+                  ["Failed attempts", String(recovery.failedAttempts)],
+                  ["Last verified", recovery.lastVerifiedAt ? safeDateTime(recovery.lastVerifiedAt) : "Not yet"],
+                  ["Locked until", recovery.lockedUntil ? safeDateTime(recovery.lockedUntil) : "Not locked"],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      borderRadius: 14,
+                      border: "1px solid rgba(37,78,119,0.10)",
+                      background: "#FFFFFF",
+                      padding: "10px 12px",
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ ...sectionLabel(), fontSize: 10 }}>{label}</div>
+                    <div
+                      style={{
+                        marginTop: 5,
+                        color: "#07172C",
+                        fontWeight: 950,
+                        fontSize: 13,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {value}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>When used</div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Use it only when device or owner-continuity signals need a stronger check.
+            <div style={identityRecoveryPanel("#FCFEFF")}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "42px minmax(0, 1fr)",
+                  gap: 10,
+                  alignItems: "start",
+                }}
+              >
+                <span style={iconTile("#FFFFFF", identityIconTone("neutral").bg)}>
+                  <GsnLegacyIcon name="document" size={34} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>When used</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Use it only when device or owner-continuity signals need a stronger check.
+                  </div>
+                </span>
               </div>
             </div>
           </div>
@@ -3113,10 +3325,20 @@ export default function IdentityIntegrityPage() {
 
         {!recovery.configured &&
         (!collapsed.recovery || activeIdentityTask === "recovery" || recovery.shouldVerify) ? (
-          <form onSubmit={handleRecoverySetup} style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          <form
+            data-identity-integrity-recovery-setup="true"
+            onSubmit={handleRecoverySetup}
+            onClick={(event) => event.stopPropagation()}
+            style={{ marginTop: 14, display: "grid", gap: 12 }}
+          >
             {recoveryPrompts.map((item, index) => (
-              <div key={`recovery-setup-${index}`} style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Prompt {index + 1}</div>
+              <div key={`recovery-setup-${index}`} style={identityRecoveryPanel("#FFFFFF")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={taskIconBadge(true, index === 0 ? "ready" : index === 1 ? "watch" : "neutral")}>
+                    <GsnLegacyIcon name="lock" size={28} />
+                  </span>
+                  <div style={sectionLabel()}>Private prompt {index + 1}</div>
+                </div>
                 <input
                   value={item.prompt}
                   onChange={(e) =>
@@ -3127,14 +3349,7 @@ export default function IdentityIntegrityPage() {
                     )
                   }
                   placeholder="Write a private prompt only you can answer"
-                  style={{
-                    width: "100%",
-                    marginTop: 10,
-                    padding: "12px 14px",
-                    borderRadius: 14,
-                    border: "1px solid rgba(11,31,51,0.12)",
-                    boxSizing: "border-box",
-                  }}
+                  style={identityRecoveryInput()}
                 />
                 <input
                   value={item.answer}
@@ -3146,14 +3361,7 @@ export default function IdentityIntegrityPage() {
                     )
                   }
                   placeholder="Write the answer exactly the way you want to remember it"
-                  style={{
-                    width: "100%",
-                    marginTop: 10,
-                    padding: "12px 14px",
-                    borderRadius: 14,
-                    border: "1px solid rgba(11,31,51,0.12)",
-                    boxSizing: "border-box",
-                  }}
+                  style={identityRecoveryInput()}
                 />
               </div>
             ))}
@@ -3163,12 +3371,14 @@ export default function IdentityIntegrityPage() {
                 type="submit"
                 busy={recoveryBusy}
                 busyLabel="Saving..."
-                stableHeight={isCompact ? 52 : 48}
+                stableHeight={isCompact ? 58 : 54}
                 fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 260}
                 debugId="identity-integrity.recovery-save"
+                style={identityRecoveryActionStyle()}
               >
-                Save private recovery challenge
+                <GsnLegacyIcon name="lock" size={32} />
+                Save private recovery
               </PrimaryButton>
             </div>
           </form>
@@ -3176,18 +3386,42 @@ export default function IdentityIntegrityPage() {
 
         {recovery.shouldVerify &&
         (!collapsed.recovery || activeIdentityTask === "recovery" || recovery.shouldVerify) ? (
-          <form onSubmit={handleRecoveryVerify} style={{ marginTop: 14, display: "grid", gap: 12 }}>
-            <div style={softCard("#FFF7ED")}>
-              <div style={sectionLabel()}>Recovery check needed now</div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Identity continuity is currently asking for a stronger owner check. Answer the
-                private prompts exactly as you configured them.
+          <form
+            data-identity-integrity-recovery-verify="true"
+            onSubmit={handleRecoveryVerify}
+            onClick={(event) => event.stopPropagation()}
+            style={{ marginTop: 14, display: "grid", gap: 12 }}
+          >
+            <div style={identityRecoveryPanel("#FFF7ED")}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "42px minmax(0, 1fr)",
+                  gap: 10,
+                  alignItems: "start",
+                }}
+              >
+                <span style={iconTile("#3B2504", identityIconTone("pending").bg)}>
+                  <GsnLegacyIcon name="shield" size={34} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>Recovery check needed now</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Identity continuity is currently asking for a stronger owner check. Answer the
+                    private prompts exactly as you configured them.
+                  </div>
+                </span>
               </div>
             </div>
 
             {recovery.prompts.map((prompt, index) => (
-              <div key={`recovery-verify-${index}`} style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>{prompt}</div>
+              <div key={`recovery-verify-${index}`} style={identityRecoveryPanel("#FFFFFF")}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={taskIconBadge(true, "watch")}>
+                    <GsnLegacyIcon name="lock" size={28} />
+                  </span>
+                  <div style={sectionLabel()}>{prompt}</div>
+                </div>
                 <input
                   value={recoveryAnswers[index] || ""}
                   onChange={(e) =>
@@ -3198,14 +3432,7 @@ export default function IdentityIntegrityPage() {
                     )
                   }
                   placeholder="Enter your private answer"
-                  style={{
-                    width: "100%",
-                    marginTop: 10,
-                    padding: "12px 14px",
-                    borderRadius: 14,
-                    border: "1px solid rgba(11,31,51,0.12)",
-                    boxSizing: "border-box",
-                  }}
+                  style={identityRecoveryInput()}
                 />
               </div>
             ))}
@@ -3216,12 +3443,14 @@ export default function IdentityIntegrityPage() {
                 busy={recoveryBusy}
                 busyLabel="Checking..."
                 disabled={recovery.locked}
-                stableHeight={isCompact ? 52 : 48}
+                stableHeight={isCompact ? 58 : 54}
                 fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 280}
                 debugId="identity-integrity.recovery-verify"
+                style={identityRecoveryActionStyle()}
               >
-                Verify private recovery challenge
+                <GsnLegacyIcon name="shield" size={32} />
+                Verify private recovery
               </PrimaryButton>
             </div>
           </form>
@@ -3525,7 +3754,7 @@ export default function IdentityIntegrityPage() {
         storageKey="gmfn.identityIntegrity.nextActionGuide.v1"
         compact={isCompact}
         items={guideItems}
-        intro="Say what you need next in plain words like open Trust Passport, check consistency, or open the portable proof. GSN will carry you into the closest trust document surface."
+        intro="Say what you need next in plain words like open Trust Passport, check consistency, or open the portable record. GSN will carry you into the closest trust document surface."
         onSelect={handleGuideSelect}
       />
 
@@ -3535,7 +3764,7 @@ export default function IdentityIntegrityPage() {
         compact={isCompact}
         items={trustDocumentFamilyItems}
         title="How Identity & Integrity fits into the wider trust-document family"
-        intro="Identity & Integrity is the steady anchor under the trust family. Use this map when you need to separate stable identity and continuity from the fuller Trust Passport story, portable TrustSlip proof, and public validity checks."
+        intro="Identity & Integrity is the steady anchor under the trust family. Use this map when you need to separate stable identity and continuity from the fuller Trust Passport story, portable TrustSlip evidence, and public validity checks."
       />
 
       <TrustDocumentUseCases

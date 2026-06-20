@@ -56,7 +56,7 @@ hide long explanation and raw data by default, and use compact chips or
 two-column facts for short information.
 
 The GSN Production Polish Standard is the current authoritative quality gate for
-phone-ready route polish, 3D icon meaning, button stability, institutional proof
+phone-ready route polish, 3D icon meaning, button stability, institutional evidence
 surfaces, user-facing language, and the conditions that must pass before a
 screen or protocol-status item can be called complete.
 
@@ -139,7 +139,7 @@ The current pipeline-saving posture is now **batch-first / push-last**:
 - `.github/workflows/tests.yml` must keep backend tests path-filtered to
   backend-relevant files and manual dispatch. Frontend/docs-only polish should
   not automatically burn backend CI minutes.
-- Local laptop/phone testing is the default proof path for UI/button work:
+- Local laptop/phone testing is the default validation path for UI/button work:
   run the backend locally on `0.0.0.0:8012`, run Vite locally on
   `0.0.0.0:5173`, and test from the phone on the same Wi-Fi before spending
   Render pipeline minutes.
@@ -156,6 +156,40 @@ The current pipeline-saving posture is now **batch-first / push-last**:
 Unabated truth: this saves pipeline minutes but removes automatic deployment as
 a safety net. A pushed commit is not necessarily live until a manual Render
 deploy is triggered or Render deployment is otherwise confirmed.
+
+### 4.0.1 Render parity / deployment drift checkpoint
+
+During pilot testing, the live Render site is the product owner's public truth.
+Local laptop/phone testing proves a correction can work, but it does not prove
+the pilot has received it.
+
+Every substantial repair must record one of these states before it is treated as
+pilot-visible:
+
+- **Local only**: code is corrected locally and verified, but not committed or
+  pushed. Render cannot show this work.
+- **Pushed, not deployed**: the correction is in GitHub, but no Render deploy
+  evidence has been confirmed.
+- **Deploy requested**: a manual Render deploy/GitHub workflow was triggered,
+  but the live service has not yet been checked.
+- **Render confirmed**: the live Render URL shows the corrected behavior, or a
+  workflow/Render API response proves the exact committed build was accepted and
+  the owner has no contradictory live screenshot.
+
+Before correcting the same visible issue again, compare the current complaint
+against:
+
+1. `docs/HANDOFF_NOTES.md` for local corrections already made.
+2. `git status --short` for uncommitted local repairs.
+3. the latest relevant commit on the branch intended for Render.
+4. the latest `Trigger Render Deploy` GitHub Actions run or Render dashboard
+   deploy evidence.
+5. the actual live Render screen when the owner is testing production.
+
+If local and Render differ, do not assume the code fix failed. First identify
+whether the corrected code was actually committed, pushed, deployed, and served
+by Render. Report the drift plainly as deployment drift, not a product bug, until
+live Render proves the corrected commit is present and still wrong.
 
 ### 4.1 Phone behavior is the functional reference
 The original phone implementation is the benchmark for expected user flow and business intent.

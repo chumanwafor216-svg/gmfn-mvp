@@ -26,6 +26,7 @@ import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
 } from "../lib/guidance";
+import { APP_ROUTES } from "../lib/appRoutes";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -34,6 +35,7 @@ import {
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { resolveSharedProfileImage } from "../lib/profileImage";
+import { publicCommunityMemberCredentialPath } from "../lib/publicLinks";
 import { buildTrustPassportSnapshot } from "../lib/trustDocumentSnapshots";
 import { TRUST_BAND_SHORT_LABELS } from "../lib/trustBandLanguage";
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
@@ -133,6 +135,14 @@ type MerchantSummary = {
   community_identity_label?: string | null;
   identity_evidence_summary?: Record<string, any> | null;
   community_role_counts?: Record<string, number> | null;
+  community_activity_count?: string | number | null;
+  community_activity_latest_at?: string | null;
+  community_activity_categories?: string[] | null;
+  community_activity_label?: string | null;
+  membership_currentness_label?: string | null;
+  membership_currentness_scope?: string | null;
+  next_witness_renewal_at?: string | null;
+  next_witness_renewal_status_label?: string | null;
 };
 
 type CapacityContext = {
@@ -180,6 +190,14 @@ type TrustSlipSummary = {
   community_member_count?: string | number | null;
   active_member_count?: string | number | null;
   total_member_count?: string | number | null;
+  community_activity_count?: string | number | null;
+  community_activity_latest_at?: string | null;
+  community_activity_categories?: string[] | null;
+  community_activity_label?: string | null;
+  membership_currentness_label?: string | null;
+  membership_currentness_scope?: string | null;
+  next_witness_renewal_at?: string | null;
+  next_witness_renewal_status_label?: string | null;
   level?: string | null;
   band?: string | null;
   level_label?: string | null;
@@ -250,6 +268,15 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function firstStringList(...values: any[]): string[] {
+  for (const value of values) {
+    if (!Array.isArray(value)) continue;
+    const items = value.map((item) => safeStr(item)).filter(Boolean);
+    if (items.length) return items;
+  }
+  return [];
 }
 
 function positiveNumber(value: any): number {
@@ -354,6 +381,11 @@ function joinUrl(root: string, path: string): string {
   }
 
   return `${cleanRoot}${cleanPath}`;
+}
+
+function cacheBust(path: string): string {
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}_ts=${Date.now()}`;
 }
 
 async function fetchFirstJson(
@@ -552,6 +584,46 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     community_member_count: src?.community_member_count ?? null,
     active_member_count: src?.active_member_count ?? null,
     total_member_count: src?.total_member_count ?? null,
+    community_activity_count:
+      src?.community_activity_count ??
+      src?.merchant_summary?.community_activity_count ??
+      src?.community_context?.community_activity_count ??
+      null,
+    community_activity_latest_at: firstTruthy(
+      src?.community_activity_latest_at,
+      src?.merchant_summary?.community_activity_latest_at,
+      src?.community_context?.community_activity_latest_at
+    ),
+    community_activity_categories: firstStringList(
+      src?.community_activity_categories,
+      src?.merchant_summary?.community_activity_categories,
+      src?.community_context?.community_activity_categories
+    ),
+    community_activity_label: firstTruthy(
+      src?.community_activity_label,
+      src?.merchant_summary?.community_activity_label,
+      src?.community_context?.community_activity_label
+    ),
+    membership_currentness_label: firstTruthy(
+      src?.membership_currentness_label,
+      src?.merchant_summary?.membership_currentness_label,
+      src?.community_context?.membership_currentness_label
+    ),
+    membership_currentness_scope: firstTruthy(
+      src?.membership_currentness_scope,
+      src?.merchant_summary?.membership_currentness_scope,
+      src?.community_context?.membership_currentness_scope
+    ),
+    next_witness_renewal_at: firstTruthy(
+      src?.next_witness_renewal_at,
+      src?.merchant_summary?.next_witness_renewal_at,
+      src?.community_context?.next_witness_renewal_at
+    ),
+    next_witness_renewal_status_label: firstTruthy(
+      src?.next_witness_renewal_status_label,
+      src?.merchant_summary?.next_witness_renewal_status_label,
+      src?.community_context?.next_witness_renewal_status_label
+    ),
     level: firstTruthy(src?.level),
     band: firstTruthy(src?.band),
     level_label: firstTruthy(src?.level_label),
@@ -1330,6 +1402,18 @@ export default function TrustScorePage() {
       clanHeaders["X-Clan-Id"] = String(selectedClanId);
     }
 
+    const fetchTrustSlipSummaryNetworkFirst = () =>
+      fetchFirstJson(
+        [
+          cacheBust("/trust-slips/me/summary"),
+          cacheBust("/trust-slips/me"),
+          cacheBust("/trust-slips/me-summary"),
+          cacheBust("/trust-slips/summary/me"),
+        ],
+        ["GET"],
+        clanHeaders
+      );
+
     const [meRes, clanRes, clansRes, guidanceRes] = await Promise.all([
       typeof (api as any).getMe === "function"
         ? (api as any).getMe().catch(() => null)
@@ -1400,6 +1484,9 @@ export default function TrustScorePage() {
         );
       })(),
       (async () => {
+        const direct = await fetchTrustSlipSummaryNetworkFirst();
+        if (direct) return direct;
+
         const viaFn = await callFirstAvailable(
           [
             "getMyTrustSlipSummary",
@@ -1412,15 +1499,7 @@ export default function TrustScorePage() {
 
         if (viaFn) return viaFn;
 
-        return fetchFirstJson(
-          [
-            "/trust-slips/me/summary",
-            "/trust-slips/me-summary",
-            "/trust-slips/summary/me",
-          ],
-          ["GET"],
-          clanHeaders
-        );
+        return fetchTrustSlipSummaryNetworkFirst();
       })(),
     ]);
 
@@ -1448,6 +1527,30 @@ export default function TrustScorePage() {
 
     return () => {
       alive = false;
+    };
+  }, [loadAll]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    let refreshTimer: number | null = null;
+    const scheduleFreshIdentityRead = () => {
+      if (document.visibilityState === "hidden") return;
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => {
+        void loadAll();
+      }, 80);
+    };
+
+    window.addEventListener("pageshow", scheduleFreshIdentityRead);
+    window.addEventListener("focus", scheduleFreshIdentityRead);
+    document.addEventListener("visibilitychange", scheduleFreshIdentityRead);
+
+    return () => {
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      window.removeEventListener("pageshow", scheduleFreshIdentityRead);
+      window.removeEventListener("focus", scheduleFreshIdentityRead);
+      document.removeEventListener("visibilitychange", scheduleFreshIdentityRead);
     };
   }, [loadAll]);
 
@@ -1551,6 +1654,19 @@ export default function TrustScorePage() {
   const communityVerifyPath = communityVerifyKey
     ? `/verify/community/${encodeURIComponent(communityVerifyKey)}`
     : "";
+  const memberCredentialPath = publicCommunityMemberCredentialPath({
+    communityKey: communityVerifyKey,
+    memberKey: gmfnId,
+  });
+  const memberCredentialUrl = useMemo(
+    () => frontendAbsoluteUrl(memberCredentialPath),
+    [memberCredentialPath]
+  );
+  const memberWitnessPolicyPath = selectedClanId
+    ? `${APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY}?community_id=${encodeURIComponent(
+        String(selectedClanId)
+      )}#member-witness`
+    : "";
   const communityFootprint = useMemo(() => {
     const byKey = new Map<string, {
       id: string;
@@ -1640,6 +1756,66 @@ export default function TrustScorePage() {
     trustSlipSummary?.community_role_counts,
     trustSlipSummary?.merchant_summary?.community_role_counts,
   ]);
+  const communityActivityCount = firstTruthy(
+    trustSlipSummary?.community_activity_count,
+    trustSlipSummary?.merchant_summary?.community_activity_count,
+    communityContext?.community_activity_count,
+    "0"
+  );
+  const communityActivityLatestAt = firstTruthy(
+    trustSlipSummary?.community_activity_latest_at,
+    trustSlipSummary?.merchant_summary?.community_activity_latest_at,
+    communityContext?.community_activity_latest_at
+  );
+  const communityActivityCategories = firstStringList(
+    trustSlipSummary?.community_activity_categories,
+    trustSlipSummary?.merchant_summary?.community_activity_categories,
+    communityContext?.community_activity_categories
+  );
+  const communityActivityLabel = firstTruthy(
+    trustSlipSummary?.community_activity_label,
+    trustSlipSummary?.merchant_summary?.community_activity_label,
+    communityContext?.community_activity_label,
+    Number(communityActivityCount || 0) > 0
+      ? "Community activity recorded"
+      : "No community activity recorded yet"
+  );
+  const communityActivityCardValue = `${communityActivityLabel} (${communityActivityCount} event${
+    communityActivityCount === "1" ? "" : "s"
+  })`;
+  const communityActivityCardDetail = [
+    communityActivityCategories.length
+      ? `Broad categories: ${communityActivityCategories.join(", ")}.`
+      : "Broad categories are not shown yet.",
+    communityActivityLatestAt
+      ? `Latest activity: ${safeDateTime(communityActivityLatestAt) || communityActivityLatestAt}.`
+      : "Latest activity date is not shown yet.",
+  ].join(" ");
+  const membershipCurrentnessLabel = firstTruthy(
+    trustSlipSummary?.membership_currentness_label,
+    trustSlipSummary?.merchant_summary?.membership_currentness_label,
+    communityContext?.membership_currentness_label,
+    "Witness renewal not started"
+  );
+  const membershipCurrentnessScope = firstTruthy(
+    trustSlipSummary?.membership_currentness_scope,
+    trustSlipSummary?.merchant_summary?.membership_currentness_scope,
+    communityContext?.membership_currentness_scope,
+    "This active membership record has no current witness validity window. Ask for member witnesses, TrustSlip, or live community confirmation before a serious decision."
+  );
+  const nextWitnessRenewalAt = firstTruthy(
+    trustSlipSummary?.next_witness_renewal_at,
+    trustSlipSummary?.merchant_summary?.next_witness_renewal_at,
+    communityContext?.next_witness_renewal_at
+  );
+  const nextWitnessRenewalStatusLabel = firstTruthy(
+    trustSlipSummary?.next_witness_renewal_status_label,
+    trustSlipSummary?.merchant_summary?.next_witness_renewal_status_label,
+    communityContext?.next_witness_renewal_status_label,
+    "Not Started"
+  );
+  const membershipCurrentnessReady =
+    membershipCurrentnessLabel.toLowerCase().includes("current");
 
   const currentBand = useMemo(() => {
     return firstTruthy(
@@ -1954,6 +2130,14 @@ export default function TrustScorePage() {
       trustSlipSummary?.merchant_summary?.community_identity_label,
       identityContext?.community_identity_label
     ),
+    communityActivityCount,
+    communityActivityLatestAt,
+    communityActivityCategories,
+    communityActivityLabel,
+    membershipCurrentnessLabel,
+    membershipCurrentnessScope,
+    nextWitnessRenewalAt: safeDateTime(nextWitnessRenewalAt) || nextWitnessRenewalAt,
+    nextWitnessRenewalStatusLabel,
     identityVerified:
       trustSlipSummary?.identity_verified ?? identityContext?.identity_verified,
     identityStatusLabel: firstTruthy(
@@ -2055,9 +2239,18 @@ export default function TrustScorePage() {
         currentScore,
         openTrustClass: openTrust.classText,
         cciClass: cci.classText,
+        communityActivitySummary: communityActivityCardValue,
+        communityActivityCategories: communityActivityCategories.join(", "),
+        communityActivityLatest:
+          safeDateTime(communityActivityLatestAt) || communityActivityLatestAt,
+        membershipCurrentnessLabel,
+        membershipCurrentnessScope,
+        nextWitnessRenewalAt: safeDateTime(nextWitnessRenewalAt) || nextWitnessRenewalAt,
+        nextWitnessRenewalStatusLabel,
         trustSlipCode,
         nextStepLabel: nextStep.ctaLabel,
         verifyUrl,
+        memberCredentialUrl,
       }),
     [
       cci.classText,
@@ -2065,7 +2258,15 @@ export default function TrustScorePage() {
       communityName,
       currentBand,
       currentScore,
+      communityActivityCardValue,
+      communityActivityCategories,
+      communityActivityLatestAt,
+      membershipCurrentnessLabel,
+      membershipCurrentnessScope,
+      nextWitnessRenewalAt,
+      nextWitnessRenewalStatusLabel,
       gmfnId,
+      memberCredentialUrl,
       memberName,
       nextStep.ctaLabel,
       openTrust.classText,
@@ -2133,15 +2334,15 @@ export default function TrustScorePage() {
       icon: "community" as GsnIconName,
       label:
         passportVm.identity.communityIdentityConfirmed
-          ? "Community confirmed"
-          : "Community not confirmed",
+          ? "Community recorded"
+          : "Community record pending",
       ok: passportVm.identity.communityIdentityConfirmed,
     },
     {
       icon: "shield" as GsnIconName,
       label:
         passportVm.identity.identityContinuity === "clean"
-          ? "Continuity confirmed"
+          ? "Continuity clean"
           : identityEvidence.score >= 35
             ? "Evidence building"
             : "Continuity review",
@@ -2207,7 +2408,11 @@ export default function TrustScorePage() {
         : passportVm.identity.phoneRecorded
           ? "A phone number is recorded against this identity. Confirm the code when OTP delivery is available."
           : "Open the focused phone task to record and confirm a phone number for this identity.",
-      actionLabel: passportVm.identity.phoneVerified ? "View proof" : "Open phone task",
+      actionLabel: passportVm.identity.phoneVerified
+        ? "View evidence"
+        : passportVm.identity.phoneRecorded
+          ? "Confirm phone"
+          : "Open phone task",
       target: passportVm.identity.phoneVerified ? routes.trustSlip : identityTaskTarget("phone"),
       debugId: "trust-score.completion.phone",
       ok: Boolean(passportVm.identity.phoneVerified),
@@ -2241,7 +2446,11 @@ export default function TrustScorePage() {
         : passportVm.identity.bankRecorded
           ? "Bank or wallet details are recorded against this name, but provider verification is still pending."
           : "Open payout details to add the bank or wallet record GSN can attach to this identity.",
-      actionLabel: passportVm.identity.bankVerified ? "Open details" : "Add bank/wallet",
+      actionLabel: passportVm.identity.bankVerified
+        ? "Open details"
+        : passportVm.identity.bankRecorded
+          ? "Review bank/wallet"
+          : "Add bank/wallet",
       target: routes.payoutDetails,
       debugId: "trust-score.completion.bank",
       ok: passportVm.identity.bankVerified === true,
@@ -2255,11 +2464,15 @@ export default function TrustScorePage() {
           ? "Recorded"
           : "Open task",
       detail: passportVm.identity.passportVerified
-        ? "Official ID evidence is verified in the trust proof layer."
+        ? "Official ID evidence is verified in the trust evidence layer."
         : passportVm.identity.officialIdRecorded
           ? "Official ID evidence is recorded for review. Provider verification is still pending."
           : "Open the focused ID task to record passport, national ID, or licence evidence.",
-      actionLabel: passportVm.identity.passportVerified ? "View proof" : "Open ID task",
+      actionLabel: passportVm.identity.passportVerified
+        ? "View evidence"
+        : passportVm.identity.officialIdRecorded
+          ? "Review ID evidence"
+          : "Open ID task",
       target: passportVm.identity.passportVerified
         ? routes.trustSlip
         : identityTaskTarget("official_id"),
@@ -2290,11 +2503,36 @@ export default function TrustScorePage() {
       passportVm.identity.communityId === "Not stated" ? "Limited" : "Ready",
     ],
     [
-      "Community confirmation",
+      "Community record",
       passportVm.identity.communityIdentityLabel,
-      "Whether this identity has been confirmed by the community layer.",
+      "Whether this identity has active community evidence recorded.",
       "check",
       passportVm.identity.communityIdentityConfirmed ? "Ready" : "Limited",
+    ],
+    [
+      "Activity evidence",
+      communityActivityCardValue,
+      communityActivityCardDetail,
+      "chart",
+      Number(passportVm.identity.communityActivityCount || 0) > 0 ? "Ready" : "Limited",
+    ],
+    [
+      "Witness currentness",
+      passportVm.identity.membershipCurrentnessLabel,
+      passportVm.identity.membershipCurrentnessScope,
+      "check",
+      membershipCurrentnessReady ? "Ready" : "Limited",
+    ],
+    [
+      "Next witness renewal",
+      passportVm.identity.nextWitnessRenewalAt || "Not shown",
+      passportVm.identity.nextWitnessRenewalAt
+        ? `Earliest active witness renewal status: ${passportVm.identity.nextWitnessRenewalStatusLabel}.`
+        : "No active witness renewal date is shown yet.",
+      "calendar",
+      passportVm.identity.nextWitnessRenewalStatusLabel.toLowerCase() === "active"
+        ? "Ready"
+        : "Limited",
     ],
     [
       "Public record",
@@ -2304,6 +2542,15 @@ export default function TrustScorePage() {
         : "The public record cannot open until a community code is visible.",
       "document",
       communityVerifyPath ? "Ready" : "Limited",
+    ],
+    [
+      "Member credential",
+      memberCredentialPath ? "Ready to open" : "Needs Community ID and GSN ID",
+      memberCredentialPath
+        ? "This opens the public credential record connecting this GSN ID to this Community ID."
+        : "The member credential needs a usable Community ID and member GSN ID before it can open.",
+      "id",
+      memberCredentialPath ? "Ready" : "Limited",
     ],
   ];
 
@@ -2354,7 +2601,7 @@ export default function TrustScorePage() {
     "No recent trust movement is shown yet. When new events occur, the reason will appear here in plain language.";
 
   const institutionalRows = [
-    ["Trust limit", `${trustLimit} ${trustCurrency}`],
+    ["Trust limit signal", `${trustLimit} ${trustCurrency}`],
     ["Event count", eventCount],
     ["Counterparties", counterpartiesCount],
     [
@@ -2373,9 +2620,9 @@ export default function TrustScorePage() {
 
   const financeDisciplineCards: Array<[string, string, string, GsnIconName]> = [
     [
-      "Trust limit",
+      "Trust limit signal",
       `${trustLimit} ${trustCurrency}`,
-      "The current ceiling GSN can show from this trust record.",
+      "The current amount signal GSN can show from this trust record; it is not an approval limit.",
       "financeInstitution",
     ],
     [
@@ -2418,7 +2665,7 @@ export default function TrustScorePage() {
     },
     {
       key: "evidence",
-      icon: "proof",
+      icon: "evidence",
       label: "Evidence Story",
       detail: "What helped, what pressured, and why trust moved.",
     },
@@ -2432,11 +2679,11 @@ export default function TrustScorePage() {
       key: "finance",
       icon: "financeInstitution",
       label: "Finance Discipline",
-      detail: "Limit, capacity, locked guarantees, and risk context.",
+      detail: "Limit signal, capacity, locked guarantees, and risk context.",
     },
     {
       key: "documents",
-      icon: "proof",
+      icon: "evidence",
       label: "Documents / TrustSlip",
       detail: "Open, verify, copy, refresh, or export the reading.",
     },
@@ -3127,7 +3374,7 @@ export default function TrustScorePage() {
                   fontWeight: 850,
                 }}
               >
-                Choose the missing proof. Only real completion routes open; pending routes are
+                Choose the missing evidence. Only real completion routes open; pending routes are
                 marked plainly so this button does not send people to another explanation page.
               </div>
               <div
@@ -3547,7 +3794,7 @@ export default function TrustScorePage() {
             >
               This lane explains the visible signals behind the trust reading
               before showing the deeper record. Start with the plain story, then
-              use the evidence rows only when you need proof.
+              use the evidence rows only when you need supporting evidence.
             </p>
 
             <div
@@ -3879,6 +4126,71 @@ export default function TrustScorePage() {
                     </p>
                   </div>
                 ))}
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gap: 10,
+                  marginTop: 12,
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <SecondaryButton
+                  onClick={() => {
+                    if (communityVerifyPath) {
+                      openTrustRoute(communityVerifyPath);
+                      return;
+                    }
+                    setNotice({
+                      tone: "error",
+                      text: "The public community record needs a usable Community ID before it can open.",
+                    });
+                  }}
+                  stableHeight={isCompact ? 50 : 46}
+                  fullWidth
+                  debugId="trust-score.community-lane.open-public-community-record"
+                  style={{ borderRadius: 12, fontWeight: 1000 }}
+                >
+                  Open community record
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => {
+                    if (memberCredentialPath) {
+                      openTrustRoute(memberCredentialPath);
+                      return;
+                    }
+                    setNotice({
+                      tone: "error",
+                      text: "The member credential needs both a usable Community ID and member GSN ID before it can open.",
+                    });
+                  }}
+                  stableHeight={isCompact ? 50 : 46}
+                  fullWidth
+                  debugId="trust-score.community-lane.open-member-credential"
+                  style={{ borderRadius: 12, fontWeight: 1000 }}
+                >
+                  Open member credential
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => {
+                    if (memberWitnessPolicyPath) {
+                      openTrustRoute(memberWitnessPolicyPath);
+                      return;
+                    }
+                    setNotice({
+                      tone: "error",
+                      text: "Choose or join a community before asking members to stand for you.",
+                    });
+                  }}
+                  stableHeight={isCompact ? 50 : 46}
+                  fullWidth
+                  debugId="trust-score.community-lane.ask-for-witness"
+                  style={{ borderRadius: 12, fontWeight: 1000 }}
+                >
+                  Ask for witness
+                </SecondaryButton>
               </div>
             </div>
 
