@@ -67,7 +67,10 @@ type MerchantSummary = {
   band?: string | null;
   expires_at?: string | null;
   expiry_policy?: string | null;
+  phone_recorded?: boolean | null;
   phone_verified?: boolean | null;
+  photo_recorded?: boolean | null;
+  bank_details_recorded?: boolean | null;
   profile_image_url?: string | null;
   community_global_id?: string | null;
   holder_role?: string | null;
@@ -87,9 +90,14 @@ type MerchantSummary = {
   cci_explainer?: Record<string, any> | null;
   identity_status_label?: string | null;
   bank_verified?: boolean | null;
+  bank_evidence_status?: string | null;
   bank_verification_label?: string | null;
+  passport_recorded?: boolean | null;
   passport_verified?: boolean | null;
   passport_verification_label?: string | null;
+  official_id_recorded?: boolean | null;
+  official_id_verified?: boolean | null;
+  official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
 };
@@ -128,11 +136,19 @@ type MerchantView = {
   currency?: string | null;
   expires_at?: string | null;
   expiry_policy?: string | null;
+  phone_recorded?: boolean | null;
   phone_verified?: boolean | null;
+  photo_recorded?: boolean | null;
+  bank_details_recorded?: boolean | null;
   bank_verified?: boolean | null;
+  bank_evidence_status?: string | null;
   bank_verification_label?: string | null;
+  passport_recorded?: boolean | null;
   passport_verified?: boolean | null;
   passport_verification_label?: string | null;
+  official_id_recorded?: boolean | null;
+  official_id_verified?: boolean | null;
+  official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
   merchant_summary?: MerchantSummary | null;
@@ -200,11 +216,19 @@ type TrustSlipSummary = {
     phone_verified?: boolean | null;
   } | null;
   phone_e164?: string | null;
+  phone_recorded?: boolean | null;
   phone_verified?: boolean | null;
+  photo_recorded?: boolean | null;
+  bank_details_recorded?: boolean | null;
   bank_verified?: boolean | null;
+  bank_evidence_status?: string | null;
   bank_verification_label?: string | null;
+  passport_recorded?: boolean | null;
   passport_verified?: boolean | null;
   passport_verification_label?: string | null;
+  official_id_recorded?: boolean | null;
+  official_id_verified?: boolean | null;
+  official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
   level?: string | null;
@@ -315,6 +339,24 @@ function firstStringList(...values: any[]): string[] {
     if (items.length) return items;
   }
   return [];
+}
+
+function firstFlag(...values: any[]): boolean | null {
+  for (const value of values) {
+    if (value === true || value === false) return value;
+    if (value === 1 || value === "1") return true;
+    if (value === 0 || value === "0") return false;
+
+    const text = safeStr(value).toLowerCase();
+    if (text === "true" || text === "yes") return true;
+    if (text === "false" || text === "no") return false;
+  }
+
+  return null;
+}
+
+function hasFlag(...values: any[]): boolean {
+  return firstFlag(...values) === true;
 }
 
 function safeDateTime(x: any): string {
@@ -932,7 +974,104 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     community: firstTruthy(src?.community),
     owner: src?.owner || null,
     phone_e164: firstTruthy(src?.phone_e164),
-    phone_verified: src?.phone_verified,
+    phone_recorded: firstFlag(
+      src?.phone_recorded,
+      src?.merchant_view?.phone_recorded,
+      src?.merchant_summary?.phone_recorded,
+      src?.identity_context?.phone_recorded
+    ),
+    phone_verified: firstFlag(
+      src?.phone_verified,
+      src?.merchant_view?.phone_verified,
+      src?.merchant_summary?.phone_verified,
+      src?.identity_context?.phone_verified
+    ),
+    photo_recorded: firstFlag(
+      src?.photo_recorded,
+      src?.merchant_view?.photo_recorded,
+      src?.merchant_summary?.photo_recorded,
+      src?.identity_context?.photo_recorded
+    ),
+    bank_details_recorded: firstFlag(
+      src?.bank_details_recorded,
+      src?.merchant_view?.bank_details_recorded,
+      src?.merchant_summary?.bank_details_recorded,
+      src?.identity_context?.bank_details_recorded
+    ),
+    bank_verified: firstFlag(
+      src?.bank_verified,
+      src?.merchant_view?.bank_verified,
+      src?.merchant_summary?.bank_verified,
+      src?.identity_context?.bank_verified
+    ),
+    bank_evidence_status: firstTruthy(
+      src?.bank_evidence_status,
+      src?.merchant_view?.bank_evidence_status,
+      src?.merchant_summary?.bank_evidence_status,
+      src?.identity_context?.bank_evidence_status
+    ),
+    bank_verification_label: firstTruthy(
+      src?.bank_verification_label,
+      src?.merchant_view?.bank_verification_label,
+      src?.merchant_summary?.bank_verification_label,
+      src?.identity_context?.bank_verification_label
+    ),
+    passport_recorded: firstFlag(
+      src?.passport_recorded,
+      src?.merchant_view?.passport_recorded,
+      src?.merchant_summary?.passport_recorded,
+      src?.identity_context?.passport_recorded
+    ),
+    passport_verified: firstFlag(
+      src?.passport_verified,
+      src?.merchant_view?.passport_verified,
+      src?.merchant_summary?.passport_verified,
+      src?.identity_context?.passport_verified,
+      src?.official_id_verified,
+      src?.merchant_view?.official_id_verified,
+      src?.merchant_summary?.official_id_verified,
+      src?.identity_context?.official_id_verified
+    ),
+    passport_verification_label: firstTruthy(
+      src?.passport_verification_label,
+      src?.merchant_view?.passport_verification_label,
+      src?.merchant_summary?.passport_verification_label,
+      src?.identity_context?.passport_verification_label,
+      src?.official_id_label,
+      src?.merchant_view?.official_id_label,
+      src?.merchant_summary?.official_id_label,
+      src?.identity_context?.official_id_label
+    ),
+    official_id_recorded: firstFlag(
+      src?.official_id_recorded,
+      src?.merchant_view?.official_id_recorded,
+      src?.merchant_summary?.official_id_recorded,
+      src?.identity_context?.official_id_recorded
+    ),
+    official_id_verified: firstFlag(
+      src?.official_id_verified,
+      src?.merchant_view?.official_id_verified,
+      src?.merchant_summary?.official_id_verified,
+      src?.identity_context?.official_id_verified
+    ),
+    official_id_label: firstTruthy(
+      src?.official_id_label,
+      src?.merchant_view?.official_id_label,
+      src?.merchant_summary?.official_id_label,
+      src?.identity_context?.official_id_label
+    ),
+    community_identity_confirmed: firstFlag(
+      src?.community_identity_confirmed,
+      src?.merchant_view?.community_identity_confirmed,
+      src?.merchant_summary?.community_identity_confirmed,
+      src?.identity_context?.community_identity_confirmed
+    ),
+    community_identity_label: firstTruthy(
+      src?.community_identity_label,
+      src?.merchant_view?.community_identity_label,
+      src?.merchant_summary?.community_identity_label,
+      src?.identity_context?.community_identity_label
+    ),
     level: firstTruthy(src?.level),
     band: firstTruthy(src?.band),
     level_label: firstTruthy(src?.level_label),
@@ -1226,7 +1365,9 @@ export default function TrustSlipPage() {
       setLoading(true);
 
       try {
-        const data = await fetchTrustSlipPageData(selectedClanId);
+        const data = await fetchTrustSlipPageData(selectedClanId, {
+          networkFirst: true,
+        });
 
         if (!alive) return;
 
@@ -1241,6 +1382,46 @@ export default function TrustSlipPage() {
 
     return () => {
       alive = false;
+    };
+  }, [selectedClanId]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function refreshVisibleTrustSlip() {
+      try {
+        const data = await fetchTrustSlipPageData(selectedClanId, {
+          networkFirst: true,
+        });
+
+        if (!alive) return;
+
+        setMe(data.me);
+        setCurrentClan(data.clan);
+        setSummary(data.summary);
+      } catch {
+        // Keep the last usable TrustSlip visible if a background refresh fails.
+      }
+    }
+
+    const handleFocus = () => {
+      void refreshVisibleTrustSlip();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void refreshVisibleTrustSlip();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("pageshow", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      alive = false;
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("pageshow", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [selectedClanId]);
 
@@ -1341,11 +1522,16 @@ export default function TrustSlipPage() {
   const qrValue = firstTruthy(verifyUrl, verifyPath, trustSlipCode);
 
   const merchantBand = firstTruthy(
+    (summary as any)?.trust_band,
+    (summary as any)?.trust_class,
+    (summary as any)?.open_trust_band,
+    summary?.merchant_view?.merchant_summary?.band,
     summary?.merchant_view?.band,
     summary?.merchant_summary?.band,
     summary?.band,
     summary?.level,
-    "Pending"
+    (summary as any)?.level_label,
+    "Awaiting band"
   );
   const normalizedMerchantBand = normalizeTrustBand(merchantBand);
   const merchantBandLabel = getTrustBandShortLabel(merchantBand);
@@ -1385,8 +1571,11 @@ export default function TrustSlipPage() {
     summary?.merchant_view?.verified ?? summary?.verified ?? false;
   const merchantViewActive =
     summary?.merchant_view?.active ?? summary?.active ?? false;
-  const merchantViewPhoneVerified =
-    summary?.merchant_view?.phone_verified ?? summary?.phone_verified ?? false;
+  const merchantViewPhoneVerified = hasFlag(
+    summary?.merchant_view?.phone_verified,
+    summary?.phone_verified,
+    summary?.merchant_summary?.phone_verified
+  );
   const rawTrustSlipStatus = safeStr(
     summary?.status || summary?.merchant_view?.status || ""
   ).toLowerCase();
@@ -1620,46 +1809,113 @@ export default function TrustSlipPage() {
     summary?.merchant_summary?.identity_status_label,
     identityContext?.identity_status_label
   );
-  const bankVerified =
-    summary?.bank_verified ??
-    summary?.merchant_view?.bank_verified ??
-    summary?.merchant_summary?.bank_verified ??
-    identityContext?.bank_verified ??
-    false;
+  const phoneRecorded =
+    merchantViewPhoneVerified ||
+    hasFlag(
+      summary?.phone_recorded,
+      summary?.merchant_view?.phone_recorded,
+      summary?.merchant_summary?.phone_recorded,
+      identityContext?.phone_recorded
+    ) ||
+    Boolean(
+      firstTruthy(summary?.phone_e164, summary?.owner?.phone_e164, me?.phone_e164)
+    );
+  const phoneRecordLabel = merchantViewPhoneVerified
+    ? "Phone verified"
+    : phoneRecorded
+      ? "Phone recorded, not verified"
+      : "Phone not connected yet";
+  const bankVerified = hasFlag(
+    summary?.bank_verified,
+    summary?.merchant_view?.bank_verified,
+    summary?.merchant_summary?.bank_verified,
+    identityContext?.bank_verified
+  );
+  const bankRecorded =
+    bankVerified ||
+    hasFlag(
+      summary?.bank_details_recorded,
+      summary?.merchant_view?.bank_details_recorded,
+      summary?.merchant_summary?.bank_details_recorded,
+      identityContext?.bank_details_recorded
+    );
   const bankVerificationLabel = firstTruthy(
     summary?.bank_verification_label,
     summary?.merchant_view?.bank_verification_label,
     summary?.merchant_summary?.bank_verification_label,
     identityContext?.bank_verification_label,
-    bankVerified ? "Bank details recorded" : "Bank check not connected yet"
+    bankVerified
+      ? "Bank verified"
+      : bankRecorded
+        ? "Bank recorded, not verified"
+        : "Bank check not connected yet"
   );
-  const passportVerified =
-    summary?.passport_verified ??
-    summary?.merchant_view?.passport_verified ??
-    summary?.merchant_summary?.passport_verified ??
-    identityContext?.passport_verified ??
-    false;
+  const passportVerified = hasFlag(
+    summary?.passport_verified,
+    summary?.merchant_view?.passport_verified,
+    summary?.merchant_summary?.passport_verified,
+    identityContext?.passport_verified,
+    summary?.official_id_verified,
+    summary?.merchant_view?.official_id_verified,
+    summary?.merchant_summary?.official_id_verified,
+    identityContext?.official_id_verified
+  );
+  const passportRecorded =
+    passportVerified ||
+    hasFlag(
+      summary?.passport_recorded,
+      summary?.merchant_view?.passport_recorded,
+      summary?.merchant_summary?.passport_recorded,
+      identityContext?.passport_recorded,
+      summary?.official_id_recorded,
+      summary?.merchant_view?.official_id_recorded,
+      summary?.merchant_summary?.official_id_recorded,
+      identityContext?.official_id_recorded
+    );
   const passportVerificationLabel = firstTruthy(
     summary?.passport_verification_label,
     summary?.merchant_view?.passport_verification_label,
     summary?.merchant_summary?.passport_verification_label,
     identityContext?.passport_verification_label,
-    "Passport check not connected yet"
+    summary?.official_id_label,
+    summary?.merchant_view?.official_id_label,
+    summary?.merchant_summary?.official_id_label,
+    identityContext?.official_id_label,
+    passportVerified
+      ? "Passport/ID verified"
+      : passportRecorded
+        ? "Passport/ID recorded for review"
+        : "Passport/ID check not connected yet"
   );
-  const communityIdentityConfirmed =
-    summary?.community_identity_confirmed ??
-    summary?.merchant_view?.community_identity_confirmed ??
-    summary?.merchant_summary?.community_identity_confirmed ??
-    identityContext?.community_identity_confirmed ??
-    false;
+  const communityIdentityConfirmed = hasFlag(
+    summary?.community_identity_confirmed,
+    summary?.merchant_view?.community_identity_confirmed,
+    summary?.merchant_summary?.community_identity_confirmed,
+    identityContext?.community_identity_confirmed
+  );
   const communityIdentityLabel = firstTruthy(
     summary?.community_identity_label,
     summary?.merchant_view?.community_identity_label,
     summary?.merchant_summary?.community_identity_label,
     identityContext?.community_identity_label,
     communityIdentityConfirmed
-      ? "Active community membership recorded"
-      : "Community membership record not shown"
+      ? "Community membership recorded"
+      : "Community membership not shown"
+  );
+  const identityCheckLabel = merchantViewPhoneVerified
+    ? "Phone verified"
+    : phoneRecorded
+      ? "Phone recorded"
+      : "Identity record not complete";
+  const identityRecordSummary = firstTruthy(
+    identityStatusLabel,
+    merchantViewPhoneVerified && communityIdentityConfirmed
+      ? "Phone verified; community membership recorded"
+      : merchantViewPhoneVerified
+        ? "Phone verified; community membership not shown"
+        : communityIdentityConfirmed
+          ? "Community membership recorded; phone not verified"
+          : "Recorded evidence still building"
   );
   const cciMeaning = firstTruthy(cciExplainer?.meaning, cciExplainer?.plain_language);
   const lastReleaseText = safeDateTime(summary?.last_release_at) || "Not shown";
@@ -1759,6 +2015,17 @@ export default function TrustSlipPage() {
       ? "PREPARING"
       : "NEEDS REFRESH";
   const trustSlipStatusTone = trustSlipValidNow ? "valid" : "refresh";
+  const trustSlipCodeLabel = trustSlipCode || "Awaiting issue";
+  const trustSlipIssuedLabel =
+    safeDateTime(summary?.issued_at) ||
+    safeDateTime(summary?.created_at) ||
+    (trustSlipCode ? "Issue time not shown" : "Not issued yet");
+  const trustSlipExpiryLabel =
+    safeDateTime(summary?.expires_at) ||
+    (trustSlipCode ? "No expiry stated yet" : "Not issued yet");
+  const merchantBandDisplay = normalizedMerchantBand
+    ? `${normalizedMerchantBand} - ${merchantBandLabel}`
+    : "Awaiting band";
   const decisionSummaryText = hasBlockingTrustSlipState
     ? "Do not rely on this TrustSlip until it is refreshed and checked again."
     : ["D", "E"].includes(trustSlipBandLetter)
@@ -2080,7 +2347,7 @@ export default function TrustSlipPage() {
                   fontWeight: 1000,
                 }}
               >
-                TrustSlip
+                GSN TrustSlip
               </h1>
               <p
                 style={{
@@ -2092,7 +2359,7 @@ export default function TrustSlipPage() {
                   fontWeight: 760,
                 }}
               >
-                Portable trust summary for sharing, checking, and quick decision-making.
+                Portable recorded trust snapshot. Check the code, then read recorded and verified signals separately.
               </p>
               <div
                 style={{
@@ -2143,6 +2410,61 @@ export default function TrustSlipPage() {
               >
                 Global Support Network
               </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
+                  marginTop: 18,
+                  maxWidth: 620,
+                }}
+              >
+                {[
+                  ["Status", trustSlipPublicStatus],
+                  ["Band", merchantBandDisplay],
+                  ["Code", trustSlipCodeLabel],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid rgba(234,243,255,0.18)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.055) 100%)",
+                      boxShadow:
+                        "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -10px 18px rgba(0,0,0,0.12)",
+                      padding: "10px 12px",
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#F6D77A",
+                        fontSize: 10,
+                        fontWeight: 1000,
+                        letterSpacing: 1.1,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 13,
+                        fontWeight: 1000,
+                        lineHeight: 1.2,
+                        marginTop: 4,
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </header>
 
@@ -2162,7 +2484,7 @@ export default function TrustSlipPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns: isCompact
-                  ? "minmax(0, 1fr)"
+                  ? "92px minmax(0, 1fr)"
                   : "132px minmax(0, 1fr)",
                 gap: isCompact ? 12 : 14,
                 alignItems: "start",
@@ -2170,10 +2492,9 @@ export default function TrustSlipPage() {
             >
               <div
                 style={{
-                  width: isCompact ? "min(100%, 340px)" : 132,
-                  height: isCompact ? "auto" : 132,
-                  aspectRatio: "1 / 1",
-                  justifySelf: isCompact ? "center" : "start",
+                  width: isCompact ? 92 : 132,
+                  height: isCompact ? 92 : 132,
+                  justifySelf: "start",
                   borderRadius: 14,
                   display: "grid",
                   placeItems: "center",
@@ -2212,7 +2533,7 @@ export default function TrustSlipPage() {
               <div style={{ display: "grid", gap: isCompact ? 10 : 0 }}>
                 {[
                   ["id", "GSN ID", gmfnId],
-                  ["shield", "Identity check", merchantViewPhoneVerified ? "Phone verified" : "Not fully shown"],
+                  ["shield", "Identity check", identityCheckLabel || "Phone verified"],
                   ["community", "Community", communityName],
                   ["hash", "Community ID", communityRef],
                 ].map(([icon, label, value]) => (
@@ -2221,7 +2542,7 @@ export default function TrustSlipPage() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: isCompact
-                      ? "28px minmax(112px, 0.42fr) minmax(0, 1fr)"
+                      ? "26px minmax(74px, 0.36fr) minmax(0, 1fr)"
                       : "18px minmax(74px, 0.62fr) minmax(0, 1fr)",
                     gap: isCompact ? 10 : 8,
                     alignItems: "center",
@@ -2259,12 +2580,12 @@ export default function TrustSlipPage() {
 
             <div style={{ display: "grid", gap: 8, position: "relative" }}>
               {[
-                [merchantViewPhoneVerified, merchantViewPhoneVerified ? "Phone verified" : "Phone not verified"],
-                [true, communityIdentityLabel],
-                [Boolean(identityStatusLabel), identityStatusLabel || "Phone verified; community membership recorded"],
-                [Boolean(bankVerified), bankVerificationLabel],
-                [Boolean(passportVerified), passportVerificationLabel],
-              ].map(([ok, label]) => (
+                [merchantViewPhoneVerified, phoneRecordLabel, merchantViewPhoneVerified ? "positive" : phoneRecorded ? "building" : "pressure"],
+                [communityIdentityConfirmed, communityIdentityLabel, communityIdentityConfirmed ? "positive" : "building"],
+                [Boolean(identityRecordSummary), identityRecordSummary || "Phone verified; community membership recorded", merchantViewPhoneVerified && communityIdentityConfirmed ? "positive" : "building"],
+                [bankVerified || bankRecorded, bankVerificationLabel, bankVerified ? "positive" : bankRecorded ? "building" : "pressure"],
+                [passportVerified || passportRecorded, passportVerificationLabel, passportVerified ? "positive" : passportRecorded ? "building" : "pressure"],
+              ].map(([ok, label, status]) => (
                 <span
                   key={String(label)}
                   style={{
@@ -2288,7 +2609,19 @@ export default function TrustSlipPage() {
                   <span style={trustSlipTinyIconCircle(Boolean(ok))}>
                     <GsnLegacyIcon name={ok ? "check" : "document"} size={24} />
                   </span>
-                  <span>{label}</span>
+                  <EvidenceMeter
+                    status={status}
+                    style={{
+                      justifyContent: "flex-start",
+                      width: "100%",
+                      whiteSpace: "normal",
+                      textAlign: "left",
+                      minHeight: 30,
+                      padding: "6px 10px",
+                    }}
+                  >
+                    {label}
+                  </EvidenceMeter>
                 </span>
               ))}
             </div>
@@ -2521,12 +2854,14 @@ export default function TrustSlipPage() {
                 }}
               >
                 <div style={{ display: "grid", gap: 8 }}>
-                  <div style={helperText()}>Slip code: {trustSlipCode || "Awaiting issue"}</div>
                   <div style={helperText()}>
-                    Issued: {safeDateTime(summary?.issued_at) || "Not stated"}
+                    TrustSlip code: {trustSlipCodeLabel}
                   </div>
                   <div style={helperText()}>
-                    Expires: {safeDateTime(summary?.expires_at) || "Not stated"}
+                    Issued: {trustSlipIssuedLabel}
+                  </div>
+                  <div style={helperText()}>
+                    Expires: {trustSlipExpiryLabel}
                   </div>
                 </div>
                 {qrValue ? <TrustSlipQrCode value={qrValue} /> : null}
@@ -2579,7 +2914,7 @@ export default function TrustSlipPage() {
                 <span>{decisionSummaryText}</span>
               </div>
               {[
-                ["Trust band", `${merchantBand} - ${merchantBandLabel}`],
+                ["Trust band", merchantBandDisplay],
                 ["Trust limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
                 ["Evidence depth", trustSlipEvidenceLanguage.label],
               ].map(([label, value]) => (

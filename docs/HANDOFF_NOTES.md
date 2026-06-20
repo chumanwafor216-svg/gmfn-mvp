@@ -1,3 +1,45 @@
+## 2026-06-20 - TrustSlip Evidence Paper Identity Truth / Layout Repair
+
+- Trigger:
+  - owner reported the signed-in TrustSlip page looked fragmented and
+    whitewashed, the holder photo was oversized on phone, the hero/body
+    language did not feel regimented, and the page mixed `verified`, `recorded`,
+    `pending`, and `not shown` in a way that could confuse underbanked /
+    unbanked users.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - normalized TrustSlip identity fields already emitted by the backend:
+      `phone_recorded`, `bank_details_recorded`, `passport_recorded`,
+      `official_id_recorded`, verified flags, and community identity labels.
+    - made the initial TrustSlip read and return-to-tab refresh use a
+      cache-busted network-first summary so identity evidence added on another
+      page is reflected when the user comes back.
+    - changed the mobile holder photo from a 340px-wide image block to a compact
+      identity tile beside the fact rows.
+    - renamed the active paper hero to `GSN TrustSlip` and added a compact
+      status/band/code rail so the page starts like an evidence document.
+    - replaced confusing labels such as `Not fully shown`, `Slip code`, and
+      `Not stated` with clearer states such as `Phone recorded, not verified`,
+      `Bank recorded, not verified`, `Passport/ID recorded for review`,
+      `TrustSlip code`, `Not issued yet`, and `Awaiting band`.
+    - kept the protected trust boundary: phone verification plus community
+      membership is not presented as fully verified member identity.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx` passed from `frontend/`.
+  - `npm run audit:trust-actions` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm run build` passed from `frontend/`; built chunk includes
+    `assets/TrustSlipPage-CJeYRKhC.js`.
+- Unabated truth:
+  - this fixes the frontend normalization/presentation path. It does not prove a
+    specific live user has bank or passport rows saved in the production
+    backend; if Render still shows `not connected yet` after this commit is
+    deployed and the phone is refreshed, inspect that user's live
+    `/trust-slips/me` or `/trust-slips/me/summary` JSON.
+  - this pass did not do a full redesign of every lower TrustSlip section or
+    public TrustSlip Verify page; it repaired the signed-in TrustSlip evidence
+    paper first viewport, identity wording, status labels, and freshness.
+
 ## 2026-06-20 - Identity Completion / Recovery Batch Published to Render
 
 - Published code commit:
