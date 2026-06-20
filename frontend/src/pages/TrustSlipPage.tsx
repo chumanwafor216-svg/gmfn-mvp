@@ -697,9 +697,9 @@ function trustSlipHeroCard(): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    minHeight: 168,
+    minHeight: 156,
     borderRadius: 14,
-    padding: "28px 34px",
+    padding: "22px 24px",
     background: "linear-gradient(135deg, #08233A 0%, #061827 100%)",
     border: "1px solid rgba(255,255,255,0.08)",
     boxShadow: "0 18px 42px rgba(7,23,44,0.18)",
@@ -937,12 +937,13 @@ function trustSlipSecurityMarkStyle(
 
   return {
     display: "grid",
-    gridTemplateColumns: "34px minmax(0, 1fr)",
-    gap: 10,
+    gridTemplateColumns: "28px minmax(0, 1fr)",
+    gap: 8,
     alignItems: "center",
-    minHeight: 58,
-    borderRadius: 18,
-    padding: "10px 13px",
+    width: "min(100%, 250px)",
+    minHeight: 48,
+    borderRadius: 16,
+    padding: "9px 12px",
     boxShadow: `${palette.shadow}, inset 0 1px 0 rgba(255,255,255,0.16)`,
     ...palette,
   };
@@ -2111,6 +2112,31 @@ export default function TrustSlipPage() {
           ? "Community membership recorded; phone not verified"
           : "Recorded evidence still building"
   );
+  const heroCommunityDisplay = communityIdentityConfirmed
+    ? "Community recorded"
+    : safeStr(communityIdentityLabel).replace("Community membership", "Community");
+  const heroHolderCheckShort =
+    merchantViewPhoneVerified && communityIdentityConfirmed
+      ? "Member recorded"
+      : merchantViewPhoneVerified
+        ? "Phone verified"
+        : communityIdentityConfirmed
+          ? "Community recorded"
+          : "Evidence building";
+  const heroEvidenceShort =
+    merchantViewPhoneVerified && communityIdentityConfirmed
+      ? "Phone + member record"
+      : merchantViewPhoneVerified
+        ? "Phone recorded"
+        : communityIdentityConfirmed
+          ? "Community record"
+          : "Evidence building";
+  const heroBankDisplay =
+    bankVerified || bankRecorded ? bankVerificationLabel : "Bank not connected";
+  const heroIdDisplay =
+    passportVerified || passportRecorded
+      ? passportVerificationLabel
+      : "ID not connected";
   const cciMeaning = firstTruthy(cciExplainer?.meaning, cciExplainer?.plain_language);
   const lastReleaseText = safeDateTime(summary?.last_release_at) || "Not shown";
   const lastFullRepaymentText =
@@ -2548,22 +2574,23 @@ export default function TrustSlipPage() {
             <TrustPaperWatermark
               name="shield"
               color="#EAF3FF"
-              size={isCompact ? 190 : 254}
-              opacity={0.055}
-              style={{ top: 8, right: -36, bottom: "auto" }}
-            />
-            <TrustPaperWatermark
-              name="globe"
-              color="#EAF3FF"
-              size={isCompact ? 108 : 142}
+              size={isCompact ? 246 : 320}
               opacity={0.07}
-              style={{ top: 58, right: 40, bottom: "auto" }}
+              style={{
+                left: "50%",
+                top: "50%",
+                right: "auto",
+                bottom: "auto",
+                transform: "translate(-50%, -50%)",
+              }}
             />
             <div style={{ position: "relative", zIndex: 1 }}>
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(230px, 0.72fr)",
+                  gridTemplateColumns: isCompact
+                    ? "minmax(0, 1fr)"
+                    : "minmax(0, 1fr) minmax(210px, 0.58fr)",
                   gap: 14,
                   alignItems: "start",
                 }}
@@ -2656,22 +2683,22 @@ export default function TrustSlipPage() {
                   width: "min(100%, 650px)",
                   height: 1,
                   background: "rgba(214,170,69,0.72)",
-                  marginTop: 24,
-                  marginBottom: 20,
+                  marginTop: 17,
+                  marginBottom: 16,
                 }}
               />
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "96px minmax(0, 1fr)" : "132px minmax(0, 1fr)",
-                  gap: isCompact ? 13 : 18,
+                  gridTemplateColumns: isCompact ? "88px minmax(0, 1fr)" : "122px minmax(0, 1fr)",
+                  gap: isCompact ? 12 : 18,
                   alignItems: "start",
                 }}
               >
                 <div
                   style={{
-                    width: isCompact ? 96 : 132,
-                    height: isCompact ? 96 : 132,
+                    width: isCompact ? 88 : 122,
+                    height: isCompact ? 88 : 122,
                     borderRadius: 18,
                     display: "grid",
                     placeItems: "center",
@@ -2712,8 +2739,8 @@ export default function TrustSlipPage() {
                       position: "absolute",
                       right: 8,
                       bottom: 8,
-                      width: isCompact ? 42 : 48,
-                      height: isCompact ? 42 : 48,
+                      width: isCompact ? 38 : 46,
+                      height: isCompact ? 38 : 46,
                       borderRadius: 16,
                       display: "grid",
                       placeItems: "center",
@@ -2740,7 +2767,7 @@ export default function TrustSlipPage() {
                   <div
                     style={{
                       color: "#FFFFFF",
-                      fontSize: isCompact ? 28 : 38,
+                      fontSize: isCompact ? 24 : 34,
                       fontWeight: 1000,
                       lineHeight: 1.04,
                       marginTop: 4,
@@ -2752,10 +2779,10 @@ export default function TrustSlipPage() {
                   <div
                     style={{
                       color: "#DCE8F4",
-                      fontSize: isCompact ? 13 : 15,
+                      fontSize: isCompact ? 12 : 15,
                       fontWeight: 850,
                       lineHeight: 1.4,
-                      marginTop: 9,
+                      marginTop: 7,
                     }}
                   >
                     Community: {communityName}
@@ -2772,10 +2799,7 @@ export default function TrustSlipPage() {
                   >
                     {[
                       identityCheckLabel || "Identity record building",
-                      identityRecordSummary || "Evidence record building",
-                      communityIdentityConfirmed
-                        ? communityIdentityLabel
-                        : communityIdentityLabel || "Community record shown",
+                      heroCommunityDisplay || "Community record shown",
                     ].map((item) => (
                       <span
                         key={item}
@@ -2808,26 +2832,28 @@ export default function TrustSlipPage() {
                     ? "repeat(2, minmax(0, 1fr))"
                     : "repeat(4, minmax(0, 1fr))",
                   gap: 8,
-                  marginTop: 18,
+                  marginTop: 14,
                 }}
               >
                 {[
-                  ["Security", trustSlipSecurityLabel],
-                  ["Status", trustSlipPublicStatus],
-                  ["Identity check", identityCheckLabel || "Phone verified"],
-                  [
-                    "Holder check",
-                    identityRecordSummary || "Phone verified; community membership recorded",
-                  ],
-                  ["Band", merchantBandDisplay],
-                  ["Code", trustSlipCodeLabel],
-                  ["Community ID", communityRef],
-                  ["Phone", phoneRecordLabel],
-                  ["Bank", bankVerified || bankRecorded ? bankVerificationLabel : "Not connected"],
-                  ["ID evidence", passportVerified || passportRecorded ? passportVerificationLabel : "Not connected"],
-                ].map(([label, value]) => (
+                  { label: "Security", value: trustSlipSecurityLabel },
+                  { label: "Status", value: trustSlipPublicStatus },
+                  { label: "Identity check", value: identityCheckLabel || "Phone verified" },
+                  {
+                    label: "Holder check",
+                    value: heroHolderCheckShort,
+                    full: identityRecordSummary || "Phone verified; community membership recorded",
+                  },
+                  { label: "Band", value: merchantBandDisplay },
+                  { label: "Community ID", value: communityRef },
+                  { label: "Phone", value: phoneRecordLabel },
+                  { label: "Bank", value: heroBankDisplay },
+                  { label: "ID evidence", value: heroIdDisplay },
+                  { label: "Evidence", value: heroEvidenceShort },
+                ].map(({ label, value, full }) => (
                   <div
                     key={label}
+                    title={full || value}
                     style={{
                       borderRadius: 12,
                       border: "1px solid rgba(234,243,255,0.18)",
@@ -2835,7 +2861,7 @@ export default function TrustSlipPage() {
                         "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.055) 100%)",
                       boxShadow:
                         "inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -10px 18px rgba(0,0,0,0.12)",
-                      padding: "10px 12px",
+                      padding: "9px 10px",
                       minWidth: 0,
                     }}
                   >
@@ -2853,7 +2879,7 @@ export default function TrustSlipPage() {
                     <div
                       style={{
                         color: "#FFFFFF",
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: 1000,
                         lineHeight: 1.2,
                         marginTop: 4,

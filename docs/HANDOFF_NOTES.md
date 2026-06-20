@@ -1,3 +1,37 @@
+## 2026-06-20 - TrustSlip Certificate Face Compression
+
+- Trigger:
+  - owner liked the official dark TrustSlip direction but reported that the
+    hero still felt unarranged: the watermark needed a centered shield, the
+    holder/evidence area was too tall, and the long holder-check text made the
+    certificate face feel unfinished.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - centered the shield watermark inside the dark hero instead of leaving the
+      official mark as a side/background decoration.
+    - shortened the dark hero padding, photo size, holder title size, divider
+      spacing, and security mark so the first TrustSlip face behaves more like
+      a certificate and less like a long page section.
+    - reduced the hero chips from three exposed statements to two compact
+      signals: identity state and community state.
+    - kept the audit-required truth `Phone verified; community membership
+      recorded`, but moved the visible hero toward shorter official labels such
+      as `Member recorded`, `Phone + member record`, and `Evidence building`.
+    - kept bank and ID evidence in the compact rail so supplied evidence is not
+      lost while avoiding oversized fact tiles.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx` passed.
+  - `git diff --check -- frontend/src/pages/TrustSlipPage.tsx` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed; built TrustSlip chunk:
+    `assets/TrustSlipPage-C1MPHoVK.js`.
+- Unabated truth:
+  - this is local source/build/audit verified only. It is not Render-live until
+    committed, pushed, and deployed.
+  - real phone screenshot QA is still required because the automated session
+    does not currently have an authenticated app session.
+
 ## 2026-06-20 - TrustSlip Dark Hero / Raised Evidence Meters
 
 - Trigger:
