@@ -957,6 +957,12 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
   const src = raw?.item || raw?.summary || raw?.trust_slip || raw?.data || raw;
   if (!src || typeof src !== "object") return null;
 
+  const identityContextSource =
+    src?.identity_context ||
+    src?.merchant_view?.identity_context ||
+    src?.merchant_summary?.identity_context ||
+    null;
+
   return {
     verified: src?.verified,
     active: src?.active,
@@ -965,7 +971,7 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     gmfn_id: firstTruthy(src?.gmfn_id),
     display_name: firstTruthy(src?.display_name),
     profile_image_url: firstTruthy(src?.profile_image_url),
-    identity_context: src?.identity_context || null,
+    identity_context: identityContextSource,
     community_context: src?.community_context || null,
     community_confirmation: src?.community_confirmation || null,
     cci_explainer: src?.cci_explainer || null,
@@ -978,99 +984,99 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
       src?.phone_recorded,
       src?.merchant_view?.phone_recorded,
       src?.merchant_summary?.phone_recorded,
-      src?.identity_context?.phone_recorded
+      identityContextSource?.phone_recorded
     ),
     phone_verified: firstFlag(
       src?.phone_verified,
       src?.merchant_view?.phone_verified,
       src?.merchant_summary?.phone_verified,
-      src?.identity_context?.phone_verified
+      identityContextSource?.phone_verified
     ),
     photo_recorded: firstFlag(
       src?.photo_recorded,
       src?.merchant_view?.photo_recorded,
       src?.merchant_summary?.photo_recorded,
-      src?.identity_context?.photo_recorded
+      identityContextSource?.photo_recorded
     ),
     bank_details_recorded: firstFlag(
       src?.bank_details_recorded,
       src?.merchant_view?.bank_details_recorded,
       src?.merchant_summary?.bank_details_recorded,
-      src?.identity_context?.bank_details_recorded
+      identityContextSource?.bank_details_recorded
     ),
     bank_verified: firstFlag(
       src?.bank_verified,
       src?.merchant_view?.bank_verified,
       src?.merchant_summary?.bank_verified,
-      src?.identity_context?.bank_verified
+      identityContextSource?.bank_verified
     ),
     bank_evidence_status: firstTruthy(
       src?.bank_evidence_status,
       src?.merchant_view?.bank_evidence_status,
       src?.merchant_summary?.bank_evidence_status,
-      src?.identity_context?.bank_evidence_status
+      identityContextSource?.bank_evidence_status
     ),
     bank_verification_label: firstTruthy(
       src?.bank_verification_label,
       src?.merchant_view?.bank_verification_label,
       src?.merchant_summary?.bank_verification_label,
-      src?.identity_context?.bank_verification_label
+      identityContextSource?.bank_verification_label
     ),
     passport_recorded: firstFlag(
       src?.passport_recorded,
       src?.merchant_view?.passport_recorded,
       src?.merchant_summary?.passport_recorded,
-      src?.identity_context?.passport_recorded
+      identityContextSource?.passport_recorded
     ),
     passport_verified: firstFlag(
       src?.passport_verified,
       src?.merchant_view?.passport_verified,
       src?.merchant_summary?.passport_verified,
-      src?.identity_context?.passport_verified,
+      identityContextSource?.passport_verified,
       src?.official_id_verified,
       src?.merchant_view?.official_id_verified,
       src?.merchant_summary?.official_id_verified,
-      src?.identity_context?.official_id_verified
+      identityContextSource?.official_id_verified
     ),
     passport_verification_label: firstTruthy(
       src?.passport_verification_label,
       src?.merchant_view?.passport_verification_label,
       src?.merchant_summary?.passport_verification_label,
-      src?.identity_context?.passport_verification_label,
+      identityContextSource?.passport_verification_label,
       src?.official_id_label,
       src?.merchant_view?.official_id_label,
       src?.merchant_summary?.official_id_label,
-      src?.identity_context?.official_id_label
+      identityContextSource?.official_id_label
     ),
     official_id_recorded: firstFlag(
       src?.official_id_recorded,
       src?.merchant_view?.official_id_recorded,
       src?.merchant_summary?.official_id_recorded,
-      src?.identity_context?.official_id_recorded
+      identityContextSource?.official_id_recorded
     ),
     official_id_verified: firstFlag(
       src?.official_id_verified,
       src?.merchant_view?.official_id_verified,
       src?.merchant_summary?.official_id_verified,
-      src?.identity_context?.official_id_verified
+      identityContextSource?.official_id_verified
     ),
     official_id_label: firstTruthy(
       src?.official_id_label,
       src?.merchant_view?.official_id_label,
       src?.merchant_summary?.official_id_label,
-      src?.identity_context?.official_id_label
+      identityContextSource?.official_id_label
     ),
     community_identity_confirmed: firstFlag(
       src?.community_identity_confirmed,
       src?.merchant_view?.community_identity_confirmed,
       src?.merchant_summary?.community_identity_confirmed,
-      src?.identity_context?.community_identity_confirmed
+      identityContextSource?.community_identity_confirmed
     ),
     community_identity_label: firstTruthy(
       src?.community_identity_label,
       src?.merchant_view?.community_identity_label,
       src?.merchant_summary?.community_identity_label,
-      src?.identity_context?.community_identity_label
+      identityContextSource?.community_identity_label
     ),
     level: firstTruthy(src?.level),
     band: firstTruthy(src?.band),
@@ -1466,9 +1472,12 @@ export default function TrustSlipPage() {
   const gmfnId = useMemo(() => {
     return firstTruthy(
       summary?.merchant_view?.gmfn_id,
+      summary?.merchant_view?.identity_context?.gmfn_id,
       summary?.merchant_summary?.gmfn_id,
+      summary?.identity_context?.gmfn_id,
       summary?.gmfn_id,
       me?.gmfn_id,
+      api.getStoredGmfnId(),
       "Pending"
     );
   }, [summary, me]);
@@ -1574,7 +1583,9 @@ export default function TrustSlipPage() {
   const merchantViewPhoneVerified = hasFlag(
     summary?.merchant_view?.phone_verified,
     summary?.phone_verified,
-    summary?.merchant_summary?.phone_verified
+    summary?.merchant_summary?.phone_verified,
+    summary?.merchant_view?.identity_context?.phone_verified,
+    summary?.identity_context?.phone_verified
   );
   const rawTrustSlipStatus = safeStr(
     summary?.status || summary?.merchant_view?.status || ""

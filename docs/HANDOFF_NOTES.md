@@ -1,3 +1,27 @@
+## 2026-06-20 - TrustSlip Nested Identity Evidence Fallback
+
+- Trigger:
+  - owner showed live TrustSlip still saying `GSN ID Pending`,
+    `Phone not verified`, and `Bank check not connected yet` even though the
+    same account evidence can be available elsewhere.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - made the TrustSlip normalizer preserve identity evidence nested under
+      `merchant_view.identity_context` and `merchant_summary.identity_context`,
+      not only the root `identity_context`.
+    - fed that nested context into phone, bank, passport/official ID, and
+      community membership labels.
+    - added GMFN ID fallback through nested identity context and the locally
+      stored GMFN ID.
+    - added phone verification fallback through nested identity context.
+- Unabated truth:
+  - this fixes a real frontend fallback weakness. It does not prove the owner's
+    current Render phone session is serving this code yet.
+  - previous Render evidence accepted deploy id `dep-d8r9ac6gvqtc73eos5dg`,
+    but live checks still showed an older frontend asset afterwards. If Render
+    continues showing the old giant-photo TrustSlip UI, treat it as deployment
+    drift or browser/PWA cache until the live asset hash changes.
+
 ## 2026-06-20 - TrustSlip Evidence Paper Identity Truth / Layout Repair
 
 - Trigger:
