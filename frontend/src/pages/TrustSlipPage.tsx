@@ -730,6 +730,21 @@ function trustSlipDarkPanel(): React.CSSProperties {
   };
 }
 
+function trustSlipPaperPanel(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    ...trustSlipSectionCard(bg),
+    position: "relative",
+    overflow: "hidden",
+  };
+}
+
+function trustSlipPanelContent(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+  };
+}
+
 function trustSlipRaisedMeter(status: string): React.CSSProperties {
   const normalized = safeStr(status).toLowerCase();
   const positive =
@@ -2675,6 +2690,14 @@ export default function TrustSlipPage() {
                     <span style={{ color: "#AFC4D9", fontWeight: 850, textTransform: "none", letterSpacing: 0 }}>
                       Record anchor {communityRef}
                     </span>
+                    <br />
+                    <span style={{ color: "#AFC4D9", fontWeight: 850, textTransform: "none", letterSpacing: 0 }}>
+                      Issued {trustSlipIssuedLabel}
+                    </span>
+                    <br />
+                    <span style={{ color: "#F9E6A4", fontWeight: 900, textTransform: "none", letterSpacing: 0 }}>
+                      Expires {trustSlipExpiryLabel}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -2791,35 +2814,71 @@ export default function TrustSlipPage() {
                   </div>
                   <div
                     style={{
-                      display: "flex",
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "minmax(0, 1fr)"
+                        : "repeat(2, minmax(0, 1fr))",
                       gap: 8,
-                      flexWrap: "wrap",
                       marginTop: 13,
                     }}
                   >
                     {[
-                      identityCheckLabel || "Identity record building",
-                      heroCommunityDisplay || "Community record shown",
+                      {
+                        label: "Phone",
+                        value: identityCheckLabel || "Identity record building",
+                        icon: "phone" as GsnIconName,
+                      },
+                      {
+                        label: "Community",
+                        value: heroCommunityDisplay || "Community record shown",
+                        icon: "community" as GsnIconName,
+                      },
                     ].map((item) => (
                       <span
-                        key={item}
+                        key={item.label}
                         style={{
-                          display: "inline-flex",
+                          display: "grid",
+                          gridTemplateColumns: "28px minmax(0, 1fr)",
                           alignItems: "center",
                           gap: 7,
-                          minHeight: 31,
-                          borderRadius: 999,
-                          padding: "7px 11px",
-                          background: "rgba(255,255,255,0.08)",
+                          minHeight: 42,
+                          borderRadius: 14,
+                          padding: "7px 9px",
+                          background:
+                            "linear-gradient(180deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.055) 100%)",
                           border: "1px solid rgba(246,215,122,0.26)",
                           color: "#F9E6A4",
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: 1000,
                           lineHeight: 1.1,
+                          boxShadow:
+                            "inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -8px 14px rgba(0,0,0,0.12)",
                         }}
                       >
-                        <GsnLegacyIcon name="shield" size={20} />
-                        {item}
+                        <GsnLegacyIcon name={item.icon} size={26} />
+                        <span style={{ minWidth: 0 }}>
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#AFC4D9",
+                              textTransform: "uppercase",
+                              fontSize: 9,
+                              lineHeight: 1,
+                            }}
+                          >
+                            {item.label}
+                          </span>
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#F9E6A4",
+                              fontSize: 11,
+                              marginTop: 3,
+                            }}
+                          >
+                            {item.value}
+                          </span>
+                        </span>
                       </span>
                     ))}
                   </div>
@@ -2836,25 +2895,32 @@ export default function TrustSlipPage() {
                 }}
               >
                 {[
-                  { label: "Security", value: trustSlipSecurityLabel },
-                  { label: "Status", value: trustSlipPublicStatus },
-                  { label: "Identity check", value: identityCheckLabel || "Phone verified" },
+                  { label: "Security", value: trustSlipSecurityLabel, icon: "shield" as GsnIconName },
+                  { label: "Status", value: trustSlipPublicStatus, icon: "globe" as GsnIconName },
+                  { label: "Identity check", value: identityCheckLabel || "Phone verified", icon: "phone" as GsnIconName },
                   {
                     label: "Holder check",
                     value: heroHolderCheckShort,
                     full: identityRecordSummary || "Phone verified; community membership recorded",
+                    icon: "id" as GsnIconName,
                   },
-                  { label: "Band", value: merchantBandDisplay },
-                  { label: "Community ID", value: communityRef },
-                  { label: "Phone", value: phoneRecordLabel },
-                  { label: "Bank", value: heroBankDisplay },
-                  { label: "ID evidence", value: heroIdDisplay },
-                  { label: "Evidence", value: heroEvidenceShort },
-                ].map(({ label, value, full }) => (
+                  { label: "Band", value: merchantBandDisplay, icon: "certificate-seal" as GsnIconName },
+                  { label: "Community ID", value: communityRef, icon: "qr" as GsnIconName },
+                  { label: "Issued", value: trustSlipIssuedLabel, icon: "calendar" as GsnIconName },
+                  { label: "Expires", value: trustSlipExpiryLabel, icon: "refresh" as GsnIconName },
+                  { label: "Phone", value: phoneRecordLabel, icon: "phone" as GsnIconName },
+                  { label: "Bank", value: heroBankDisplay, icon: "bank" as GsnIconName },
+                  { label: "ID evidence", value: heroIdDisplay, icon: "id" as GsnIconName },
+                  { label: "Evidence", value: heroEvidenceShort, icon: "evidence" as GsnIconName },
+                ].map(({ label, value, full, icon }) => (
                   <div
                     key={label}
                     title={full || value}
                     style={{
+                      display: "grid",
+                      gridTemplateColumns: "28px minmax(0, 1fr)",
+                      alignItems: "center",
+                      gap: 8,
                       borderRadius: 12,
                       border: "1px solid rgba(234,243,255,0.18)",
                       background:
@@ -2865,28 +2931,31 @@ export default function TrustSlipPage() {
                       minWidth: 0,
                     }}
                   >
-                    <div
-                      style={{
-                        color: "#F6D77A",
-                        fontSize: 10,
-                        fontWeight: 1000,
-                        letterSpacing: 1.1,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {label}
-                    </div>
-                    <div
-                      style={{
-                        color: "#FFFFFF",
-                        fontSize: 12,
-                        fontWeight: 1000,
-                        lineHeight: 1.2,
-                        marginTop: 4,
-                        overflowWrap: "break-word",
-                      }}
-                    >
-                      {value}
+                    <GsnLegacyIcon name={icon} size={28} />
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          color: "#F6D77A",
+                          fontSize: 9,
+                          fontWeight: 1000,
+                          letterSpacing: 1.1,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {label}
+                      </div>
+                      <div
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: 12,
+                          fontWeight: 1000,
+                          lineHeight: 1.2,
+                          marginTop: 4,
+                          overflowWrap: "break-word",
+                        }}
+                      >
+                        {value}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -3088,6 +3157,8 @@ export default function TrustSlipPage() {
               )}
 
               <div style={{ ...trustSlipDarkPanel(), padding: 16 }}>
+                <TrustPaperWatermark name="shield" color="#EAF3FF" size={190} opacity={0.055} />
+                <div style={trustSlipPanelContent()}>
                 <div
                   style={{
                     color: "#FFFFFF",
@@ -3189,16 +3260,19 @@ export default function TrustSlipPage() {
               >
                 Open public verify
               </SecondaryButton>
+                </div>
               </div>
             </div>
 
             <div
               style={{
-                ...trustSlipSectionCard("#FFFFFF"),
+                ...trustSlipPaperPanel("#FFFFFF"),
                 order: 3,
                 gridColumn: isCompact ? "1 / -1" : "1 / 2",
               }}
             >
+              <TrustPaperWatermark name="shield" color="#0B63D1" size={210} opacity={0.035} />
+              <div style={trustSlipPanelContent()}>
               <div style={trustSlipPaperTitle(isCompact)}>
                 TrustSlip decision summary
               </div>
@@ -3265,6 +3339,7 @@ export default function TrustSlipPage() {
                   );
                 })}
               </div>
+              </div>
             </div>
           </section>
 
@@ -3282,6 +3357,8 @@ export default function TrustSlipPage() {
               gridColumn: isCompact ? "1 / -1" : "2 / 3",
             }}
           >
+              <TrustPaperWatermark name="shield" color="#EAF3FF" size={220} opacity={0.045} />
+              <div style={trustSlipPanelContent()}>
               <div
                 style={{
                   color: "#FFFFFF",
@@ -3321,15 +3398,18 @@ export default function TrustSlipPage() {
                   </div>
                 ))}
               </div>
+              </div>
             </div>
 
             <div
               style={{
-                ...trustSlipSectionCard("#FFFFFF"),
+                ...trustSlipPaperPanel("#FFFFFF"),
                 order: 5,
                 gridColumn: isCompact ? "1 / -1" : "1 / 2",
               }}
             >
+              <TrustPaperWatermark name="globe" color="#0B63D1" size={178} opacity={0.035} />
+              <div style={trustSlipPanelContent()}>
               <div style={trustSlipPaperTitle(isCompact)}>
                 What this can be used for
               </div>
@@ -3355,6 +3435,7 @@ export default function TrustSlipPage() {
                   </div>
                 ))}
               </div>
+              </div>
             </div>
           </section>
 
@@ -3366,11 +3447,13 @@ export default function TrustSlipPage() {
           >
             <div
               style={{
-                ...trustSlipSectionCard("#FFFFFF"),
+                ...trustSlipPaperPanel("#FFFFFF"),
                 order: 7,
                 gridColumn: isCompact ? "1 / -1" : "2 / 3",
               }}
             >
+              <TrustPaperWatermark name="alert" color="#991B1B" size={178} opacity={0.035} />
+              <div style={trustSlipPanelContent()}>
               <div style={trustSlipPaperTitle(isCompact)}>
                 Important limitations
               </div>
@@ -3383,15 +3466,18 @@ export default function TrustSlipPage() {
                   </div>
                 ))}
               </div>
+              </div>
             </div>
 
             <div
               style={{
-                ...trustSlipSectionCard("#FFFFFF"),
+                ...trustSlipPaperPanel("#FFFFFF"),
                 order: 8,
                 gridColumn: isCompact ? "1 / -1" : "1 / 2",
               }}
             >
+              <TrustPaperWatermark name="shield" color="#166534" size={178} opacity={0.04} />
+              <div style={trustSlipPanelContent()}>
               <div style={trustSlipPaperTitle(isCompact)}>
                 Why a reader may trust this
               </div>
@@ -3404,17 +3490,20 @@ export default function TrustSlipPage() {
                   </div>
                 ))}
               </div>
+              </div>
             </div>
           </section>
 
           <section
             style={{
-              ...trustSlipSectionCard("#FFFFFF"),
+              ...trustSlipPaperPanel("#FFFFFF"),
               ...trustSlipScrollClearance(isCompact),
               order: 9,
               gridColumn: "1 / -1",
             }}
           >
+            <TrustPaperWatermark name="qr" color="#0B63D1" size={190} opacity={0.03} />
+            <div style={trustSlipPanelContent()}>
             <div style={trustSlipPaperTitle(isCompact)}>
               Quick actions
             </div>
@@ -3469,6 +3558,7 @@ export default function TrustSlipPage() {
                 {trustSlipIconBadge("search", isCompact ? 26 : 28, "navy")}
                 Verify public code
               </SecondaryButton>
+            </div>
             </div>
           </section>
 

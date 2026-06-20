@@ -1,3 +1,39 @@
+## 2026-06-20 - TrustSlip Hero Stamps / Paper Watermarks
+
+- Trigger:
+  - owner reviewed the tightened certificate face and asked for the phone and
+    community evidence to be framed as separate official stamps, for security
+    and status tiles to carry embedded icons, for issue/expiry time to appear on
+    the hero itself, and for the document-paper sections below to carry GSN
+    watermark treatment.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed the top `Phone verified` and `Community recorded` chips into
+      two framed mini-stamps with their own phone/community 3D icons.
+    - added the TrustSlip issued and expiry times to the hero meta area, and
+      also added them as icon-led compact fact tiles.
+    - added embedded 3D icons to the hero fact rail for security, status,
+      identity check, holder check, band, community ID, issued, expires, phone,
+      bank, ID evidence, and evidence state.
+    - added reusable official paper-panel helpers so document sections can carry
+      a watermark without making their text hard to read.
+    - added subtle watermark treatment to the current status panel, decision
+      summary, `What this TrustSlip says`, use-case paper, limitations,
+      trust-reasons, and quick-actions paper.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx` passed.
+  - `git diff --check -- frontend/src/pages/TrustSlipPage.tsx` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed; built TrustSlip chunk:
+    `assets/TrustSlipPage-DXtz1IQq.js`.
+- Unabated truth:
+  - this is still local source/build/audit verified only. It is not Render-live
+    until committed, pushed, and deployed.
+  - real phone screenshot QA is still needed because the authenticated mobile
+    session is the only trustworthy way to confirm spacing under the actual
+    phone browser and bottom navigation chrome.
+
 ## 2026-06-20 - TrustSlip Certificate Face Compression
 
 - Trigger:
