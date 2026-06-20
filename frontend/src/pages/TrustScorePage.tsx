@@ -864,7 +864,7 @@ function overviewBadge(ok: boolean, muted = false): React.CSSProperties {
 
 function evidenceDialStyle(degrees: number, isCompact = false): React.CSSProperties {
   const clamped = Math.max(0, Math.min(360, Number(degrees) || 0));
-  const size = isCompact ? 58 : 68;
+  const size = isCompact ? 42 : 52;
   return {
     width: size,
     height: size,
@@ -881,14 +881,14 @@ function evidenceDialStyle(degrees: number, isCompact = false): React.CSSPropert
 
 function evidenceDialInnerStyle(isCompact = false): React.CSSProperties {
   return {
-    width: isCompact ? 42 : 50,
-    height: isCompact ? 42 : 50,
+    width: isCompact ? 30 : 38,
+    height: isCompact ? 30 : 38,
     borderRadius: 999,
     display: "grid",
     placeItems: "center",
     background: "#FFFFFF",
     color: "#07172C",
-    fontSize: isCompact ? 14 : 16,
+    fontSize: isCompact ? 11 : 13,
     fontWeight: 1000,
     lineHeight: 1,
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)",
@@ -2884,140 +2884,6 @@ export default function TrustScorePage() {
           </section>
 
           <div
-            data-trust-passport-identity-evidence-meter="true"
-            style={{
-              marginTop: isCompact ? 12 : 14,
-              borderRadius: isCompact ? 16 : 18,
-              border: "1px solid rgba(216,227,238,0.78)",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.92) 100%)",
-              padding: isCompact ? 9 : 12,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "36px minmax(0, 1fr)"
-                : "44px minmax(0, 1fr) auto",
-              gap: isCompact ? 9 : 12,
-              alignItems: "center",
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
-            <span style={overviewBadge(identityEvidence.score >= 60, identityEvidence.score < 60)}>
-              <GsnLegacyIcon name="shield" size={22} decorative />
-            </span>
-            <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    color: "#07172C",
-                    fontWeight: 1000,
-                    fontSize: isCompact ? 14 : 16,
-                    lineHeight: 1.1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {isCompact ? "Evidence" : "Identity evidence"}
-                </span>
-                <span style={statusPillStyle(identityEvidence.label)}>
-                  {isCompact
-                    ? `${identityEvidence.score}% ready`
-                    : `${identityEvidence.score}% | ${identityEvidence.label}`}
-                </span>
-              </div>
-              <div
-                style={{
-                  color: "#617085",
-                  fontSize: isCompact ? 11.5 : 13,
-                  lineHeight: 1.3,
-                  fontWeight: 850,
-                }}
-              >
-                {isCompact
-                  ? "Recorded helps. Verified builds confidence."
-                  : "Recorded evidence raises readiness. Verified evidence raises confidence."}
-              </div>
-            </div>
-            <SubtleButton
-              onClick={() => setIdentityEvidenceOpen((open) => !open)}
-              stableHeight={isCompact ? 48 : 40}
-              aria-expanded={identityEvidenceOpen}
-              style={{
-                minWidth: isCompact ? 58 : 70,
-                borderRadius: 999,
-                paddingInline: isCompact ? 8 : 12,
-                fontSize: isCompact ? 11 : 12,
-                fontWeight: 1000,
-                whiteSpace: "nowrap",
-                alignSelf: "center",
-                gridColumn: isCompact ? "1 / -1" : undefined,
-                justifySelf: isCompact ? "stretch" : undefined,
-                marginTop: 0,
-              }}
-              debugId="trust-score.identity-evidence-meter.toggle"
-            >
-              <GsnLegacyIcon
-                name={identityEvidenceOpen ? "chevronUp" : "chevronDown"}
-                size={22}
-                decorative
-              />
-              {identityEvidenceOpen ? "Hide" : "Open"}
-            </SubtleButton>
-
-            {identityEvidenceOpen ? (
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "58px minmax(0, 1fr)"
-                    : "68px minmax(0, 1fr)",
-                  gap: isCompact ? 9 : 12,
-                  alignItems: "center",
-                  paddingTop: isCompact ? 6 : 8,
-                  borderTop: "1px solid rgba(216,227,238,0.58)",
-                }}
-              >
-                <div style={evidenceDialStyle(identityEvidence.degrees, isCompact)}>
-                  <div style={evidenceDialInnerStyle(isCompact)}>{identityEvidence.score}%</div>
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, minWidth: 0 }}>
-                {identityEvidence.items.slice(0, 5).map((item) => (
-                  <span
-                    key={item.key}
-                    style={{
-                      borderRadius: 999,
-                      border: item.done
-                        ? "1px solid rgba(46,155,98,0.18)"
-                        : "1px solid rgba(214,170,69,0.20)",
-                      background: item.done ? "#F0FBF4" : "#FFFBF2",
-                      color: item.done ? "#166534" : "#92400E",
-                      padding: "4px 7px",
-                      fontSize: isCompact ? 10.5 : 11.5,
-                      fontWeight: 1000,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {item.done ? "Recorded: " : "Add: "}
-                    {item.label}
-                  </span>
-                ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div
             style={{
               display: "grid",
               gridTemplateColumns: isCompact
@@ -3180,6 +3046,145 @@ export default function TrustScorePage() {
               <OpenRecordGlyph size={isCompact ? 18 : 21} />
               Open public community record
             </SecondaryButton>
+          </div>
+
+          <div
+            data-trust-passport-identity-evidence-meter="true"
+            style={{
+              marginTop: isCompact ? 8 : 10,
+              borderRadius: isCompact ? 14 : 16,
+              border: "1px solid rgba(216,227,238,0.66)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(248,251,255,0.86) 100%)",
+              padding: isCompact ? 7 : 9,
+              display: "grid",
+              gap: identityEvidenceOpen ? (isCompact ? 7 : 9) : 0,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <SubtleButton
+              onClick={() => setIdentityEvidenceOpen((open) => !open)}
+              stableHeight={isCompact ? 42 : 44}
+              aria-expanded={identityEvidenceOpen}
+              fullWidth
+              style={{
+                justifyContent: "space-between",
+                borderRadius: 999,
+                paddingInline: isCompact ? 9 : 12,
+                fontSize: isCompact ? 11 : 12.5,
+                fontWeight: 1000,
+                whiteSpace: "nowrap",
+                marginTop: 0,
+                background: "#FFFFFF",
+              }}
+              debugId="trust-score.identity-evidence-meter.toggle"
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: isCompact ? 6 : 8,
+                  minWidth: 0,
+                }}
+              >
+                <span
+                  style={overviewBadge(
+                    identityEvidence.score >= 60,
+                    identityEvidence.score < 60
+                  )}
+                >
+                  <GsnLegacyIcon
+                    name={identityEvidenceOpen ? "chevronUp" : "shield"}
+                    size={22}
+                    decorative
+                  />
+                </span>
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {isCompact ? "Evidence" : "Identity evidence"}
+                </span>
+              </span>
+              <span
+                style={{
+                  ...statusPillStyle(identityEvidence.label),
+                  padding: isCompact ? "5px 8px" : "5px 10px",
+                  fontSize: isCompact ? 11 : 12,
+                }}
+              >
+                {isCompact
+                  ? `${identityEvidence.score}% ready`
+                  : `${identityEvidence.score}% | ${identityEvidence.label}`}
+              </span>
+            </SubtleButton>
+
+            {identityEvidenceOpen ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "42px minmax(0, 1fr)"
+                    : "52px minmax(0, 1fr)",
+                  gap: isCompact ? 7 : 9,
+                  alignItems: "center",
+                  paddingTop: isCompact ? 6 : 8,
+                  borderTop: "1px solid rgba(216,227,238,0.52)",
+                }}
+              >
+                <div style={evidenceDialStyle(identityEvidence.degrees, isCompact)}>
+                  <div style={evidenceDialInnerStyle(isCompact)}>{identityEvidence.score}%</div>
+                </div>
+                <div style={{ display: "grid", gap: isCompact ? 5 : 6, minWidth: 0 }}>
+                  <div
+                    style={{
+                      color: "#617085",
+                      fontSize: isCompact ? 10.5 : 12,
+                      lineHeight: 1.2,
+                      fontWeight: 850,
+                    }}
+                  >
+                    {isCompact
+                      ? "Recorded helps. Verified builds confidence."
+                      : "Recorded evidence raises readiness. Verified evidence raises confidence."}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: isCompact ? 4 : 5,
+                      minWidth: 0,
+                    }}
+                  >
+                    {identityEvidence.items.slice(0, 5).map((item) => (
+                      <span
+                        key={item.key}
+                        style={{
+                          borderRadius: 999,
+                          border: item.done
+                            ? "1px solid rgba(46,155,98,0.16)"
+                            : "1px solid rgba(214,170,69,0.18)",
+                          background: item.done ? "#F0FBF4" : "#FFFBF2",
+                          color: item.done ? "#166534" : "#92400E",
+                          padding: isCompact ? "3px 6px" : "4px 7px",
+                          fontSize: isCompact ? 9.5 : 10.5,
+                          fontWeight: 1000,
+                          lineHeight: 1,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.done ? "Recorded: " : "Add: "}
+                        {item.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           {showIdentityCompletionPaths ? (

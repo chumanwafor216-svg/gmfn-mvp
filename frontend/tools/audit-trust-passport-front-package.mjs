@@ -85,7 +85,7 @@ assertContains(
 assertContains(
   "trust",
   /import GSNBrandMark from "\.\.\/components\/GSNBrandMark";[\s\S]*?function OfficialGsnWatermark\([\s\S]*?<GSNBrandMark width=\{isCompact \? 148 : 210\} height=\{isCompact \? 186 : 264\} \/>[\s\S]*?OfficialGsnWatermark[\s\S]*?activeTrustPassportLane === "finance"/,
-  "Trust Passport must use the official GSN brand mark as a watermark on the document shell and proof lanes."
+  "Trust Passport must use the official GSN brand mark as a watermark on the document shell and evidence lanes."
 );
 
 assertContains(
@@ -99,7 +99,7 @@ if (/letterSpacing:\s*[1-9]/.test(sourceByFile.trust)) {
     files.trust,
     sourceByFile.trust,
     sourceByFile.trust.search(/letterSpacing:\s*[1-9]/),
-    "Trust Passport must not use spaced-out uppercase lane headers on phone-polished proof surfaces.",
+    "Trust Passport must not use spaced-out uppercase lane headers on phone-polished evidence surfaces.",
     sourceByFile.trust.match(/letterSpacing:\s*[1-9][^,\n]*/)?.[0] || ""
   );
 }
@@ -109,7 +109,7 @@ if (/TrustPaperWatermark[\s\S]*?name="wallet"/.test(sourceByFile.trust)) {
     files.trust,
     sourceByFile.trust,
     sourceByFile.trust.search(/TrustPaperWatermark[\s\S]*?name="wallet"/),
-    "Trust Passport finance proof surfaces must not use wallet watermark imagery.",
+    "Trust Passport finance evidence surfaces must not use wallet watermark imagery.",
     "Use the official GSN watermark and financeInstitution 3D icon for Finance Discipline."
   );
 }
@@ -193,8 +193,8 @@ assertContains(
 
 assertContains(
   "trust",
-  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?buildIdentityEvidenceCompletion[\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?isCompact[\s\S]*?`\$\{identityEvidence\.score\}% ready`[\s\S]*?`\$\{identityEvidence\.score\}% \| \$\{identityEvidence\.label\}`[\s\S]*?Recorded helps\. Verified builds confidence\.[\s\S]*?Recorded evidence raises readiness\. Verified evidence raises confidence\.[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?identityEvidenceOpen \?/,
-  "Trust Passport Identity Overview must keep the reusable identity evidence meter collapsed behind a real toggle with phone-safe and full recorded-vs-verified language."
+  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?buildIdentityEvidenceCompletion[\s\S]*?Complete ID checks[\s\S]*?Open public community record[\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{isCompact \? 42 : 44\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?`\$\{identityEvidence\.score\}% ready`[\s\S]*?`\$\{identityEvidence\.score\}% \| \$\{identityEvidence\.label\}`[\s\S]*?identityEvidenceOpen \?[\s\S]*?Recorded helps\. Verified builds confidence\.[\s\S]*?Recorded evidence raises readiness\. Verified evidence raises confidence\./,
+  "Trust Passport Identity Overview must keep the reusable identity evidence meter collapsed behind a compact toggle after the snapshot actions with phone-safe and full recorded-vs-verified language."
 );
 
 assertContains(

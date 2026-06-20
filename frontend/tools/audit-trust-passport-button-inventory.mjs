@@ -102,9 +102,9 @@ for (const action of actions) {
 
 const expectedOrder = [
   "trust-score.lane.${lane.key}",
-  "trust-score.identity-evidence-meter.toggle",
   "trust-score.complete-identification",
   "trust-score.open-public-community-record",
+  "trust-score.identity-evidence-meter.toggle",
   "debugId={item.debugId}",
   "trust-score.repair-next-step",
   "trust-score.community-lane.open-public-community-record",
@@ -176,8 +176,8 @@ assertContains(
 );
 
 assertContains(
-  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?marginTop: isCompact \? 12 : 14[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?isCompact[\s\S]*?`\$\{identityEvidence\.score\}% ready`[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?alignSelf: "center"[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?identityEvidenceOpen \?/,
-  "Trust Passport identity evidence meter must stay collapsed behind a stable Open/Hide toggle so the snapshot remains portable."
+  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?marginTop: isCompact \? 8 : 10[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{isCompact \? 42 : 44\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?`\$\{identityEvidence\.score\}% ready`[\s\S]*?identityEvidenceOpen \?/,
+  "Trust Passport identity evidence meter must stay collapsed behind a compact stable toggle after the snapshot actions so the snapshot remains portable."
 );
 
 assertContains(
