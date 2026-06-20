@@ -312,6 +312,18 @@ function HeroChip({ color, label }: { color: string; label: string }) {
   );
 }
 
+function fitRecordName(value: string): React.CSSProperties {
+  const length = safeStr(value).length;
+  return {
+    fontSize:
+      length > 24
+        ? "clamp(25px, 6.4vw, 40px)"
+        : length > 16
+          ? "clamp(28px, 7.2vw, 46px)"
+          : "clamp(34px, 9vw, 54px)",
+  };
+}
+
 export default function CommunityVerifyPage() {
   const { communityKey } = useParams<{ communityKey: string }>();
   const [record, setRecord] = useState<CommunityVerifyRecord | null>(null);
@@ -756,7 +768,7 @@ export default function CommunityVerifyPage() {
                       border: "1px solid rgba(214,170,69,0.34)",
                       padding: 18,
                       display: "grid",
-                      gap: 14,
+                      gap: 12,
                       boxShadow: "0 18px 42px rgba(6,24,39,0.22)",
                     }}
                     aria-label="Public community record"
@@ -764,12 +776,12 @@ export default function CommunityVerifyPage() {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "minmax(0, 1fr) auto",
-                        gap: 12,
+                        gridTemplateColumns: "minmax(0, 1fr) 58px",
+                        gap: 10,
                         alignItems: "start",
                       }}
                     >
-                      <div style={{ minWidth: 0, display: "grid", gap: 10 }}>
+                      <div style={{ minWidth: 0, display: "grid", gap: 8 }}>
                         <span
                           style={{
                             color: "#C8D8EA",
@@ -785,11 +797,14 @@ export default function CommunityVerifyPage() {
                           style={{
                             margin: 0,
                             color: "#FFFFFF",
-                            fontSize: "clamp(32px, 9vw, 52px)",
+                            ...fitRecordName(communityName),
                             lineHeight: 0.98,
                             fontWeight: 1000,
                             letterSpacing: 0,
-                            overflowWrap: "anywhere",
+                            overflowWrap: "break-word",
+                            wordBreak: "normal",
+                            hyphens: "none",
+                            maxWidth: "100%",
                           }}
                         >
                           {communityName}
@@ -797,16 +812,16 @@ export default function CommunityVerifyPage() {
                       </div>
                       <div
                         style={{
-                          width: 72,
-                          height: 72,
-                          borderRadius: 22,
+                          width: 58,
+                          height: 58,
+                          borderRadius: 18,
                           display: "grid",
                           placeItems: "center",
                           border: "1px solid rgba(242,199,102,0.42)",
                           background: "rgba(255,255,255,0.04)",
                         }}
                       >
-                        {communityVerifyIconBadge("trust-shield", 48, "navy")}
+                        {communityVerifyIconBadge("trust-shield", 44, "navy")}
                       </div>
                     </div>
                     <div
@@ -823,7 +838,8 @@ export default function CommunityVerifyPage() {
                             fontSize: "clamp(18px, 5vw, 26px)",
                             lineHeight: 1.08,
                             fontWeight: 1000,
-                            overflowWrap: "anywhere",
+                            overflowWrap: "break-word",
+                            wordBreak: "normal",
                           }}
                         >
                           {communityAnchor}
@@ -875,35 +891,43 @@ export default function CommunityVerifyPage() {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "44px minmax(0, 1fr) auto",
+                        gridTemplateColumns: "44px minmax(0, 1fr)",
                         gap: 10,
                         alignItems: "start",
                       }}
                     >
                       {communityVerifyIconBadge("certificate-seal", 42, "blue")}
-                      <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          minWidth: 0,
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "7px 10px",
+                          alignItems: "center",
+                        }}
+                      >
                         <h2 style={{ ...sectionTitle(), fontSize: 22 }}>Smart guidance</h2>
-                        <p style={{ ...helperText(), marginTop: 5 }}>
+                        <span
+                          style={{
+                            minHeight: 30,
+                            borderRadius: 999,
+                            padding: "6px 10px",
+                            color: "#0B63D1",
+                            background: "#EEF6FF",
+                            border: "1px solid rgba(11,99,209,0.16)",
+                            fontSize: 10.5,
+                            fontWeight: 1000,
+                            letterSpacing: 0,
+                            textTransform: "uppercase",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Context-aware
+                        </span>
+                        <p style={{ ...helperText(), flexBasis: "100%" }}>
                           What are you checking?
                         </p>
                       </div>
-                      <span
-                        style={{
-                          minHeight: 32,
-                          borderRadius: 999,
-                          padding: "7px 10px",
-                          color: "#0B63D1",
-                          background: "#EEF6FF",
-                          border: "1px solid rgba(11,99,209,0.16)",
-                          fontSize: 11,
-                          fontWeight: 1000,
-                          letterSpacing: 0.8,
-                          textTransform: "uppercase",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Context-aware
-                      </span>
                     </div>
                     <div
                       aria-label="Verification scope selector"

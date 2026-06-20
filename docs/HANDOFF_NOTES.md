@@ -1,3 +1,51 @@
+## 2026-06-20 - Public Verification and Verdict Layout Cleanup
+
+- Trigger:
+  - owner reported phone visual issues in the public Community Verification
+    record and Trust Passport `Current trust verdict` block:
+    long community names split badly, the `Context-aware` chip blocked nearby
+    Smart guidance text, the verdict area wasted space, the record-state note
+    stayed exposed, and the A/B/C/D/E rail looked too flat.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added responsive community-name sizing for the dark public record card.
+    - stopped using aggressive `anywhere` wrapping for the community name and
+      Community ID so words and IDs keep a cleaner institutional shape.
+    - reduced the hero shield tile so `Homeland isa`-style names have more
+      usable line space on phone.
+    - moved the `Context-aware` badge into a wrapping Smart guidance header so
+      it cannot sit over the title or helper text.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - compacted the verdict seal and text into a tighter grid.
+    - changed the exposed `Record state, not character judgement` note into a
+      stable open/close control labelled `Record state note`.
+    - rebuilt the A/B/C/D/E grade strip as a raised institutional rail with a
+      stronger active grade block.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added guards for the Community Verification long-name and Smart guidance
+      wrapping behavior.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - added guards for the verdict note toggle, compact seal geometry, and
+      raised grade rail.
+- Verification:
+  - `npm run audit:trust-actions` passed from `frontend/`.
+  - `npm run audit:trust-passport-front-package` passed from `frontend/`.
+  - `npm run audit:trust-passport-button-inventory` passed from `frontend/`.
+  - `npm run audit:trust-passport-lane-map` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm exec -- eslint src/pages/CommunityVerifyPage.tsx src/pages/TrustScorePage.tsx tools/audit-trust-actions.mjs tools/audit-trust-passport-button-inventory.mjs`
+    passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this is source/build/audit verified, not phone-screenshot verified in the
+    actual handset browser during this turn. Because the defects were visual,
+    the next pilot check still needs real phone screenshots before calling the
+    surface fully polished.
+  - `frontend/src/pages/TrustScorePage.tsx` already contains broader
+    uncommitted Trust Passport/community-evidence work outside this cleanup;
+    only the compact verdict layout, note toggle, and grade rail changes belong
+    to this entry.
+
 ## 2026-06-20 - Trust Passport Verdict Language Reframed
 
 - Trigger:

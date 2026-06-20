@@ -1335,6 +1335,7 @@ export default function TrustScorePage() {
   const [showIdentityCompletionPaths, setShowIdentityCompletionPaths] =
     useState(false);
   const [identityEvidenceOpen, setIdentityEvidenceOpen] = useState(false);
+  const [verdictNoteOpen, setVerdictNoteOpen] = useState(false);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -3311,52 +3312,100 @@ export default function TrustScorePage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "82px minmax(0, 1fr)" : "112px minmax(0, 1fr)",
-                  gap: isCompact ? 12 : 16,
-                  alignItems: "center",
+                  gap: isCompact ? 10 : 14,
                 }}
               >
                 <div
                   style={{
-                    minHeight: isCompact ? 82 : 112,
-                    borderRadius: 18,
                     display: "grid",
-                    placeItems: "center",
-                    background: readingTone.bg,
-                    border: readingTone.border,
-                    color: readingTone.text,
-                    fontSize: isCompact ? 54 : 76,
-                    lineHeight: 1,
-                    fontWeight: 1000,
+                    gridTemplateColumns: isCompact
+                      ? "58px minmax(0, 1fr)"
+                      : "78px minmax(0, 1fr)",
+                    gap: isCompact ? 10 : 14,
+                    alignItems: "center",
                   }}
                 >
-                  {activeBand || currentBand}
-                </div>
-                <div>
                   <div
                     style={{
+                      minHeight: isCompact ? 58 : 78,
+                      borderRadius: isCompact ? 16 : 20,
+                      display: "grid",
+                      placeItems: "center",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,247,230,0.98) 100%)",
+                      border: "1px solid rgba(245,158,11,0.34)",
                       color: readingTone.text,
-                      fontSize: 23,
+                      fontSize: isCompact ? 34 : 46,
+                      lineHeight: 1,
+                      fontWeight: 1000,
+                      boxShadow:
+                        "0 14px 28px rgba(146,64,14,0.12), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -7px 16px rgba(245,158,11,0.12)",
+                    }}
+                  >
+                    {activeBand || currentBand}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                      color: readingTone.text,
+                      fontSize: isCompact ? 21 : 24,
                       lineHeight: 1.1,
                       fontWeight: 1000,
                     }}
                   >
                     {passportVm.verdict.label}
+                    </div>
+                    <div style={{ marginTop: 7 }}>
+                      <span
+                        title={passportVm.verdict.evidenceMeaning}
+                        style={{
+                          ...statusPillStyle(passportVm.verdict.evidenceStatus),
+                          minHeight: 24,
+                          padding: "3px 8px",
+                          fontSize: 11.5,
+                        }}
+                      >
+                        Depth: {passportVm.verdict.evidenceLabel}
+                      </span>
+                    </div>
                   </div>
-                  <p style={{ ...helperText(), margin: "8px 0 0" }}>
-                    {plainTrustVerdict}
-                  </p>
-                  <div style={{ marginTop: 10 }}>
-                    <span
-                      title={passportVm.verdict.evidenceMeaning}
-                      style={statusPillStyle(passportVm.verdict.evidenceStatus)}
-                    >
-                      Evidence depth: {passportVm.verdict.evidenceLabel}
-                    </span>
-                  </div>
+                </div>
+                <p
+                  style={{
+                    ...helperText(),
+                    margin: 0,
+                    fontSize: isCompact ? 14 : 14.5,
+                    lineHeight: isCompact ? 1.5 : 1.65,
+                  }}
+                >
+                  {plainTrustVerdict}
+                </p>
+                <SecondaryButton
+                  debugId="trust-score.verdict-note.toggle"
+                  stableHeight={isCompact ? 42 : 44}
+                  onClick={() => setVerdictNoteOpen((open) => !open)}
+                  style={{
+                    justifyContent: "space-between",
+                    borderRadius: 13,
+                    background: verdictNoteOpen ? "#F8FBFF" : "#FFFFFF",
+                    border: "1px solid rgba(11,99,209,0.14)",
+                    color: "#24415C",
+                    boxShadow: "none",
+                    fontSize: 12.5,
+                    fontWeight: 1000,
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                    <GsnLegacyIcon name="document" size={24} decorative />
+                    Record state note
+                  </span>
+                  <span aria-hidden="true" style={{ color: "#617085", fontSize: 18 }}>
+                    {verdictNoteOpen ? "-" : "+"}
+                  </span>
+                </SecondaryButton>
+                {verdictNoteOpen ? (
                   <div
                     style={{
-                      marginTop: 10,
                       display: "grid",
                       gridTemplateColumns: "30px minmax(0, 1fr)",
                       gap: 8,
@@ -3376,16 +3425,22 @@ export default function TrustScorePage() {
                       Record state, not character judgement. Add current evidence to strengthen this reading.
                     </span>
                   </div>
-                </div>
+                ) : null}
               </div>
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                  display: "flex",
+                  alignItems: "stretch",
+                  gap: isCompact ? 5 : 7,
+                  padding: isCompact ? 5 : 7,
                   border: "1px solid rgba(216,227,238,0.9)",
-                  borderRadius: 14,
-                  overflow: "hidden",
+                  borderRadius: 18,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.96) 100%)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.95), 0 12px 24px rgba(6,24,39,0.06)",
                 }}
+                aria-label="Trust grade rail"
               >
                 {gradeLegend.map(([grade, label]) => {
                   const isActive = activeBand === grade;
@@ -3393,18 +3448,32 @@ export default function TrustScorePage() {
                     <div
                       key={grade}
                       style={{
-                        padding: isCompact ? "8px 4px" : "10px 6px",
+                        flex: "1 1 0",
+                        minHeight: isCompact ? 46 : 58,
+                        padding: isCompact ? "7px 4px" : "9px 6px",
                         textAlign: "center",
-                        background: isActive ? "#FFF7E6" : grade === "A" || grade === "B" ? "#F0FBF4" : "#FFFDF5",
-                        borderLeft: "1px solid rgba(216,227,238,0.9)",
-                        boxShadow: isActive ? "inset 0 0 0 2px rgba(245,158,11,0.42)" : "none",
+                        borderRadius: 13,
+                        background: isActive
+                          ? "linear-gradient(180deg, #FFF9EA 0%, #FFE7A8 100%)"
+                          : grade === "A" || grade === "B"
+                            ? "linear-gradient(180deg, #F7FCF8 0%, #EAF7EE 100%)"
+                            : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+                        border: isActive
+                          ? "1px solid rgba(214,170,69,0.72)"
+                          : "1px solid rgba(216,227,238,0.95)",
+                        boxShadow: isActive
+                          ? "0 12px 22px rgba(146,64,14,0.16), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -8px 18px rgba(214,170,69,0.20)"
+                          : "inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -6px 14px rgba(6,24,39,0.04)",
+                        display: "grid",
+                        placeItems: "center",
                       }}
                     >
                       <div
                         style={{
                           color: isActive ? "#92400E" : "#07172C",
                           fontWeight: 1000,
-                          fontSize: isCompact ? 16 : 18,
+                          fontSize: isCompact ? 19 : 23,
+                          lineHeight: 1,
                         }}
                       >
                         {grade}

@@ -390,7 +390,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Community Verification[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?Smart guidance[\s\S]*?What are you checking\?[\s\S]*?Context-aware[\s\S]*?Request scoped confirmation[\s\S]*?Verification snapshot[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Community type[\s\S]*?Relay[\s\S]*?community-verify\.copy-link[\s\S]*?Copy[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Verification details[\s\S]*?Public record[\s\S]*?Public face[\s\S]*?GSN record[\s\S]*?Next evidence[\s\S]*?Private by design/,
+  /Community Verification[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?Smart guidance[\s\S]*?Context-aware[\s\S]*?What are you checking\?[\s\S]*?Request scoped confirmation[\s\S]*?Verification snapshot[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Community type[\s\S]*?Relay[\s\S]*?community-verify\.copy-link[\s\S]*?Copy[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Verification details[\s\S]*?Public record[\s\S]*?Public face[\s\S]*?GSN record[\s\S]*?Next evidence[\s\S]*?Private by design/,
   "CommunityVerifyPage must present an official record card, smart guidance, compact snapshot, collapsed details, and a privacy boundary."
 );
 
@@ -404,6 +404,12 @@ assertContains(
   "src/pages/CommunityVerifyPage.tsx",
   /const communityAnchor = firstTruthy\(record\?\.community_code, record\?\.community_id, "Not shown"\);[\s\S]*?Public community record[\s\S]*?\{communityName\}[\s\S]*?\{communityAnchor\}[\s\S]*?This confirms the community identity in GSN/,
   "CommunityVerifyPage hero must surface the Community ID as the visible trust anchor before treating the community name as display text."
+);
+
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /function fitRecordName\(value: string\)[\s\S]*?overflowWrap: "break-word"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?gridTemplateColumns: "44px minmax\(0, 1fr\)"[\s\S]*?flexWrap: "wrap"[\s\S]*?Context-aware/,
+  "CommunityVerifyPage phone hero and Smart guidance header must keep long names and the context chip from clipping or blocking nearby text."
 );
 
 assertContains(

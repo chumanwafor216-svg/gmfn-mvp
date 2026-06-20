@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 17;
-const expectedRenderedActions = 25;
+const expectedSourceActions = 18;
+const expectedRenderedActions = 26;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -221,8 +221,18 @@ assertNotContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact \? "82px minmax\(0, 1fr\)" : "112px minmax\(0, 1fr\)"[\s\S]*?fontSize: isCompact \? 54 : 76/,
-  "Trust Passport verdict tile must shrink on phone so the verdict text keeps enough room."
+  /debugId="trust-score\.verdict-note\.toggle"[\s\S]*?Record state note[\s\S]*?Record state, not character judgement\. Add current evidence to strengthen this reading\./,
+  "Trust Passport verdict note must stay behind a stable open/close control so the screenshot surface stays compact."
+);
+
+assertContains(
+  /gridTemplateColumns: isCompact[\s\S]*?"58px minmax\(0, 1fr\)"[\s\S]*?"78px minmax\(0, 1fr\)"[\s\S]*?minHeight: isCompact \? 58 : 78[\s\S]*?fontSize: isCompact \? 34 : 46/,
+  "Trust Passport verdict seal must stay compact on phone so the verdict text no longer sits beside a tall empty tile."
+);
+
+assertContains(
+  /aria-label="Trust grade rail"[\s\S]*?linear-gradient\(180deg, #FFF9EA 0%, #FFE7A8 100%\)[\s\S]*?boxShadow: isActive[\s\S]*?inset 0 -8px 18px rgba\(214,170,69,0\.20\)/,
+  "Trust Passport grade rail must render as a raised institutional rail, not a flat ABCDE strip."
 );
 
 assertContains(
@@ -261,5 +271,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector and two trust-surface cards.`
+  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, verdict note toggle, and two trust-surface cards.`
 );
