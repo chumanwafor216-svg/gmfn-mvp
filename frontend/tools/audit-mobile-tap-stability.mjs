@@ -118,6 +118,8 @@ const mobileTapGuardPath = join(sourceRoot, "lib", "mobileTapGuard.ts");
 const mobileTapGuardSource = readFileSync(mobileTapGuardPath, "utf8");
 const appLayoutPath = join(sourceRoot, "layout", "AppLayout.tsx");
 const appLayoutSource = readFileSync(appLayoutPath, "utf8");
+const companionLayerPath = join(sourceRoot, "components", "CompanionLayer.tsx");
+const companionLayerSource = readFileSync(companionLayerPath, "utf8");
 const mainPath = join(sourceRoot, "main.tsx");
 const mainSource = readFileSync(mainPath, "utf8");
 const brandPath = join(sourceRoot, "styles", "gmfnBrand.ts");
@@ -254,6 +256,36 @@ if (
       "Global mobile tap guard must suppress phantom app-shell navigation immediately after a page action is accepted",
     text:
       "Expected app-layout settle-window suppression was not found.",
+  });
+}
+
+if (
+  !/function isCompanionToastAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("companion-toast\."\)[\s\S]*?if \(isCompanionToastAction\(endRoot\)\) \{[\s\S]*?lastFieldPointerContext = null;[\s\S]*?lastFocusedFieldContext = null;[\s\S]*?clearActiveTap\(\);[\s\S]*?companion-toast-click-accepted/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Companion toast actions must bypass mobile tap-guard suppression so Dismiss and Open stay reachable on phone",
+    text:
+      "Expected companion-toast action whitelist was not found in the mobile tap guard.",
+  });
+}
+
+if (
+  !/dismissedToastIdsRef = useRef<Set<string>>\(new Set\(\)\)[\s\S]*?const dismissToast = useCallback[\s\S]*?markCompanionUserInteraction\(\);[\s\S]*?dismissedToastIdsRef\.current\.add\(toast\.id\);[\s\S]*?if \(dismissedToastIdsRef\.current\.has\(payload\.id\)\) \{[\s\S]*?return;[\s\S]*?zIndex: 2200[\s\S]*?onClick=\{\(\) => dismissToast\(toast\)\}[\s\S]*?debugId=\{`companion-toast\.\$\{toast\.id\}\.dismiss-icon`\}[\s\S]*?onClick=\{\(\) => dismissToast\(toast\)\}[\s\S]*?debugId=\{`companion-toast\.\$\{toast\.id\}\.dismiss`\}/.test(
+    companionLayerSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, companionLayerPath),
+    line: 1,
+    label:
+      "Companion toast dismiss controls must remain above mobile overlays and suppress the dismissed toast id for the current session",
+    text:
+      "Expected Companion dismiss session memory, high overlay z-index, and shared dismiss handler were not found.",
   });
 }
 

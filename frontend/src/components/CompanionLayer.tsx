@@ -139,6 +139,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
 
   const timerMapRef = useRef<Record<string, number>>({});
   const lastUrgentPollRef = useRef(0);
+  const dismissedToastIdsRef = useRef<Set<string>>(new Set());
 
   const clearToastTimer = useCallback((id: string) => {
     const timerId = timerMapRef.current[id];
@@ -152,6 +153,12 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
     clearToastTimer(id);
     setToasts((prev) => prev.filter((item) => item.id !== id));
   }, [clearToastTimer]);
+
+  const dismissToast = useCallback((toast: CompanionToastPayload) => {
+    markCompanionUserInteraction();
+    dismissedToastIdsRef.current.add(toast.id);
+    removeToast(toast.id);
+  }, [removeToast]);
 
   function handleToastOpen(toast: CompanionToastPayload) {
     markCompanionUserInteraction();
@@ -200,6 +207,10 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   
   useEffect(() => {
     return subscribeCompanionToasts((payload) => {
+      if (dismissedToastIdsRef.current.has(payload.id)) {
+        return;
+      }
+
       setToasts((prev) => {
         const next = [...prev.filter((item) => item.id !== payload.id), payload];
         return next.slice(-3);
@@ -345,7 +356,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
         position: "fixed",
         top: 12,
         right: 12,
-        zIndex: 80,
+        zIndex: 2200,
         width: "min(88vw, 350px)",
         display: "grid",
         gap: 10,
@@ -396,7 +407,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
 
             <SubtleButton
               aria-label="Dismiss companion message"
-              onClick={() => removeToast(toast.id)}
+              onClick={() => dismissToast(toast)}
               stableHeight={52}
               minWidth={32}
               debugId={`companion-toast.${toast.id}.dismiss-icon`}
@@ -437,7 +448,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
             ) : null}
 
             <SecondaryButton
-              onClick={() => removeToast(toast.id)}
+              onClick={() => dismissToast(toast)}
               stableHeight={52}
               debugId={`companion-toast.${toast.id}.dismiss`}
               style={{

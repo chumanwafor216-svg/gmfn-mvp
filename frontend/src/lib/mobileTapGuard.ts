@@ -272,6 +272,11 @@ function isAppShellAction(root: Element | null): boolean {
   return ctaId.startsWith("app-layout.");
 }
 
+function isCompanionToastAction(root: Element | null): boolean {
+  const ctaId = root?.getAttribute("data-cta-id") || "";
+  return ctaId.startsWith("companion-toast.");
+}
+
 function isInsideOpenMobileOverlay(root: Element | null): boolean {
   return Boolean(root?.closest(OPEN_MOBILE_OVERLAY_SELECTOR));
 }
@@ -652,6 +657,19 @@ function handleClick(event: MouseEvent): void {
   ) {
     lastAcceptedActionClickAt = currentTime;
     traceTap("click-redispatch-accepted", {
+      action: labelForAction(endRoot),
+    });
+    return;
+  }
+
+  if (isCompanionToastAction(endRoot)) {
+    lastAcceptedActionClickAt = currentTime;
+    lastAcceptedActionRoot = endRoot;
+    lastPointerContext = null;
+    lastFieldPointerContext = null;
+    lastFocusedFieldContext = null;
+    clearActiveTap();
+    traceTap("companion-toast-click-accepted", {
       action: labelForAction(endRoot),
     });
     return;

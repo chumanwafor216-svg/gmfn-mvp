@@ -1,3 +1,27 @@
+## 2026-06-20 - Companion Toast Dismiss Phone Repair
+
+- Trigger:
+  - owner reported the `Dismiss` button on the top Companion approval toast did
+    not work on phone.
+- Changed:
+  - `frontend/src/components/CompanionLayer.tsx`
+    - added session-level dismissed-toast id memory so a manually dismissed
+      toast cannot be immediately re-added by the companion event stream.
+    - routed both the `x` button and the visible `Dismiss` button through the
+      same dismiss handler.
+    - raised the Companion toast layer above mobile drawer/tools overlays.
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - added a narrow `companion-toast.` action whitelist so the global phone tap
+      guard accepts Companion `Open` / `Dismiss` clicks before field-focus or
+      wrong-root suppression can eat them.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - caged the Companion toast whitelist, dismissed-id memory, and overlay
+      priority.
+- Unabated truth:
+  - this repairs the likely frontend causes: re-added toast ids, low overlay
+    stacking, and global tap-guard suppression. It is still worth confirming on
+    the actual phone because the report came from a real-device tap path.
+
 ## 2026-06-20 - Community Verification Snapshot Compression
 
 - Trigger:
