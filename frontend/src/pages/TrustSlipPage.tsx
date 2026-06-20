@@ -11,10 +11,8 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
-import EvidenceMeter from "../components/EvidenceMeter";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
-  TrustPaperSeal,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
@@ -719,6 +717,92 @@ function trustSlipSectionCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
+function trustSlipDarkPanel(): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 16,
+    border: "1px solid rgba(196,216,238,0.16)",
+    background:
+      "linear-gradient(145deg, rgba(8,35,58,0.98) 0%, rgba(6,24,39,0.98) 58%, rgba(11,45,74,0.96) 100%)",
+    boxShadow:
+      "0 18px 42px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+  };
+}
+
+function trustSlipRaisedMeter(status: string): React.CSSProperties {
+  const normalized = safeStr(status).toLowerCase();
+  const positive =
+    normalized.includes("strong") ||
+    normalized.includes("stable") ||
+    normalized.includes("active") ||
+    normalized.includes("verified") ||
+    normalized.includes("ready");
+  const caution =
+    normalized.includes("caution") ||
+    normalized.includes("pressure") ||
+    normalized.includes("expired") ||
+    normalized.includes("refresh") ||
+    normalized.includes("not") ||
+    normalized.includes("pending");
+  const amber =
+    caution ||
+    normalized.includes("limited") ||
+    normalized.includes("building") ||
+    normalized.includes("mixed");
+  const color = positive ? "#166534" : amber ? "#8A4B08" : "#0B4E91";
+  const border = positive
+    ? "rgba(46,155,98,0.26)"
+    : amber
+      ? "rgba(214,170,69,0.34)"
+      : "rgba(11,99,209,0.24)";
+  const bg = positive
+    ? "linear-gradient(180deg, #F4FFF8 0%, #DDF8E8 55%, #C8ECD9 100%)"
+    : amber
+      ? "linear-gradient(180deg, #FFFDF5 0%, #FFF2CB 56%, #F7D989 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #EAF3FF 56%, #D7E8FF 100%)";
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 38,
+    minWidth: 82,
+    borderRadius: 14,
+    padding: "8px 13px",
+    border: `1px solid ${border}`,
+    background: bg,
+    color,
+    fontWeight: 1000,
+    fontSize: 13,
+    lineHeight: 1.1,
+    textAlign: "center",
+    boxShadow:
+      "0 10px 22px rgba(7,23,44,0.10), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -8px 14px rgba(7,23,44,0.045)",
+    whiteSpace: "normal",
+  };
+}
+
+function trustSlipRaisedGradeCell(active: boolean, grade: string): React.CSSProperties {
+  const strong = grade === "A" || grade === "B";
+  const mixed = grade === "C";
+  return {
+    padding: "11px 6px",
+    textAlign: "center",
+    background: active
+      ? "linear-gradient(180deg, #FFF7E6 0%, #F4CF74 100%)"
+      : strong
+        ? "linear-gradient(180deg, #F8FFF9 0%, #DFF7EA 100%)"
+        : mixed
+          ? "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"
+          : "linear-gradient(180deg, #FFFDF7 0%, #F8E8BB 100%)",
+    boxShadow: active
+      ? "inset 0 0 0 3px rgba(214,170,69,0.52), 0 10px 20px rgba(154,104,23,0.12)"
+      : "inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -10px 16px rgba(7,23,44,0.04)",
+    borderLeft: "1px solid rgba(216,227,238,0.9)",
+  };
+}
+
 function trustSlipPaperTitle(compact = false): React.CSSProperties {
   return {
     margin: 0,
@@ -748,20 +832,6 @@ function trustSlipActionButtonStyle(compact = false): React.CSSProperties {
     fontSize: compact ? 13 : 14,
     fontWeight: 950,
     boxShadow: "0 8px 18px rgba(7,23,44,0.05)",
-  };
-}
-
-function trustSlipTinyIconCircle(ok = true): React.CSSProperties {
-  return {
-    width: 24,
-    height: 24,
-    borderRadius: 999,
-    display: "grid",
-    placeItems: "center",
-    color: ok ? "#166534" : "#B45309",
-    background: ok ? "#F0FBF4" : "#FFF7E6",
-    border: `1px solid ${ok ? "rgba(46,155,98,0.20)" : "rgba(214,170,69,0.28)"}`,
-    flex: "0 0 auto",
   };
 }
 
@@ -2573,7 +2643,7 @@ export default function TrustSlipPage() {
                       textTransform: "uppercase",
                     }}
                   >
-                    GSN · Public View
+                    GSN - Public View
                     <br />
                     <span style={{ color: "#AFC4D9", fontWeight: 850, textTransform: "none", letterSpacing: 0 }}>
                       Record anchor {communityRef}
@@ -2581,94 +2651,180 @@ export default function TrustSlipPage() {
                   </div>
                 </div>
               </div>
-              <h1
-                style={{
-                  margin: "24px 0 0",
-                  color: "#FFFFFF",
-                  fontSize: isCompact ? 34 : 42,
-                  lineHeight: 1.02,
-                  fontWeight: 1000,
-                }}
-              >
-                {holderName}
-              </h1>
-              <p
-                style={{
-                  margin: "12px 0 0",
-                  maxWidth: 430,
-                  color: "#DCE8F4",
-                  fontSize: isCompact ? 17 : 18,
-                  lineHeight: 1.38,
-                  fontWeight: 760,
-                }}
-              >
-                Community: {communityName}. GSN ID: {gmfnId}. Check the code, then read recorded and verified signals separately.
-              </p>
               <div
                 style={{
-                  width: 146,
+                  width: "min(100%, 650px)",
                   height: 1,
                   background: "rgba(214,170,69,0.72)",
                   marginTop: 24,
-                  marginBottom: 22,
+                  marginBottom: 20,
                 }}
               />
               <div
                 style={{
-                  color: "#FFFFFF",
-                  fontSize: 36,
-                  lineHeight: 1,
-                  fontWeight: 1000,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "96px minmax(0, 1fr)" : "132px minmax(0, 1fr)",
+                  gap: isCompact ? 13 : 18,
+                  alignItems: "start",
                 }}
               >
-                <span
-                  aria-hidden
+                <div
                   style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: 12,
+                    width: isCompact ? 96 : 132,
+                    height: isCompact ? 96 : 132,
+                    borderRadius: 18,
                     display: "grid",
                     placeItems: "center",
-                    color: "#F6D77A",
-                    border: "1px solid rgba(246,215,122,0.52)",
-                    background: "rgba(246,215,122,0.08)",
+                    background:
+                      "linear-gradient(180deg, rgba(234,243,255,0.16) 0%, rgba(255,255,255,0.06) 100%)",
+                    border: "1px solid rgba(246,215,122,0.28)",
+                    color: "#FFFFFF",
+                    fontSize: 28,
+                    fontWeight: 1000,
+                    overflow: "hidden",
+                    position: "relative",
+                    boxShadow:
+                      "0 16px 34px rgba(2,6,23,0.32), inset 0 0 0 5px rgba(255,255,255,0.08)",
                   }}
                 >
-                  <GsnLegacyIcon name="evidence" size={40} />
-                </span>
-                <span>GSN</span>
-              </div>
-              <div
-                style={{
-                  color: "#DCE8F4",
-                  fontSize: 14,
-                  fontWeight: 900,
-                  lineHeight: 1,
-                  marginTop: 6,
-                  marginLeft: 62,
-                }}
-              >
-                Global Support Network
+                  {profileImageUrl ? (
+                    <img
+                      src={profileImageUrl}
+                      alt={`${holderName} profile`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  ) : (
+                    holderName
+                      .split(/\s+/)
+                      .map((part) => part[0])
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join("")
+                      .toUpperCase() || "GSN"
+                  )}
+                  <span
+                    style={{
+                      position: "absolute",
+                      right: 8,
+                      bottom: 8,
+                      width: isCompact ? 42 : 48,
+                      height: isCompact ? 42 : 48,
+                      borderRadius: 16,
+                      display: "grid",
+                      placeItems: "center",
+                      background: "#FFFFFF",
+                      boxShadow: "0 10px 22px rgba(2,6,23,0.28)",
+                    }}
+                  >
+                    <GsnLegacyIcon name="shield" size={isCompact ? 38 : 44} />
+                  </span>
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      color: "#AFC4D9",
+                      fontSize: 11,
+                      fontWeight: 1000,
+                      letterSpacing: 1.5,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    TrustSlip holder
+                  </div>
+                  <div
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: isCompact ? 28 : 38,
+                      fontWeight: 1000,
+                      lineHeight: 1.04,
+                      marginTop: 4,
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {holderName}
+                  </div>
+                  <div
+                    style={{
+                      color: "#DCE8F4",
+                      fontSize: isCompact ? 13 : 15,
+                      fontWeight: 850,
+                      lineHeight: 1.4,
+                      marginTop: 9,
+                    }}
+                  >
+                    Community: {communityName}
+                    <br />
+                    GSN ID: {gmfnId}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                      marginTop: 13,
+                    }}
+                  >
+                    {[
+                      identityCheckLabel || "Identity record building",
+                      identityRecordSummary || "Evidence record building",
+                      communityIdentityConfirmed
+                        ? communityIdentityLabel
+                        : communityIdentityLabel || "Community record shown",
+                    ].map((item) => (
+                      <span
+                        key={item}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 7,
+                          minHeight: 31,
+                          borderRadius: 999,
+                          padding: "7px 11px",
+                          background: "rgba(255,255,255,0.08)",
+                          border: "1px solid rgba(246,215,122,0.26)",
+                          color: "#F9E6A4",
+                          fontSize: 11,
+                          fontWeight: 1000,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        <GsnLegacyIcon name="shield" size={20} />
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? "1fr"
+                    ? "repeat(2, minmax(0, 1fr))"
                     : "repeat(4, minmax(0, 1fr))",
                   gap: 8,
                   marginTop: 18,
-                  maxWidth: 620,
                 }}
               >
                 {[
                   ["Security", trustSlipSecurityLabel],
                   ["Status", trustSlipPublicStatus],
+                  ["Identity check", identityCheckLabel || "Phone verified"],
+                  [
+                    "Holder check",
+                    identityRecordSummary || "Phone verified; community membership recorded",
+                  ],
                   ["Band", merchantBandDisplay],
                   ["Code", trustSlipCodeLabel],
+                  ["Community ID", communityRef],
+                  ["Phone", phoneRecordLabel],
+                  ["Bank", bankVerified || bankRecorded ? bankVerificationLabel : "Not connected"],
+                  ["ID evidence", passportVerified || passportRecorded ? passportVerificationLabel : "Not connected"],
                 ].map(([label, value]) => (
                   <div
                     key={label}
@@ -2714,166 +2870,8 @@ export default function TrustSlipPage() {
 
           <section
             style={{
-              ...trustSlipSectionCard("#FFFFFF"),
-              ...trustSlipScrollClearance(isCompact),
-              order: 1,
-              gridColumn: isCompact ? "1 / -1" : "1 / 2",
-              display: "grid",
-              gap: 12,
-              alignItems: "start",
-            }}
-          >
-            <div style={trustSlipPaperTitle(isCompact)}>1. Who is this person?</div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "92px minmax(0, 1fr)"
-                  : "132px minmax(0, 1fr)",
-                gap: isCompact ? 12 : 14,
-                alignItems: "start",
-              }}
-            >
-              <div
-                style={{
-                  width: isCompact ? 92 : 132,
-                  height: isCompact ? 92 : 132,
-                  justifySelf: "start",
-                  borderRadius: 14,
-                  display: "grid",
-                  placeItems: "center",
-                  background: "linear-gradient(180deg, #EEF6FF 0%, #FFFFFF 100%)",
-                  border: "1px solid rgba(37,78,119,0.18)",
-                  color: "#0B63D1",
-                  fontWeight: 1000,
-                  fontSize: 28,
-                  overflow: "hidden",
-                  boxShadow: "inset 0 0 0 6px rgba(255,255,255,0.65)",
-                  position: "relative",
-                }}
-              >
-                {profileImageUrl ? (
-                  <img
-                    src={profileImageUrl}
-                    alt={`${holderName} profile`}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
-                ) : (
-                  holderName
-                    .split(/\s+/)
-                    .map((part) => part[0])
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .join("")
-                    .toUpperCase() || "GSN"
-                )}
-                <TrustPaperSeal compact />
-              </div>
-              <div style={{ display: "grid", gap: isCompact ? 10 : 0 }}>
-                {[
-                  ["id", "GSN ID", gmfnId],
-                  ["shield", "Identity check", identityCheckLabel || "Phone verified"],
-                  ["community", "Community", communityName],
-                  ["hash", "Community ID", communityRef],
-                ].map(([icon, label, value]) => (
-                <div
-                  key={label}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "26px minmax(74px, 0.36fr) minmax(0, 1fr)"
-                      : "18px minmax(74px, 0.62fr) minmax(0, 1fr)",
-                    gap: isCompact ? 10 : 8,
-                    alignItems: "center",
-                    marginTop: isCompact ? 0 : 7,
-                    minHeight: isCompact ? 36 : "auto",
-                  }}
-                >
-                  <GsnLegacyIcon name={icon as GsnIconName} size={isCompact ? 30 : 24} />
-                  <span
-                    style={{
-                      color: "#0B63D1",
-                      fontWeight: 1000,
-                      fontSize: isCompact ? 14 : 12,
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    {label}
-                  </span>
-                  <span
-                    style={{
-                      color: "#334155",
-                      fontWeight: 900,
-                      fontSize: isCompact ? 14 : 12,
-                      lineHeight: 1.18,
-                      overflowWrap: "break-word",
-                      wordBreak: "normal",
-                    }}
-                  >
-                    {value}
-                  </span>
-                </div>
-              ))}
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gap: 8, position: "relative" }}>
-              {[
-                [merchantViewPhoneVerified, phoneRecordLabel, merchantViewPhoneVerified ? "positive" : phoneRecorded ? "building" : "pressure"],
-                [communityIdentityConfirmed, communityIdentityLabel, communityIdentityConfirmed ? "positive" : "building"],
-                [Boolean(identityRecordSummary), identityRecordSummary || "Phone verified; community membership recorded", merchantViewPhoneVerified && communityIdentityConfirmed ? "positive" : "building"],
-                [bankVerified || bankRecorded, bankVerificationLabel, bankVerified ? "positive" : bankRecorded ? "building" : "pressure"],
-                [passportVerified || passportRecorded, passportVerificationLabel, passportVerified ? "positive" : passportRecorded ? "building" : "pressure"],
-              ].map(([ok, label, status]) => (
-                <span
-                  key={String(label)}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "24px minmax(0, 1fr)",
-                    gap: 8,
-                    alignItems: "center",
-                    minHeight: 42,
-                    borderRadius: 9,
-                    padding: "8px 10px",
-                    background: ok ? "#F7FCF8" : "#FFFBF2",
-                    border: `1px solid ${
-                      ok ? "rgba(46,155,98,0.16)" : "rgba(214,170,69,0.20)"
-                    }`,
-                    color: ok ? "#166534" : "#7A3E08",
-                    fontWeight: 1000,
-                    fontSize: 12,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  <span style={trustSlipTinyIconCircle(Boolean(ok))}>
-                    <GsnLegacyIcon name={ok ? "check" : "document"} size={24} />
-                  </span>
-                  <EvidenceMeter
-                    status={status}
-                    style={{
-                      justifyContent: "flex-start",
-                      width: "100%",
-                      whiteSpace: "normal",
-                      textAlign: "left",
-                      minHeight: 30,
-                      padding: "6px 10px",
-                    }}
-                  >
-                    {label}
-                  </EvidenceMeter>
-                </span>
-              ))}
-            </div>
-          </section>
-
-          <section
-            style={{
-              ...trustSlipSectionCard("#FFFFFF"),
+              ...trustSlipDarkPanel(),
+              padding: 16,
               ...trustSlipScrollClearance(isCompact),
               order: 6,
               gridColumn: isCompact ? "1 / -1" : "2 / 3",
@@ -2893,12 +2891,12 @@ export default function TrustSlipPage() {
               }}
             >
               <div>
-                <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-                  6. Instant community confirmation
+                <div style={{ color: "#FFFFFF", fontWeight: 1000, fontSize: 20 }}>
+                  Instant community confirmation
                 </div>
                 <div
                   style={{
-                    ...documentMetaCard(communityRelayAvailable ? "#F0FBF4" : "#FFF7E6"),
+                    ...documentMetaCard(communityRelayAvailable ? "rgba(240,251,244,0.96)" : "rgba(255,247,230,0.96)"),
                     marginTop: 12,
                     color: "#334155",
                     lineHeight: 1.5,
@@ -2920,13 +2918,13 @@ export default function TrustSlipPage() {
                         alignItems: "center",
                       }}
                     >
-                      <span style={{ color: "#526579", fontWeight: 900 }}>{label}</span>
-                      <EvidenceMeter status={String(value)}>{value}</EvidenceMeter>
+                      <span style={{ color: "#DCE8F4", fontWeight: 900 }}>{label}</span>
+                      <span style={trustSlipRaisedMeter(String(value))}>{value}</span>
                     </div>
                   ))}
                 </div>
               </div>
-              <div style={{ ...documentMetaCard("#F8FBFF"), display: "grid", gap: 12 }}>
+              <div style={{ ...documentMetaCard("rgba(248,251,255,0.94)"), display: "grid", gap: 12 }}>
                 <div style={sectionLabel()}>Live response check</div>
                 <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
                   Ask eligible members to confirm now without exposing phone numbers.
@@ -2988,11 +2986,13 @@ export default function TrustSlipPage() {
                         "Community responses will appear as an aggregate result when members answer."}
                     </div>
                     <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
-                      <EvidenceMeter
-                        status={firstTruthy(confirmationResult?.community_confidence, "Pending")}
+                      <span
+                        style={trustSlipRaisedMeter(
+                          firstTruthy(confirmationResult?.community_confidence, "Pending")
+                        )}
                       >
                         Confidence: {firstTruthy(confirmationResult?.community_confidence, "Pending")}
-                      </EvidenceMeter>
+                      </span>
                       <span style={{ color: "#526579", fontWeight: 800, fontSize: 13 }}>
                         Sent: {confirmationResult?.requests_sent ?? 0}; Responses:{" "}
                         {confirmationResult?.responses_received ?? 0} of{" "}
@@ -3061,9 +3061,16 @@ export default function TrustSlipPage() {
                 </SecondaryButton>
               )}
 
-              <div style={trustSlipSectionCard("#FFFFFF")}>
-                <div style={trustSlipPaperTitle(isCompact)}>
-                2. Current TrustSlip status
+              <div style={{ ...trustSlipDarkPanel(), padding: 16 }}>
+                <div
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: isCompact ? 20 : 22,
+                    lineHeight: 1.1,
+                    fontWeight: 1000,
+                  }}
+                >
+                  Current TrustSlip status
                 </div>
               <div
                 style={{
@@ -3115,24 +3122,28 @@ export default function TrustSlipPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 118px",
+                  gridTemplateColumns: isCompact ? "126px minmax(0, 1fr)" : "minmax(0, 1fr) 132px",
                   gap: 12,
                   alignItems: "center",
                   marginTop: 14,
+                  borderRadius: 16,
+                  padding: 12,
+                  background: "rgba(255,255,255,0.075)",
+                  border: "1px solid rgba(215,227,241,0.14)",
                 }}
               >
+                {qrValue ? <TrustSlipQrCode value={qrValue} size={isCompact ? 92 : 104} /> : null}
                 <div style={{ display: "grid", gap: 8 }}>
-                  <div style={helperText()}>
+                  <div style={{ ...helperText(), color: "#DCE8F4", fontWeight: 850, fontSize: isCompact ? 13 : 14.5 }}>
                     TrustSlip code: {trustSlipCodeLabel}
                   </div>
-                  <div style={helperText()}>
+                  <div style={{ ...helperText(), color: "#DCE8F4", fontWeight: 850, fontSize: isCompact ? 13 : 14.5 }}>
                     Issued: {trustSlipIssuedLabel}
                   </div>
-                  <div style={helperText()}>
+                  <div style={{ ...helperText(), color: "#DCE8F4", fontWeight: 850, fontSize: isCompact ? 13 : 14.5 }}>
                     Expires: {trustSlipExpiryLabel}
                   </div>
                 </div>
-                {qrValue ? <TrustSlipQrCode value={qrValue} /> : null}
               </div>
               <SecondaryButton
                 onClick={() => {
@@ -3163,7 +3174,7 @@ export default function TrustSlipPage() {
               }}
             >
               <div style={trustSlipPaperTitle(isCompact)}>
-                3. TrustSlip decision summary
+                TrustSlip decision summary
               </div>
               <div
                 style={{
@@ -3198,7 +3209,7 @@ export default function TrustSlipPage() {
                   }}
                 >
                   <span style={{ color: "#526579", fontWeight: 900 }}>{label}</span>
-                  <EvidenceMeter status={String(value)}>{value}</EvidenceMeter>
+                  <span style={trustSlipRaisedMeter(String(value))}>{value}</span>
                 </div>
               ))}
               <div
@@ -3216,13 +3227,7 @@ export default function TrustSlipPage() {
                   return (
                     <div
                       key={grade}
-                      style={{
-                        padding: "10px 6px",
-                        textAlign: "center",
-                        background: active ? "#FFF1F2" : grade === "A" || grade === "B" ? "#F0FBF4" : "#FFFDF5",
-                        boxShadow: active ? "inset 0 0 0 2px rgba(200,58,58,0.45)" : "none",
-                        borderLeft: "1px solid rgba(216,227,238,0.9)",
-                      }}
+                      style={trustSlipRaisedGradeCell(active, grade)}
                     >
                       <div style={{ color: active ? "#991B1B" : "#07172C", fontWeight: 1000 }}>
                         {grade}
@@ -3245,13 +3250,21 @@ export default function TrustSlipPage() {
           >
             <div
               style={{
-                ...trustSlipSectionCard("#FFFFFF"),
-                order: 4,
-                gridColumn: isCompact ? "1 / -1" : "2 / 3",
-              }}
-            >
-              <div style={trustSlipPaperTitle(isCompact)}>
-                4. What this TrustSlip says
+              ...trustSlipDarkPanel(),
+              padding: 16,
+              order: 4,
+              gridColumn: isCompact ? "1 / -1" : "2 / 3",
+            }}
+          >
+              <div
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: isCompact ? 20 : 22,
+                  lineHeight: 1.1,
+                  fontWeight: 1000,
+                }}
+              >
+                What this TrustSlip says
               </div>
               <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
                 {trustSlipReadingRows.map((item) => (
@@ -3263,12 +3276,12 @@ export default function TrustSlipPage() {
                       gap: 10,
                       alignItems: "center",
                       padding: "8px 0",
-                      borderBottom: "1px solid rgba(216,227,238,0.72)",
+                      borderBottom: "1px solid rgba(215,227,241,0.14)",
                     }}
                   >
                     <span
                       style={{
-                        color: "#334155",
+                        color: "#EAF3FF",
                         fontWeight: 900,
                         display: "inline-flex",
                         alignItems: "center",
@@ -3278,7 +3291,7 @@ export default function TrustSlipPage() {
                       {trustSlipIconBadge(item.icon, 28, item.status === "Ready" ? "green" : "blue")}
                       {item.label}
                     </span>
-                    <EvidenceMeter status={item.status}>{item.status}</EvidenceMeter>
+                    <span style={trustSlipRaisedMeter(item.status)}>{item.status}</span>
                   </div>
                 ))}
               </div>
@@ -3292,7 +3305,7 @@ export default function TrustSlipPage() {
               }}
             >
               <div style={trustSlipPaperTitle(isCompact)}>
-                5. What this can be used for
+                What this can be used for
               </div>
               <div style={{ marginTop: 12, display: "grid", gap: 13 }}>
                 {trustSlipUseCases.map(([icon, item]) => (
@@ -3333,7 +3346,7 @@ export default function TrustSlipPage() {
               }}
             >
               <div style={trustSlipPaperTitle(isCompact)}>
-                7. What this does NOT mean
+                Important limitations
               </div>
               <div style={{ ...documentMetaCard("#FFF1F2"), marginTop: 12, position: "relative", overflow: "hidden" }}>
                 <TrustPaperWatermark name="alert" color="#991B1B" size={132} opacity={0.065} />
@@ -3354,7 +3367,7 @@ export default function TrustSlipPage() {
               }}
             >
               <div style={trustSlipPaperTitle(isCompact)}>
-                8. Why a reader may trust this
+                Why a reader may trust this
               </div>
               <div style={{ ...documentMetaCard("#F0FBF4"), marginTop: 12, position: "relative", overflow: "hidden" }}>
                 <TrustPaperWatermark name="shield" color="#166534" size={132} opacity={0.075} />
@@ -3377,7 +3390,7 @@ export default function TrustSlipPage() {
             }}
           >
             <div style={trustSlipPaperTitle(isCompact)}>
-              9. Quick actions
+              Quick actions
             </div>
             <div
               style={{

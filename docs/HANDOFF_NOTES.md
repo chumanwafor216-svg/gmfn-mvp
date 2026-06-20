@@ -1,3 +1,41 @@
+## 2026-06-20 - TrustSlip Dark Hero / Raised Evidence Meters
+
+- Trigger:
+  - owner approved the official TrustSlip document direction but asked for the
+    holder photo inside the dark hero, more respectful dark paper treatment,
+    balanced identity/QR sections, raised 3D-style meter chips, and less exposed
+    wordiness.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - moved the holder image into the dark TrustSlip masthead and added the
+      shield security overlay so the first screenshot reads as one official
+      slip instead of separate app blocks.
+    - removed the duplicate white `Who is this person?` section because the
+      same identity facts now live in the hero.
+    - expanded the hero facts into a compact official rail for security, status,
+      identity check, holder check, trust band, code, community ID, phone, bank,
+      and ID evidence.
+    - restyled the current-status / QR panel as a dark official panel and
+      balanced the QR beside the slip code, issued date, and expiry date.
+    - replaced flat status pills across decision summary, ABCDE grade rail,
+      TrustSlip readings, and community confirmation with raised meter styling.
+    - kept the audit-required words that prove supplied identity evidence is
+      reaching the TrustSlip: `Phone verified` and
+      `Phone verified; community membership recorded`.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx` passed.
+  - `git diff --check -- frontend/src/pages/TrustSlipPage.tsx` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run build` passed; built TrustSlip chunk:
+    `assets/TrustSlipPage-Bsroqj6J.js`.
+- Unabated truth:
+  - this is local source/build/audit verified only until committed and pushed.
+  - Codex's in-app browser surface was unavailable in this session; Playwright
+    could open the route, but without an authenticated session it redirected to
+    `/login?session=expired`, so a real phone screenshot remains required before
+    calling the visual polish final.
+
 ## 2026-06-20 - TrustSlip Official Document Branding / Security Mark
 
 - Trigger:
