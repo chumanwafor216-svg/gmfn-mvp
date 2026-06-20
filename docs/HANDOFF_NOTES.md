@@ -1,3 +1,26 @@
+## 2026-06-20 - TrustSlip Official Paper Final Polish
+
+- Trigger:
+  - owner asked for the TrustSlip document to be polished at system level before
+    publishing: check the body shape, check the buttons, keep the official
+    watermark/security feel, and then push for Render.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - strengthened the TrustSlip page shell with a subtle official gold glow so
+      the paper reads less flat on phone.
+    - raised the dark hero and dark evidence panels with stronger gold-edged
+      borders, deeper inset lines, and more document-like corner radius.
+    - upgraded the shared TrustSlip primary and secondary action styles so the
+      buttons feel like polished controls instead of washed-out flat blocks.
+    - added `touchAction: manipulation` to the TrustSlip action styles to reduce
+      tap delay/jumpy browser behavior on mobile surfaces.
+- Verification:
+  - pending final publish checks in this session.
+- Unabated truth:
+  - this is a finishing polish pass on top of the already committed TrustSlip
+    document redesign. It does not prove Render is live until the commit is
+    pushed and the deploy workflow is verified.
+
 ## 2026-06-20 - TrustSlip Hero Stamps / Paper Watermarks
 
 - Trigger:

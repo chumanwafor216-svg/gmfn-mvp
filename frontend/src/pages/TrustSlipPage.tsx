@@ -680,7 +680,8 @@ function trustSlipPageShell(): React.CSSProperties {
     minHeight: "100vh",
     margin: "-18px",
     padding: "22px 14px 34px",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F6F8FB 42%, #F2F6FA 100%)",
+    background:
+      "radial-gradient(circle at 50% -12%, rgba(214,170,69,0.10) 0, rgba(214,170,69,0) 270px), linear-gradient(180deg, #FFFFFF 0%, #F6F8FB 42%, #EDF4FA 100%)",
   };
 }
 
@@ -690,6 +691,7 @@ function trustSlipWorkArea(): React.CSSProperties {
     margin: "0 auto",
     display: "grid",
     gap: 14,
+    borderRadius: 18,
   };
 }
 
@@ -698,11 +700,13 @@ function trustSlipHeroCard(): React.CSSProperties {
     position: "relative",
     overflow: "hidden",
     minHeight: 156,
-    borderRadius: 14,
+    borderRadius: 18,
     padding: "22px 24px",
-    background: "linear-gradient(135deg, #08233A 0%, #061827 100%)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    boxShadow: "0 18px 42px rgba(7,23,44,0.18)",
+    background:
+      "linear-gradient(145deg, #08233A 0%, #061827 62%, #0B3459 100%)",
+    border: "1px solid rgba(246,215,122,0.18)",
+    boxShadow:
+      "0 22px 52px rgba(7,23,44,0.24), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(214,170,69,0.18)",
     color: "#FFFFFF",
   };
 }
@@ -721,12 +725,12 @@ function trustSlipDarkPanel(): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 16,
-    border: "1px solid rgba(196,216,238,0.16)",
+    borderRadius: 18,
+    border: "1px solid rgba(246,215,122,0.16)",
     background:
       "linear-gradient(145deg, rgba(8,35,58,0.98) 0%, rgba(6,24,39,0.98) 58%, rgba(11,45,74,0.96) 100%)",
     boxShadow:
-      "0 18px 42px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+      "0 20px 46px rgba(2,6,23,0.20), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(214,170,69,0.12)",
   };
 }
 
@@ -831,22 +835,31 @@ function trustSlipPaperTitle(compact = false): React.CSSProperties {
 function trustSlipPrimaryActionStyle(compact = false): React.CSSProperties {
   return {
     width: "100%",
-    borderRadius: 11,
-    background: "linear-gradient(135deg, #0B63D1 0%, #0648A8 100%)",
+    borderRadius: 13,
+    background:
+      "linear-gradient(180deg, #1A82F5 0%, #0B63D1 52%, #0648A8 100%)",
     color: "#FFFFFF",
-    boxShadow: "0 10px 20px rgba(11,99,209,0.18)",
+    border: "1px solid rgba(191,219,254,0.38)",
+    boxShadow:
+      "0 14px 28px rgba(11,99,209,0.24), inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -10px 18px rgba(3,35,84,0.16)",
     fontWeight: 1000,
     fontSize: compact ? 14 : 15,
     letterSpacing: 0,
+    touchAction: "manipulation",
   };
 }
 
 function trustSlipActionButtonStyle(compact = false): React.CSSProperties {
   return {
-    borderRadius: 11,
+    borderRadius: 13,
     fontSize: compact ? 13 : 14,
     fontWeight: 950,
-    boxShadow: "0 8px 18px rgba(7,23,44,0.05)",
+    border: "1px solid rgba(148,163,184,0.22)",
+    background:
+      "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 55%, #EAF3FF 100%)",
+    boxShadow:
+      "0 12px 24px rgba(7,23,44,0.10), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -9px 16px rgba(7,23,44,0.045)",
+    touchAction: "manipulation",
   };
 }
 
