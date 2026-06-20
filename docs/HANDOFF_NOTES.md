@@ -1,3 +1,40 @@
+## 2026-06-20 - Identity Completion / Recovery Batch Published to Render
+
+- Published code commit:
+  - `a37bb61c5dc85d9b3ba65890aa00d6c80d8cb120`
+  - commit message: `Fix identity completion refresh and recovery controls`
+  - pushed to `origin/main`.
+- Deploy evidence:
+  - GitHub Actions `Trigger Render Deploy` run `27871750032` completed
+    successfully from `main`.
+  - The workflow used head SHA
+    `a37bb61c5dc85d9b3ba65890aa00d6c80d8cb120`.
+  - Job `Trigger Render deploy` succeeded.
+  - Step `Trigger frontend deploy hook` succeeded.
+- Live Render asset check:
+  - `https://gmfn-frontend.onrender.com` served
+    `/assets/index-Cw00BcGG.js`.
+  - That live index referenced:
+    - `IdentityIntegrityPage--8W12MSE.js`
+    - `TrustScorePage-Dd-evFO5.js`
+  - The live Identity Integrity chunk contains the new visible repair strings:
+    - `Save private recovery`
+    - `Copy GSN ID`
+  - The live Trust Passport chunk contains:
+    - `ID recorded for review`
+    - `/trust-slips/me/summary`
+- Status:
+  - The identity completion freshness repair, Identity Integrity copy-action
+    repair, and Private Recovery polish are no longer local-only; Render is
+    serving the repaired frontend chunks.
+- Unabated truth:
+  - this proves the frontend bundle reached Render. It does not prove a specific
+    pilot user's backend identity rows exist. If the live phone still says
+    `Bank not recorded` or similar after a hard refresh/sign-in refresh, inspect
+    that account's live `/trust-slips/me` payload and the save endpoint response.
+  - Render/browser cache can still show an old bundle until the phone refreshes
+    the page or the PWA/browser cache clears.
+
 ## 2026-06-20 - Identity Integrity Private Recovery Polish / On-Page Guard
 
 - Trigger:
