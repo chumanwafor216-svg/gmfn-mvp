@@ -1,3 +1,45 @@
+## 2026-06-20 - Community Verification Snapshot Compression
+
+- Trigger:
+  - owner reviewed phone screenshots of `/verify/community/:communityKey` and
+    rejected the page as too worded, unarranged, icon-light, laid bare, and
+    missing a clear screenshot portion.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - replaced the tall shared public header with a compact route-local public
+      navigation strip.
+    - rebuilt the visible success state around a `Verification snapshot` block
+      with 3D-icon fact rows, the Community ID anchor, and the main `Request`
+      / `Copy` actions inside the screenshotable area.
+    - moved long public-reading, domain-stage, currentness, trust-mobility,
+      group-affiliation, and controlled-confirmation explanations behind a
+      collapsed `Verification details` disclosure.
+    - normalized any stale public payload label that reads as a broad
+      verification claim back to `Recorded in GSN`.
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+    - changed the public community payload `public_record` value from the
+      overclaiming verification wording to `Recorded in GSN`.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated the Community Verification guard to protect the snapshot-first,
+      details-collapsed contract and the `Recorded in GSN` wording.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs`
+    passed from `frontend/`.
+  - `npm run audit:trust-actions` passed from `frontend/`.
+  - `npm run audit:proof-surfaces` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `python -m pytest -q gmfn_backend/tests/test_community_confirmation_relay.py gmfn_backend/tests/test_community_domain_affiliations.py`
+    passed: 29 tests.
+  - `npm run build` passed from `frontend/`.
+  - Phone-width mocked-success browser screenshot was saved to
+    `C:\tmp\community-verify-mobile-success-5.png`; it shows the compact
+    snapshot, icons, Request/Copy actions, collapsed details, and no
+    `Verified in GSN` visible label.
+- Unabated truth:
+  - the local live database did not contain `GMFN-C-000008`, so the success
+    screenshot was verified with a mocked public API response rather than that
+    exact local record. Backend route tests still cover the real public payload.
+
 ## 2026-06-20 - Mobile Shell Scroll Rail Drag Repair
 
 - Trigger:

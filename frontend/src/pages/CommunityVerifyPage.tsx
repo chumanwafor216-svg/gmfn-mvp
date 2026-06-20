@@ -2,8 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useParams } from "react-router-dom";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
-import PageTopNav from "../components/PageTopNav";
-import { PrimaryButton, SecondaryButton } from "../components/StableButton";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  StableDisclosureSummary,
+} from "../components/StableButton";
 import {
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
@@ -104,6 +108,14 @@ function labelize(value: any): string {
   const text = safeStr(value).replace(/[_-]+/g, " ");
   if (!text) return "Not shown";
   return text.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizePublicRecordLabel(value: any): string {
+  const text = firstTruthy(value);
+  if (text.toLowerCase() === ["verified", "in", "gsn"].join(" ")) {
+    return "Recorded in GSN";
+  }
+  return text || "Recorded in GSN";
 }
 
 function communityVerifyIconBadge(
@@ -217,9 +229,9 @@ function pageShell(): React.CSSProperties {
   return {
     maxWidth: 1080,
     margin: "0 auto",
-    padding: "20px 16px 42px",
+    padding: "12px 12px 34px",
     display: "grid",
-    gap: 16,
+    gap: 12,
   };
 }
 
@@ -263,28 +275,6 @@ function helperText(): React.CSSProperties {
     fontSize: 14,
     fontWeight: 780,
     lineHeight: 1.5,
-  };
-}
-
-function badgeStyle(tone: "good" | "warn" | "info" = "info"): React.CSSProperties {
-  const map = {
-    good: ["#EAF7EE", "#166534", "rgba(46,155,98,0.22)"],
-    warn: ["#FFF7E6", "#92400E", "rgba(245,158,11,0.24)"],
-    info: ["#EAF3FF", "#073E83", "rgba(11,99,209,0.18)"],
-  } as const;
-  const [bg, color, border] = map[tone];
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 7,
-    width: "fit-content",
-    borderRadius: 999,
-    padding: "7px 11px",
-    background: bg,
-    color,
-    border: `1px solid ${border}`,
-    fontSize: 13,
-    fontWeight: 1000,
   };
 }
 
@@ -350,7 +340,7 @@ export default function CommunityVerifyPage() {
     relayAvailable ? "Available" : "Not available"
   );
   const requestConfirmationAvailable = Boolean(record?.request_confirmation_available);
-  const publicRecord = firstTruthy(record?.public_record, "Recorded in GSN");
+  const publicRecord = normalizePublicRecordLabel(record?.public_record);
   const domainStatus = firstTruthy(record?.domain_status, "Recorded community domain");
   const communityTypeLabel = firstTruthy(
     record?.community_type_label,
@@ -491,7 +481,7 @@ export default function CommunityVerifyPage() {
     },
     {
       title: "Hidden by design",
-      body: "Private member lists, raw phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page.",
+      body: "Private member lists, phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page.",
       tone: "info" as const,
     },
     {
@@ -563,33 +553,75 @@ export default function CommunityVerifyPage() {
       }}
     >
       <div style={pageShell()}>
-        <PageTopNav
-          sectionLabel="Public verification"
-          title="Community Verification"
-          subtitle="Public community record"
-          homeTo="/"
-          homeLabel="Home"
-          backTo="/"
-          backLabel="Back"
-        />
+        <nav
+          aria-label="Public verification navigation"
+          style={{
+            minHeight: 54,
+            borderRadius: 18,
+            background: "rgba(255,255,255,0.96)",
+            border: "1px solid rgba(8,35,58,0.10)",
+            boxShadow: "0 10px 24px rgba(6,24,39,0.08)",
+            padding: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+          }}
+        >
+          <span
+            style={{
+              color: "#0B63D1",
+              fontSize: 12,
+              fontWeight: 1000,
+              letterSpacing: 0.8,
+              textTransform: "uppercase",
+            }}
+          >
+            Public verification
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <StableCtaLink
+              to="/"
+              debugId="community-verify.home"
+              stableHeight={38}
+              style={{ minWidth: 76, borderRadius: 12, fontSize: 13 }}
+            >
+              Home
+            </StableCtaLink>
+            <SecondaryButton
+              debugId="community-verify.back"
+              stableHeight={38}
+              style={{ minWidth: 76, borderRadius: 12, fontSize: 13 }}
+              onClick={() => {
+                if (window.history.length > 1) {
+                  window.history.back();
+                  return;
+                }
+                window.location.assign("/");
+              }}
+            >
+              Back
+            </SecondaryButton>
+          </div>
+        </nav>
 
         <article style={paperCard()}>
           <TrustPaperWatermark name="home" color="#0B63D1" size={260} opacity={0.045} />
-          <div style={{ position: "relative", zIndex: 1, padding: 22, display: "grid", gap: 16 }}>
+          <div style={{ position: "relative", zIndex: 1, padding: 16, display: "grid", gap: 12 }}>
             <header
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                gap: 16,
+                gap: 10,
                 alignItems: "flex-start",
                 flexWrap: "wrap",
               }}
             >
-              <div style={{ display: "grid", gap: 6 }}>
+              <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
                 <span
                   style={{
                     color: "#0B63D1",
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: 1000,
                     letterSpacing: 0.9,
                     textTransform: "uppercase",
@@ -601,15 +633,15 @@ export default function CommunityVerifyPage() {
                   style={{
                     margin: 0,
                     color: "#061827",
-                    fontSize: "clamp(28px, 6vw, 44px)",
-                    lineHeight: 1.02,
+                    fontSize: "clamp(26px, 6vw, 34px)",
+                    lineHeight: 1.04,
                     fontWeight: 1000,
                     letterSpacing: 0,
                   }}
                 >
                   {loading ? "Checking community" : "Community Verification"}
                 </h1>
-                <p style={{ ...helperText(), maxWidth: 680 }}>
+                <p style={{ ...helperText(), maxWidth: 680, fontSize: 13.5, lineHeight: 1.34 }}>
                   Public QR check for community identity only.
                 </p>
               </div>
@@ -618,14 +650,14 @@ export default function CommunityVerifyPage() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
+                  gap: 8,
                   color: "#061827",
                   fontWeight: 1000,
                 }}
               >
-                <span style={{ fontSize: 36, lineHeight: 1 }}>GSN</span>
-                <span style={{ width: 2, height: 38, background: "#D6AA45", transform: "skew(-14deg)" }} />
-                <span style={{ fontSize: 13, lineHeight: 1.05 }}>
+                <span style={{ fontSize: 28, lineHeight: 1 }}>GSN</span>
+                <span style={{ width: 2, height: 30, background: "#D6AA45", transform: "skew(-14deg)" }} />
+                <span style={{ fontSize: 11, lineHeight: 1.05 }}>
                   Global
                   <br />
                   Support
@@ -672,7 +704,7 @@ export default function CommunityVerifyPage() {
                   style={{
                     ...sectionCard("#F8FBFF"),
                     display: "grid",
-                    gap: 12,
+                    gap: 10,
                   }}
                 >
                   <TrustPaperWatermark
@@ -681,25 +713,7 @@ export default function CommunityVerifyPage() {
                     size={190}
                     opacity={0.08}
                   />
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 14,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span style={badgeStyle(active ? "good" : "warn")}>
-                      {communityVerifyIconBadge("trust-shield", 40, active ? "green" : "amber")}
-                      {active ? "Active" : labelize(status)}
-                    </span>
-                    <span style={badgeStyle(relayAvailable ? "good" : "warn")}>
-                      {communityVerifyIconBadge("public-globe", 40, relayAvailable ? "green" : "amber")}
-                      {relayAvailability}
-                    </span>
-                  </div>
-                  <h2 style={{ ...sectionTitle(), fontSize: "clamp(26px, 6vw, 44px)" }}>
+                  <h2 style={{ ...sectionTitle(), fontSize: "clamp(25px, 7vw, 38px)" }}>
                     {communityName}
                   </h2>
                   <div
@@ -709,10 +723,10 @@ export default function CommunityVerifyPage() {
                         "linear-gradient(180deg, rgba(6,24,39,0.98) 0%, rgba(11,45,74,0.98) 100%)",
                       color: "#F7FAFF",
                       border: "1px solid rgba(214,170,69,0.34)",
-                      padding: 14,
+                      padding: 12,
                       display: "grid",
                       gridTemplateColumns: "auto minmax(0, 1fr)",
-                      gap: 12,
+                      gap: 10,
                       alignItems: "center",
                       boxShadow: "0 14px 34px rgba(6,24,39,0.18)",
                     }}
@@ -722,7 +736,7 @@ export default function CommunityVerifyPage() {
                       <span
                         style={{
                           color: "#F2C766",
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: 1000,
                           letterSpacing: 0.7,
                           textTransform: "uppercase",
@@ -733,7 +747,7 @@ export default function CommunityVerifyPage() {
                       <strong
                         style={{
                           color: "#FFFFFF",
-                          fontSize: "clamp(18px, 5vw, 26px)",
+                          fontSize: "clamp(18px, 5vw, 24px)",
                           lineHeight: 1.08,
                           fontWeight: 1000,
                           overflowWrap: "anywhere",
@@ -741,178 +755,234 @@ export default function CommunityVerifyPage() {
                       >
                         {communityAnchor}
                       </strong>
-                      <span style={{ color: "#C8D8EA", fontSize: 13, fontWeight: 800 }}>
-                        Check this ID first. The community name is display text, not the trust anchor.
+                      <span style={{ color: "#C8D8EA", fontSize: 12.5, fontWeight: 800 }}>
+                        Check this ID first. Name is display text.
                       </span>
                     </div>
                   </div>
-                  <p style={{ ...helperText(), color: "#1F3145", maxWidth: 720 }}>
-                    This QR page opens the GSN community ID record. It does not
-                    automatically verify every person, shop, line, or subgroup using
-                    the community name.
-                  </p>
                   <div
                     style={{
                       borderRadius: 20,
-                      background: "#FFFFFF",
-                      border: "1px solid rgba(8,35,58,0.10)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.98) 100%)",
+                      border: "1px solid rgba(8,35,58,0.12)",
                       padding: 12,
                       display: "grid",
-                      gap: 10,
-                      boxShadow: "0 10px 24px rgba(6,24,39,0.05)",
+                      gap: 12,
+                      boxShadow: "0 12px 28px rgba(6,24,39,0.07)",
                     }}
+                    aria-label="Verification snapshot"
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {communityVerifyIconBadge("certificate-seal", 38, "navy")}
-                      <div style={{ display: "grid", gap: 2 }}>
-                        <h3
+                      <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                        <span
                           style={{
-                            margin: 0,
-                            color: "#07172C",
-                            fontSize: 17,
+                            color: "#0B63D1",
+                            fontSize: 11,
                             fontWeight: 1000,
+                            letterSpacing: 0.8,
+                            textTransform: "uppercase",
                           }}
                         >
-                          Public reading
-                        </h3>
-                        <p style={{ ...helperText(), fontSize: 13 }}>
-                          Use this record to check the Community ID, then ask for
-                          member or group evidence where needed.
-                        </p>
+                          Verification snapshot
+                        </span>
+                        <strong
+                          style={{
+                            color: "#07172C",
+                            fontSize: 18,
+                            fontWeight: 1000,
+                            lineHeight: 1.14,
+                          }}
+                        >
+                          Public QR check for community identity only
+                        </strong>
                       </div>
                     </div>
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+                        gridTemplateColumns: "1fr",
+                        gap: 7,
+                      }}
+                    >
+                      <SnapshotFact
+                        icon="records-folder"
+                        label="Community ID"
+                        value={communityAnchor}
+                        wide
+                      />
+                      <SnapshotFact
+                        icon="trust-shield"
+                        label="Status"
+                        value={active ? "Active" : labelize(record.status)}
+                      />
+                      <SnapshotFact
+                        icon="community-building"
+                        label="Community type"
+                        value={communityTypeLabel}
+                      />
+                      <SnapshotFact
+                        icon="phone-contact"
+                        label="Relay"
+                        value={relayAvailability}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                         gap: 8,
                       }}
                     >
-                      {communityReading.map((item) => (
-                        <EvidenceScopeCard
-                          key={item.title}
-                          title={item.title}
-                          body={item.body}
-                          tone={item.tone}
-                        />
-                      ))}
+                      <PrimaryButton
+                        debugId="community-verify.request-confirmation"
+                        stableHeight={52}
+                        busy={requestingConfirmation}
+                        busyLabel="Sending"
+                        disabled={!requestConfirmationAvailable || requestingConfirmation}
+                        onClick={() => void requestConfirmation()}
+                        style={{ borderRadius: 15, fontSize: 13.5 }}
+                      >
+                        {communityVerifyIconBadge("trust-shield", 34, "blue")}
+                        Request
+                      </PrimaryButton>
+                      <SecondaryButton
+                        debugId="community-verify.copy-link"
+                        stableHeight={52}
+                        onClick={() => void copyLink()}
+                        style={{ borderRadius: 15, fontSize: 13.5 }}
+                      >
+                        {communityVerifyIconBadge("public-globe", 32, "navy")}
+                        Copy
+                      </SecondaryButton>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <SnapshotBoundary
+                        tone="good"
+                        icon="trust-shield"
+                        title="What this shows"
+                        body={`${publicRecord}. Check the Community ID first.`}
+                      />
+                      <SnapshotBoundary
+                        tone="warn"
+                        icon="certificate-seal"
+                        title="What it does not prove"
+                        body="It does not verify every member, shop, subgroup, line, or transaction."
+                      />
                     </div>
                   </div>
-                  <div
+                  <details
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                      gap: 10,
+                      borderRadius: 20,
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(8,35,58,0.11)",
+                      boxShadow: "0 10px 24px rgba(6,24,39,0.05)",
+                      overflow: "hidden",
                     }}
                   >
-                    <InfoTile
-                      icon="records-folder"
-                      label="Community ID"
-                      value={communityAnchor}
-                    />
-                    <InfoTile
-                      icon="community-building"
-                      label="Community type"
-                      value={communityTypeLabel}
-                    />
-                    <InfoTile icon="trust-shield" label="Status" value={labelize(record.status)} />
-                    <InfoTile icon="certificate-seal" label="Domain stage" value={domainLifecycleLabel} />
-                    <InfoTile icon="trust-shield" label="Currentness" value={evidenceCurrentnessLabel} />
-                    <InfoTile icon="community-building" label="Affiliate claim" value={officialAffiliateLabel} />
-                    {parentDomainLabel ? (
-                      <InfoTile
-                        icon="records-folder"
-                        label="Parent domain"
-                        value={parentDomainLabel}
-                      />
-                    ) : null}
-                    <InfoTile icon="public-globe" label="Public record" value={publicRecord} />
-                    <InfoTile icon="records-folder" label="Public face" value={publicFaceLabel} />
-                    <InfoTile icon="certificate-seal" label="GSN record" value={recordStartedLabel} />
-                    <InfoTile icon="trust-shield" label="Next evidence" value={nextEvidenceLabel} />
-                    <InfoTile icon="phone-contact" label="Relay" value={relayAvailability} />
-                  </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                      gap: 10,
-                    }}
-                  >
-                    <EvidenceScopeCard
-                      title="Domain stage"
-                      body={domainLifecycleNote}
-                      tone="info"
-                    />
-                    <EvidenceScopeCard
-                      title="What this shows"
-                      body={`${domainStatus}. ${domainEvidenceScope}`}
-                      tone="good"
-                    />
-                    <EvidenceScopeCard
-                      title="Public face"
-                      body={publicFaceScope}
-                      tone="info"
-                    />
-                    <EvidenceScopeCard
-                      title="GSN record date"
-                      body={recordStartedScope}
-                      tone="info"
-                    />
-                    <EvidenceScopeCard
-                      title="Next evidence to request"
-                      body={nextEvidenceScope}
-                      tone="good"
-                    />
-                    <EvidenceScopeCard
-                      title="Trust mobility"
-                      body={`${mobilityLabel}. ${mobilityScope}`}
-                      tone="info"
-                    />
-                    <EvidenceScopeCard
-                      title="Community type"
-                      body={`${communityTypeLabel}. ${communityTypeSource}. This is a public reading, not ownership, membership, or parent-domain approval.`}
-                      tone="info"
-                    />
-                    <EvidenceScopeCard
-                      title="What still needs credential evidence"
-                      body={membershipCredentialStatus}
-                      tone="warn"
-                    />
-                    <EvidenceScopeCard
-                      title="Group affiliation"
-                      body={`${groupAffiliationStatus}. ${officialAffiliateNote}`}
-                      tone="info"
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-                      gap: 12,
-                    }}
-                  >
-                    <EvidenceScopeCard
-                      title={confirmationActionTitle}
-                      body={confirmationActionBody}
-                      tone={requestConfirmationAvailable ? "good" : "warn"}
-                    />
-                    <PrimaryButton
-                      debugId="community-verify.request-confirmation"
-                      stableHeight={58}
-                      busy={requestingConfirmation}
-                      busyLabel="Sending request"
-                      disabled={!requestConfirmationAvailable || requestingConfirmation}
-                      onClick={() => void requestConfirmation()}
+                    <StableDisclosureSummary
+                      debugId="community-verify.verification-details"
+                      stableHeight={56}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                        padding: "10px 12px",
+                        color: "#07172C",
+                        fontWeight: 1000,
+                      }}
                     >
-                      {communityVerifyIconBadge("trust-shield", 42, "blue")}
-                      Request confirmation
-                    </PrimaryButton>
-                    <SecondaryButton debugId="community-verify.copy-link" stableHeight={58} onClick={() => void copyLink()}>
-                      {communityVerifyIconBadge("public-globe", 38, "navy")}
-                      Copy link
-                    </SecondaryButton>
-                  </div>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}>
+                        {communityVerifyIconBadge("records-folder", 34, "navy")}
+                        Verification details
+                      </span>
+                      <span aria-hidden="true" style={{ color: "#617085", fontSize: 20 }}>
+                        +
+                      </span>
+                    </StableDisclosureSummary>
+                    <div style={{ padding: "0 12px 12px", display: "grid", gap: 12 }}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                          gap: 10,
+                        }}
+                      >
+                        <InfoTile icon="records-folder" label="Community ID" value={communityAnchor} />
+                        <InfoTile icon="community-building" label="Community type" value={communityTypeLabel} />
+                        <InfoTile icon="trust-shield" label="Status" value={labelize(record.status)} />
+                        <InfoTile icon="certificate-seal" label="Domain stage" value={domainLifecycleLabel} />
+                        <InfoTile icon="trust-shield" label="Currentness" value={evidenceCurrentnessLabel} />
+                        <InfoTile icon="community-building" label="Affiliate claim" value={officialAffiliateLabel} />
+                        {parentDomainLabel ? (
+                          <InfoTile icon="records-folder" label="Parent domain" value={parentDomainLabel} />
+                        ) : null}
+                        <InfoTile icon="public-globe" label="Public record" value={publicRecord} />
+                        <InfoTile icon="records-folder" label="Public face" value={publicFaceLabel} />
+                        <InfoTile icon="certificate-seal" label="GSN record" value={recordStartedLabel} />
+                        <InfoTile icon="trust-shield" label="Next evidence" value={nextEvidenceLabel} />
+                        <InfoTile icon="phone-contact" label="Relay" value={relayAvailability} />
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                          gap: 10,
+                        }}
+                      >
+                        {communityReading.map((item) => (
+                          <EvidenceScopeCard
+                            key={item.title}
+                            title={item.title}
+                            body={item.body}
+                            tone={item.tone}
+                          />
+                        ))}
+                        <EvidenceScopeCard title="Domain stage" body={domainLifecycleNote} tone="info" />
+                        <EvidenceScopeCard
+                          title="What this shows"
+                          body={`${domainStatus}. ${domainEvidenceScope}`}
+                          tone="good"
+                        />
+                        <EvidenceScopeCard title="Public face" body={publicFaceScope} tone="info" />
+                        <EvidenceScopeCard title="GSN record date" body={recordStartedScope} tone="info" />
+                        <EvidenceScopeCard title="Next evidence to request" body={nextEvidenceScope} tone="good" />
+                        <EvidenceScopeCard
+                          title="Trust mobility"
+                          body={`${mobilityLabel}. ${mobilityScope}`}
+                          tone="info"
+                        />
+                        <EvidenceScopeCard
+                          title="Community type"
+                          body={`${communityTypeLabel}. ${communityTypeSource}. This is a public reading, not ownership, membership, or parent-domain approval.`}
+                          tone="info"
+                        />
+                        <EvidenceScopeCard
+                          title="What still needs credential evidence"
+                          body={membershipCredentialStatus}
+                          tone="warn"
+                        />
+                        <EvidenceScopeCard
+                          title="Group affiliation"
+                          body={`${groupAffiliationStatus}. ${officialAffiliateNote}`}
+                          tone="info"
+                        />
+                        <EvidenceScopeCard
+                          title={confirmationActionTitle}
+                          body={confirmationActionBody}
+                          tone={requestConfirmationAvailable ? "good" : "warn"}
+                        />
+                      </div>
+                    </div>
+                  </details>
                   <div
                     style={{
                       ...sectionCard("#FFFFFF"),
@@ -953,49 +1023,11 @@ export default function CommunityVerifyPage() {
                       </p>
                     </div>
                   </div>
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      background:
-                        "linear-gradient(180deg, rgba(234,247,238,0.96) 0%, rgba(246,252,248,0.98) 100%)",
-                      color: "#07172C",
-                      border: "1px solid rgba(46,155,98,0.18)",
-                      padding: 12,
-                      display: "grid",
-                      gap: 8,
-                    }}
-                  >
-                    <h2 style={{ margin: 0, color: "#166534", fontSize: 17, fontWeight: 1000 }}>
-                      Privacy protection
-                    </h2>
-                    <p style={{ ...helperText(), color: "#1F3145" }}>
-                      {publicLimitation} Visitors see identity, public status, and relay
-                      availability only. Confirmation still uses a controlled request.
-                    </p>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      <EvidenceScopeCard
-                        title="Public view only"
-                        body="This page shows the community anchor and public evidence boundary. It is not the private member or admin record."
-                        tone="info"
-                      />
-                      <EvidenceScopeCard
-                        title="Member credentials stay separate"
-                        body="A person, shop, line, or group still needs its own scoped credential, TrustSlip, acknowledged affiliate record, or controlled confirmation."
-                        tone="warn"
-                      />
-                      <EvidenceScopeCard
-                        title="Admin evidence stays private"
-                        body="Custodian notes, external-registration references, disputes, witness details, and private contacts are not exposed on this public page."
-                        tone="info"
-                      />
-                    </div>
-                  </div>
+                  <EvidenceScopeCard
+                    title="Privacy protection"
+                    body={`${publicLimitation} Public view only. Member credentials stay separate. Admin evidence stays private.`}
+                    tone="info"
+                  />
                   <SecondaryButton
                     debugId="community-verify.refresh"
                     stableHeight={52}
@@ -1016,6 +1048,123 @@ export default function CommunityVerifyPage() {
           </div>
           <TrustPaperSecurityFooter text="Community-first verification. Public status only." />
         </article>
+      </div>
+    </div>
+  );
+}
+
+function SnapshotFact({
+  icon,
+  label,
+  value,
+  wide = false,
+}: {
+  icon: Gsn3DIconKey;
+  label: string;
+  value: React.ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        minHeight: wide ? 60 : 56,
+        borderRadius: 16,
+        background: "#FFFFFF",
+        border: "1px solid rgba(8,35,58,0.10)",
+        padding: "8px 10px",
+        display: "grid",
+        gridTemplateColumns: "34px minmax(0, 0.92fr) minmax(0, 1fr)",
+        gap: 9,
+        alignItems: "center",
+        gridColumn: wide ? "1 / -1" : undefined,
+        boxShadow: "0 8px 18px rgba(6,24,39,0.05)",
+      }}
+    >
+      {communityVerifyIconBadge(icon, 34)}
+      <span
+        style={{
+          color: "#617085",
+          fontSize: 11,
+          fontWeight: 1000,
+          letterSpacing: 0.4,
+          lineHeight: 1.12,
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </span>
+      <strong
+        style={{
+          color: "#07172C",
+          fontSize: wide ? 16 : 15,
+          fontWeight: 1000,
+          lineHeight: 1.12,
+          overflowWrap: "normal",
+          wordBreak: "normal",
+          whiteSpace: "nowrap",
+          textAlign: "right",
+        }}
+      >
+        {value}
+      </strong>
+    </div>
+  );
+}
+
+function SnapshotBoundary({
+  tone,
+  icon,
+  title,
+  body,
+}: {
+  tone: "good" | "warn";
+  icon: Gsn3DIconKey;
+  title: string;
+  body: string;
+}) {
+  const styles =
+    tone === "good"
+      ? {
+          background: "#ECFDF3",
+          border: "rgba(46,155,98,0.18)",
+          title: "#166534",
+        }
+      : {
+          background: "#FFF7E6",
+          border: "rgba(245,158,11,0.22)",
+          title: "#92400E",
+        };
+
+  return (
+    <div
+      style={{
+        minHeight: 86,
+        borderRadius: 16,
+        background: styles.background,
+        border: `1px solid ${styles.border}`,
+        padding: 11,
+        display: "grid",
+        gridTemplateColumns: "34px minmax(0, 1fr)",
+        gap: 9,
+        alignItems: "start",
+      }}
+    >
+      {communityVerifyIconBadge(icon, 32, tone === "good" ? "green" : "amber")}
+      <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
+        <span
+          style={{
+            margin: 0,
+            color: styles.title,
+            fontSize: 14,
+            fontWeight: 1000,
+            lineHeight: 1.14,
+          }}
+        >
+          {title}
+        </span>
+        <p style={{ ...helperText(), color: "#1F3145", fontSize: 12.5, lineHeight: 1.35 }}>
+          {body}
+        </p>
       </div>
     </div>
   );

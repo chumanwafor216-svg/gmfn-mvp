@@ -390,19 +390,19 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Community Verification[\s\S]*?Public QR check for community identity only[\s\S]*?Community ID[\s\S]*?Community type[\s\S]*?Status[\s\S]*?Public record[\s\S]*?Public face[\s\S]*?GSN record[\s\S]*?Next evidence[\s\S]*?Relay[\s\S]*?Request confirmation[\s\S]*?Copy link[\s\S]*?Privacy protection/,
-  "CommunityVerifyPage must present a compact public verification record, one primary confirmation action, and a privacy boundary."
+  /Community Verification[\s\S]*?Verification snapshot[\s\S]*?Public QR check for community identity only[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Community type[\s\S]*?Relay[\s\S]*?community-verify\.request-confirmation[\s\S]*?Request[\s\S]*?community-verify\.copy-link[\s\S]*?Copy[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Verification details[\s\S]*?Public record[\s\S]*?Public face[\s\S]*?GSN record[\s\S]*?Next evidence[\s\S]*?Privacy protection/,
+  "CommunityVerifyPage must present a screenshot-ready public verification snapshot, one primary confirmation action, collapsed details, and a privacy boundary."
 );
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /title: "Trust anchor"[\s\S]*?Names are display labels; the Community ID is what the reader should check[\s\S]*?Public view only[\s\S]*?Member credentials stay separate[\s\S]*?Admin evidence stays private[\s\S]*?external-registration references[\s\S]*?not exposed on this public page/,
+  /title: "Trust anchor"[\s\S]*?Names are display labels; the Community ID is what the reader should check[\s\S]*?Public view only[\s\S]*?Member credentials stay separate[\s\S]*?Admin evidence stays private/,
   "CommunityVerifyPage must implement the Community Public Face anchor rule and public/member/admin privacy boundary using existing data only."
 );
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /const communityAnchor = firstTruthy\(record\?\.community_code, record\?\.community_id, "Not shown"\);[\s\S]*?Community ID anchor[\s\S]*?\{communityAnchor\}[\s\S]*?Check this ID first\. The community name is display text, not the trust anchor\./,
+  /const communityAnchor = firstTruthy\(record\?\.community_code, record\?\.community_id, "Not shown"\);[\s\S]*?Community ID anchor[\s\S]*?\{communityAnchor\}[\s\S]*?Check this ID first\. Name is display text\./,
   "CommunityVerifyPage hero must surface the Community ID as the visible trust anchor before treating the community name as display text."
 );
 
@@ -414,7 +414,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /title: "Trust anchor"[\s\S]*?title: "What this means"[\s\S]*?title: "What remains unchecked"[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, raw phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page[\s\S]*?title: "Next safe step"[\s\S]*?title: "Reader decision"/,
+  /title: "Trust anchor"[\s\S]*?title: "What this means"[\s\S]*?title: "What remains unchecked"[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page[\s\S]*?title: "Next safe step"[\s\S]*?title: "Reader decision"/,
   "CommunityVerifyPage public reading must follow the Community Public Face order: anchor, meaning, unchecked limits, hidden private evidence, next action, and reader decision."
 );
 
@@ -492,8 +492,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /const publicRecord = firstTruthy\(record\?\.public_record, "Recorded in GSN"\);/,
-  "CommunityVerifyPage public-record fallback must say Recorded in GSN, not Verified in GSN."
+  /function normalizePublicRecordLabel\(value: any\): string \{[\s\S]*?return "Recorded in GSN";[\s\S]*?const publicRecord = normalizePublicRecordLabel\(record\?\.public_record\);/,
+  "CommunityVerifyPage public-record fallback and defensive normalization must say Recorded in GSN."
 );
 
 assertContains(
