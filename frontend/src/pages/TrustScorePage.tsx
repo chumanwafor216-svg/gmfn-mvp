@@ -639,11 +639,12 @@ function statusPillStyle(status: string): React.CSSProperties {
     text.includes("ready") ||
     text === "yes";
   const pressure =
-    text.includes("caution") ||
+    text.includes("check first") ||
     text.includes("pressure") ||
-    text.includes("weak") ||
+    text.includes("needs current") ||
     text.includes("high");
-  const mixed = text.includes("mixed") || text.includes("pending");
+  const building = text.includes("building") || text.includes("limited");
+  const mixed = text.includes("mixed") || text.includes("pending") || building;
 
   return {
     display: "inline-flex",
@@ -658,24 +659,24 @@ function statusPillStyle(status: string): React.CSSProperties {
     color: positive
       ? "#166534"
       : pressure
-        ? "#991B1B"
+        ? "#92400E"
         : mixed
-          ? "#92400E"
+          ? "#073E83"
           : "#334155",
     background: positive
       ? "#EAF7EE"
       : pressure
-        ? "#FFF1F2"
+        ? "#FFF7E6"
         : mixed
-          ? "#FFF7E6"
+          ? "#EEF6FF"
           : "#F1F5F9",
     border: `1px solid ${
       positive
         ? "rgba(46,155,98,0.16)"
         : pressure
-          ? "rgba(200,58,58,0.16)"
+          ? "rgba(245,158,11,0.22)"
           : mixed
-            ? "rgba(245,158,11,0.16)"
+            ? "rgba(11,99,209,0.16)"
             : "rgba(100,116,139,0.14)"
     }`,
     textAlign: "center",
@@ -1738,9 +1739,9 @@ export default function TrustScorePage() {
     }
 
     return {
-      bg: "#FFF5F5",
-      border: "1px solid rgba(239,68,68,0.16)",
-      text: "#991B1B",
+      bg: "#FFF7E6",
+      border: "1px solid rgba(245,158,11,0.20)",
+      text: "#92400E",
     };
   }, [currentBand]);
 
@@ -2354,14 +2355,16 @@ export default function TrustScorePage() {
   ];
 
   const trustQuestionIcons: Record<string, GsnIconName> = {
-    "Identity verified": "shield",
+    "Identity evidence": "shield",
     "Support trust": "community",
+    "Contribution / discipline": "chart",
     "Contribution discipline": "chart",
     "Finance discipline": "financeInstitution",
+    "Trade / merchant trust": "shop",
     "Trade trust": "shop",
     "Follow-through": "check",
     "Community stability": "home",
-    "Verified history": "document",
+    "Checkable history": "document",
   };
 
   const trustSurfaceCards = [
@@ -3351,6 +3354,28 @@ export default function TrustScorePage() {
                       Evidence depth: {passportVm.verdict.evidenceLabel}
                     </span>
                   </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "grid",
+                      gridTemplateColumns: "30px minmax(0, 1fr)",
+                      gap: 8,
+                      alignItems: "center",
+                      padding: "8px 10px",
+                      borderRadius: 12,
+                      background: "#F8FBFF",
+                      border: "1px solid rgba(11,99,209,0.12)",
+                      color: "#24415C",
+                      fontSize: 12.5,
+                      fontWeight: 850,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    <GsnLegacyIcon name="document" size={28} decorative />
+                    <span>
+                      Record state, not character judgement. Add current evidence to strengthen this reading.
+                    </span>
+                  </div>
                 </div>
               </div>
               <div
@@ -3370,14 +3395,14 @@ export default function TrustScorePage() {
                       style={{
                         padding: isCompact ? "8px 4px" : "10px 6px",
                         textAlign: "center",
-                        background: isActive ? "#FFF1F2" : grade === "A" || grade === "B" ? "#F0FBF4" : "#FFFDF5",
+                        background: isActive ? "#FFF7E6" : grade === "A" || grade === "B" ? "#F0FBF4" : "#FFFDF5",
                         borderLeft: "1px solid rgba(216,227,238,0.9)",
-                        boxShadow: isActive ? "inset 0 0 0 2px rgba(200,58,58,0.45)" : "none",
+                        boxShadow: isActive ? "inset 0 0 0 2px rgba(245,158,11,0.42)" : "none",
                       }}
                     >
                       <div
                         style={{
-                          color: isActive ? "#991B1B" : "#07172C",
+                          color: isActive ? "#92400E" : "#07172C",
                           fontWeight: 1000,
                           fontSize: isCompact ? 16 : 18,
                         }}

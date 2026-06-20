@@ -4,7 +4,7 @@ export type TrustBandLanguage = {
   plainMeaning: string;
   implication: string;
   nextStep: string;
-  tone: "strong" | "good" | "care" | "weak" | "danger";
+  tone: "strong" | "good" | "care" | "danger";
 };
 
 export type TrustEvidenceStatus = "strong" | "mixed" | "limited";
@@ -14,7 +14,7 @@ export type TrustEvidenceLanguage = {
   label: string;
   plainMeaning: string;
   implication: string;
-  tone: "strong" | "care" | "weak";
+  tone: "strong" | "care";
 };
 
 export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
@@ -35,7 +35,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
       "The record has useful evidence, but the reader should still check what kind of events created it.",
     implication:
       "A small or moderate decision may be reasonable. For bigger money, goods, work, or responsibility, ask for the fuller Trust Passport.",
-    nextStep: "Proceed with care; ask for more proof if the risk is meaningful.",
+    nextStep: "Proceed with care; ask for more evidence if the risk is meaningful.",
     tone: "good",
   },
   {
@@ -50,13 +50,13 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
   },
   {
     band: "D",
-    title: "Limited or pressured evidence; reduce exposure",
+    title: "Evidence needs strengthening; reduce exposure",
     plainMeaning:
-      "The visible record is showing pressure, limited evidence, or weak follow-through. This is not a character judgement; it means the current proof is not strong enough yet.",
+      "The visible record has gaps, pressure, or follow-through signals that need more evidence. This is not a character judgement; it means the record is not strong enough yet.",
     implication:
       "Do not depend heavily on this record for credit, goods, work, or serious support. Reduce the amount, ask for repair evidence, or request community confirmation.",
     nextStep: "Ask what needs care and wait for stronger evidence before a serious decision.",
-    tone: "weak",
+    tone: "care",
   },
   {
     band: "E",
@@ -65,7 +65,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
       "There is not enough reliable visible evidence, or the record has warning signs that need attention.",
     implication:
       "Do not use this TrustSlip or Trust Passport alone for a meaningful risk. Ask for direct verification, recent payments, completed commitments, or admin/community confirmation.",
-    nextStep: "Do not rely on this alone. Require stronger proof first.",
+    nextStep: "Do not rely on this alone. Require stronger evidence first.",
     tone: "danger",
   },
   {
@@ -87,7 +87,7 @@ export const TRUST_BAND_SHORT_LABELS: Array<{
   { band: "A", label: "Strong evidence" },
   { band: "B", label: "Good evidence" },
   { band: "C", label: "Mixed evidence" },
-  { band: "D", label: "Limited evidence" },
+  { band: "D", label: "Evidence building" },
   { band: "E", label: "Insufficient evidence" },
 ];
 
@@ -115,12 +115,12 @@ export const TRUST_EVIDENCE_LANGUAGE: Record<
   },
   limited: {
     status: "limited",
-    label: "Limited evidence",
+    label: "Evidence still building",
     plainMeaning:
-      "Only a small amount of usable trust history is visible so far.",
+      "Only a small amount of usable trust history is visible so far. The record can still become stronger as more current evidence is added.",
     implication:
-      "This is not proof of bad behaviour. It means the reader should reduce the risk or ask for more evidence before relying on the record.",
-    tone: "weak",
+      "This does not mean bad behaviour. It means the reader should reduce the risk or ask for more evidence before relying on the record.",
+    tone: "care",
   },
 };
 

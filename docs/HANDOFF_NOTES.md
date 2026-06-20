@@ -1,3 +1,48 @@
+## 2026-06-20 - Trust Passport Verdict Language Reframed
+
+- Trigger:
+  - owner challenged the `Current trust verdict` and `What this reading says`
+    block because labels like `weak`, `needs caution`, and `limited evidence`
+    can sound like a judgement on the person instead of a statement about
+    missing or incomplete evidence.
+- Changed:
+  - `frontend/src/lib/trustBandLanguage.ts`
+    - changed the D-band language from `Limited evidence` / weak-tone language
+      to `Evidence building` and `Evidence needs strengthening`.
+    - kept the risk boundary honest while making clear the issue is the record,
+      not the person's character.
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - replaced visible low-depth statuses with `Evidence still building`,
+      `Check first`, `Needs current activity`, and checkable-history labels.
+    - changed a low-identity warning from relying on `this person` to relying
+      on `this record`.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - added a compact icon-backed note inside `Current trust verdict`:
+      `Record state, not character judgement. Add current evidence to
+      strengthen this reading.`
+    - softened the non-danger verdict tone from red to amber/blue so it reads
+      as `check first` / `building`, not condemnation.
+    - ensured the trust-question rows use meaningful 3D icons for contribution
+      and trade instead of falling back to the shield icon.
+  - `frontend/tools/audit-trust-passport-front-package.mjs`
+    - added guards so Trust Passport verdict surfaces do not quietly regress to
+      the morally loaded low-evidence labels.
+- Verification:
+  - `npm run audit:trust-passport-front-package` passed from `frontend/`.
+  - `npm run audit:trust-passport-button-inventory` passed from `frontend/`.
+  - `npm run audit:trust-passport-lane-map` passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx src/lib/trustPassportViewModel.ts src/lib/trustBandLanguage.ts tools/audit-trust-passport-front-package.mjs`
+    passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - this pass is source/build/audit verified. It has not been visually
+    screenshot-verified in the in-app browser during this turn.
+  - `frontend/src/pages/TrustScorePage.tsx` and
+    `frontend/src/lib/trustPassportViewModel.ts` already had broader
+    uncommitted Trust Passport/community-evidence work before this slice; this
+    note records only the verdict-language correction.
+
 ## 2026-06-20 - Trust Passport Identity Overview Badge Cleanup
 
 - Trigger:

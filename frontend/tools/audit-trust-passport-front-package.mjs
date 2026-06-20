@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
+  band: "src/lib/trustBandLanguage.ts",
+  viewModel: "src/lib/trustPassportViewModel.ts",
   app: "src/App.tsx",
   targets: "src/lib/actionTargetRoutes.ts",
   package: "package.json",
@@ -135,6 +137,49 @@ assertContains(
     new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
     `Trust Passport current front package must keep the ${label} section until a deliberate lane redesign replaces it.`
   );
+});
+
+[
+  {
+    key: "band",
+    pattern: /title: "Evidence needs strengthening; reduce exposure"[\s\S]*?label: "Evidence building"[\s\S]*?label: "Evidence still building"/,
+    message:
+      "Trust Passport trust-band language must frame low-depth states as evidence still building, not a judgement on the person.",
+  },
+  {
+    key: "viewModel",
+    pattern:
+      /"Evidence still building"[\s\S]*?"Check first"[\s\S]*?before relying on this record/,
+    message:
+      "Trust Passport view model must use record-state language for low-depth readings.",
+  },
+  {
+    key: "trust",
+    pattern:
+      /Record state, not character judgement\. Add current evidence to strengthen this reading\./,
+    message:
+      "Current trust verdict must explain that the reading is about the record state, not character judgement.",
+  },
+].forEach(({ key, pattern, message }) => {
+  assertContains(key, pattern, message);
+});
+
+[
+  { key: "band", pattern: /"Limited evidence"|"Weak"|"Needs caution"|"Under pressure"/ },
+  { key: "viewModel", pattern: /"Limited evidence"|"Weak"|"Needs caution"|"Under pressure"/ },
+  { key: "trust", pattern: /Record state, not character judgement[\s\S]*?"Weak"|"Needs caution"|"Under pressure"/ },
+].forEach(({ key, pattern }) => {
+  const source = sourceByFile[key];
+  const match = source.match(pattern);
+  if (match?.index !== undefined) {
+    addFinding(
+      files[key],
+      source,
+      match.index,
+      "Trust Passport current verdict surfaces must not reintroduce morally loaded low-evidence labels.",
+      match[0]
+    );
+  }
 });
 
 [

@@ -10,14 +10,13 @@ import {
 export type TrustQuestionStatus =
   | "Strong"
   | "Mixed"
-  | "Needs caution"
-  | "Limited evidence"
-  | "Weak"
+  | "Check first"
+  | "Evidence still building"
   | "Stable"
-  | "Under pressure"
-  | "Strong verified history"
-  | "Moderate verified history"
-  | "Limited verified history";
+  | "Needs current activity"
+  | "Strong checkable history"
+  | "Moderate checkable history"
+  | "Building checkable history";
 
 export type TrustQuestionLine = {
   title: string;
@@ -223,46 +222,46 @@ export function buildTrustPassportViewModel(
   const highRisk = ["high", "critical", "severe"].includes(riskLevel.toLowerCase());
 
   const supportStatus: TrustQuestionStatus = lowData
-    ? "Limited evidence"
+    ? "Evidence still building"
     : weakBand
-      ? "Needs caution"
+      ? "Check first"
       : "Mixed";
   const contributionStatus: TrustQuestionStatus =
-    eventCountNumber > 0 ? (weakBand ? "Mixed" : "Strong") : "Limited evidence";
+    eventCountNumber > 0 ? (weakBand ? "Mixed" : "Strong") : "Evidence still building";
   const financeStatus: TrustQuestionStatus =
-    hasRepayment ? "Strong" : hasRelease || highRisk ? "Needs caution" : "Limited evidence";
+    hasRepayment ? "Strong" : hasRelease || highRisk ? "Check first" : "Evidence still building";
   const tradeStatus: TrustQuestionStatus =
-    counterparties > 0 ? (weakBand ? "Mixed" : "Strong") : "Limited evidence";
+    counterparties > 0 ? (weakBand ? "Mixed" : "Strong") : "Evidence still building";
   const followThroughStatus: TrustQuestionStatus =
-    hasRepayment ? "Strong" : eventCountNumber > 0 ? "Mixed" : "Weak";
+    hasRepayment ? "Strong" : eventCountNumber > 0 ? "Mixed" : "Evidence still building";
   const communityStatus: TrustQuestionStatus =
-    activeClans > 0 && !weakBand ? "Stable" : activeClans > 0 ? "Under pressure" : "Limited evidence";
+    activeClans > 0 && !weakBand ? "Stable" : activeClans > 0 ? "Needs current activity" : "Evidence still building";
   const historyStatus: TrustQuestionStatus =
     hasVerifyCode && eventCountNumber > 0
-      ? "Strong verified history"
+      ? "Strong checkable history"
       : hasVerifyCode || eventCountNumber > 0
-        ? "Moderate verified history"
-        : "Limited verified history";
+        ? "Moderate checkable history"
+        : "Building checkable history";
 
   const trustQuestions: TrustQuestionLine[] = [
     {
-      title: "Identity verified",
+      title: "Identity evidence",
       status: phoneVerified && (bankVerified || passportVerified || communityIdentityConfirmed)
         ? "Strong"
         : phoneRecorded || bankRecorded || officialIdRecorded
           ? "Mixed"
-          : "Needs caution",
+          : "Check first",
       meaning: phoneVerified
         ? "The phone is verified. Recorded bank or ID evidence can strengthen this identity, but provider verification still matters for serious decisions."
         : phoneRecorded || bankRecorded || officialIdRecorded
-          ? "Identity evidence is recorded, but some proof is not verified yet. Treat this as progress, not final confirmation."
-          : "Identity is only partly visible. Ask for stronger identity proof before relying on this person.",
+          ? "Identity evidence is recorded, but some evidence is not verified yet. Treat this as progress, not final confirmation."
+          : "Identity is only partly visible. Ask for stronger identity evidence before relying on this record.",
     },
     {
       title: "Support trust",
       status: supportStatus,
       meaning:
-        supportStatus === "Limited evidence"
+        supportStatus === "Evidence still building"
           ? "This screen does not yet show enough support history for serious reliance."
           : "Use the grade, recent behaviour, and community confirmation before offering support.",
     },
@@ -270,7 +269,7 @@ export function buildTrustPassportViewModel(
       title: "Contribution / discipline",
       status: contributionStatus,
       meaning:
-        contributionStatus === "Limited evidence"
+        contributionStatus === "Evidence still building"
           ? "Contribution or pooled-activity discipline is not visible enough yet."
           : "There is visible activity, but the reader should still check whether commitments were completed on time.",
     },
@@ -279,15 +278,15 @@ export function buildTrustPassportViewModel(
       status: financeStatus,
       meaning: hasRepayment
         ? "Completed repayment evidence is visible."
-        : "Repayment or guarantee follow-through is not strong enough on this screen. Ask for more proof before money, credit, or goods.",
+        : "Repayment or guarantee follow-through is not complete enough on this screen. Ask for more evidence before money, credit, or goods.",
     },
     {
       title: "Trade / merchant trust",
       status: tradeStatus,
       meaning:
-        tradeStatus === "Limited evidence"
+        tradeStatus === "Evidence still building"
           ? "Marketplace or merchant evidence is not enough yet."
-          : "Trade evidence exists, but the reader should still match the risk to the proof.",
+          : "Trade evidence exists, but the reader should still match the risk to the evidence shown.",
     },
     {
       title: "Follow-through",
@@ -305,12 +304,12 @@ export function buildTrustPassportViewModel(
           : "A stable active community base is not visible enough yet.",
     },
     {
-      title: "Verified history",
+      title: "Checkable history",
       status: historyStatus,
       meaning:
-        historyStatus === "Limited verified history"
+        historyStatus === "Building checkable history"
           ? "There is not enough visible history behind the claim yet."
-          : "Some verification trail exists. For bigger risk, inspect the Trust Events and TrustSlip verification.",
+          : "Some checkable trail exists. For bigger risk, inspect the Trust Events and TrustSlip verification.",
     },
   ];
 
@@ -331,7 +330,7 @@ export function buildTrustPassportViewModel(
 
   const createsPressure = unique([
     lowData ? "limited evidence so far" : "",
-    weakBand ? "current grade needs attention" : "",
+    weakBand ? "visible evidence still needs strengthening" : "",
     recentEventCount <= 0 ? "no recent Trust Events are visible" : "",
     eventCountNumber <= 0 ? "no event-depth is visible" : "",
     phoneRecorded && !phoneVerified ? "phone is recorded but not network-verified yet" : "",
