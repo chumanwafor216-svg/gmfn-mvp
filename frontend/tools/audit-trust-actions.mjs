@@ -390,19 +390,19 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Community Verification[\s\S]*?Verification snapshot[\s\S]*?Public QR check for community identity only[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Community type[\s\S]*?Relay[\s\S]*?community-verify\.request-confirmation[\s\S]*?Request[\s\S]*?community-verify\.copy-link[\s\S]*?Copy[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Verification details[\s\S]*?Public record[\s\S]*?Public face[\s\S]*?GSN record[\s\S]*?Next evidence[\s\S]*?Privacy protection/,
-  "CommunityVerifyPage must present a screenshot-ready public verification snapshot, one primary confirmation action, collapsed details, and a privacy boundary."
+  /Community Verification[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?Smart guidance[\s\S]*?What are you checking\?[\s\S]*?Context-aware[\s\S]*?Request scoped confirmation[\s\S]*?Verification snapshot[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Community type[\s\S]*?Relay[\s\S]*?community-verify\.copy-link[\s\S]*?Copy[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Verification details[\s\S]*?Public record[\s\S]*?Public face[\s\S]*?GSN record[\s\S]*?Next evidence[\s\S]*?Private by design/,
+  "CommunityVerifyPage must present an official record card, smart guidance, compact snapshot, collapsed details, and a privacy boundary."
 );
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /title: "Trust anchor"[\s\S]*?Names are display labels; the Community ID is what the reader should check[\s\S]*?Public view only[\s\S]*?Member credentials stay separate[\s\S]*?Admin evidence stays private/,
+  /title: "Trust anchor"[\s\S]*?Names are display labels; the Community ID is what the reader should check[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page[\s\S]*?Private by design[\s\S]*?Member lists, contacts, disputes, and admin notes stay hidden/,
   "CommunityVerifyPage must implement the Community Public Face anchor rule and public/member/admin privacy boundary using existing data only."
 );
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /const communityAnchor = firstTruthy\(record\?\.community_code, record\?\.community_id, "Not shown"\);[\s\S]*?Community ID anchor[\s\S]*?\{communityAnchor\}[\s\S]*?Check this ID first\. Name is display text\./,
+  /const communityAnchor = firstTruthy\(record\?\.community_code, record\?\.community_id, "Not shown"\);[\s\S]*?Public community record[\s\S]*?\{communityName\}[\s\S]*?\{communityAnchor\}[\s\S]*?This confirms the community identity in GSN/,
   "CommunityVerifyPage hero must surface the Community ID as the visible trust anchor before treating the community name as display text."
 );
 

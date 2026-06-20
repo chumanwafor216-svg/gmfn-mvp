@@ -1,3 +1,47 @@
+## 2026-06-20 - Community Verification Guided Record Redesign
+
+- Trigger:
+  - owner provided phone reference screenshots showing the desired public GSN
+    verification direction and reported the current route was still too worded,
+    unarranged, icon-light, and had sizing overflow.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - rebuilt the visible success state around a dark official `Public community
+      record` card, compact GSN status chips, and a short limitation sentence.
+    - added a `Smart guidance` card with Community / Person / Shop / Group scope
+      choices, a context-aware note, and one primary `Request scoped
+      confirmation` action.
+    - kept the `Verification snapshot` but changed fact rows to icon + stacked
+      label/value so long Community IDs and `Market association` style values
+      wrap inside the phone card instead of clipping offscreen.
+    - kept deeper public-face, currentness, affiliate, mobility, and boundary
+      explanations inside the collapsed `Verification details` disclosure.
+    - changed the QR/share and privacy surfaces into compact rows rather than
+      exposed explanation blocks.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - changed the reusable `sectionIconHeader` layout so mobile action/status
+      controls wrap below the title/copy instead of compressing body text into a
+      narrow vertical column.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated the Community Verification guard to protect the new official
+      record + smart guidance + compact snapshot + private-by-design contract.
+- Verification:
+  - `npm run audit:trust-actions` passed from `frontend/`.
+  - `npm run audit:identity-integrity-front-package` passed from `frontend/`.
+  - `npm exec -- eslint src/pages/CommunityVerifyPage.tsx src/pages/IdentityIntegrityPage.tsx tools/audit-trust-actions.mjs tools/audit-identity-integrity-front-package.mjs`
+    passed from `frontend/`.
+  - `npm run audit:protected-button-freeze` passed from `frontend/`.
+  - `npm run audit:tap-stability` passed from `frontend/`.
+  - `npm run build` passed from `frontend/`.
+- Unabated truth:
+  - the in-app Browser surface was unavailable in this session (`iab` missing),
+    so this pass is source/build/audit verified but not visually screenshot
+    verified through Codex browser automation. It still needs real-phone review.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx` and
+    `frontend/tools/audit-identity-integrity-front-package.mjs` already had
+    uncommitted proof-to-evidence wording changes before this repair; this note
+    records only the mobile section-header sizing repair.
+
 ## 2026-06-20 - Companion Toast Dismiss Phone Repair
 
 - Trigger:

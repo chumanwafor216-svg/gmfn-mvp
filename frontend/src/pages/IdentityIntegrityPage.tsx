@@ -417,8 +417,8 @@ function sectionIconHeader(
       style={{
         display: "grid",
         gridTemplateColumns: right
-          ? "auto minmax(0, 1fr) auto"
-          : "auto minmax(0, 1fr)",
+          ? "46px minmax(0, 1fr)"
+          : "46px minmax(0, 1fr)",
         gap: 12,
         alignItems: "center",
       }}
@@ -432,7 +432,21 @@ function sectionIconHeader(
           {detail}
         </span>
       </span>
-      {right ? <span>{right}</span> : null}
+      {right ? (
+        <span
+          style={{
+            gridColumn: "1 / -1",
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "flex-start",
+            alignItems: "center",
+            gap: 10,
+            paddingTop: 2,
+          }}
+        >
+          {right}
+        </span>
+      ) : null}
     </div>
   );
 }

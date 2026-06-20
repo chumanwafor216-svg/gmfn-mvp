@@ -278,6 +278,40 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function HeroChip({ color, label }: { color: string; label: string }) {
+  return (
+    <span
+      style={{
+        minHeight: 34,
+        borderRadius: 999,
+        padding: "7px 11px",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        color: "#F7FAFF",
+        background: "rgba(255,255,255,0.08)",
+        border: `1px solid ${color}80`,
+        fontSize: 13,
+        fontWeight: 1000,
+        lineHeight: 1.1,
+        whiteSpace: "normal",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 999,
+          border: `2px solid ${color}`,
+          boxShadow: `0 0 0 3px ${color}22`,
+        }}
+      />
+      {label}
+    </span>
+  );
+}
+
 export default function CommunityVerifyPage() {
   const { communityKey } = useParams<{ communityKey: string }>();
   const [record, setRecord] = useState<CommunityVerifyRecord | null>(null);
@@ -713,52 +747,238 @@ export default function CommunityVerifyPage() {
                     size={190}
                     opacity={0.08}
                   />
-                  <h2 style={{ ...sectionTitle(), fontSize: "clamp(25px, 7vw, 38px)" }}>
-                    {communityName}
-                  </h2>
                   <div
                     style={{
-                      borderRadius: 20,
+                      borderRadius: 24,
                       background:
-                        "linear-gradient(180deg, rgba(6,24,39,0.98) 0%, rgba(11,45,74,0.98) 100%)",
+                        "radial-gradient(circle at 74% 72%, rgba(11,99,209,0.26) 0%, rgba(11,99,209,0.00) 34%), linear-gradient(145deg, #061827 0%, #08233A 58%, #0B3E78 100%)",
                       color: "#F7FAFF",
                       border: "1px solid rgba(214,170,69,0.34)",
-                      padding: 12,
+                      padding: 18,
                       display: "grid",
-                      gridTemplateColumns: "auto minmax(0, 1fr)",
-                      gap: 10,
-                      alignItems: "center",
-                      boxShadow: "0 14px 34px rgba(6,24,39,0.18)",
+                      gap: 14,
+                      boxShadow: "0 18px 42px rgba(6,24,39,0.22)",
                     }}
+                    aria-label="Public community record"
                   >
-                    {communityVerifyIconBadge("records-folder", 42, "amber")}
-                    <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) auto",
+                        gap: 12,
+                        alignItems: "start",
+                      }}
+                    >
+                      <div style={{ minWidth: 0, display: "grid", gap: 10 }}>
+                        <span
+                          style={{
+                            color: "#C8D8EA",
+                            fontSize: 11,
+                            fontWeight: 1000,
+                            letterSpacing: 1.2,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Public community record
+                        </span>
+                        <h2
+                          style={{
+                            margin: 0,
+                            color: "#FFFFFF",
+                            fontSize: "clamp(32px, 9vw, 52px)",
+                            lineHeight: 0.98,
+                            fontWeight: 1000,
+                            letterSpacing: 0,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {communityName}
+                        </h2>
+                      </div>
+                      <div
+                        style={{
+                          width: 72,
+                          height: 72,
+                          borderRadius: 22,
+                          display: "grid",
+                          placeItems: "center",
+                          border: "1px solid rgba(242,199,102,0.42)",
+                          background: "rgba(255,255,255,0.04)",
+                        }}
+                      >
+                        {communityVerifyIconBadge("trust-shield", 48, "navy")}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr)",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <strong
+                          style={{
+                            color: "#EAF3FF",
+                            fontSize: "clamp(18px, 5vw, 26px)",
+                            lineHeight: 1.08,
+                            fontWeight: 1000,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {communityAnchor}
+                        </strong>
+                        <span
+                          style={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 12,
+                            display: "grid",
+                            placeItems: "center",
+                            background: "rgba(255,255,255,0.10)",
+                            color: "#EAF3FF",
+                            fontSize: 20,
+                            fontWeight: 900,
+                          }}
+                          aria-hidden="true"
+                        >
+                          ID
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        <HeroChip color="#2E9B62" label={active ? "Active" : labelize(record.status)} />
+                        <HeroChip color="#0B63D1" label={publicRecord} />
+                        <HeroChip color="#64748B" label={`Relay ${relayAvailability.toLowerCase()}`} />
+                      </div>
+                      <p
+                        style={{
+                          margin: "4px 0 0",
+                          color: "#C8D8EA",
+                          fontSize: 14,
+                          lineHeight: 1.45,
+                          fontWeight: 760,
+                        }}
+                      >
+                        This confirms the community identity in GSN. It does not verify every member, shop, line, or subgroup.
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      ...sectionCard("#FFFFFF"),
+                      display: "grid",
+                      gap: 14,
+                      boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
+                    }}
+                    aria-label="Smart verification guidance"
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "44px minmax(0, 1fr) auto",
+                        gap: 10,
+                        alignItems: "start",
+                      }}
+                    >
+                      {communityVerifyIconBadge("certificate-seal", 42, "blue")}
+                      <div style={{ minWidth: 0 }}>
+                        <h2 style={{ ...sectionTitle(), fontSize: 22 }}>Smart guidance</h2>
+                        <p style={{ ...helperText(), marginTop: 5 }}>
+                          What are you checking?
+                        </p>
+                      </div>
                       <span
                         style={{
-                          color: "#F2C766",
+                          minHeight: 32,
+                          borderRadius: 999,
+                          padding: "7px 10px",
+                          color: "#0B63D1",
+                          background: "#EEF6FF",
+                          border: "1px solid rgba(11,99,209,0.16)",
                           fontSize: 11,
                           fontWeight: 1000,
-                          letterSpacing: 0.7,
+                          letterSpacing: 0.8,
                           textTransform: "uppercase",
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        Community ID anchor
-                      </span>
-                      <strong
-                        style={{
-                          color: "#FFFFFF",
-                          fontSize: "clamp(18px, 5vw, 24px)",
-                          lineHeight: 1.08,
-                          fontWeight: 1000,
-                          overflowWrap: "anywhere",
-                        }}
-                      >
-                        {communityAnchor}
-                      </strong>
-                      <span style={{ color: "#C8D8EA", fontSize: 12.5, fontWeight: 800 }}>
-                        Check this ID first. Name is display text.
+                        Context-aware
                       </span>
                     </div>
+                    <div
+                      aria-label="Verification scope selector"
+                      style={{
+                        borderRadius: 18,
+                        background: "#EEF3FB",
+                        padding: 6,
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gap: 6,
+                      }}
+                    >
+                      {["Community", "Person", "Shop", "Group"].map((item) => (
+                        <span
+                          key={item}
+                          style={{
+                            minHeight: 44,
+                            borderRadius: 14,
+                            display: "grid",
+                            placeItems: "center",
+                            background: item === "Community" ? "#FFFFFF" : "transparent",
+                            color: item === "Community" ? "#0B63D1" : "#617085",
+                            boxShadow:
+                              item === "Community" ? "0 8px 18px rgba(6,24,39,0.08)" : "none",
+                            fontSize: 14,
+                            fontWeight: 1000,
+                          }}
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                    <div
+                      style={{
+                        borderRadius: 18,
+                        background: "#EAF3FF",
+                        border: "1px solid rgba(11,99,209,0.16)",
+                        padding: 12,
+                        display: "grid",
+                        gridTemplateColumns: "42px minmax(0, 1fr)",
+                        gap: 10,
+                        alignItems: "start",
+                      }}
+                    >
+                      {communityVerifyIconBadge("community-building", 40, "blue")}
+                      <div style={{ minWidth: 0, display: "grid", gap: 7 }}>
+                        <strong
+                          style={{
+                            color: "#07172C",
+                            fontSize: 18,
+                            fontWeight: 1000,
+                            lineHeight: 1.16,
+                          }}
+                        >
+                          This is an active community record
+                        </strong>
+                        <p style={{ ...helperText(), color: "#526579", lineHeight: 1.42 }}>
+                          Use the Community ID as the anchor. For a person, shop, line, or group claim, ask for scoped confirmation.
+                        </p>
+                        <p style={{ margin: 0, color: "#24415C", fontSize: 13, fontWeight: 900, lineHeight: 1.38 }}>
+                          Best next step: request scoped evidence before relying on a narrower claim.
+                        </p>
+                      </div>
+                    </div>
+                    <PrimaryButton
+                      debugId="community-verify.request-confirmation"
+                      stableHeight={56}
+                      busy={requestingConfirmation}
+                      busyLabel="Sending"
+                      disabled={!requestConfirmationAvailable || requestingConfirmation}
+                      onClick={() => void requestConfirmation()}
+                      style={{ borderRadius: 17, fontSize: 15 }}
+                    >
+                      Request scoped confirmation
+                    </PrimaryButton>
                   </div>
                   <div
                     style={{
@@ -831,22 +1051,10 @@ export default function CommunityVerifyPage() {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gridTemplateColumns: "1fr",
                         gap: 8,
                       }}
                     >
-                      <PrimaryButton
-                        debugId="community-verify.request-confirmation"
-                        stableHeight={52}
-                        busy={requestingConfirmation}
-                        busyLabel="Sending"
-                        disabled={!requestConfirmationAvailable || requestingConfirmation}
-                        onClick={() => void requestConfirmation()}
-                        style={{ borderRadius: 15, fontSize: 13.5 }}
-                      >
-                        {communityVerifyIconBadge("trust-shield", 34, "blue")}
-                        Request
-                      </PrimaryButton>
                       <SecondaryButton
                         debugId="community-verify.copy-link"
                         stableHeight={52}
@@ -987,47 +1195,67 @@ export default function CommunityVerifyPage() {
                     style={{
                       ...sectionCard("#FFFFFF"),
                       display: "grid",
-                      gridTemplateColumns: "96px minmax(0, 1fr)",
-                      gap: 14,
-                      alignItems: "center",
+                      gridTemplateColumns: "minmax(0, 1fr)",
+                      gap: 12,
+                      alignItems: "start",
                       boxShadow: "0 10px 28px rgba(6,24,39,0.05)",
                     }}
                   >
-                    <div
-                      style={{
-                        width: 92,
-                        height: 92,
-                        borderRadius: 18,
-                        border: "1px solid rgba(8,35,58,0.14)",
-                        background: "#FFFFFF",
-                        display: "grid",
-                        placeItems: "center",
-                        padding: 8,
-                      }}
-                    >
-                      <QRCodeSVG
-                        value={publicLink}
-                        size={74}
-                        bgColor="#FFFFFF"
-                        fgColor="#07172C"
-                        level="M"
-                        marginSize={1}
-                      />
-                    </div>
-                    <div>
-                      <h2 style={{ margin: 0, color: "#07172C", fontSize: 17, fontWeight: 1000 }}>
-                        Scan to reopen this community record
-                      </h2>
-                      <p style={{ margin: "7px 0 0", ...helperText() }}>
-                        The QR opens this same public Community ID Domain record. It does not reveal private member lists, verifier names, phone numbers, or shop details.
-                      </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div
+                        style={{
+                          width: 92,
+                          height: 92,
+                          borderRadius: 18,
+                          border: "1px solid rgba(8,35,58,0.14)",
+                          background: "#FFFFFF",
+                          display: "grid",
+                          placeItems: "center",
+                          padding: 8,
+                          flex: "0 0 auto",
+                        }}
+                      >
+                        <QRCodeSVG
+                          value={publicLink}
+                          size={74}
+                          bgColor="#FFFFFF"
+                          fgColor="#07172C"
+                          level="M"
+                          marginSize={1}
+                        />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <h2 style={{ margin: 0, color: "#07172C", fontSize: 17, fontWeight: 1000 }}>
+                          Share this public record
+                        </h2>
+                        <p style={{ margin: "7px 0 0", ...helperText(), lineHeight: 1.38 }}>
+                          Scan or copy the link to reopen this same Community ID record. Private member lists and admin evidence stay hidden.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <EvidenceScopeCard
-                    title="Privacy protection"
-                    body={`${publicLimitation} Public view only. Member credentials stay separate. Admin evidence stays private.`}
-                    tone="info"
-                  />
+                  <div
+                    style={{
+                      ...sectionCard("#FFFFFF"),
+                      display: "grid",
+                      gridTemplateColumns: "44px minmax(0, 1fr) auto",
+                      gap: 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    {communityVerifyIconBadge("certificate-seal", 40, "blue")}
+                    <div style={{ minWidth: 0 }}>
+                      <h2 style={{ margin: 0, color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
+                        Private by design
+                      </h2>
+                      <p style={{ margin: "4px 0 0", ...helperText(), lineHeight: 1.34 }}>
+                        Member lists, contacts, disputes, and admin notes stay hidden.
+                      </p>
+                    </div>
+                    <span aria-hidden="true" style={{ color: "#8AA0B8", fontSize: 24, fontWeight: 700 }}>
+                      {">"}
+                    </span>
+                  </div>
                   <SecondaryButton
                     debugId="community-verify.refresh"
                     stableHeight={52}
@@ -1073,7 +1301,7 @@ function SnapshotFact({
         border: "1px solid rgba(8,35,58,0.10)",
         padding: "8px 10px",
         display: "grid",
-        gridTemplateColumns: "34px minmax(0, 0.92fr) minmax(0, 1fr)",
+        gridTemplateColumns: "34px minmax(0, 1fr)",
         gap: 9,
         alignItems: "center",
         gridColumn: wide ? "1 / -1" : undefined,
@@ -1081,32 +1309,33 @@ function SnapshotFact({
       }}
     >
       {communityVerifyIconBadge(icon, 34)}
-      <span
-        style={{
-          color: "#617085",
-          fontSize: 11,
-          fontWeight: 1000,
-          letterSpacing: 0.4,
-          lineHeight: 1.12,
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
+      <span style={{ minWidth: 0, display: "grid", gap: 3 }}>
+        <span
+          style={{
+            color: "#617085",
+            fontSize: 10.5,
+            fontWeight: 1000,
+            letterSpacing: 0.4,
+            lineHeight: 1.12,
+            textTransform: "uppercase",
+          }}
+        >
+          {label}
+        </span>
+        <strong
+          style={{
+            color: "#07172C",
+            fontSize: wide ? 15.5 : 15,
+            fontWeight: 1000,
+            lineHeight: 1.12,
+            overflowWrap: "anywhere",
+            wordBreak: "normal",
+            whiteSpace: "normal",
+          }}
+        >
+          {value}
+        </strong>
       </span>
-      <strong
-        style={{
-          color: "#07172C",
-          fontSize: wide ? 16 : 15,
-          fontWeight: 1000,
-          lineHeight: 1.12,
-          overflowWrap: "normal",
-          wordBreak: "normal",
-          whiteSpace: "nowrap",
-          textAlign: "right",
-        }}
-      >
-        {value}
-      </strong>
     </div>
   );
 }
@@ -1244,7 +1473,16 @@ function InfoTile({
           {label}
         </span>
       </div>
-      <strong style={{ color: "#07172C", fontSize: 17, fontWeight: 1000, lineHeight: 1.2 }}>
+      <strong
+        style={{
+          color: "#07172C",
+          fontSize: 17,
+          fontWeight: 1000,
+          lineHeight: 1.2,
+          overflowWrap: "anywhere",
+          wordBreak: "normal",
+        }}
+      >
         {value}
       </strong>
     </div>
