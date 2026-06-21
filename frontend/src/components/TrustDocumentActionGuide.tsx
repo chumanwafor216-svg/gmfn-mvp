@@ -61,7 +61,7 @@ function actionGuideIcon(id: string): GsnIconName {
     case "verify-link":
       return "search";
     case "passport":
-      return "proof";
+      return "evidence";
     default:
       return "document";
   }

@@ -90,7 +90,7 @@ Personal commitments are useful evidence of follow-through, especially for membe
 
 ---
 
-## 6. App Proof Path
+## 6. App Evidence Path
 
 Before the workshop, test this exact path:
 
@@ -106,9 +106,9 @@ Before the workshop, test this exact path:
 
 Each screen should answer one question:
 
-**Does this help prove portable trust, or is it noise?**
+**Does this show portable trust evidence, or is it noise?**
 
-The demo should not explain every page. It should prove one thing:
+The demo should not explain every page. It should show one thing:
 
 **Community activity becomes portable trust evidence.**
 
@@ -134,7 +134,7 @@ Make one thing clear:
 
 **Contribution is one example of trust evidence. Portable trust is the main story.**
 
-### 20-35 minutes: Live app proof
+### 20-35 minutes: Live app evidence
 
 Walk through only the screens that support Amara's story:
 
@@ -224,7 +224,7 @@ Ask these before showing the app:
 
 ### Post-demo questions
 
-Ask these after showing Amara's proof path:
+Ask these after showing Amara's evidence path:
 
 - In your own words, what problem is GSN trying to solve?
 - Did Amara's TrustSlip make her more believable in Aberdeen?
@@ -239,7 +239,7 @@ Ask these after showing Amara's proof path:
 
 Ask participants to rank these from most convincing to least convincing:
 
-1. verified community membership
+1. recorded community membership evidence
 2. completed contributions
 3. repayment or support history
 4. sponsor signals
@@ -306,7 +306,7 @@ The session is a concern if participants like the idea but:
 - think GSN is only a savings app, loan app, contribution app, or marketplace
 - cannot explain the difference between Trust Passport and TrustSlip
 - trust the score or band without looking at the evidence behind it
-- ask for proof that the community and sponsors are real
+- ask for evidence that the community and sponsors are real
 - feel the public page needs clearer warnings about what GSN does not guarantee
 - understand Amara's story only after repeated explanation
 - find the app path too broad or too busy for the main story
@@ -343,7 +343,7 @@ For the school-organised test to be useful, we need to leave with:
 
 ## 11. Materials Needed
 
-Prepare only what supports the proof:
+Prepare only what supports the evidence:
 
 - Short slide deck
 - System architecture map
@@ -387,7 +387,7 @@ The goal is honest feedback on what feels clear, useful, risky, confusing, or mi
 2. Confirm whether the workshop is likely to be in person or online.
 3. Confirm the best date and time.
 4. Confirm whether the Nigerian Society can gather 6-12 participants.
-5. Rehearse the Amara proof path on phone.
+5. Rehearse the Amara evidence path on phone.
 6. Prepare the slide deck, feedback form, and backup screenshots.
 7. Decide which auditors should review the TrustSlip evidence before the session.
 

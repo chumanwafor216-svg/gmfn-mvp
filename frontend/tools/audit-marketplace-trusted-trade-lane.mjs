@@ -74,6 +74,7 @@ if (!trustedTradeSection.text) {
   [
     /Trusted Trade/,
     /See known members and visible shops inside this selected/,
+    /Open the shop record for current evidence before[\s\S]*?trade, credit, goods, or money move/,
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
     /Community-bound trade/,

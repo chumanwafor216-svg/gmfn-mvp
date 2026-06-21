@@ -19,7 +19,7 @@ A screen is acceptable only if:
   possible.
 - For production polish, it follows
   `docs/GSN_PRODUCTION_POLISH_STANDARD.md`: the first viewport, icon meaning,
-  button stability, user-facing language, screenshot readiness, and proof
+  button stability, user-facing language, screenshot readiness, and evidence
   surface treatment must pass before the route is called complete.
 - It uses the approved color system.
 - Meaningful icons follow the GSN Icon Protocol: premium realistic 3D object
@@ -65,7 +65,7 @@ heavy, improvised, unstable, or unfinished beside high-trust mobile products.
   hover, and active states.
 - Text must be short, direct, and user-facing; backend or protocol words must
   not leak into ordinary user surfaces.
-- Shared/exportable proof screens must look like official GSN documents with
+- Shared/exportable evidence screens must look like official GSN documents with
   watermark or brand mark, title, identity block, generated time, verification
   reference, limitation statement, and footer.
 
@@ -82,7 +82,7 @@ heavy, improvised, unstable, or unfinished beside high-trust mobile products.
 
 ## One-Screen Snapshot Test
 
-Identity, proof, receipt, link, and verification snapshots must be able to fit
+Identity, evidence, receipt, link, and verification snapshots must be able to fit
 one complete record into a 390x844 phone screenshot when the snapshot itself is
 the intended information unit.
 
@@ -90,7 +90,7 @@ the intended information unit.
   visible without scrolling inside that snapshot.
 - Use short labels, compact rows/chips, and premium realistic 3D object icons.
 - Verification photos and official marks must not cover each other; the person,
-  ID, or proof item being shown must remain visible.
+  ID, or evidence item being shown must remain visible.
 - The snapshot must include the next completion or verification action when it
   shows an incomplete status.
 - Completion actions must open a real task route, form, chooser, or explicit

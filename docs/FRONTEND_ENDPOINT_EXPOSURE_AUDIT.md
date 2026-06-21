@@ -264,7 +264,7 @@ This phase is now in strong completion state for:
 - marketplace/shop/Vault separation
 - commercial unlock visibility
 - trust and verification document quality
-- finance and repayment proof visibility
+- finance and repayment evidence visibility
 - collapse/open discipline on the major oversized surfaces
 
 The biggest remaining item is not route wiring.

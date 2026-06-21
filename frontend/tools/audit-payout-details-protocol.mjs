@@ -62,9 +62,24 @@ assertContains(
   "Payout Details must keep one concise custody boundary statement."
 );
 
+assertContains(
+  /Review the payout destination record for the Money Out route\. This record does not approve or execute a withdrawal\./,
+  "Payout copied summary must state that payout destination records do not approve or execute withdrawals."
+);
+
+assertContains(
+  /This destination record is ready for the Money Out route, but it does not approve or execute a withdrawal\./,
+  "Payout ready state must not sound like withdrawal approval or payout execution."
+);
+
 assertNotContains(
   /import ExplainToggle|<ExplainToggle|Why this matters|GSN does not hold funds/,
   "Payout Details must not restore the wordy top explainer, repeated why-this-matters card, or repeated custody paragraph."
+);
+
+assertNotContains(
+  /Review the payout destination saved for approved withdrawals\.|This destination is ready for approved withdrawals\.|Use Withdrawal Instructions when approval is ready\.|Save the destination for approved withdrawals\./,
+  "Payout Details must not make a saved destination sound like approved withdrawal status."
 );
 
 assertNotContains(

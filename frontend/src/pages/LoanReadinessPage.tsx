@@ -1142,8 +1142,8 @@ export default function LoanReadinessPage() {
       <ExplainToggle
         label="What this screen does"
         what="This page is one step inside Loans & Support. It tests whether the current community support item is calm enough to move forward right now."
-        why="Finance records the wider money story. Readiness decides whether this one support path should continue, pause, or clear another pressure first."
-        next="Read the main readiness message first, then use the summary and blockers below to decide whether to continue into suggestions or workbench."
+        why="Finance records the wider money story. Readiness helps you decide whether this one support path should continue, pause, or clear another pressure first."
+        next="Support Readiness is decision support only; it does not approve a loan, approve a guarantor, or authorize release of goods, credit, or money."
         tone="blue"
       />
 

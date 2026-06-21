@@ -3,7 +3,7 @@
 Date: 2026-05-29
 
 Purpose: preserve the existing Amara storyline while auditing the whole line for
-flow, button response, focused activity, proof visibility, and screenshot
+flow, button response, focused activity, evidence visibility, and screenshot
 readiness.
 
 This is not a new story. The story remains:
@@ -20,7 +20,7 @@ Every screen in this line must obey these rules:
 - Every action must answer. Success gets a visible response. Failure explains
   what is wrong, why it matters, and the first thing to do next.
 - Popups and notices are temporary. They must not become permanent extra pages.
-- Public proof must not expose private/internal evidence. Public verification
+- Public evidence must not expose private/internal evidence. Public verification
   can show the permitted paper, validity state, limits, and public confirmation
   paths only.
 - Buttons must be stable. A blocked or not-ready action should still explain
@@ -41,7 +41,7 @@ Capture these in order during the live pilot check.
 | 07 | `/app/marketplace` | Activity/evidence context. | Marketplace supports the story but does not compete with create/join doors. |
 | 08 | `/app/shop-control` | Shop/activity setup. | Shop actions respond; external handoffs report blocked popups or missing links. |
 | 09 | `/app/trust` | Trust Passport. | Full private/member trust story is visible only to the signed-in user. |
-| 10 | `/app/trust-slip` | Portable proof. | Current TrustSlip can be refreshed, copied, printed, and verified with truthful success/failure notices. |
+| 10 | `/app/trust-slip` | Portable evidence. | Current TrustSlip can be refreshed, copied, printed, and verified with truthful success/failure notices. |
 | 11 | `/app/trust-slip/verify` | Internal verification view. | Internal evidence is allowed only in app mode. |
 | 12 | `/t/GSNAMARA2026` or `/trust-slips/verify/GSNAMARA2026/page` | Public verification. | Public viewer sees only the public paper and public actions; no private/internal disclosure appears. |
 | 13 | `/verify/community/:communityKey` if available | Public community confirmation. | Public community record explains current evidence without private member details. |
@@ -55,7 +55,7 @@ Capture these in order during the live pilot check.
 - TrustSlip, TrustSlip Verify, Community Home, and First Circle copy actions now
   await clipboard success before saying "copied." If copy fails, the user gets a
   manual-copy fallback.
-- Proof-line unavailable actions now speak instead of becoming dead disabled
+- Evidence-line unavailable actions now speak instead of becoming dead disabled
   taps for the patched surfaces: TrustSlip code/link copy, community record open,
   instant confirmation request, and First Circle invite copy.
 - Create setup progress now marks the actual open panel as active instead of
@@ -69,7 +69,7 @@ Capture these in order during the live pilot check.
   Render database has the current Amara TrustSlip and related community data.
 - Activation fallback can still be improved: if activation happens after create,
   the safer final behavior is to lead into First Circle instead of Dashboard.
-- Community Home still carries more numerical proof/finance/trust readings than
+- Community Home still carries more numerical evidence/finance/trust readings than
   the screen spec wants. For the Amara live line, keep the narration tight and
   move deeper readings through Trust Passport and Finance.
 - Marketplace still contains a create-community door inside a selected

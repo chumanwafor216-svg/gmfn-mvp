@@ -695,7 +695,7 @@ assertContains(
 assertContains(
   "src/pages/TrustSlipPage.tsx",
   /function collapseToggle\(\): React\.CSSProperties \{[\s\S]*?minWidth: 96[\s\S]*?whiteSpace: "nowrap"[\s\S]*?stableHeight=\{isCompact \? 52 : 50\}[\s\S]*?minWidth=\{isCompact \? undefined : 176\}[\s\S]*?debugId="trust-slip\.copy-code"[\s\S]*?stableHeight=\{isCompact \? 48 : 42\}[\s\S]*?debugId="trust-slip\.toggle-reader"[\s\S]*?stableHeight=\{isCompact \? 52 : 50\}[\s\S]*?debugId="trust-slip\.open-verify"[\s\S]*?stableHeight=\{isCompact \? 52 : 48\}[\s\S]*?debugId="trust-slip\.open-guide"/,
-  "TrustSlip inner proof actions and disclosure toggles must keep fixed geometry on mobile and desktop."
+  "TrustSlip inner evidence actions and disclosure toggles must keep fixed geometry on mobile and desktop."
 );
 
 assertNotContains(
@@ -725,7 +725,7 @@ assertContains(
 assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
   /function selectIdentityTask\(key: IdentityTaskKey\)[\s\S]*?setActiveIdentityTask\(key\)[\s\S]*?setIdentityPhotoFile\(null\)[\s\S]*?setIdentityPhotoPreview\(""\)[\s\S]*?setPhoneTaskMessage\(""\)[\s\S]*?data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 52 : 16[\s\S]*?stableHeight=\{isCompact \? 54 : 58\}[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}[\s\S]*?data-identity-integrity-active-task="true"[\s\S]*?minHeight: isCompact \? 178 : undefined[\s\S]*?overflow: "hidden"/,
-  "Identity & Integrity proof-task selector must clear transient panels and keep the active task surface contained on phone."
+  "Identity & Integrity evidence-task selector must clear transient panels and keep the active task surface contained on phone."
 );
 
 assertNotContains(
@@ -1564,7 +1564,7 @@ assertContains(
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function collapseToggle\(\)[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?minWidth: 124[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflowWrap: "normal"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?function actionText\(name: GsnIconName[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(142px, 1fr\)\)"[\s\S]*?minWidth=\{isCompact \? undefined : 186\}[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="repayment\.generate-instruction"[\s\S]*?actionText\("repaymentSchedule", "Generate"\)[\s\S]*?minWidth=\{isCompact \? undefined : 150\}[\s\S]*?debugId="repayment\.copy-reference"[\s\S]*?actionText\("copy", "Copy reference"\)[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="repayment\.copy-full-instruction"[\s\S]*?actionText\("repaymentSchedule", "Copy instruction"\)[\s\S]*?minWidth=\{isCompact \? undefined : 170\}[\s\S]*?debugId="repayment\.confirm-paid"[\s\S]*?actionText\("check", paymentConfirmedAt \? "Declared" : "Declare paid"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loan-summary"[\s\S]*?actionText\("proof", "Loan Summary"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.finance"[\s\S]*?actionText\("financeInstitution", "Finance"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loans"[\s\S]*?actionText\("community", "Loans & Support"\)/,
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function collapseToggle\(\)[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?minWidth: 124[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflowWrap: "normal"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?function actionText\(name: GsnIconName[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(142px, 1fr\)\)"[\s\S]*?minWidth=\{isCompact \? undefined : 186\}[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="repayment\.generate-instruction"[\s\S]*?actionText\("repaymentSchedule", "Generate"\)[\s\S]*?minWidth=\{isCompact \? undefined : 150\}[\s\S]*?debugId="repayment\.copy-reference"[\s\S]*?actionText\("copy", "Copy reference"\)[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="repayment\.copy-full-instruction"[\s\S]*?actionText\("repaymentSchedule", "Copy instruction"\)[\s\S]*?minWidth=\{isCompact \? undefined : 170\}[\s\S]*?debugId="repayment\.confirm-paid"[\s\S]*?actionText\("check", paymentConfirmedAt \? "Declared" : "Declare paid"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loan-summary"[\s\S]*?actionText\("evidence", "Loan Summary"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.finance"[\s\S]*?actionText\("financeInstitution", "Finance"\)[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loans"[\s\S]*?actionText\("community", "Loans & Support"\)/,
   "Repayment controls must keep 3D icon labels, fixed no-wrap collapse geometry, responsive fact grids, and full-width route links."
 );
 
@@ -1607,7 +1607,7 @@ assertContains(
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
   /fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 176\}[\s\S]*?debugId="trust-slip-verify\.public\.print"[\s\S]*?minWidth=\{isCompact \? undefined : 190\}[\s\S]*?debugId="trust-slip-verify\.public\.open-community-record"[\s\S]*?stableHeight=\{isCompact \? 52 : 44\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?stableHeight=\{isCompact \? 52 : 44\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?stableHeight=\{isCompact \? 52 : 44\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 140\}[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
-  "TrustSlip Verify public and internal proof actions must keep fixed desktop width and full-width phone behavior."
+  "TrustSlip Verify public and internal evidence actions must keep fixed desktop width and full-width phone behavior."
 );
 
 assertNotContains(

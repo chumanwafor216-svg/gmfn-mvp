@@ -64,7 +64,7 @@ function parsePaperText(paperText: string): ParsedPaper {
     actionLink: "",
     privacy: "",
     limitation: "",
-    footer: "Global Support Network (GSN). Trusted marketplace. Real people. Real value.",
+    footer: "Global Support Network (GSN). Trust infrastructure for organized communities.",
   };
 
   let mode: "none" | "context" | "details" = "none";

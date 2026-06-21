@@ -8,10 +8,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 from sqlalchemy import text
 
-from app.core.auth import get_current_user
+from app.core.auth import PENDING_APPROVAL_SENTINEL, get_current_user
 from app.core.security import create_access_token
 from app.db.database import SessionLocal, engine
 from app.db.models import (
+    Clan,
     CommunityConfirmationContact,
     CommunityConfirmationDecision,
     CommunityConfirmationRequest,
@@ -19,6 +20,7 @@ from app.db.models import (
     CommunityConfirmationReviewEvidence,
     TrustEvent,
     TrustSlip,
+    User,
 )
 from app.db.notification_models import Notification
 from app.main import app
@@ -218,12 +220,15 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
     assert public_data["community_response"]["responses_received"] == 1
     assert public_data["community_response"]["community_confidence"] == "limited"
     assert public_data["community_response"]["private_contacts_exposed"] is False
+    assert public_data["subject_public_reference"] == "GSN-U-TEST001"
+    assert public_data["subject_reference_type"] == "gsn_id"
     assert public_data["requester_callback"]["requested"] is True
     assert public_data["requester_callback"]["channel"] == "sms"
     assert public_data["requester_callback"]["contact_masked"] == "ending 5678"
     assert public_data["requester_callback"]["delivery_status"] == "not_configured"
     assert public_data["requester_callback"]["result_link_is_source_of_truth"] is True
     public_text = json.dumps(public_data)
+    assert "subject_user_id" not in public_text
     assert "responder_user_id" not in public_text
     assert "user2@example.com" not in public_text
     assert "+447712345678" not in public_text
@@ -377,6 +382,278 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
         assert status_meta["private_contacts_exposed"] is False
 
 
+def test_activation_pending_responder_cannot_use_stale_confirmation_contact(
+    client: TestClient,
+    monkeypatch,
+):
+    _seed_relay_fixture()
+    monkeypatch.setenv("GMFN_SECRET_KEY", "test-secret")
+    requester_token = create_access_token({"sub": "merchant@example.com"})
+
+    created = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "relay",
+        },
+    )
+    assert created.status_code == 200, created.text
+    request_id = int(created.json()["request_id"])
+
+    with SessionLocal() as db:
+        pending_user = db.query(User).filter_by(id=2).first()
+        pending_user.hashed_password = PENDING_APPROVAL_SENTINEL
+        db.commit()
+
+    app.dependency_overrides[get_current_user] = lambda: Obj(
+        id=2,
+        email="user2@example.com",
+        role="user",
+    )
+    try:
+        inbox = client.get("/community-confirmations/inbox")
+        assert inbox.status_code == 200, inbox.text
+        assert inbox.json()["total"] == 0
+
+        answered = client.post(
+            f"/community-confirmations/{request_id}/respond",
+            json={
+                "response_type": "active_here",
+                "response_reason": "known_in_community",
+            },
+        )
+        assert answered.status_code == 403, answered.text
+        assert "not eligible" in answered.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_pending_contact_does_not_consume_limited_delivery_slot(
+    client: TestClient,
+    monkeypatch,
+):
+    _seed_relay_fixture()
+    monkeypatch.setenv("GMFN_SECRET_KEY", "test-secret")
+    requester_token = create_access_token({"sub": "merchant@example.com"})
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role)
+                VALUES (4, 'active-contact@example.com', 'hashed', 'user')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role)
+                VALUES (5, 'pending-contact@example.com', :pending, 'user')
+                """
+            ),
+            {"pending": PENDING_APPROVAL_SENTINEL},
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clan_memberships (clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 4, 'user', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clan_memberships (clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 5, 'user', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR REPLACE INTO community_confirmation_policies (
+                    id,
+                    community_id,
+                    relay_enabled,
+                    instant_pulse_enabled,
+                    minimum_positive_responses,
+                    maximum_relay_contacts,
+                    response_window_seconds,
+                    review_attention_after_hours,
+                    review_overdue_after_hours,
+                    allow_admin_contacts,
+                    allow_sponsor_contacts,
+                    allow_voting_member_contacts,
+                    allow_subject_nominated_contacts,
+                    public_confirmation_enabled
+                )
+                VALUES (1, 1, 1, 1, 2, 1, 86400, 24, 72, 1, 1, 1, 0, 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR REPLACE INTO community_confirmation_contacts (
+                    id,
+                    community_id,
+                    user_id,
+                    role_type,
+                    active,
+                    can_receive_relay_requests,
+                    can_receive_instant_pulse,
+                    priority_order,
+                    standing_status,
+                    opted_out_at
+                )
+                VALUES (10, 1, 5, 'member', 1, 1, 1, 0, 'active', NULL)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR REPLACE INTO community_confirmation_contacts (
+                    id,
+                    community_id,
+                    user_id,
+                    role_type,
+                    active,
+                    can_receive_relay_requests,
+                    can_receive_instant_pulse,
+                    priority_order,
+                    standing_status,
+                    opted_out_at
+                )
+                VALUES (11, 1, 4, 'member', 1, 1, 1, 1, 'active', NULL)
+                """
+            )
+        )
+
+    created = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "relay",
+        },
+    )
+    assert created.status_code == 200, created.text
+    created_data = created.json()
+    assert created_data["community_response"]["requests_sent"] >= 2
+
+    with SessionLocal() as db:
+        responder_notifications = (
+            db.query(Notification)
+            .filter(Notification.kind == "community_confirmation.request_to_respond")
+            .all()
+        )
+        notified_user_ids = {int(row.user_id) for row in responder_notifications}
+        assert 4 in notified_user_ids
+        assert 5 not in notified_user_ids
+
+
+def test_live_confirmation_request_requires_active_community(
+    client: TestClient,
+    monkeypatch,
+):
+    _seed_relay_fixture()
+    monkeypatch.setenv("GMFN_SECRET_KEY", "test-secret")
+    requester_token = create_access_token({"sub": "merchant@example.com"})
+
+    with SessionLocal() as db:
+        community = db.get(Clan, 1)
+        community.status = "closed"
+        summary = build_community_confirmation_summary(
+            db,
+            community_id=1,
+            subject_user_id=1,
+        )
+        db.commit()
+
+    assert summary["community_status"] == "closed"
+    assert summary["relay_available"] is False
+    assert summary["request_action"] is None
+    assert "not active" in summary["plain_language"]
+
+    created = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "relay",
+        },
+    )
+    assert created.status_code == 400, created.text
+    assert "not active" in created.text
+
+    public_request = client.post(
+        "/verify/community/GSN-C-000001/confirmation-request",
+        json={"requester_external_label": "Public visitor"},
+    )
+    assert public_request.status_code == 400, public_request.text
+    assert "not active" in public_request.text
+
+    with SessionLocal() as db:
+        notifications = (
+            db.query(Notification)
+            .filter(Notification.kind.in_([
+                "community_confirmation.request_to_respond",
+                "community_verification.request_confirmation",
+            ]))
+            .all()
+        )
+        assert notifications == []
+
+
+def test_live_confirmation_request_rejects_activation_pending_subject(
+    client: TestClient,
+    monkeypatch,
+):
+    _seed_relay_fixture()
+    monkeypatch.setenv("GMFN_SECRET_KEY", "test-secret")
+    requester_token = create_access_token({"sub": "merchant@example.com"})
+
+    with SessionLocal() as db:
+        subject = db.get(User, 1)
+        subject.hashed_password = PENDING_APPROVAL_SENTINEL
+        db.commit()
+
+    created = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "relay",
+        },
+    )
+    assert created.status_code == 400, created.text
+    assert "Subject is not an active member" in created.text
+
+    with SessionLocal() as db:
+        notifications = (
+            db.query(Notification)
+            .filter(Notification.kind == "community_confirmation.request_to_respond")
+            .all()
+        )
+        assert notifications == []
+
+
 def test_trustslip_verify_includes_privacy_safe_community_confirmation(
 ):
     _seed_relay_fixture()
@@ -495,7 +772,41 @@ def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: 
         assert data["community_id"] == 1
         assert data["community_name"] == "Test Clan"
         assert data["community_code"] == "GSN-C-000001"
-        assert data["public_record"] == "Verified in GSN"
+        assert data["community_type"] == "organized_community"
+        assert data["community_type_label"] == "Organized community"
+        assert data["community_type_source"] == "Default public category"
+        assert data["community_public_face_status"] == "basic_public_record"
+        assert data["community_public_face_label"] == "Basic public record"
+        assert "not a full community profile" in data["community_public_face_scope"]
+        assert data["community_next_evidence_label"] == "Use controlled confirmation before relying on a claim"
+        assert "scoped member credential" in data["community_next_evidence_scope"]
+        assert "Do not rely on the display name alone" in data["community_next_evidence_scope"]
+        assert data["community_record_started_at"]
+        assert data["community_record_started_label"].startswith("GSN record since ")
+        assert "not the date the real-world community was founded" in data["community_record_started_scope"]
+        assert data["community_mobility_label"] == "Portable Community ID anchor"
+        assert "outside the original room" in data["community_mobility_scope"]
+        assert "does not transfer trust or approve a transaction" in data["community_mobility_scope"]
+        assert data["community_reader_decision_label"] == "First check, not final decision"
+        assert "serious trade, lending, membership" in data["community_reader_decision_scope"]
+        assert "ask for current scoped evidence before acting" in data["community_reader_decision_scope"]
+        assert data["community_evidence_currentness_status"] == "active_basic_record"
+        assert data["community_evidence_currentness_label"] == "Active recorded Community ID"
+        assert "Parent-domain acknowledgement" in data["community_evidence_currentness_scope"]
+        assert data["public_record"] == "Recorded in GSN"
+        assert data["domain_label"] == "GSN Community ID Domain"
+        assert data["domain_status"] == "Recorded community domain"
+        assert data["domain_lifecycle_status"] == "recorded"
+        assert data["domain_lifecycle_label"] == "Recorded in GSN"
+        assert "Paid protected domain ownership" in data["domain_lifecycle_note"]
+        assert "Community ID is the record anchor" in data["domain_evidence_scope"]
+        assert "Community ID is the record anchor" in data["domain_proof_scope"]
+        assert "not exposed" in data["membership_credential_status"]
+        assert data["official_affiliate_status"] == "not_asserted"
+        assert data["official_affiliate_label"] == "No parent-domain affiliate claim on this record"
+        assert "Parent-domain acknowledgement needs its own record" in data["official_affiliate_note"]
+        assert "acknowledged under the parent domain" in data["group_affiliation_status"]
+        assert "does not automatically verify every person" in data["public_limitation"]
         assert data["member_confirmation"] == "By controlled request only"
         assert data["request_confirmation_available"] is True
         assert "active_member_count" not in data
@@ -565,12 +876,15 @@ def test_public_community_verify_degrades_when_confirmation_schema_missing(
     assert data["community_name"] == "Test Clan"
     assert data["relay_available"] is False
     assert data["relay_availability"] == "Not available"
+    assert data["community_next_evidence_label"] == "Ask for scoped member or group evidence"
+    assert "Do not rely on the display name alone" in data["community_next_evidence_scope"]
     assert data["request_confirmation_available"] is False
     assert "plain_language" not in data
     assert "active_member_count" not in data
     assert "hidden_by_design" not in data
     assert "community_confirmation_policies" not in response.text
     assert "SELECT" not in response.text
+
 
 def test_public_verification_routes_do_not_leak_missing_schema_sql(
     client: TestClient,
@@ -613,6 +927,29 @@ def test_public_verification_routes_do_not_leak_missing_schema_sql(
     assert "refresh the server database setup" in response.text
     assert "community_member_verifications" not in response.text
     assert "SELECT" not in response.text
+
+
+def test_public_community_verify_does_not_offer_relay_for_inactive_community(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    with SessionLocal() as db:
+        community = db.get(Clan, 1)
+        community.status = "closed"
+        db.commit()
+
+    response = client.get("/verify/community/GSN-C-000001")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["status"] == "closed"
+    assert data["relay_available"] is False
+    assert data["relay_availability"] == "Not available"
+    assert data["request_confirmation_available"] is False
+    assert data["community_next_evidence_label"] == "Ask for scoped member or group evidence"
+    assert data["community_evidence_currentness_status"] == "inactive_record"
+    assert data["community_evidence_currentness_label"] == "Community record is not active"
+    assert "historical or unavailable" in data["community_evidence_currentness_scope"]
 
 
 def test_public_community_verify_confirmation_request_uses_controlled_relay(
@@ -660,6 +997,34 @@ def test_public_community_verify_confirmation_request_uses_controlled_relay(
         assert meta["request_channel"] == "controlled_relay"
         assert meta["private_contacts_exposed"] is False
         assert meta["recipient_notification_count"] >= 1
+
+
+def test_public_community_confirmation_request_skips_activation_pending_recipients(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    with SessionLocal() as db:
+        pending_admin = db.get(User, 1)
+        pending_member = db.get(User, 2)
+        pending_admin.hashed_password = PENDING_APPROVAL_SENTINEL
+        pending_member.hashed_password = PENDING_APPROVAL_SENTINEL
+        db.commit()
+
+    response = client.post(
+        "/verify/community/GSN-C-000001/confirmation-request",
+        json={"requester_external_label": "Public visitor"},
+    )
+    assert response.status_code == 400, response.text
+    assert "No controlled relay recipient" in response.text
+
+    with SessionLocal() as db:
+        notifications = (
+            db.query(Notification)
+            .filter(Notification.kind == "community_verification.request_confirmation")
+            .all()
+        )
+        assert notifications == []
 
 
 def test_expired_community_confirmation_records_trust_event(client: TestClient, monkeypatch):

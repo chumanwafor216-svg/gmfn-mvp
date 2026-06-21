@@ -2402,7 +2402,7 @@ export default function ShopGalleryPage() {
     ? "Community record ready"
     : shopVerificationQrKind === "shop"
     ? "Public shop QR ready"
-    : "Trust proof on request";
+    : "Trust evidence on request";
   const shopVerificationQrLabel = shopVerificationQrKind === "community"
     ? "Scan community record"
     : shopVerificationQrKind === "shop"
@@ -2425,10 +2425,12 @@ export default function ShopGalleryPage() {
     { icon: "lock", label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
   ] satisfies Array<{ icon: ShopIconName; label: string; value: string }>;
   const shopTrustCheckOptions = [
-    { icon: "document", text: "Request TrustSlip for live proof" },
+    { icon: "document", text: "Request TrustSlip for current evidence" },
     { icon: "community", text: "Ask community for extra confirmation" },
     { icon: "search", text: "Use IDs to avoid name confusion" },
   ] satisfies Array<{ icon: ShopIconName; text: string }>;
+  const shopCommerceDecisionText =
+    "Before credit, goods, or money move, read the shop ID, Community ID, current TrustSlip, and community confirmation together. This panel is evidence for judgement, not approval to release goods or credit.";
 
   function buildPublicShopPackage(
     link: string,
@@ -2640,23 +2642,23 @@ export default function ShopGalleryPage() {
       effectiveShop?.ownerName,
       "this GSN shop"
     );
-    const proofContext = firstMeaningful(
+    const evidenceContext = firstMeaningful(
       shopVerificationQrTarget,
       absoluteShopShareLink,
       absoluteShopLink
     );
-    const message = `Hello, I am checking ${shopTitle} on GSN. Please send the current TrustSlip or merchant verification proof for this shop owner (${shopGmfnText || "owner ID not visible yet"}).`;
+    const message = `Hello, I am checking ${shopTitle} on GSN. Please send the current TrustSlip or merchant verification record for this shop owner (${shopGmfnText || "owner ID not visible yet"}).`;
 
     if (
       openOwnerWhatsAppChat(
         message,
-        "WhatsApp opened. Ask the owner for the current TrustSlip or merchant verification proof."
+        "WhatsApp opened. Ask the owner for the current TrustSlip or merchant verification record."
       )
     ) {
       return;
     }
 
-    const copied = await safeCopy(`${message}\n${proofContext}`);
+    const copied = await safeCopy(`${message}\n${evidenceContext}`);
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
@@ -2677,7 +2679,7 @@ export default function ShopGalleryPage() {
       "this community"
     );
     const message = `Hello, I am checking ${shopTitle} on GSN. Please connect me with the right community confirmation route for ${communityLabel}, or send the current community verification link for this shop owner (${shopGmfnText || "owner ID not visible yet"}).`;
-    const proofContext = firstMeaningful(
+    const evidenceContext = firstMeaningful(
       shopCommunityVerifyPath ? publicFrontendUrl(shopCommunityVerifyPath) : "",
       absoluteShopShareLink,
       absoluteShopLink
@@ -2692,7 +2694,7 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    const copied = await safeCopy(`${message}\n${proofContext}`);
+    const copied = await safeCopy(`${message}\n${evidenceContext}`);
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
@@ -3333,8 +3335,8 @@ export default function ShopGalleryPage() {
           {[
             {
               icon: "shield" as ShopIconName,
-              title: "Verified Community",
-              detail: shopCommunityIdText ? "Member review" : "Record pending",
+              title: "Community Record",
+              detail: shopCommunityIdText ? "ID check" : "Record pending",
             },
             { icon: "globe" as ShopIconName, title: "Public Shelf", detail: publicBlockText },
             { icon: "vault" as ShopIconName, title: "Private Vault", detail: "By trust link" },
@@ -3513,7 +3515,9 @@ export default function ShopGalleryPage() {
                   }}
                 >
                   Community membership and shop IDs are visible here. Request a
-                  live TrustSlip when you need fresh proof from the owner.
+                  live TrustSlip when you need current evidence from the owner.
+                  Shop and community IDs do not show member-witness currentness
+                  by themselves.
                 </div>
               </div>
 
@@ -3537,7 +3541,7 @@ export default function ShopGalleryPage() {
                   textOverflow: "ellipsis",
                 }}
               >
-                {isCompact ? "Hide" : "Hide proof"}
+                {isCompact ? "Hide" : "Hide evidence"}
               </SecondaryButton>
             </div>
 
@@ -3729,7 +3733,7 @@ export default function ShopGalleryPage() {
                   }}
                 >
                   {inlineShopIcon("shield", "rgba(246,215,122,0.86)", isCompact ? 12 : 14)}
-                  <span>Community ID confirms the exact community.</span>
+                  <span>Community ID points to the recorded community.</span>
                 </div>
               </div>
             </div>
@@ -3839,6 +3843,33 @@ export default function ShopGalleryPage() {
                 }}
               >
                 Trust check options
+              </div>
+              <div
+                style={{
+                  position: "relative",
+                  display: "grid",
+                  gap: isCompact ? 5 : 6,
+                  borderRadius: isCompact ? 14 : 16,
+                  border: "1px solid rgba(246,196,83,0.22)",
+                  background: "rgba(246,196,83,0.08)",
+                  padding: isCompact ? "9px 10px" : "11px 13px",
+                  color: "rgba(255,255,255,0.90)",
+                  fontSize: isCompact ? 10.6 : 12.4,
+                  fontWeight: 760,
+                  lineHeight: 1.35,
+                }}
+              >
+                <span
+                  style={{
+                    color: "#F6D77A",
+                    fontSize: isCompact ? 10 : 11.5,
+                    fontWeight: 950,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  Before goods or money move
+                </span>
+                <span>{shopCommerceDecisionText}</span>
               </div>
               <div
                 style={{

@@ -1,3 +1,43 @@
+## 2026-06-21 - Evidence Boundary And Button Stability Batch
+
+- Trigger:
+  - owner asked to check for remaining uncommitted/unrendered corrections and
+    proceed with the safe repair batch.
+- Changed:
+  - aligned product wording away from overclaiming `proof` language toward
+    scoped `evidence`, `record`, `signal`, and `validation` language across
+    docs, frontend surfaces, audit tooling, and backend response copy.
+  - strengthened public/community confirmation boundaries:
+    - public confirmation outcome reads as aggregate response evidence, not a
+      whole-community vote.
+    - subject public reference is exposed only as safe public reference type;
+      raw internal subject user id remains private.
+    - pending/unactivated members cannot answer or consume relay delivery
+      slots as if they were active community responders.
+  - added/updated community-domain and public-face specs for Community ID,
+    parent-domain acknowledgement, member credential, external registration,
+    and public evidence boundaries.
+  - updated Marketplace, Community Confirmation, Finance, Loans, Repayment,
+    Trust, Shop, Vault, and admin surfaces to keep money/trade/support readings
+    framed as evidence/decision support rather than approval or release
+    authority.
+  - repaired button-stability audit failures in:
+    - `IdentityIntegrityPage.tsx`
+    - `LoanSummaryPage.tsx`
+    - `GuarantorInboxPage.tsx`
+    - `PaymentInstructionsPage.tsx`
+- Verification:
+  - `npm run build` passed.
+  - `npm run audit:evidence-surfaces` passed.
+  - `npm run audit:proof-surfaces` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `python -m pytest gmfn_backend/tests/test_community_confirmation_relay.py gmfn_backend/tests/test_community_domain_affiliations.py gmfn_backend/tests/test_entry_create.py gmfn_backend/tests/test_protocol_readiness_status.py` passed (`69 passed`).
+- Unabated truth:
+  - this is a broad evidence-boundary stabilization batch, not a one-screen UX
+    patch. It should be watched carefully after Render because it touches many
+    labels and several API-facing trust/confirmation contracts.
+
 ## 2026-06-21 - TrustSlip Verify Public Evidence Paper Polish
 
 - Trigger:

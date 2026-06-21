@@ -27,10 +27,10 @@ RULES: dict[str, TrustDeltaRule] = {
     "guarantor.repayment.confirmed": TrustDeltaRule("guarantor.repayment.confirmed", Decimal("0.03"), "Guarantor supported a successful repayment", "positive"),
     "guarantor.support.confirmed": TrustDeltaRule("guarantor.support.confirmed", Decimal("0.03"), "Guarantor supported a successful repayment", "positive"),
 
-    # Onboarding identity proofs
+    # Onboarding identity evidence
     "identity.phone_verified": TrustDeltaRule("identity.phone_verified", Decimal("0.50"), "Verified phone attached to identity", "positive"),
     "identity.bank_destination_recorded": TrustDeltaRule("identity.bank_destination_recorded", Decimal("0.80"), "Verified-phone holder recorded a bank destination", "positive"),
-    "identity.drivers_licence_recorded": TrustDeltaRule("identity.drivers_licence_recorded", Decimal("0.40"), "Driver's licence proof recorded", "positive"),
+    "identity.drivers_licence_recorded": TrustDeltaRule("identity.drivers_licence_recorded", Decimal("0.40"), "Driver's licence evidence recorded", "positive"),
     "identity.region_consistent": TrustDeltaRule("identity.region_consistent", Decimal("0.20"), "Phone and bank region signals aligned at onboarding", "positive"),
     "identity.region_mismatch_explained": TrustDeltaRule("identity.region_mismatch_explained", Decimal("0.00"), "Cross-region onboarding was explained and recorded for review", "neutral"),
 

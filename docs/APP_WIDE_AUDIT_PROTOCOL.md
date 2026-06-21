@@ -116,7 +116,7 @@ Avoid exposed words such as:
 - MVP;
 - module;
 - configuration;
-- protocol, unless the user is reading a real policy/proof surface;
+- protocol, unless the user is reading a real policy/evidence surface;
 - settlement route, unless it is explained in plain language.
 
 Prefer plain action language:
@@ -221,7 +221,7 @@ For every important visible value, know where it came from:
 - mock/sample data;
 - fallback placeholder.
 
-Fallback placeholders must not trigger readiness, completion, official proof,
+Fallback placeholders must not trigger readiness, completion, official evidence,
 or share/export behavior unless the UI clearly labels them as placeholders.
 
 ### 10. Mobile Density

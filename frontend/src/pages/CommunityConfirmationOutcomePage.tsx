@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useParams } from "react-router-dom";
-import { PrimaryButton, SecondaryButton, StableDisclosureSummary } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   TrustPaperWatermark,
@@ -17,7 +18,7 @@ import {
   updateCommunityConfirmationReviewCase,
   updateCommunityConfirmationRequestStatus,
 } from "../lib/api";
-import { publicFrontendUrl } from "../lib/publicLinks";
+import { publicCommunityMemberCredentialPath, publicFrontendUrl } from "../lib/publicLinks";
 
 type CommunityResponse = {
   requests_sent?: number | null;
@@ -41,6 +42,8 @@ type PublicOutcome = {
   community_id?: number | string | null;
   community_code?: string | null;
   subject_user_id?: number | string | null;
+  subject_public_reference?: string | null;
+  subject_reference_type?: string | null;
   created_at?: string | null;
   expires_at?: string | null;
   community_response?: CommunityResponse | null;
@@ -150,6 +153,12 @@ function labelize(value: any): string {
   return text.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function decisionStatusLabel(value: any): string {
+  const raw = safeStr(value).toLowerCase();
+  if (raw === "settled") return "Resolved";
+  return labelize(value);
+}
+
 function normalizeTrustReadingEffect(raw: any): TrustReadingEffect | null {
   if (!raw || typeof raw !== "object") return null;
   return {
@@ -188,6 +197,8 @@ function normalizeOutcome(raw: any): PublicOutcome {
     community_id: src.community_id ?? null,
     community_code: firstTruthy(src.community_code),
     subject_user_id: src.subject_user_id ?? null,
+    subject_public_reference: firstTruthy(src.subject_public_reference),
+    subject_reference_type: firstTruthy(src.subject_reference_type),
     created_at: firstTruthy(src.created_at),
     expires_at: firstTruthy(src.expires_at),
     community_response: src.community_response || null,
@@ -577,6 +588,10 @@ export default function CommunityConfirmationOutcomePage() {
   const confidence =
     safeStr(response.community_confidence).toLowerCase() ||
     (status === "expired" ? "expired" : "pending");
+  const memberCredentialPath = publicCommunityMemberCredentialPath({
+    communityKey: firstTruthy(outcome?.community_code, outcome?.community_id),
+    memberKey: outcome?.subject_reference_type === "gsn_id" ? outcome?.subject_public_reference : "",
+  });
   const requestsSent = asNumber(response.requests_sent);
   const activeMemberCount = asNumber(response.active_member_count);
   const responsesReceived = asNumber(response.responses_received);
@@ -585,6 +600,27 @@ export default function CommunityConfirmationOutcomePage() {
   const objectionCount = asNumber(response.objection_count);
   const liveWindowOpen = Boolean(outcome && !terminalStatus(status) && remainingSeconds > 0);
   const responseProgress = requestsSent > 0 ? Math.min(100, Math.round((responsesReceived / requestsSent) * 100)) : 0;
+  const responseCountScope =
+    "Responses are counted against the contacts asked, not as a whole-community vote.";
+  const simpleReadingText =
+    outcome?.visible_summary ||
+    (liveWindowOpen
+      ? `Instant community confirmation is pending. ${responsesReceived} of ${requestsSent} requested contacts responded. Wait for responses or ask for more evidence.`
+      : status === "expired"
+        ? "Instant community confirmation is expired. No valid response was received before the window closed."
+        : "Instant community confirmation is not complete yet. Refresh later or ask for more evidence.");
+  const decisionNoteText =
+    outcome?.decision_note ||
+    "This is evidence for judgement, not a guarantee, payment instruction, or automatic approval.";
+  const privacyLimitText =
+    outcome?.privacy_note ||
+    "This public outcome shows aggregate response evidence only. It does not expose private responder contacts, verifier names, phone numbers, shop details, payment records, or credit approval.";
+  const responseTone =
+    objectionCount > 0 || confidence === "caution"
+      ? "warn"
+      : confirmedKnown > 0 || confidence === "strong" || confidence === "moderate"
+        ? "good"
+        : "info";
 
   useEffect(() => {
     if (!outcome || terminalStatus(status) || remainingSeconds <= 0) return undefined;
@@ -671,7 +707,7 @@ export default function CommunityConfirmationOutcomePage() {
         settled,
         decision_note:
           statusValue === "settled"
-            ? "Provider marked this confirmation decision as settled."
+            ? "Provider marked this confirmation decision as resolved after review."
             : statusValue === "issue_reported"
               ? "Provider reported an issue after the confirmation decision."
               : "Provider sent this confirmation decision for further review.",
@@ -1127,8 +1163,39 @@ export default function CommunityConfirmationOutcomePage() {
                         label="Community ID"
                         value={firstTruthy(outcome.community_code, outcome.community_id)}
                       />
-                      <InfoRow compact={isCompactPaper} label="Member reference" value={outcome.subject_user_id || "Protected"} />
+                      <InfoRow
+                        compact={isCompactPaper}
+                        label="Member reference"
+                        value={
+                          firstTruthy(
+                            outcome.subject_public_reference,
+                            outcome.subject_reference_type === "protected" ? "Protected" : null,
+                            "Protected"
+                          )
+                        }
+                      />
                     </div>
+                    {memberCredentialPath ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+                        <StableCtaLink
+                          debugId="community-confirmation-outcome.member-credential"
+                          to={memberCredentialPath}
+                          stableHeight={48}
+                          fullWidth
+                          style={{
+                            justifyContent: "center",
+                            borderRadius: 14,
+                          }}
+                        >
+                          {outcomeIconBadge("certificate", 24, "navy")}
+                          Open member credential
+                        </StableCtaLink>
+                        <p style={{ ...helperText(), fontSize: 12, color: "#64748B" }}>
+                          Supporting evidence only. The credential does not replace this live
+                          confirmation result.
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div style={sectionCard("#F8FBFF")}>
@@ -1151,7 +1218,8 @@ export default function CommunityConfirmationOutcomePage() {
                       Community response
                     </h2>
                     <p style={helperText()}>
-                      Aggregate counts only. No personal details are shown.
+                      Aggregate counts only. {responseCountScope} No personal
+                      details are shown.
                     </p>
                   </div>
                   <div
@@ -1177,29 +1245,49 @@ export default function CommunityConfirmationOutcomePage() {
                     gap: 14,
                   }}
                 >
-                  <div style={sectionCard("#F7FAFF")}>
-                    <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                      {outcomeIconBadge("document", 32, "blue")}
-                      Simple reading
-                    </h2>
-                    <p style={{ ...helperText(), color: "#1F3145", marginTop: 10 }}>
-                      {outcome.visible_summary ||
-                        (liveWindowOpen
-                          ? `Instant community confirmation is pending. ${responsesReceived} of ${activeMemberCount} active community members responded. Wait for responses or ask for more evidence.`
-                          : status === "expired"
-                            ? "Instant community confirmation is expired. No valid response was received before the window closed."
-                            : "Instant community confirmation is not complete yet. Refresh later or ask for more evidence.")}
-                    </p>
-                  </div>
-                  <div style={sectionCard("#FFF7E6")}>
-                    <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                      {outcomeIconBadge("shield", 32, "amber")}
-                      Reader decision note
-                    </h2>
-                    <p style={{ ...helperText(), color: "#07172C", marginTop: 10, fontWeight: 900 }}>
-                      {outcome.decision_note ||
-                        "This is evidence for judgement, not a guarantee, payment instruction, or automatic approval."}
-                    </p>
+                  <div style={sectionCard("#FFFFFF")}>
+                    <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
+                      <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                        {outcomeIconBadge("shield", 32, "blue")}
+                        Public reading
+                      </h2>
+                      <p style={helperText()}>
+                        This explains what the community response means without turning it into a
+                        payment instruction, credit approval, or private investigation report.
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                        gap: isCompactPaper ? 10 : 12,
+                      }}
+                    >
+                      <ReadingCard
+                        compact={isCompactPaper}
+                        icon="community"
+                        label="Simple reading"
+                        title="Community response"
+                        body={simpleReadingText}
+                        tone={responseTone}
+                      />
+                      <ReadingCard
+                        compact={isCompactPaper}
+                        icon="lock"
+                        label="Not confirmed here"
+                        title="Private claims stay outside"
+                        body={`${privacyLimitText} It also does not prove repayment, shop ownership, payment history, or legal responsibility.`}
+                        tone="warn"
+                      />
+                      <ReadingCard
+                        compact={isCompactPaper}
+                        icon="shield"
+                        label="Reader decision note"
+                        title="Use as evidence"
+                        body={decisionNoteText}
+                        tone="info"
+                      />
+                    </div>
                   </div>
                   <div style={sectionCard("#F8FBFF")}>
                     <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
@@ -1239,6 +1327,51 @@ export default function CommunityConfirmationOutcomePage() {
                         }
                       />
                     </div>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        display: "grid",
+                        gridTemplateColumns: isCompactPaper ? "1fr" : "92px minmax(0, 1fr)",
+                        gap: 12,
+                        alignItems: "center",
+                        borderRadius: 14,
+                        border: "1px solid rgba(8,35,58,0.12)",
+                        background: "#FFFFFF",
+                        padding: 12,
+                      }}
+                    >
+                      <div
+                        aria-label="Public confirmation outcome QR code"
+                        style={{
+                          width: 92,
+                          height: 92,
+                          display: "grid",
+                          placeItems: "center",
+                          borderRadius: 16,
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(8,35,58,0.14)",
+                          boxShadow: "0 10px 24px rgba(6,24,39,0.08)",
+                        }}
+                      >
+                        <QRCodeSVG
+                          value={outcomeLink}
+                          size={72}
+                          bgColor="#FFFFFF"
+                          fgColor="#061827"
+                          level="M"
+                          includeMargin={false}
+                        />
+                      </div>
+                      <div style={{ display: "grid", gap: 5 }}>
+                        <strong style={{ color: "#07172C", fontSize: 15, fontWeight: 1000 }}>
+                          Scan to reopen this outcome
+                        </strong>
+                        <p style={{ ...helperText(), color: "#526579", fontSize: 13 }}>
+                          The QR opens this public confirmation result. It does not expose private
+                          responder contacts, verifier names, phone numbers, or payment details.
+                        </p>
+                      </div>
+                    </div>
                     <p style={{ ...helperText(), color: "#64748B", marginTop: 10, fontSize: 13 }}>
                       {outcome.requester_callback?.delivery_note ||
                         "SMS or WhatsApp return delivery will work only after a real delivery rail is configured."}
@@ -1257,7 +1390,7 @@ export default function CommunityConfirmationOutcomePage() {
                     <TrustPaperWatermark name="shield" color="#2E9B62" size={132} opacity={0.08} />
                     <h2 style={sectionTitle()}>Why a reader may use this</h2>
                     <ul style={{ ...helperText(), margin: "12px 0 0", paddingLeft: 20 }}>
-                      <li>It is linked to a real community record.</li>
+                      <li>It is linked to a recorded GSN community record.</li>
                       <li>It uses approved community contacts.</li>
                       <li>It gives a controlled public outcome.</li>
                       <li>It can be refreshed as more responses arrive.</li>
@@ -1270,6 +1403,7 @@ export default function CommunityConfirmationOutcomePage() {
                       <li>Not a bank guarantee.</li>
                       <li>Not automatic lending or credit release.</li>
                       <li>Not a legal promise of repayment.</li>
+                      <li>Not a whole-community vote.</li>
                       <li>Not a public list of community contacts.</li>
                     </ul>
                   </div>
@@ -1385,7 +1519,7 @@ export default function CommunityConfirmationOutcomePage() {
                             Decision: {labelize(decisionSnapshot.decision)}
                           </span>
                           <span style={badgeStyle(decisionSnapshot.status === "issue_reported" ? "bad" : "info")}>
-                            Status: {labelize(decisionSnapshot.status)}
+                            Status: {decisionStatusLabel(decisionSnapshot.status)}
                           </span>
                         </div>
                         <p style={helperText()}>
@@ -1404,7 +1538,7 @@ export default function CommunityConfirmationOutcomePage() {
                             busy={decisionBusy === "status:settled"}
                             onClick={() => void updateDecisionStatus("settled")}
                           >
-                            {outcomeButtonLabel("check", "Mark settled", "green")}
+                            {outcomeButtonLabel("check", "Mark resolved", "green")}
                           </PrimaryButton>
                           <SecondaryButton
                             debugId="community-confirmation-outcome.decision-status.issue"
@@ -1896,6 +2030,79 @@ function InfoTile({ label, value }: { label: React.ReactNode; value: React.React
       >
         {value}
       </strong>
+    </div>
+  );
+}
+
+function ReadingCard({
+  label,
+  title,
+  body,
+  icon,
+  tone = "info",
+  compact = false,
+}: {
+  label: string;
+  title: string;
+  body: React.ReactNode;
+  icon: GsnIconName;
+  tone?: "good" | "warn" | "bad" | "info";
+  compact?: boolean;
+}) {
+  const toneColor =
+    tone === "bad" ? "#991B1B" : tone === "warn" ? "#92400E" : tone === "good" ? "#166534" : "#073E83";
+  const toneBackground =
+    tone === "bad" ? "#FEF2F2" : tone === "warn" ? "#FFF7E6" : tone === "good" ? "#ECFDF3" : "#F7FAFF";
+  const iconTone = tone === "bad" ? "red" : tone === "warn" ? "amber" : tone === "good" ? "green" : "blue";
+
+  return (
+    <div
+      style={{
+        minWidth: 0,
+        minHeight: compact ? 136 : 158,
+        borderRadius: compact ? 14 : 18,
+        border: "1px solid rgba(8,35,58,0.11)",
+        background: toneBackground,
+        padding: compact ? 12 : 14,
+        display: "grid",
+        alignContent: "start",
+        gap: compact ? 8 : 10,
+      }}
+    >
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          color: toneColor,
+          fontSize: compact ? 11 : 12,
+          fontWeight: 1000,
+          textTransform: "uppercase",
+        }}
+      >
+        {outcomeIconBadge(icon, compact ? 24 : 28, iconTone)}
+        {label}
+      </span>
+      <strong
+        style={{
+          color: "#07172C",
+          fontSize: compact ? 15 : 17,
+          fontWeight: 1000,
+          lineHeight: 1.2,
+        }}
+      >
+        {title}
+      </strong>
+      <p
+        style={{
+          ...helperText(),
+          color: "#1F3145",
+          fontSize: compact ? 13 : 14,
+          lineHeight: 1.45,
+        }}
+      >
+        {body}
+      </p>
     </div>
   );
 }

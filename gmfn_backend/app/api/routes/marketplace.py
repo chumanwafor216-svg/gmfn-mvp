@@ -1229,7 +1229,7 @@ def _public_shop_verification_out(
     has_community = int(effective_clan_id or 0) > 0
 
     return {
-        "status": "community_record_ready" if has_community else "trust_proof_on_request",
+        "status": "community_record_ready" if has_community else "trust_evidence_on_request",
         "scan_kind": "community" if has_community else "shop",
         "primary_scan_path": (
             f"/verify/community/{int(effective_clan_id)}" if has_community else shop_path
@@ -1249,7 +1249,7 @@ def _public_shop_verification_out(
             fallback="Public GSN Shop",
         ),
         "plain_language": (
-            "This shop has a public community record. Ask the owner for live TrustSlip proof when you need fresh confirmation."
+            "This shop has a public community record. Ask the owner for current TrustSlip evidence when you need a fresh check."
             if has_community
             else "This shop can be reopened by QR. Ask the owner for TrustSlip or community confirmation before trading."
         ),

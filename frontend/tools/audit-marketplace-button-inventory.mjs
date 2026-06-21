@@ -250,12 +250,12 @@ assertContains(
 
 assertNotContains(
   /\bjoinCompactStep\b/g,
-  "Marketplace Join compact phone view must not hide proof fields behind a computed step while the user is typing."
+  "Marketplace Join compact phone view must not hide evidence fields behind a computed step while the user is typing."
 );
 
 assertNotContains(
   /display:\s*!isCompact\s*\|\|\s*join/g,
-  "Marketplace Join proof fields must not use phone-only display:none stage gating."
+  "Marketplace Join evidence fields must not use phone-only display:none stage gating."
 );
 
 assertContains(
@@ -365,7 +365,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Trust, ID, proof, messages, and route help[\s\S]*?Trust[\s\S]*?Identity[\s\S]*?TrustSlip[\s\S]*?Messages/,
+  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Trust, ID, evidence, messages, and route help[\s\S]*?Trust[\s\S]*?Identity[\s\S]*?TrustSlip[\s\S]*?Messages/,
   "Marketplace More / Community Tools grouped card must keep only secondary helper tools visible on the front card."
 );
 

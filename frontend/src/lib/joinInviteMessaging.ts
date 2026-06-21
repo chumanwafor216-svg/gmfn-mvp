@@ -11,7 +11,7 @@ type JoinInviteDoorwayParams = JoinInviteTextParams & {
   inviteLink?: string;
 };
 
-const JOIN_INVITE_PROOF_LINES = [
+const JOIN_INVITE_EVIDENCE_LINES = [
   "✅ Build a trusted identity that follows you wherever life takes you.",
   "✅ Find work, customers, and opportunities with greater confidence.",
   "✅ Buy and sell online knowing more about who you are dealing with.",
@@ -19,7 +19,7 @@ const JOIN_INVITE_PROOF_LINES = [
   "✅ Keep community records clear and reduce misunderstandings and disputes.",
   "✅ Organise savings groups, support circles, and community activities with greater accountability.",
   "✅ Receive community-backed support when it matters most.",
-  "✅ Share your Trust Passport or TrustSlip as proof of credibility when trust is needed.",
+  "✅ Share your Trust Passport or TrustSlip as checkable credibility evidence when trust is needed.",
 ];
 
 const JOIN_INVITE_LINK_HINT =
@@ -64,7 +64,7 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   lines.push("");
   lines.push("With GSN, you can:");
   lines.push("");
-  lines.push(...JOIN_INVITE_PROOF_LINES);
+  lines.push(...JOIN_INVITE_EVIDENCE_LINES);
 
   if (marketplaceName) {
     lines.push("");
@@ -120,7 +120,7 @@ export function buildJoinInviteDoorwayMessage(
     "",
     "With GSN, you can:",
     "",
-    ...JOIN_INVITE_PROOF_LINES,
+    ...JOIN_INVITE_EVIDENCE_LINES,
     "",
     marketplaceName ? `🏛️ Community: ${marketplaceName}` : null,
   ];

@@ -129,8 +129,8 @@ assertContains(
 );
 
 assertContains(
-  /const FINANCE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "proof"[\s\S]*?out: "wallet"[\s\S]*?receipt: "proof"[\s\S]*?signal: "financeInstitution"/,
-  "Finance semantic icons must use the bank-building meaning for institutional finance, proof icons for records, and wallet only for personal money movement."
+  /const FINANCE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "evidence"[\s\S]*?out: "wallet"[\s\S]*?receipt: "evidence"[\s\S]*?signal: "financeInstitution"/,
+  "Finance semantic icons must use the bank-building meaning for institutional finance, certificate/evidence icons for records, and wallet only for personal money movement."
 );
 
 assertContains(

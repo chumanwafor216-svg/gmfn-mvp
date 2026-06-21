@@ -131,7 +131,7 @@ one current state, and one next action before exposing deeper details.
 
 For production polish, `docs/GSN_PRODUCTION_POLISH_STANDARD.md` is the quality
 gate. Use it before calling a route screenshot-ready, before widening the 3D
-icon sweep to another page, before treating a proof/PDF surface as official, and
+icon sweep to another page, before treating an evidence/PDF surface as official, and
 before changing protocol-status items from `partial` to `complete`.
 
 ## Mobile Density Protocol
@@ -203,7 +203,7 @@ Rules:
   - wallet/card = personal payout, payment-detail, or card context
   - repayment = calendar or payment plan with money/check evidence
   - trust = shield badge or seal
-  - proof/certificate = sealed paper, certificate packet, or evidence package
+  - evidence/certificate = sealed paper, certificate packet, or evidence package
   - records = document folder
   - join = person-plus
 - For hero areas, use larger realistic object illustrations.
@@ -225,7 +225,7 @@ Final rule:
   not flat symbols.
 - Important task and fact icons should sit inside stable tiles or badges with
   strong navy, gold, green, or neutral contrast.
-- Icons must not cover photos, proof evidence, or record text.
+- Icons must not cover photos, identity evidence, or record text.
 - Icon tiles must not cause button labels or card text to split into one-letter
   stacks.
 - Icon tiles should normally stay between `40px` and `48px`.
@@ -242,7 +242,7 @@ Final rule:
 Some surfaces are meant to communicate one complete record in one screenshot,
 not to behave like a scroll document.
 
-Use this protocol for compact identity, proof, receipt, link, and verification
+Use this protocol for compact identity, evidence, receipt, link, and verification
 snapshots:
 
 - target a 390x844 phone viewport first
@@ -258,12 +258,12 @@ snapshots:
   one-letter fragments
 - if all facts cannot fit, shorten labels before hiding data
 - keep the snapshot as its own portable package boundary: screenshot, PDF, or
-  shared proof should not need unrelated page content above or below to feel
+  shared evidence should not need unrelated page content above or below to feel
   complete
 - if a status says something is incomplete, include a clear route or action to
   continue that completion work from the snapshot package
 - a completion route must lead to the task that can actually complete or start
-  the missing proof; do not route a `complete` button to an explanation-only
+  the missing evidence; do not route a `complete` button to an explanation-only
   page unless the button clearly says it is opening guidance
 - if the record cannot fit as one package, split it into explicit `Page 1`,
   `Page 2` packages instead of letting one card bleed into the next section
@@ -283,7 +283,7 @@ between evidence that is `recorded`, `under review`, and `verified`.
   admin review, or other accepted verification route has confirmed the
   evidence.
 - Recorded evidence may increase an identity-readiness meter immediately, but
-  it must not be described as provider-verified proof.
+  it must not be described as provider-verified evidence.
 - Verdict, Trust Passport, TrustSlip, and CCI copy must update when evidence is
   recorded, but must keep the confidence distinction clear for institutional
   readers.
@@ -293,7 +293,7 @@ between evidence that is `recorded`, `under review`, and `verified`.
 - Role copy should be reader-friendly: show `Member`, `Admin`, or equivalent
   counts rather than forcing a reader to decode raw internal role values.
 - For IMF/World-Bank/institution-grade usage, never hide the difference between
-  captured data and confirmed proof just to make the record look stronger.
+  captured data and confirmed evidence just to make the record look stronger.
 
 ## Focused Action Protocol
 

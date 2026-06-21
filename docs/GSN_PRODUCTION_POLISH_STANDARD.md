@@ -120,7 +120,7 @@ Use the GSN 3D icon family for primary meaning:
   repayment-plan objects, not weak wallet-only imagery;
 - marketplace and shop: use market, storefront, stall, trade, or opportunity
   objects;
-- proof, TrustSlip, certificate, evidence: use seal, document, folder, QR, or
+- evidence, TrustSlip, certificate, credential: use seal, document, folder, QR, or
   official-paper objects;
 - sound: use speaker/loudspeaker;
 - video/media: use video/playable-media object;
@@ -152,9 +152,9 @@ Motion should make the app feel alive, not unstable:
 - keep long-running actions visibly in progress;
 - avoid animation that hides the next action or delays the user.
 
-### 9. Institutional Proof Surfaces
+### 9. Institutional Evidence Surfaces
 
-Any user-facing proof surface that can be shared, printed, downloaded, or used
+Any user-facing evidence surface that can be shared, printed, downloaded, or used
 as evidence must look like an official GSN paper, not a plain app panel.
 
 This includes:
@@ -165,7 +165,7 @@ This includes:
 - evidence packs;
 - loan evidence packs;
 - identity/profile integrity evidence;
-- community confirmation outcomes when used as proof.
+- community confirmation outcomes when used as evidence.
 
 Required document treatment:
 
@@ -220,7 +220,7 @@ Apply this standard in this order:
 2. Institutional document shell:
    TrustSlip PDF, Trust Timeline PDF, Evidence Pack PDF, Loan Evidence Pack PDF,
    User Evidence Pack PDF.
-3. Borrowing and repayment end-to-end proof:
+3. Borrowing and repayment end-to-end evidence:
    pay-in-full, pay-in-parts, partial payment, full repayment, overdue/missed,
    reversal, Finance, Loan Summary, Trust Passport, TrustSlip.
 4. Protocol-status truth:

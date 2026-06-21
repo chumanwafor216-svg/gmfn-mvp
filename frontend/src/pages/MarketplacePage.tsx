@@ -524,13 +524,13 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   },
   {
     id: "trustslip",
-    label: "Show proof",
-    detail: "Open TrustSlip proof.",
+    label: "Show evidence",
+    detail: "Open TrustSlip evidence.",
     technical: "TrustSlip",
     to: "",
     intent: "trustSlip",
     tone: "soft",
-    keywords: ["trustslip", "slip", "proof", "verify"],
+    keywords: ["trustslip", "slip", "evidence", "verify"],
   },
   {
     id: "demand",
@@ -2972,7 +2972,7 @@ const MARKETPLACE_GLYPH_ICON_MAP = {
   eye: "eye",
   heart: "shield",
   join: "join-person-plus",
-  ledger: "proof",
+  ledger: "evidence",
   links: "qr",
   members: "community",
   open: "navigation",
@@ -2987,7 +2987,7 @@ const MARKETPLACE_GLYPH_ICON_MAP = {
   target: "qr",
   trade: "marketplace",
   trust: "shield",
-  verify: "proof",
+  verify: "evidence",
   whatsapp: "phone",
 } satisfies Record<MarketplaceGlyphName, GsnIconName>;
 
@@ -5377,6 +5377,27 @@ export default function MarketplacePage() {
     marketplaceTrust?.negatives,
     "0"
   );
+  const marketplaceTrustFrontDeskFacts = useMemo(
+    () => [
+      ["Community ID", communityIdentity(selectedCommunity)],
+      ["Local trust", marketplaceTrustDisplay],
+      ["Trust evidence", marketplaceTrustEvidenceLabel],
+      ["Members", members.length ? `${members.length} visible` : "Preparing"],
+      ["Shops", shops.length ? `${shops.length} visible` : "No public shops yet"],
+      [
+        "Support records",
+        activeLoanCount ? `${activeLoanCount} active` : "No active support",
+      ],
+    ],
+    [
+      activeLoanCount,
+      marketplaceTrustDisplay,
+      marketplaceTrustEvidenceLabel,
+      members.length,
+      selectedCommunity,
+      shops.length,
+    ]
+  );
   const communityPackageByCode = useMemo(() => {
     const map = new Map<string, CommunityPackageStatusItem>();
     communityPackageItems.forEach((item) => {
@@ -6390,6 +6411,111 @@ export default function MarketplacePage() {
         <div
           style={{
             marginTop: 14,
+            borderRadius: 22,
+            border: "1px solid rgba(11,99,209,0.14)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(236,246,255,0.96) 100%)",
+            padding: isCompact ? 12 : 14,
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.9), 0 14px 28px rgba(10,24,49,0.08)",
+            overflow: "hidden",
+            overflowAnchor: "none",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "40px minmax(0, 1fr)"
+                : "44px minmax(0, 1fr)",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: isCompact ? 38 : 42,
+                height: isCompact ? 38 : 42,
+                borderRadius: 14,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#FFFFFF",
+                background:
+                  "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)",
+                boxShadow:
+                  "0 10px 18px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.22)",
+              }}
+            >
+              <MarketplaceGlyph name="trust" size={isCompact ? 22 : 24} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
+                Community trust front desk
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#173750",
+                  fontSize: isCompact ? 13 : 14,
+                  fontWeight: 850,
+                  lineHeight: 1.35,
+                  overflowWrap: "break-word",
+                }}
+              >
+                Work inside one recorded community context before money,
+                support, or trade moves.
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "repeat(2, minmax(0, 1fr))"
+                : "repeat(6, minmax(0, 1fr))",
+              gap: 8,
+            }}
+          >
+            {marketplaceTrustFrontDeskFacts.map(([label, value]) => (
+              <div
+                key={label}
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(11,99,209,0.12)",
+                  background:
+                    "linear-gradient(180deg, rgba(247,251,255,0.98) 0%, rgba(232,242,251,0.96) 100%)",
+                  padding: isCompact ? "9px 10px" : "10px 11px",
+                  minHeight: isCompact ? 58 : 64,
+                  minWidth: 0,
+                }}
+              >
+                <div style={{ ...sectionLabel(), color: "#4A6178" }}>
+                  {label}
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    color: "#0B1F33",
+                    fontSize: isCompact ? 13 : 14,
+                    fontWeight: 950,
+                    lineHeight: 1.2,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
             borderRadius: 24,
             border: "1px solid rgba(16,37,59,0.1)",
             background:
@@ -6674,7 +6800,7 @@ export default function MarketplacePage() {
                   More / Community Tools
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Trust, ID, proof, messages, and route help.
+                  Trust, ID, evidence, messages, and route help.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
@@ -6768,7 +6894,9 @@ export default function MarketplacePage() {
               <div style={sectionLabel()}>Local Marketplace Trust</div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                 This is this selected community's local trust signal. Use More
-                / Community Tools when you need fuller proof routes.
+                / Community Tools when you need fuller evidence routes.
+                Member-level witness currentness belongs in those fuller
+                evidence routes, not this local marketplace summary.
               </div>
               <div
                 style={{
@@ -6834,7 +6962,7 @@ export default function MarketplacePage() {
                   {...marketplaceFieldTouchProps("marketplace.intent.query")}
                   value={intentQuery}
                   onChange={(event) => setIntentQuery(event.target.value)}
-                  placeholder="Try: trust, identity, proof, messages..."
+                  placeholder="Try: trust, identity, evidence, messages..."
                   aria-label="Type what you want to do next"
                   style={{
                     ...inputStyle(),
@@ -9532,7 +9660,8 @@ export default function MarketplacePage() {
               <div style={sectionLabel()}>Trusted Trade</div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 See known members and visible shops inside this selected
-                community.
+                community. Open the shop record for current evidence before
+                trade, credit, goods, or money move.
               </div>
             </div>
           </div>

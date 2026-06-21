@@ -17,7 +17,7 @@ export function buildIdentityActionGuide(): TrustDocumentActionGuideContent {
     eyebrow: "Use these actions well",
     title: "Identity gives you a stable anchor",
     intro:
-      "Use the quick actions here to carry the stable identity facts forward before you move into trust proof or continuity repair.",
+      "Use the quick actions here to carry the stable identity facts forward before you move into trust evidence or continuity repair.",
     cards: [
       {
         id: "gmfn-id",
@@ -27,7 +27,7 @@ export function buildIdentityActionGuide(): TrustDocumentActionGuideContent {
       },
       {
         id: "trustslip-code",
-        title: "Use the TrustSlip code only when proof is needed",
+        title: "Use the TrustSlip code only when a public check is needed",
         detail:
           "Copy the TrustSlip code when you are moving from identity into a portable trust check, not as a substitute for the full identity reading.",
       },
@@ -39,7 +39,7 @@ export function buildIdentityActionGuide(): TrustDocumentActionGuideContent {
       },
     ],
     footer:
-      "When the question becomes why trust is changing or what public proof is safe to show, continue into Trust Passport or TrustSlip instead of staying here alone.",
+      "When the question becomes why trust is changing or what public record is safe to show, continue into Trust Passport or TrustSlip instead of staying here alone.",
   };
 }
 
@@ -64,7 +64,7 @@ export function buildTrustPassportActionGuide(): TrustDocumentActionGuideContent
       },
       {
         id: "verify",
-        title: "Use TrustSlip Verify for the outward-facing proof",
+        title: "Use TrustSlip Verify for the outward-facing check",
         detail:
           "Open TrustSlip Verify when the question is current public validity, not the full personal why behind the reading.",
       },
@@ -79,7 +79,7 @@ export function buildTrustSlipActionGuide(): TrustDocumentActionGuideContent {
     eyebrow: "Use these actions well",
     title: "TrustSlip is the portable trust document",
     intro:
-      "The action row here is for carrying outward-facing proof cleanly without confusing the portable summary with the fuller personal trust record.",
+      "The action row here is for carrying an outward-facing record cleanly without confusing the portable summary with the fuller personal trust record.",
     cards: [
       {
         id: "code",
@@ -97,7 +97,7 @@ export function buildTrustSlipActionGuide(): TrustDocumentActionGuideContent {
         id: "snapshot",
         title: "Use the TrustSlip snapshot for a short portable summary",
         detail:
-          "Copy the TrustSlip snapshot when you need one clean text summary of the holder, band, trust limit, wider consistency, expiry, and verify path.",
+          "Copy the TrustSlip snapshot when you need one clean text summary of the holder, band, trust-limit signal, wider consistency, expiry, and verify path.",
       },
     ],
     footer:
@@ -108,9 +108,9 @@ export function buildTrustSlipActionGuide(): TrustDocumentActionGuideContent {
 export function buildTrustSlipVerifyActionGuide(): TrustDocumentActionGuideContent {
   return {
     eyebrow: "Use these actions well",
-    title: "TrustSlip Verify confirms current public validity",
+    title: "TrustSlip Verify checks current public validity",
     intro:
-      "These actions are for confirming and carrying the public reading cleanly without pretending this page replaces the fuller trust explanation.",
+      "These actions are for checking and carrying the public reading cleanly without pretending this page replaces the fuller trust explanation.",
     cards: [
       {
         id: "verify",
@@ -120,7 +120,7 @@ export function buildTrustSlipVerifyActionGuide(): TrustDocumentActionGuideConte
       },
       {
         id: "snapshot",
-        title: "Use the verification snapshot for a quick confirmed summary",
+        title: "Use the verification snapshot for a quick checked summary",
         detail:
           "Copy the verification snapshot when you need a short record of visible band, visible score, validity, dates, and the current verify route.",
       },
@@ -132,6 +132,6 @@ export function buildTrustSlipVerifyActionGuide(): TrustDocumentActionGuideConte
       },
     ],
     footer:
-      "Printing this page is useful for carrying the current public confirmation. It is not the substitute for the fuller personal trust story.",
+      "Printing this page is useful for carrying the current public reading. It is not the substitute for the fuller personal trust story.",
   };
 }

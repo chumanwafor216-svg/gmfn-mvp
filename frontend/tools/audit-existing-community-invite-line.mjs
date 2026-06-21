@@ -121,14 +121,14 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /JOIN_INVITE_PROOF_LINES = \[[\s\S]*?Build a trusted identity that follows you wherever life takes you\.[\s\S]*?Find work, customers, and opportunities with greater confidence\.[\s\S]*?Buy and sell online knowing more about who you are dealing with\.[\s\S]*?Verify people, businesses, and communities before making decisions\.[\s\S]*?Keep community records clear and reduce misunderstandings and disputes\.[\s\S]*?Organise savings groups, support circles, and community activities with greater accountability\.[\s\S]*?Receive community-backed support when it matters most\.[\s\S]*?Share your Trust Passport or TrustSlip as proof of credibility when trust is needed\.[\s\S]*?You're invited to \$\{inviteTarget\} on GSN\.[\s\S]*?GSN is a trust platform that helps people turn trust and integrity into real-life opportunities\.[\s\S]*?With GSN, you can:[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_PROOF_LINES\)[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\./,
-  "Existing-community invite message must keep the best-version solution invite body, serial proof lines, community line, GSN-link instruction, and review-before-approval boundary."
+  /JOIN_INVITE_EVIDENCE_LINES = \[[\s\S]*?Build a trusted identity that follows you wherever life takes you\.[\s\S]*?Find work, customers, and opportunities with greater confidence\.[\s\S]*?Buy and sell online knowing more about who you are dealing with\.[\s\S]*?Verify people, businesses, and communities before making decisions\.[\s\S]*?Keep community records clear and reduce misunderstandings and disputes\.[\s\S]*?Organise savings groups, support circles, and community activities with greater accountability\.[\s\S]*?Receive community-backed support when it matters most\.[\s\S]*?Share your Trust Passport or TrustSlip as checkable credibility evidence when trust is needed\.[\s\S]*?You're invited to \$\{inviteTarget\} on GSN\.[\s\S]*?GSN is a trust platform that helps people turn trust and integrity into real-life opportunities\.[\s\S]*?With GSN, you can:[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_EVIDENCE_LINES\)[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\./,
+  "Existing-community invite message must keep the best-version solution invite body, serial evidence lines, community line, GSN-link instruction, and review-before-approval boundary."
 );
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /function isInvitationProofLine[\s\S]*?startsWith\("✅ "\)[\s\S]*?function invitationProofGridStyle[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?function invitationProofItemStyle[\s\S]*?function renderInvitationMessageLines[\s\S]*?invitationProofGridStyle\(isCompact\)[\s\S]*?renderInvitationMessageLines\(lines, isCompact\)/,
-  "The visible invitation paper must render portable-trust proof points as a proper compact proof grid, not a loose sentence line."
+  /function isInvitationEvidenceLine[\s\S]*?startsWith\("✅ "\)[\s\S]*?function invitationEvidenceGridStyle[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?function invitationEvidenceItemStyle[\s\S]*?function renderInvitationMessageLines[\s\S]*?invitationEvidenceGridStyle\(isCompact\)[\s\S]*?renderInvitationMessageLines\(lines, isCompact\)/,
+  "The visible invitation paper must render portable-trust evidence points as a proper compact evidence grid, not a loose sentence line."
 );
 
 assertContains(

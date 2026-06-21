@@ -349,7 +349,7 @@ Ask participants and auditors:
 - Would you ask for the full Trust Passport after seeing this?
 - Would you trust sponsor count without sponsor quality?
 - Does the trust limit feel like a guarantee, even with the disclaimer?
-- What amount or risk level would require more proof?
+- What amount or risk level would require more evidence?
 
 ---
 

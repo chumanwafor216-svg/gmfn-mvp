@@ -75,8 +75,8 @@ function requirePattern(pattern, message) {
     "Demand Box community chooser summary must keep the short label.",
   ],
   [
-    /<span style=\{badge\(false\)\}>Proof optional<\/span>/,
-    "Demand Box form context must use compact proof chips.",
+    /<span style=\{badge\(false\)\}>Evidence optional<\/span>/,
+    "Demand Box form context must use compact evidence chips.",
   ],
   [
     /<span style=\{badge\(false\)\}>Payment terms optional<\/span>/,

@@ -317,7 +317,7 @@ function reconciliationMessage(res: any): string {
   const needsReview = Number(pending) > 0 || Number(mismatch) > 0;
   const resultLine = [
     `Seen ${seen}`,
-    `confirmed ${confirmed}`,
+    `finance-confirmed ${confirmed}`,
     `partial ${partial}`,
     `pending ${pending}`,
     `mismatch ${mismatch}`,
@@ -325,8 +325,8 @@ function reconciliationMessage(res: any): string {
   ].join(", ");
 
   return needsReview
-    ? `Reconciliation complete: ${resultLine}. Review unmatched or mismatched items before treating the rail as settled.`
-    : `Reconciliation complete: ${resultLine}. No unmatched review item is visible from this run.`;
+    ? `Reconciliation run recorded: ${resultLine}. Review unmatched or mismatched items before treating the rail as settlement-ready.`
+    : `Reconciliation run recorded: ${resultLine}. No unmatched review item is visible from this run; this is not settlement or evidence that money moved.`;
 }
 
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
@@ -571,7 +571,7 @@ export default function BankConsolePage() {
           "Match records first, then review the unmatched queue.",
         today: "Match records now, then open the item still needing review.",
         tomorrow:
-          "Clean matches make settlement easier to defend.",
+          "Clean matched records make later settlement review easier to defend.",
         ctaLabel: "Match records",
         ctaTo: routes.bankConsole,
       };
@@ -850,8 +850,8 @@ export default function BankConsolePage() {
             </div>
 
             <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.45 }}>
-              Check incoming bank events, confirm matches, and review anything
-              still unmatched.
+              Check incoming bank events, review matched records, and investigate
+              anything still unmatched.
             </div>
 
             <div
@@ -1016,7 +1016,7 @@ export default function BankConsolePage() {
           label="How to use this"
           what="Record one missing real bank event."
           why="This avoids duplicate or speculative entries."
-          next="Save it, refresh, then check whether it matched."
+          next="Save it, refresh, then check whether a matched record is visible."
           tone="light"
           style={{ marginTop: 14 }}
         />

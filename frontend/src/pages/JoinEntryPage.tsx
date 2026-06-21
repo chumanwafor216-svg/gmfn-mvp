@@ -263,11 +263,11 @@ function invitationPaperMessageStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function isInvitationProofLine(line: string): boolean {
+function isInvitationEvidenceLine(line: string): boolean {
   return cleanText(line).startsWith("✅ ");
 }
 
-function invitationProofGridStyle(isCompact: boolean): React.CSSProperties {
+function invitationEvidenceGridStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
@@ -276,7 +276,7 @@ function invitationProofGridStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function invitationProofItemStyle(isCompact: boolean): React.CSSProperties {
+function invitationEvidenceItemStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: "22px minmax(0, 1fr)",
@@ -296,23 +296,23 @@ function invitationProofItemStyle(isCompact: boolean): React.CSSProperties {
 }
 
 function renderInvitationMessageLines(lines: string[], isCompact: boolean) {
-  const proofLines = lines.filter(isInvitationProofLine);
-  let proofRendered = false;
+  const evidenceLines = lines.filter(isInvitationEvidenceLine);
+  let evidenceRendered = false;
 
   return lines.map((line, index) => {
-    if (isInvitationProofLine(line)) {
-      if (proofRendered) return null;
-      proofRendered = true;
+    if (isInvitationEvidenceLine(line)) {
+      if (evidenceRendered) return null;
+      evidenceRendered = true;
 
       return (
         <div
-          key="invitation-proof-grid"
-          style={invitationProofGridStyle(isCompact)}
+          key="invitation-evidence-grid"
+          style={invitationEvidenceGridStyle(isCompact)}
         >
-          {proofLines.map((proofLine) => (
-            <div key={proofLine} style={invitationProofItemStyle(isCompact)}>
+          {evidenceLines.map((evidenceLine) => (
+            <div key={evidenceLine} style={invitationEvidenceItemStyle(isCompact)}>
               <span aria-hidden="true">✅</span>
-              <span>{cleanText(proofLine).replace(/^✅\s*/, "")}</span>
+              <span>{cleanText(evidenceLine).replace(/^✅\s*/, "")}</span>
             </div>
           ))}
         </div>

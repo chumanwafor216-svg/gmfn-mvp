@@ -23,7 +23,7 @@ def test_pilot_readiness_partial_items_explain_remaining_work():
     }.issubset(partial_keys)
 
     for check in partial_checks:
-        assert check["status_label"] == "Needs proof"
+        assert check["status_label"] == "Needs evidence"
         assert check["why_it_matters"]
         assert check["complete"]
         assert check["remaining"]
@@ -62,7 +62,7 @@ def test_protocol_status_keeps_summary_and_structured_truth_details():
     assert details_by_key["loan_repayment_e2e"]["next_route"] == "/app/loans"
     assert details_by_key["guarantor_flow"]["remaining"]
     assert details_by_key["guarantor_flow"]["next_route"] == "/app/loans"
-    assert "guarantor borrower/admin invite phone proof and payout-route decision" in " ".join(payload["next_priority"])
+    assert "guarantor borrower/admin invite phone evidence and payout-route decision" in " ".join(payload["next_priority"])
     assert "trust-event route consistency" not in " ".join(payload["next_priority"])
 
 
@@ -92,11 +92,13 @@ def test_pilot_readiness_exposes_evidence_pack_checklist_without_fake_acceptance
 
     assert checklist == endpoint_payload
     assert checklist["status"] == "needs_capture"
-    assert checklist["status_label"] == "Checklist ready, proof not captured"
+    assert checklist["status_label"] == "Checklist ready, evidence not captured"
     assert checklist["doc"] == "docs/PILOT_EVIDENCE_PACK_CHECKLIST.md"
     assert checklist["accepted_count"] == 0
     assert checklist["status_counts"]["not_captured"] == checklist["item_count"]
     assert checklist["item_count"] >= 10
     assert checklist["items"][0]["status"] == "not_captured"
+    assert checklist["items"][0]["required_evidence"]
+    assert checklist["items"][0]["required_proof"] == checklist["items"][0]["required_evidence"]
     assert "accepted screenshots and PDFs are still zero" in checklist["truth_statement"]
     assert "pilot_evidence_pack/10_generated_pdfs/" in checklist["folder_shape"]

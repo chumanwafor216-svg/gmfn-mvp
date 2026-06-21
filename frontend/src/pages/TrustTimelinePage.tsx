@@ -339,7 +339,7 @@ export default function TrustTimelinePage() {
       <PageTopNav
         sectionLabel="Trust Timeline"
         title="Trust Timeline"
-        subtitle="See the trust events behind your standing and save the evidence bundle when you need proof."
+        subtitle="See the trust events behind your standing and save the evidence bundle when you need supporting evidence."
       />
 
       <section
@@ -371,7 +371,7 @@ export default function TrustTimelinePage() {
           }}
         >
           Use this page before you answer a question, support a claim, or save
-          proof for a review.
+          evidence for a review.
         </div>
 
         <CardActionRow style={{ marginTop: 16 }}>

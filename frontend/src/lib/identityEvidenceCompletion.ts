@@ -150,7 +150,7 @@ export function buildIdentityEvidenceCompletion(
   if (photoNeedsRepair) {
     primaryMissingKey = "review";
     next = input.photoRejected
-      ? "Photo/selfie evidence was rejected. Add clearer identity proof before relying on this record for serious trust decisions."
+      ? "Photo/selfie evidence was rejected. Add clearer identity evidence before relying on this record for serious trust decisions."
       : "Photo/selfie evidence needs a clearer follow-up. Add a better face photo or official ID evidence when available.";
   } else if (photoReady) {
     primaryMissingKey = "photo";

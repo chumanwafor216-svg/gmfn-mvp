@@ -78,12 +78,12 @@ if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
 });
 
 assertContains(
-  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Trust, ID, proof, messages, and route help[\s\S]*?Trust[\s\S]*?Identity[\s\S]*?TrustSlip[\s\S]*?Messages/,
+  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Trust, ID, evidence, messages, and route help[\s\S]*?Trust[\s\S]*?Identity[\s\S]*?TrustSlip[\s\S]*?Messages/,
   "More / Community Tools front card must name secondary helpers, not invite, money, ROSCA, support, shop, or vague More."
 );
 
 assertContains(
-  /Use this helper when the job is not one of the main cards\.[\s\S]*?Search still understands money, ROSCA, support, shop, invite,[\s\S]*?demand, and records\.[\s\S]*?placeholder="Try: trust, identity, proof, messages\.\.\."/,
+  /Use this helper when the job is not one of the main cards\.[\s\S]*?Search still understands money, ROSCA, support, shop, invite,[\s\S]*?demand, and records\.[\s\S]*?placeholder="Try: trust, identity, evidence, messages\.\.\."/,
   "Expanded More helper must explain that search can still find main lanes without exposing them as equal buttons."
 );
 

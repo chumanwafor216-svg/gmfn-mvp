@@ -178,7 +178,7 @@ Missing or under-expressed:
 
 Why it matters:
 
-The highest-risk ROSCA moment is after someone has received value and still needs to keep paying. This is the strongest behavioral proof.
+The highest-risk ROSCA moment is after someone has received value and still needs to keep paying. This is the strongest behavioral evidence.
 
 ### 4.3 Community governance quality
 
@@ -384,7 +384,7 @@ A TrustSlip is complete enough for the RGU pilot if a viewer can answer:
 5. What amount or use case is it meant to support?
 6. What risks or limits remain?
 7. When was the evidence last updated?
-8. What should I do if I need stronger proof?
+8. What should I do if I need stronger evidence?
 
 If the viewer cannot answer these, the TrustSlip is not yet complete.
 
@@ -402,4 +402,3 @@ Recommended next move:
 2. Create a TrustSlip decision checklist from this audit.
 3. Compare the app's `/app/trust-slip` and public verification page against the seven-section decision structure.
 4. Only then decide which fields need code changes.
-

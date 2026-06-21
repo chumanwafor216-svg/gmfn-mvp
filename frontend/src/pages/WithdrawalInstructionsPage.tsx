@@ -1284,7 +1284,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Direct withdrawal request submitted. It is waiting for community confirmation before money movement is complete."
+        "Direct withdrawal request recorded. Community confirmation is still review evidence; payout execution and money movement are not complete here."
       );
     } finally {
       setSubmittingWithdrawal(false);
@@ -2791,7 +2791,7 @@ export default function WithdrawalInstructionsPage() {
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Use the decision lane above</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Confirm amount, rail, and payout account before submitting.
+                      Review amount, rail, and payout account before submitting a request.
                     </div>
                   </div>
                 ) : requiresSupport && !withdrawalCanWidenRoutes ? (

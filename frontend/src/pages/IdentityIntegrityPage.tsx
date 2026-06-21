@@ -1928,17 +1928,11 @@ export default function IdentityIntegrityPage() {
 
   function selectIdentityTask(key: IdentityTaskKey) {
     setActiveIdentityTask(key);
-
-    if (key !== "official_id") {
-      if (identityPhotoPreview) URL.revokeObjectURL(identityPhotoPreview);
-      setIdentityPhotoFile(null);
-      setIdentityPhotoPreview("");
-      setOfficialIdTaskMessage("");
-    }
-
-    if (key !== "phone") {
-      setPhoneTaskMessage("");
-    }
+    if (identityPhotoPreview) URL.revokeObjectURL(identityPhotoPreview);
+    setIdentityPhotoFile(null);
+    setIdentityPhotoPreview("");
+    setPhoneTaskMessage("");
+    setOfficialIdTaskMessage("");
   }
 
   function openIdentityTask(item: typeof activeTask) {
@@ -2366,8 +2360,9 @@ export default function IdentityIntegrityPage() {
           <PrimaryButton
             onClick={copyGmfnId}
             disabled={!gmfnId || gmfnId === "Pending"}
-            stableHeight={isCompact ? 52 : 52}
+            stableHeight={52}
             fullWidth
+            minWidth={isCompact ? undefined : 132}
             debugId="identity-integrity.copy-gmfn-id"
             style={identityCopyActionStyle(Boolean(gmfnId && gmfnId !== "Pending"), "primary")}
           >
@@ -2423,7 +2418,7 @@ export default function IdentityIntegrityPage() {
         <div
           data-identity-integrity-task-switcher="true"
           style={{
-            marginTop: isCompact ? 14 : 16,
+            marginTop: isCompact ? 52 : 16,
             display: "grid",
             gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
             gap: 8,
@@ -3211,7 +3206,7 @@ export default function IdentityIntegrityPage() {
             <SubtleButton
               type="button"
               onClick={() => toggleSection("recovery")}
-              stableHeight={52}
+              stableHeight={isCompact ? 52 : 48}
               style={collapseToggle()}
               debugId="identity-integrity.toggle-recovery"
             >
@@ -3371,9 +3366,9 @@ export default function IdentityIntegrityPage() {
                 type="submit"
                 busy={recoveryBusy}
                 busyLabel="Saving..."
-                stableHeight={isCompact ? 58 : 54}
+                stableHeight={isCompact ? 52 : 50}
                 fullWidth={isCompact}
-                minWidth={isCompact ? undefined : 260}
+                minWidth={isCompact ? undefined : 210}
                 debugId="identity-integrity.recovery-save"
                 style={identityRecoveryActionStyle()}
               >

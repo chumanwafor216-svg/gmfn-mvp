@@ -20,7 +20,9 @@ export type CreateEntryDraft = {
   openPanel?: CreateEntryPanel;
   guideDone?: boolean;
   verificationId?: number;
+  phoneVerificationEvidence?: any;
   phoneVerificationProof?: any;
+  bankRecordEvidence?: any;
   bankRecordProof?: any;
   bankVerificationResult?: any;
   licenceVerificationResult?: any;
@@ -101,7 +103,7 @@ function compactTrustEvent(value: any) {
   };
 }
 
-function compactPhoneProof(value: any) {
+function compactPhoneEvidence(value: any) {
   if (!value || typeof value !== "object") return null;
   return {
     display_name: safeStr(value.display_name),
@@ -113,7 +115,7 @@ function compactPhoneProof(value: any) {
   };
 }
 
-function compactBankRecordProof(value: any) {
+function compactBankRecordEvidence(value: any) {
   if (!value || typeof value !== "object") return null;
   return {
     confirmation_message: safeStr(value.confirmation_message),
@@ -163,7 +165,9 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
       safeStr(parsed?.countryOfOrigin) ||
       safeStr(parsed?.residentialArea) ||
       Number(parsed?.verificationId || 0) > 0 ||
+        parsed?.phoneVerificationEvidence ||
         parsed?.phoneVerificationProof ||
+        parsed?.bankRecordEvidence ||
         parsed?.bankRecordProof ||
         parsed?.bankVerificationResult ||
         parsed?.licenceVerificationResult ||
@@ -175,6 +179,12 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
     const step = isValidStep(parsed?.step) ? parsed.step : undefined;
     const openPanel = isValidPanel(parsed?.openPanel) ? parsed.openPanel : undefined;
     const verificationId = Number(parsed?.verificationId || 0);
+    const phoneVerificationEvidence = compactPhoneEvidence(
+      parsed?.phoneVerificationEvidence || parsed?.phoneVerificationProof
+    );
+    const bankRecordEvidence = compactBankRecordEvidence(
+      parsed?.bankRecordEvidence || parsed?.bankRecordProof
+    );
 
     return {
       communityName: safeStr(parsed?.communityName),
@@ -193,8 +203,10 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
       openPanel,
       guideDone: Boolean(parsed?.guideDone),
       verificationId: Number.isFinite(verificationId) && verificationId > 0 ? verificationId : 0,
-      phoneVerificationProof: compactPhoneProof(parsed?.phoneVerificationProof),
-      bankRecordProof: compactBankRecordProof(parsed?.bankRecordProof),
+      phoneVerificationEvidence,
+      phoneVerificationProof: phoneVerificationEvidence,
+      bankRecordEvidence,
+      bankRecordProof: bankRecordEvidence,
       bankVerificationResult: compactVerificationResult(parsed?.bankVerificationResult),
       licenceVerificationResult: compactVerificationResult(parsed?.licenceVerificationResult),
       identityPhotoResult: compactVerificationResult(parsed?.identityPhotoResult),
@@ -227,8 +239,18 @@ export function saveCreateEntryDraft(
     openPanel: isValidPanel(draft.openPanel) ? draft.openPanel : null,
     guideDone: Boolean(draft.guideDone),
     verificationId: Number(draft.verificationId || 0),
-    phoneVerificationProof: compactPhoneProof(draft.phoneVerificationProof),
-    bankRecordProof: compactBankRecordProof(draft.bankRecordProof),
+    phoneVerificationEvidence: compactPhoneEvidence(
+      draft.phoneVerificationEvidence || draft.phoneVerificationProof
+    ),
+    phoneVerificationProof: compactPhoneEvidence(
+      draft.phoneVerificationEvidence || draft.phoneVerificationProof
+    ),
+    bankRecordEvidence: compactBankRecordEvidence(
+      draft.bankRecordEvidence || draft.bankRecordProof
+    ),
+    bankRecordProof: compactBankRecordEvidence(
+      draft.bankRecordEvidence || draft.bankRecordProof
+    ),
     bankVerificationResult: compactVerificationResult(draft.bankVerificationResult),
     licenceVerificationResult: compactVerificationResult(draft.licenceVerificationResult),
     identityPhotoResult: compactVerificationResult(draft.identityPhotoResult),
@@ -248,7 +270,9 @@ export function saveCreateEntryDraft(
       safeDraft.countryOfOrigin ||
       safeDraft.residentialArea ||
       safeDraft.verificationId ||
+      safeDraft.phoneVerificationEvidence ||
       safeDraft.phoneVerificationProof ||
+      safeDraft.bankRecordEvidence ||
       safeDraft.bankRecordProof ||
       safeDraft.bankVerificationResult ||
       safeDraft.licenceVerificationResult ||

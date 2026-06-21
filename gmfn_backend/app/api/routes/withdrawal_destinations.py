@@ -117,12 +117,12 @@ def _trust_event_response(row: UserPayoutDestination) -> dict:
 
     if status.startswith("phone_verified"):
         message = (
-            "Payout proof is recorded against your verified identity. "
+            "Payout evidence is recorded against your phone-verified identity record. "
             "External bank-rail ownership verification is not connected yet, so this is recorded payout evidence, not confirmed bank ownership."
         )
     else:
         message = (
-            "Payout proof is recorded. Complete phone verification before relying on this destination for high-trust money movement."
+            "Payout evidence is recorded. Complete phone verification before relying on this destination for high-trust money movement."
         )
 
     if note:

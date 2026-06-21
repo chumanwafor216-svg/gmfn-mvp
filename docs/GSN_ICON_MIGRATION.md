@@ -107,21 +107,21 @@ Create or source these first:
 | `finance-wallet-card` | wallet or bank card for personal payment details | `premium banking icon, wallet and bank card, realistic 3D, navy gold green, transparent background` |
 | `repayment-schedule` | repayment schedule, instalments, or payment plan | `premium realistic 3D repayment calendar icon, payment schedule with coins and check marks, navy gold white, transparent background` |
 | `records-folder` | document folder | `realistic object icon, premium document folder with seal, navy gold white, transparent background` |
-| `certificate-seal` | certificate, proof paper, or evidence seal | `premium realistic 3D certificate proof icon, white paper, navy leather corners, gold seal, transparent background` |
+| `certificate-seal` | certificate, evidence paper, or evidence seal | `premium realistic 3D certificate evidence icon, white paper, navy leather corners, gold seal, transparent background` |
 | `join-person-plus` | person-plus entry | `premium realistic 3D icon, member profile and plus badge, navy gold white, transparent background` |
 | `spotlight-megaphone` | real loudspeaker or megaphone | `premium skeuomorphic 3D icon, real megaphone spotlight, navy gold white, transparent background` |
 | `audio-speaker` | speaker for sound controls | `premium realistic 3D sound speaker icon, white navy and gold, transparent background` |
 | `media-video` | video camera or playable media | `premium realistic 3D video camera icon, white navy and gold, transparent background` |
 | `identity-card` | GSN identity | `glossy executive app icon, identity card with shield seal, navy gold white, transparent background` |
 | `phone-contact` | phone/contact | `realistic object icon, premium phone handset, navy gold white, transparent background` |
-| `qr-record` | QR proof record | `premium 3D UI icon, QR record card with seal, navy gold white, transparent background` |
-| `public-globe` | public proof/share surface | `realistic 3D globe and trust seal icon, navy gold white, transparent background` |
+| `qr-record` | QR evidence record | `premium 3D UI icon, QR record card with seal, navy gold white, transparent background` |
+| `public-globe` | public evidence/share surface | `realistic 3D globe and trust seal icon, navy gold white, transparent background` |
 
 ## Screen Priority
 
 Replace icons in this order:
 
-1. Public proof and entry surfaces:
+1. Public evidence and entry surfaces:
    - `CoverPage`
    - `WelcomePage`
    - `CommunityVerifyPage`
@@ -178,9 +178,9 @@ the object, size, and dignity of the mark more than the surrounding text.
   icons for personal payout, card, or payment-detail contexts.
 - Marketplace should use a shopfront, stall, or real trading-place object for
   the domain. Use carts/baskets only for literal shopping or goods movement.
-- Trust, proof, passport, certificate, and verification papers should look like
+- Trust, evidence, passport, certificate, and verification papers should look like
   evidence packages: light paper, seal, watermark, fixed fact chips, and clear
-  object icons that do not cover the proof.
+  object icons that do not cover the record.
 - Do not call a page visually complete until the icon object, not the colored
   tile behind it, is the first thing a low-literacy user can understand.
 
@@ -193,7 +193,7 @@ The first semantic meaning upgrade now exists in the shared icon registry:
 - `market-stall` for Marketplace/domain opportunity contexts where a real
   trading place is stronger than a shopping cart.
 - `certificate-seal` for Trust Passport, TrustSlip, public verification, and
-  printable proof packages.
+  printable evidence packages.
 - `repayment-schedule` for borrowing repayment plans, instalments, and
   pay-in-full vs pay-in-parts decisions.
 - `audio-speaker` for media sound controls, including video sound on/off.

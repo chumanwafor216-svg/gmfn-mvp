@@ -1483,7 +1483,7 @@ export default function VaultControlPage() {
     if (confirmedPaymentQuoteKey !== quoteKey) {
       showNotice(
         "info",
-        `Confirm the Vault quote first: ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} = ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
+        `Agree to the Vault quote first: ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} = ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
       );
       return;
     }
@@ -1765,11 +1765,11 @@ export default function VaultControlPage() {
               {shopName}
             </h1>
             <div style={{ marginTop: 14, color: "#E8F1FA", fontSize: isCompact ? 16 : 18, lineHeight: 1.55, maxWidth: 600, fontWeight: 760 }}>
-              Same shop signboard. Private paid blocks. Access only through a link you create.
+              Same shop signboard. Private blocks become available after payment confirmation. Access only through a link you create.
             </div>
             <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
               <span style={vaultHeroBadge(true)}>{labelWithIcon("vault", "Vault")}</span>
-              <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} paid slots</span>
+              <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} active Vault slots</span>
               <span style={vaultHeroBadge(false)}>One block at a time</span>
             </div>
           </div>
@@ -1825,7 +1825,7 @@ export default function VaultControlPage() {
           >
             <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div>
             <div style={{ marginTop: isCompact ? 8 : 12, color: gmfnBrand.colors.inkSoft, fontSize: isCompact ? 14 : 16, lineHeight: 1.45 }}>
-              Choose the number of Vault blocks you want. Paid blocks are private positions.
+              Choose the number of Vault blocks you want. Vault blocks become private positions only after payment confirmation.
             </div>
             {!isCompact ? (
               <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
@@ -1869,7 +1869,7 @@ export default function VaultControlPage() {
             <PrimaryButton
               onClick={() => {
                 setConfirmedPaymentQuoteKey(selectedVaultQuoteKey);
-                showNotice("success", `Vault quote confirmed: ${selectedVaultAgreementText}.`);
+                showNotice("success", `Vault quote agreed: ${selectedVaultAgreementText}. Quote agreement is not payment confirmation.`);
               }}
               style={{
                 ...brandActionButton("primary"),
@@ -1900,13 +1900,13 @@ export default function VaultControlPage() {
               <div style={{ marginTop: 6, fontWeight: 820, lineHeight: 1.55 }}>{selectedVaultBundleText}</div>
             </div>
             <div style={{ marginTop: 14, ...helperText() }}>
-              Confirm this quote first. GSN will generate the payment code against this exact slot count and amount, then the bank rail can cross-check the code and amount before Vault opens.
+              Agree to this quote first. GSN will generate the payment code against this exact slot count and amount, then bank or finance reconciliation must confirm the payment before Vault blocks become available.
             </div>
             {!activeVaultPayment ? (
               <SecondaryButton
                 onClick={() => {
                   if (!paymentQuoteConfirmed) {
-                    showNotice("info", `Confirm this Vault quote first: ${selectedVaultAgreementText}.`);
+                    showNotice("info", `Agree to this Vault quote first: ${selectedVaultAgreementText}.`);
                     return;
                   }
                   void createVaultInstruction(paymentSlots);
@@ -1978,7 +1978,7 @@ export default function VaultControlPage() {
           </>
         ) : (
           <div style={{ marginTop: 14, ...noticeCard("info") }}>
-            Select slots, agree to the quote, then generate the payment code. The bank details stay here until the instruction is paid, expired, or cancelled.
+            Select slots, agree to the quote, then generate the payment code. The bank details stay here until the instruction is payment-confirmed, expired, or cancelled.
           </div>
         ) : null}
       </section>
@@ -1988,18 +1988,18 @@ export default function VaultControlPage() {
           "blocks",
           3,
           "Private Vault blocks",
-          `${confirmedVaultSlots} / ${VAULT_SLOT_LIMIT} paid slots. Block #${selectedSlot} is selected.`
+          `${confirmedVaultSlots} / ${VAULT_SLOT_LIMIT} active Vault slots. Block #${selectedSlot} is selected.`
         )}
         {openVaultPanels.blocks ? (
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 16 }}>
             <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
           <div style={stepTitle()}><span style={stepBadge()}>3</span>Choose a block</div>
           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Paid position</span><span style={badge(false)}>Locked</span><span style={badge(false)}>Empty</span>
+            <span style={badge(true)}>Active position</span><span style={badge(false)}>Locked</span><span style={badge(false)}>Empty</span>
           </div>
           {confirmedVaultSlots <= 0 ? (
             <div style={{ marginTop: 14, ...noticeCard("info") }}>
-              No private block is active yet. Generate a payment code above, complete the bank transfer, and the paid blocks will unlock here.
+              No private block is active yet. Generate a payment code above, complete the bank transfer, and Vault blocks become available here only after payment confirmation.
             </div>
           ) : null}
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
@@ -2061,7 +2061,7 @@ export default function VaultControlPage() {
           </div>
           <div style={{ marginTop: 14, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>Block #{selectedSlot}</div>
           <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(selectedSeatIsActive)}>{selectedSeatIsActive ? "Paid position" : "Locked"}</span>
+            <span style={badge(selectedSeatIsActive)}>{selectedSeatIsActive ? "Active position" : "Locked"}</span>
             <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? "In use" : "Empty"}</span>
             <span style={badge(false)}>Private Vault</span>
           </div>

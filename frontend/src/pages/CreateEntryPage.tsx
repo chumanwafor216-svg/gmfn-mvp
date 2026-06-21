@@ -1661,8 +1661,8 @@ export default function CreateEntryPage() {
       : "Founder trust level";
   const verificationBlockHelp =
     step === "verify"
-      ? "Record this phone against your entry name. SMS proof can come later."
-      : "Optional proof. Add what you have now, or finish and continue.";
+      ? "Record this phone against your entry name. SMS evidence can come later."
+      : "Optional evidence. Add what you have now, or finish and continue.";
 
   function applyPhonePrefix(prefix: string) {
     setPhone((current) => {
@@ -2120,7 +2120,7 @@ export default function CreateEntryPage() {
     const missing: string[] = [];
     if (!communityDetailsRecorded) missing.push("record community details");
     if (!safeStr(communityName)) missing.push("community name");
-    if (!Number(verificationId)) missing.push("phone proof");
+    if (!Number(verificationId)) missing.push("phone evidence");
     if (!safeStr(displayName)) missing.push("name");
     if (!safeStr(country)) missing.push("country");
     if (!safeStr(phone)) missing.push("phone");
@@ -2763,7 +2763,7 @@ export default function CreateEntryPage() {
       safeStr(out?.confirmation_message) ||
         safeStr(nextBankVerification?.explanation) ||
         safeStr(out?.verification_note) ||
-        "Optional founder proof recorded. You can continue creating the community."
+        "Optional founder evidence recorded. You can continue creating the community."
     );
   }
 
@@ -2803,7 +2803,7 @@ export default function CreateEntryPage() {
           setOptionalEvidenceStep("official_id_done");
           showSuccess(
             "verification",
-            `Your phone proof had timed out, so GSN refreshed it and recorded ${regionalEvidence.officialIdLabel} evidence.`
+            `Your phone evidence session had timed out, so GSN refreshed it and recorded ${regionalEvidence.officialIdLabel} evidence.`
           );
         } catch (retryErr: any) {
           showError(
@@ -2828,7 +2828,7 @@ export default function CreateEntryPage() {
 
     if (!refreshed.autoConfirmed || !refreshed.verificationId) {
       throw new Error(
-        "Your phone proof has timed out. Please start this entry step afresh so GSN can link the phone to your name again."
+        "Your phone evidence session has timed out. Please start this entry step afresh so GSN can link the phone to your name again."
       );
     }
 
@@ -2851,13 +2851,13 @@ export default function CreateEntryPage() {
           finishBankStep(saved.out, saved.bankVerification);
           showSuccess(
             "bank",
-            "Your phone proof had timed out, so GSN refreshed it and saved your bank or wallet details."
+            "Your phone evidence session had timed out, so GSN refreshed it and saved your bank or wallet details."
           );
         } catch (retryErr: any) {
           showError(
             "bank",
             retryErr?.message ||
-              "Your phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
+              "Your phone evidence session has timed out. Please start afresh so GSN can link the phone to your name again."
           );
         }
       } else {
@@ -2920,7 +2920,7 @@ export default function CreateEntryPage() {
           setOptionalEvidenceStep("photo_done");
           showSuccess(
             "photo",
-            `Your phone proof had timed out, so GSN refreshed it and recorded ${uploaded.length} photo/selfie evidence record${uploaded.length === 1 ? "" : "s"}.`
+            `Your phone evidence session had timed out, so GSN refreshed it and recorded ${uploaded.length} photo/selfie evidence record${uploaded.length === 1 ? "" : "s"}.`
           );
         } catch (retryErr: any) {
           showError(
@@ -3178,7 +3178,7 @@ export default function CreateEntryPage() {
           showError(
             feedbackTargetForFinish,
             retryErr?.message ||
-              "Your phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
+              "Your phone evidence session has timed out. Please start afresh so GSN can link the phone to your name again."
           );
         }
       } else if (isCommunityNameTakenError(err)) {
@@ -3269,7 +3269,7 @@ export default function CreateEntryPage() {
       number: "2",
       title: "Founder trust level",
       detail:
-        "Add photo, bank, wallet, or ID proof when ready.",
+        "Add photo, bank, wallet, or ID evidence when ready.",
     },
     {
       key: "community",
@@ -4557,7 +4557,7 @@ export default function CreateEntryPage() {
                           phoneVerificationProof.trust_event_response.message
                         ) ||
                           (phoneVerificationProof.registered_only
-                            ? "This phone is saved for your entry. SMS proof can be added later."
+                            ? "This phone is saved for your entry. SMS evidence can be added later."
                             : "This phone is saved to strengthen your profile.")}
                       </div>
                       {safeStr(
@@ -4588,7 +4588,7 @@ export default function CreateEntryPage() {
                   }}
                 >
                   <div style={{ ...sectionLabel(), color: "#047857" }}>
-                    Bank and wallet proof recorded
+                    Bank and wallet evidence recorded
                   </div>
                   <div
                     style={{
@@ -4748,7 +4748,7 @@ export default function CreateEntryPage() {
                           fontSize: 14,
                         }}
                       >
-                        Record this phone to protect the entry. SMS proof can be added later.
+                        Record this phone to protect the entry. SMS evidence can be added later.
                       </div>
                     </div>
 
@@ -5632,7 +5632,7 @@ export default function CreateEntryPage() {
                     fontWeight: 760,
                   }}
                 >
-                  Name it. Add a short story. Finish now or add optional proof.
+                  Name it. Add a short story. Finish now or add optional evidence.
                 </div>
               ) : null}
 

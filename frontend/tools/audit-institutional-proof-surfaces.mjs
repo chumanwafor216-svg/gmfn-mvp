@@ -61,7 +61,7 @@ function read(file) {
     findings.push({
       file,
       line: 1,
-      message: "Required proof-surface file is missing.",
+      message: "Required evidence-surface file is missing.",
       text: file,
     });
     return "";
@@ -194,7 +194,7 @@ assertContains(
 );
 assertContains(
   "trustSlipPdf",
-  /not a bank guarantee[\s\S]*?does not auto-debit/,
+  /not a bank guarantee, credit approval, payment instruction, or automatic debit authority/,
   "TrustSlip PDF must keep the reader-facing limitation language."
 );
 assertContains(
@@ -362,33 +362,53 @@ assertContains(
 );
 assertContains(
   "snapshotPaper",
+  /Footer: Global Support Network \(GSN\)\. Trust infrastructure for organized communities\./,
+  "Shared copied snapshot paper footer must position GSN as trust infrastructure, not only a marketplace."
+);
+assertContains(
+  "snapshotPaper",
   /buildGsnCommunityVerifyLinkPackage[\s\S]*?GSN Community Verification Link[\s\S]*?buildGsnInviteLinkPackage[\s\S]*?GSN Community Invite[\s\S]*?buildGsnPublicShopLinkPackage[\s\S]*?GSN Public Shop Invitation/,
-  "Shared proof package helper must cover community verification, community invites, and public shop invitations."
+  "Shared evidence package helper must cover community verification, community invites, and public shop invitations."
+);
+assertContains(
+  "snapshotPaper",
+  /Limitation: opens a public GSN community record only\. Not a bank guarantee, credit approval, protected-domain approval, or evidence that every claim is true\./,
+  "Community verification copied packages must describe the link as opening a public record, not as protected-domain approval."
+);
+assertNotContains(
+  "snapshotPaper",
+  /verifies a public GSN community record/i,
+  "Community verification copied packages must not claim the package itself verifies a public community record."
 );
 assertContains(
   "snapshotPaper",
   /buildGsnVaultInvitePackage[\s\S]*?GSN Private Vault Invitation/,
-  "Shared proof package helper must cover private Vault invitation packages."
+  "Shared evidence package helper must cover private Vault invitation packages."
 );
 assertContains(
   "snapshotPaper",
   /buildGsnPaymentInstructionPackage[\s\S]*?GSN Payment Instruction[\s\S]*?Not a receipt or bank guarantee until reconciliation confirms funds/,
-  "Shared proof package helper must cover payment, payout, and receipt-like instruction packages."
+  "Shared evidence package helper must cover payment, payout, and receipt-like instruction packages."
 );
 assertContains(
   "snapshotPaper",
   /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Evidence Snapshot[\s\S]*?Not a guarantee, lending approval, receipt, or payout/,
-  "Shared proof package helper must cover loan, guarantor, and support evidence snapshots."
+  "Shared evidence package helper must cover loan, guarantor, and support evidence snapshots."
 );
 assertNotContains(
   "snapshotPaper",
   /A branded|Use this branded|viewer should|careful reader/g,
-  "Shared proof package text must speak to the receiver, not describe builder-side branding."
+  "Shared evidence package text must speak to the receiver, not describe builder-side branding."
 );
 assertContains(
   "snapshotPaperCard",
   /import GSNBrandMark[\s\S]*?TrustPaperWatermark[\s\S]*?TrustPaperSecurityFooter/,
   "Shared visual snapshot paper card must use the GSN mark, watermark, and institutional footer."
+);
+assertContains(
+  "snapshotPaperCard",
+  /footer: "Global Support Network \(GSN\)\. Trust infrastructure for organized communities\."/,
+  "Shared visual snapshot paper card fallback footer must position GSN as trust infrastructure, not only a marketplace."
 );
 assertContains(
   "snapshotPaperCard",
@@ -402,8 +422,13 @@ assertContains(
 );
 assertContains(
   "trustSnapshots",
-  /import \{ buildGsnSnapshotPaper, gsnGeneratedAt \} from "\.\/gsnSnapshotPaper";[\s\S]*?GSN Identity & Integrity Snapshot[\s\S]*?GSN Cross-Community Consistency Snapshot[\s\S]*?GSN TrustSlip Snapshot[\s\S]*?GSN TrustSlip Verification Snapshot[\s\S]*?GSN Trust Passport Snapshot/,
+  /import \{ buildGsnSnapshotPaper \} from "\.\/gsnSnapshotPaper";[\s\S]*?GSN Identity & Integrity Snapshot[\s\S]*?GSN Cross-Community Consistency Snapshot[\s\S]*?GSN TrustSlip Snapshot[\s\S]*?GSN TrustSlip Verification Snapshot[\s\S]*?buildTrustPassportSnapshot[\s\S]*?return buildGsnSnapshotPaper\(\{[\s\S]*?GSN Trust Passport Snapshot/,
   "Trust document copy snapshots must use GSN headed-paper helpers and keep Trust Passport official."
+);
+assertNotContains(
+  "trustSnapshots",
+  /buildTrustPassportSnapshot[\s\S]*?return \[/g,
+  "Trust Passport copied snapshot must not hand-build a separate headed-paper string."
 );
 assertNotContains(
   "trustSnapshots",
@@ -412,8 +437,18 @@ assertNotContains(
 );
 assertContains(
   "trustSnapshots",
-  /function friendlyTrustBand[\s\S]*?Early, limited record[\s\S]*?use caution; ask for current proof[\s\S]*?function friendlyScore[\s\S]*?signal only; not a character label/,
+  /function friendlyTrustBand[\s\S]*?Early, limited record[\s\S]*?use caution; ask for current evidence[\s\S]*?function friendlyScore[\s\S]*?signal only; not a character label/,
   "Trust document snapshots must explain trust bands in concise humane growth language instead of sending bare A/B/C/D/E codes."
+);
+assertContains(
+  "trustSnapshots",
+  /function friendlyConsistency[\s\S]*?Ask for current evidence\./,
+  "Trust document consistency snapshots must ask for current evidence, not broad confirmation."
+);
+assertNotContains(
+  "trustSnapshots",
+  /Ask for current confirmation/,
+  "Trust document snapshots must not imply current confirmation alone is enough."
 );
 assertNotContains(
   "trustSnapshots",
@@ -452,7 +487,7 @@ assertContains(
 );
 assertContains(
   "joinInviteMessaging",
-  /JOIN_INVITE_PROOF_LINES = \[[\s\S]*?Build a trusted identity that follows you wherever life takes you\.[\s\S]*?Find work, customers, and opportunities with greater confidence\.[\s\S]*?Buy and sell online knowing more about who you are dealing with\.[\s\S]*?Verify people, businesses, and communities before making decisions\.[\s\S]*?Keep community records clear and reduce misunderstandings and disputes\.[\s\S]*?Organise savings groups, support circles, and community activities with greater accountability\.[\s\S]*?Receive community-backed support when it matters most\.[\s\S]*?Share your Trust Passport or TrustSlip as proof of credibility when trust is needed\.[\s\S]*?export function buildJoinInviteLetter[\s\S]*?You're invited to \$\{inviteTarget\} on GSN\.[\s\S]*?GSN is a trust platform that helps people turn trust and integrity into real-life opportunities\.[\s\S]*?With GSN, you can:[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_PROOF_LINES\)[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\.[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?Hello \$\{receiver\}[\s\S]*?\.\.\.JOIN_INVITE_PROOF_LINES[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?After it opens, request access from the invitation page\.[\s\S]*?Community membership is reviewed before approval\./,
+  /JOIN_INVITE_EVIDENCE_LINES = \[[\s\S]*?Build a trusted identity that follows you wherever life takes you\.[\s\S]*?Find work, customers, and opportunities with greater confidence\.[\s\S]*?Buy and sell online knowing more about who you are dealing with\.[\s\S]*?Verify people, businesses, and communities before making decisions\.[\s\S]*?Keep community records clear and reduce misunderstandings and disputes\.[\s\S]*?Organise savings groups, support circles, and community activities with greater accountability\.[\s\S]*?Receive community-backed support when it matters most\.[\s\S]*?Share your Trust Passport or TrustSlip as checkable credibility evidence when trust is needed\.[\s\S]*?export function buildJoinInviteLetter[\s\S]*?You're invited to \$\{inviteTarget\} on GSN\.[\s\S]*?GSN is a trust platform that helps people turn trust and integrity into real-life opportunities\.[\s\S]*?With GSN, you can:[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_EVIDENCE_LINES\)[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?Open the GSN link above to view the invitation and request access\.[\s\S]*?Community membership is reviewed before approval\.[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?Hello \$\{receiver\}[\s\S]*?\.\.\.JOIN_INVITE_EVIDENCE_LINES[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?After it opens, request access from the invitation page\.[\s\S]*?Community membership is reviewed before approval\./,
   "Shared join invite messaging must keep the best-version solution form-page invite and outbound doorway message serial, icon-led, sender-aware, and review-aware."
 );
 assertContains(
@@ -559,7 +594,7 @@ assertContains(
 assertContains(
   "trustPassport",
   /TrustPaperSecurityFooter/,
-  "Trust Passport must keep the proof-paper security footer on institutional sections."
+  "Trust Passport must keep the evidence-paper security footer on institutional sections."
 );
 
 assertContains(
@@ -586,21 +621,25 @@ assertContains(
 assertContains(
   "uxChecklist",
   /watermark (?:or|\/) brand mark[\s\S]*?generated time[\s\S]*?limitation statement[\s\S]*?footer/,
-  "UX checklist must keep proof-paper authority requirements."
+  "UX checklist must keep evidence-paper authority requirements."
 );
 
 assertOrdered(
   "package",
-  ['"audit:trust-actions"', '"audit:proof-surfaces"'],
-  "Proof surface audit must be registered near trust audits in package scripts."
+  [
+    '"audit:trust-actions"',
+    '"audit:evidence-surfaces": "node tools/audit-institutional-evidence-surfaces.mjs"',
+    '"audit:proof-surfaces": "node tools/audit-institutional-proof-surfaces.mjs"',
+  ],
+  "Evidence surface audit must expose the preferred evidence command while preserving the legacy command."
 );
 
 if (findings.length > 0) {
-  console.error("Institutional proof surface audit failed:");
+  console.error("Institutional evidence surface audit failed:");
   for (const finding of findings) {
     console.error(`- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`);
   }
   process.exit(1);
 }
 
-console.log("Institutional proof surface audit passed.");
+console.log("Institutional evidence surface audit passed.");

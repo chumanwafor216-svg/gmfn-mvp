@@ -452,7 +452,7 @@ marketplace.
 It helps other communities see the member in a truer carried-forward form,
 rather than only as a brand-new stranger.
 
-TrustSlip should be understood as the portable current proof, not the full trust
+TrustSlip should be understood as the portable current evidence, not the full trust
 story.
 
 The fuller trust story belongs in Trust Passport.
@@ -470,8 +470,8 @@ outside the immediate circle where they are already known.
 The relationship is:
 
 - Trust Passport = full accumulated trust story
-- TrustSlip = portable current proof
-- Merchant verification = the process of checking that proof before a trading
+- TrustSlip = portable current evidence
+- Merchant verification = the process of checking that evidence before a trading
   or release decision
 
 Merchant verification should not expose the whole Trust Passport by default.

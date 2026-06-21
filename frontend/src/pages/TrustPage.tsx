@@ -38,6 +38,13 @@ type TrustScoreExplained = {
 
   // some versions return breakdown dict
   breakdown?: any;
+  starter_evidence_summary?: {
+    phone_verified?: boolean;
+    bank_recorded?: boolean;
+    drivers_licence_recorded?: boolean;
+    region_consistent?: boolean;
+    region_mismatch_explained?: boolean;
+  };
   starter_proof_summary?: {
     phone_verified?: boolean;
     bank_recorded?: boolean;
@@ -177,7 +184,7 @@ function csvEscape(value: any) {
   return s;
 }
 
-function proofTile(enabled: boolean): React.CSSProperties {
+function evidenceTile(enabled: boolean): React.CSSProperties {
   return {
     padding: 12,
     borderRadius: 12,
@@ -429,8 +436,12 @@ export default function TrustPage() {
     (score?.trust_score ?? score?.score ?? "") !== "" ? String(score?.trust_score ?? score?.score) : "-";
   const band = score?.trust_band ?? score?.band ?? (score?.breakdown?.trust_band ?? null);
   const starterSummary =
-    score?.starter_proof_summary ?? score?.breakdown?.starter_proof_summary ?? {};
-  const starterProofs = [
+    score?.starter_evidence_summary ??
+    score?.breakdown?.starter_evidence_summary ??
+    score?.starter_proof_summary ??
+    score?.breakdown?.starter_proof_summary ??
+    {};
+  const starterEvidenceItems = [
     {
       key: "phone",
       icon: "phone" as GsnIconName,
@@ -448,9 +459,9 @@ export default function TrustPage() {
     {
       key: "licence",
       icon: "id" as GsnIconName,
-      label: "Driver's licence proof",
+      label: "Driver's licence evidence",
       enabled: Boolean(starterSummary?.drivers_licence_recorded),
-      detail: "Optional licence proof adds another visible identity layer when it is supplied.",
+      detail: "Optional licence evidence adds another visible identity layer when it is supplied.",
     },
     {
       key: "region",
@@ -460,15 +471,15 @@ export default function TrustPage() {
       detail: "Matching phone and bank region signals strengthen starter trust because the identity evidence aligns.",
     },
   ];
-  const hasStarterProof = starterProofs.some((item) => item.enabled);
+  const hasStarterEvidence = starterEvidenceItems.some((item) => item.enabled);
   const latestReason =
     score?.latest_reason ??
     score?.breakdown?.latest_reason ??
-    "Your trust position reflects the proofs and trust events already recorded on your account.";
+    "Your trust position reflects the evidence and trust events already recorded on your account.";
   const trustExplanation =
     score?.explanation ??
     score?.breakdown?.explanation ??
-    "The score is explainable. Verified onboarding proofs can establish a starter base before later transactions deepen or weaken it.";
+    "The score is explainable. Verified onboarding evidence can establish a starter base before later transactions deepen or weaken it.";
 
   return (
     <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 0 28px" }}>
@@ -600,7 +611,7 @@ export default function TrustPage() {
 
         {showExplain && (
           <div style={{ ...innerCard("linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"), marginTop: 14 }}>
-            {hasStarterProof ? (
+            {hasStarterEvidence ? (
               <div
                 style={{
                   marginBottom: 12,
@@ -622,8 +633,8 @@ export default function TrustPage() {
                     gap: 10,
                   }}
                 >
-                  {starterProofs.map((item) => (
-                    <div key={item.key} style={proofTile(item.enabled)}>
+                  {starterEvidenceItems.map((item) => (
+                    <div key={item.key} style={evidenceTile(item.enabled)}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         {trustIconTile(item.icon, 36)}
                         <div style={{ minWidth: 0 }}>

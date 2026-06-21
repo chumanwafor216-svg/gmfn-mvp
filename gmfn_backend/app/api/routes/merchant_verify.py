@@ -104,6 +104,6 @@ def verify_for_merchant(token: str, db: Session = Depends(get_db)) -> Dict[str, 
         "level": payload.get("lvl"),
         "expires_at": payload.get("exp"),
         "used": used,
-        "disclaimer": "Community-backed integrity limit. Not a bank guarantee. No auto-debit.",
+        "disclaimer": "Community-backed integrity signal. Not a bank guarantee. No auto-debit.",
         "ask_for_pack_id_hint": "Ask the buyer for Pack ID if you need evidence.",
     }

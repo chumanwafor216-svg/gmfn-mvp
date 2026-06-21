@@ -6,9 +6,9 @@ export function buildIdentityIntegrityGuideItems(): NextActionGuideItem[] {
       id: "trust-passport",
       label: "Open Trust Passport",
       detail:
-        "Use Trust Passport when you want the fuller why, repair path, public-proof meaning, and current trust posture that sit beside this identity reading.",
+        "Use Trust Passport when you want the fuller why, repair path, public-record meaning, and current trust posture that sit beside this identity reading.",
       to: "/app/trust",
-      keywords: ["trust", "passport", "repair", "proof", "why"],
+      keywords: ["trust", "passport", "repair", "evidence", "why"],
       tone: "primary",
     },
     {
@@ -47,9 +47,9 @@ export function buildCciGuideItems(): NextActionGuideItem[] {
       id: "trust-passport",
       label: "Open Trust Passport",
       detail:
-        "Go to Trust Passport when you want the personal trust explanation, repair path, and public-proof context around the same reading.",
+        "Go to Trust Passport when you want the personal trust explanation, repair path, and public-record context around the same reading.",
       to: "/app/trust",
-      keywords: ["trust", "passport", "repair", "proof", "community"],
+      keywords: ["trust", "passport", "repair", "evidence", "community"],
       tone: "secondary",
     },
     {

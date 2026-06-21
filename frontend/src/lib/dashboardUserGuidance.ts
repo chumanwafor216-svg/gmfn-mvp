@@ -601,7 +601,7 @@ export function buildDashboardTrustAttentionCore(params: {
   const bothUnderPressure =
     params.openTrust.tone === "red" && params.cci.tone === "red";
   const baseConnectionText =
-    "Focus shows visible follow-through. Local trust shows how your community reads it. Cross-community consistency shows how people outside your community may read the same behaviour. TrustSlip is the record they may later check when they want proof.";
+    "Focus shows visible follow-through. Local trust shows how your community reads it. Cross-community consistency shows how people outside your community may read the same behaviour. TrustSlip is the record they may later check when they want supporting evidence.";
 
   let helpingText = "";
 
@@ -850,8 +850,8 @@ export function buildDashboardTrustJourneyCopy(params: {
       : "Cross-community consistency shows how people outside your community may read the same behaviour.";
 
   const trustSlipDetail = cleanText(params.trustSlipCode)
-    ? "TrustSlip is the record people can check when they want proof that your trust story is backed by a visible record."
-    : "TrustSlip is still not ready. That means your trust record is not yet easy to prove when people ask for it.";
+    ? "TrustSlip is the record people can check when they want evidence that your trust story is backed by a visible record."
+    : "TrustSlip is still not ready. That means your trust record is not yet easy to share when people ask for evidence.";
 
   let focusDetail =
     "Focus shows whether the targets you set are being met, watched, or missed in a visible way.";
@@ -877,7 +877,7 @@ export function buildDashboardTrustJourneyCopy(params: {
   }
 
   const passportDetail =
-    "Trust Passport helps you read the full trust path in simple steps, while TrustSlip is the record people may later check for proof.";
+    "Trust Passport helps you read the full trust path in simple steps, while TrustSlip is the record people may later check for supporting evidence.";
 
   let connectionSummary =
     "These five work together: Focus shows visible follow-through, local trust shows how your community reads it, cross-community consistency shows how people outside your community may read it, TrustSlip carries the record, and Trust Passport helps you understand the whole path.";

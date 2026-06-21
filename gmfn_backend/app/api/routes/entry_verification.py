@@ -470,7 +470,7 @@ def confirm_signed_in_phone_verification(
         "phone_verified_at": db_user.phone_verified_at.isoformat()
         if db_user.phone_verified_at
         else None,
-        "message": "Phone proof is now connected to your signed-in GSN identity.",
+        "message": "Phone evidence is now connected to your signed-in GSN identity.",
     }
 
 

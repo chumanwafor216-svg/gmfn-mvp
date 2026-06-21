@@ -89,6 +89,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/SystemOperationsPage.tsx",
+  /settlement-ready[\s\S]*?waiting for finance review[\s\S]*?clear through finance evidence[\s\S]*?Pledge decisions \$\{toNum\(row\?\.approved_guarantors\)\}\/\$\{toNum[\s\S]*?Pool finance review pending/,
+  "System Operations must frame finance queues as review and reconciliation readings, not settlement, confirmation, or broad approval."
+);
+
+assertNotContains(
+  "src/pages/SystemOperationsPage.tsx",
+  /finance reading as settled|waiting for confirmation\. Confirm|Confirm them before the money queue drifts|expectations settle|`Approved \$\{toNum\(row\?\.approved_guarantors\)\}\/\$\{toNum|Pool confirmation pending/,
+  "System Operations must not make internal admin queues sound like final settlement, payment confirmation, or broad loan approval."
+);
+
+assertContains(
   "src/pages/AdminTrustGraphPage.tsx",
   /debugId="admin-trust-graph\.toggle-overview"[\s\S]*?debugId="admin-trust-graph\.toggle-structure"[\s\S]*?debugId="admin-trust-graph\.route\.analytics"[\s\S]*?debugId="admin-trust-graph\.route\.command-center"/,
   "Admin Trust Graph toggles and route actions must remain traceable."
@@ -107,15 +119,51 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/AdminIncompleteLoansPage.tsx",
+  /pledge decisions, coverage gaps[\s\S]*?does not approve the whole loan, authorize release, or show that money moved[\s\S]*?Missing pledge decisions[\s\S]*?Locked pledge coverage[\s\S]*?Pledge decisions/,
+  "Admin Incomplete Loans must frame the queue as pledge-decision and coverage review, not whole-loan approval, release authority, or money movement."
+);
+
+assertNotContains(
+  "src/pages/AdminIncompleteLoansPage.tsx",
+  /Approved guarantors:|Missing approvals|Approval progress|approved \/ \{toNum\(loan\?\.guarantors_required\)\} required|Pending guarantors:|Coverage already held|money movement looks wrong/,
+  "Admin Incomplete Loans must not use broad approval or custody wording for pledge-decision coverage review."
+);
+
+assertContains(
   "src/pages/ExposureAdminPage.tsx",
   /debugId="exposure-admin\.toggle\.overview"[\s\S]*?debugId="exposure-admin\.toggle\.queues"[\s\S]*?debugId="exposure-admin\.route\.system-operations"[\s\S]*?debugId="exposure-admin\.route\.bank-console"/,
   "Exposure Admin toggles and route actions must remain traceable."
 );
 
 assertContains(
+  "src/pages/ExposureAdminPage.tsx",
+  /Pledge decisions[\s\S]*?Pending pool finance review[\s\S]*?practical risk reading; it is not settlement, release authority, or evidence that money moved[\s\S]*?locked pledge coverage/,
+  "Exposure Admin must frame exposure as a risk reading and pledge-coverage review, not settlement, release authority, or payment proof."
+);
+
+assertNotContains(
+  "src/pages/ExposureAdminPage.tsx",
+  /locked money|Pending pool confirmation|pool confirmation|Clean bank events|`Approved \$\{toNum\(row\.approved_count\)\}/,
+  "Exposure Admin must not use broad money, confirmation, or approval wording for exposure readings."
+);
+
+assertContains(
   "src/pages/ExposurePage.tsx",
   /debugId="exposure\.run-overdue"[\s\S]*?debugId="exposure\.refresh"[\s\S]*?debugId="exposure\.load-cci"[\s\S]*?debugId="exposure\.open-trust-analytics"/,
   "Exposure operational actions must remain traceable."
+);
+
+assertContains(
+  "src/pages/ExposurePage.tsx",
+  /Exposure is a recorded risk reading from locked pledge coverage minus release records[\s\S]*?not settlement, release authority, or evidence that money moved/,
+  "Legacy Exposure page must frame exposure as a recorded risk reading, not settlement, release authority, or payment proof."
+);
+
+assertNotContains(
+  "src/pages/ExposurePage.tsx",
+  /Exposure = sum\(locked|approved guarantees/,
+  "Legacy Exposure page must not describe exposure as broad approved-guarantee settlement math."
 );
 
 assertContains(

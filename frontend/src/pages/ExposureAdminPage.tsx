@@ -665,8 +665,8 @@ export default function ExposureAdminPage() {
       ),
       detail: [
         row.role ? `Role: ${row.role}` : "",
-        `Exposure: ${toNum(row.exposure)}`,
-        `Available: ${toNum(row.available)}`,
+        `Exposure reading: ${toNum(row.exposure)}`,
+        `Available buffer: ${toNum(row.available)}`,
       ]
         .filter(Boolean)
         .join(" | "),
@@ -678,7 +678,7 @@ export default function ExposureAdminPage() {
       key: `incomplete-${firstTruthy(row.id, row.loan_id, Math.random())}`,
       title: `Incomplete loan ${firstTruthy(row.loan_id, row.id, "")}`.trim(),
       detail: [
-        `Approved ${toNum(row.approved_count)} / ${toNum(row.required_count)}`,
+        `Pledge decisions ${toNum(row.approved_count)} / ${toNum(row.required_count)}`,
         row.required_gap != null ? `Gap ${toNum(row.required_gap)}` : "",
         toNum(row.auto_cancel_remaining_seconds) > 0
           ? `${toNum(row.auto_cancel_remaining_seconds)}s remaining`
@@ -719,7 +719,7 @@ export default function ExposureAdminPage() {
 
     const poolQueue = pendingPool.slice(0, 4).map((row) => ({
       key: `pool-${firstTruthy(row.id, row.reference, Math.random())}`,
-      title: "Pending pool confirmation",
+      title: "Pending pool finance review",
       detail: [
         firstTruthy(row.event_type, "Pool event"),
         row.amount && row.currency ? `${row.amount} ${row.currency}` : "",
@@ -794,7 +794,7 @@ export default function ExposureAdminPage() {
       <ExplainToggle
         label="How to use this"
         what="This page reads exposure, stale demand, bank pressure, and admin queues together."
-        why="Exposure is a practical risk picture, not only a money number."
+        why="Exposure is a practical risk reading; it is not settlement, release authority, or evidence that money moved."
         next="Start with current pressure, then open the route that matches the cause."
         tone="light"
       />
@@ -826,7 +826,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Read locked money, stale demand, pending pool, and bank pressure in one place.
+              Read locked pledge coverage, stale demand, pending pool review, and bank pressure in one place.
             </div>
 
             <div
@@ -1055,7 +1055,7 @@ export default function ExposureAdminPage() {
                 Concentration pressure
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Shows how much community value is locked and who is close to the edge.
+                Shows locked pledge coverage readings and who is close to the edge.
               </div>
 
               <div
@@ -1291,7 +1291,7 @@ export default function ExposureAdminPage() {
                 {actionLabel("bank", "Bank Console", "blue")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Clean bank events, pool confirmation, and money-path records.
+                Review bank events, pool finance review, and money-path records.
               </div>
             </StableCtaLink>
           </div>

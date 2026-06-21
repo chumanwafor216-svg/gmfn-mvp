@@ -1236,7 +1236,7 @@ export default function LoanWorkbenchPage() {
         label="What this screen does"
         what="This is the detailed workspace for one support item."
         why="It keeps the loan, gap, and supporter work together."
-        next="Confirm the item, then use the summary or supporter section."
+        next="Workbench readings and suggested pledges are decision support only; they do not approve a loan, approve a guarantor, or authorize release of goods, credit, or money."
         tone="blue"
       />
 
@@ -1965,7 +1965,8 @@ export default function LoanWorkbenchPage() {
           <div>
             <div style={sectionLabel()}>Guarantor fit and request queue</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Candidate quality and guarantor request state stay together here.
+              Candidate quality and guarantor request state stay together here;
+              fit rows do not approve a guarantor or authorize release.
             </div>
           </div>
 
@@ -2071,7 +2072,7 @@ export default function LoanWorkbenchPage() {
                             ? `Total requests: ${String(item.totalRequests)}`
                             : "",
                           item.approved != null
-                            ? `Approved: ${String(item.approved)}`
+                            ? `Past pledge approvals: ${String(item.approved)}`
                             : "",
                           item.declined != null
                             ? `Declined: ${String(item.declined)}`

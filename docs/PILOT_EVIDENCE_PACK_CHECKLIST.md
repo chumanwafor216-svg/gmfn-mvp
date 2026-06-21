@@ -8,12 +8,12 @@ This checklist defines what must be captured before GSN can call the pilot
 evidence pack complete.
 
 Unabated truth: this file is not evidence by itself. It is the acceptance map
-for screenshots, PDFs, route proofs, and limitation notes that still need to be
+for screenshots, PDFs, route evidence, and limitation notes that still need to be
 captured from the working system.
 
 ## Evidence Rules
 
-- Use GSN-branded proof surfaces wherever the system provides them.
+- Use GSN-branded evidence surfaces wherever the system provides them.
 - Prefer phone screenshots at 390x844 or the closest real device size.
 - Capture one clear state per screenshot: state, key facts, and next action.
 - Do not expose raw private IDs, full bank details, full phone numbers, or
@@ -24,11 +24,11 @@ captured from the working system.
   - `Accepted`
   - `Rejected`
 - A route is not accepted only because it builds. Acceptance needs local/phone
-  visual proof or a generated PDF opened and reviewed.
+  visual evidence or a generated PDF opened and reviewed.
 
 ## Required Evidence Index
 
-| Area | Required proof | Current status | Acceptance rule |
+| Area | Required evidence | Current status | Acceptance rule |
 | --- | --- | --- | --- |
 | Entry flow | Cover, Welcome, Sign In, Create Community, Join Request path | Not captured | First viewport shows one clear action, no pre-auth bottom nav, and no route confusion. |
 | Community Home | Community identity, next action chooser, compact owner rows | Not captured | 3D icons are readable, no oversized blocks, and owner tools are grouped rather than dumped. |
@@ -37,9 +37,9 @@ captured from the working system.
 | Finance | Money-in, money-out, repayment, revenue and evidence routes | Not captured | Finance uses institutional money meaning, not weak wallet-only imagery, and states what GSN can and cannot do. |
 | Loan request | Borrower draft, readiness, guarantor fit, decision path | Not captured | Borrowing state, needed support, and next action are visible without decoding backend terms. |
 | Repayment | Full-balance choice, part-payment choice, payment instruction | Not captured | Screenshot shows selected amount, outstanding amount, and that part payment is not a scheduled instalment calendar. |
-| Guarantor flow | Invite, decision, exposure release, earnings | Not captured | Proof shows who can invite, what a guarantor is accepting, when exposure releases, and that earnings are not automatic payout. |
-| Trust Passport | Identity, trust summary, evidence/document lane | Not captured | Looks like a dignified GSN proof surface with watermark/mark, limitation statement, and clear next action. |
-| TrustSlip Verify | Public proof and private evidence view | Not captured | Public paper is shareable without private overload; private evidence stays clearly separate. |
+| Guarantor flow | Invite, decision, exposure release, earnings | Not captured | Evidence shows who can invite, what a guarantor is accepting, when exposure releases, and that earnings are not automatic payout. |
+| Trust Passport | Identity, trust summary, evidence/document lane | Not captured | Looks like a dignified GSN evidence surface with watermark/mark, limitation statement, and clear next action. |
+| TrustSlip Verify | Public evidence and private evidence view | Not captured | Public paper is shareable without private overload; private evidence stays clearly separate. |
 | Evidence PDFs | Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Community Exposure | Not captured | Generated PDF opens visually with GSN title, watermark/header/footer, generated time, and a clear "not a bank guarantee" limitation statement. |
 | Admin readiness | Protocol status and pilot readiness partials | Not captured | Partial labels explain what is complete, what remains, why it matters, and the next route. |
 
@@ -66,7 +66,7 @@ pilot_evidence_pack/
 
 Do not commit private captured evidence unless it is intentionally redacted and
 approved for the repository. During the active pilot, treat the local evidence
-folder as working proof, not public documentation.
+folder as working evidence, not public documentation.
 
 ## Acceptance Notes
 
@@ -86,11 +86,11 @@ Each accepted item should record:
   report generators, including generated time, reference, watermark/header/footer,
   and the "not a bank guarantee" limitation.
 - Copy/snapshot text packages still need the same institutional GSN treatment
-  before they are accepted as customer-facing proof: clear `GSN Snapshot` title,
+  before they are accepted as customer-facing evidence: clear `GSN Snapshot` title,
   GSN mark or watermark, official frame, holder/community context, generated
   time or reference, and a limitation/currentness note.
-- The working route/page inventory for this proof-surface rollout is
-  `docs/INSTITUTIONAL_PROOF_SURFACE_INVENTORY.md`.
+- The working route/page inventory for this evidence-surface rollout is
+  `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`.
 - Several web routes have received route-local polish, icon, button, and
   language passes.
 - The evidence pack is still partial until accepted screenshots/PDFs are

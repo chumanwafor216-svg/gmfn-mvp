@@ -791,7 +791,7 @@ export default function GuarantorInboxPage() {
         tone: "success",
         text:
           status === "approved"
-            ? "Support approved. GSN has recorded your guarantor response and will update the loan progress."
+            ? "Pledge response approved. GSN has recorded your guarantor response; this is not loan approval or money-release authority."
             : "Support declined. GSN has recorded your response so the borrower can continue clearly.",
       });
       await loadInbox();
@@ -821,7 +821,7 @@ export default function GuarantorInboxPage() {
         label="What this screen does"
         what="This page is the incoming queue for guarantor requests that need your response."
         why="Finance keeps the money record. Guarantor Inbox keeps the live response queue so you can act clearly without mixing it with borrower work."
-        next="Read the queue context first, then open the request or route that needs your next guarantor decision."
+        next="Approving here records your guarantor pledge response only; it does not approve the loan or authorize release of goods, credit, or money."
         tone="blue"
         style={{ marginTop: 18 }}
       />
@@ -1421,8 +1421,9 @@ export default function GuarantorInboxPage() {
               </div>
               <div style={{ marginTop: 10, ...helperText() }}>
                 This queue is where incoming guarantor decisions first become visible.
-                It is not the final step. Once you choose a request,
-                the deeper workbench should take over.
+                Approving a request records your pledge response only; it is not
+                whole-loan approval or permission to release goods, credit, or money.
+                Once you choose a request, the deeper workbench should take over.
               </div>
             </div>
 

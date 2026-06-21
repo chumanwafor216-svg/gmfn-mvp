@@ -389,7 +389,7 @@ function buildPayoutSummary(
 
   return buildGsnPaymentInstructionPackage({
     title: "GSN Payout Details Snapshot",
-    purpose: "Review the payout destination saved for approved withdrawals.",
+    purpose: "Review the payout destination record for the Money Out route. This record does not approve or execute a withdrawal.",
     memberName: context.memberName,
     gsnId: context.gsnId,
     communityName: context.communityName,
@@ -439,7 +439,7 @@ export default function PayoutDetailsPage() {
   const [loadedFromServer, setLoadedFromServer] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
-  const [proofFeedback, setProofFeedback] = useState<TrustEventFeedback>(null);
+  const [evidenceFeedback, setEvidenceFeedback] = useState<TrustEventFeedback>(null);
 
   const [form, setForm] = useState<PayoutForm>({
     account_name: "",
@@ -523,7 +523,7 @@ export default function PayoutDetailsPage() {
     const timer = window.setTimeout(() => {
       setMsg("");
       setErr("");
-      setProofFeedback(null);
+      setEvidenceFeedback(null);
     }, 2600);
 
     return () => window.clearTimeout(timer);
@@ -595,17 +595,17 @@ export default function PayoutDetailsPage() {
     return {
       title: "Keep the payout destination ready for withdrawal",
       detail:
-        "This destination is ready for approved withdrawals.",
+        "This destination record is ready for the Money Out route, but it does not approve or execute a withdrawal.",
       today: "Review the details before withdrawal.",
       tomorrow:
-        "Use Withdrawal Instructions when approval is ready.",
+        "Use Withdrawal Instructions when a withdrawal request is ready for review.",
     };
   }, [selectedClanId, isReady, needsUkSortCode]);
 
   function update<K extends keyof PayoutForm>(key: K, value: PayoutForm[K]) {
     setMsg("");
     setErr("");
-    setProofFeedback(null);
+    setEvidenceFeedback(null);
     setForm((prev) => ({
       ...prev,
       [key]: key === "sort_code" ? normalizeSortCode(String(value)) : value,
@@ -630,7 +630,7 @@ export default function PayoutDetailsPage() {
 
       const saved = await updateWithdrawalDestination(payload);
 
-      setProofFeedback({
+      setEvidenceFeedback({
         confirmation_message: safeStr(saved?.confirmation_message),
         verification_status: safeStr(saved?.verification_status),
         verification_note: safeStr(saved?.verification_note),
@@ -646,7 +646,7 @@ export default function PayoutDetailsPage() {
           "Payout details saved on the system and kept locally for continuity."
       );
     } catch {
-      setProofFeedback(null);
+      setEvidenceFeedback(null);
       setErr("Payout details could not be saved on the system.");
     }
   }
@@ -666,7 +666,7 @@ export default function PayoutDetailsPage() {
       });
 
       setErr("");
-      setProofFeedback(null);
+      setEvidenceFeedback(null);
       setMsg("Local payout details cleared.");
     } catch {
       setErr("Local payout details could not be cleared.");
@@ -675,7 +675,7 @@ export default function PayoutDetailsPage() {
 
   function copySummary() {
     safeCopy(payoutSummaryPaper);
-    setProofFeedback(null);
+    setEvidenceFeedback(null);
     setErr("");
     setMsg("Payout summary copied.");
   }
@@ -685,7 +685,7 @@ export default function PayoutDetailsPage() {
       <PageTopNav
         sectionLabel="Bank / Wallet Details"
         title="Bank / Wallet Details"
-        subtitle="Save the destination for approved withdrawals."
+        subtitle="Save the destination record for the Money Out route."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.moneyOut}
@@ -1026,7 +1026,7 @@ export default function PayoutDetailsPage() {
 
         {err ? <div style={{ ...feedbackCard(false), marginTop: 14 }}>{err}</div> : null}
         {msg ? <div style={{ ...feedbackCard(true), marginTop: 14 }}>{msg}</div> : null}
-        {proofFeedback ? (
+        {evidenceFeedback ? (
           <div
             style={{
               marginTop: 12,
@@ -1042,12 +1042,12 @@ export default function PayoutDetailsPage() {
           >
             <div style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 1000 }}>
               <GsnLegacyIcon name="check" size={28} />
-              {safeStr(proofFeedback.confirmation_message) ||
+              {safeStr(evidenceFeedback.confirmation_message) ||
                 "Your payout destination has been recorded."}
             </div>
             <div style={{ lineHeight: 1.5 }}>
-              {safeStr(proofFeedback.trust_event_response?.message) ||
-                safeStr(proofFeedback.verification_note) ||
+              {safeStr(evidenceFeedback.trust_event_response?.message) ||
+                safeStr(evidenceFeedback.verification_note) ||
                 "External bank ownership verification is still a separate connection."}
             </div>
           </div>

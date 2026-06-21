@@ -67,6 +67,18 @@ assertContains(
 
 assertContains(
   "paymentRails",
+  /Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out routes\./,
+  "Payment Rails must separate visible rail status from payment approval, settlement confirmation, or money movement."
+);
+
+assertContains(
+  "paymentRails",
+  /Status-active: \{loading \? "\.\.\." : activeCount\}[\s\S]*?Inbound status-active[\s\S]*?Outbound status-active/,
+  "Payment Rails active counters must read as status-active rail signals."
+);
+
+assertContains(
+  "paymentRails",
   /debugId="payment-rails\.route\.money-in"[\s\S]*?debugId="payment-rails\.route\.money-out"[\s\S]*?debugId="payment-rails\.route\.readiness"[\s\S]*?debugId="payment-rails\.route\.workbench"/,
   "Payment Rails route buttons must keep traceable follow-on routes."
 );

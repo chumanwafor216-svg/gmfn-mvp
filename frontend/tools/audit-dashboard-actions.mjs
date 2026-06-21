@@ -197,12 +197,12 @@ assertContains(
 
 assertContains(
   /data-dashboard-passport-reference="gsn-trust-card"[\s\S]*?Your trust[\s\S]*?first currency[\s\S]*?Frame tools[\s\S]*?aria-label="GSN Global Support Network connector"[\s\S]*?Global Support Network[\s\S]*?Verifiable identity you can see[\s\S]*?Your identity, anytime, anywhere[\s\S]*?Accepted and trusted where it matters[\s\S]*?<GSNBrandMark width=\{isPhone \? 70 : 90\}[\s\S]*?GSN Global ID[\s\S]*?Issued by GSN[\s\S]*?Status:/,
-  "Dashboard passport must keep the supplied GSN trust-card reference treatment: framed headline, floating Frame tools, central GSN connector, light proof icons, watermark, and truthful issued/status metadata."
+  "Dashboard passport must keep the supplied GSN trust-card reference treatment: framed headline, floating Frame tools, central GSN connector, light evidence icons, watermark, and truthful issued/status metadata."
 );
 
 assertContains(
-  /passportGlobalIdDisplay[\s\S]*?GSN Global ID[\s\S]*?Your verified identity across the network[\s\S]*?globalIdParts[\s\S]*?\{passportGlobalIdDisplay\}/,
-  "Dashboard passport Global ID block must keep the simplified verified identity card with the formal passport-style ID display."
+  /passportGlobalIdDisplay[\s\S]*?GSN Global ID[\s\S]*?Your GSN identity record across the network[\s\S]*?globalIdParts[\s\S]*?\{passportGlobalIdDisplay\}/,
+  "Dashboard passport Global ID block must keep the simplified identity-record card with the formal passport-style ID display."
 );
 
 assertNotContains(

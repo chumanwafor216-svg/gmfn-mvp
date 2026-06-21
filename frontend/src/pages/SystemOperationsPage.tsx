@@ -651,7 +651,7 @@ export default function SystemOperationsPage() {
           ? "Manual photo review accepted and recorded in the Trust Event trail. This is not provider KYC."
           : decision === "reject"
             ? "Manual photo review rejected and recorded for follow-up."
-            : "Photo evidence marked as needing clearer proof before trust can use it."
+            : "Photo evidence marked as needing clearer evidence before trust can use it."
       );
     } catch (err: any) {
       setReviewMessage(
@@ -799,7 +799,7 @@ export default function SystemOperationsPage() {
     }
 
     if (pilotIntakeSummary.createAwaitingBank > 0) {
-      return "Some creators have phone proof ready and only need bank or wallet details recorded.";
+      return "Some creators have phone evidence ready and only need bank or wallet details recorded.";
     }
 
     if (pilotIntakeSummary.joinPending > 0) {
@@ -834,8 +834,8 @@ export default function SystemOperationsPage() {
       return {
         detail:
           bankUnmatched.length === 1
-            ? "One bank event is still unmatched. Reconcile it before treating the finance reading as settled."
-            : `${bankUnmatched.length} bank events are still unmatched. Reconcile them before treating the finance reading as settled.`,
+            ? "One bank event is still unmatched. Reconcile it before treating the finance reading as settlement-ready."
+            : `${bankUnmatched.length} bank events are still unmatched. Reconcile them before treating the finance reading as settlement-ready.`,
       };
     }
 
@@ -857,8 +857,8 @@ export default function SystemOperationsPage() {
       return {
         detail:
           pendingPool.length === 1
-            ? "One pool event is waiting for confirmation. Confirm it before the money queue drifts."
-            : `${pendingPool.length} pool events are waiting for confirmation. Confirm them before the money queue drifts.`,
+            ? "One pool event is waiting for finance review. Record its review before the money queue drifts."
+            : `${pendingPool.length} pool events are waiting for finance review. Record their review before the money queue drifts.`,
       };
     }
 
@@ -878,7 +878,7 @@ export default function SystemOperationsPage() {
     if (expectedPayments.length > 0) {
       return {
         detail:
-          "Expected payment items are still open. Keep the money path readable until those expectations settle.",
+          "Expected payment items are still open. Keep the money path readable until those expectations clear through finance evidence.",
       };
     }
 
@@ -946,7 +946,7 @@ export default function SystemOperationsPage() {
           kind: "loan.incomplete",
           title: "Incomplete loan queue item",
           detail: [
-            `Approved ${toNum(row?.approved_guarantors)}/${toNum(
+            `Pledge decisions ${toNum(row?.approved_guarantors)}/${toNum(
               row?.guarantors_required
             )}`,
             row?.required_gap != null ? `Gap ${row.required_gap}` : "",
@@ -967,7 +967,7 @@ export default function SystemOperationsPage() {
         makeSystemRow({
           id: `pool-pending-${row?.id || index}`,
           kind: "pool.pending",
-          title: "Pool confirmation pending",
+          title: "Pool finance review pending",
           detail: [
             firstTruthy(row?.event_type, "Pool event"),
             row?.amount && row?.currency ? `${row.amount} ${row.currency}` : "",
@@ -1654,7 +1654,7 @@ export default function SystemOperationsPage() {
                                           handleIdentityPhotoDecision(checkId, "needs_more")
                                         }
                                       >
-                                        {actionLabel("image", "Clearer proof", "gold")}
+                                        {actionLabel("image", "Clearer evidence", "gold")}
                                       </StableButton>
 
                                       <StableButton

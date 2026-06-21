@@ -1124,7 +1124,7 @@ export default function LoanSummaryPage() {
         tone: "success",
         text:
           status === "approved"
-            ? "Guarantor approved successfully."
+            ? "Guarantor pledge decision recorded. This is not whole-loan approval or release authority."
             : "Guarantor declined successfully.",
       });
 
@@ -1168,7 +1168,7 @@ export default function LoanSummaryPage() {
         actionLink: auditLink,
         detailLines: [
           `Required guarantors: ${requiredCount}`,
-          `Approved guarantors: ${approvedCount}`,
+          `Approved pledges: ${approvedCount}`,
           `Pending guarantors: ${pendingGuarantors.length}`,
           "This package points to the current trust analytics review route for the support item.",
         ],
@@ -1220,7 +1220,7 @@ export default function LoanSummaryPage() {
       status: safeStr(summary.status),
       detailLines: [
         `Required guarantors: ${requiredCount}`,
-        `Approved guarantors: ${approvedCount}`,
+        `Approved pledges: ${approvedCount}`,
         `Pending guarantors: ${pendingGuarantors.length}`,
         summary.remaining_amount != null
           ? `Remaining amount: ${fmtMoney(summary.remaining_amount, currency)}`
@@ -1610,7 +1610,7 @@ export default function LoanSummaryPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Approved guarantors</div>
+              <div style={sectionLabel()}>Approved pledges</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1740,7 +1740,7 @@ export default function LoanSummaryPage() {
                 </div>
 
                 <div style={statTile("#F8FBFF")}>
-                  <div style={sectionLabel()}>Net disbursed</div>
+                  <div style={sectionLabel()}>Net disbursed preview</div>
                   <div
                     style={{
                       marginTop: 8,
@@ -1750,6 +1750,14 @@ export default function LoanSummaryPage() {
                     }}
                   >
                     {fmtMoney(revenuePreview.net_disbursed_amount, currency)}
+                  </div>
+                </div>
+
+                <div style={{ ...statTile("#FFFBEF"), gridColumn: "1 / -1" }}>
+                  <div style={sectionLabel()}>Allocation boundary</div>
+                  <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                    Allocation preview only; it is not payment instruction,
+                    settlement confirmation, or evidence that money has moved.
                   </div>
                 </div>
               </>
@@ -1802,7 +1810,7 @@ export default function LoanSummaryPage() {
             label="How to use these decisions"
             what="Review pending guarantors one by one."
             why="Each decision stays visible and deliberate."
-            next="Approve or decline only the rows that are ready."
+            next="Approve pledge or decline only the rows that are ready; this records a guarantor pledge decision, not whole-loan approval or release authority."
             tone="light"
             style={{ marginTop: 12 }}
           />
@@ -2303,6 +2311,10 @@ export default function LoanSummaryPage() {
 
           <div style={pageCard("#FFFFFF")}>
             <div style={sectionLabel()}>Revenue allocation preview</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Allocation preview only; it is not payment instruction,
+              settlement confirmation, or evidence that money has moved.
+            </div>
 
             {revenuePreview ? (
               <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -2356,7 +2368,7 @@ export default function LoanSummaryPage() {
 
                 <div style={innerCard("#FCFEFF")}>
                   <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
-                    Net disbursed
+                    Net disbursed preview
                   </div>
                   <div
                     style={{

@@ -697,7 +697,7 @@ export default function GuarantorEarningsPage() {
           "Your next move is to watch the active support flow, not to ignore it. Earnings become meaningful when the support cycle closes properly.",
         today: "Review the active support items and keep the pending work moving.",
         tomorrow:
-          "Settled support creates clearer earnings and stronger visible contribution.",
+          "Closed-support records create clearer earnings and stronger visible contribution.",
         ctaLabel: "Return to Loans & Support",
         ctaTo: routes.loans,
       };
@@ -739,7 +739,7 @@ export default function GuarantorEarningsPage() {
     () =>
       buildGsnSupportEvidencePackage({
         title: "GSN Guarantor Earnings Snapshot",
-        purpose: "Review visible guarantor value, settled items, and pending items for this member.",
+        purpose: "Review visible guarantor value, closed-support records, and pending items for this member.",
         reference: `guarantor-earnings-${communityPublicId || selectedClanId || "current"}`,
         memberName,
         gsnId: gmfnId,
@@ -754,7 +754,7 @@ export default function GuarantorEarningsPage() {
           `Potential share: ${fmtMoney(totals.estimatedTotal)} ${currency}`,
           `This month: ${fmtMoney(totals.thisMonth)} ${currency}`,
           `This year: ${fmtMoney(totals.thisYear)} ${currency}`,
-          `Settled items: ${totals.settledCount}`,
+          `Closed-support records: ${totals.settledCount}`,
           `Pending items: ${totals.pendingCount}`,
           GUARANTOR_EARNINGS_PAYOUT_TRUTH,
         ],
@@ -983,7 +983,7 @@ export default function GuarantorEarningsPage() {
               <span style={badge(true)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Currency: {currency}</span>
-              <span style={badge(false)}>Settled: {totals.settledCount}</span>
+              <span style={badge(false)}>Closed-support records: {totals.settledCount}</span>
               <span style={badge(false)}>Pending: {totals.pendingCount}</span>
             </div>
 
@@ -1331,7 +1331,7 @@ export default function GuarantorEarningsPage() {
                     const status = safeStr(earning?.status || "Not available yet");
                     const tone = statusTone(status);
                     const settled = isSettledStatus(status);
-                    const amountLabel = settled ? "EARNED" : "POTENTIAL SHARE";
+                    const amountLabel = settled ? "RECORDED EARNED VALUE" : "POTENTIAL SHARE";
                     const amountValue = settled ? payableValue(earning) : estimatedValue(earning);
 
                     return (

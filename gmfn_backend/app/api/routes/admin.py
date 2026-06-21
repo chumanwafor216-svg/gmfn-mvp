@@ -178,9 +178,9 @@ def _entry_next_action(stage: str) -> str:
     if stage == "ready_for_community":
         return "Phone and bank or wallet details are ready. The tester should finish community setup."
     if stage == "awaiting_bank":
-        return "Phone proof is ready. The tester should add bank or wallet details."
+        return "Phone evidence is ready. The tester should add bank or wallet details."
     if stage == "awaiting_phone":
-        return "The tester started entry but phone proof is not complete yet."
+        return "The tester started entry but phone evidence is not complete yet."
     if stage == "expired":
         return "The pilot session expired before completion. Ask the tester to start again with the same name, phone, and email."
     return "Review this intake record."
@@ -311,7 +311,7 @@ def admin_identity_verification_decision(
         check.confidence_score = 0
         check.explanation = (
             "Photo/selfie evidence was reviewed and could not be accepted. "
-            "A clearer selfie, passport photo, or identity photo is needed before this proof can support trust."
+            "A clearer selfie, passport photo, or identity photo is needed before this evidence can support trust."
         )
         event_type = "identity.photo_evidence_rejected"
         event_reason = "identity_photo_manual_review_rejected"

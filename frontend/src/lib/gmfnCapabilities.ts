@@ -169,7 +169,7 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     title: "Contribution Tracking",
     proverb: "Contribution Tracking turns memory into visible economic record.",
     gmfn:
-      "GSN helps contribution history become visible proof so access and accountability improve together.",
+      "GSN helps contribution history become visible evidence so access and accountability improve together.",
     category: "finance",
     tone: "focus",
     priority: 6,
@@ -196,7 +196,7 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     whatItIs:
       "Portable Trust Identity helps a member carry their good name beyond the street, market, family, or community where people already know them.",
     howItWorks:
-      "Trust Passport keeps the fuller record of money promises, repayment behaviour, support given, guarantor responsibility, identity continuity, and verified community behaviour. TrustSlip gives a smaller proof that can be checked before a seller releases goods on credit, before a loan is approved, or before someone accepts risk.",
+      "Trust Passport keeps the fuller record of money promises, repayment behaviour, support given, guarantor responsibility, identity continuity, and recorded community-backed behaviour. TrustSlip gives a smaller evidence record that can be checked before a seller releases goods on credit, before a loan is approved, or before someone accepts risk.",
     whyItMatters:
       "GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.",
   },

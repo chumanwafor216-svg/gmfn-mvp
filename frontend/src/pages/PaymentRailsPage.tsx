@@ -714,7 +714,7 @@ export default function PaymentRailsPage() {
         tone: "green",
         title: "Inbound and outbound rails are both visible",
         detail:
-          "Both money directions are at least partly visible here, but action should still happen on the guided Money In and Money Out routes.",
+          "Both money directions are at least partly visible here. Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out routes.",
         nowLine: "Understand rail visibility here, not act here.",
         nextLine: "Return to Money In or Money Out when you are ready to act.",
       };
@@ -835,7 +835,7 @@ export default function PaymentRailsPage() {
               <span style={badge(true)}>Total rails: {loading ? "..." : rails.length}</span>
               <span style={badge(false)}>Inbound: {loading ? "..." : inboundRails.length}</span>
               <span style={badge(false)}>Outbound: {loading ? "..." : outboundRails.length}</span>
-              <span style={badge(false)}>Active: {loading ? "..." : activeCount}</span>
+              <span style={badge(false)}>Status-active: {loading ? "..." : activeCount}</span>
             </div>
 
             <div
@@ -979,7 +979,7 @@ export default function PaymentRailsPage() {
         }}
       >
         <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Inbound active</div>
+          <div style={sectionLabel()}>Inbound status-active</div>
           <div
             style={{
               marginTop: 8,
@@ -993,7 +993,7 @@ export default function PaymentRailsPage() {
         </div>
 
         <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Outbound active</div>
+          <div style={sectionLabel()}>Outbound status-active</div>
           <div
             style={{
               marginTop: 8,
@@ -1098,7 +1098,7 @@ export default function PaymentRailsPage() {
         <ExplainToggle
           label="What this does"
           what="This groups inbound, outbound, and general rails."
-          why="It shows which direction looks active or limited."
+          why="It shows which direction looks status-active or limited without approving payment or settlement."
           next="Continue on the matching guided money page."
           tone="light"
           style={{ marginTop: 16 }}

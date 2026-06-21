@@ -140,7 +140,7 @@ Community confirmation
 
 ### Public Wording
 
-This person is part of a verified community. If you need stronger assurance for a higher-risk decision, GSN can request response-based confirmation from eligible community members without exposing private details by default.
+This person has recorded community membership evidence. If you need stronger assurance for a higher-risk decision, GSN can request response-based confirmation from eligible community members without exposing private details by default.
 
 ### Visible Public Fields
 
@@ -600,7 +600,7 @@ The internal audit trail must not be anonymous to GSN.
 
 Community confirmation
 
-This person is part of a verified community. If you need stronger assurance for a higher-risk decision, GSN can request confirmation from approved community contacts without exposing private details by default.
+This person has recorded community membership evidence. If you need stronger assurance for a higher-risk decision, GSN can request confirmation from approved community contacts without exposing private details by default.
 
 Buttons:
 

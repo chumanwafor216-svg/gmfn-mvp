@@ -1,7 +1,7 @@
-# GSN RGU Phone Proof Path Checklist
+# GSN RGU Phone Evidence Path Checklist
 
 Date: 15 May 2026  
-Use this after the laptop-side proof-path audit.  
+Use this after the laptop-side evidence-path audit.
 Phone URL: `http://192.168.1.38:5173/reset`, then continue from `/cover` or `/login`.
 
 ---
@@ -31,7 +31,7 @@ Known phone number sign-in format:
 
 Do not use `447903165266` without the `+`; that version fails locally.
 
-For the workshop proof path, use the Amara demo account, not the admin account.
+For the workshop evidence path, use the Amara demo account, not the admin account.
 
 ---
 
@@ -43,7 +43,7 @@ Do not test the app like a normal full feature tour. Test one story:
 
 Every page should answer one question:
 
-**Does this page help prove portable trust, or is it noise?**
+**Does this page help show portable trust evidence, or is it noise?**
 
 ---
 
@@ -180,7 +180,7 @@ Laptop audit expectation:
   - Holder: `Amara Okafor`
   - Community: `Lagos Trusted Circle Market`
 
-This is now the main local proof example. The old admin account remains useful as a rejection/caution example.
+This is now the main local evidence example. The old admin account remains useful as a rejection/caution example.
 
 ---
 
@@ -191,9 +191,9 @@ When you test on phone, bring back only these four types of correction:
 1. Page does not open or stays blank.
 2. Page opens but sends you to the wrong place.
 3. Text or button is confusing on phone.
-4. Trust story breaks because the page does not prove the next step.
+4. Trust story breaks because the page does not show the next evidence step.
 
-Do not worry about every minor feature yet. The job is to protect the proof line.
+Do not worry about every minor feature yet. The job is to protect the evidence line.
 
 ---
 
@@ -205,7 +205,7 @@ Current judgment:
 
 Reason:
 
-The proof data now supports the portable-trust story on the backend. The remaining job is to confirm the phone UI is clear, reachable, and not confusing.
+The evidence data now supports the portable-trust story on the backend. The remaining job is to confirm the phone UI is clear, reachable, and not confusing.
 
 The demo account now has:
 

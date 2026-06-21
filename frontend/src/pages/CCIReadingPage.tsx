@@ -431,7 +431,7 @@ export default function CCIReadingPage() {
                 minWidth={isCompact ? undefined : 178}
                 debugId="cci-reading.trust"
               >
-                {labelWithIcon("proof", "Open Trust Passport")}
+                {labelWithIcon("evidence", "Open Trust Passport")}
               </StableCtaLink>
               <SecondaryButton
                 onClick={copyCciSnapshot}
@@ -451,7 +451,7 @@ export default function CCIReadingPage() {
         storageKey="gmfn.cciReading.nextActionGuide.v1"
         compact={isCompact}
         items={guideItems}
-        intro="Choose the next trust step in plain language. GSN will point you to the right proof surface."
+        intro="Choose the next trust step in plain language. GSN will point you to the right evidence surface."
         onSelect={handleGuideSelect}
       />
 
@@ -459,14 +459,14 @@ export default function CCIReadingPage() {
         compact={isCompact}
         items={familyItems}
         title="Where consistency sits inside the trust-document family"
-        intro="Use this map to decide whether you need this narrow reading, a fuller trust story, portable proof, or public verification."
+        intro="Use this map to decide whether you need this narrow reading, a fuller trust story, a portable record, or public verification."
       />
 
       <TrustDocumentUseCases
         compact={isCompact}
         items={trustDocumentUseCases}
         title="Which trust question should stay here?"
-        intro="Stay here for the wider consistency read. Move to another trust surface when someone needs identity, proof, or public verification."
+        intro="Stay here for the wider consistency read. Move to another trust surface when someone needs identity, evidence, or public verification."
       />
 
       <section style={pageCard("#FFFFFF")}>
@@ -491,7 +491,7 @@ export default function CCIReadingPage() {
 
           <div style={innerCard("#FFFFFF")}>
             <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
-              Do not stop here if you need proof
+              Do not stop here if you need evidence
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               For a portable document or public verify code, open TrustSlip or

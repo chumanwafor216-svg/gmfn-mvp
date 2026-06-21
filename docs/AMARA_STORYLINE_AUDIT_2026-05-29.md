@@ -33,12 +33,12 @@ If a screen cannot answer that question quickly, it is noise for this storyline.
 | Community layer | `/app/community` | Show where Amara belongs and where her communities live. | Community Home can support the story, but it must not become a feature dump during the audit. |
 | Marketplace / shop | `/app/marketplace`, `/app/shop-control` | Show the real-world activity context that can create evidence. | Use only as evidence context. Do not let marketplace tools swallow the portable-trust message. |
 | Trust Passport | `/app/trust` | Explain the full trust story behind Amara. | Structurally correct. It should make clear why the TrustSlip is believable. |
-| TrustSlip | `/app/trust-slip` | Show the portable current proof. | Stronger than before: code, status, visible limit, merchant verification, and community confirmation language exist. |
-| Public verify | `/t/:code`, `/trust-slips/verify/:code/page` | Let an outsider check the current proof. | This is the strongest final proof point if the code is current and the Amara data exists in the active environment. |
+| TrustSlip | `/app/trust-slip` | Show the portable current evidence. | Stronger than before: code, status, visible limit, merchant verification, and community confirmation language exist. |
+| Public verify | `/t/:code`, `/trust-slips/verify/:code/page` | Let an outsider check the current evidence. | This is the strongest final evidence point if the code is current and the Amara data exists in the active environment. |
 
 ## Confirmed From Repo
 
-- Existing workshop audit files already define the Amara proof account and code:
+- Existing workshop audit files already define the Amara evidence account and code:
   `amara.demo@gsnworkshop.co.uk`, `GSN-DEMO-AMARA`, and `GSNAMARA2026`.
 - `frontend/src/App.tsx` contains the active route line for entry, community,
   marketplace, shop, Trust Passport, TrustSlip, and TrustSlip Verify.
@@ -71,19 +71,19 @@ If a screen cannot answer that question quickly, it is noise for this storyline.
    setup, and finish. If any step fails without explaining why and what to do
    next, Amara's story breaks before trust ever becomes portable.
 
-3. Community growth is still invite-intent, not joined-community proof.
+3. Community growth is still invite-intent, not joined-community evidence.
 
    First Circle can collect people and copy/share an invite message. That is
-   not the same as proving those people received the invite, joined, accepted,
-   or produced trust evidence. Do not oversell the first-circle card as proof
+   not the same as showing those people received the invite, joined, accepted,
+   or produced trust evidence. Do not oversell the first-circle card as evidence
    of community density until recipient activity is recorded.
 
 4. Trust activity is still split between several places.
 
-   TrustSlip tells the portable proof. Trust Passport tells the fuller story.
+   TrustSlip tells the portable evidence. Trust Passport tells the fuller story.
    Admin Trust Events and dormant/less-visible timeline surfaces carry deeper
    event trails. For Amara, the pilot needs a plain member-facing "activity
-   behind this proof" path, otherwise a verifier may ask where the evidence came
+   behind this evidence" path, otherwise a verifier may ask where the evidence came
    from and the app may feel hand-wavy.
 
 5. Merchant verification must stay decision-support, not guarantee language.
@@ -123,7 +123,7 @@ Use only this line. Do not test every product feature.
 
 Create an Amara-facing trust activity lane that connects:
 
-Trust Passport -> TrustSlip -> activity behind the proof -> public verification.
+Trust Passport -> TrustSlip -> activity behind the evidence -> public verification.
 
 This should not expose private raw admin logs. It should show ordinary evidence
 categories: identity, community membership, sponsor signals, contribution or
@@ -134,8 +134,8 @@ TrustSlip status.
 
 - Do not merge Create Community and Join Existing Community.
 - Do not make Dashboard the owner of the trust story.
-- Do not expose raw member financial or private trust records as public proof.
-- Do not claim Amara is trustworthy because the app says so. The proof must
+- Do not expose raw member financial or private trust records as public evidence.
+- Do not claim Amara is trustworthy because the app says so. The evidence must
   point to current evidence and limits.
 
 ## Audit Judgment
@@ -147,5 +147,5 @@ First Circle focus, and TrustSlip verification have all been strengthened.
 
 The remaining truth is simple: the story is only ready when the phone path can
 show a current Amara TrustSlip, explain the activity behind it, and let an
-outside verifier understand the proof without the product owner narrating every
+outside verifier understand the evidence without the product owner narrating every
 screen by hand.

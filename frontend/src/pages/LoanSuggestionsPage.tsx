@@ -1126,7 +1126,7 @@ export default function LoanSuggestionsPage() {
         label="What this screen does"
         what="This page reads the current support item and shows which people or signals look strongest for the next move."
         why="Finance keeps the money record. Suggestions keeps the fit reading, so you can judge this support path before deeper action."
-        next="Read the suggestion summary first, then use the fit reading and suggested supporters below to decide whether to continue."
+        next="Fit suggestions are decision support only; they do not approve a guarantor, approve a loan, or authorize release of goods, credit, or money."
         tone="blue"
       />
 

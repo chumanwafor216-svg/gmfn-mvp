@@ -10,84 +10,84 @@ EVIDENCE_PACK_CHECKLIST_ITEMS: list[dict[str, str]] = [
     {
         "key": "entry_flow",
         "area": "Entry flow",
-        "required_proof": "Cover, Welcome, Sign In, Create Community, Join Request path",
+        "required_evidence": "Cover, Welcome, Sign In, Create Community, Join Request path",
         "status": "not_captured",
         "acceptance_rule": "First viewport shows one clear action, no pre-auth bottom nav, and no route confusion.",
     },
     {
         "key": "community_home",
         "area": "Community Home",
-        "required_proof": "Community identity, next action chooser, compact owner rows",
+        "required_evidence": "Community identity, next action chooser, compact owner rows",
         "status": "not_captured",
         "acceptance_rule": "3D icons are readable, no oversized blocks, and owner tools are grouped rather than dumped.",
     },
     {
         "key": "marketplace",
         "area": "Marketplace",
-        "required_proof": "Main marketplace lanes, shop/opportunity route, trust/finance lane clarity",
+        "required_evidence": "Main marketplace lanes, shop/opportunity route, trust/finance lane clarity",
         "status": "not_captured",
         "acceptance_rule": "Marketplace does not overload the first screen and every visible action has a real destination or clear explanation.",
     },
     {
         "key": "shop_control",
         "area": "Shop Control",
-        "required_proof": "Status summary, public shop, vault/assets/spotlight controls",
+        "required_evidence": "Status summary, public shop, vault/assets/spotlight controls",
         "status": "not_captured",
         "acceptance_rule": "Owner controls are guided, icons are meaningful, and media/audio controls use the speaker/video meaning system.",
     },
     {
         "key": "finance",
         "area": "Finance",
-        "required_proof": "Money-in, money-out, repayment, revenue and evidence routes",
+        "required_evidence": "Money-in, money-out, repayment, revenue and evidence routes",
         "status": "not_captured",
         "acceptance_rule": "Finance uses institutional money meaning and states what GSN can and cannot do.",
     },
     {
         "key": "loan_request",
         "area": "Loan request",
-        "required_proof": "Borrower draft, readiness, guarantor fit, decision path",
+        "required_evidence": "Borrower draft, readiness, guarantor fit, decision path",
         "status": "not_captured",
         "acceptance_rule": "Borrowing state, needed support, and next action are visible without decoding backend terms.",
     },
     {
         "key": "repayment",
         "area": "Repayment",
-        "required_proof": "Full-balance choice, part-payment choice, payment instruction",
+        "required_evidence": "Full-balance choice, part-payment choice, payment instruction",
         "status": "not_captured",
         "acceptance_rule": "Screenshot shows selected amount, outstanding amount, and that part payment is not a scheduled instalment calendar.",
     },
     {
         "key": "guarantor_flow",
         "area": "Guarantor flow",
-        "required_proof": "Invite, decision, exposure release, earnings",
+        "required_evidence": "Invite, decision, exposure release, earnings",
         "status": "not_captured",
-        "acceptance_rule": "Proof shows who can invite, what a guarantor accepts, when exposure releases, and that earnings are not automatic payout.",
+        "acceptance_rule": "Evidence shows who can invite, what a guarantor accepts, when exposure releases, and that earnings are not automatic payout.",
     },
     {
         "key": "trust_passport",
         "area": "Trust Passport",
-        "required_proof": "Identity, trust summary, evidence/document lane",
+        "required_evidence": "Identity, trust summary, evidence/document lane",
         "status": "not_captured",
-        "acceptance_rule": "Looks like a dignified GSN proof surface with watermark/mark, limitation statement, and clear next action.",
+        "acceptance_rule": "Looks like a dignified GSN evidence surface with watermark/mark, limitation statement, and clear next action.",
     },
     {
         "key": "trustslip_verify",
         "area": "TrustSlip Verify",
-        "required_proof": "Public proof and private evidence view",
+        "required_evidence": "Public record check and private evidence view",
         "status": "not_captured",
         "acceptance_rule": "Public paper is shareable without private overload; private evidence stays clearly separate.",
     },
     {
         "key": "evidence_pdfs",
         "area": "Evidence PDFs",
-        "required_proof": "Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Community Exposure",
+        "required_evidence": "Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Community Exposure",
         "status": "not_captured",
         "acceptance_rule": "Generated PDF opens visually with GSN title, watermark/header/footer, generated time, and limitation statement.",
     },
     {
         "key": "admin_readiness",
         "area": "Admin readiness",
-        "required_proof": "Protocol status and pilot readiness partials",
+        "required_evidence": "Protocol status and pilot readiness partials",
         "status": "not_captured",
         "acceptance_rule": "Partial labels explain what is complete, what remains, why it matters, and the next route.",
     },
@@ -110,8 +110,16 @@ EVIDENCE_PACK_FOLDER_SHAPE = [
 ]
 
 
+def _with_evidence_alias(item: dict[str, str]) -> dict[str, str]:
+    out = dict(item)
+    evidence = out.get("required_evidence") or out.get("required_proof") or ""
+    out["required_evidence"] = evidence
+    out.setdefault("required_proof", evidence)
+    return out
+
+
 def evidence_pack_checklist() -> dict[str, object]:
-    items = [dict(item) for item in EVIDENCE_PACK_CHECKLIST_ITEMS]
+    items = [_with_evidence_alias(item) for item in EVIDENCE_PACK_CHECKLIST_ITEMS]
     status_counts = {
         "not_captured": sum(1 for item in items if item["status"] == "not_captured"),
         "captured": sum(1 for item in items if item["status"] == "captured"),
@@ -121,7 +129,7 @@ def evidence_pack_checklist() -> dict[str, object]:
 
     return {
         "status": "needs_capture",
-        "status_label": "Checklist ready, proof not captured",
+        "status_label": "Checklist ready, evidence not captured",
         "doc": EVIDENCE_PACK_CHECKLIST_DOC,
         "truth_statement": "The checklist exists, but accepted screenshots and PDFs are still zero until the team captures and reviews them.",
         "items": items,
@@ -167,7 +175,7 @@ def _partial_check(
         "key": key,
         "label": label,
         "status": "partial",
-        "status_label": "Needs proof",
+        "status_label": "Needs evidence",
         "why_it_matters": why_it_matters,
         "complete": complete,
         "remaining": remaining,
@@ -221,33 +229,33 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             complete=[
                 "Backend tests cover guarantor list/invite contracts, duplicate blocking, non-member rejection, and decision updates.",
                 "Service tests cover guarantor approval, auto-approval when enough pledged support is present, and release of locked exposure.",
-                "Repayment proof now covers guarantor exposure release after full repayment, and earnings tests show rewards stay pending until the loan is repaid.",
+                "Repayment validation now covers guarantor exposure release after full repayment, and earnings tests show rewards stay pending until the loan is repaid.",
                 "Frontend support surfaces show fit suggestions, selected guarantors, line-by-line decisions, and guarantor earnings routes.",
                 "Guarantor invite permission is locked to the borrower who owns the loan or a community admin; ordinary non-borrower members are forbidden.",
                 "Guarantor Earnings now tells users that earned value is a visible record, not an automatic payout.",
             ],
             remaining=[
-                "Run the borrower, guarantor, and admin views on a phone and capture proof that invite, decision, exposure, release, and earnings language is clear.",
+                "Run the borrower, guarantor, and admin views on a phone and capture evidence that invite, decision, exposure, release, and earnings language is clear.",
                 "Decide whether a real guided withdrawal workflow must be pilot-ready before guarantor rewards move beyond visibility.",
             ],
-            next_step="Run a phone proof pass across support draft, guarantor decision, loan summary, repayment closure, and guarantor earnings; then decide the reward payout route.",
+            next_step="Run a phone evidence pass across support draft, guarantor decision, loan summary, repayment closure, and guarantor earnings; then decide the reward payout route.",
             next_route="/app/loans",
         ),
         _partial_check(
             "loan_repayment_e2e",
-            "Loan repayment end-to-end proof",
-            why_it_matters="The backend path is now protected by a local reconciliation proof test, but pilot trust still needs visible phone/manual evidence and a decision on planned instalment schedules.",
+            "Loan repayment end-to-end evidence",
+            why_it_matters="The backend path is now protected by a local reconciliation validation test, but pilot trust still needs visible phone/manual evidence and a decision on planned instalment schedules.",
             complete=[
                 "Full-balance and part-payment instruction choices are visible on the repayment screen.",
                 "Backend repayment logic supports partial repayment without falsely closing the loan.",
-                "Automated backend proof covers one expected repayment receiving a part payment, then a final payment, through bank reconciliation, loan balance update, guarantee release, and trust events.",
+                "Automated backend validation covers one expected repayment receiving a part payment, then a final payment, through bank reconciliation, loan balance update, guarantee release, and trust events.",
             ],
             remaining=[
                 "Run the same full and part-payment route from the phone/local UI and capture screenshots.",
                 "Capture the before/after loan balance, expected payment, bank match, and Trust event evidence as the pilot evidence pack.",
                 "Decide whether planned instalment schedules with due dates are required now or after pilot.",
             ],
-            next_step="Run the phone/local UI proof and capture the repayment evidence pack; keep planned instalment scheduling as a separate product decision.",
+            next_step="Run the phone/local UI evidence pass and capture the repayment evidence pack; keep planned instalment scheduling as a separate product decision.",
             next_route="/app/loans",
         ),
         _ready_check(
@@ -299,17 +307,17 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
         _partial_check(
             "trustslip",
             "TrustSlip presentation",
-            why_it_matters="TrustSlip is a portable proof surface. It must look and read like an official GSN evidence package before people share screenshots or PDFs.",
+            why_it_matters="TrustSlip is a portable evidence surface. It must look and read like an official GSN evidence package before people share screenshots or PDFs.",
             complete=[
-                "Public TrustSlip Verify and TrustSlip proof paper have institutional visual treatment.",
+                "Public TrustSlip Verify and TrustSlip evidence paper have institutional visual treatment.",
                 "GSN PDF shells now share official header, watermark, footer, generated time, and limitation language.",
                 "Older Trust Timeline, Loan Trust Report, and Community Exposure Report PDFs now use the same GSN institutional shell.",
             ],
             remaining=[
-                "Run phone screenshot review for TrustSlip Verify, Trust Passport, and public proof surfaces.",
-                "Render and review exported/shared proof packages visually so they read clearly without surrounding page context.",
+                "Run phone screenshot review for TrustSlip Verify, Trust Passport, and public record surfaces.",
+                "Render and review exported/shared evidence packages visually so they read clearly without surrounding page context.",
             ],
-            next_step="Review the TrustSlip and Trust Passport proof surfaces on a real phone and capture accepted screenshots.",
+            next_step="Review the TrustSlip and Trust Passport evidence surfaces on a real phone and capture accepted screenshots.",
             next_route="/app/trust-passport",
         ),
         _partial_check(
@@ -331,10 +339,10 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
         _partial_check(
             "evidence",
             "Evidence capture pack",
-            why_it_matters="A pilot needs a dignified package of screenshots, PDFs, route proof, and limitations that an outside reader can respect.",
+            why_it_matters="A pilot needs a dignified package of screenshots, PDFs, route evidence, and limitations that an outside reader can respect.",
             complete=[
                 "Institutional PDF header, watermark, footer, and limitation shells are in place for key generated reports.",
-                "Trust Timeline, Loan Trust Report, Community Exposure Report, Trust Passport, and TrustSlip proof surfaces have official GSN treatment.",
+                "Trust Timeline, Loan Trust Report, Community Exposure Report, Trust Passport, and TrustSlip evidence surfaces have official GSN treatment.",
                 "Evidence-pack meta and zip routes now share the same GSN package contract and are owned by the active evidence-pack route module.",
                 "The current source-level PDF shell pass covers the known evidence/report generators.",
                 "A pilot evidence-pack checklist now defines required screenshots, PDFs, acceptance rules, and local folder shape.",
@@ -342,9 +350,9 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             remaining=[
                 "Assemble accepted screenshots/PDFs for entry, community, marketplace, repayment, TrustSlip, Trust Passport, and admin readiness.",
                 "Visually open generated PDFs and screenshots before treating them as accepted pilot evidence.",
-                "Record which proofs are system-generated, which are screenshots, and which still need live pilot data.",
+                "Record which evidence items are system-generated, which are screenshots, and which still need live pilot data.",
             ],
-            next_step="Create a local evidence folder or checklist after the next phone screenshot run, then attach each accepted proof to this readiness item.",
+            next_step="Create a local evidence folder or checklist after the next phone screenshot run, then attach each accepted evidence item to this readiness item.",
             next_route="/app/trust-command",
         ),
     ]
@@ -368,7 +376,7 @@ def pilot_readiness():
             else "Not ready"
         ),
         "truth_statement": (
-            "No blocked service check is listed, but partial items still need phone proof, evidence packaging, or end-to-end validation."
+            "No blocked service check is listed, but partial items still need phone evidence, evidence packaging, or end-to-end validation."
             if blocked == 0 and partial > 0
             else "No readiness gap is currently listed."
             if blocked == 0

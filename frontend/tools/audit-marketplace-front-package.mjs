@@ -71,8 +71,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /const MARKETPLACE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "proof"[\s\S]*?payment: "repaymentSchedule"[\s\S]*?pool: "financeInstitution"[\s\S]*?rosca: "repaymentSchedule"[\s\S]*?shop: "marketplace"[\s\S]*?support: "repaymentSchedule"[\s\S]*?trade: "marketplace"[\s\S]*?verify: "proof"/,
-  "Marketplace semantic icons must use the market stall, finance institution, repayment schedule, and proof meanings for front-page lanes."
+  /const MARKETPLACE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "evidence"[\s\S]*?payment: "repaymentSchedule"[\s\S]*?pool: "financeInstitution"[\s\S]*?rosca: "repaymentSchedule"[\s\S]*?shop: "marketplace"[\s\S]*?support: "repaymentSchedule"[\s\S]*?trade: "marketplace"[\s\S]*?verify: "evidence"/,
+  "Marketplace semantic icons must use the market stall, finance institution, repayment schedule, and certificate/evidence meanings for front-page lanes."
 );
 
 assertContains(
@@ -137,8 +137,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /Local Marketplace Trust[\s\S]*?selected community's local trust signal[\s\S]*?fuller proof routes/,
-  "Compact Trust pill expansion must remain a local Marketplace Trust summary."
+  /Local Marketplace Trust[\s\S]*?selected community's local trust signal[\s\S]*?fuller evidence routes[\s\S]*?Member-level witness currentness belongs in those fuller[\s\S]*?evidence routes, not this local marketplace summary/,
+  "Compact Trust pill expansion must remain a local Marketplace Trust summary and must send member currentness to fuller evidence routes."
 );
 
 assertContains(

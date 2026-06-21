@@ -1303,7 +1303,7 @@ export default function LoansPage() {
           alignItems: "center",
         }}
       >
-        {routeIcon("proof")}
+        {routeIcon("evidence")}
         <div>
           <div style={{ color: "#07172C", fontWeight: 950, lineHeight: 1.35 }}>
             Loans & Support stays community-specific. Finance shows the money picture;

@@ -23,7 +23,7 @@ Devil's advocate:
 
 ## 2. Include In TrustSlip / Workshop Evidence Package
 
-These files belong together because they support the portable-trust proof path:
+These files belong together because they support the portable-trust evidence path:
 
 - `frontend/src/lib/api.ts`
 - `frontend/src/pages/DashboardPage.tsx`
@@ -129,7 +129,7 @@ Public demo payload check:
 
 ## 7. What Still Needs A Manual Demo Check
 
-Before committing or deploying, run the local proof path with Amara:
+Before committing or deploying, run the local evidence path with Amara:
 
 1. Seed the workshop demo.
 2. Sign in as `amara.demo@gsnworkshop.co.uk`.
@@ -151,11 +151,11 @@ Before committing or deploying, run the local proof path with Amara:
 
 ## 8. Remaining Truth
 
-Personal commitments are now backend Trust Events, but they are still member-recorded discipline evidence. They should support the TrustSlip follow-through story, not automatically act like verified payment proof.
+Personal commitments are now backend Trust Events, but they are still member-recorded discipline evidence. They should support the TrustSlip follow-through story, not automatically act like verified payment evidence.
 
 Expected payments remain the stronger evidence for contribution and repayment discipline.
 
-Trust Events, Trust Graph, CCI, and Trust Passport remain the deeper proof layer behind the public TrustSlip summary.
+Trust Events, Trust Graph, CCI, and Trust Passport remain the deeper evidence layer behind the public TrustSlip summary.
 
 After the independent auditor pass:
 

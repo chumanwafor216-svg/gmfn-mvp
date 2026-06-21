@@ -77,7 +77,7 @@ already happens in community life: promises, support, contribution, lending,
 borrowing, repayment, and people standing behind one another. Dashboard helps
 those events stay visible instead of becoming only memory or hearsay.
 
-TrustSlip is the proof layer behind the Dashboard story. When events show that
+TrustSlip is the evidence layer behind the Dashboard story. When events show that
 the member follows through, repays, responds, and supports honestly, TrustSlip
 has stronger evidence to carry when someone needs to trust them.
 
@@ -101,7 +101,7 @@ The simplest model is:
 
 - Finance shows what happened with money.
 - Trust Passport explains what that money behaviour means.
-- Trust Events record the proof that changes the trust story.
+- Trust Events record the evidence that changes the trust story.
 
 For a member who belongs to many communities, Finance should show one GSN
 finance file with community units inside it. Each unit can show money in,
@@ -155,7 +155,7 @@ With GSN, my TrustSlip can speak with me.
 
 Before someone releases goods, gives support, or accepts risk, they can check my
 TrustSlip. They can see that I am not just a stranger talking. I have a record.
-I have a community. I have proof that follows me.
+I have a community. I have evidence that follows me.
 
 So Marketplace is not only for displaying goods.
 
@@ -187,9 +187,9 @@ Trust Passport is built to solve that problem.
 
 Your Trust Passport keeps the record of what you have already done: money
 promises kept, loans repaid, support given, guarantor responsibility, missed
-promises, completed repayments, and verified community behaviour.
+promises, completed repayments, and recorded community-backed behaviour.
 
-Your TrustSlip is the shareable proof from that record.
+Your TrustSlip is the shareable evidence from that record.
 
 Before a seller releases goods on credit, before a loan is approved, before
 support is given, or before a guarantor accepts risk, your TrustSlip can be
@@ -211,11 +211,11 @@ becomes about behaviour.
 
 A person who borrows small and repays properly can build trust.
 A person who supports others responsibly can build trust.
-A person who keeps promises across communities can carry that proof forward.
+A person who keeps promises across communities can carry that evidence forward.
 
 Finance records what happened.
 Trust Passport explains what it means.
-TrustSlip proves it quickly when someone needs to decide.
+TrustSlip shows it quickly when someone needs to decide.
 
 The simple idea is this:
 

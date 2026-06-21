@@ -214,8 +214,8 @@ const RESPONSE_OPTIONS: ResponseOption[] = [
 const REVIEW_RESOLUTIONS = [
   {
     value: "confirmed_clean",
-    label: "Confirmed clean",
-    meaning: "Use when the review found no meaningful problem.",
+    label: "No issue found",
+    meaning: "Use when the review evidence found no meaningful problem.",
   },
   {
     value: "resolved_with_caution",
@@ -248,7 +248,7 @@ const REVIEW_TRUST_IMPACTS = [
   {
     value: "positive",
     label: "Positive trust signal",
-    meaning: "Use only when review confirms the person behaved well.",
+    meaning: "Use only when review evidence supports a positive trust signal.",
   },
   {
     value: "caution",
@@ -543,7 +543,7 @@ function pillStyle(tone: ResponseOption["tone"] | "neutral"): React.CSSPropertie
 }
 
 function responseCategoryLabel(tone: ResponseOption["tone"]): string {
-  if (tone === "positive") return "Can confirm";
+  if (tone === "positive") return "Can support";
   if (tone === "caution") return "Need caution";
   return "Cannot support";
 }
@@ -1372,6 +1372,8 @@ function CommunityConfirmationInboxPage() {
           >
             <p style={{ margin: 0, ...helperText() }}>
               Check cases here before they become a public trust signal. Sensitive review work stays inside GSN.
+              A review resolution changes GSN's trust reading only; it is not parent-domain
+              certification, legal approval, or permission to release goods, credit, or money.
             </p>
             <SecondaryButton
               type="button"
@@ -2515,7 +2517,7 @@ function CommunityConfirmationInboxPage() {
                       </div>
                       <div>
                         <h2 style={{ margin: 0, color: "#07172C", fontSize: 22, fontWeight: 1000 }}>
-                          Confirm {subjectName(row)}
+                          Answer about {subjectName(row)}
                         </h2>
                         <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <span style={pillStyle("neutral")}>
@@ -2532,6 +2534,7 @@ function CommunityConfirmationInboxPage() {
                     </div>
                     <p style={{ margin: "12px 0 0", ...helperText() }}>
                       Community: {firstTruthy(row.communityName, row.communityId, "Not shown")}. {row.readerNote || "Answer only if you genuinely know this member."}
+                      {" "}Your answer records what you personally know; it is not parent-domain certification or a whole-community vote.
                     </p>
                     <div style={{ marginTop: 10, display: "grid", gap: 5, ...helperText() }}>
                       <span>Created: {safeDateTime(row.createdAt)}</span>

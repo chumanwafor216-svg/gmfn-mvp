@@ -175,15 +175,15 @@ assertContains(
 
 assertContains(
   "trust",
-  /key: "evidence"[\s\S]*?icon: "proof"[\s\S]*?key: "finance"[\s\S]*?icon: "financeInstitution"[\s\S]*?key: "documents"[\s\S]*?icon: "proof"/,
-  "Trust Passport lanes must use proof and finance-institution 3D meanings for evidence, finance, and document lanes."
+  /key: "evidence"[\s\S]*?icon: "evidence"[\s\S]*?key: "finance"[\s\S]*?icon: "financeInstitution"[\s\S]*?key: "documents"[\s\S]*?icon: "evidence"/,
+  "Trust Passport lanes must use certificate/evidence and finance-institution 3D meanings for evidence, finance, and document lanes."
 );
 
 assertOrderedSnippets(
   "trust",
   [
     "const institutionalRows = [",
-    "\"Trust limit\"",
+    "\"Trust limit signal\"",
     "\"Available guarantee capacity\"",
     "\"Current locked guarantees\"",
     "\"Overexposure ratio\"",

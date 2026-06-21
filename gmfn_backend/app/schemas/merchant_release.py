@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 class MerchantReleaseIn(BaseModel):
     """
-    Merchant logs goods release based on verified TrustSlip.
+    Merchant logs goods release after reviewing current TrustSlip evidence.
     """
     token: str = Field(..., min_length=20)
     goods_value: str = Field(..., min_length=1)  # decimal string

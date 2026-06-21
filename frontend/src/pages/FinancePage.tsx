@@ -149,9 +149,9 @@ const FINANCE_GLYPH_ICON_MAP = {
   community: "community",
   down: "financeInstitution",
   history: "records-folder",
-  ledger: "proof",
+  ledger: "evidence",
   out: "wallet",
-  receipt: "proof",
+  receipt: "evidence",
   shield: "shield",
   signal: "financeInstitution",
   wallet: "financeInstitution",
@@ -307,7 +307,7 @@ function safeDateTime(x: any): string {
 }
 
 function expectedPaymentState(item: ExpectedPaymentRecord): string {
-  if (safeStr(item.confirmed_at)) return "Confirmed";
+  if (safeStr(item.confirmed_at)) return "Finance confirmed";
   if (item.matched_bank_event_id) return "Bank match started";
   if (safeStr(item.reference_display)) return "Awaiting bank check";
   return "Needs payment instruction";
@@ -315,14 +315,14 @@ function expectedPaymentState(item: ExpectedPaymentRecord): string {
 
 function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
   const state = expectedPaymentState(item);
-  if (state === "Confirmed") {
-    return "You can use the service this payment unlocked.";
+  if (state === "Finance confirmed") {
+    return "Finance shows this payment as confirmed; use the related service only where its route says it is available.";
   }
   if (state === "Bank match started") {
-    return "The bank match has started. Wait for final confirmation.";
+    return "The bank match has started. Wait for finance confirmation.";
   }
   if (state === "Awaiting bank check") {
-    return "Pay with the exact reference so the system can confirm it.";
+    return "Pay with the exact reference so finance can reconcile it.";
   }
   return "Generate a fresh payment instruction if you still need to pay.";
 }
@@ -1256,7 +1256,7 @@ export default function FinancePage() {
     me?.trust_band,
     "Not ready"
   );
-  const repaymentProofCount = countTrustEvents(trustCounts, [
+  const repaymentRecordCount = countTrustEvents(trustCounts, [
     "loan_fully_repaid",
     "loan_repaid",
     "repaid",
@@ -1264,7 +1264,7 @@ export default function FinancePage() {
     "full_repayment",
     "loan_repayment_completed",
   ]);
-  const supportProofCount = countTrustEvents(trustCounts, [
+  const supportRecordCount = countTrustEvents(trustCounts, [
     "guarantor_success",
     "guarantor_repayment_success",
     "guarantor_supported_repaid",
@@ -1300,7 +1300,7 @@ export default function FinancePage() {
     return activeExpectedPayments.reduce(
       (acc, item) => {
         const state = expectedPaymentState(item);
-        if (state === "Confirmed") acc.confirmed += 1;
+        if (state === "Finance confirmed") acc.confirmed += 1;
         else if (state === "Bank match started") acc.matched += 1;
         else if (state === "Awaiting bank check") acc.awaitingReconciliation += 1;
         else acc.awaitingIssue += 1;
@@ -1347,18 +1347,18 @@ export default function FinancePage() {
       );
     }
 
-    if (repaymentProofCount > 0) {
+    if (repaymentRecordCount > 0) {
       rows.push(
-        `${repaymentProofCount} repayment record${
-          repaymentProofCount === 1 ? "" : "s"
+        `${repaymentRecordCount} repayment record${
+          repaymentRecordCount === 1 ? "" : "s"
         } supporting your trust history.`
       );
     }
 
-    if (supportProofCount > 0) {
+    if (supportRecordCount > 0) {
       rows.push(
-        `${supportProofCount} successful support record${
-          supportProofCount === 1 ? "" : "s"
+        `${supportRecordCount} successful support record${
+          supportRecordCount === 1 ? "" : "s"
         } in your name.`
       );
     }
@@ -1383,8 +1383,8 @@ export default function FinancePage() {
     crossCurrency,
     crossEffectiveAvailable,
     guarantorEarningsTotal,
-    repaymentProofCount,
-    supportProofCount,
+    repaymentRecordCount,
+    supportRecordCount,
   ]);
 
   const financeWatchItems = useMemo(() => {
@@ -1556,7 +1556,11 @@ export default function FinancePage() {
     ["Borrowed support total", `${fmtMoney(borrowerRequestedTotal)} ${poolCurrency}`, "Support you requested that is still active."],
     ["Still to repay", `${fmtMoney(borrowerRemainingTotal)} ${poolCurrency}`, "Repayment amount still showing."],
     ["Guarantees held", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support still held for people you backed."],
-    ["Guarantees released", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`, "Support already released from past backing."],
+    [
+      "Guarantee release records",
+      `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`,
+      "Support exposure recorded as released from past backing. This page reports the record; it does not release exposure by itself.",
+    ],
     ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0), "People you are still backing now."],
     ["Past guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0), "People you backed before."],
     ["Money history rows", String(poolEvents.length), "Recent money movements we can show you."],
@@ -1564,7 +1568,7 @@ export default function FinancePage() {
 
   const supportBackedRows: Array<[string, string]> = [
     ["Total locked", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`],
-    ["Total released", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`],
+    ["Recorded releases", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`],
     ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0)],
     ["Historical guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0)],
     [
@@ -1581,7 +1585,7 @@ export default function FinancePage() {
     ["Active loans", safeStr(clanLiquidity?.activeLoansCount ?? 0)],
     ["Pledged total", safeStr(clanLiquidity?.pledgedTotal || "0")],
     ["Locked total", safeStr(clanLiquidity?.lockedTotal || "0")],
-    ["Released total", safeStr(clanLiquidity?.releasedTotal || "0")],
+    ["Recorded release total", safeStr(clanLiquidity?.releasedTotal || "0")],
     [
       "Note",
       safeStr(
@@ -2537,9 +2541,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Payments waiting for confirmation</div>
+            <div style={sectionLabel()}>Payments waiting for finance confirmation</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              See which payments are waiting, which are confirmed, and what to do next.
+              See which payments are waiting, which are finance-confirmed, and what to do next.
             </div>
           </div>
 
@@ -2564,8 +2568,8 @@ export default function FinancePage() {
               }}
             >
               <span style={badge(true)}>Payments waiting: {activeExpectedPayments.length}</span>
-              <span style={badge(false)}>Waiting for confirmation: {pendingReconciliationCount}</span>
-              <span style={badge(false)}>Confirmed: {expectedPaymentStateCounts.confirmed}</span>
+              <span style={badge(false)}>Waiting for finance check: {pendingReconciliationCount}</span>
+              <span style={badge(false)}>Finance confirmed: {expectedPaymentStateCounts.confirmed}</span>
               <span style={badge(false)}>Bank match started: {expectedPaymentStateCounts.matched}</span>
               <span style={badge(false)}>
                 Needs new instruction: {expectedPaymentStateCounts.awaitingIssue}
@@ -2573,14 +2577,14 @@ export default function FinancePage() {
             </div>
 
             {activeExpectedPayments.length === 0 ? (
-              emptyRecord("No payment is waiting for confirmation right now.")
+              emptyRecord("No payment is waiting for finance confirmation right now.")
             ) : isCompact ? (
               <div style={{ display: "grid", gap: 10 }}>
                 {activeExpectedPayments.slice(0, 10).map((item, index) => (
                   <FinanceMobileRecord
                     key={`${item.id || index}`}
                     title={safeStr(item.expected_type || "Expected payment")}
-                    tone={expectedPaymentState(item) === "Confirmed" ? "good" : "watch"}
+                    tone={expectedPaymentState(item) === "Finance confirmed" ? "good" : "watch"}
                     rows={[
                       ["Reference", safeStr(item.reference_display || "-")],
                       [
@@ -2597,7 +2601,7 @@ export default function FinancePage() {
                       [
                         "Date",
                         item.confirmed_at
-                          ? `Confirmed: ${safeDateTime(item.confirmed_at)}`
+                          ? `Finance confirmed: ${safeDateTime(item.confirmed_at)}`
                           : item.due_at
                             ? `Due: ${safeDateTime(item.due_at)}`
                             : item.matched_bank_event_id
@@ -2643,7 +2647,7 @@ export default function FinancePage() {
                         </td>
                         <td style={tableCell()}>
                           {item.confirmed_at
-                            ? `Confirmed: ${safeDateTime(item.confirmed_at)}`
+                            ? `Finance confirmed: ${safeDateTime(item.confirmed_at)}`
                             : item.due_at
                               ? `Due: ${safeDateTime(item.due_at)}`
                               : item.matched_bank_event_id
@@ -2973,7 +2977,7 @@ export default function FinancePage() {
                       ["Reference", safeStr(row.reference || "-")],
                       ["Note", safeStr(row.note || "-")],
                       ["Created", row.createdAt ? safeDateTime(row.createdAt) : "-"],
-                      ["Confirmed", row.confirmedAt ? safeDateTime(row.confirmedAt) : "-"],
+                      ["Finance confirmed", row.confirmedAt ? safeDateTime(row.confirmedAt) : "-"],
                     ]}
                   />
                 ))}
@@ -2988,7 +2992,7 @@ export default function FinancePage() {
                       <th style={tableHeadCell()}>Reference</th>
                       <th style={tableHeadCell()}>Note</th>
                       <th style={tableHeadCell()}>Created</th>
-                      <th style={tableHeadCell()}>Confirmed</th>
+                      <th style={tableHeadCell()}>Finance confirmed</th>
                     </tr>
                   </thead>
                   <tbody>

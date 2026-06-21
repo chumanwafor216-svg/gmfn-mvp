@@ -122,8 +122,8 @@ assertContains(
 
 assertContains(
   "src/pages/LoansPage.tsx",
-  /routeIconCircle\(primary = false[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name="financeInstitution" size=\{64\}[\s\S]*?iconLabel\("repaymentSchedule", "Active loans"\)[\s\S]*?iconLabel\("financeInstitution", "Pool"\)[\s\S]*?routeIcon\("proof"\)/,
-  "Loans & Support must use light icon tiles plus repayment, proof, and finance-institution 3D meanings for the visible support summary."
+  /routeIconCircle\(primary = false[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name="financeInstitution" size=\{64\}[\s\S]*?iconLabel\("repaymentSchedule", "Active loans"\)[\s\S]*?iconLabel\("financeInstitution", "Pool"\)[\s\S]*?routeIcon\("evidence"\)/,
+  "Loans & Support must use light icon tiles plus repayment, certificate/evidence, and finance-institution 3D meanings for the visible support summary."
 );
 
 assertAsciiOnly(
@@ -144,8 +144,14 @@ assertAsciiOnly(
 
 assertContains(
   "src/pages/GuarantorEarningsPage.tsx",
-  /const GUARANTOR_EARNINGS_PAYOUT_TRUTH =[\s\S]*?not an automatic payout[\s\S]*?guided Money Out process[\s\S]*?copySummary\(\)[\s\S]*?GUARANTOR_EARNINGS_PAYOUT_TRUTH[\s\S]*?debugId="guarantor-earnings\.route\.money-out"[\s\S]*?does not pay it out by itself/,
-  "Guarantor Earnings must tell users that earned guarantor value is a visible record, not an automatic payout, and must keep the Money Out route honest."
+  /const GUARANTOR_EARNINGS_PAYOUT_TRUTH =[\s\S]*?not an automatic payout[\s\S]*?guided Money Out process[\s\S]*?Closed-support records: \$\{totals\.settledCount\}[\s\S]*?copySummary\(\)[\s\S]*?GUARANTOR_EARNINGS_PAYOUT_TRUTH[\s\S]*?const amountLabel = settled \? "RECORDED EARNED VALUE" : "POTENTIAL SHARE"[\s\S]*?debugId="guarantor-earnings\.route\.money-out"[\s\S]*?does not pay it out by itself/,
+  "Guarantor Earnings must tell users that earned guarantor value is a visible record, not an automatic payout, and must keep closed-support records from sounding like settlement or payout completion."
+);
+
+assertNotContains(
+  "src/pages/GuarantorEarningsPage.tsx",
+  /Review visible guarantor value, settled items|Settled support creates clearer earnings|`Settled items: \$\{totals\.settledCount\}`|<span style=\{badge\(false\)\}>Settled:|const amountLabel = settled \? "EARNED" : "POTENTIAL SHARE"/,
+  "Guarantor Earnings must not restore broad settlement or earned-value labels."
 );
 
 assertContains(
@@ -241,13 +247,13 @@ assertContains(
 assertContains(
   "src/pages/GuarantorInboxPage.tsx",
   /debugId="guarantor-inbox\.front-next"[\s\S]*?stableHeight=\{isCompact \? 58 : 72\}[\s\S]*?height: isCompact \? 58 : 72,[\s\S]*?maxHeight: isCompact \? 58 : 72,[\s\S]*?guarantorInboxRouteHeading\("navigation", nextStep\.ctaLabel\)/,
-  "Guarantor Inbox must keep a compact first-viewport recommended next action before the proof snapshot and deeper queue sections."
+  "Guarantor Inbox must keep a compact first-viewport recommended next action before the evidence snapshot and deeper queue sections."
 );
 
 assertContains(
   "src/pages/GuarantorEarningsPage.tsx",
   /debugId="guarantor-earnings\.front-next"[\s\S]*?stableHeight=\{isCompact \? 58 : 72\}[\s\S]*?height: isCompact \? 58 : 72,[\s\S]*?maxHeight: isCompact \? 58 : 72,[\s\S]*?guarantorEarningsRouteHeading\("navigation", nextStep\.ctaLabel\)/,
-  "Guarantor Earnings must keep a compact first-viewport recommended next action before payout truth, proof snapshot, and deeper earnings sections."
+  "Guarantor Earnings must keep a compact first-viewport recommended next action before payout truth, evidence snapshot, and deeper earnings sections."
 );
 
 assertContains(

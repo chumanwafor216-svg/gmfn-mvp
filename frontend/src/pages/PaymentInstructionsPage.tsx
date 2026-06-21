@@ -853,7 +853,7 @@ export default function PaymentInstructionsPage() {
         step: "Payment",
         title: "Pay using the exact generated reference.",
         detail:
-          "After payment is made, confirm it here so the route can move into reconciliation.",
+          "After payment is made, declare it here so the route can move into reconciliation; this does not confirm money received.",
       };
     }
 
@@ -872,7 +872,7 @@ export default function PaymentInstructionsPage() {
       step: "Awaiting reconciliation",
       title: "Payment is waiting for reconciliation.",
       detail:
-        "Payment has been confirmed, but the recent money record does not show a visible matched event for this reference yet.",
+        "Payment has been declared by the member, but the recent money record does not show a visible matched event for this reference yet.",
     };
   }, [instruction, paymentConfirmed, matchedEvent]);
 
@@ -1009,7 +1009,7 @@ export default function PaymentInstructionsPage() {
 
     setNotice({
       tone: "success",
-      text: "Payment marked as made. Waiting for reconciliation.",
+      text: "Payment declaration recorded. Waiting for reconciliation to confirm the money trail.",
     });
   }
 
@@ -1291,7 +1291,7 @@ export default function PaymentInstructionsPage() {
             ["1", "Amount", !instruction],
             ["2", "Generate", Boolean(instruction) && !paymentConfirmed],
             ["3", "Pay", Boolean(instruction) && !paymentConfirmed],
-            ["4", "Confirm", Boolean(paymentConfirmed || matchedEvent)],
+            ["4", "Declare", Boolean(paymentConfirmed || matchedEvent)],
           ].map(([num, label, active], index, steps) => (
             <div
               key={`money-in-step-${num}`}
@@ -1522,8 +1522,8 @@ export default function PaymentInstructionsPage() {
               value: matchedEvent
                 ? "Matched"
                 : paymentConfirmed
-                  ? "Matching records"
-                  : "Not confirmed",
+                  ? "Declaration recorded"
+                  : "Not declared",
               color: matchedEvent ? "#2E9B62" : "#92400E",
             },
           ].map((tile) => (
@@ -1604,7 +1604,7 @@ export default function PaymentInstructionsPage() {
             }}
           >
             Amount, reference, route, and reconciliation stay together until this
-            payment is clearly matched.
+            payment is declared or clearly matched.
           </div>
         ) : null}
       </section>
@@ -1815,7 +1815,7 @@ export default function PaymentInstructionsPage() {
               fontWeight: 800,
             }}
           >
-            Stay on this route until payment is confirmed or clearly awaiting reconciliation.
+            Stay on this route until payment is declared or clearly awaiting reconciliation.
           </span>
         </div>
       </section>
@@ -1856,7 +1856,7 @@ export default function PaymentInstructionsPage() {
           label="How to use this instruction"
           what="This section gives you the exact amount, reference, and settlement details for the current Money In task."
           why="The payment only matches cleanly when the exact instruction is used, especially the reference."
-          next="Copy the reference or full instruction, make the payment through the shown rail, then confirm payment here so reconciliation can continue."
+          next="Copy the reference or full instruction, make the payment through the shown rail, then declare payment here so reconciliation can continue."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -1993,7 +1993,7 @@ export default function PaymentInstructionsPage() {
           <div>
             <div style={sectionLabel()}>Result and reconciliation</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Stay on this route until reconciliation is visible or clearly awaiting confirmation.
+              Stay on this route until reconciliation is visible or clearly awaiting reconciliation.
             </div>
           </div>
 
@@ -2015,7 +2015,7 @@ export default function PaymentInstructionsPage() {
           label="What happens here"
           what="This section shows whether the payment has been seen, matched, or is still waiting for reconciliation."
           why="It stops a successful payment from feeling lost by showing the result state in the same route where the instruction was created."
-          next="Refresh the status if needed, then move on only when the payment is clearly matched or the page tells you it is still awaiting confirmation."
+          next="Refresh the status if needed, then move on only when the payment is clearly matched or the page tells you it is still awaiting reconciliation."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -2054,7 +2054,7 @@ export default function PaymentInstructionsPage() {
 
                 {paymentConfirmedAt ? (
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>Member confirmation time</div>
+                    <div style={sectionLabel()}>Member declaration time</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -2109,7 +2109,7 @@ export default function PaymentInstructionsPage() {
                     <div style={sectionLabel()}>Keep the route focused</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       This pay-in is still active. Stay on this route until payment is
-                      clearly confirmed or reconciliation is visibly awaiting. The route
+                      declared or reconciliation is visibly awaiting. The route
                       options stay together in the next section below so they do not
                       compete with the result reading here.
                     </div>
@@ -2157,7 +2157,7 @@ export default function PaymentInstructionsPage() {
             <div style={{ marginTop: 8, ...helperText() }}>
               {moneyInCanWidenRoutes
                 ? "Related routes reopen after this pay-in has reached a visible conclusion."
-                : "This pay-in is still active. Stay on this route until payment is confirmed or reconciliation is clearly awaiting."}
+                : "This pay-in is still active. Stay on this route until payment is declared or reconciliation is clearly awaiting."}
             </div>
           </div>
 
@@ -2273,7 +2273,7 @@ export default function PaymentInstructionsPage() {
                 <div style={sectionLabel()}>One-task mode</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                   Generate the instruction, pay using the exact reference, and keep this
-                  route open until the payment is confirmed or reconciliation is visibly
+                  route open until the payment is declared or reconciliation is visibly
                   awaiting.
                 </div>
               </div>

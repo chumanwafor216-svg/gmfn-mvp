@@ -465,13 +465,13 @@ def recompute_trust_for_user(
         latest_reason = "Photo/selfie evidence was reviewed and could not be accepted yet"
         latest_source = EV_IDENTITY_PHOTO_REJECTED
     elif identity_bank_recorded > 0:
-        latest_reason = "Recorded onboarding proofs established your starter trust standing"
+        latest_reason = "Recorded onboarding evidence established your starter trust standing"
         latest_source = EV_IDENTITY_BANK_RECORDED
     elif identity_official_id > 0:
         latest_reason = "Official ID evidence was recorded for later review"
         latest_source = EV_IDENTITY_OFFICIAL_ID
     elif identity_region_consistent > 0:
-        latest_reason = "Region consistency between onboarding proofs strengthened your starter trust standing"
+        latest_reason = "Region consistency between onboarding evidence strengthened your starter trust standing"
         latest_source = EV_IDENTITY_REGION_CONSISTENT
     elif identity_region_mismatch_explained > 0:
         latest_reason = "A cross-region onboarding explanation was recorded for trust review"
@@ -503,6 +503,19 @@ def recompute_trust_for_user(
     band = trust_band_for_score(standing_q)
     level_label = humane_trust_level(standing_q)
     score_int = _i(standing_q)
+    starter_evidence_summary = {
+        "phone_verified": identity_phone_verified > 0,
+        "bank_recorded": identity_bank_recorded > 0,
+        "drivers_licence_recorded": identity_drivers_licence > 0,
+        "official_id_recorded": identity_official_id > 0,
+        "photo_evidence_recorded": identity_photo_recorded > 0,
+        "photo_evidence_verified": identity_photo_verified_net > 0,
+        "photo_evidence_needs_more": active_identity_photo_needs_more > 0,
+        "photo_evidence_rejected": active_identity_photo_rejected > 0,
+        "photo_evidence_verified_reversed": identity_photo_verified_rev > 0,
+        "region_consistent": identity_region_consistent > 0,
+        "region_mismatch_explained": identity_region_mismatch_explained > 0,
+    }
 
     breakdown = {
         "user_id": int(user_id),
@@ -574,19 +587,8 @@ def recompute_trust_for_user(
         },
         "policy": loan_policy_for_band(band),
         "score_int": score_int,
-        "starter_proof_summary": {
-            "phone_verified": identity_phone_verified > 0,
-            "bank_recorded": identity_bank_recorded > 0,
-            "drivers_licence_recorded": identity_drivers_licence > 0,
-            "official_id_recorded": identity_official_id > 0,
-            "photo_evidence_recorded": identity_photo_recorded > 0,
-            "photo_evidence_verified": identity_photo_verified_net > 0,
-            "photo_evidence_needs_more": active_identity_photo_needs_more > 0,
-            "photo_evidence_rejected": active_identity_photo_rejected > 0,
-            "photo_evidence_verified_reversed": identity_photo_verified_rev > 0,
-            "region_consistent": identity_region_consistent > 0,
-            "region_mismatch_explained": identity_region_mismatch_explained > 0,
-        },
+        "starter_evidence_summary": starter_evidence_summary,
+        "starter_proof_summary": starter_evidence_summary,
     }
 
     return breakdown
@@ -613,7 +615,7 @@ def compute_trust_score_explained(db: Session, user_id: int) -> Dict[str, Any]:
     out = recompute_trust_for_user(db, user_id=int(user_id))
     out["explanation"] = (
         "Your trust standing grows slowly when you fully repay loans. "
-        "Starter identity proofs can establish an initial base. "
+        "Starter identity evidence can establish an initial base. "
         "Resolved community confirmation reviews can add small support or caution. "
         "If a repayment is corrected later, a reversal event is logged and the "
         "score is recomputed from the trust ledger."

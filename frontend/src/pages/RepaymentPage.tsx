@@ -505,7 +505,7 @@ export default function RepaymentPage() {
 
   const repaymentModeText =
     repaymentMode === "full"
-      ? "Pay the full remaining balance. After reconciliation, the loan can close and guarantor exposure can release."
+      ? "Pay the full remaining balance. Only admin or finance reconciliation can confirm closure and release guarantor exposure."
       : "Pay one part now. GSN records the part payment and keeps the remaining balance visible for the next repayment.";
 
   const repaymentPlanTruth =
@@ -868,7 +868,7 @@ export default function RepaymentPage() {
         label="What this screen does"
         what="This gives the exact repayment amount, reference, and result state."
         why="It keeps payment tied to the right support item."
-        next="Generate the instruction, copy it, then wait for reconciliation."
+        next="Generate the instruction and declare payment only after paying; this route does not confirm money received, close a loan, or release guarantor exposure."
         tone="blue"
       />
 
@@ -1294,7 +1294,7 @@ export default function RepaymentPage() {
           <div>
             <div style={sectionLabel()}>Result and reconciliation</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Stay here until the repayment is waiting or confirmed.
+              Stay here until the repayment is waiting or confirmed by admin or finance reconciliation.
             </div>
           </div>
           <SubtleButton
@@ -1485,7 +1485,7 @@ export default function RepaymentPage() {
                 fullWidth
                 debugId="repayment.route.loan-summary"
               >
-                {actionText("proof", "Loan Summary")}
+                {actionText("evidence", "Loan Summary")}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.finance}

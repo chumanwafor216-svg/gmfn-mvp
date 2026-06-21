@@ -8,7 +8,7 @@ export const copy = {
     guarantors: "Supporters",
     exposureAdmin: "Safety & Risk (Admin)",
     lockManagement: "Protection Holds",
-    evidencePack: "Proof Pack (PDF)",
+    evidencePack: "Evidence Pack (PDF)",
     trustSlip: "TrustSlip",
   },
   trust: {

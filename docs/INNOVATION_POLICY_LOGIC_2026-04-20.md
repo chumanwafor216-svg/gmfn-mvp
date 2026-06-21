@@ -195,7 +195,7 @@ question belongs.
 ### TrustSlip
 TrustSlip is not the whole story.
 
-TrustSlip is the portable current proof.
+TrustSlip is the portable current evidence.
 
 It answers a narrower question:
 
@@ -284,7 +284,7 @@ portable, explainable economic infrastructure.
 ## Required guardrails
 This story must not be overstated.
 
-The system should not claim policy proof before real data exists.
+The system should not claim policy impact before real data exists.
 
 The system must protect users from unfair profiling.
 
@@ -323,9 +323,9 @@ Finance tells the money story.
 
 Trust Passport tells the full trust story.
 
-TrustSlip carries a smaller verified proof to someone outside the circle.
+TrustSlip carries a smaller verified evidence view to someone outside the circle.
 
-Merchant verification checks that proof when goods, trade, or confidence are at
+Merchant verification checks that evidence when goods, trade, or confidence are at
 stake.
 
 That is why the architecture matters.

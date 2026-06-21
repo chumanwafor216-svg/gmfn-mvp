@@ -11,7 +11,7 @@ It answers one practical question:
 
 **Can this person's community confirm them right now, for this specific decision, without exposing private member contacts?**
 
-TrustSlip remains the static proof. Instant Community Confirmation is the real-time reassurance layer.
+TrustSlip remains the current evidence record. Instant Community Confirmation is the real-time reassurance layer.
 
 ## 2. Core Rule
 

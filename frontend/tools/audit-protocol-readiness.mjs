@@ -30,7 +30,7 @@ function assertNotContains(file, pattern, message) {
 assertContains(
   "gmfn_backend/app/api/routes/pilot_readiness.py",
   /def pilot_readiness_checks\(\)[\s\S]*?"loan_repayment_e2e"[\s\S]*?"TrustSlip presentation"[\s\S]*?"Frontend route consistency"[\s\S]*?"Evidence capture pack"/,
-  "Pilot readiness must keep explicit partial proof items for repayment E2E, TrustSlip, frontend route consistency, and evidence packaging."
+  "Pilot readiness must keep explicit partial evidence items for repayment E2E, TrustSlip, frontend route consistency, and evidence packaging."
 );
 
 assertContains(
@@ -48,7 +48,7 @@ assertContains(
 assertContains(
   "gmfn_backend/app/api/routes/pilot_readiness.py",
   /def evidence_pack_checklist\(\)[\s\S]*?"status": "needs_capture"[\s\S]*?"accepted_count"[\s\S]*?"folder_shape"[\s\S]*?@router\.get\("\/evidence-pack-checklist"\)/,
-  "Pilot readiness must expose the evidence-pack checklist and keep accepted proof separate from checklist readiness."
+  "Pilot readiness must expose the evidence-pack checklist and keep accepted evidence separate from checklist readiness."
 );
 
 assertContains(
@@ -83,14 +83,14 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/TrustCommandCentrePage.tsx",
-  /Needs proof: \{Number\(executiveReading\.pilotReadiness\?\.partial_count[\s\S]*?Needs proof\{" "\}\s*\{Number\(executiveReading\.pilotReadiness\?\.partial_count/,
-  "Trust Command Centre must translate protocol partial counts into user-facing Needs proof language."
+  /Needs evidence: \{Number\(executiveReading\.pilotReadiness\?\.partial_count[\s\S]*?Needs evidence\{" "\}\s*\{Number\(executiveReading\.pilotReadiness\?\.partial_count/,
+  "Trust Command Centre must translate protocol partial counts into user-facing Needs evidence language."
 );
 
 assertContains(
   "frontend/src/pages/TrustCommandCentrePage.tsx",
-  /evidencePackChecklist = executiveReading\.pilotReadiness\?\.evidence_pack_checklist[\s\S]*?evidencePackChecklistItems = rowsOf<any>\(evidencePackChecklist\?\.items\)\.slice\(0, 4\)[\s\S]*?Evidence pack: \{evidencePackChecklistLabel\}\. Accepted[\s\S]*?evidencePackChecklistTruth[\s\S]*?Evidence proof to capture first[\s\S]*?required_proof[\s\S]*?replace\(\/_\/g, " "\)/,
-  "Trust Command Centre must show the evidence-pack checklist status, accepted proof count, and first proof areas without implying evidence has already been accepted."
+  /evidencePackChecklist = executiveReading\.pilotReadiness\?\.evidence_pack_checklist[\s\S]*?evidencePackChecklistItems = rowsOf<any>\(evidencePackChecklist\?\.items\)\.slice\(0, 4\)[\s\S]*?Evidence pack: \{evidencePackChecklistLabel\}\. Accepted[\s\S]*?evidencePackChecklistTruth[\s\S]*?Evidence to capture first[\s\S]*?required_proof[\s\S]*?replace\(\/_\/g, " "\)/,
+  "Trust Command Centre must show the evidence-pack checklist status, accepted evidence count, and first evidence areas without implying evidence has already been accepted."
 );
 
 assertNotContains(

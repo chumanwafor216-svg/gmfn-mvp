@@ -85,7 +85,7 @@ def _insert_expected(
 
 
 def _seed_supported_loan_for_reconciliation(db):
-    clan = Clan(name="Repayment Proof Clan")
+    clan = Clan(name="Repayment Evidence Clan")
     borrower = User(
         email="repayment-borrower@example.com",
         hashed_password="x",

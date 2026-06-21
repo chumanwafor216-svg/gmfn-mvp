@@ -48,7 +48,7 @@ export function buildGsnSnapshotPaper(params: GsnSnapshotPaperParams): string {
     "Privacy: only details needed for this GSN check are shown.";
   const limitationNote =
     safeText(params.limitationNote) ||
-    "Limitation: GSN record only. Not a bank guarantee, approval, or automatic debit.";
+    "Limitation: GSN record only. Not a bank guarantee, credit approval, payment instruction, or automatic debit authority.";
 
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
@@ -69,7 +69,7 @@ export function buildGsnSnapshotPaper(params: GsnSnapshotPaperParams): string {
     privacyNote,
     limitationNote,
     "",
-    "Footer: Global Support Network (GSN). Trusted marketplace. Real people. Real value.",
+    "Footer: Global Support Network (GSN). Trust infrastructure for organized communities.",
   ]
     .filter((line, index, lines) => {
       if (line !== "") return true;
@@ -105,7 +105,7 @@ export function buildGsnCommunityVerifyLinkPackage(params: {
     privacyNote:
       "Privacy: only public community verification fields are shown.",
     limitationNote:
-      "Limitation: verifies a public GSN community record only. Not a bank guarantee or approval.",
+      "Limitation: opens a public GSN community record only. Not a bank guarantee, credit approval, protected-domain approval, or evidence that every claim is true.",
   });
 }
 
@@ -163,7 +163,7 @@ export function buildGsnPublicShopLinkPackage(params: {
     privacyNote:
       "Privacy: only public shop information is shown. Private Vault items need a separate owner link.",
     limitationNote:
-      "Limitation: verify current price, availability, and trust proof before relying on the offer.",
+      "Limitation: verify current price, availability, and trust evidence before relying on the offer.",
   });
 }
 
@@ -197,7 +197,7 @@ export function buildGsnVaultInvitePackage(params: {
     privacyNote:
       "Privacy: other Vault blocks, owner records, and private member details are not shown.",
     limitationNote:
-      "Limitation: private shop access only. Not a guarantee, approval, or proof the offer is still available.",
+      "Limitation: private shop access only. Not a guarantee, credit approval, or evidence that the offer is still available.",
   });
 }
 

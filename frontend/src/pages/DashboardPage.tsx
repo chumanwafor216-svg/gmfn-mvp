@@ -6122,7 +6122,7 @@ export default function DashboardPage() {
     fontFamily: "inherit",
   });
   const attentionConnectionText = isPhone
-    ? "Focus shows follow-through. Local trust is how your community reads it. Wider consistency is how outsiders may read it. TrustSlip keeps later proof."
+    ? "Focus shows follow-through. Local trust is how your community reads it. Wider consistency is how outsiders may read it. TrustSlip keeps later evidence."
     : trustAttentionCore.connectionText;
   const attentionConsequenceText = isPhone
     ? "Leaving it waiting weakens trust now. If it stays open, it can affect wider consistency and make your TrustSlip story look less steady."
@@ -7681,7 +7681,7 @@ export default function DashboardPage() {
                   maxWidth: isPhone ? 210 : 360,
                 }}
               >
-                Your verified identity across the network
+                Your GSN identity record across the network
               </span>
             </span>
 
@@ -10834,7 +10834,7 @@ export default function DashboardPage() {
                         lineHeight: 1.28,
                       }}
                     >
-                      Response proof expected.
+                      Response evidence expected.
                     </div>
                     <div
                       style={{

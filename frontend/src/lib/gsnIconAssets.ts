@@ -136,9 +136,9 @@ export const GSN_3D_ICON_ASSETS = {
   "certificate-seal": {
     key: "certificate-seal",
     fileName: "icon-certificate-seal-3d.webp",
-    objectMeaning: "certificate, proof paper, or evidence seal",
+    objectMeaning: "certificate, evidence paper, or evidence seal",
     promptSeed:
-      "premium realistic 3D certificate proof icon, white paper, navy leather corners, gold seal, transparent background",
+      "premium realistic 3D certificate evidence icon, white paper, navy leather corners, gold seal, transparent background",
     assetUrl: certificateSealIconUrl,
     status: "available",
   },
@@ -199,7 +199,7 @@ export const GSN_3D_ICON_ASSETS = {
   "qr-record": {
     key: "qr-record",
     fileName: "icon-qr-record-3d.webp",
-    objectMeaning: "QR proof record",
+    objectMeaning: "QR evidence record",
     promptSeed:
       "premium 3D UI icon, QR record card with seal, navy gold white, transparent background",
     assetUrl: qrRecordIconUrl,
@@ -208,7 +208,7 @@ export const GSN_3D_ICON_ASSETS = {
   "public-globe": {
     key: "public-globe",
     fileName: "icon-public-globe-3d.webp",
-    objectMeaning: "public proof/share surface",
+    objectMeaning: "public record/share surface",
     promptSeed:
       "realistic 3D globe and trust seal icon, navy gold white, transparent background",
     assetUrl: publicGlobeIconUrl,

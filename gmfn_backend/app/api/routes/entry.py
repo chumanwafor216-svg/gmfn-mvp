@@ -1412,7 +1412,7 @@ def confirm_entry_phone_verification(
             "event_type": "identity.phone_verified",
             "status": "ready_for_registration",
             "message": (
-                "Phone proof is ready. When you finish creating the community, "
+                "Phone evidence is ready. When you finish creating the community, "
                 "GSN will write this as a permanent trust event on your record."
             ),
         },
@@ -1556,7 +1556,7 @@ def save_entry_bank_details(
         if row.verified_at is None
         else (
             "Your bank or wallet destination has been recorded against this verified phone session. "
-            "GSN will attach this proof to your starter trust record when community creation is completed."
+            "GSN will attach this evidence to your starter trust record when community creation is completed."
         )
     )
 
@@ -1571,7 +1571,7 @@ def save_entry_bank_details(
             "event_type": "identity.bank_destination_recorded",
             "status": "ready_for_registration",
             "message": (
-                "Bank or wallet proof is ready. When you finish creating the community, "
+                "Bank or wallet evidence is ready. When you finish creating the community, "
                 "GSN will write this as permanent starter trust evidence. External bank ownership verification remains a separate future rail."
             ),
         },
@@ -1975,24 +1975,29 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     db.commit()
 
     trust_out = apply_trust_score(db, user_id=int(user.id))
-    starter_summary = trust_out.get("starter_proof_summary", {}) if isinstance(trust_out, dict) else {}
-    proof_bits = []
+    if isinstance(trust_out, dict):
+        starter_summary = trust_out.get("starter_evidence_summary") or trust_out.get(
+            "starter_proof_summary", {}
+        )
+    else:
+        starter_summary = {}
+    evidence_bits = []
     if verification.verified_at is None:
-        proof_bits.append("registered phone")
+        evidence_bits.append("registered phone")
     elif starter_summary.get("phone_verified"):
-        proof_bits.append("verified phone")
+        evidence_bits.append("verified phone")
     if starter_summary.get("bank_recorded"):
-        proof_bits.append("bank destination")
+        evidence_bits.append("bank destination")
     if starter_summary.get("drivers_licence_recorded"):
-        proof_bits.append("driver's licence")
+        evidence_bits.append("driver's licence")
     if starter_summary.get("official_id_recorded"):
-        proof_bits.append("official ID")
+        evidence_bits.append("official ID")
     if identity_photo_url:
-        proof_bits.append("photo/selfie evidence")
+        evidence_bits.append("photo/selfie evidence")
     if starter_summary.get("region_consistent"):
-        proof_bits.append("matched region signals")
+        evidence_bits.append("matched region signals")
 
-    proof_text = ", ".join(proof_bits) if proof_bits else "starter identity proofs"
+    evidence_text = ", ".join(evidence_bits) if evidence_bits else "starter identity evidence"
     score_text = _clean_text(
         trust_out.get("standing_score")
         or trust_out.get("score")
@@ -2006,7 +2011,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         kind="trust.onboarding",
         title="Starter trust has been established",
         message=(
-            f"Your current starter trust reflects your {proof_text}. "
+            f"Your current starter trust reflects your {evidence_text}. "
             f"Current trust score: {score_text}. Open Trust or CCI to see why this score was given and what can strengthen it next."
         ),
         action_url="/app/trust",
@@ -2036,7 +2041,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             title="Cross-region onboarding was recorded for review",
             message=(
                 "Your phone and bank regions do not match, so your explanation was attached to your trust record. "
-                "Open Trust to review how this was recorded and what further proof may strengthen it."
+                "Open Trust to review how this was recorded and what further evidence may strengthen it."
             ),
             action_url="/app/trust",
             action_label="Review Trust",

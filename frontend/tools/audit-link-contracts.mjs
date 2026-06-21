@@ -742,7 +742,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /setPublicShopVerification\(publicShopRes\?\.verification \|\| null\);[\s\S]*?async function loadPublicShop\(cleanedGmfnId: string\)[\s\S]*?getPublicMarketplaceShopByGmfnId\(cleanedGmfnId, \{[\s\S]*?clan_id: routeClanId > 0 \? routeClanId : undefined/,
+  /setPublicShopVerification\(publicShopRes\?\.verification \|\| null\);[\s\S]*?async function loadPublicShop\([\s\S]*?cleanedGmfnId: string,[\s\S]*?options: \{ useCommunityScope\?: boolean \} = \{\}[\s\S]*?getPublicMarketplaceShopByGmfnId\(cleanedGmfnId, \{[\s\S]*?clan_id: useCommunityScope && routeClanId > 0 \? routeClanId : undefined/,
   "Public Shop must use the backend public-shop payload for spotlight and verification truth, scoped by route community when present."
 );
 
@@ -926,6 +926,12 @@ assertNotContains(
   "Shop Gallery spotlight community links must not generate the retired public /community/:clanId route."
 );
 
+assertContains(
+  "src/App.tsx",
+  /const CommunityMemberVerifyPage = React\.lazy\([\s\S]*?\.\/pages\/CommunityMemberVerifyPage[\s\S]*?path="\/verify\/community\/:communityKey\/member\/:memberKey"[\s\S]*?element=\{<CommunityMemberVerifyPage \/>\}[\s\S]*?<Route path="\/verify\/community\/:communityKey" element=\{<CommunityVerifyPage \/>\}/,
+  "Public community member credentials must keep their scoped /verify/community/:communityKey/member/:memberKey route before the generic public community route."
+);
+
 assertWholeFileNotContains(
   "src/pages/ShopGalleryPage.tsx",
   /createMarketplaceRepost|repostPanelOpen|shop-gallery\.repost|Live GSN repost|Place in spotlight/,
@@ -982,7 +988,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for live proof[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?async function requestCommunityConfirmationFromOwner\(\)[\s\S]*?Please connect me with the right community confirmation route[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Ask owner[\s\S]*?Trust check options/,
+  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for current evidence[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?async function requestCommunityConfirmationFromOwner\(\)[\s\S]*?Please connect me with the right community confirmation route[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Ask owner[\s\S]*?Trust check options/,
   "Public Shop Verify panel must expose identity/community context while routing community confirmation requests through the owner instead of direct random community contact."
 );
 

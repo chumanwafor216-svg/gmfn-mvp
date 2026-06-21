@@ -511,7 +511,11 @@ function detailPairs(allocation: RevenueAllocationView | null): Array<[string, s
     ["Service fee", `${allocation.serviceFee} ${allocation.currency}`],
     ["Platform revenue", `${allocation.platformRevenue} ${allocation.currency}`],
     ["Guarantor pool", `${allocation.guarantorPool} ${allocation.currency}`],
-    ["Net disbursed", `${allocation.netDisbursedAmount} ${allocation.currency}`],
+    ["Net disbursed preview", `${allocation.netDisbursedAmount} ${allocation.currency}`],
+    [
+      "Allocation boundary",
+      "Returned allocation reading only; not payment instruction, settlement confirmation, or evidence that money moved.",
+    ],
     ["Personal pool at request", `${allocation.personalPoolAtRequest} ${allocation.currency}`],
     ["Pool used", `${allocation.poolUsed} ${allocation.currency}`],
     ["Guarantee gap", `${allocation.guaranteeGap} ${allocation.currency}`],
@@ -795,7 +799,9 @@ export default function RevenueAllocationPage() {
                 lineHeight: 1.45,
               }}
             >
-              See the split without digging through source finance records.
+              See the returned split without digging through source finance
+              records. This page does not confirm settlement or prove money
+              moved.
             </div>
 
             <div
@@ -994,7 +1000,8 @@ export default function RevenueAllocationPage() {
           <div>
             <div style={sectionLabel()}>Allocation summary</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The main financial breakdown of the selected support item.
+              The main returned financial breakdown of the selected support
+              item, not settlement confirmation.
             </div>
           </div>
 
@@ -1012,8 +1019,8 @@ export default function RevenueAllocationPage() {
         <ExplainToggle
           label="What this does"
           what="This is the main money breakdown for the selected item."
-          why="It shows the broad split before the field-by-field view."
-          next="Use this first, then open details only when needed."
+          why="It shows the broad split before the field-by-field view, without proving money movement."
+          next="Use this first, then open details only when needed; settlement still needs finance evidence."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -1085,7 +1092,7 @@ export default function RevenueAllocationPage() {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Net disbursed</div>
+                <div style={sectionLabel()}>Net disbursed preview</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1095,6 +1102,14 @@ export default function RevenueAllocationPage() {
                   }}
                 >
                   {allocation.netDisbursedAmount} {allocation.currency}
+                </div>
+              </div>
+
+              <div style={{ ...statTile("#FFFBEF"), gridColumn: "1 / -1" }}>
+                <div style={sectionLabel()}>Allocation boundary</div>
+                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+                  Returned allocation reading only; not payment instruction,
+                  settlement confirmation, or evidence that money moved.
                 </div>
               </div>
 
@@ -1198,7 +1213,7 @@ export default function RevenueAllocationPage() {
 
               <div style={{ marginTop: 10, ...helperText() }}>
                 See what was kept as fee, what supports guarantors, and what
-                reaches the member.
+                may reach the member in the allocation reading.
               </div>
             </div>
 

@@ -452,7 +452,7 @@ const PUBLIC_CAPABILITY_LINES: Record<number, string> = {
   12: "Adds a visible trust layer to savings groups.",
   13: "Turns contribution memory into usable record.",
   14: "Keeps trust from resetting when people move.",
-  15: "Lets a member carry their good name as proof.",
+  15: "Lets a member carry their good name as a checkable record.",
   16: "Keeps earned reputation useful in new spaces.",
   17: "Gives one trusted identity one wider shop presence.",
   18: "Makes informal service work more visible and trusted.",
@@ -1069,7 +1069,7 @@ export default function MyGMFNAndIPage() {
       },
       {
         label: "Trust Passport",
-        detail: "Deeper trust identity and proof.",
+        detail: "Deeper trust identity and evidence.",
         icon: "shield" as GsnIconName,
         to: routes.trust,
         debugId: "my-gmfn.route.trust",

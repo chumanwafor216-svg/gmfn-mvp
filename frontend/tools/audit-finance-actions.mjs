@@ -166,6 +166,30 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /finance-confirmed \$\{confirmed\}/,
+  "Bank Console reconciliation counts must label confirmed rows as finance-confirmed."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /Reconciliation run recorded:[\s\S]*?settlement-ready[\s\S]*?not settlement or evidence that money moved/,
+  "Bank Console reconciliation language must frame matching as a recorded finance review, not settlement or money movement."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /review matched records[\s\S]*?matched record is visible/,
+  "Bank Console guidance must frame matching as visible matched-record review."
+);
+
+assertNotContains(
+  "src/pages/BankConsolePage.tsx",
+  /Reconciliation complete|treating the rail as settled|`confirmed \$\{confirmed\}`|confirm matches|settlement easier to defend|check whether it matched/,
+  "Bank Console must not make reconciliation runs sound like settlement completion or money movement."
+);
+
+assertContains(
   "src/pages/PayoutDetailsPage.tsx",
   /debugId="payout-details\.front-save"[\s\S]*?debugId="payout-details\.front-copy-summary"[\s\S]*?debugId="payout-details\.save"[\s\S]*?debugId="payout-details\.copy-summary"[\s\S]*?debugId="payout-details\.clear-local"[\s\S]*?debugId="payout-details\.open-money-out"[\s\S]*?debugId="payout-details\.open-loans"/,
   "Payout Details save/copy/clear/follow-on actions must remain traceable."

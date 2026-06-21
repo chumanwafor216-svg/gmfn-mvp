@@ -90,8 +90,8 @@ const LEGACY_WISDOM: MarketWisdomPair[] = [
   },
   {
     id: "mw-legacy-03",
-    title: "Carry one clean proof",
-    proverb: "Portable proof is stronger than repeated explanation.",
+    title: "Carry one clean record",
+    proverb: "A portable trust record is stronger than repeated explanation.",
     gmfn:
       "GSN helps a person or merchant carry usable trust instead of starting from zero again.",
     category: "identity",
@@ -123,7 +123,7 @@ const LEGACY_WISDOM: MarketWisdomPair[] = [
     title: "Consistency compounds",
     proverb: "Small visible reliability becomes larger access over time.",
     gmfn:
-      "GSN rewards steady proof, not noise, by making visible conduct economically useful.",
+      "GSN rewards steady evidence, not noise, by making visible conduct economically useful.",
     category: "operating",
     tone: "focus",
     priority: 3,

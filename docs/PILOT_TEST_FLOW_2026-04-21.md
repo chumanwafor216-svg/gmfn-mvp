@@ -9,7 +9,7 @@ must be corrected first.
 
 ## Pilot Purpose
 
-The pilot should prove three simple things:
+The pilot should demonstrate three simple things:
 
 1. A new person can enter GSN without being lost.
 2. A member can move through community, marketplace, finance, and trust without
@@ -26,14 +26,14 @@ These relaxations are allowed only for the controlled pilot. They are not final
 production banking, telecoms, or public-access rules. Keep them visible in every
 handoff so that nobody mistakes a test shortcut for a completed external rail.
 
-### 1. Phone Proof
+### 1. Phone Evidence
 
 Current pilot state:
 
 - Live SMS OTP is not fully connected.
 - The frontend may use the preview code returned by the backend to keep testing
   moving.
-- Pilot phone proof sessions last about 24 hours so remote testers are not
+- Pilot phone evidence sessions last about 24 hours so remote testers are not
   blocked by short expiry while giving feedback.
 
 User-facing standard:
@@ -102,7 +102,7 @@ Before public launch:
 Current pilot state:
 
 - Users can save payout destinations.
-- The saved destination is proof of where approved withdrawals should go.
+- The saved destination is recorded evidence of where approved withdrawals should go.
 - The system does not yet execute real payouts from GSN.
 
 User-facing standard:
@@ -644,7 +644,7 @@ Unless the product owner explicitly asks:
   environment configuration for a UI issue.
 - Do not remove a route only because it looks duplicated. Confirm redirects and
   callers first.
-- Do not use desktop success as proof of phone success.
+- Do not use desktop success as evidence of phone success.
 
 ## What Testers Should Say Back
 

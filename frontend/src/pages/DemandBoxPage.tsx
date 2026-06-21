@@ -404,14 +404,14 @@ function cciLabel(me: any): string {
 
 function buildDemandDescription(
   description: string,
-  responseProof: string
+  responseEvidence: string
 ): string | undefined {
   const body = safeStr(description);
-  const proof = safeStr(responseProof);
+  const evidence = safeStr(responseEvidence);
   const parts = body ? [body] : [];
 
-  if (proof) {
-    parts.push(`Response proof expected: ${proof}.`);
+  if (evidence) {
+    parts.push(`Response evidence expected: ${evidence}.`);
   }
 
   return parts.join("\n\n") || undefined;
@@ -503,7 +503,7 @@ export default function DemandBoxPage() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [expiresInHours, setExpiresInHours] = useState("72");
   const [paymentMode, setPaymentMode] = useState("");
-  const [responseProof, setResponseProof] = useState("");
+  const [responseEvidence, setResponseEvidence] = useState("");
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
 
   const [creating, setCreating] = useState(false);
@@ -665,7 +665,7 @@ export default function DemandBoxPage() {
     try {
       await createMarketplaceRequest({
         title: safeStr(title),
-        description: buildDemandDescription(description, responseProof),
+        description: buildDemandDescription(description, responseEvidence),
         category: safeStr(category) || undefined,
         urgency: safeStr(urgency) || undefined,
         area: safeStr(area) || undefined,
@@ -684,7 +684,7 @@ export default function DemandBoxPage() {
       setWhatsappNumber("");
       setExpiresInHours("72");
       setPaymentMode("");
-      setResponseProof("");
+      setResponseEvidence("");
       setAllowTrustCredit(false);
 
       await loadPage();
@@ -1262,7 +1262,7 @@ export default function DemandBoxPage() {
               }}
             >
               Create only one clear request at a time. Mark it fulfilled or
-              cancel it when the need is settled.
+              cancel it when the need is resolved.
             </div>
           </div>
         </div>
@@ -1311,8 +1311,8 @@ export default function DemandBoxPage() {
               }}
             >
               {isCreateMode
-                ? "Fill in the need, contact, area, and proof expectation. GSN keeps the community context attached."
-                : "Keep it simple: what you need, where it is needed, how people can reach you, and what proof or payment should be clear first."}
+                ? "Fill in the need, contact, area, and evidence expectation. GSN keeps the community context attached."
+                : "Keep it simple: what you need, where it is needed, how people can reach you, and what evidence or payment should be clear first."}
             </div>
           </div>
         </div>
@@ -1419,7 +1419,7 @@ export default function DemandBoxPage() {
           }}
         >
           <span style={badge(true)}>Community: {currentCommunityName}</span>
-          <span style={badge(false)}>Proof optional</span>
+          <span style={badge(false)}>Evidence optional</span>
           <span style={badge(false)}>Payment terms optional</span>
         </div>
 
@@ -1512,10 +1512,10 @@ export default function DemandBoxPage() {
               </div>
 
               <div>
-                <div style={sectionLabel()}>Proof from responder</div>
+                <div style={sectionLabel()}>Evidence from responder</div>
                 <select
-                  value={responseProof}
-                  onChange={(e) => setResponseProof(e.target.value)}
+                  value={responseEvidence}
+                  onChange={(e) => setResponseEvidence(e.target.value)}
                   style={{ ...inputStyle(), marginTop: 8 }}
                 >
                   <option value="">Choose if needed</option>
@@ -1528,8 +1528,8 @@ export default function DemandBoxPage() {
                   <option value="Please confirm GSN ID and TrustSlip before work starts">
                     GSN ID and TrustSlip
                   </option>
-                  <option value="No extra proof needed before response">
-                    No extra proof
+                  <option value="No extra evidence needed before response">
+                    No extra evidence
                   </option>
                 </select>
               </div>
@@ -1631,7 +1631,7 @@ export default function DemandBoxPage() {
                       checked={allowTrustCredit}
                       onChange={(e) => setAllowTrustCredit(e.target.checked)}
                     />
-                    Allow trust credit where appropriate
+                    Open to trust credit where appropriate
                   </label>
                 </div>
               </div>
@@ -1740,7 +1740,7 @@ export default function DemandBoxPage() {
                         </span>
                       ) : null}
                       {row?.allow_trust_credit ? (
-                        <span style={badge(false)}>Trust credit allowed</span>
+                        <span style={badge(false)}>Open to trust credit</span>
                       ) : null}
                       {safeStr(row?.created_at) ? (
                         <span style={badge(false)}>
@@ -1853,7 +1853,7 @@ export default function DemandBoxPage() {
                               </span>
                             ) : null}
                             {row?.allow_trust_credit ? (
-                              <span style={badge(false)}>Trust credit allowed</span>
+                              <span style={badge(false)}>Open to trust credit</span>
                             ) : null}
                             {safeStr(row?.created_at) ? (
                               <span style={badge(false)}>
@@ -1911,7 +1911,9 @@ export default function DemandBoxPage() {
             }}
           >
             These are open needs from people in your current community. Read the
-            trust signs before you decide how to respond.
+            trust signs before you decide how to respond. Trust-credit openness
+            is a request preference, not approval to release goods, credit, or
+            money.
           </div>
 
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
@@ -2000,7 +2002,7 @@ export default function DemandBoxPage() {
                       </span>
                     ) : null}
                     {row?.allow_trust_credit ? (
-                      <span style={badge(false)}>Trust credit allowed</span>
+                      <span style={badge(false)}>Open to trust credit</span>
                     ) : null}
                   </div>
                 </div>
@@ -2092,7 +2094,7 @@ export default function DemandBoxPage() {
                               </span>
                             ) : null}
                             {row?.allow_trust_credit ? (
-                              <span style={badge(false)}>Trust credit allowed</span>
+                              <span style={badge(false)}>Open to trust credit</span>
                             ) : null}
                           </div>
                         </div>

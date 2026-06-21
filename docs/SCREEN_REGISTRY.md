@@ -25,6 +25,7 @@ No bottom navigation on these screens.
 1. TrustSlipVerifyPage
 2. CommunityConfirmationOutcomePage
 3. CommunityVerifyPage
+4. CommunityMemberVerifyPage
 
 ## Authenticated Screens
 

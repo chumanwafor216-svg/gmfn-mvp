@@ -165,7 +165,7 @@ assertContains(
 
 assertContains(
   "docs/DESIGN_SYSTEM.md",
-  /spotlight = real loudspeaker or megaphone for announcement\/publicity[\s\S]*?sound controls = real speaker\/loudspeaker for audio on\/off[\s\S]*?video\/media = video camera or playable media object, not a megaphone[\s\S]*?community home = premium house, hall, or civic building[\s\S]*?shop \/ marketplace = shopfront, market stall, or real trading place[\s\S]*?vault = safe box[\s\S]*?finance = bank building, cash drawer, or institutional money house[\s\S]*?wallet\/card = personal payout, payment-detail, or card context[\s\S]*?repayment = calendar or payment plan with money\/check evidence[\s\S]*?trust = shield badge or seal[\s\S]*?proof\/certificate = sealed paper, certificate packet, or evidence package[\s\S]*?records = document folder[\s\S]*?join = person-plus/,
+  /spotlight = real loudspeaker or megaphone for announcement\/publicity[\s\S]*?sound controls = real speaker\/loudspeaker for audio on\/off[\s\S]*?video\/media = video camera or playable media object, not a megaphone[\s\S]*?community home = premium house, hall, or civic building[\s\S]*?shop \/ marketplace = shopfront, market stall, or real trading place[\s\S]*?vault = safe box[\s\S]*?finance = bank building, cash drawer, or institutional money house[\s\S]*?wallet\/card = personal payout, payment-detail, or card context[\s\S]*?repayment = calendar or payment plan with money\/check evidence[\s\S]*?trust = shield badge or seal[\s\S]*?evidence\/certificate = sealed paper, certificate packet, or evidence package[\s\S]*?records = document folder[\s\S]*?join = person-plus/,
   "Design system must keep the object-meaning map for GSN icons."
 );
 
@@ -195,7 +195,7 @@ assertContains(
 
 assertContains(
   "docs/GSN_ICON_MIGRATION.md",
-  /Public proof and entry surfaces:[\s\S]*?CoverPage[\s\S]*?WelcomePage[\s\S]*?CommunityVerifyPage[\s\S]*?TrustSlipVerifyPage[\s\S]*?ShopGalleryPage[\s\S]*?Core authenticated work surfaces:[\s\S]*?MarketplacePage[\s\S]*?FinancePage[\s\S]*?TrustScorePage/,
+  /Public evidence and entry surfaces:[\s\S]*?CoverPage[\s\S]*?WelcomePage[\s\S]*?CommunityVerifyPage[\s\S]*?TrustSlipVerifyPage[\s\S]*?ShopGalleryPage[\s\S]*?Core authenticated work surfaces:[\s\S]*?MarketplacePage[\s\S]*?FinancePage[\s\S]*?TrustScorePage/,
   "Icon migration plan must keep the priority screen migration order."
 );
 
@@ -219,8 +219,8 @@ assertContains(
 
 assertContains(
   "frontend/src/components/GsnLegacyIcon.tsx",
-  /bank: "finance-bank-building"[\s\S]*?chart: "finance-bank-building"[\s\S]*?financeInstitution: "finance-bank-building"[\s\S]*?marketplace: "market-stall"[\s\S]*?proof: "certificate-seal"[\s\S]*?repaymentSchedule: "repayment-schedule"[\s\S]*?shop: "market-stall"[\s\S]*?soundOn: "audio-speaker"[\s\S]*?speaker: "audio-speaker"[\s\S]*?tag: "market-stall"[\s\S]*?video: "media-video"/,
-  "Legacy icon adapter must route domain finance, marketplace, proof, repayment, sound, and video meanings to the stronger 3D assets."
+  /bank: "finance-bank-building"[\s\S]*?chart: "finance-bank-building"[\s\S]*?evidence: "certificate-seal"[\s\S]*?financeInstitution: "finance-bank-building"[\s\S]*?marketplace: "market-stall"[\s\S]*?proof: "certificate-seal"[\s\S]*?repaymentSchedule: "repayment-schedule"[\s\S]*?shop: "market-stall"[\s\S]*?soundOn: "audio-speaker"[\s\S]*?speaker: "audio-speaker"[\s\S]*?tag: "market-stall"[\s\S]*?video: "media-video"/,
+  "Legacy icon adapter must route domain finance, marketplace, certificate/evidence, repayment, sound, and video meanings to the stronger 3D assets."
 );
 
 assertContains(
@@ -349,14 +349,14 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/TrustSlipPage.tsx",
-  /<GsnLegacyIcon name="proof" size=\{40\} \/>[\s\S]*?<span>GSN<\/span>/,
-  "TrustSlip hero must use a proof/certificate 3D icon instead of a generic globe mark."
+  /<GsnLegacyIcon name="evidence" size=\{40\} \/>[\s\S]*?<span>GSN<\/span>/,
+  "TrustSlip hero must use a certificate/evidence 3D icon instead of a generic globe mark."
 );
 
 assertContains(
   "frontend/src/pages/CCIReadingPage.tsx",
-  /cciIconBadge\("community", <>Class \{cci\.classText\}<\/>, true\)[\s\S]*?labelWithIcon\("community", "Reading"\)[\s\S]*?labelWithIcon\("proof", "Open Trust Passport"\)/,
-  "CCI first viewport must use community/proof icon meaning instead of finance-chart meaning."
+  /cciIconBadge\("community", <>Class \{cci\.classText\}<\/>, true\)[\s\S]*?labelWithIcon\("community", "Reading"\)[\s\S]*?labelWithIcon\("evidence", "Open Trust Passport"\)/,
+  "CCI first viewport must use community/certificate icon meaning instead of finance-chart meaning."
 );
 
 if (findings.length) {

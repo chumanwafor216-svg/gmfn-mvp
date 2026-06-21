@@ -76,7 +76,7 @@ function trustDocumentIcon(id: string): GsnIconName {
     case "passport":
       return "certificate";
     case "trust-slip":
-      return "proof";
+      return "evidence";
     case "verify":
       return "qr";
     default:
@@ -105,7 +105,7 @@ function iconTile(disabled = false): React.CSSProperties {
 
 export default function TrustDocumentFamilyMap({
   title = "How these trust surfaces fit together",
-  intro = "Use this map when you need to understand the difference between the stable identity layer, the fuller trust story, the portable proof, and the public verification check.",
+  intro = "Use this map when you need to understand the difference between the stable identity layer, the fuller trust story, the portable record, and the public verification check.",
   items,
   compact = false,
 }: Props) {

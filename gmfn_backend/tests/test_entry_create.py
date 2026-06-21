@@ -1192,6 +1192,12 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     )
     assert explained_res.status_code == 200, explained_res.text
     explained_body = explained_res.json()
+    assert explained_body["starter_evidence_summary"]["phone_verified"] is True
+    assert explained_body["starter_evidence_summary"]["bank_recorded"] is True
+    assert (
+        explained_body["starter_evidence_summary"]["drivers_licence_recorded"] is True
+    )
+    assert explained_body["starter_evidence_summary"]["region_consistent"] is True
     assert explained_body["starter_proof_summary"]["phone_verified"] is True
     assert explained_body["starter_proof_summary"]["bank_recorded"] is True
     assert explained_body["starter_proof_summary"]["drivers_licence_recorded"] is True
@@ -1709,6 +1715,10 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
     assert review_body["provider_response"]["provider_verified"] is False
     assert review_body["provider_response"]["manual_review"] is True
     assert review_body["trust_summary"]["counts"]["identity_photo_verified"] == 1
+    assert (
+        review_body["trust_summary"]["starter_evidence_summary"]["photo_evidence_verified"]
+        is True
+    )
     assert review_body["trust_summary"]["starter_proof_summary"]["photo_evidence_verified"] is True
 
     with SessionLocal() as db:
@@ -1749,6 +1759,16 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
     assert correction_body["trust_summary"]["counts"]["identity_photo_verified"] == 1
     assert correction_body["trust_summary"]["counts"]["identity_photo_verified_reversed"] == 1
     assert correction_body["trust_summary"]["counts"]["identity_photo_verified_net"] == 0
+    assert (
+        correction_body["trust_summary"]["starter_evidence_summary"]["photo_evidence_verified"]
+        is False
+    )
+    assert (
+        correction_body["trust_summary"]["starter_evidence_summary"][
+            "photo_evidence_verified_reversed"
+        ]
+        is True
+    )
     assert correction_body["trust_summary"]["starter_proof_summary"]["photo_evidence_verified"] is False
     assert correction_body["trust_summary"]["starter_proof_summary"]["photo_evidence_verified_reversed"] is True
 
@@ -1764,6 +1784,12 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
     assert needs_more_body["status"] == "manual_review_required"
     assert needs_more_body["trust_summary"]["counts"]["identity_photo_needs_more"] == 1
     assert needs_more_body["trust_summary"]["counts"]["identity_photo_needs_more_active"] == 1
+    assert (
+        needs_more_body["trust_summary"]["starter_evidence_summary"][
+            "photo_evidence_needs_more"
+        ]
+        is True
+    )
     assert needs_more_body["trust_summary"]["starter_proof_summary"]["photo_evidence_needs_more"] is True
 
     rereview_res = client.post(
@@ -1781,6 +1807,16 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
     assert rereview_body["trust_summary"]["counts"]["identity_photo_verified_net"] == 1
     assert rereview_body["trust_summary"]["counts"]["identity_photo_needs_more_active"] == 0
     assert rereview_body["trust_summary"]["latest_source"] == "identity.photo_evidence_verified"
+    assert (
+        rereview_body["trust_summary"]["starter_evidence_summary"]["photo_evidence_verified"]
+        is True
+    )
+    assert (
+        rereview_body["trust_summary"]["starter_evidence_summary"][
+            "photo_evidence_needs_more"
+        ]
+        is False
+    )
     assert rereview_body["trust_summary"]["starter_proof_summary"]["photo_evidence_verified"] is True
     assert rereview_body["trust_summary"]["starter_proof_summary"]["photo_evidence_needs_more"] is False
 
@@ -1830,6 +1866,10 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
     reject_body = reject_res.json()
     assert reject_body["trust_summary"]["counts"]["identity_photo_rejected"] == 1
     assert reject_body["trust_summary"]["counts"]["identity_photo_rejected_active"] == 1
+    assert (
+        reject_body["trust_summary"]["starter_evidence_summary"]["photo_evidence_rejected"]
+        is True
+    )
     assert reject_body["trust_summary"]["starter_proof_summary"]["photo_evidence_rejected"] is True
 
     reject_correction_res = client.post(
@@ -1842,6 +1882,12 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
     reject_correction_body = reject_correction_res.json()
     assert reject_correction_body["trust_summary"]["counts"]["identity_photo_rejected"] == 1
     assert reject_correction_body["trust_summary"]["counts"]["identity_photo_rejected_active"] == 0
+    assert (
+        reject_correction_body["trust_summary"]["starter_evidence_summary"][
+            "photo_evidence_rejected"
+        ]
+        is False
+    )
     assert reject_correction_body["trust_summary"]["starter_proof_summary"]["photo_evidence_rejected"] is False
 
 

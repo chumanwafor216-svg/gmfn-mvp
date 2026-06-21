@@ -50,7 +50,7 @@ export function buildTrustDocumentFamilyItems(
     },
     {
       id: "trust-slip",
-      label: "Portable proof",
+      label: "Portable record",
       title: "TrustSlip",
       detail:
         "TrustSlip is the portable trust document. It carries the outward-facing trust summary, code, expiry, and verify route in one shareable surface.",
@@ -65,7 +65,7 @@ export function buildTrustDocumentFamilyItems(
       label: "Public validity check",
       title: "TrustSlip Verify",
       detail:
-        "TrustSlip Verify confirms the current public reading. It proves whether a supplied TrustSlip code still belongs to a valid visible record right now.",
+        "TrustSlip Verify checks the current public reading and whether a supplied TrustSlip code still points to a visible current record right now.",
       to: isAppRoute ? "/app/trust-slip/verify" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute

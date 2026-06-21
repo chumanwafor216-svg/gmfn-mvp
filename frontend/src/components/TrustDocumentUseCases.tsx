@@ -84,7 +84,7 @@ function trustUseCaseIcon(id: string): GsnIconName {
     case "passport":
       return "certificate";
     case "trust-slip":
-      return "proof";
+      return "evidence";
     case "verify":
       return "qr";
     default:

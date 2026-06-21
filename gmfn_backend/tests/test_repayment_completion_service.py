@@ -91,7 +91,7 @@ def _seed_approved_supported_loan(db):
     return clan, borrower, guarantor, loan, guarantor_row
 
 
-def test_full_repayment_records_trust_proof_and_releases_guarantor_lock(db):
+def test_full_repayment_records_trust_evidence_and_releases_guarantor_lock(db):
     clan, borrower, _guarantor, loan, guarantor_row = _seed_approved_supported_loan(db)
 
     repayment, updated_loan = create_repayment(

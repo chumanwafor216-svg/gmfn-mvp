@@ -949,7 +949,7 @@ export default function TrustCommandCentrePage() {
   );
   const evidencePackChecklistTruth = firstTruthy(
     evidencePackChecklist?.truth_statement,
-    "Evidence proof still needs accepted screenshots and PDFs."
+    "Evidence still needs accepted screenshots and PDFs."
   );
   const evidencePackChecklistItems = rowsOf<any>(evidencePackChecklist?.items).slice(0, 4);
   const exposureTotals = executiveReading.exposure?.totals || null;
@@ -1214,7 +1214,7 @@ export default function TrustCommandCentrePage() {
     if (!systemOk) {
       return {
         title: "Check system health first",
-        detail: "The service health check is not clean yet. Confirm database and service health before reading deeper admin views.",
+        detail: "The service health check is not clean yet. Check database and service health before reading deeper admin views.",
         to: routes.systemOperations,
         cta: "Open System Operations",
       };
@@ -1231,7 +1231,7 @@ export default function TrustCommandCentrePage() {
 
     if (selectedClanId > 0 && executiveReading.exposureError) {
       return {
-        title: "Confirm community-admin exposure access",
+        title: "Check community-admin exposure access",
         detail: "Exposure summary could not be loaded for the current community. Verify the active community context and admin access before relying on exposure pressure.",
         to: routes.exposure,
         cta: "Open Exposure",
@@ -1271,7 +1271,7 @@ export default function TrustCommandCentrePage() {
             ? "One incomplete loan is nearing auto-cancel"
             : `${urgentIncompleteCount} incomplete loans are nearing auto-cancel`,
         detail:
-          "The unresolved loan queue now has items running short on time. Review approval progress and coverage before they fall out of the active path.",
+          "The unresolved loan queue now has items running short on time. Review pledge progress and coverage before they fall out of the active path.",
         to: routes.incompleteLoans,
         cta: "Open Incomplete Loans",
       };
@@ -1632,7 +1632,7 @@ export default function TrustCommandCentrePage() {
                     {pilotOverallLabel}
                   </div>
                   <div style={commandStatDetailStyle()}>
-                    Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Needs proof: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
+                    Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Needs evidence: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
                   </div>
                 </div>
 
@@ -1649,13 +1649,13 @@ export default function TrustCommandCentrePage() {
                 <div style={statTile()}>
                   <div>{sectionLabelWithIcon("alert", "Exposure pressure")}</div>
                   <div style={commandStatValueStyle()}>
-                    {exposureTotals ? `${formatNumber(exposureTotals.exposure)} exposed` : "Unavailable"}
+                    {exposureTotals ? `${formatNumber(exposureTotals.exposure)} exposure reading` : "Unavailable"}
                   </div>
                   <div style={commandStatDetailStyle()}>
                     {exposureTotals
-                      ? `Available: ${formatNumber(exposureTotals.available)} | Pool: ${formatNumber(exposureTotals.pool)}`
+                      ? `Buffer: ${formatNumber(exposureTotals.available)} | Pool: ${formatNumber(exposureTotals.pool)}`
                       : selectedClanId > 0
-                      ? "Exposure totals could not be confirmed."
+                      ? "Exposure totals could not be loaded."
                       : "Select a current community first."}
                   </div>
                 </div>
@@ -1881,7 +1881,7 @@ export default function TrustCommandCentrePage() {
                   {pilotOverallLabel}
                 </div>
                 <div style={{ marginTop: 10, ...helperText() }}>
-                  Ready {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Needs proof{" "}
+                  Ready {Number(executiveReading.pilotReadiness?.ready_count || 0)} | Needs evidence{" "}
                   {Number(executiveReading.pilotReadiness?.partial_count || 0)} | Blocked{" "}
                   {Number(executiveReading.pilotReadiness?.blocked_count || 0)}
                 </div>
@@ -1978,13 +1978,17 @@ export default function TrustCommandCentrePage() {
                           fontSize: 15,
                         }}
                       >
-                        Evidence proof to capture first
+                        Evidence to capture first
                       </div>
                       <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
                         {evidencePackChecklistItems.map((item) => (
                           <div key={firstTruthy(item?.key, item?.area)} style={{ ...helperText(), fontSize: 13 }}>
                             <b>{firstTruthy(item?.area, "Evidence area")}</b>:{" "}
-                            {firstTruthy(item?.required_proof, "Required proof not named.")}{" "}
+                            {firstTruthy(
+                              item?.required_evidence,
+                              item?.required_proof,
+                              "Required evidence not named."
+                            )}{" "}
                             <span style={{ fontWeight: 850 }}>
                               ({safeStr(item?.status).replace(/_/g, " ") || "not captured"})
                             </span>
@@ -2214,12 +2218,12 @@ export default function TrustCommandCentrePage() {
                 }}
               >
                 {selectedClanId > 0 && exposureTotals
-                  ? `${formatNumber(exposureTotals.exposure)} exposed`
+                  ? `${formatNumber(exposureTotals.exposure)} exposure reading`
                   : "Risk and concentration view"}
               </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                 {selectedClanId > 0 && exposureTotals
-                  ? `Pool ${formatNumber(exposureTotals.pool)} | Available ${formatNumber(
+                  ? `Pool ${formatNumber(exposureTotals.pool)} | Buffer ${formatNumber(
                       exposureTotals.available
                     )}`
                   : "Choose a community to load community-specific exposure totals."}
