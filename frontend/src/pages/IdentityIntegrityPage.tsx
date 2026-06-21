@@ -457,6 +457,38 @@ function identityCopyIconBox(ready: boolean, active: boolean): React.CSSProperti
   };
 }
 
+function identityTaskButtonStyle(): React.CSSProperties {
+  return {
+    height: 52,
+    minHeight: 52,
+    maxHeight: 52,
+    minWidth: 0,
+    width: "100%",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    lineHeight: 1.05,
+    flexShrink: 0,
+    transition: "none",
+  };
+}
+
+function identityCompletionFieldStyle(): React.CSSProperties {
+  return {
+    height: 52,
+    minHeight: 52,
+    maxHeight: 52,
+    boxSizing: "border-box",
+    borderRadius: 13,
+    border: "1px solid rgba(37,78,119,0.16)",
+    padding: "0 12px",
+    color: "#07172C",
+    fontWeight: 900,
+    fontSize: 14,
+    background: "#FFFFFF",
+  };
+}
+
 function identityRecoveryPanel(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 18,
@@ -2532,6 +2564,7 @@ export default function IdentityIntegrityPage() {
             minWidth={isCompact ? undefined : 190}
             debugId="identity-integrity.active-task-action"
             style={{
+              ...identityTaskButtonStyle(),
               borderRadius: 14,
               background:
                 activeTask.to || activeTask.key === "recovery"
@@ -2629,15 +2662,7 @@ export default function IdentityIntegrityPage() {
                     onChange={(event) => setPhoneInput(event.target.value)}
                     placeholder="+447700900123"
                     disabled={phoneBusy || Boolean(phoneVerificationId)}
-                    style={{
-                      minHeight: isCompact ? 52 : 46,
-                      borderRadius: 13,
-                      border: "1px solid rgba(37,78,119,0.16)",
-                      padding: "0 12px",
-                      color: "#07172C",
-                      fontWeight: 900,
-                      fontSize: 14,
-                    }}
+                    style={identityCompletionFieldStyle()}
                   />
                 </label>
                 {phoneVerificationId ? (
@@ -2649,15 +2674,7 @@ export default function IdentityIntegrityPage() {
                       value={phoneCode}
                       onChange={(event) => setPhoneCode(event.target.value)}
                       placeholder="6 digits"
-                      style={{
-                        minHeight: isCompact ? 52 : 46,
-                        borderRadius: 13,
-                        border: "1px solid rgba(37,78,119,0.16)",
-                        padding: "0 12px",
-                        color: "#07172C",
-                        fontWeight: 900,
-                        fontSize: 14,
-                      }}
+                      style={identityCompletionFieldStyle()}
                     />
                   </label>
                 ) : null}
@@ -2698,9 +2715,10 @@ export default function IdentityIntegrityPage() {
                 <PrimaryButton
                   type="submit"
                   disabled={phoneBusy || !phoneInput || (Boolean(phoneVerificationId) && !phoneCode)}
-                  stableHeight={isCompact ? 52 : 46}
+                  stableHeight={52}
                   fullWidth
                   debugId="identity-integrity.phone-completion-submit"
+                  style={identityTaskButtonStyle()}
                 >
                   {phoneBusy
                     ? "Working..."
@@ -2729,16 +2747,7 @@ export default function IdentityIntegrityPage() {
                   <select
                     value={officialIdType}
                     onChange={(event) => setOfficialIdType(event.target.value)}
-                    style={{
-                      minHeight: isCompact ? 52 : 46,
-                      borderRadius: 13,
-                      border: "1px solid rgba(37,78,119,0.16)",
-                      padding: "0 12px",
-                      color: "#07172C",
-                      fontWeight: 900,
-                      fontSize: 14,
-                      background: "#FFFFFF",
-                    }}
+                    style={identityCompletionFieldStyle()}
                   >
                     <option>Passport</option>
                     <option>National ID</option>
@@ -2755,15 +2764,7 @@ export default function IdentityIntegrityPage() {
                     value={officialIdReference}
                     onChange={(event) => setOfficialIdReference(event.target.value)}
                     placeholder="Last digits or reference"
-                    style={{
-                      minHeight: isCompact ? 52 : 46,
-                      borderRadius: 13,
-                      border: "1px solid rgba(37,78,119,0.16)",
-                      padding: "0 12px",
-                      color: "#07172C",
-                      fontWeight: 900,
-                      fontSize: 14,
-                    }}
+                    style={identityCompletionFieldStyle()}
                   />
                 </label>
                 <label style={{ display: "grid", gap: 5 }}>
@@ -2774,15 +2775,7 @@ export default function IdentityIntegrityPage() {
                     value={officialIdCountry}
                     onChange={(event) => setOfficialIdCountry(event.target.value)}
                     placeholder="GB, NG, GH..."
-                    style={{
-                      minHeight: isCompact ? 52 : 46,
-                      borderRadius: 13,
-                      border: "1px solid rgba(37,78,119,0.16)",
-                      padding: "0 12px",
-                      color: "#07172C",
-                      fontWeight: 900,
-                      fontSize: 14,
-                    }}
+                    style={identityCompletionFieldStyle()}
                   />
                 </label>
 
@@ -2829,10 +2822,10 @@ export default function IdentityIntegrityPage() {
                             selfiePhotoInputRef.current.click();
                           }
                         }}
-                        stableHeight={isCompact ? 52 : 42}
+                        stableHeight={52}
                         fullWidth
                         debugId="identity-integrity.identity-photo.selfie"
-                        style={{ borderRadius: 13 }}
+                        style={{ ...identityTaskButtonStyle(), borderRadius: 13 }}
                       >
                         Selfie
                       </SecondaryButton>
@@ -2844,10 +2837,10 @@ export default function IdentityIntegrityPage() {
                             idPhotoInputRef.current.click();
                           }
                         }}
-                        stableHeight={isCompact ? 52 : 42}
+                        stableHeight={52}
                         fullWidth
                         debugId="identity-integrity.identity-photo.id-photo"
-                        style={{ borderRadius: 13 }}
+                        style={{ ...identityTaskButtonStyle(), borderRadius: 13 }}
                       >
                         ID photo
                       </SecondaryButton>
@@ -2909,10 +2902,10 @@ export default function IdentityIntegrityPage() {
                         type="button"
                         onClick={handleRecordIdentityPhoto}
                         disabled={identityPhotoBusy || !identityPhotoFile}
-                        stableHeight={isCompact ? 52 : 42}
+                        stableHeight={52}
                         fullWidth
                         debugId="identity-integrity.identity-photo.record"
-                        style={{ borderRadius: 13 }}
+                        style={{ ...identityTaskButtonStyle(), borderRadius: 13 }}
                       >
                         {identityPhotoBusy ? "Recording..." : "Record photo evidence"}
                       </PrimaryButton>
@@ -2927,10 +2920,10 @@ export default function IdentityIntegrityPage() {
                     !officialIdReference ||
                     !officialIdCountry
                   }
-                  stableHeight={isCompact ? 52 : 46}
+                  stableHeight={52}
                   fullWidth
                   debugId="identity-integrity.official-id-completion-submit"
-                  style={{ gridColumn: "1 / -1" }}
+                  style={{ ...identityTaskButtonStyle(), gridColumn: "1 / -1" }}
                 >
                   {officialIdBusy ? "Recording..." : "Record ID evidence"}
                 </PrimaryButton>

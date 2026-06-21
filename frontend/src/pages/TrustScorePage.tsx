@@ -891,6 +891,22 @@ function overviewBadge(ok: boolean, muted = false): React.CSSProperties {
   };
 }
 
+function trustScoreFixedActionStyle(height = 52): React.CSSProperties {
+  return {
+    height,
+    minHeight: height,
+    maxHeight: height,
+    minWidth: 0,
+    width: "100%",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    lineHeight: 1.05,
+    flexShrink: 0,
+    transition: "none",
+  };
+}
+
 function evidenceDialStyle(degrees: number, isCompact = false): React.CSSProperties {
   const clamped = Math.max(0, Math.min(360, Number(degrees) || 0));
   const size = isCompact ? 42 : 52;
@@ -3191,10 +3207,11 @@ export default function TrustScorePage() {
           >
             <PrimaryButton
               onClick={() => setShowIdentityCompletionPaths((open) => !open)}
-              stableHeight={isCompact ? 50 : 58}
+              stableHeight={52}
               fullWidth
               aria-expanded={showIdentityCompletionPaths}
               style={{
+                ...trustScoreFixedActionStyle(52),
                 borderRadius: isCompact ? 12 : 14,
                 fontSize: isCompact ? 13 : 16,
                 fontWeight: 1000,
@@ -3216,9 +3233,10 @@ export default function TrustScorePage() {
                   text: "The public community record is not ready because this Trust Passport has no community code yet.",
                 });
               }}
-              stableHeight={isCompact ? 50 : 58}
+              stableHeight={52}
               fullWidth
               style={{
+                ...trustScoreFixedActionStyle(52),
                 borderRadius: isCompact ? 12 : 14,
                 background: "linear-gradient(180deg, #052B58 0%, #031E42 100%)",
                 border: "1px solid rgba(3,30,66,0.18)",
@@ -3423,10 +3441,11 @@ export default function TrustScorePage() {
                         text: `${item.label} needs a dedicated signed-in completion page before GSN can finish it from Trust Passport.`,
                       });
                     }}
-                    stableHeight={isCompact ? 56 : 62}
+                    stableHeight={56}
                     fullWidth
                     debugId={item.debugId}
                     style={{
+                      ...trustScoreFixedActionStyle(56),
                       justifyContent: "flex-start",
                       gap: isCompact ? 8 : 10,
                       borderRadius: isCompact ? 12 : 14,

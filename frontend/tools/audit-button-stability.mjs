@@ -668,6 +668,12 @@ assertContains(
   "Trust Score must use shared stable button primitives and shared CTA resolution for surface navigation, refresh, copy, verify, and review actions."
 );
 
+assertContains(
+  "src/pages/TrustScorePage.tsx",
+  /function trustScoreFixedActionStyle\(height = 52\): React\.CSSProperties \{[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height,[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?stableHeight=\{52\}[\s\S]*?\.\.\.trustScoreFixedActionStyle\(52\)[\s\S]*?debugId="trust-score\.complete-identification"[\s\S]*?stableHeight=\{52\}[\s\S]*?\.\.\.trustScoreFixedActionStyle\(52\)[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?stableHeight=\{56\}[\s\S]*?debugId=\{item\.debugId\}[\s\S]*?\.\.\.trustScoreFixedActionStyle\(56\)/,
+  "Trust Score Complete ID checks and identity completion rows must keep fixed action geometry when tapped, expanded, disabled, or loaded."
+);
+
 assertNotContains(
   "src/pages/TrustScorePage.tsx",
   /(function (actionBtn|tapSafeButtonBase|stopTrustTap)\(|actionBtn\(|tapSafeButtonBase\(|stopTrustTap|<button|<a\s|OriginLink|to="\/app|homeTo="\/app|backTo="\/app|openTrustRoute\("\/app)/,
@@ -726,6 +732,12 @@ assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
   /function selectIdentityTask\(key: IdentityTaskKey\)[\s\S]*?setActiveIdentityTask\(key\)[\s\S]*?setIdentityPhotoFile\(null\)[\s\S]*?setIdentityPhotoPreview\(""\)[\s\S]*?setPhoneTaskMessage\(""\)[\s\S]*?data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 52 : 16[\s\S]*?stableHeight=\{isCompact \? 54 : 58\}[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}[\s\S]*?data-identity-integrity-active-task="true"[\s\S]*?minHeight: isCompact \? 178 : undefined[\s\S]*?overflow: "hidden"/,
   "Identity & Integrity evidence-task selector must clear transient panels and keep the active task surface contained on phone."
+);
+
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
+  /function identityTaskButtonStyle\(\): React\.CSSProperties \{[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function identityCompletionFieldStyle\(\): React\.CSSProperties \{[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?debugId="identity-integrity\.active-task-action"[\s\S]*?\.\.\.identityTaskButtonStyle\(\)[\s\S]*?debugId="identity-integrity\.phone-completion-submit"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.selfie"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.id-photo"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.record"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.official-id-completion-submit"[\s\S]*?stableHeight=\{52\}/,
+  "Identity & Integrity phone/ID completion controls must keep one fixed 52px action and field geometry across disabled, busy, photo-selected, and submitted states."
 );
 
 assertNotContains(

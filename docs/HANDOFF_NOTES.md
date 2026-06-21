@@ -1,3 +1,33 @@
+## 2026-06-21 - Complete ID Button Stability
+
+- Trigger:
+  - owner reported that the `Complete ID` button was now jumpy.
+  - code audit found the exact visible label as `Complete ID checks` on Trust
+    Passport, plus downstream phone/official-ID completion controls on Identity
+    & Integrity with inconsistent compact/desktop heights.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - fixed `Complete ID checks`, `Open public community record`, and the
+      expanded identity-completion rows to stable 52/56px action geometry.
+    - added no-wrap, fixed-height, no-transition action styling so labels and
+      disabled/expanded states do not reflow the button.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - fixed active task action, phone submit, official ID submit, photo buttons,
+      and the phone/ID form fields to a consistent 52px geometry.
+    - replaced mixed 42/46/52px completion controls with one stable shell for
+      the ID completion path.
+  - `frontend/tools/audit-button-stability.mjs`
+    - added a cage for Trust Passport `Complete ID checks` and Identity &
+      Integrity phone/ID completion geometry.
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed.
+  - `npm run audit:protected-button-freeze` passed.
+- Deploy state:
+  - local only at time of note; not pushed and not Render-visible until the
+    owner approves publishing this batch.
+
 ## 2026-06-21 - Join-Member Phone Verification Bridge
 
 - Trigger:
