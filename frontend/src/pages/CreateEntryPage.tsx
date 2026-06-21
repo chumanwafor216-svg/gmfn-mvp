@@ -1782,6 +1782,21 @@ export default function CreateEntryPage() {
     writeStorage(ENTRY_CREATE_CODE_KEY, null);
     writeStorage(ENTRY_INVITE_CODE_KEY, null);
     clearCreateEntryDraft(createCode);
+
+    if (isAuthenticated()) {
+      nav("/app/clans", {
+        replace: false,
+        state: {
+          create_community: {
+            name: safeStr(communityName),
+            description: safeStr(description),
+          },
+          source: "create-entry-existing-member",
+        },
+      });
+      return;
+    }
+
     nav(existingMemberLoginTo, { replace: false });
   }
 
@@ -2046,7 +2061,9 @@ export default function CreateEntryPage() {
             }}
           >
             {identityGateActive
-              ? "Before GSN opens a fresh founder record, answer this first. If you already have a GSN ID, sign in and create the new community from that same identity. GSN will ask for the community details, not another full personal record."
+              ? isAuthenticated()
+                ? "You are already signed in. Open the signed-in community lane so this same GSN ID starts the new community without repeating phone, bank, or identity records."
+                : "Before GSN opens a fresh founder record, answer this first. If you already have a GSN ID, sign in and create the new community from that same identity. GSN will ask for the community details, not another full personal record."
               : "One person should keep one GSN ID across every community. Sign in first, then create or join communities from that same identity."}
           </div>
 
@@ -2063,7 +2080,7 @@ export default function CreateEntryPage() {
                 flex: "1 1 220px",
               }}
             >
-              Sign in with GSN ID
+              {isAuthenticated() ? "Open signed-in create" : "Sign in with GSN ID"}
             </PrimaryButton>
             <SecondaryButton
               onClick={

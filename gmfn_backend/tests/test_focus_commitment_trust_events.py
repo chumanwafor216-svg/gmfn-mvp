@@ -10,7 +10,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
-from app.db.models import Clan, ClanMembership, TrustEvent, TrustSlip, User, UserPayoutDestination
+from app.db.models import (
+    Clan,
+    ClanJoinRequest,
+    ClanMembership,
+    TrustEvent,
+    TrustSlip,
+    User,
+    UserPayoutDestination,
+)
 from app.db.verification_models import IdentityVerificationCheck
 from app.api.routes.trust_slips import _public_visibility_level
 from app.services.trust_slips_services import get_trust_slip_payload, issue_trust_slip_for_user
@@ -299,6 +307,86 @@ def test_signed_in_phone_start_records_system_generated_phone_evidence(
     assert payload["identity_context"]["phone_status_label"] == (
         "Phone number recorded; network verification pending"
     )
+
+
+def test_signed_in_phone_start_releases_abandoned_pending_phone_identity(
+    client: TestClient,
+    monkeypatch,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "preview")
+
+    with SessionLocal() as db:
+        abandoned = User(
+            email="abandoned-signed-in-phone@example.com",
+            phone_e164="+447700900333",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(abandoned)
+        db.commit()
+        abandoned_id = int(abandoned.id)
+
+    start_res = client.post(
+        "/entry/signed-in/phone/start",
+        json={"phone_e164": "+447700900333", "country": "GB"},
+    )
+    assert start_res.status_code == 201, start_res.text
+    assert start_res.json()["phone_e164"] == "+447700900333"
+
+    with SessionLocal() as db:
+        abandoned = db.get(User, abandoned_id)
+        signed_in = db.get(User, 1)
+        assert abandoned is not None
+        assert abandoned.phone_e164 is None
+        assert abandoned.email.startswith(f"abandoned-entry-{abandoned_id}-")
+        assert signed_in is not None
+        assert signed_in.phone_e164 == "+447700900333"
+        assert signed_in.phone_verified_at is None
+
+
+def test_signed_in_phone_start_keeps_pending_join_phone_protected(
+    client: TestClient,
+    monkeypatch,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "preview")
+
+    with SessionLocal() as db:
+        applicant = User(
+            email="protected-signed-in-phone@example.com",
+            phone_e164="+447700900334",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                clan_id=1,
+                applicant_user_id=int(applicant.id),
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+        applicant_id = int(applicant.id)
+
+    start_res = client.post(
+        "/entry/signed-in/phone/start",
+        json={"phone_e164": "+447700900334", "country": "GB"},
+    )
+    assert start_res.status_code == 409, start_res.text
+
+    with SessionLocal() as db:
+        applicant = db.get(User, applicant_id)
+        signed_in = db.get(User, 1)
+        assert applicant is not None
+        assert applicant.phone_e164 == "+447700900334"
+        assert signed_in is not None
+        assert signed_in.phone_e164 != "+447700900334"
 
 
 def test_signed_in_identity_completion_records_phone_and_official_id(

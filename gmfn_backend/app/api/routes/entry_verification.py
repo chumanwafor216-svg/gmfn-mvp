@@ -9,11 +9,12 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, is_user_activation_pending
 from app.db.database import get_db
-from app.db.models import ClanMembership, EntryPhoneVerification, User
+from app.db.models import Clan, ClanJoinRequest, ClanMembership, EntryPhoneVerification, User
 from app.db.verification_models import IdentityVerificationCheck
 from app.services.trust_events_services import build_trust_meta, log_trust_event
 from app.services.verification_adapters.base import VerificationAdapterRequest
@@ -323,6 +324,62 @@ def _document_reference_last4(value: object) -> str:
     return compact[-4:] if compact else ""
 
 
+def _pending_user_has_live_entry_path(db: Session, user: User) -> bool:
+    user_id = int(getattr(user, "id", 0) or 0)
+    if user_id <= 0:
+        return False
+
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == user_id,
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if membership is not None:
+        return True
+
+    join_request = (
+        db.query(ClanJoinRequest)
+        .filter(ClanJoinRequest.applicant_user_id == user_id)
+        .first()
+    )
+    if join_request is not None:
+        return True
+
+    return db.query(Clan).filter(Clan.created_by_user_id == user_id).first() is not None
+
+
+def _release_abandoned_pending_phone_identity(
+    *,
+    db: Session,
+    user: User,
+) -> bool:
+    if not is_user_activation_pending(user):
+        return False
+    if _pending_user_has_live_entry_path(db, user):
+        return False
+
+    user_id = int(getattr(user, "id", 0) or 0)
+    if user_id <= 0:
+        return False
+
+    stamp = int(_now().timestamp())
+    suffix = secrets.token_hex(4)
+    user.email = f"abandoned-entry-{user_id}-{stamp}-{suffix}@abandoned.gsnmail.app"
+    user.phone_e164 = None
+    user.phone_verified_at = None
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return False
+    db.refresh(user)
+    return True
+
+
 @router.post("/signed-in/phone/start", status_code=status.HTTP_201_CREATED)
 def start_signed_in_phone_verification(
     payload: SignedInPhoneStartIn,
@@ -345,7 +402,14 @@ def start_signed_in_phone_verification(
         .first()
     )
     if clash:
-        raise HTTPException(status_code=409, detail="This phone number is already used by another account.")
+        released = _release_abandoned_pending_phone_identity(db=db, user=clash)
+        if released:
+            clash = None
+    if clash:
+        raise HTTPException(
+            status_code=409,
+            detail="This phone number is already used by another account.",
+        )
 
     delivery_mode = _signed_in_phone_delivery_mode()
     verification = EntryPhoneVerification(

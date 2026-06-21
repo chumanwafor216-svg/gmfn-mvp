@@ -351,6 +351,13 @@ function buildInviteState(
 export default function ClansPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const createCommunityState =
+    (location.state as {
+      create_community?: {
+        name?: string | null;
+        description?: string | null;
+      };
+    } | null)?.create_community || null;
   const [isCompact, setIsCompact] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth <= 720 : false
   );
@@ -365,8 +372,12 @@ export default function ClansPage() {
   const [copied, setCopied] = useState("");
   const [inviteComposerOpen, setInviteComposerOpen] = useState(false);
 
-  const [communityNameInput, setCommunityNameInput] = useState("");
-  const [communityDescriptionInput, setCommunityDescriptionInput] = useState("");
+  const [communityNameInput, setCommunityNameInput] = useState(
+    safeStr(createCommunityState?.name)
+  );
+  const [communityDescriptionInput, setCommunityDescriptionInput] = useState(
+    safeStr(createCommunityState?.description)
+  );
   const [creatingCommunity, setCreatingCommunity] = useState(false);
   const [createMessage, setCreateMessage] = useState("");
 

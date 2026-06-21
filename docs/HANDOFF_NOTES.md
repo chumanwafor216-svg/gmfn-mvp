@@ -1,3 +1,56 @@
+## 2026-06-21 - Same GSN ID Multi-Community Phone Recovery
+
+- Trigger:
+  - owner explained that the same phone/bank evidence was used while joining a
+    group and also during a separate attempted founder setup; later attempts
+    reported `already registered` while TrustSlip still had no verified-phone
+    path to produce QR/code.
+  - product rule clarified: one human should keep one GSN ID, while belonging
+    to many communities and creating/admining new communities from that same
+    identity.
+- Changed:
+  - `gmfn_backend/app/api/routes/entry_verification.py`
+    - signed-in phone verification now releases a phone only when it is trapped
+      on an abandoned pending identity with no membership, no join request, and
+      no created community.
+    - protected pending join identities and real active accounts still block
+      duplicate phone takeover.
+  - `gmfn_backend/tests/test_focus_commitment_trust_events.py`
+    - added regression coverage for reclaiming an abandoned pending phone.
+    - added regression coverage proving a pending join request phone remains
+      protected.
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - when an already signed-in user chooses the existing-GSN path from
+      `/create`, the app now opens `/app/clans` instead of pushing them toward
+      login or the first-time founder identity form.
+  - `frontend/src/pages/ClansPage.tsx`
+    - signed-in community creation can receive the community name/description
+      typed on `/create`, so the user does not lose their draft when redirected
+      to the correct existing-member lane.
+- Verification:
+  - `npm run build` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `python -m py_compile gmfn_backend\app\api\routes\entry_verification.py
+    gmfn_backend\tests\test_focus_commitment_trust_events.py` passed.
+  - `python -m pytest -q
+    gmfn_backend\tests\test_focus_commitment_trust_events.py -k
+    "signed_in_phone or phone_unverified" --basetemp
+    C:\tmp\pytest-gmfn-signed-phone` passed: 3 tests.
+  - `python -m pytest -q gmfn_backend\tests\test_entry_create.py -k
+    "abandoned_pending_identity or keeps_real_pending_join_request_protected
+    or duplicate_identity or bank_destination" --basetemp
+    C:\tmp\pytest-gmfn-entry-identity` passed: 3 tests.
+- Unabated truth:
+  - this fixes the abandoned-placeholder case; it does not merge two real,
+    active GSN accounts. Active-account merges remain a higher-risk admin
+    recovery operation and should not be automated from a phone form.
+  - if the phone belongs to a pending approved join identity, the owner should
+    activate that GSN ID instead of starting a second founder identity.
+  - frontend-only Render deploy is not enough for this full repair because the
+    phone recovery logic is backend code. Exact backend deployment still needs
+    the Render API credential path that previous workflow notes identified.
+
 ## 2026-06-21 - TrustSlip And Trust Passport Code/QR Line Audit
 
 - Trigger:
