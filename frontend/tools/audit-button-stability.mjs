@@ -1048,7 +1048,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
-  /import \{ StableDisclosureSummary \} from "\.\.\/components\/StableButton";[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId=\{`admin-identity-risk\.\$\{g\.userId\}\.details`\}/,
+  /import \{ PrimaryButton, StableDisclosureSummary \} from "\.\.\/components\/StableButton";[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId=\{`admin-identity-risk\.\$\{g\.userId\}\.details`\}/,
   "Admin Identity Risk disclosure summary must use the shared stable disclosure primitive."
 );
 

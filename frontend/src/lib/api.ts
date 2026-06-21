@@ -2706,6 +2706,13 @@ export async function getAdminIdentityRisk(limit: number = 100): Promise<any> {
   return httpJson(`/identity-risk/admin${buildQuery({ limit })}`, "GET");
 }
 
+export async function getAdminPhoneIdentityLineage(phoneE164: string): Promise<any> {
+  return httpJson(
+    `/identity-risk/admin/phone-lineage${buildQuery({ phone_e164: phoneE164 })}`,
+    "GET"
+  );
+}
+
 export async function getMyNotifications(
   limit: number = 50,
   unreadOnly: boolean = false

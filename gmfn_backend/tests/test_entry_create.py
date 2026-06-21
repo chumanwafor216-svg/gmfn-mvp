@@ -1278,6 +1278,147 @@ def test_activate_membership_cannot_reset_already_activated_account(client):
     assert new_login_res.status_code == 401, new_login_res.text
 
 
+def test_admin_phone_lineage_lookup_identifies_protected_owner(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+
+    with SessionLocal() as db:
+        admin = User(
+            email="lineage-admin@example.com",
+            hashed_password=get_password_hash("admin-secret"),
+            role="admin",
+        )
+        owner = User(
+            email="lineage-owner@example.com",
+            hashed_password=get_password_hash("owner-secret"),
+            role="user",
+            gmfn_id="GMFN-U-LINEAGE1",
+            display_name="Lineage Owner",
+            phone_e164="+447903165266",
+            phone_verified_at=datetime.now(timezone.utc),
+        )
+        db.add_all([admin, owner])
+        db.flush()
+        clan = Clan(
+            name="Lineage Owner Circle",
+            invite_code="lineage-owner-circle",
+            community_code="GMFN-C-LINEAGE",
+            created_by_user_id=int(owner.id),
+            status="active",
+        )
+        db.add(clan)
+        db.flush()
+        db.add(
+            ClanMembership(
+                clan_id=int(clan.id),
+                user_id=int(owner.id),
+                role="admin",
+            )
+        )
+        db.commit()
+
+    owner_login = client.post(
+        "/auth/login",
+        data={"username": "lineage-owner@example.com", "password": "owner-secret"},
+    )
+    assert owner_login.status_code == 200, owner_login.text
+    owner_token = owner_login.json()["access_token"]
+
+    forbidden = client.get(
+        "/identity-risk/admin/phone-lineage",
+        params={"phone_e164": "+447903165266"},
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    assert forbidden.status_code == 403, forbidden.text
+
+    admin_login = client.post(
+        "/auth/login",
+        data={"username": "lineage-admin@example.com", "password": "admin-secret"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    admin_token = admin_login.json()["access_token"]
+
+    res = client.get(
+        "/identity-risk/admin/phone-lineage",
+        params={"phone_e164": "+447903165266"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["lineage_note"].startswith("Read-only admin diagnostic")
+    assert body["match_count"] == 1
+    row = body["matches"][0]
+    assert row["gmfn_id"] == "GMFN-U-LINEAGE1"
+    assert row["phone_verified"] is True
+    assert row["protection_state"] == "active_or_protected"
+    assert row["active_membership_count"] == 1
+    assert row["created_community_count"] == 1
+    assert "Sign in to this GSN ID" in row["recommended_first_step"]
+
+
+def test_admin_phone_lineage_lookup_reports_pending_join_owner(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+
+    with SessionLocal() as db:
+        admin = User(
+            email="pending-lineage-admin@example.com",
+            hashed_password=get_password_hash("admin-secret"),
+            role="admin",
+        )
+        applicant = User(
+            email="pending-lineage@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+            gmfn_id="GMFN-U-PENDING-LINE",
+            phone_e164="+447903165267",
+        )
+        owner = User(
+            email="pending-lineage-owner@example.com",
+            hashed_password=get_password_hash("owner-secret"),
+            role="admin",
+        )
+        db.add_all([admin, applicant, owner])
+        db.flush()
+        clan = Clan(
+            name="Pending Lineage Circle",
+            invite_code="pending-lineage-circle",
+            community_code="GMFN-C-PENDLINE",
+            created_by_user_id=int(owner.id),
+            status="active",
+        )
+        db.add(clan)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                clan_id=int(clan.id),
+                applicant_user_id=int(applicant.id),
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    admin_login = client.post(
+        "/auth/login",
+        data={"username": "pending-lineage-admin@example.com", "password": "admin-secret"},
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    admin_token = admin_login.json()["access_token"]
+
+    res = client.get(
+        "/identity-risk/admin/phone-lineage",
+        params={"phone_e164": "+447903165267"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res.status_code == 200, res.text
+    row = res.json()["matches"][0]
+    assert row["gmfn_id"] == "GMFN-U-PENDING-LINE"
+    assert row["activation_pending"] is True
+    assert row["protection_state"] == "pending_join_or_create"
+    assert row["pending_join_request_count"] == 1
+    assert row["join_request_counts"]["pending"] == 1
+    assert "activation path" in row["recommended_first_step"]
+
+
 def test_auth_me_profile_image_upload_persists_on_user_record(client):
     with SessionLocal() as db:
         user = User(

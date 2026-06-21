@@ -1,3 +1,62 @@
+## 2026-06-21 - Admin Phone Identity Lineage Diagnostic
+
+- Trigger:
+  - continued from the duplicate-phone TrustSlip audit. The remaining useful
+    step was not to bypass the phone guard, but to let an admin/support operator
+    identify which protected GSN identity already owns a phone number.
+- Findings:
+  - the existing Admin Identity Risk page listed identity risk signals, but it
+    did not answer the practical pilot question: "Which GSN row owns this
+    phone, and why is it protected?"
+  - signed-in self-service phone verification should still block active,
+    pending-join, and pending-create ownership conflicts.
+- Changed:
+  - `gmfn_backend/app/api/routes/identity_risk.py`
+    - added read-only admin endpoint:
+      `GET /identity-risk/admin/phone-lineage?phone_e164=...`.
+    - endpoint is admin-only and returns matching user lineage:
+      GSN ID, email/display name, phone verification state, activation pending
+      state, protection state, membership count, pending join count, created
+      community count, and first recommended recovery step.
+    - endpoint does not merge, release, verify, or move a phone number.
+  - `frontend/src/lib/api.ts`
+    - added `getAdminPhoneIdentityLineage`.
+  - `frontend/src/pages/AdminIdentityRiskPage.tsx`
+    - added a compact `Phone identity lineage` card with a phone lookup field,
+      stable `Check phone` button, summarized owner state, and a raw details
+      disclosure for admin evidence review.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the Admin Identity Risk stable primitive cage for the new
+      `PrimaryButton` import.
+  - `gmfn_backend/tests/test_entry_create.py`
+    - added coverage that non-admin users receive 403.
+    - added coverage for active phone owner lineage.
+    - added coverage for pending join phone owner lineage.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\identity_risk.py
+    gmfn_backend\tests\test_entry_create.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_entry_create.py -k
+    "phone_lineage_lookup" --basetemp
+    C:\tmp\pytest-gmfn-phone-lineage-admin` passed: 2 tests.
+  - `npm exec -- eslint src/pages/AdminIdentityRiskPage.tsx src/lib/api.ts`
+    passed from `frontend`.
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+  - `npm run audit:admin-ops-actions` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:protected-button-freeze` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run build` passed from `frontend`.
+- Unabated truth:
+  - this is an admin/support diagnostic, not an automatic repair.
+  - it still requires a real admin account on Render and the backend commit to
+    be deployed before it can inspect live Render data.
+  - if the live phone is owned by a protected identity, the next safe action is
+    sign-in to that GSN ID or admin-supported merge/release after ownership
+    checks, not self-service takeover.
+- Deploy state:
+  - local only at time of note; not pushed and not Render-visible until the
+    owner explicitly approves publishing this batch.
+
 ## 2026-06-21 - Identity Lineage Audit After Duplicate Phone Live Screenshot
 
 - Trigger:

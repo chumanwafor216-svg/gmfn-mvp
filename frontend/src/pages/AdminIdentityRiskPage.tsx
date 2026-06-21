@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import { StableDisclosureSummary } from "../components/StableButton";
+import { PrimaryButton, StableDisclosureSummary } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   institutionalInnerCard,
   institutionalPageCard,
 } from "../lib/institutionalSurface";
-import { getAdminIdentityRisk } from "../lib/api";
+import { getAdminIdentityRisk, getAdminPhoneIdentityLineage } from "../lib/api";
 
 function safeStr(x: any): string {
   return String(x ?? "");
@@ -220,6 +220,10 @@ function classify(row: any): { level: "green" | "yellow" | "red"; label: string;
 export default function AdminIdentityRiskPage() {
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState("");
+  const [phoneLookup, setPhoneLookup] = useState("");
+  const [phoneLineage, setPhoneLineage] = useState<any>(null);
+  const [phoneLineageErr, setPhoneLineageErr] = useState("");
+  const [phoneLineageBusy, setPhoneLineageBusy] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -252,6 +256,24 @@ export default function AdminIdentityRiskPage() {
       return { userId, rows, risk: max };
     });
   }, [data]);
+
+  async function handlePhoneLineageLookup(event: React.FormEvent) {
+    event.preventDefault();
+    const phone = safeStr(phoneLookup).trim();
+    if (!phone || phoneLineageBusy) return;
+
+    setPhoneLineageBusy(true);
+    setPhoneLineageErr("");
+    try {
+      const res = await getAdminPhoneIdentityLineage(phone);
+      setPhoneLineage(res || null);
+    } catch (e: any) {
+      setPhoneLineage(null);
+      setPhoneLineageErr(String(e?.message || e || "Unable to load phone lineage."));
+    } finally {
+      setPhoneLineageBusy(false);
+    }
+  }
 
   return (
     <div style={{ maxWidth: 1200, margin: "0 auto" }}>
@@ -317,6 +339,126 @@ export default function AdminIdentityRiskPage() {
             "#991B1B"
           )}
         </div>
+      </div>
+
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div>{sectionLabelWithIcon("phone", "Phone identity lineage")}</div>
+        <div style={{ marginTop: 10, ...helperText() }}>
+          Look up the protected GSN identity that already owns a phone number.
+          This is read-only; it does not merge, release, or verify the phone.
+        </div>
+        <form
+          onSubmit={handlePhoneLineageLookup}
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) auto",
+            gap: 10,
+            alignItems: "center",
+          }}
+        >
+          <input
+            value={phoneLookup}
+            onChange={(event) => setPhoneLookup(event.target.value)}
+            placeholder="+447903165266"
+            style={{
+              width: "100%",
+              minHeight: 52,
+              boxSizing: "border-box",
+              borderRadius: 16,
+              border: "1px solid rgba(20,52,83,0.22)",
+              background: "#FFFFFF",
+              color: "#0B1F33",
+              fontSize: 16,
+              fontWeight: 900,
+              padding: "0 14px",
+            }}
+          />
+          <PrimaryButton
+            type="submit"
+            busy={phoneLineageBusy}
+            busyLabel="Checking..."
+            disabled={!safeStr(phoneLookup).trim()}
+            stableHeight={52}
+            minWidth={132}
+            debugId="admin-identity-risk.phone-lineage.lookup"
+          >
+            Check phone
+          </PrimaryButton>
+        </form>
+
+        {phoneLineageErr ? (
+          <div
+            style={{
+              marginTop: 12,
+              ...institutionalInnerCard("#FEF2F2"),
+              color: "#991B1B",
+              fontWeight: 900,
+            }}
+          >
+            {phoneLineageErr}
+          </div>
+        ) : null}
+
+        {phoneLineage ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+            <div style={{ ...helperText(), fontWeight: 900 }}>
+              {phoneLineage.match_count
+                ? `${phoneLineage.match_count} protected identity line found.`
+                : "No GSN identity currently owns that phone in this database."}
+            </div>
+            {Array.isArray(phoneLineage.matches)
+              ? phoneLineage.matches.map((row: any) => (
+                  <div
+                    key={safeStr(row?.user_id)}
+                    style={{
+                      ...institutionalInnerCard("#F8FBFF"),
+                      border: "1px solid rgba(20,52,83,0.18)",
+                    }}
+                  >
+                    <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                      {labelWithIcon("identity-card", safeStr(row?.gmfn_id || `User #${row?.user_id}`))}
+                    </div>
+                    <div style={{ marginTop: 8, ...helperText() }}>
+                      {safeStr(row?.display_name || row?.email || "Name not shown")}
+                    </div>
+                    <div style={{ marginTop: 10, display: "grid", gap: 6, ...helperText() }}>
+                      <div>State: {safeStr(row?.protection_state || "unknown")}</div>
+                      <div>Phone verified: {row?.phone_verified ? "Yes" : "No"}</div>
+                      <div>
+                        Communities: {safeStr(row?.active_membership_count || 0)} active,{" "}
+                        {safeStr(row?.created_community_count || 0)} created,{" "}
+                        {safeStr(row?.pending_join_request_count || 0)} pending join
+                      </div>
+                      <div>First step: {safeStr(row?.recommended_first_step || "Review manually.")}</div>
+                    </div>
+                  </div>
+                ))
+              : null}
+            <details>
+              <StableDisclosureSummary
+                style={summaryToggle()}
+                debugId="admin-identity-risk.phone-lineage.raw"
+              >
+                {labelWithIcon("document", "Full phone-lineage record")}
+              </StableDisclosureSummary>
+              <pre
+                style={{
+                  marginTop: 12,
+                  background: "#0B1F33",
+                  color: "#E5E7EB",
+                  padding: 16,
+                  borderRadius: 14,
+                  fontSize: 13,
+                  overflow: "auto",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {JSON.stringify(phoneLineage, null, 2)}
+              </pre>
+            </details>
+          </div>
+        ) : null}
       </div>
 
       <div style={{ marginTop: 18, display: "grid", gap: 14 }}>
