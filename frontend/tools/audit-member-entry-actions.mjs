@@ -91,14 +91,14 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /debugId="member-activation\.about"[\s\S]*?debugId="member-activation\.guide"[\s\S]*?debugId="member-activation\.finish"[\s\S]*?debugId="member-activation\.trust"/,
+  /debugId="member-activation\.about"[\s\S]*?debugId="member-activation\.guide"[\s\S]*?debugId="member-activation\.finish"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.build-first-circle[\s\S]*?debugId="member-activation\.trust"/,
   "Member Activation actions must remain traceable."
 );
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /Build your First Circle next[\s\S]*?window\.setTimeout\([\s\S]*?navigate\(routes\.buildFirstCircle, \{ replace: true \}\);[\s\S]*?kind="primary"[\s\S]*?debugId="member-activation\.build-first-circle"/,
-  "Member Activation success must show First Circle as the primary next action and usher the user there instead of silently skipping community growth."
+  /const nextRoute = needsPhoneVerification[\s\S]*?routes\.identityPhone[\s\S]*?routes\.buildFirstCircle[\s\S]*?Verify this phone next[\s\S]*?navigate\(nextRoute[\s\S]*?Verify phone[\s\S]*?Build first circle/,
+  "Member Activation success must route unverified joined members to phone verification before First Circle, while keeping First Circle as the primary next action once phone is verified."
 );
 
 assertContains(

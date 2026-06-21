@@ -138,8 +138,8 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /buildFirstCircle:\s*routeTarget\([\s\S]*"buildFirstCircle"[\s\S]*Membership activated successfully\. Build your First Circle next[\s\S]*window\.setTimeout\([\s\S]*navigate\(routes\.buildFirstCircle, \{ replace: true \}\);/,
-  "Successful activation must answer visibly and then enter First Circle instead of leaving testers stranded or skipping community growth."
+  /identityPhone:[\s\S]*"cci"[\s\S]*task=phone&mode=complete[\s\S]*buildFirstCircle:\s*routeTarget\([\s\S]*"buildFirstCircle"[\s\S]*const nextRoute = needsPhoneVerification[\s\S]*routes\.identityPhone[\s\S]*routes\.buildFirstCircle[\s\S]*Membership activated\. Verify this phone next[\s\S]*navigate\(nextRoute, \{ replace: true \}\);/,
+  "Successful activation must answer visibly, route unverified joined members to phone verification, and then preserve First Circle as the next growth step once phone is verified."
 );
 
 assertContains(

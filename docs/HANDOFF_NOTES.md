@@ -1,3 +1,48 @@
+## 2026-06-21 - Join-Member Phone Verification Bridge
+
+- Trigger:
+  - owner identified that joining an existing community records a phone number
+    but does not run the same phone verification lane as create-community.
+  - live symptom: joined-member identity can have `phone_e164` and still show
+    TrustSlip `Code: Not available` / no QR because `phone_verified_at` is
+    missing.
+- Changed:
+  - `gmfn_backend/app/api/routes/auth.py`
+    - `/auth/me` now returns `phone_verified_at` and `phone_verified`.
+    - `/auth/activate-approved-member` and `/auth/activate-membership` now
+      return phone-verification status plus the next required action/path when
+      the activated account still needs phone verification.
+    - no old join phone is silently marked verified; recorded phone remains
+      recorded-only until the member confirms a signed-in phone code.
+  - `frontend/src/pages/MemberActivationPage.tsx`
+    - after membership activation, if the activated account is not phone
+      verified, the page routes to `/app/identity?task=phone&mode=complete`
+      instead of going straight to First Circle.
+    - the post-activation primary action becomes `Verify phone` in that state.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - when TrustSlip is blocked by `phone_unverified`, the primary action is now
+      `Verify phone` and opens the same signed-in Identity & Integrity phone
+      task.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\auth.py
+    gmfn_backend\tests\test_join_requests.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py -k
+    "activate_approved_member_accepts_request_id_path" --basetemp
+    C:\tmp\pytest-gmfn-join-phone-bridge` passed.
+  - `npm run build` passed from `frontend`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:protected-button-freeze` passed.
+- Unabated truth:
+  - this completes the missing bridge without faking ownership verification.
+    A join phone typed into an invitation form is not treated as verified until
+    the signed-in member completes the phone-code task.
+  - if a phone belongs to a different real active account, the duplicate guard
+    should still block takeover; that remains an admin/account-merge problem,
+    not a self-service form shortcut.
+
 ## 2026-06-21 - Same GSN ID Multi-Community Phone Recovery
 
 - Trigger:

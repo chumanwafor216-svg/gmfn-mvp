@@ -2459,6 +2459,7 @@ def test_activate_approved_member_accepts_request_id_path(
             email="pending@example.com",
             hashed_password="PENDING_APPROVAL",
             role="user",
+            phone_e164="+2348012345678",
         )
         reviewer = User(
             id=3,
@@ -2509,6 +2510,12 @@ def test_activate_approved_member_accepts_request_id_path(
     assert activate_body["ok"] is True
     assert activate_body["gmfn_id"].startswith("GMFN-U-")
     assert activate_body["access_token"]
+    assert activate_body["phone_e164"] == "+2348012345678"
+    assert activate_body["phone_verified"] is False
+    assert activate_body["phone_verified_at"] is None
+    assert activate_body["phone_verification_required"] is True
+    assert activate_body["next_action"] == "verify_phone"
+    assert activate_body["next_action_path"] == "/app/identity?task=phone&mode=complete"
 
     with SessionLocal() as db:
         applicant = db.get(User, 2)

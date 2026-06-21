@@ -47,6 +47,8 @@ class UserOut(BaseModel):
     role: str
     gmfn_id: Optional[str] = None
     phone_e164: Optional[str] = None
+    phone_verified_at: Optional[str] = None
+    phone_verified: bool = False
     display_name: Optional[str] = None
     profile_image_url: Optional[str] = None
     nickname: Optional[str] = None
@@ -114,6 +116,13 @@ class ActivateApprovedMemberOut(BaseModel):
     user_id: int
     email: str
     gmfn_id: str
+    phone_e164: Optional[str] = None
+    phone_verified_at: Optional[str] = None
+    phone_verified: bool = False
+    phone_verification_required: bool = True
+    next_action: Optional[str] = None
+    next_action_label: Optional[str] = None
+    next_action_path: Optional[str] = None
     access_token: str
     token_type: str = "bearer"
 
@@ -471,12 +480,18 @@ async def _read_profile_image_bytes(upload: UploadFile) -> bytes:
 def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
     cci_payload = _extract_user_cci_payload(db, int(user.id))
     display_name = getattr(user, "display_name", None)
+    phone_verified_at = getattr(user, "phone_verified_at", None)
+    phone_verified_at_text = (
+        phone_verified_at.isoformat() if phone_verified_at else None
+    )
     return {
         "id": int(user.id),
         "email": user.email,
         "role": str(getattr(user, "role", "user") or "user"),
         "gmfn_id": getattr(user, "gmfn_id", None),
         "phone_e164": getattr(user, "phone_e164", None),
+        "phone_verified_at": phone_verified_at_text,
+        "phone_verified": bool(phone_verified_at and getattr(user, "phone_e164", None)),
         "display_name": display_name,
         "profile_image_url": getattr(user, "profile_image_url", None),
         "nickname": display_name,
@@ -484,6 +499,25 @@ def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
         "cci_class": cci_payload.get("cci_class"),
         "cci_reason": cci_payload.get("cci_reason"),
         "cci_tone": cci_payload.get("cci_tone"),
+    }
+
+
+def _activation_phone_status(user: User) -> dict[str, Any]:
+    phone_e164 = getattr(user, "phone_e164", None)
+    phone_verified_at = getattr(user, "phone_verified_at", None)
+    phone_verified = bool(phone_e164 and phone_verified_at)
+    return {
+        "phone_e164": phone_e164,
+        "phone_verified_at": phone_verified_at.isoformat()
+        if phone_verified_at
+        else None,
+        "phone_verified": phone_verified,
+        "phone_verification_required": not phone_verified,
+        "next_action": None if phone_verified else "verify_phone",
+        "next_action_label": None if phone_verified else "Verify phone",
+        "next_action_path": None
+        if phone_verified
+        else "/app/identity?task=phone&mode=complete",
     }
 
 
@@ -570,6 +604,7 @@ def activate_approved_member(
         "user_id": int(user.id),
         "email": user.email,
         "gmfn_id": str(user.gmfn_id),
+        **_activation_phone_status(user),
         "access_token": access_token,
         "token_type": "bearer",
     }
@@ -632,6 +667,7 @@ def activate_membership(
     return {
         "status": "activated",
         "gmfn_id": user.gmfn_id,
+        **_activation_phone_status(user),
         "access_token": access_token,
         "token_type": "bearer",
     }

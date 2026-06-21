@@ -1509,6 +1509,15 @@ export default function TrustSlipPage() {
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "trust-slip.route.dashboard"),
+      identityPhone: (() => {
+        const identityPath = routeTarget(
+          "cci",
+          selectedClanId,
+          "trust-slip.route.identity-phone"
+        );
+        const separator = identityPath.includes("?") ? "&" : "?";
+        return `${identityPath}${separator}task=phone&mode=complete`;
+      })(),
       trust: routeTarget("trust", selectedClanId, "trust-slip.route.trust"),
       guide: routeTarget("profile", selectedClanId, "trust-slip.route.guide"),
     }),
@@ -3589,22 +3598,37 @@ export default function TrustSlipPage() {
               </SecondaryButton>
               <PrimaryButton
                 onClick={() => {
+                  if (trustSlipBlockedByPhone) {
+                    navigateWithOrigin(navigate, routes.identityPhone, location);
+                    return;
+                  }
                   void refreshTrustSlip();
                 }}
                 busy={refreshing}
-                busyLabel="Refreshing..."
+                busyLabel={trustSlipBlockedByPhone ? "Opening..." : "Refreshing..."}
                 fullWidth
                 stableHeight={isCompact ? 52 : 50}
                 debugId="trust-slip.paper.refresh"
                 style={trustSlipPrimaryActionStyle(isCompact)}
               >
-                {trustSlipIconBadge("refresh", isCompact ? 26 : 28, "blue")}
-                Refresh TrustSlip
+                {trustSlipIconBadge(
+                  trustSlipBlockedByPhone ? "phone" : "refresh",
+                  isCompact ? 26 : 28,
+                  "blue"
+                )}
+                {trustSlipBlockedByPhone ? "Verify phone" : "Refresh TrustSlip"}
               </PrimaryButton>
               <SecondaryButton
                 onClick={() => {
                   if (verifyPath) {
                     navigateWithOrigin(navigate, verifyPath, location);
+                    return;
+                  }
+                  if (trustSlipBlockedByPhone) {
+                    showNotice(
+                      "error",
+                      "Verify your phone first so GSN can issue a public TrustSlip code and QR."
+                    );
                     return;
                   }
                   showNotice(

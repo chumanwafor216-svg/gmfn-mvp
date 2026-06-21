@@ -502,7 +502,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="member-activation\.finish"[\s\S]*?debugId="member-activation\.build-first-circle"[\s\S]*?debugId="member-activation\.trust"[\s\S]*?debugId="member-activation\.notifications"/,
+  /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="member-activation\.finish"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.build-first-circle[\s\S]*?debugId="member-activation\.trust"[\s\S]*?debugId="member-activation\.notifications"/,
   "Member activation must use shared stable button primitives and shared CTA resolution for guide, submit, and post-activation route actions."
 );
 

@@ -105,8 +105,8 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /Membership activated successfully[\s\S]*?Build your First Circle next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?debugId="member-activation\.build-first-circle"/,
-  "Member Activation must answer success visibly and lead the user to the next community-growth step."
+  /Membership activated\. Verify this phone next[\s\S]*?Membership activated successfully\. Build your First Circle next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.build-first-circle/,
+  "Member Activation must answer success visibly, send unverified members to phone verification, and preserve First Circle as the next community-growth step after verification."
 );
 
 if (findings.length > 0) {

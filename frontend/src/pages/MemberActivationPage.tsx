@@ -633,6 +633,15 @@ export default function MemberActivationPage() {
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "member-activation.route.dashboard"),
+      identityPhone: (() => {
+        const identityPath = routeTarget(
+          "cci",
+          selectedClanId,
+          "member-activation.route.identity-phone"
+        );
+        const separator = identityPath.includes("?") ? "&" : "?";
+        return `${identityPath}${separator}task=phone&mode=complete`;
+      })(),
       buildFirstCircle: routeTarget(
         "buildFirstCircle",
         selectedClanId,
@@ -670,6 +679,7 @@ export default function MemberActivationPage() {
   const [notice, setNotice] = useState<ActivationNotice | null>(null);
   const [, setSuccess] = useState("");
   const [activated, setActivated] = useState(false);
+  const [phoneVerificationRequired, setPhoneVerificationRequired] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -834,21 +844,31 @@ export default function MemberActivationPage() {
 
       await observeIdentityRisk().catch(() => null);
 
-      setActivated(true);
-      setSuccess(
-        "Membership activated successfully. Build your First Circle next so your community growth starts with real trusted people."
+      const phoneVerified = Boolean(
+        activationResult?.phone_verified ||
+          activationResult?.phone_verified_at ||
+          me?.phone_verified ||
+          me?.phone_verified_at
       );
+      const needsPhoneVerification = !phoneVerified;
+      const nextRoute = needsPhoneVerification ? routes.identityPhone : routes.buildFirstCircle;
+      const nextMessage = needsPhoneVerification
+        ? "Membership activated. Verify this phone next so TrustSlip can issue your code and QR."
+        : "Membership activated successfully. Build your First Circle next so your community growth starts with real trusted people.";
+
+      setActivated(true);
+      setPhoneVerificationRequired(needsPhoneVerification);
+      setSuccess(nextMessage);
       showNotice(
         {
           tone: "success",
           title: "Activation complete",
-          message:
-            "Membership activated successfully. Build your First Circle next so your community growth starts with real trusted people.",
+          message: nextMessage,
         }
       );
       if (typeof window !== "undefined") {
         routeTimerRef.current = window.setTimeout(() => {
-          navigate(routes.buildFirstCircle, { replace: true });
+          navigate(nextRoute, { replace: true });
         }, 1200);
       }
     } catch (err: any) {
@@ -1273,12 +1293,16 @@ export default function MemberActivationPage() {
         {activated ? (
           <CardActionRow style={postActivationRow(isCompact)} align="center">
             <StableCtaLink
-              to={routes.buildFirstCircle}
+              to={phoneVerificationRequired ? routes.identityPhone : routes.buildFirstCircle}
               kind="primary"
-              debugId="member-activation.build-first-circle"
+              debugId={
+                phoneVerificationRequired
+                  ? "member-activation.verify-phone"
+                  : "member-activation.build-first-circle"
+              }
               style={postActivationLink(true)}
             >
-              Build first circle
+              {phoneVerificationRequired ? "Verify phone" : "Build first circle"}
             </StableCtaLink>
             <StableCtaLink
               to={routes.trust}
