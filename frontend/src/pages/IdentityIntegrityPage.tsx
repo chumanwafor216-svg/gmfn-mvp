@@ -97,6 +97,7 @@ type ReadingState = {
 };
 
 type NoticeTone = "success" | "error";
+type PhoneTaskTone = "success" | "error";
 
 type CollapseState = {
   summary: boolean;
@@ -156,6 +157,27 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function parsePhoneTaskError(err: any): string {
+  const raw = safeStr(err?.message || err);
+  if (!raw) return "Phone verification could not start.";
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      const message = firstTruthy(parsed.message, parsed.detail, parsed.title);
+      const why = firstTruthy(parsed.why_it_matters, parsed.why);
+      const firstStep = firstTruthy(parsed.first_step, parsed.next_step);
+      return [message, why ? `Why it matters: ${why}` : "", firstStep ? `First step: ${firstStep}` : ""]
+        .filter(Boolean)
+        .join(" ");
+    }
+  } catch {
+    // Plain backend errors are already user-facing enough to show directly.
+  }
+
+  return raw;
 }
 
 function firstNumberLike(...values: any[]): number | null {
@@ -350,9 +372,9 @@ function identityIconTone(tone: "ready" | "pending" | "watch" | "neutral"): {
 function taskIconBadge(active: boolean, tone: "ready" | "pending" | "watch" | "neutral"): React.CSSProperties {
   const iconTone = identityIconTone(tone);
   return {
-    width: active ? 34 : 30,
-    height: active ? 34 : 30,
-    borderRadius: active ? 13 : 12,
+    width: 34,
+    height: 34,
+    borderRadius: 13,
     display: "grid",
     placeItems: "center",
     flex: "0 0 auto",
@@ -364,6 +386,9 @@ function taskIconBadge(active: boolean, tone: "ready" | "pending" | "watch" | "n
     boxShadow: active
       ? "0 10px 18px rgba(7,23,44,0.16), inset 0 1px 0 rgba(255,255,255,0.18)"
       : "inset 0 1px 0 rgba(255,255,255,0.14)",
+    overflow: "hidden",
+    transform: "none",
+    transition: "none",
   };
 }
 
@@ -459,6 +484,7 @@ function identityCopyIconBox(ready: boolean, active: boolean): React.CSSProperti
 
 function identityTaskButtonStyle(): React.CSSProperties {
   return {
+    boxSizing: "border-box",
     height: 52,
     minHeight: 52,
     maxHeight: 52,
@@ -469,12 +495,15 @@ function identityTaskButtonStyle(): React.CSSProperties {
     textOverflow: "ellipsis",
     lineHeight: 1.05,
     flexShrink: 0,
+    overflowAnchor: "none",
+    transform: "none",
     transition: "none",
   };
 }
 
 function identityCompletionFieldStyle(): React.CSSProperties {
   return {
+    width: "100%",
     height: 52,
     minHeight: 52,
     maxHeight: 52,
@@ -486,6 +515,46 @@ function identityCompletionFieldStyle(): React.CSSProperties {
     fontWeight: 900,
     fontSize: 14,
     background: "#FFFFFF",
+    overflowAnchor: "none",
+    transform: "none",
+    transition: "none",
+  };
+}
+
+function identityPanelLock(): React.CSSProperties {
+  return {
+    boxSizing: "border-box",
+    minWidth: 0,
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transform: "none",
+    transition: "none",
+  };
+}
+
+function identityResponseSlotStyle(
+  tone: "success" | "error",
+  compact: boolean,
+  visible: boolean
+): React.CSSProperties {
+  return {
+    ...identityPanelLock(),
+    height: compact ? 106 : 74,
+    minHeight: compact ? 106 : 74,
+    maxHeight: compact ? 106 : 74,
+    borderRadius: 13,
+    border:
+      tone === "error"
+        ? "1px solid rgba(200,58,58,0.20)"
+        : "1px solid rgba(46,155,98,0.18)",
+    background: tone === "error" ? "#FFF5F5" : "#F3FBF5",
+    color: tone === "error" ? "#991B1B" : "#166534",
+    fontSize: 12,
+    fontWeight: 950,
+    lineHeight: 1.35,
+    padding: "8px 10px",
+    visibility: visible ? "visible" : "hidden",
+    overflowY: "auto",
   };
 }
 
@@ -1227,6 +1296,7 @@ export default function IdentityIntegrityPage() {
   const [phoneVerificationId, setPhoneVerificationId] = useState<number | null>(null);
   const [phoneOtpPreview, setPhoneOtpPreview] = useState("");
   const [phoneTaskMessage, setPhoneTaskMessage] = useState("");
+  const [phoneTaskTone, setPhoneTaskTone] = useState<PhoneTaskTone>("success");
   const [phoneBusy, setPhoneBusy] = useState(false);
   const [officialIdType, setOfficialIdType] = useState("Passport");
   const [officialIdReference, setOfficialIdReference] = useState("");
@@ -1964,6 +2034,7 @@ export default function IdentityIntegrityPage() {
     setIdentityPhotoFile(null);
     setIdentityPhotoPreview("");
     setPhoneTaskMessage("");
+    setPhoneTaskTone("success");
     setOfficialIdTaskMessage("");
   }
 
@@ -2013,6 +2084,7 @@ export default function IdentityIntegrityPage() {
           ? `System code generated: ${out.otp_preview}. Confirm it below.`
           : "Phone number recorded. Waiting for delivery provider code; confirmation is still pending."
       );
+      setPhoneTaskTone("success");
       showNotice(
         "success",
         out?.otp_preview
@@ -2020,8 +2092,10 @@ export default function IdentityIntegrityPage() {
           : "Phone number recorded. Confirmation is still pending."
       );
     } catch (err: any) {
-      setPhoneTaskMessage(err?.message || "Phone verification could not start.");
-      showNotice("error", err?.message || "Phone verification could not start.");
+      const message = parsePhoneTaskError(err);
+      setPhoneTaskMessage(message);
+      setPhoneTaskTone("error");
+      showNotice("error", message);
     } finally {
       setPhoneBusy(false);
     }
@@ -2047,10 +2121,13 @@ export default function IdentityIntegrityPage() {
       setPhoneCode("");
       setPhoneOtpPreview("");
       setPhoneTaskMessage(out?.message || "Phone evidence is now verified and connected.");
+      setPhoneTaskTone("success");
       showNotice("success", out?.message || "Phone evidence is now connected.");
     } catch (err: any) {
-      setPhoneTaskMessage(err?.message || "Phone code could not be confirmed.");
-      showNotice("error", err?.message || "Phone code could not be confirmed.");
+      const message = err?.message || "Phone code could not be confirmed.";
+      setPhoneTaskMessage(message);
+      setPhoneTaskTone("error");
+      showNotice("error", message);
     } finally {
       setPhoneBusy(false);
     }
@@ -2450,10 +2527,11 @@ export default function IdentityIntegrityPage() {
         <div
           data-identity-integrity-task-switcher="true"
           style={{
-            marginTop: isCompact ? 52 : 16,
+            marginTop: isCompact ? 14 : 16,
             display: "grid",
             gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
             gap: 8,
+            ...identityPanelLock(),
           }}
         >
           {identityTaskRows.map((item) => {
@@ -2475,10 +2553,12 @@ export default function IdentityIntegrityPage() {
                   boxShadow: "none",
                   color: "#07172C",
                   paddingInline: 10,
+                  gap: 8,
+                  ...identityPanelLock(),
                 }}
               >
                 <span style={taskIconBadge(active, item.tone)}>
-                  <GsnLegacyIcon name={item.icon} size={active ? 30 : 26} />
+                  <GsnLegacyIcon name={item.icon} size={28} />
                 </span>
                 <span style={{ minWidth: 0, textAlign: "left" }}>
                   <span style={{ display: "block", fontWeight: 1000, fontSize: 12.5 }}>
@@ -2518,7 +2598,7 @@ export default function IdentityIntegrityPage() {
             gap: 10,
             alignItems: "center",
             minHeight: isCompact ? 178 : undefined,
-            overflow: "hidden",
+            ...identityPanelLock(),
           }}
         >
           <div
@@ -2584,6 +2664,7 @@ export default function IdentityIntegrityPage() {
           <div
             data-identity-integrity-completion-target="true"
             style={{
+              ...identityPanelLock(),
               gridColumn: "1 / -1",
               borderRadius: 16,
               border: completionMode
@@ -2595,7 +2676,6 @@ export default function IdentityIntegrityPage() {
               padding: isCompact ? 10 : 12,
               display: "grid",
               gap: 8,
-              overflow: "hidden",
             }}
           >
             <div
@@ -2647,6 +2727,7 @@ export default function IdentityIntegrityPage() {
                 }
                 data-identity-integrity-phone-completion="true"
                 style={{
+                  ...identityPanelLock(),
                   display: "grid",
                   gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 160px",
                   gap: 8,
@@ -2694,24 +2775,16 @@ export default function IdentityIntegrityPage() {
                     Pilot code: {phoneOtpPreview}
                   </div>
                 ) : null}
-                {phoneTaskMessage ? (
-                  <div
-                    data-identity-integrity-phone-response="true"
-                    style={{
-                      gridColumn: "1 / -1",
-                      borderRadius: 13,
-                      border: "1px solid rgba(46,155,98,0.18)",
-                      background: "#F3FBF5",
-                      color: "#166534",
-                      fontSize: 12,
-                      fontWeight: 950,
-                      lineHeight: 1.35,
-                      padding: "8px 10px",
-                    }}
-                  >
-                    {phoneTaskMessage}
-                  </div>
-                ) : null}
+                <div
+                  data-identity-integrity-phone-response="true"
+                  aria-hidden={!phoneTaskMessage}
+                  style={{
+                    gridColumn: "1 / -1",
+                    ...identityResponseSlotStyle(phoneTaskTone, isCompact, Boolean(phoneTaskMessage)),
+                  }}
+                >
+                  {phoneTaskMessage || "Phone task response"}
+                </div>
                 <PrimaryButton
                   type="submit"
                   disabled={phoneBusy || !phoneInput || (Boolean(phoneVerificationId) && !phoneCode)}
@@ -2734,6 +2807,7 @@ export default function IdentityIntegrityPage() {
                 onSubmit={handleRecordOfficialId}
                 data-identity-integrity-official-id-completion="true"
                 style={{
+                  ...identityPanelLock(),
                   display: "grid",
                   gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
                   gap: 8,
@@ -2782,6 +2856,7 @@ export default function IdentityIntegrityPage() {
                 <div
                   data-identity-integrity-photo-completion="true"
                   style={{
+                    ...identityPanelLock(),
                     gridColumn: "1 / -1",
                     borderRadius: 15,
                     border: "1px solid rgba(37,78,119,0.12)",
@@ -2793,6 +2868,7 @@ export default function IdentityIntegrityPage() {
                 >
                   <div
                     style={{
+                      ...identityPanelLock(),
                       display: "grid",
                       gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
                       gap: 8,
@@ -2809,6 +2885,7 @@ export default function IdentityIntegrityPage() {
                     </div>
                     <div
                       style={{
+                        ...identityPanelLock(),
                         display: "grid",
                         gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                         gap: 8,
@@ -2869,48 +2946,78 @@ export default function IdentityIntegrityPage() {
                     aria-label="Choose ID photo evidence"
                   />
 
-                  {identityPhotoPreview ? (
+                  <div
+                    data-identity-integrity-photo-preview-slot="true"
+                    style={{
+                      ...identityPanelLock(),
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "88px minmax(0, 1fr)" : "104px minmax(0, 1fr) auto",
+                      gap: 10,
+                      alignItems: "center",
+                      minHeight: isCompact ? 88 : 98,
+                    }}
+                  >
                     <div
                       style={{
+                        width: isCompact ? 88 : 104,
+                        height: isCompact ? 68 : 78,
+                        borderRadius: 14,
+                        border: "1px solid rgba(37,78,119,0.16)",
+                        background: identityPhotoPreview
+                          ? "#FFFFFF"
+                          : "linear-gradient(180deg, #F8FBFF 0%, #EEF2F7 100%)",
                         display: "grid",
-                        gridTemplateColumns: isCompact ? "88px minmax(0, 1fr)" : "104px minmax(0, 1fr) auto",
-                        gap: 10,
-                        alignItems: "center",
+                        placeItems: "center",
+                        overflow: "hidden",
                       }}
                     >
-                      <img
-                        src={identityPhotoPreview}
-                        alt="Selected identity evidence"
-                        style={{
-                          width: isCompact ? 88 : 104,
-                          height: isCompact ? 68 : 78,
-                          borderRadius: 14,
-                          objectFit: "cover",
-                          border: "1px solid rgba(37,78,119,0.16)",
-                          display: "block",
-                        }}
-                      />
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ color: "#07172C", fontSize: 13, fontWeight: 1000 }}>
-                          {identityPhotoKind === "selfie" ? "Selfie ready" : "ID photo ready"}
-                        </div>
-                        <div style={{ marginTop: 2, ...compactHelperText() }}>
-                          Tap Record photo evidence to attach it to this identity.
-                        </div>
-                      </div>
-                      <PrimaryButton
-                        type="button"
-                        onClick={handleRecordIdentityPhoto}
-                        disabled={identityPhotoBusy || !identityPhotoFile}
-                        stableHeight={52}
-                        fullWidth
-                        debugId="identity-integrity.identity-photo.record"
-                        style={{ ...identityTaskButtonStyle(), borderRadius: 13 }}
-                      >
-                        {identityPhotoBusy ? "Recording..." : "Record photo evidence"}
-                      </PrimaryButton>
+                      {identityPhotoPreview ? (
+                        <img
+                          src={identityPhotoPreview}
+                          alt="Selected identity evidence"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                      ) : (
+                        <GsnLegacyIcon name="document" size={34} />
+                      )}
                     </div>
-                  ) : null}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: "#07172C", fontSize: 13, fontWeight: 1000 }}>
+                        {identityPhotoPreview
+                          ? identityPhotoKind === "selfie"
+                            ? "Selfie ready"
+                            : "ID photo ready"
+                          : "No photo selected"}
+                      </div>
+                      <div style={{ marginTop: 2, ...compactHelperText() }}>
+                        {identityPhotoPreview
+                          ? "Tap Record photo evidence to attach it to this identity."
+                          : "Choose Selfie or ID photo first. This slot stays still while you pick evidence."}
+                      </div>
+                    </div>
+                    <PrimaryButton
+                      type="button"
+                      onClick={handleRecordIdentityPhoto}
+                      disabled={identityPhotoBusy || !identityPhotoFile}
+                      stableHeight={52}
+                      fullWidth
+                      debugId="identity-integrity.identity-photo.record"
+                      style={{
+                        ...identityTaskButtonStyle(),
+                        borderRadius: 13,
+                        gridColumn: isCompact ? "1 / -1" : undefined,
+                        visibility: identityPhotoPreview ? "visible" : "hidden",
+                        pointerEvents: identityPhotoPreview ? "auto" : "none",
+                      }}
+                    >
+                      {identityPhotoBusy ? "Recording..." : "Record photo evidence"}
+                    </PrimaryButton>
+                  </div>
                 </div>
                 <PrimaryButton
                   type="submit"
@@ -2929,21 +3036,13 @@ export default function IdentityIntegrityPage() {
                 </PrimaryButton>
               </form>
             ) : null}
-            {activeTask.key === "official_id" && officialIdTaskMessage ? (
+            {activeTask.key === "official_id" ? (
               <div
                 data-identity-integrity-official-id-response="true"
-                style={{
-                  borderRadius: 13,
-                  border: "1px solid rgba(46,155,98,0.18)",
-                  background: "#F3FBF5",
-                  color: "#166534",
-                  fontSize: 12,
-                  fontWeight: 950,
-                  lineHeight: 1.35,
-                  padding: "8px 10px",
-                }}
+                aria-hidden={!officialIdTaskMessage}
+                style={identityResponseSlotStyle("success", isCompact, Boolean(officialIdTaskMessage))}
               >
-                {officialIdTaskMessage}
+                {officialIdTaskMessage || "Official ID task response"}
               </div>
             ) : null}
           </div>

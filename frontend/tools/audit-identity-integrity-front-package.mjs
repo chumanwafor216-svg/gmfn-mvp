@@ -86,8 +86,8 @@ assertContains(
 );
 
 assertContains(
-  /taskIconBadge\(active, item\.tone\)[\s\S]*?GsnLegacyIcon name=\{item\.icon\} size=\{active \? 30 : 26\}/,
-  "Identity Integrity task selector icons must stay large, dark, and badge-backed on phone."
+  /function taskIconBadge[\s\S]*?width: 34[\s\S]*?height: 34[\s\S]*?transition: "none"[\s\S]*?taskIconBadge\(active, item\.tone\)[\s\S]*?GsnLegacyIcon name=\{item\.icon\} size=\{28\}/,
+  "Identity Integrity task selector icons must stay fixed-size, large, dark, and badge-backed on phone."
 );
 
 assertContains(
@@ -96,7 +96,7 @@ assertContains(
 );
 
 assertContains(
-  /data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 14 : 16[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}/,
+  /data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 14 : 16[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?\.\.\.identityPanelLock\(\)[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}[\s\S]*?\.\.\.identityPanelLock\(\)/,
   "Identity Integrity must keep the evidence tasks as compact SVG-led selectors, not a long exposed explanation stack."
 );
 
@@ -151,8 +151,13 @@ assertContains(
 );
 
 assertContains(
-  /data-identity-integrity-phone-completion="true"[\s\S]*?data-identity-integrity-phone-response="true"[\s\S]*?\{phoneTaskMessage\}[\s\S]*?debugId="identity-integrity\.phone-completion-submit"/,
+  /data-identity-integrity-phone-completion="true"[\s\S]*?data-identity-integrity-phone-response="true"[\s\S]*?\{phoneTaskMessage \|\| "Phone task response"\}[\s\S]*?debugId="identity-integrity\.phone-completion-submit"/,
   "Identity Integrity must show the phone completion response inside the phone form instead of a dead or disappearing phone requirement."
+);
+
+assertContains(
+  /function identityResponseSlotStyle[\s\S]*?height: compact \? 106 : 74[\s\S]*?visibility: visible \? "visible" : "hidden"[\s\S]*?data-identity-integrity-phone-response="true"[\s\S]*?identityResponseSlotStyle\(phoneTaskTone, isCompact, Boolean\(phoneTaskMessage\)\)[\s\S]*?data-identity-integrity-official-id-response="true"[\s\S]*?identityResponseSlotStyle\("success", isCompact, Boolean\(officialIdTaskMessage\)\)/,
+  "Identity Integrity phone and official-ID responses must reserve stable slots so action buttons do not jump when a result appears."
 );
 
 assertContains(
@@ -161,13 +166,13 @@ assertContains(
 );
 
 assertContains(
-  /officialIdTaskMessage[\s\S]*?setOfficialIdTaskMessage\([\s\S]*?data-identity-integrity-official-id-response="true"[\s\S]*?\{officialIdTaskMessage\}/,
+  /officialIdTaskMessage[\s\S]*?setOfficialIdTaskMessage\([\s\S]*?data-identity-integrity-official-id-response="true"[\s\S]*?\{officialIdTaskMessage \|\| "Official ID task response"\}/,
   "Identity Integrity must keep the official-ID recording result inside the Passport/ID task instead of relying on a disappearing top notice."
 );
 
 assertContains(
-  /recordSignedInIdentityPhoto[\s\S]*?data-identity-integrity-photo-completion="true"[\s\S]*?debugId="identity-integrity\.identity-photo\.selfie"[\s\S]*?debugId="identity-integrity\.identity-photo\.id-photo"[\s\S]*?debugId="identity-integrity\.identity-photo\.record"/,
-  "Identity Integrity must provide signed-in selfie and ID-photo evidence capture instead of an explanation-only ID route."
+  /recordSignedInIdentityPhoto[\s\S]*?data-identity-integrity-photo-completion="true"[\s\S]*?debugId="identity-integrity\.identity-photo\.selfie"[\s\S]*?debugId="identity-integrity\.identity-photo\.id-photo"[\s\S]*?data-identity-integrity-photo-preview-slot="true"[\s\S]*?debugId="identity-integrity\.identity-photo\.record"[\s\S]*?visibility: identityPhotoPreview \? "visible" : "hidden"/,
+  "Identity Integrity must provide signed-in selfie and ID-photo evidence capture with a stable preview/action slot instead of an explanation-only ID route."
 );
 
 assertNotContains(

@@ -406,9 +406,30 @@ def start_signed_in_phone_verification(
         if released:
             clash = None
     if clash:
+        clash_is_pending = is_user_activation_pending(clash)
+        account_state = "pending_join_or_create" if clash_is_pending else "active_or_protected"
+        first_step = (
+            "Open the original join or create-community activation path for that GSN identity before trying to attach this phone here."
+            if clash_is_pending
+            else "Sign in to the GSN identity that already owns this phone, or ask support/admin to merge the records after checking ownership."
+        )
         raise HTTPException(
             status_code=409,
-            detail="This phone number is already used by another account.",
+            detail={
+                "code": "phone_owned_by_another_identity",
+                "account_state": account_state,
+                "title": "Phone belongs to another GSN identity",
+                "message": (
+                    "This phone number is already used by another account. "
+                    "GSN cannot safely attach one phone to two identities from this form."
+                ),
+                "why_it_matters": (
+                    "Phone verification unlocks TrustSlip code and QR issue. "
+                    "Moving it without account recovery could let the wrong person take over identity evidence."
+                ),
+                "first_step": first_step,
+                "recovery_path": "/login",
+            },
         )
 
     delivery_mode = _signed_in_phone_delivery_mode()

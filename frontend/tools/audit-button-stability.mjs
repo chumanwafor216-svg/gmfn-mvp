@@ -730,14 +730,32 @@ assertContains(
 
 assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
-  /function selectIdentityTask\(key: IdentityTaskKey\)[\s\S]*?setActiveIdentityTask\(key\)[\s\S]*?setIdentityPhotoFile\(null\)[\s\S]*?setIdentityPhotoPreview\(""\)[\s\S]*?setPhoneTaskMessage\(""\)[\s\S]*?data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 52 : 16[\s\S]*?stableHeight=\{isCompact \? 54 : 58\}[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}[\s\S]*?data-identity-integrity-active-task="true"[\s\S]*?minHeight: isCompact \? 178 : undefined[\s\S]*?overflow: "hidden"/,
+  /function selectIdentityTask\(key: IdentityTaskKey\)[\s\S]*?setActiveIdentityTask\(key\)[\s\S]*?setIdentityPhotoFile\(null\)[\s\S]*?setIdentityPhotoPreview\(""\)[\s\S]*?setPhoneTaskMessage\(""\)[\s\S]*?data-identity-integrity-task-switcher="true"[\s\S]*?marginTop: isCompact \? 14 : 16[\s\S]*?\.\.\.identityPanelLock\(\)[\s\S]*?stableHeight=\{isCompact \? 54 : 58\}[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}[\s\S]*?\.\.\.identityPanelLock\(\)[\s\S]*?data-identity-integrity-active-task="true"[\s\S]*?minHeight: isCompact \? 178 : undefined[\s\S]*?\.\.\.identityPanelLock\(\)/,
   "Identity & Integrity evidence-task selector must clear transient panels and keep the active task surface contained on phone."
 );
 
 assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
-  /function identityTaskButtonStyle\(\): React\.CSSProperties \{[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function identityCompletionFieldStyle\(\): React\.CSSProperties \{[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?debugId="identity-integrity\.active-task-action"[\s\S]*?\.\.\.identityTaskButtonStyle\(\)[\s\S]*?debugId="identity-integrity\.phone-completion-submit"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.selfie"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.id-photo"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.record"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.official-id-completion-submit"[\s\S]*?stableHeight=\{52\}/,
+  /function identityTaskButtonStyle\(\): React\.CSSProperties \{[\s\S]*?boxSizing: "border-box"[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?overflowAnchor: "none"[\s\S]*?function identityCompletionFieldStyle\(\): React\.CSSProperties \{[\s\S]*?width: "100%"[\s\S]*?height: 52[\s\S]*?minHeight: 52[\s\S]*?maxHeight: 52[\s\S]*?transition: "none"[\s\S]*?function identityPanelLock\(\): React\.CSSProperties \{[\s\S]*?overflowAnchor: "none"[\s\S]*?function identityResponseSlotStyle[\s\S]*?height: compact \? 106 : 74/,
   "Identity & Integrity phone/ID completion controls must keep one fixed 52px action and field geometry across disabled, busy, photo-selected, and submitted states."
+);
+
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
+  /debugId="identity-integrity\.active-task-action"[\s\S]*?\.\.\.identityTaskButtonStyle\(\)[\s\S]*?data-identity-integrity-phone-response="true"[\s\S]*?identityResponseSlotStyle\(phoneTaskTone, isCompact, Boolean\(phoneTaskMessage\)\)[\s\S]*?debugId="identity-integrity\.phone-completion-submit"[\s\S]*?stableHeight=\{52\}/,
+  "Identity & Integrity phone task must reserve a stable response slot above a fixed 52px submit action."
+);
+
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
+  /stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.selfie"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.id-photo"[\s\S]*?data-identity-integrity-photo-preview-slot="true"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.record"[\s\S]*?visibility: identityPhotoPreview \? "visible" : "hidden"/,
+  "Identity & Integrity photo evidence controls must reserve a stable preview/action slot before and after file selection."
+);
+
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
+  /stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.official-id-completion-submit"[\s\S]*?data-identity-integrity-official-id-response="true"[\s\S]*?identityResponseSlotStyle\("success", isCompact, Boolean\(officialIdTaskMessage\)\)/,
+  "Identity & Integrity official-ID task must keep a fixed submit action and a stable result slot."
 );
 
 assertNotContains(

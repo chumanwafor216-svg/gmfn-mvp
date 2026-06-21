@@ -1,3 +1,96 @@
+## 2026-06-21 - Identity Integrity Task Body Stability
+
+- Trigger:
+  - owner reported that the Identity & Integrity bodies/buttons around Phone,
+    Bank / Wallet, Passport / ID, and related completion panels had started
+    jumping on phone.
+- Changed:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - fixed evidence-task selector icon tiles to one stable 34px shell instead
+      of growing/shrinking between active and inactive states.
+    - added route-local surface locks for task switcher, active task, completion
+      panels, forms, and native fields so taps/focus/result states cannot
+      animate or anchor-scroll the bodies.
+    - changed the compact task switcher gap from the oversized `52px` top gap
+      back to the front-package target `14px`.
+    - reserved stable response slots for Phone and Passport / ID task results,
+      so the submit buttons no longer move when success/blocker text appears.
+    - reserved a stable photo preview/action slot, so selecting a selfie or ID
+      photo no longer inserts a new row that pushes the record button around.
+  - `frontend/tools/audit-button-stability.mjs`
+    - tightened Identity & Integrity cages for task body locks, response slots,
+      and photo preview/action stability.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+    - updated the front-package cage for fixed-size evidence-task icons and
+      stable task result/photo slots.
+- Verification:
+  - `npm run audit:identity-integrity-front-package` passed from `frontend`.
+  - `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx
+    tools/audit-button-stability.mjs
+    tools/audit-identity-integrity-front-package.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+  - `npm run audit:protected-button-freeze` passed from `frontend`.
+  - `npm run build` passed from `frontend`.
+  - `python -m py_compile gmfn_backend\app\api\routes\entry_verification.py
+    gmfn_backend\tests\test_focus_commitment_trust_events.py` passed.
+  - `python -m pytest -q
+    gmfn_backend\tests\test_focus_commitment_trust_events.py -k
+    "signed_in_phone_start" --basetemp
+    C:\tmp\pytest-gmfn-phone-identity-conflict` passed: 4 tests.
+- Unabated truth:
+  - the in-app Browser surface was unavailable in this session (`iab` missing),
+    so this pass is verified by source/audits/build/tests rather than a live
+    browser screenshot.
+  - this stabilizes the Identity & Integrity task bodies; it does not resolve
+    a real duplicate-phone ownership conflict or force TrustSlip QR issuance.
+
+## 2026-06-21 - Identity Phone Conflict Truth Surface
+
+- Trigger:
+  - owner reported the QR code / Identity Integrity situation still has not
+    changed; current phone screenshot shows `This phone number is already used
+    by another account` while TrustSlip code/QR remains blocked.
+- Changed:
+  - `gmfn_backend/app/api/routes/entry_verification.py`
+    - duplicate signed-in phone verification conflicts now return structured
+      blocker detail with `code`, `account_state`, `why_it_matters`,
+      `first_step`, and `recovery_path`.
+    - abandoned pending phone identities can still be released, but pending
+      join/create identities and active/protected identities remain blocked.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - signed-in phone task parses structured backend blockers and shows the
+      real reason, why it matters for TrustSlip code/QR, and the first recovery
+      step.
+    - phone conflict responses now render as error-tone blockers instead of
+      green success-looking messages.
+  - `gmfn_backend/tests/test_focus_commitment_trust_events.py`
+    - added/updated coverage for protected pending-join phone conflicts and
+      active-account phone conflicts.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\entry_verification.py
+    gmfn_backend\tests\test_focus_commitment_trust_events.py` passed.
+  - `python -m pytest -q
+    gmfn_backend\tests\test_focus_commitment_trust_events.py -k
+    "signed_in_phone_start" --basetemp
+    C:\tmp\pytest-gmfn-phone-identity-conflict` passed: 4 tests.
+  - `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx` passed from
+    `frontend`.
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:protected-button-freeze` passed from `frontend`.
+  - `npm run build` passed from `frontend`.
+- Unabated truth:
+  - this does not force-generate a TrustSlip QR while the phone is still owned
+    by another protected GSN identity. That would be unsafe.
+  - if the owner's live phone number is attached to an active or pending real
+    account, the honest next step is original-account activation/sign-in or an
+    admin/account-merge recovery, not another self-service phone form attempt.
+  - deploy state is local only unless/until this batch is committed, pushed,
+    and deployed.
+
 ## 2026-06-21 - Complete ID Button Stability
 
 - Trigger:

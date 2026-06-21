@@ -379,6 +379,11 @@ def test_signed_in_phone_start_keeps_pending_join_phone_protected(
         json={"phone_e164": "+447700900334", "country": "GB"},
     )
     assert start_res.status_code == 409, start_res.text
+    detail = start_res.json()["detail"]
+    assert detail["code"] == "phone_owned_by_another_identity"
+    assert detail["account_state"] == "pending_join_or_create"
+    assert "TrustSlip code and QR" in detail["why_it_matters"]
+    assert "activation path" in detail["first_step"]
 
     with SessionLocal() as db:
         applicant = db.get(User, applicant_id)
@@ -387,6 +392,46 @@ def test_signed_in_phone_start_keeps_pending_join_phone_protected(
         assert applicant.phone_e164 == "+447700900334"
         assert signed_in is not None
         assert signed_in.phone_e164 != "+447700900334"
+
+
+def test_signed_in_phone_start_blocks_active_phone_owner_with_recovery_guidance(
+    client: TestClient,
+    monkeypatch,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "preview")
+
+    with SessionLocal() as db:
+        active_owner = User(
+            email="active-signed-in-phone-owner@example.com",
+            phone_e164="+447700900335",
+            hashed_password="active-owner-password",
+            role="user",
+            display_name="Active Phone Owner",
+        )
+        db.add(active_owner)
+        db.commit()
+        active_owner_id = int(active_owner.id)
+
+    start_res = client.post(
+        "/entry/signed-in/phone/start",
+        json={"phone_e164": "+447700900335", "country": "GB"},
+    )
+    assert start_res.status_code == 409, start_res.text
+    detail = start_res.json()["detail"]
+    assert detail["code"] == "phone_owned_by_another_identity"
+    assert detail["account_state"] == "active_or_protected"
+    assert detail["recovery_path"] == "/login"
+    assert "Sign in to the GSN identity" in detail["first_step"]
+
+    with SessionLocal() as db:
+        active_owner = db.get(User, active_owner_id)
+        signed_in = db.get(User, 1)
+        assert active_owner is not None
+        assert active_owner.phone_e164 == "+447700900335"
+        assert signed_in is not None
+        assert signed_in.phone_e164 != "+447700900335"
 
 
 def test_signed_in_identity_completion_records_phone_and_official_id(
