@@ -1,3 +1,80 @@
+## 2026-06-21 - Identity Lineage Audit After Duplicate Phone Live Screenshot
+
+- Trigger:
+  - owner asked whether local-production activity could be getting included in
+    the Render/live app because the same credentials were used across local,
+    create-community, and join-community paths.
+  - live screenshots showed `TrustSlip: Pending`, `Code: Not available`, and
+    the signed-in phone task blocking `+447903165266` as already used by
+    another account.
+- Findings:
+  - there is no code path found where the frontend build bundles local database
+    activity into Render. A frontend build can carry code/assets, not local
+    SQLite/Postgres rows, unless the live app is deliberately pointed at the
+    same backend/database.
+  - create-entry phone start and create-entry completion both check existing
+    phone identity rows before creating a founder identity.
+  - public join requests with an already-owned phone return
+    `existing_gsn_id_required` and do not create a pending duplicate user.
+  - signed-in phone verification releases only truly abandoned pending
+    identities; pending join/create identities and active/protected identities
+    remain blocked.
+  - one signed-in GSN identity can belong to multiple communities and can create
+    another community without changing identity; this is already covered by
+    join/community tests.
+  - therefore the owner's current live blocker most likely means the phone is
+    already attached to a different protected Render identity row, not that the
+    QR renderer is broken and not that local laptop activity was compiled into
+    the app.
+- Changed:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - duplicate-phone blockers in the phone task now render as compact recovery
+      lines:
+      - what is wrong: the phone belongs to another GSN identity;
+      - why it matters: phone verification unlocks TrustSlip code and QR;
+      - first step: sign in to that GSN ID or request support/admin merge after
+        ownership check.
+    - response slots now preserve line breaks and wrap safely so the recovery
+      guidance is not clipped into an unreadable paragraph on phone.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+    - added a cage requiring the duplicate-phone blocker to remain short,
+      TrustSlip-specific, and recovery-directed.
+- Verification:
+  - `python -m pytest -q
+    gmfn_backend\tests\test_focus_commitment_trust_events.py -k
+    "signed_in_phone_start" --basetemp
+    C:\tmp\pytest-gmfn-phone-lineage-audit` passed: 4 tests.
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py -k
+    "existing_phone_requires_gsn_id or existing_gmfn_id_reuses_global_identity
+    or existing_member_creates_second_community_without_new_identity or
+    direct_clan_join_reuses_existing_identity" --basetemp
+    C:\tmp\pytest-gmfn-join-lineage-audit` passed: 4 tests.
+  - `python -m pytest -q gmfn_backend\tests\test_entry_create.py -k
+    "keeps_real_pending_join_request_protected or
+    releases_abandoned_pending_identity or
+    activate_membership_cannot_reset_already_activated_account" --basetemp
+    C:\tmp\pytest-gmfn-entry-lineage-audit` passed: 3 tests.
+  - `npm run audit:identity-integrity-front-package` passed from `frontend`.
+  - `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx
+    tools/audit-identity-integrity-front-package.mjs` passed from `frontend`.
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:protected-button-freeze` passed from `frontend`.
+  - `npm run build` passed from `frontend`.
+- Unabated truth:
+  - this does not and must not force TrustSlip QR/code issue while the phone is
+    owned by another protected identity.
+  - bank/payout evidence being recorded is not enough to issue TrustSlip if
+    phone verification is blocked.
+  - a real fix for the owner's live account likely requires signing in to the
+    original GSN identity that owns the phone, or an admin/support merge/release
+    after confirming ownership. This session did not inspect private Render DB
+    rows directly.
+- Deploy state:
+  - local only at time of note; not pushed and not Render-visible until the
+    owner explicitly approves publishing this batch.
+
 ## 2026-06-21 - Joined Member TrustSlip Issue Line Audit
 
 - Trigger:

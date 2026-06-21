@@ -166,6 +166,18 @@ function parsePhoneTaskError(err: any): string {
   try {
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === "object") {
+      if (parsed.code === "phone_owned_by_another_identity") {
+        const accountState = safeStr(parsed.account_state);
+        const firstStep =
+          accountState === "pending_join_or_create"
+            ? "Open the original join/create activation path for that GSN ID."
+            : "Sign in to that GSN ID, or ask support/admin to merge after ownership check.";
+        return [
+          "This phone belongs to another GSN identity.",
+          "Why: phone verification unlocks TrustSlip code and QR.",
+          `First: ${firstStep}`,
+        ].join("\n");
+      }
       const message = firstTruthy(parsed.message, parsed.detail, parsed.title);
       const why = firstTruthy(parsed.why_it_matters, parsed.why);
       const firstStep = firstTruthy(parsed.first_step, parsed.next_step);
@@ -553,6 +565,8 @@ function identityResponseSlotStyle(
     fontWeight: 950,
     lineHeight: 1.35,
     padding: "8px 10px",
+    whiteSpace: "pre-line",
+    overflowWrap: "anywhere",
     visibility: visible ? "visible" : "hidden",
     overflowY: "auto",
   };

@@ -156,12 +156,17 @@ assertContains(
 );
 
 assertContains(
+  /phone_owned_by_another_identity[\s\S]*?support\/admin[\s\S]*?This phone belongs to another GSN identity\.[\s\S]*?TrustSlip code and QR/,
+  "Identity Integrity duplicate-phone blockers must stay short enough to fit the stable phone response slot and must name the first recovery step."
+);
+
+assertContains(
   /data-identity-integrity-phone-completion="true"[\s\S]*?data-identity-integrity-phone-response="true"[\s\S]*?\{phoneTaskMessage \|\| "Phone task response"\}[\s\S]*?debugId="identity-integrity\.phone-completion-submit"/,
   "Identity Integrity must show the phone completion response inside the phone form instead of a dead or disappearing phone requirement."
 );
 
 assertContains(
-  /function identityResponseSlotStyle[\s\S]*?height: compact \? 106 : 74[\s\S]*?visibility: visible \? "visible" : "hidden"[\s\S]*?data-identity-integrity-phone-response="true"[\s\S]*?identityResponseSlotStyle\(phoneTaskTone, isCompact, Boolean\(phoneTaskMessage\)\)[\s\S]*?data-identity-integrity-official-id-response="true"[\s\S]*?identityResponseSlotStyle\("success", isCompact, Boolean\(officialIdTaskMessage\)\)/,
+  /function identityResponseSlotStyle[\s\S]*?height: compact \? 106 : 74[\s\S]*?whiteSpace: "pre-line"[\s\S]*?overflowWrap: "anywhere"[\s\S]*?visibility: visible \? "visible" : "hidden"[\s\S]*?data-identity-integrity-phone-response="true"[\s\S]*?identityResponseSlotStyle\(phoneTaskTone, isCompact, Boolean\(phoneTaskMessage\)\)[\s\S]*?data-identity-integrity-official-id-response="true"[\s\S]*?identityResponseSlotStyle\("success", isCompact, Boolean\(officialIdTaskMessage\)\)/,
   "Identity Integrity phone and official-ID responses must reserve stable slots so action buttons do not jump when a result appears."
 );
 
