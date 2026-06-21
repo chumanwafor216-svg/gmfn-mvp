@@ -261,6 +261,8 @@ type TrustSlipSummary = {
   merchant_visibility_level?: string | null;
   visibility_options?: string[];
   is_current?: boolean | null;
+  reason?: string | null;
+  detail?: string | null;
   issued_reason?: string | null;
   supersedes_trust_slip_id?: number | null;
   superseded_by_trust_slip_id?: number | null;
@@ -426,7 +428,7 @@ function toFrontendAbsoluteUrl(pathOrUrl: string): string {
 function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
   const cleanCode = safeStr(code);
   if (cleanCode) {
-    return `/trust-slips/verify/${encodeURIComponent(cleanCode)}/page`;
+    return `/t/${encodeURIComponent(cleanCode)}`;
   }
 
   const rawFallback = safeStr(fallback);
@@ -434,6 +436,13 @@ function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
 
   try {
     const url = new URL(rawFallback, "https://gsn.local");
+    const oldVerifyMatch = url.pathname.match(/^\/trust-slips\/verify\/([^/]+)/);
+    if (oldVerifyMatch?.[1]) {
+      return `/t/${encodeURIComponent(decodeURIComponent(oldVerifyMatch[1]))}${url.search}${url.hash}`;
+    }
+    if (url.pathname.startsWith("/t/")) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
     if (url.pathname.startsWith("/trust-slips/verify")) {
       return `${url.pathname}${url.search}${url.hash}`;
     }
@@ -441,7 +450,12 @@ function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
     // Fall through to the raw fallback below.
   }
 
-  return rawFallback.startsWith("/trust-slips/verify") ? rawFallback : "";
+  const oldRawMatch = rawFallback.match(/^\/trust-slips\/verify\/([^/?#]+)/);
+  if (oldRawMatch?.[1]) {
+    return `/t/${encodeURIComponent(decodeURIComponent(oldRawMatch[1]))}`;
+  }
+
+  return rawFallback.startsWith("/t/") ? rawFallback : "";
 }
 
 async function fetchFirstJson(
@@ -1327,6 +1341,8 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
       ? src.visibility_options
       : [],
     is_current: src?.is_current ?? null,
+    reason: firstTruthy(src?.reason),
+    detail: firstTruthy(src?.detail),
     issued_reason: firstTruthy(src?.issued_reason),
     supersedes_trust_slip_id: src?.supersedes_trust_slip_id ?? null,
     superseded_by_trust_slip_id: src?.superseded_by_trust_slip_id ?? null,
@@ -1456,7 +1472,7 @@ function mergeFreshTrustSlipSummary(
 
   const issuedAt = firstTruthy(reissueResult.issued_at, reissueResult.created_at);
   const expiresAt = firstTruthy(reissueResult.expires_at);
-  const freshVerifyUrl = `/trust-slips/verify/${encodeURIComponent(freshCode)}/page`;
+  const freshVerifyUrl = `/t/${encodeURIComponent(freshCode)}`;
 
   return {
     ...summary,
@@ -1644,6 +1660,20 @@ export default function TrustSlipPage() {
   }, [selectedClanId]);
 
   async function refreshTrustSlip() {
+    if (
+      !trustSlipCode &&
+      safeStr(summary?.reason).toLowerCase() === "phone_unverified"
+    ) {
+      showNotice(
+        "error",
+        firstTruthy(
+          summary?.detail,
+          "Verify your phone number to activate TrustSlip portability."
+        )
+      );
+      return;
+    }
+
     setRefreshing(true);
 
     try {
@@ -1659,8 +1689,14 @@ export default function TrustSlipPage() {
       setSummary(mergeFreshTrustSlipSummary(data.summary, reissueResult));
       setConfirmationOutcome(null);
       showNotice("success", "Fresh TrustSlip issued.");
-    } catch {
-      showNotice("error", "TrustSlip could not refresh. Try again in a moment.");
+    } catch (error: any) {
+      showNotice(
+        "error",
+        firstTruthy(
+          error?.message,
+          "TrustSlip could not refresh. Try again in a moment."
+        )
+      );
     } finally {
       setRefreshing(false);
     }
@@ -1731,6 +1767,15 @@ export default function TrustSlipPage() {
       summary?.token
     );
   }, [summary]);
+  const trustSlipIssueReason = safeStr(summary?.reason).toLowerCase();
+  const trustSlipBlockedByPhone =
+    !trustSlipCode &&
+    (trustSlipIssueReason === "phone_unverified" ||
+      /verify your phone/i.test(safeStr(summary?.detail)));
+  const trustSlipBlockDetail = firstTruthy(
+    summary?.detail,
+    "Verify your phone number to activate TrustSlip portability."
+  );
 
   const verifyPath = useMemo(() => {
     return trustSlipVerifyFrontendPath(
@@ -1806,7 +1851,9 @@ export default function TrustSlipPage() {
     summary?.merchant_view?.expires_at || summary?.expires_at
   );
   const trustSlipPublicStatus =
-    rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
+    trustSlipBlockedByPhone
+      ? "Phone check needed"
+      : rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
       ? "Needs refresh"
       : rawTrustSlipStatus === "revoked"
       ? "Revoked"
@@ -1816,7 +1863,9 @@ export default function TrustSlipPage() {
       ? "Ready to verify"
       : "Preparing";
   const trustSlipStatusNote =
-    rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
+    trustSlipBlockedByPhone
+      ? trustSlipBlockDetail
+      : rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
       ? "This TrustSlip exists, but the current public record window has passed. Refresh or generate a current TrustSlip before asking anyone to rely on it."
       : rawTrustSlipStatus === "revoked" || rawTrustSlipStatus === "frozen"
       ? "Do not rely on this TrustSlip until the status is cleared and a fresh verification record is available."

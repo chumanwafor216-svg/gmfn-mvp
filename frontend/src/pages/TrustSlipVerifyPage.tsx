@@ -499,7 +499,7 @@ export default function TrustSlipVerifyPage() {
     }
     navigateWithOrigin(
       navigate,
-      `/trust-slips/verify/${encodeURIComponent(code)}/page`,
+      `/t/${encodeURIComponent(code)}`,
       location
     );
   }

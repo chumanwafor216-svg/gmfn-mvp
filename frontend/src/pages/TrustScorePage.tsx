@@ -233,6 +233,8 @@ type TrustSlipSummary = {
   merchant_visibility_level?: string | null;
   visibility_options?: string[];
   is_current?: boolean | null;
+  reason?: string | null;
+  detail?: string | null;
   issued_reason?: string | null;
   not_a_bank_guarantee?: boolean | null;
   no_auto_debit?: boolean | null;
@@ -662,6 +664,8 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
       ? src.visibility_options
       : [],
     is_current: src?.is_current ?? null,
+    reason: firstTruthy(src?.reason),
+    detail: firstTruthy(src?.detail),
     issued_reason: firstTruthy(src?.issued_reason),
     not_a_bank_guarantee: src?.not_a_bank_guarantee ?? null,
     no_auto_debit: src?.no_auto_debit ?? null,
@@ -959,7 +963,7 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
   const cleanCode = safeStr(code);
   if (cleanCode) {
-    return `/trust-slips/verify/${encodeURIComponent(cleanCode)}/page`;
+    return `/t/${encodeURIComponent(cleanCode)}`;
   }
 
   const rawFallback = safeStr(fallback);
@@ -967,6 +971,13 @@ function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
 
   try {
     const url = new URL(rawFallback, "https://gsn.local");
+    const oldVerifyMatch = url.pathname.match(/^\/trust-slips\/verify\/([^/]+)/);
+    if (oldVerifyMatch?.[1]) {
+      return `/t/${encodeURIComponent(decodeURIComponent(oldVerifyMatch[1]))}${url.search}${url.hash}`;
+    }
+    if (url.pathname.startsWith("/t/")) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
     if (url.pathname.startsWith("/trust-slips/verify")) {
       return `${url.pathname}${url.search}${url.hash}`;
     }
@@ -974,7 +985,12 @@ function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
     // Use the raw fallback below.
   }
 
-  return rawFallback.startsWith("/trust-slips/verify") ? rawFallback : "";
+  const oldRawMatch = rawFallback.match(/^\/trust-slips\/verify\/([^/?#]+)/);
+  if (oldRawMatch?.[1]) {
+    return `/t/${encodeURIComponent(decodeURIComponent(oldRawMatch[1]))}`;
+  }
+
+  return rawFallback.startsWith("/t/") ? rawFallback : "";
 }
 
 function trustSlipVerifyAppPath(code: string, fallback: string): string {
@@ -1933,8 +1949,17 @@ export default function TrustScorePage() {
     [me, trustSlipSummary, hasSelectedCommunity]
   );
   const cci = useMemo(() => getCciState(me, trustSlipSummary), [me, trustSlipSummary]);
+  const trustSlipIssueReason = safeStr(trustSlipSummary?.reason).toLowerCase();
+  const trustSlipBlockedByPhone =
+    !trustSlipCode &&
+    (trustSlipIssueReason === "phone_unverified" ||
+      /verify your phone/i.test(safeStr(trustSlipSummary?.detail)));
+  const trustSlipBlockDetail = firstTruthy(
+    trustSlipSummary?.detail,
+    "Verify your phone number to activate TrustSlip portability."
+  );
   const trustSlipStatus = firstTruthy(
-    trustSlipSummary?.status,
+    trustSlipBlockedByPhone ? "Phone check needed" : trustSlipSummary?.status,
     trustSlipSummary?.active || trustSlipSummary?.verified || trustSlipCode
       ? "Ready"
       : "Pending"
@@ -4397,6 +4422,16 @@ export default function TrustScorePage() {
                 </DangerButton>
                 <SubtleButton
                   onClick={() => {
+                    if (!trustPassportSnapshotReady) {
+                      setNotice({
+                        tone: "error",
+                        text: trustSlipBlockedByPhone
+                          ? trustSlipBlockDetail
+                          : "Trust Passport PDF is not ready yet. Issue the GSN ID and TrustSlip first.",
+                      });
+                      return;
+                    }
+
                     if (
                       typeof window !== "undefined" &&
                       typeof window.print === "function"
@@ -4481,13 +4516,16 @@ export default function TrustScorePage() {
                           marginTop: 3,
                         }}
                       >
-                        Finish the GSN ID and TrustSlip before sharing.
+                        {trustSlipBlockedByPhone
+                          ? "Verify the phone number before sharing."
+                          : "Finish the GSN ID and TrustSlip before sharing."}
                       </div>
                     </div>
                   </div>
                   <p style={{ ...helperText(), margin: 0 }}>
-                    A public-looking paper should not show placeholders like
-                    Awaiting issue or a blank TrustSlip code.
+                    {trustSlipBlockedByPhone
+                      ? trustSlipBlockDetail
+                      : "A public-looking paper should not show placeholders like Awaiting issue or a blank TrustSlip code."}
                   </p>
                   <SecondaryButton
                     onClick={() => openTrustRoute(routes.trustSlip)}

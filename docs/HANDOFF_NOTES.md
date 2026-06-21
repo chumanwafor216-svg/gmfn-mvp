@@ -1,3 +1,52 @@
+## 2026-06-21 - TrustSlip And Trust Passport Code/QR Line Audit
+
+- Trigger:
+  - owner started auditing the full TrustSlip and Trust Passport line from
+    issue/refresh through copy, verify, PDF, and merchant verification.
+  - owner reported that Render was not showing or generating a TrustSlip code
+    or QR code, and that Trust Passport PDF/export could print a management
+    page with buttons, tabs, and `TrustSlip: Pending`.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - public verify links now normalize to `/t/{code}` instead of the older
+      `/trust-slips/verify/{code}/page` route family.
+    - stale backend `public_verify_url` values using the older route are
+      converted to `/t/{code}` before copy, QR, or open actions use them.
+    - fresh reissue merge now stores `/t/{code}` as the public verify URL.
+    - TrustSlip summary now preserves backend `reason/detail` fields.
+    - if the backend says `phone_unverified`, the page says `Phone check
+      needed` and shows the real phone-verification blocker instead of only
+      `Preparing` or a generic refresh failure.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport verify links now normalize to `/t/{code}` as well.
+    - Trust Passport summary now preserves backend `reason/detail` fields.
+    - shareable tools show `Phone check needed` when the TrustSlip is blocked
+      by phone verification.
+    - `Export / print` no longer prints the not-ready management surface; it
+      stops and explains the missing GSN ID / TrustSlip / phone-verification
+      condition first.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - manual TrustSlip code entry now navigates to `/t/{code}`.
+- Verification:
+  - `npm run build` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - focused scan confirms the TrustSlip/Trust Passport pages no longer build
+    public verify links using `/trust-slips/verify/{code}/page`.
+- Unabated truth:
+  - this does not prove the owner's Render account has a valid TrustSlip code;
+    without the signed-in Render session or API token, we cannot directly read
+    that user's `/trust-slips/me` payload.
+  - the backend intentionally returns no code/QR when the signed-in user lacks
+    `phone_verified_at` or `phone_e164`; the frontend now exposes that truth.
+  - there is a backend inconsistency still to fix in a backend deploy window:
+    initial issue requires verified phone, but the `reissue_trust_slip`
+    service itself does not enforce the same phone check. This pass kept to
+    frontend-only deployment so Render can receive it immediately.
+  - the older `/trust-slips/verify/{code}/page` route remains as a compatibility
+    alias/API-adjacent path, but user-facing QR/copy/open flows now prefer
+    `/t/{code}`.
+
 ## 2026-06-21 - TrustSlip Verify Mobile Frame Reduction
 
 - Trigger:
