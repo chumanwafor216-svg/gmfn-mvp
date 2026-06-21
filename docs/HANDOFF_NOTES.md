@@ -1,3 +1,35 @@
+## 2026-06-21 - TrustSlip Verify Mobile Frame Reduction
+
+- Trigger:
+  - owner reported that the TrustSlip Verify public paper had too many nested
+    borders/frames on phone, narrowing the readable area and making the page
+    scroll longer than necessary.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - removed the compact/mobile outer paper border and heavy shadow.
+    - removed the compact/mobile inner public shell border and shadow.
+    - reduced compact/mobile body side padding.
+    - flattened compact/mobile quick reader answers, public reading, and
+      `At a glance` sections so they use simple separators instead of cards
+      inside cards.
+    - compact/mobile `At a glance` result groups now render without their own
+      boxed table border/background.
+- Verification:
+  - `npm run build` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - local Playwright mobile Chromium smoke against mocked TrustSlip data
+    confirmed:
+    - `At a glance` still renders.
+    - compact `At a glance` section has no border and no box shadow.
+    - compact inner result table has `border: 0`.
+    - `Print / save PDF` and `Share paper` controls still render.
+- Unabated truth:
+  - this reduces visual frame congestion on the TrustSlip Verify public paper;
+    it does not yet redesign every long text block or remove every internal
+    row separator. If the owner wants the whole page much shorter, the next
+    honest move is content condensation/collapse, not only border removal.
+
 ## 2026-06-21 - TrustSlip Verify Action Buttons
 
 - Trigger:

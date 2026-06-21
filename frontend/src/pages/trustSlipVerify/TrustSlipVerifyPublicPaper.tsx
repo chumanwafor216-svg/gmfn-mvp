@@ -259,22 +259,22 @@ function paperStatusPill(status: string): React.CSSProperties {
 function publicVerifyPaperShell(compact: boolean): React.CSSProperties {
   return {
     ...institutionalPageCard("#FFFFFF"),
-    borderRadius: compact ? 20 : 28,
+    borderRadius: compact ? 12 : 28,
     padding: 0,
-    border: "1px solid rgba(37,78,119,0.16)",
+    border: compact ? "0" : "1px solid rgba(37,78,119,0.16)",
     position: "relative",
     overflow: "hidden",
-    boxShadow: "0 24px 60px rgba(15,23,42,0.12)",
+    boxShadow: compact ? "none" : "0 24px 60px rgba(15,23,42,0.12)",
     background: "#FFFFFF",
   };
 }
 
-function publicVerifyShell(bg = "#FFFFFF"): React.CSSProperties {
+function publicVerifyShell(bg = "#FFFFFF", compact = false): React.CSSProperties {
   return {
-    ...publicVerifyPanel(bg),
+    ...publicVerifyPanel(bg, compact),
     position: "relative",
     overflow: "hidden",
-    boxShadow: "0 16px 34px rgba(15,23,42,0.08)",
+    boxShadow: compact ? "none" : "0 16px 34px rgba(15,23,42,0.08)",
   };
 }
 
@@ -322,14 +322,26 @@ function officialPaperWatermark(compact: boolean): React.ReactNode {
   );
 }
 
-function publicVerifyPanel(bg = "#FFFFFF"): React.CSSProperties {
+function publicVerifyPanel(bg = "#FFFFFF", compact = false): React.CSSProperties {
   return {
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: compact ? 10 : 14,
+    padding: compact ? 10 : 14,
     background: bg,
-    border: "1px solid rgba(37,78,119,0.11)",
-    boxShadow: "0 10px 26px rgba(7,23,44,0.05)",
+    border: compact ? "0" : "1px solid rgba(37,78,119,0.11)",
+    boxShadow: compact ? "none" : "0 10px 26px rgba(7,23,44,0.05)",
   };
+}
+
+function mobileFlatSection(compact: boolean, bg = "transparent"): React.CSSProperties {
+  return compact
+    ? {
+        borderRadius: 0,
+        padding: "10px 0 0",
+        background: bg,
+        border: "0",
+        boxShadow: "none",
+      }
+    : innerCard(bg === "transparent" ? "#FFFFFF" : bg);
 }
 
 function paperMiniRow(): React.CSSProperties {
@@ -471,13 +483,13 @@ function PublicReadingTile({
 function paperDataRow(compact = false): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: compact ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
-    gap: compact ? 4 : 10,
-    alignItems: compact ? "start" : "center",
-    padding: compact ? "9px 0" : "8px 0",
+    gridTemplateColumns: compact ? "minmax(0, 0.54fr) minmax(0, 0.46fr)" : "minmax(0, 1fr) auto",
+    gap: compact ? 8 : 10,
+    alignItems: "center",
+    padding: compact ? "8px 0" : "8px 0",
     borderBottom: "1px solid rgba(216,227,238,0.72)",
     color: "#334155",
-    fontSize: 13,
+    fontSize: compact ? 12.5 : 13,
     fontWeight: 850,
     minWidth: 0,
   };
@@ -627,17 +639,17 @@ function OfficialResultTable({
   return (
     <div
       style={{
-        borderRadius: 14,
-        border: "1px solid rgba(37,78,119,0.12)",
-        background: "#FFFFFF",
+        borderRadius: compact ? 0 : 14,
+        border: compact ? "0" : "1px solid rgba(37,78,119,0.12)",
+        background: compact ? "transparent" : "#FFFFFF",
         overflow: "hidden",
         minWidth: 0,
       }}
     >
       <div
         style={{
-          padding: compact ? "9px 11px" : "10px 12px",
-          background: "linear-gradient(180deg, #F8FBFF 0%, #EEF5FC 100%)",
+          padding: compact ? "11px 0 4px" : "10px 12px",
+          background: compact ? "transparent" : "linear-gradient(180deg, #F8FBFF 0%, #EEF5FC 100%)",
           color: "#07172C",
           fontSize: 12,
           fontWeight: 1000,
@@ -647,7 +659,7 @@ function OfficialResultTable({
       >
         {title}
       </div>
-      <div style={{ padding: compact ? "0 11px 5px" : "0 12px 6px" }}>
+      <div style={{ padding: compact ? "0 0 4px" : "0 12px 6px" }}>
         {rows.map(([label, value]) => (
           <div key={`${title}-${label}`} style={paperDataRow(compact)}>
             <span style={readableText()}>{label}</span>
@@ -655,8 +667,8 @@ function OfficialResultTable({
               style={{
                 ...readableText(),
                 color: "#07172C",
-                textAlign: compact ? "left" : "right",
-                justifySelf: compact ? "start" : "end",
+                textAlign: "right",
+                justifySelf: "end",
                 maxWidth: "100%",
               }}
             >
@@ -1006,7 +1018,7 @@ export default function TrustSlipVerifyPublicPaper({
 
       <div
         style={{
-          padding: compact ? "0 14px 16px" : "0 36px 26px",
+          padding: compact ? "0 8px 14px" : "0 36px 26px",
           transform: "translateY(-24px)",
           marginBottom: -12,
           display: "grid",
@@ -1015,7 +1027,7 @@ export default function TrustSlipVerifyPublicPaper({
           alignItems: "stretch",
         }}
       >
-        <div style={publicVerifyShell("#F8FBFF")}>
+        <div style={publicVerifyShell("#F8FBFF", compact)}>
           <TrustPaperWatermark
             name={validNow ? "shield" : "lock"}
             color="#FFFFFF"
@@ -1078,7 +1090,7 @@ export default function TrustSlipVerifyPublicPaper({
 
           <div
             style={{
-              ...publicVerifyPanel("#FFF8E8"),
+              ...publicVerifyPanel("#FFF8E8", compact),
               marginTop: 14,
               borderLeft: "4px solid #D6AA45",
               display: "grid",
@@ -1293,7 +1305,20 @@ export default function TrustSlipVerifyPublicPaper({
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {quickTrustAnswers.map(([icon, title, answer]) => (
-                  <div key={title} style={{ ...innerCard("#FFFFFF"), padding: 10 }}>
+                  <div
+                    key={title}
+                    style={{
+                      ...(compact
+                        ? {
+                            padding: "8px 0",
+                            background: "transparent",
+                            border: "0",
+                            boxShadow: "none",
+                          }
+                        : innerCard("#FFFFFF")),
+                      padding: compact ? "8px 0" : 10,
+                    }}
+                  >
                     <div style={paperMiniRow()}>
                       {paperIconBadge(icon, "neutral")}
                       <div>
@@ -1307,7 +1332,14 @@ export default function TrustSlipVerifyPublicPaper({
                 ))}
               </div>
 
-              <div style={{ marginTop: 12, ...innerCard("#FFFFFF"), padding: 12 }}>
+              <div
+                style={{
+                  marginTop: 12,
+                  ...mobileFlatSection(compact, "#FFFFFF"),
+                  padding: compact ? "12px 0 0" : 12,
+                  borderTop: compact ? "1px solid rgba(216,227,238,0.72)" : undefined,
+                }}
+              >
                 <div style={{ ...sectionLabel(), color: "#07172C" }}>Public reading</div>
                 <div
                   style={{
@@ -1342,7 +1374,7 @@ export default function TrustSlipVerifyPublicPaper({
                     tone="warning"
                   />
                 </div>
-                <div style={{ marginTop: 10 }}>
+                <div style={{ marginTop: compact ? 8 : 10 }}>
                   <EvidenceResultGrid rows={evidenceResults} compact={compact} />
                 </div>
                 <div
@@ -1396,7 +1428,14 @@ export default function TrustSlipVerifyPublicPaper({
               </div>
 
               {!isLite ? (
-                <div style={{ marginTop: 12, ...innerCard("#F8FBFF"), padding: 12 }}>
+                <div
+                  style={{
+                    marginTop: 12,
+                    ...mobileFlatSection(compact, "#F8FBFF"),
+                    padding: compact ? "12px 0 0" : 12,
+                    borderTop: compact ? "1px solid rgba(216,227,238,0.72)" : undefined,
+                  }}
+                >
                   <div style={{ ...sectionLabel(), color: "#07172C" }}>At a glance</div>
                   <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                     {glanceGroups.map((group) => (
