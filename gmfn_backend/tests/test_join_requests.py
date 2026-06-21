@@ -2517,6 +2517,50 @@ def test_activate_approved_member_accepts_request_id_path(
     assert activate_body["next_action"] == "verify_phone"
     assert activate_body["next_action_path"] == "/app/identity?task=phone&mode=complete"
 
+    # The pilot approve call above runs under an admin override. Drop it before
+    # checking the activated member's own signed-in identity path.
+    app.dependency_overrides.pop(auth.get_current_user, None)
+
+    member_headers = {"Authorization": f"Bearer {activate_body['access_token']}"}
+    phone_start_res = client.post(
+        "/entry/signed-in/phone/start",
+        json={"phone_e164": "+2348012345678", "country": "Nigeria"},
+        headers=member_headers,
+    )
+    assert phone_start_res.status_code == 201, phone_start_res.text
+    phone_start_body = phone_start_res.json()
+    assert phone_start_body["phone_e164"] == "+2348012345678"
+    assert phone_start_body["otp_preview"]
+
+    phone_confirm_res = client.post(
+        "/entry/signed-in/phone/confirm",
+        json={
+            "verification_id": phone_start_body["verification_id"],
+            "code": phone_start_body["otp_preview"],
+        },
+        headers=member_headers,
+    )
+    assert phone_confirm_res.status_code == 200, phone_confirm_res.text
+    phone_confirm_body = phone_confirm_res.json()
+    assert phone_confirm_body["verified"] is True
+    assert phone_confirm_body["phone_verified_at"] is not None
+
+    me_res = client.get("/auth/me", headers=member_headers)
+    assert me_res.status_code == 200, me_res.text
+    me_body = me_res.json()
+    assert me_body["phone_verified"] is True
+    assert me_body["phone_verified_at"] is not None
+
+    trust_slip_res = client.get("/trust-slips/me", headers=member_headers)
+    assert trust_slip_res.status_code == 200, trust_slip_res.text
+    trust_slip_body = trust_slip_res.json()
+    assert trust_slip_body["active"] is True
+    assert trust_slip_body["phone_verified"] is True
+    assert trust_slip_body["code"]
+    assert trust_slip_body["public_verify_url"].endswith(
+        f"/t/{trust_slip_body['code']}"
+    )
+
     with SessionLocal() as db:
         applicant = db.get(User, 2)
         assert applicant is not None

@@ -146,6 +146,11 @@ assertContains(
 );
 
 assertContains(
+  /async function refreshTrustSlipAfterIdentityChange\([\s\S]*?const nextTrustSlip = await getMyTrustSlip\(\);[\s\S]*?setTrustSlip\(normalizeTrustSlipRecord\(nextTrustSlip\)\)[\s\S]*?const out = await confirmSignedInPhoneVerification[\s\S]*?const nextTrustSlip = await refreshTrustSlipAfterIdentityChange\(\)[\s\S]*?TrustSlip code and QR are now ready/,
+  "Identity Integrity must refetch/auto-issue TrustSlip after phone confirmation so joined members do not remain visibly pending after the phone code succeeds."
+);
+
+assertContains(
   /phoneTaskMessage[\s\S]*?setPhoneTaskMessage\(/,
   "Identity Integrity must keep local phone task response state."
 );

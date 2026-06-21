@@ -1,3 +1,72 @@
+## 2026-06-21 - Joined Member TrustSlip Issue Line Audit
+
+- Trigger:
+  - owner reported that created/local identity flow can look fine, but a joined
+    Render account keeps showing Identity / TrustSlip pending even after phone
+    and bank/payout information is accepted.
+- Findings:
+  - backend TrustSlip issue still correctly requires the signed-in user row to
+    have both `phone_e164` and `phone_verified_at`.
+  - Identity Integrity was updating local phone state after code confirmation,
+    but it was not immediately refetching `/trust-slips/me`, so the same screen
+    could keep showing `TrustSlip: Pending` after phone verification until a
+    later refresh/open.
+  - backend `_verify_page_url` still generated legacy
+    `/trust-slips/verify/{code}/page` URLs even though the public frontend route
+    and QR/copy direction now prefer `/t/{code}`.
+  - the joined-member backend path works when the signed-in member identity is
+    actually used: activate approved join request, verify signed-in phone, then
+    `/trust-slips/me` issues a code.
+- Changed:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - after successful signed-in phone confirmation, the page now immediately
+      refetches `/trust-slips/me`; this lets the backend auto-issue the
+      TrustSlip and updates the visible code/QR state without leaving the joined
+      member stuck on a stale pending reading.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+    - added a cage requiring the post-phone-confirm TrustSlip refetch and ready
+      message.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - backend-generated TrustSlip verify URLs now use `/t/{code}` and lite URLs
+      use `/t/{code}/lite`.
+  - `gmfn_backend/tests/test_join_requests.py`
+    - extended the approved-member activation regression through signed-in
+      phone verification, `/auth/me`, and `/trust-slips/me`, requiring an
+      active TrustSlip code and `/t/{code}` public URL.
+- Verification:
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py -k
+    "activate_approved_member_accepts_request_id_path" --basetemp
+    C:\tmp\pytest-gmfn-joined-trustslip` passed.
+  - `python -m py_compile gmfn_backend\app\api\routes\trust_slips.py
+    gmfn_backend\tests\test_join_requests.py` passed.
+  - `python -m pytest -q
+    gmfn_backend\tests\test_focus_commitment_trust_events.py -k
+    "trust_slip or signed_in_phone" --basetemp
+    C:\tmp\pytest-gmfn-trustslip-line` passed: 4 tests.
+  - `python -m pytest -q
+    gmfn_backend\tests\test_community_member_verifications.py -k
+    "trustslip_verify_page_links_scoped_member_credential or TrustSlip"
+    --basetemp C:\tmp\pytest-gmfn-trustslip-public-line` passed: 3 tests.
+  - `npm run audit:identity-integrity-front-package` passed from `frontend`.
+  - `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx
+    tools/audit-identity-integrity-front-package.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:protected-button-freeze` passed from `frontend`.
+  - `npm run build` passed from `frontend`.
+  - `npm run audit:live-api-identity-routes` passed against
+    `https://gmfn-api.onrender.com`; this only proves the live API has the
+    expected route contracts, not that this new backend commit is deployed.
+- Unabated truth:
+  - this fix does not bypass a real duplicate-phone conflict. If the same phone
+    is owned by another active/protected GSN identity, TrustSlip must remain
+    blocked until account recovery/merge resolves ownership.
+  - the joined-member line now has local regression coverage, but Render will
+    not show the backend URL/issue changes until the backend service deploys
+    this commit. The previous Render workflow failed backend deploy because
+    `RENDER_API_KEY` was missing.
+
 ## 2026-06-21 - Identity Integrity Task Body Stability
 
 - Trigger:

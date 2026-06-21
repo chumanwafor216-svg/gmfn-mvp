@@ -2038,6 +2038,16 @@ export default function IdentityIntegrityPage() {
     setOfficialIdTaskMessage("");
   }
 
+  async function refreshTrustSlipAfterIdentityChange() {
+    try {
+      const nextTrustSlip = await getMyTrustSlip();
+      setTrustSlip(normalizeTrustSlipRecord(nextTrustSlip));
+      return nextTrustSlip;
+    } catch {
+      return null;
+    }
+  }
+
   function openIdentityTask(item: typeof activeTask) {
     if (item.to) {
       navigateWithOrigin(navigate, item.to, location);
@@ -2120,9 +2130,25 @@ export default function IdentityIntegrityPage() {
       setPhoneVerificationId(null);
       setPhoneCode("");
       setPhoneOtpPreview("");
-      setPhoneTaskMessage(out?.message || "Phone evidence is now verified and connected.");
+      const nextTrustSlip = await refreshTrustSlipAfterIdentityChange();
+      const nextTrustSlipCode = safeStr(
+        nextTrustSlip?.code ||
+          nextTrustSlip?.verification_code ||
+          nextTrustSlip?.verification_token ||
+          nextTrustSlip?.token
+      );
+      setPhoneTaskMessage(
+        nextTrustSlipCode
+          ? "Phone evidence is verified. TrustSlip code and QR are now ready."
+          : out?.message || "Phone evidence is now verified and connected."
+      );
       setPhoneTaskTone("success");
-      showNotice("success", out?.message || "Phone evidence is now connected.");
+      showNotice(
+        "success",
+        nextTrustSlipCode
+          ? "Phone verified. TrustSlip code and QR are ready."
+          : out?.message || "Phone evidence is now connected."
+      );
     } catch (err: any) {
       const message = err?.message || "Phone code could not be confirmed.";
       setPhoneTaskMessage(message);

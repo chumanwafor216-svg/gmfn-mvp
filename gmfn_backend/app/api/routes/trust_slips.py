@@ -166,14 +166,14 @@ def _public_visibility_level(
 
 
 def _verify_page_url(code: str, level: Optional[str] = None) -> str:
-    base = f"/trust-slips/verify/{code}/page"
+    base = f"/t/{quote(str(code), safe='')}"
     if level in {"minimal", "standard", "detailed"}:
         return f"{base}?level={level}"
     return base
 
 
 def _lite_page_url(code: str, level: Optional[str] = None) -> str:
-    base = f"/trust-slips/verify/{code}/lite"
+    base = f"/t/{quote(str(code), safe='')}/lite"
     if level in {"minimal", "standard", "detailed"}:
         return f"{base}?level={level}"
     return base
