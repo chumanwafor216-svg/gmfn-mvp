@@ -458,6 +458,9 @@ export default function TrustSlipVerifyPage() {
   const confirmationPublicPath = confirmationOutcome?.public_token
     ? `/community-confirmations/public/${encodeURIComponent(String(confirmationOutcome.public_token))}`
     : "";
+  const publicLitePath = resolvedCode
+    ? `/trust-slips/verify/${encodeURIComponent(resolvedCode)}/lite`
+    : "";
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -606,11 +609,29 @@ export default function TrustSlipVerifyPage() {
           background: "#062B58",
           color: "#FFFFFF",
           fontWeight: 1000,
+          boxShadow: "0 14px 28px rgba(6,43,88,0.18)",
         }}
       >
         {labelWithIcon("records-folder", "Print / save PDF")}
       </SecondaryButton>
-      {isAppRoute ? (
+      {publicLitePath ? (
+        <StableCtaLink
+          to={publicLitePath}
+          kind="secondary"
+          stableHeight={isCompact ? 52 : 58}
+          fullWidth={isCompact}
+          minWidth={isCompact ? undefined : 132}
+          debugId="trust-slip-verify.public.open-lite"
+          style={{
+            borderRadius: 12,
+            fontWeight: 1000,
+            background: "#FFFFFF",
+            color: "#07172C",
+          }}
+        >
+          {labelWithIcon("public-globe", "Lite view")}
+        </StableCtaLink>
+      ) : isAppRoute ? (
         <SecondaryButton
           type="button"
           onClick={() => navigateWithOrigin(navigate, routes.trust, location)}
@@ -692,13 +713,21 @@ export default function TrustSlipVerifyPage() {
           }),
           url: verifyUrl,
         }}
-        disabled={!verifyUrl}
-        buttonLabel="Share"
+        disabled={false}
+        buttonLabel="Share paper"
         stableHeight={isCompact ? 52 : 58}
         fullWidth={isCompact}
         minWidth={isCompact ? undefined : 132}
         debugId="trust-slip-verify.public.tag-social"
-        style={{ borderRadius: 12, fontWeight: 1000 }}
+        style={{
+          borderRadius: 12,
+          fontWeight: 1000,
+          background: verifyUrl
+            ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+            : "#F8FBFF",
+          color: "#07172C",
+          border: "1px solid rgba(11,99,209,0.14)",
+        }}
         onResult={showNotice}
       />
       <div style={{ display: "none" }}>

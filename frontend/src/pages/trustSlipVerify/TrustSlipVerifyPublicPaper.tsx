@@ -482,6 +482,192 @@ function paperDataRow(compact = false): React.CSSProperties {
   };
 }
 
+type EvidenceTone = "good" | "warning" | "neutral" | "danger";
+
+type EvidenceResult = {
+  icon: Gsn3DIconKey;
+  label: string;
+  value: string;
+  note?: string;
+  tone?: EvidenceTone;
+};
+
+function evidenceToneStyle(tone: EvidenceTone = "neutral") {
+  return {
+    good: {
+      bg: "#EEF9F1",
+      text: "#166534",
+      border: "rgba(46,155,98,0.24)",
+      iconTone: "trust" as const,
+    },
+    warning: {
+      bg: "#FFF7E6",
+      text: "#92400E",
+      border: "rgba(245,158,11,0.26)",
+      iconTone: "warning" as const,
+    },
+    danger: {
+      bg: "#FEF2F2",
+      text: "#991B1B",
+      border: "rgba(220,38,38,0.20)",
+      iconTone: "warning" as const,
+    },
+    neutral: {
+      bg: "#F8FBFF",
+      text: "#0B63D1",
+      border: "rgba(11,99,209,0.16)",
+      iconTone: "neutral" as const,
+    },
+  }[tone];
+}
+
+function EvidenceResultRow({
+  icon,
+  label,
+  value,
+  note,
+  tone = "neutral",
+  compact = false,
+}: EvidenceResult & { compact?: boolean }) {
+  const toneStyle = evidenceToneStyle(tone);
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: compact ? "38px minmax(0, 1fr)" : "42px minmax(0, 1fr)",
+        gap: 10,
+        alignItems: "start",
+        minWidth: 0,
+        borderRadius: 14,
+        padding: compact ? "9px 10px" : "10px 12px",
+        background: toneStyle.bg,
+        border: `1px solid ${toneStyle.border}`,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.82)",
+      }}
+    >
+      {paperIconBadge(icon, toneStyle.iconTone, compact ? 36 : 40)}
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            ...readableText(),
+            color: "#526579",
+            fontSize: 10.5,
+            fontWeight: 1000,
+            textTransform: "uppercase",
+            letterSpacing: 0,
+          }}
+        >
+          {label}
+        </div>
+        <div
+          style={{
+            ...readableText(),
+            marginTop: 2,
+            color: "#07172C",
+            fontSize: compact ? 14 : 15,
+            fontWeight: 1000,
+            lineHeight: 1.18,
+          }}
+        >
+          {value}
+        </div>
+        {note ? (
+          <div
+            style={{
+              ...readableText(),
+              marginTop: 4,
+              color: toneStyle.text,
+              fontSize: compact ? 11.5 : 12,
+              fontWeight: 850,
+              lineHeight: 1.35,
+            }}
+          >
+            {note}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function EvidenceResultGrid({
+  rows,
+  compact,
+}: {
+  rows: EvidenceResult[];
+  compact: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      {rows.map((row) => (
+        <EvidenceResultRow key={`${row.label}-${row.value}`} {...row} compact={compact} />
+      ))}
+    </div>
+  );
+}
+
+function OfficialResultTable({
+  title,
+  rows,
+  compact,
+}: {
+  title: string;
+  rows: Array<[string, string]>;
+  compact: boolean;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 14,
+        border: "1px solid rgba(37,78,119,0.12)",
+        background: "#FFFFFF",
+        overflow: "hidden",
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          padding: compact ? "9px 11px" : "10px 12px",
+          background: "linear-gradient(180deg, #F8FBFF 0%, #EEF5FC 100%)",
+          color: "#07172C",
+          fontSize: 12,
+          fontWeight: 1000,
+          textTransform: "uppercase",
+          letterSpacing: 0,
+        }}
+      >
+        {title}
+      </div>
+      <div style={{ padding: compact ? "0 11px 5px" : "0 12px 6px" }}>
+        {rows.map(([label, value]) => (
+          <div key={`${title}-${label}`} style={paperDataRow(compact)}>
+            <span style={readableText()}>{label}</span>
+            <strong
+              style={{
+                ...readableText(),
+                color: "#07172C",
+                textAlign: compact ? "left" : "right",
+                justifySelf: compact ? "start" : "end",
+                maxWidth: "100%",
+              }}
+            >
+              {value}
+            </strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function TrustSlipVerifyPublicPaper({
   compact,
   validNow,
@@ -589,6 +775,108 @@ export default function TrustSlipVerifyPublicPaper({
   const visibleBandReading = visibleBand.toLowerCase().includes("visible reading")
     ? visibleBand
     : `Grade ${visibleBand}`;
+  const witnessTone: EvidenceTone =
+    memberWitnessLabel.toLowerCase().includes("not") ||
+    memberWitnessCurrentness.toLowerCase().includes("not")
+      ? "warning"
+      : "good";
+  const evidenceResults: EvidenceResult[] = [
+    {
+      icon: "certificate-seal",
+      label: "Member witness",
+      value: memberWitnessEvidence,
+      note: memberWitnessCurrentness,
+      tone: witnessTone,
+    },
+    {
+      icon: "records-folder",
+      label: "Witness window",
+      value: memberWitnessValidity || "Not shown",
+      note: nextWitnessRenewal
+        ? `Next renewal: ${nextWitnessRenewal}`
+        : `Renewal status: ${nextWitnessRenewalStatus}`,
+      tone: witnessTone,
+    },
+    {
+      icon: "community-building",
+      label: "Community record",
+      value: communityRecordCurrentness,
+      note: "Community ID anchor recorded.",
+      tone: communityRecordCurrentness.toLowerCase().includes("active")
+        ? "good"
+        : "warning",
+    },
+    {
+      icon: "public-globe",
+      label: "Community activity",
+      value: communityActivityEvidence,
+      note: communityActivityLatest
+        ? `Latest activity: ${communityActivityLatest}`
+        : "No latest activity date shown.",
+      tone: positiveNumber(communityActivityCountLabel) > 0 ? "good" : "warning",
+    },
+  ];
+  const glanceGroups: Array<{ title: string; rows: Array<[string, string]> }> = [
+    {
+      title: "Public result",
+      rows: [
+        ["Visible band", visibleBand],
+        ["Visible score", publicVisibleScore],
+        ["Trust limit signal", compactTrustLimit],
+        ["Validity", publicValidityLabel],
+      ],
+    },
+    {
+      title: "Evidence currentness",
+      rows: [
+        ["Member witness", memberWitnessEvidence],
+        ["Witness renewal", memberWitnessRenewal],
+        ["Witness valid until", memberWitnessValidity || "Not shown"],
+        ["Next witness status", nextWitnessRenewalStatus],
+      ],
+    },
+    {
+      title: "Community evidence",
+      rows: [
+        ["Community record", communityRecordCurrentness],
+        ["Community activity", communityActivityEvidence],
+        ["Activity categories", communityActivityCategoriesLabel || "Not shown"],
+        ["Latest activity", communityActivityLatest || "Not shown"],
+      ],
+    },
+    {
+      title: "Document reference",
+      rows: [
+        ["Issued", issuedAtLabel],
+        ["Expires", expiresAtLabel],
+        ["Verification code", resolvedCode || "Not available"],
+      ],
+    },
+  ];
+  const confirmationEvidenceResults: EvidenceResult[] = communityConfirmationRows.map(
+    ([label, value]) => {
+      const normalizedLabel = label.toLowerCase();
+      const numeric = Number(value);
+      const emptyish =
+        !safeText(value) ||
+        safeText(value).toLowerCase().includes("not shown") ||
+        safeText(value).toLowerCase().includes("not requested") ||
+        (Number.isFinite(numeric) && numeric <= 0);
+
+      return {
+        icon: normalizedLabel.includes("member")
+          ? "community-building"
+          : normalizedLabel.includes("pool") || normalizedLabel.includes("signal")
+            ? "trust-shield"
+            : normalizedLabel.includes("last")
+              ? "records-folder"
+              : "certificate-seal",
+        label,
+        value,
+        tone: emptyish ? "warning" : "good",
+      };
+    }
+  );
 
   return (
     <section
@@ -1038,7 +1326,7 @@ export default function TrustSlipVerifyPublicPaper({
                     icon="certificate-seal"
                     label="Supporting evidence"
                     title={memberWitnessCurrentness}
-                    text={`Member witness: ${memberWitnessEvidence}. Witness currentness: ${memberWitnessCurrentnessScope} Community record: ${communityRecordCurrentness}. ${communityRecordCurrentnessScope} Community activity: ${communityActivityEvidence}. Use the member credential when available for scoped community evidence.`}
+                    text="Read the witness, Community ID, and activity results below before making a serious decision."
                     compact={compact}
                     tone="neutral"
                   />
@@ -1051,42 +1339,71 @@ export default function TrustSlipVerifyPublicPaper({
                     tone="warning"
                   />
                 </div>
+                <div style={{ marginTop: 10 }}>
+                  <EvidenceResultGrid rows={evidenceResults} compact={compact} />
+                </div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      ...documentMetaCard("#FFF7E6"),
+                      border: "1px solid rgba(245,158,11,0.22)",
+                    }}
+                  >
+                    <div style={{ color: "#92400E", fontWeight: 1000, fontSize: 12 }}>
+                      Witness currentness note
+                    </div>
+                    <p
+                      style={{
+                        ...readableText(),
+                        margin: "5px 0 0",
+                        color: "#334155",
+                        fontWeight: 820,
+                        fontSize: 12,
+                        lineHeight: 1.42,
+                      }}
+                    >
+                      {`Witness currentness: ${memberWitnessCurrentnessScope}`}
+                    </p>
+                  </div>
+                  <div style={documentMetaCard("#F8FBFF")}>
+                    <div style={{ color: "#0B63D1", fontWeight: 1000, fontSize: 12 }}>
+                      Community scope note
+                    </div>
+                    <p
+                      style={{
+                        ...readableText(),
+                        margin: "5px 0 0",
+                        color: "#334155",
+                        fontWeight: 820,
+                        fontSize: 12,
+                        lineHeight: 1.42,
+                      }}
+                    >
+                      {`Community record: ${communityRecordCurrentness}. ${communityRecordCurrentnessScope}`}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div style={{ marginTop: 12, ...innerCard("#F8FBFF"), padding: 12 }}>
                 <div style={{ ...sectionLabel(), color: "#07172C" }}>At a glance</div>
-                {[
-                  ["Visible band", visibleBand],
-                  ["Visible score", publicVisibleScore],
-                  ["Trust limit signal", compactTrustLimit],
-                  ["Member witness", memberWitnessEvidence],
-                  ["Community record", communityRecordCurrentness],
-                  ["Witness renewal", memberWitnessRenewal],
-                  ["Witness valid until", memberWitnessValidity || "Not shown"],
-                  ["Next witness renewal", nextWitnessRenewal || "Not shown"],
-                  ["Next witness status", nextWitnessRenewalStatus],
-                  ["Community activity", communityActivityEvidence],
-                  ["Activity categories", communityActivityCategoriesLabel || "Not shown"],
-                  ["Latest activity", communityActivityLatest || "Not shown"],
-                  ["Issued", issuedAtLabel],
-                  ["Expires", expiresAtLabel],
-                  ["Verification code", resolvedCode || "Not available"],
-                ].map(([label, value]) => (
-                  <div key={label} style={paperDataRow(compact)}>
-                    <span style={readableText()}>{label}</span>
-                    <strong
-                      style={{
-                        ...readableText(),
-                        color: "#07172C",
-                        textAlign: compact ? "left" : "right",
-                        justifySelf: compact ? "start" : "end",
-                        maxWidth: "100%",
-                      }}
-                    >
-                      {value}
-                    </strong>
-                  </div>
-                ))}
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  {glanceGroups.map((group) => (
+                    <OfficialResultTable
+                      key={group.title}
+                      title={group.title}
+                      rows={group.rows}
+                      compact={compact}
+                    />
+                  ))}
+                </div>
                 {memberCredentialPath ? (
                   <StableCtaLink
                     to={memberCredentialPath}
@@ -1166,22 +1483,10 @@ export default function TrustSlipVerifyPublicPaper({
                 </div>
 
                 <div style={{ ...documentMetaCard("#FFFFFF"), display: "grid", gap: 8 }}>
-                  {communityConfirmationRows.map(([label, value]) => (
-                    <div key={label} style={paperDataRow(compact)}>
-                      <span style={readableText()}>{label}</span>
-                      <strong
-                        style={{
-                          ...readableText(),
-                          color: "#07172C",
-                          textAlign: compact ? "left" : "right",
-                          justifySelf: compact ? "start" : "end",
-                          maxWidth: "100%",
-                        }}
-                      >
-                        {value}
-                      </strong>
-                    </div>
-                  ))}
+                  <div style={{ ...sectionLabel(), color: "#07172C" }}>
+                    Confirmation readiness
+                  </div>
+                  <EvidenceResultGrid rows={confirmationEvidenceResults} compact={compact} />
                 </div>
               </div>
 
@@ -1201,7 +1506,7 @@ export default function TrustSlipVerifyPublicPaper({
                   </div>
                   {confirmationOutcome ? (
                     <>
-                      <p style={{ margin: "8px 0 0", color: "#334155", fontWeight: 850, lineHeight: 1.45 }}>
+                      <p style={{ margin: "8px 0 0", color: "#334155", fontWeight: 850, lineHeight: 1.42 }}>
                         {confirmationOutcome.visible_summary ||
                           "Community responses will appear as an aggregate result when members answer."}
                       </p>
@@ -1233,10 +1538,23 @@ export default function TrustSlipVerifyPublicPaper({
                       ) : null}
                     </>
                   ) : (
-                    <p style={{ margin: "8px 0 0", color: "#64748B", fontWeight: 850, lineHeight: 1.45 }}>
-                      {requestLockedReason ||
-                        "No live community confirmation has been requested from this paper yet."}
-                    </p>
+                    <div style={{ marginTop: 8 }}>
+                      <EvidenceResultRow
+                        icon="records-folder"
+                        label="Current result"
+                        value={
+                          requestLockedReason
+                            ? "Locked"
+                            : "No request sent"
+                        }
+                        note={
+                          requestLockedReason ||
+                          "Ask only when the TrustSlip code and community response pool are ready."
+                        }
+                        tone={requestLockedReason ? "warning" : "neutral"}
+                        compact={compact}
+                      />
+                    </div>
                   )}
                 </div>
 
@@ -1253,8 +1571,8 @@ export default function TrustSlipVerifyPublicPaper({
                       <div style={{ color: "#07172C", fontWeight: 1000 }}>
                         Result return channel
                       </div>
-                      <p style={{ margin: "6px 0 0", color: "#64748B", fontWeight: 850, lineHeight: 1.45 }}>
-                        GSN creates the result link first. Add SMS or WhatsApp only when you want a return notice later.
+                      <p style={{ margin: "6px 0 0", color: "#64748B", fontWeight: 850, lineHeight: 1.4 }}>
+                        The result link is the evidence source. SMS or WhatsApp only sends a notice back.
                       </p>
                     </div>
 

@@ -1,3 +1,90 @@
+## 2026-06-21 - TrustSlip Verify Public Evidence Paper Polish
+
+- Trigger:
+  - owner clarified that the TrustSlip Verify public reader paper still felt
+    like long lecture notes rather than a professional public evidence result.
+  - Specific weak areas: Supporting Evidence, At a Glance, instant community
+    confirmation, Lite View action, and Share action.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - replaced the long Supporting Evidence prose wall with structured result
+      cards for member witness, witness window, community record, and community
+      activity.
+    - rebuilt At a Glance into grouped official-result tables so long values
+      wrap beneath labels on mobile instead of colliding.
+    - changed instant community confirmation readiness into evidence result
+      cards and made the no-request state read as a current result.
+    - kept compact witness/community scope notes because `audit:trust-actions`
+      requires that currentness evidence to remain visible.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - made Lite View open the public lite route when a TrustSlip code exists.
+    - changed the public share action to an active `Share paper` button, with a
+      clear fallback notice when no share URL exists yet.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:evidence-surfaces` passed.
+  - `npm run build` passed.
+  - local static-preview mobile render check at 390px through `/t/TS-DEMO-100`
+    showed no document-level horizontal overflow (`scrollWidth === clientWidth`)
+    and confirmed `Share paper` plus the new witness note were present.
+- Known limits:
+  - local Vite preview still proxies `/trust-slips/*` before React can render
+    that route, so the component visual check used the non-proxied `/t/:code`
+    alias for the same screen.
+  - `npm run audit:button-stability` still fails in pre-existing unrelated dirty
+    files: `IdentityIntegrityPage.tsx`, `LoanSummaryPage.tsx`,
+    `GuarantorInboxPage.tsx`, and `PaymentInstructionsPage.tsx`.
+
+## 2026-06-21 - TrustSlip Verify Mobile Layout Repair Published
+
+- Trigger:
+  - owner showed phone screenshots where the public TrustSlip Verify paper had
+    interwoven/overlapping rows, oversized mobile facts, clipped return-channel
+    fields, and an un-institutional random arrangement.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - made compact paper data rows single-column so long values such as member
+      witness, community record, activity, and last confirmation cannot overlap
+      their labels on phone.
+    - added reusable readable text wrapping for holder, IDs, fact tiles, public
+      reading tiles, and community confirmation rows.
+    - tightened the mobile Trust reading tile so `Visible reading` no longer
+      expands into the huge red stacked layout.
+    - raised native field font size to 16px and shortened the business-number
+      placeholder to avoid mobile clipping/zoom.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:evidence-surfaces` passed.
+  - `npm run build` passed.
+  - Playwright mobile check at 390px with mocked long TrustSlip evidence showed
+    no document-level horizontal overflow and no JSON/body routing mistake;
+    screenshot saved locally at `C:\tmp\trustslip-verify-mobile.png`.
+  - `npm run audit:button-stability` still fails in pre-existing dirty files
+    outside this repair: `IdentityIntegrityPage.tsx`, `LoanSummaryPage.tsx`,
+    `GuarantorInboxPage.tsx`, and `PaymentInstructionsPage.tsx`.
+- Published:
+  - committed and pushed `a7f3c3d859ce47e2dbf07c520910138ffa43a0d9`
+    (`Fix TrustSlip verify mobile layout`) to `origin/main`.
+  - manual `Trigger Render Deploy` workflow run `27901949974` completed
+    successfully and Render returned frontend deploy id
+    `dep-d8rs3ob6sc1c73bmqeh0`.
+  - live Render check confirmed `https://gmfn-frontend.onrender.com` serves
+    `assets/index-DzP1oS0_.js`, referencing
+    `TrustSlipVerifyPage-CyiwclUY.js`; live chunk contains the new
+    `Use +E164 format` placeholder and no longer contains the old
+    `Preferably +E164 format` placeholder.
+- Unabated truth:
+  - this fixes the visible overlap/sizing fault in the TrustSlip Verify public
+    paper. It does not yet investigate the separate app-wide tap/jump issue
+    where touching some surfaces can route back to Welcome; that needs its own
+    trace with one or two concrete reproduction points from the owner.
+
 ## 2026-06-20 - TrustSlip Official Paper Final Polish
 
 - Trigger:
