@@ -89,6 +89,7 @@ type TrustSlipVerifyPublicPaperProps = {
   canRequestCommunityPulse: boolean;
   onRequestCommunityPulse: (draft?: CommunityConfirmationCallbackDraft) => void;
   publicActions: React.ReactNode;
+  variant?: "full" | "lite";
 };
 
 function safeText(value: unknown): string {
@@ -715,6 +716,7 @@ export default function TrustSlipVerifyPublicPaper({
   canRequestCommunityPulse,
   onRequestCommunityPulse,
   publicActions,
+  variant = "full",
 }: TrustSlipVerifyPublicPaperProps) {
   const [requesterLabel, setRequesterLabel] = useState("");
   const [callbackChannel, setCallbackChannel] =
@@ -775,6 +777,7 @@ export default function TrustSlipVerifyPublicPaper({
   const visibleBandReading = visibleBand.toLowerCase().includes("visible reading")
     ? visibleBand
     : `Grade ${visibleBand}`;
+  const isLite = variant === "lite";
   const witnessTone: EvidenceTone =
     memberWitnessLabel.toLowerCase().includes("not") ||
     memberWitnessCurrentness.toLowerCase().includes("not")
@@ -1392,47 +1395,50 @@ export default function TrustSlipVerifyPublicPaper({
                 </div>
               </div>
 
-              <div style={{ marginTop: 12, ...innerCard("#F8FBFF"), padding: 12 }}>
-                <div style={{ ...sectionLabel(), color: "#07172C" }}>At a glance</div>
-                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                  {glanceGroups.map((group) => (
-                    <OfficialResultTable
-                      key={group.title}
-                      title={group.title}
-                      rows={group.rows}
-                      compact={compact}
-                    />
-                  ))}
+              {!isLite ? (
+                <div style={{ marginTop: 12, ...innerCard("#F8FBFF"), padding: 12 }}>
+                  <div style={{ ...sectionLabel(), color: "#07172C" }}>At a glance</div>
+                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                    {glanceGroups.map((group) => (
+                      <OfficialResultTable
+                        key={group.title}
+                        title={group.title}
+                        rows={group.rows}
+                        compact={compact}
+                      />
+                    ))}
+                  </div>
+                  {memberCredentialPath ? (
+                    <StableCtaLink
+                      to={memberCredentialPath}
+                      kind="soft"
+                      stableHeight={48}
+                      debugId="trust-slip-verify.public.open-member-credential"
+                      style={{
+                        marginTop: 10,
+                        width: "100%",
+                        borderRadius: 12,
+                        fontWeight: 1000,
+                      }}
+                    >
+                      Open member credential
+                    </StableCtaLink>
+                  ) : null}
                 </div>
-                {memberCredentialPath ? (
-                  <StableCtaLink
-                    to={memberCredentialPath}
-                    kind="soft"
-                    stableHeight={48}
-                    debugId="trust-slip-verify.public.open-member-credential"
-                    style={{
-                      marginTop: 10,
-                      width: "100%",
-                      borderRadius: 12,
-                      fontWeight: 1000,
-                    }}
-                  >
-                    Open member credential
-                  </StableCtaLink>
-                ) : null}
-              </div>
+              ) : null}
             </div>
           </div>
 
-          <div
-            style={{
-              marginTop: 12,
-              ...innerCard("#FFFFFF"),
-              border: "1px solid rgba(216,227,238,0.9)",
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
+          {!isLite ? (
+            <div
+              style={{
+                marginTop: 12,
+                ...innerCard("#FFFFFF"),
+                border: "1px solid rgba(216,227,238,0.9)",
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
             <TrustPaperWatermark
               name="community"
               color="#0B63D1"
@@ -1702,7 +1708,8 @@ export default function TrustSlipVerifyPublicPaper({
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          ) : null}
 
           {publicActions}
         </div>

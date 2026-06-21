@@ -217,6 +217,13 @@ export default function TrustSlipVerifyPage() {
   const requestedCode = useMemo(() => {
     return firstTruthy(params.code, queryCode);
   }, [params.code, queryCode]);
+  const isLiteRoute = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return (
+      location.pathname.replace(/\/+$/, "").endsWith("/lite") ||
+      safeStr(params.get("view")).toLowerCase() === "lite"
+    );
+  }, [location.pathname, location.search]);
 
   const noPublicCodeSupplied = !isAppRoute && !requestedCode;
 
@@ -459,7 +466,10 @@ export default function TrustSlipVerifyPage() {
     ? `/community-confirmations/public/${encodeURIComponent(String(confirmationOutcome.public_token))}`
     : "";
   const publicLitePath = resolvedCode
-    ? `/trust-slips/verify/${encodeURIComponent(resolvedCode)}/lite`
+    ? `/t/${encodeURIComponent(resolvedCode)}/lite`
+    : "";
+  const publicReaderPath = resolvedCode
+    ? `/t/${encodeURIComponent(resolvedCode)}`
     : "";
 
   function showNotice(tone: NoticeTone, text: string) {
@@ -614,7 +624,24 @@ export default function TrustSlipVerifyPage() {
       >
         {labelWithIcon("records-folder", "Print / save PDF")}
       </SecondaryButton>
-      {publicLitePath ? (
+      {isLiteRoute && publicReaderPath ? (
+        <StableCtaLink
+          to={publicReaderPath}
+          kind="secondary"
+          stableHeight={isCompact ? 52 : 58}
+          fullWidth={isCompact}
+          minWidth={isCompact ? undefined : 132}
+          debugId="trust-slip-verify.public.open-full-paper"
+          style={{
+            borderRadius: 12,
+            fontWeight: 1000,
+            background: "#FFFFFF",
+            color: "#07172C",
+          }}
+        >
+          {labelWithIcon("public-globe", "Full paper")}
+        </StableCtaLink>
+      ) : publicLitePath ? (
         <StableCtaLink
           to={publicLitePath}
           kind="secondary"
@@ -1031,6 +1058,7 @@ export default function TrustSlipVerifyPage() {
             void requestCommunityPulse(draft);
           }}
           publicActions={publicTrustSlipActions}
+          variant={isLiteRoute ? "lite" : "full"}
         />
       )}
       {noPublicCodeSupplied ? null : <TrustSlipVerifyBoundary compact={isCompact} />}

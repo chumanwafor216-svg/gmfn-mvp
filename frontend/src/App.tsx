@@ -773,6 +773,7 @@ export default function App() {
       <Route path="/activate-membership" element={<MemberActivationPage />} />
 
       <Route path="/t/:code" element={<TrustSlipVerifyPage />} />
+      <Route path="/t/:code/lite" element={<TrustSlipVerifyPage />} />
       <Route path="/verify/trust-slip" element={<TrustSlipVerifyPage />} />
       <Route path="/verify/trustslip" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code" element={<TrustSlipVerifyPage />} />

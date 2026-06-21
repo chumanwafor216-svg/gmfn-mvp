@@ -1,3 +1,39 @@
+## 2026-06-21 - TrustSlip Verify Action Buttons
+
+- Trigger:
+  - owner asked to check the TrustSlip Verify `Print / save PDF`, `Lite view`,
+    `Request current TrustSlip`, and `Share` buttons because Lite View was not
+    landing in a useful lightweight view and Render/local needed to be aligned.
+- Changed:
+  - `frontend/src/App.tsx`
+    - added `/t/:code/lite` as a public React route alias for TrustSlip Lite
+      View.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - Lite View now points to `/t/:code/lite` instead of the `/trust-slips`
+      route family, avoiding local/API route ambiguity.
+    - when already in Lite View, the action changes to `Full paper` and returns
+      to `/t/:code`.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - added a `lite` variant that keeps the public TrustSlip summary and quick
+      reader answers but removes the full At a Glance table and instant
+      community confirmation block from Lite View.
+- Verification:
+  - `npm run build` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - local Playwright mobile Chromium check passed against mocked TrustSlip data:
+    - `Print / save PDF` invoked `window.print`.
+    - `Lite view` navigated to `/t/KYLXEDWXXXZW/lite`.
+    - Lite View showed `Full paper` and no `At a glance` table.
+    - `Full paper` navigated back to `/t/KYLXEDWXXXZW`.
+    - `Request current TrustSlip` navigated to `/verify/community/COMM-001`
+      when the record had a public community code.
+    - `Share paper` opened the share dialog.
+- Unabated truth:
+  - this confirms the button wiring and the Lite route behavior in Chromium; it
+    does not prove Android Chrome/browser chrome cannot still expose unrelated
+    scroll/tap sensitivity elsewhere in the app.
+
 ## 2026-06-21 - Evidence Boundary And Button Stability Batch
 
 - Trigger:
