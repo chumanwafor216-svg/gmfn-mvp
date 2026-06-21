@@ -150,7 +150,7 @@ function fieldLabel(): React.CSSProperties {
   };
 }
 
-function textInput(): React.CSSProperties {
+function textInput(compact = false): React.CSSProperties {
   return {
     width: "100%",
     minWidth: 0,
@@ -159,16 +159,16 @@ function textInput(): React.CSSProperties {
     border: "1px solid rgba(8,35,58,0.16)",
     background: "#FFFFFF",
     color: "#07172C",
-    padding: "12px 13px",
-    fontSize: 15,
+    padding: compact ? "12px 14px" : "12px 13px",
+    fontSize: 16,
     fontWeight: 800,
     outline: "none",
   };
 }
 
-function selectInput(): React.CSSProperties {
+function selectInput(compact = false): React.CSSProperties {
   return {
-    ...textInput(),
+    ...textInput(compact),
     appearance: "auto",
   };
 }
@@ -187,6 +187,7 @@ function statTile(
     borderRadius: 16,
     padding: 12,
     minHeight: "auto",
+    minWidth: 0,
   };
 }
 
@@ -291,6 +292,15 @@ function publicVerifyHero(compact: boolean): React.CSSProperties {
   };
 }
 
+function readableText(): React.CSSProperties {
+  return {
+    minWidth: 0,
+    overflowWrap: "break-word",
+    wordBreak: "normal",
+    hyphens: "auto",
+  };
+}
+
 function officialPaperWatermark(compact: boolean): React.ReactNode {
   return (
     <div
@@ -388,12 +398,14 @@ function PublicReadingTile({
   label,
   title,
   text,
+  compact = false,
   tone = "neutral",
 }: {
   icon: Gsn3DIconKey;
   label: string;
   title: string;
   text: string;
+  compact?: boolean;
   tone?: "trust" | "warning" | "neutral";
 }) {
   const background =
@@ -405,11 +417,12 @@ function PublicReadingTile({
     <div
       style={{
         ...innerCard(background),
-        padding: 10,
-        minHeight: 132,
+        padding: compact ? 11 : 10,
+        minHeight: compact ? "auto" : 132,
         display: "grid",
         alignContent: "start",
         gap: 7,
+        minWidth: 0,
       }}
     >
       <div
@@ -421,32 +434,51 @@ function PublicReadingTile({
           fontSize: 11,
           fontWeight: 1000,
           textTransform: "uppercase",
+          minWidth: 0,
         }}
       >
         {paperIconBadge(icon, tone, 30)}
-        <span>{label}</span>
+        <span style={readableText()}>{label}</span>
       </div>
-      <strong style={{ color: "#07172C", fontSize: 14, fontWeight: 1000, lineHeight: 1.2 }}>
+      <strong
+        style={{
+          ...readableText(),
+          color: "#07172C",
+          fontSize: compact ? 15 : 14,
+          fontWeight: 1000,
+          lineHeight: 1.2,
+        }}
+      >
         {title}
       </strong>
-      <p style={{ margin: 0, color: "#334155", fontSize: 12, fontWeight: 820, lineHeight: 1.42 }}>
+      <p
+        style={{
+          ...readableText(),
+          margin: 0,
+          color: "#334155",
+          fontSize: compact ? 12.5 : 12,
+          fontWeight: 820,
+          lineHeight: compact ? 1.5 : 1.42,
+        }}
+      >
         {text}
       </p>
     </div>
   );
 }
 
-function paperDataRow(): React.CSSProperties {
+function paperDataRow(compact = false): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: 10,
-    alignItems: "center",
-    padding: "8px 0",
+    gridTemplateColumns: compact ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
+    gap: compact ? 4 : 10,
+    alignItems: compact ? "start" : "center",
+    padding: compact ? "9px 0" : "8px 0",
     borderBottom: "1px solid rgba(216,227,238,0.72)",
     color: "#334155",
     fontSize: 13,
     fontWeight: 850,
+    minWidth: 0,
   };
 }
 
@@ -554,6 +586,9 @@ export default function TrustSlipVerifyPublicPaper({
   const callbackNeedsConsent = callbackChannel !== "none" && safeText(callbackContact);
   const callbackBlocked = Boolean(callbackNeedsConsent && !callbackConsent);
   const requesterCallback = confirmationOutcome?.requester_callback || null;
+  const visibleBandReading = visibleBand.toLowerCase().includes("visible reading")
+    ? visibleBand
+    : `Grade ${visibleBand}`;
 
   return (
     <section
@@ -865,11 +900,13 @@ export default function TrustSlipVerifyPublicPaper({
                 </div>
                 <div>
                   <div style={{ ...sectionLabel(), color: "#64748B" }}>Holder</div>
-                  <div style={{ color: "#07172C", fontWeight: 1000 }}>{holderName}</div>
-                  <div style={{ color: "#64748B", fontSize: 12, fontWeight: 800 }}>
+                  <div style={{ ...readableText(), color: "#07172C", fontWeight: 1000 }}>
+                    {holderName}
+                  </div>
+                  <div style={{ ...readableText(), color: "#64748B", fontSize: 12, fontWeight: 800 }}>
                     GSN ID: {gsnId}
                   </div>
-                  <div style={{ color: "#64748B", fontSize: 12, fontWeight: 800 }}>
+                  <div style={{ ...readableText(), color: "#64748B", fontSize: 12, fontWeight: 800 }}>
                     Community: {communityLabel}
                   </div>
                 </div>
@@ -885,44 +922,53 @@ export default function TrustSlipVerifyPublicPaper({
               >
                 <div style={statTile("#FFFFFF")}>
                   <div style={sectionLabel()}>Trust reading</div>
-                  <div style={{ marginTop: 6, color: "#A62626", fontSize: 28, fontWeight: 1000 }}>
-                    Grade {visibleBand}
+                  <div
+                    style={{
+                      ...readableText(),
+                      marginTop: 6,
+                      color: "#A62626",
+                      fontSize: compact ? 20 : 28,
+                      lineHeight: 1.05,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {visibleBandReading}
                   </div>
-                  <div style={{ color: "#64748B", fontSize: 11, fontWeight: 800 }}>
+                  <div style={{ ...readableText(), color: "#64748B", fontSize: 11, fontWeight: 800 }}>
                     {visibleBandLabel}
                   </div>
-                  <div style={{ marginTop: 4, color: "#64748B", fontSize: 11, fontWeight: 760 }}>
+                  <div style={{ ...readableText(), marginTop: 4, color: "#64748B", fontSize: 11, fontWeight: 760 }}>
                     {visibleBandMeaning}
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
                   <div style={sectionLabel()}>Visible score</div>
-                  <div style={{ marginTop: 6, color: "#07172C", fontSize: 24, fontWeight: 1000 }}>
+                  <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: compact ? 21 : 24, fontWeight: 1000 }}>
                     {publicVisibleScore}
                   </div>
-                  <div style={{ color: "#64748B", fontSize: 11, fontWeight: 800 }}>
+                  <div style={{ ...readableText(), color: "#64748B", fontSize: 11, fontWeight: 800 }}>
                     {visibleEvidenceLabel}
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
                   <div style={sectionLabel()}>Trust limit signal</div>
-                  <div style={{ marginTop: 6, color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
+                  <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: compact ? 17 : 18, fontWeight: 1000 }}>
                     {compactTrustLimit}
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
                   <div style={sectionLabel()}>Validity</div>
-                  <div style={{ marginTop: 6, color: "#07172C", fontSize: 13, fontWeight: 950 }}>
+                  <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: 13, fontWeight: 950 }}>
                     {issuedAtLabel} issued
                   </div>
-                  <div style={{ color: "#07172C", fontSize: 13, fontWeight: 950 }}>
+                  <div style={{ ...readableText(), color: "#07172C", fontSize: 13, fontWeight: 950 }}>
                     {expiresAtLabel} expires
                   </div>
                 </div>
               </div>
 
               <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 92px", gap: 10 }}>
-                <div style={{ display: "grid", gap: 5, color: "#334155", fontSize: 12, fontWeight: 850 }}>
+                <div style={{ ...readableText(), display: "grid", gap: 5, color: "#334155", fontSize: 12, fontWeight: 850 }}>
                   <span>Code: {resolvedCode || "Not available"}</span>
                   <span>Public link: {verifyPath || "Not available"}</span>
                 </div>
@@ -985,6 +1031,7 @@ export default function TrustSlipVerifyPublicPaper({
                     label="Validity check"
                     title={validNow ? "Current public slip" : "Do not rely on this alone"}
                     text={`${publicValidityLabel}. This checks the public TrustSlip status for this code now. It does not open the holder's private Trust Passport.`}
+                    compact={compact}
                     tone={validNow ? "trust" : "warning"}
                   />
                   <PublicReadingTile
@@ -992,6 +1039,7 @@ export default function TrustSlipVerifyPublicPaper({
                     label="Supporting evidence"
                     title={memberWitnessCurrentness}
                     text={`Member witness: ${memberWitnessEvidence}. Witness currentness: ${memberWitnessCurrentnessScope} Community record: ${communityRecordCurrentness}. ${communityRecordCurrentnessScope} Community activity: ${communityActivityEvidence}. Use the member credential when available for scoped community evidence.`}
+                    compact={compact}
                     tone="neutral"
                   />
                   <PublicReadingTile
@@ -999,6 +1047,7 @@ export default function TrustSlipVerifyPublicPaper({
                     label="Next safe step"
                     title="Evidence, not approval"
                     text="Use this as evidence for judgement, not as a guarantee, credit approval, payment instruction, or evidence that every claim is true."
+                    compact={compact}
                     tone="warning"
                   />
                 </div>
@@ -1023,9 +1072,19 @@ export default function TrustSlipVerifyPublicPaper({
                   ["Expires", expiresAtLabel],
                   ["Verification code", resolvedCode || "Not available"],
                 ].map(([label, value]) => (
-                  <div key={label} style={paperDataRow()}>
-                    <span>{label}</span>
-                    <strong style={{ color: "#07172C", textAlign: "right" }}>{value}</strong>
+                  <div key={label} style={paperDataRow(compact)}>
+                    <span style={readableText()}>{label}</span>
+                    <strong
+                      style={{
+                        ...readableText(),
+                        color: "#07172C",
+                        textAlign: compact ? "left" : "right",
+                        justifySelf: compact ? "start" : "end",
+                        maxWidth: "100%",
+                      }}
+                    >
+                      {value}
+                    </strong>
                   </div>
                 ))}
                 {memberCredentialPath ? (
@@ -1108,9 +1167,19 @@ export default function TrustSlipVerifyPublicPaper({
 
                 <div style={{ ...documentMetaCard("#FFFFFF"), display: "grid", gap: 8 }}>
                   {communityConfirmationRows.map(([label, value]) => (
-                    <div key={label} style={paperDataRow()}>
-                      <span>{label}</span>
-                      <strong style={{ color: "#07172C", textAlign: "right" }}>{value}</strong>
+                    <div key={label} style={paperDataRow(compact)}>
+                      <span style={readableText()}>{label}</span>
+                      <strong
+                        style={{
+                          ...readableText(),
+                          color: "#07172C",
+                          textAlign: compact ? "left" : "right",
+                          justifySelf: compact ? "start" : "end",
+                          maxWidth: "100%",
+                        }}
+                      >
+                        {value}
+                      </strong>
                     </div>
                   ))}
                 </div>
@@ -1196,7 +1265,7 @@ export default function TrustSlipVerifyPublicPaper({
                         onChange={(event) => setRequesterLabel(event.target.value)}
                         placeholder="Merchant counter check"
                         maxLength={120}
-                        style={textInput()}
+                        style={textInput(compact)}
                       />
                     </label>
 
@@ -1213,7 +1282,7 @@ export default function TrustSlipVerifyPublicPaper({
                               setCallbackContact("");
                             }
                           }}
-                          style={selectInput()}
+                          style={selectInput(compact)}
                         >
                           <option value="none">Result link only</option>
                           <option value="sms">SMS later</option>
@@ -1226,11 +1295,11 @@ export default function TrustSlipVerifyPublicPaper({
                         <input
                           value={callbackContact}
                           onChange={(event) => setCallbackContact(event.target.value)}
-                          placeholder="Preferably +E164 format"
+                          placeholder="Use +E164 format"
                           disabled={callbackChannel === "none"}
                           maxLength={64}
                           style={{
-                            ...textInput(),
+                            ...textInput(compact),
                             opacity: callbackChannel === "none" ? 0.62 : 1,
                           }}
                         />
