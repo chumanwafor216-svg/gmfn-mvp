@@ -56,11 +56,12 @@ function assertOrderedSnippets(key, snippets, message) {
 
 assertContains(
   "finance",
-  /const routes = useMemo\([\s\S]*?moneyOut: routeTarget\("moneyOut", selectedClanId, "finance\.route\.money-out-target"\)[\s\S]*?payoutDetails: routeTarget\("payoutDetails", selectedClanId, "finance\.route\.payout-details-target"\)[\s\S]*?loanReadiness: routeTarget\("loanReadiness", selectedClanId, "finance\.route\.loan-readiness-target"\)[\s\S]*?trust: routeTarget\("trust", selectedClanId, "finance\.route\.trust-target"\)/,
+  /const routes = useMemo\([\s\S]*?moneyOut: routeTarget\("moneyOut", selectedClanId, "finance\.route\.money-out-target"\)[\s\S]*?paymentRails: routeTarget\("paymentRails", selectedClanId, "finance\.route\.payment-rails-target"\)[\s\S]*?payoutDetails: routeTarget\("payoutDetails", selectedClanId, "finance\.route\.payout-details-target"\)[\s\S]*?loanReadiness: routeTarget\("loanReadiness", selectedClanId, "finance\.route\.loan-readiness-target"\)[\s\S]*?trust: routeTarget\("trust", selectedClanId, "finance\.route\.trust-target"\)/,
   "Finance secondary route tools must keep their CTA intents and traceable route-target debug ids."
 );
 
 [
+  ["bank", "Banking Rails", "Check rails before acting.", "routes.paymentRails"],
   ["out", "Money Out", "Open guided payout.", "routes.moneyOut"],
   ["receipt", "Payout Details", "Confirm payout details.", "routes.payoutDetails"],
   ["check", "Signals / Readiness", "Read support readiness.", "routes.loanReadiness"],
@@ -79,6 +80,12 @@ assertContains(
     `${label} must stay in the compact Finance secondary route tool group with the approved target and debug-id root.`
   );
 });
+
+assertContains(
+  "finance",
+  /const \[otherFinanceLanesOpen, setOtherFinanceLanesOpen\] = useState\(false\);[\s\S]*?const showOtherFinanceLanes = !isCompact \|\| otherFinanceLanesOpen;[\s\S]*?setOtherFinanceLanesOpen\(\(open\) => !open\)[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?\{showOtherFinanceLanes \? \([\s\S]*?compactOnly: true[\s\S]*?\.filter\(\(tool\) => !tool\.compactOnly \|\| isCompact\)/,
+  "Finance secondary route tools must be collapsed behind a More lanes disclosure on phone."
+);
 
 assertContains(
   "finance",

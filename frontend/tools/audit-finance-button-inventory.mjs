@@ -54,8 +54,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 9;
-const expectedRenderedActions = 15;
+const expectedSourceActions = 10;
+const expectedRenderedActions = 16;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -88,6 +88,7 @@ for (const action of actions) {
 
 const expectedOrder = [
   "finance.tool.${item.id}",
+  "finance.more-lanes.toggle",
   "finance.mini-tool.${tool.label",
   "finance.events.view-all",
   "finance.view-signals",
@@ -149,7 +150,17 @@ assertContains(
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
+  /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?\.filter\(\(item\) => !isCompact \|\| item\.id !== "bank-accounts"\)/,
+  "Finance phone front door must show only three major lane buttons, with Banking Rails moved under More lanes on compact screens."
+);
+
+assertContains(
+  /const \[otherFinanceLanesOpen, setOtherFinanceLanesOpen\] = useState\(false\);[\s\S]*?const showOtherFinanceLanes = !isCompact \|\| otherFinanceLanesOpen;[\s\S]*?setOtherFinanceLanesOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{46\}[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?\{showOtherFinanceLanes \? \(/,
+  "Finance secondary route tools must stay behind a compact More lanes disclosure on phone."
+);
+
+assertContains(
+  /label: "Banking Rails"[\s\S]*?compactOnly: true[\s\S]*?\.filter\(\(tool\) => !tool\.compactOnly \|\| isCompact\)[\s\S]*?stableHeight=\{isCompact \? 78 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
   "Finance mini tools must keep tightened fixed phone geometry."
 );
 
@@ -174,7 +185,7 @@ assertContains(
 );
 
 assertContains(
-  /id="finance-events"[\s\S]*?poolEvents\.length === 0[\s\S]*?: isCompact \? \([\s\S]*?poolEvents\.slice\(0, 12\)\.map[\s\S]*?<FinanceMobileRecord[\s\S]*?Confirmed[\s\S]*?<table style=\{financeTable\(\)\}>/,
+  /id="finance-events"[\s\S]*?poolEvents\.length === 0[\s\S]*?: isCompact \? \([\s\S]*?poolEvents\.slice\(0, 12\)\.map[\s\S]*?<FinanceMobileRecord[\s\S]*?Finance confirmed[\s\S]*?<table style=\{financeTable\(\)\}>/,
   "Finance recent money history must render event cards on phone while preserving the desktop table."
 );
 

@@ -1,3 +1,65 @@
+## 2026-06-25 - Finance Phone Front Door Simplified Locally
+
+- Trigger:
+  - owner asked whether the Present-style stabilization work was completely
+    done and pointed out that Finance still felt jumpy, crowded, and full of
+    duplicate-looking buttons on phone.
+- Changed:
+  - `frontend/src/pages/FinancePage.tsx`
+    - compact/mobile Finance now hides the secondary route tools behind one
+      fixed-height `More lanes` disclosure instead of exposing Money Out,
+      Payout Details, Signals / Readiness, and Trust Passport as another
+      always-visible button group;
+    - compact/mobile Finance now shows only three major first-step buttons:
+      Money In, Money Summary, and Records / Events;
+    - Banking Rails remains visible in the four-button desktop front package,
+      but moves under `More lanes` on phone so the first phone surface does not
+      exceed the three-major-action target;
+    - desktop still shows the secondary finance lanes directly;
+    - `View Finance Signals` now uses `openFinanceDetailLane("overview",
+      "finance-summary")` so it closes competing Finance detail lanes before
+      revealing Money Summary, matching the existing one-lane behavior used by
+      Money Summary and Records / Events.
+  - Finance audits were tightened so this first-screen simplification and
+    one-lane Signals behavior cannot regress silently:
+    - `frontend/tools/audit-finance-button-inventory.mjs`;
+    - `frontend/tools/audit-finance-front-package.mjs`;
+    - `frontend/tools/audit-finance-money-summary-lane.mjs`;
+    - `frontend/tools/audit-finance-secondary-route-tools.mjs`.
+  - Two stale Finance audit expectations were updated to match current, more
+    truthful UI wording:
+    - Records / Events now protects `Finance confirmed`;
+    - Signals / Readiness now protects the Loan Readiness explanation that
+      readiness is decision support only and does not approve loans,
+      guarantors, goods, credit, or money.
+- Verification:
+  - Passed `npm run audit:finance-actions`.
+  - Passed `npm run audit:finance-lane-map`.
+  - Passed `npm run audit:finance-money-movement-lanes`.
+  - Passed `npm run audit:finance-banking-rails-lane`.
+  - Passed `npm run audit:finance-money-summary-lane`.
+  - Passed `npm run audit:finance-records-events-lane`.
+  - Passed `npm run audit:finance-secondary-route-tools`.
+  - Passed `npm run audit:finance-signals-readiness-lane`.
+  - Passed `npm run audit:finance-button-inventory`.
+  - Passed `npm run audit:finance-front-package`.
+  - Passed `npm run audit:tap-stability`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed targeted `npx eslint` on touched Finance files and audits.
+  - `npm run lint -- ...` still invoked the repo-wide `eslint .` script and
+    failed on the pre-existing `frontend/server.mjs` `URLSearchParams`
+    `no-undef` error, with the known `BuildFirstCirclePage.tsx` hook warnings.
+  - Passed `npm run build`.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - this is a real Finance phone-density improvement, but it is not the same as
+    a full Finance redesign or complete app-wide duplicate-button cleanup;
+  - the new Finance pass is local only and has not been pushed or deployed to
+    Render yet;
+  - the owner should phone-check Finance locally first if possible. If it still
+    feels jumpy, the next step is to inspect Finance's remaining first-screen
+    blocks and active detail sections, not to push a broad redesign.
+
 ## 2026-06-25 - Public Shop Owner Shortcuts No Longer Scroll Horizontally
 
 - Trigger:

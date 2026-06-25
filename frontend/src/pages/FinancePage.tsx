@@ -928,6 +928,7 @@ export default function FinancePage() {
       readLocalJSON(FINANCE_UI_STORAGE_KEY, defaultCollapseState())
     )
   );
+  const [otherFinanceLanesOpen, setOtherFinanceLanesOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<any>(null);
@@ -1595,6 +1596,7 @@ export default function FinancePage() {
       ),
     ],
   ];
+  const showOtherFinanceLanes = !isCompact || otherFinanceLanesOpen;
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -1968,10 +1970,10 @@ export default function FinancePage() {
             marginTop: isCompact ? 12 : 16,
             display: "grid",
             gridTemplateColumns: isCompact
-              ? "repeat(2, minmax(0, 1fr))"
+              ? "1fr"
               : "repeat(4, minmax(0, 1fr))",
             gap: 12,
-            rowGap: isCompact ? 4 : 12,
+            rowGap: isCompact ? 8 : 12,
           }}
         >
           {[
@@ -2011,59 +2013,61 @@ export default function FinancePage() {
               },
               color: "#5B3BC4",
             },
-          ].map((item) => (
-            <SecondaryButton
-              key={item.id}
-              onClick={item.action}
-              fullWidth
-              stableHeight={isCompact ? 48 : 132}
-              debugId={`finance.tool.${item.id}`}
-              style={financeToolButtonStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: isCompact ? 22 : 64,
-                  height: isCompact ? 22 : 64,
-                  borderRadius: 999,
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.86) 100%)",
-                  color: "#0B4EA2",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: 950,
-                  border: "1px solid rgba(12,41,71,0.08)",
-                  boxShadow:
-                    "0 12px 24px rgba(7,23,44,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
-                }}
+          ]
+            .filter((item) => !isCompact || item.id !== "bank-accounts")
+            .map((item) => (
+              <SecondaryButton
+                key={item.id}
+                onClick={item.action}
+                fullWidth
+                stableHeight={isCompact ? 48 : 132}
+                debugId={`finance.tool.${item.id}`}
+                style={financeToolButtonStyle(isCompact)}
               >
-                <FinanceGlyph name={item.icon} size={isCompact ? 15 : 44} />
-              </span>
-              <span
-                style={{
-                  ...(isCompact ? brandSingleLine() : brandClampLines(2)),
-                  fontSize: isCompact ? 11.5 : 15,
-                  fontWeight: 950,
-                  lineHeight: isCompact ? 1.05 : 1.12,
-                }}
-              >
-                {item.label}
-              </span>
-              <span
-                style={{
-                  ...brandClampLines(2),
-                  display: isCompact ? "none" : undefined,
-                  color: "#52697F",
-                  fontSize: isCompact ? 11 : 12,
-                  fontWeight: 750,
-                  lineHeight: 1.18,
-                }}
-              >
-                {item.detail}
-              </span>
-            </SecondaryButton>
-          ))}
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: isCompact ? 22 : 64,
+                    height: isCompact ? 22 : 64,
+                    borderRadius: 999,
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.86) 100%)",
+                    color: "#0B4EA2",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 950,
+                    border: "1px solid rgba(12,41,71,0.08)",
+                    boxShadow:
+                      "0 12px 24px rgba(7,23,44,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
+                  }}
+                >
+                  <FinanceGlyph name={item.icon} size={isCompact ? 15 : 44} />
+                </span>
+                <span
+                  style={{
+                    ...(isCompact ? brandSingleLine() : brandClampLines(2)),
+                    fontSize: isCompact ? 11.5 : 15,
+                    fontWeight: 950,
+                    lineHeight: isCompact ? 1.05 : 1.12,
+                  }}
+                >
+                  {item.label}
+                </span>
+                <span
+                  style={{
+                    ...brandClampLines(2),
+                    display: isCompact ? "none" : undefined,
+                    color: "#52697F",
+                    fontSize: isCompact ? 11 : 12,
+                    fontWeight: 750,
+                    lineHeight: 1.18,
+                  }}
+                >
+                  {item.detail}
+                </span>
+              </SecondaryButton>
+            ))}
         </div>
         <div
           style={{
@@ -2075,79 +2079,109 @@ export default function FinancePage() {
             boxShadow: "0 12px 28px rgba(7, 23, 44, 0.06)",
           }}
         >
-          <FinanceSectionLabel icon="signal" color="#0B4EA2">
-            Other finance lanes
-          </FinanceSectionLabel>
           <div
             style={{
-              marginTop: 12,
               display: "grid",
-              gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
-              gap: 10,
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr)",
+              gap: isCompact ? 10 : 0,
             }}
           >
-            {[
-              {
-                icon: "out" as FinanceGlyphName,
-                label: "Money Out",
-                detail: "Open guided payout.",
-                action: () => openFinanceRoute(routes.moneyOut),
-              },
-              {
-                icon: "receipt" as FinanceGlyphName,
-                label: "Payout Details",
-                detail: "Confirm payout details.",
-                action: () => openFinanceRoute(routes.payoutDetails),
-              },
-              {
-                icon: "check" as FinanceGlyphName,
-                label: "Signals / Readiness",
-                detail: "Read support readiness.",
-                action: () => openFinanceRoute(routes.loanReadiness),
-              },
-              {
-                icon: "shield" as FinanceGlyphName,
-                label: "Trust Passport",
-                detail: "Read trust record.",
-                action: () => openFinanceRoute(routes.trust),
-              },
-            ].map((tool) => (
-              <SecondaryButton
-                key={tool.label}
-                onClick={tool.action}
+            <FinanceSectionLabel icon="signal" color="#0B4EA2">
+              Other finance lanes
+            </FinanceSectionLabel>
+            {isCompact ? (
+              <SubtleButton
+                onClick={() => setOtherFinanceLanesOpen((open) => !open)}
                 fullWidth
-                stableHeight={isCompact ? 78 : 76}
-                debugId={`finance.mini-tool.${tool.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                style={financeMiniToolButtonStyle(isCompact)}
+                stableHeight={46}
+                debugId="finance.more-lanes.toggle"
+                style={financeCollapseButtonStyle()}
               >
-                <span
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontWeight: 950,
-                    fontSize: isCompact ? 13 : 14,
-                    lineHeight: 1.15,
-                  }}
-                >
-                  <FinanceGlyph name={tool.icon} size={isCompact ? 18 : 20} color="#0B4EA2" />
-                  <span style={brandSingleLine()}>{tool.label}</span>
-                </span>
-                <span
-                  style={{
-                    ...brandClampLines(2),
-                    marginTop: 5,
-                    color: "#52677D",
-                    fontWeight: 800,
-                    fontSize: isCompact ? 11 : 12,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {tool.detail}
-                </span>
-              </SecondaryButton>
-            ))}
+                {otherFinanceLanesOpen ? "Hide lanes" : "More lanes"}
+              </SubtleButton>
+            ) : null}
           </div>
+          {showOtherFinanceLanes ? (
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {[
+                {
+                  icon: "bank" as FinanceGlyphName,
+                  label: "Banking Rails",
+                  detail: "Check rails before acting.",
+                  action: () => openFinanceRoute(routes.paymentRails),
+                  compactOnly: true,
+                },
+                {
+                  icon: "out" as FinanceGlyphName,
+                  label: "Money Out",
+                  detail: "Open guided payout.",
+                  action: () => openFinanceRoute(routes.moneyOut),
+                },
+                {
+                  icon: "receipt" as FinanceGlyphName,
+                  label: "Payout Details",
+                  detail: "Confirm payout details.",
+                  action: () => openFinanceRoute(routes.payoutDetails),
+                },
+                {
+                  icon: "check" as FinanceGlyphName,
+                  label: "Signals / Readiness",
+                  detail: "Read support readiness.",
+                  action: () => openFinanceRoute(routes.loanReadiness),
+                },
+                {
+                  icon: "shield" as FinanceGlyphName,
+                  label: "Trust Passport",
+                  detail: "Read trust record.",
+                  action: () => openFinanceRoute(routes.trust),
+                },
+              ]
+                .filter((tool) => !tool.compactOnly || isCompact)
+                .map((tool) => (
+                  <SecondaryButton
+                    key={tool.label}
+                    onClick={tool.action}
+                    fullWidth
+                    stableHeight={isCompact ? 78 : 76}
+                    debugId={`finance.mini-tool.${tool.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                    style={financeMiniToolButtonStyle(isCompact)}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        fontWeight: 950,
+                        fontSize: isCompact ? 13 : 14,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      <FinanceGlyph name={tool.icon} size={isCompact ? 18 : 20} color="#0B4EA2" />
+                      <span style={brandSingleLine()}>{tool.label}</span>
+                    </span>
+                    <span
+                      style={{
+                        ...brandClampLines(2),
+                        marginTop: 5,
+                        color: "#52677D",
+                        fontWeight: 800,
+                        fontSize: isCompact ? 11 : 12,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {tool.detail}
+                    </span>
+                  </SecondaryButton>
+                ))}
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -2438,13 +2472,7 @@ export default function FinancePage() {
             </div>
             <PrimaryButton
               onClick={() => {
-                setCollapsed((prev) => ({
-                  ...prev,
-                  overview: false,
-                  reconciliation: false,
-                  borrower: false,
-                }));
-                revealFinanceSection("finance-summary");
+                openFinanceDetailLane("overview", "finance-summary");
               }}
               debugId="finance.view-signals"
               fullWidth

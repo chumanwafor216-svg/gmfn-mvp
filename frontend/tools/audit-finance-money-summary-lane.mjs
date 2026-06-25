@@ -62,6 +62,13 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
+  /<PrimaryButton[\s\S]*?openFinanceDetailLane\("overview", "finance-summary"\);[\s\S]*?debugId="finance\.view-signals"[\s\S]*?>[\s\S]*?View Finance Signals[\s\S]*?<\/PrimaryButton>/,
+  "Finance Signals action must use the one-lane helper instead of manually leaving competing detail sections open."
+);
+
+assertContains(
+  financeFile,
+  financeSource,
   /id="finance-summary"[\s\S]*?<FinanceSectionLabel icon="chart">Money Summary<\/FinanceSectionLabel>[\s\S]*?Read your money position first\.[\s\S]*?selected[\s\S]*?community view[\s\S]*?wider Finance story/,
   "Money Summary detail section must explain that it is the selected community view inside the wider Finance story."
 );

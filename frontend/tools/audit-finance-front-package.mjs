@@ -95,8 +95,22 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /Other finance lanes[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Signals \/ Readiness[\s\S]*?Trust Passport/,
+  /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?\.filter\(\(item\) => !isCompact \|\| item\.id !== "bank-accounts"\)/,
+  "Finance phone front package must collapse to three major lane buttons, moving Banking Rails into More lanes on compact screens."
+);
+
+assertContains(
+  financeFile,
+  financeSource,
+  /Other finance lanes[\s\S]*?Banking Rails[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Signals \/ Readiness[\s\S]*?Trust Passport/,
   "Finance secondary lanes must remain grouped below the four main lane choices."
+);
+
+assertContains(
+  financeFile,
+  financeSource,
+  /Other finance lanes[\s\S]*?debugId="finance\.more-lanes\.toggle"[\s\S]*?Hide lanes[\s\S]*?More lanes[\s\S]*?\{showOtherFinanceLanes \? \(/,
+  "Finance secondary lanes must be tucked behind a More lanes disclosure on phone instead of appearing as equal first-screen choices."
 );
 
 assertContains(

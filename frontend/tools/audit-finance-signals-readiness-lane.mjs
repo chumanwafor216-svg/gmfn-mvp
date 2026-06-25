@@ -61,7 +61,7 @@ assertContains(
 
 assertContains(
   "loanReadiness",
-  /what="This page is one step inside Loans & Support\.[\s\S]*?why="Finance records the wider money story\.[\s\S]*?next="Read the main readiness message first/,
+  /what="This page is one step inside Loans & Support\.[\s\S]*?why="Finance records the wider money story\.[\s\S]*?next="Support Readiness is decision support only; it does not approve a loan, approve a guarantor, or authorize release of goods, credit, or money\./,
   "Loan Readiness explanation must keep the distinction between Finance's wider money story and readiness's support-path decision."
 );
 

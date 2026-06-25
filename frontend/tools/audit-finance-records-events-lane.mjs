@@ -84,7 +84,7 @@ assertOrderedSnippets(
     "\"Reference\"",
     "\"Note\"",
     "\"Created\"",
-    "\"Confirmed\"",
+    "\"Finance confirmed\"",
   ],
   "Finance events mobile records must keep the core money-event fields."
 );
