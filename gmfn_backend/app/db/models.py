@@ -1742,6 +1742,41 @@ class MarketplaceShop(Base):
     )
 
 
+class ShopFollower(Base):
+    __tablename__ = "shop_followers"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "shop_id",
+            "follower_user_id",
+            name="uq_shop_followers_shop_user",
+        ),
+        Index("ix_shop_followers_shop_user", "shop_id", "follower_user_id"),
+        Index("ix_shop_followers_user_created", "follower_user_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    follower_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
+
 class MarketplaceProduct(Base):
     __tablename__ = "marketplace_products"
 

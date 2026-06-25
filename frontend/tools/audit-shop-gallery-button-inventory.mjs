@@ -25,10 +25,10 @@ const mediaFrameSource = readFileSync(join(frontendRoot, mediaFrameFile), "utf8"
 const findings = [];
 
 const expectedPageSourceActions = {
-  PrimaryButton: 8,
-  SecondaryButton: 11,
+  PrimaryButton: 9,
+  SecondaryButton: 14,
   StableCtaLink: 4,
-  total: 23,
+  total: 27,
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 7;
@@ -174,6 +174,10 @@ for (const action of actions) {
 
 const expectedActionOrder = [
   "shop-gallery.return-marketplace",
+  "shop-gallery.public-shop.sign-in-follow",
+  "shop-gallery.public-shop.following",
+  "shop-gallery.public-shop.unfollow",
+  "shop-gallery.public-shop.follow",
   "shop-gallery.share-shop",
   "shop-gallery.verify-shop.toggle",
   "shop-gallery.owner-contact.choose",

@@ -10,15 +10,18 @@ import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   createMarketplaceShop,
+  followMarketplaceShop,
   getAccessToken,
   getCurrentClan,
   getMarketplaceBroadcasts,
+  getMarketplaceShopFollowStatus,
   listMyClans,
   getMe,
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
   getStoredGmfnId,
   safeCopy,
+  unfollowMarketplaceShop,
 } from "../lib/api";
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
@@ -46,6 +49,7 @@ import {
 type ShopProfile = {
   id?: number;
   clanId?: number;
+  ownerUserId?: number;
   gmfnId: string;
   shopName: string;
   ownerName: string;
@@ -56,6 +60,16 @@ type ShopProfile = {
   imageUrl: string;
   whatsapp: string;
   telegram: string;
+  followerCount: number;
+};
+
+type ShopFollowState = {
+  isFollowing: boolean;
+  canFollow: boolean;
+  isOwner: boolean;
+  followerCount: number;
+  loading: boolean;
+  busy: boolean;
 };
 
 type ShopProduct = {
@@ -203,6 +217,11 @@ function publicShopName(...values: any[]): string {
 
 function publicShopCategory(...values: any[]): string {
   return firstMeaningful(...values) || "General merchandise";
+}
+
+function formatShopFollowerCount(count: any): string {
+  const value = positiveNumber(count);
+  return value === 1 ? "1 following this shop" : `${value} following this shop`;
 }
 
 function buildPhoneCallUrl(value: any): string {
@@ -822,6 +841,10 @@ function normalizeShop(
 
   return {
     id: positiveNumber(src?.id) || undefined,
+    ownerUserId:
+      positiveNumber(src?.owner_user_id) ||
+      positiveNumber(src?.ownerUserId) ||
+      undefined,
     clanId:
       positiveNumber(src?.clan_id) ||
       positiveNumber(src?.clanId) ||
@@ -847,6 +870,9 @@ function normalizeShop(
       src?.telegram_handle,
       src?.telegram,
       src?.telegram_username
+    ),
+    followerCount: positiveNumber(
+      src?.follower_count || src?.followers_count || src?.shop_follower_count
     ),
   };
 }
@@ -1359,6 +1385,14 @@ export default function ShopGalleryPage() {
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
   );
+  const [shopFollowState, setShopFollowState] = useState<ShopFollowState>({
+    isFollowing: false,
+    canFollow: false,
+    isOwner: false,
+    followerCount: 0,
+    loading: false,
+    busy: false,
+  });
   const [error, setError] = useState<string>("");
   const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
@@ -2000,6 +2034,7 @@ export default function ShopGalleryPage() {
     return {
       id: shop?.id,
       clanId: shop?.clanId,
+      ownerUserId: shop?.ownerUserId,
       gmfnId: effectiveGmfnId,
       shopName: effectiveShopName,
       ownerName: effectiveOwnerName,
@@ -2010,8 +2045,144 @@ export default function ShopGalleryPage() {
       imageUrl: firstMeaningful(shop?.imageUrl),
       whatsapp: firstMeaningful(shop?.whatsapp),
       telegram: firstMeaningful(shop?.telegram),
+      followerCount: positiveNumber(shop?.followerCount),
     };
   }, [shop, broadcast, gmfnId, currentClan]);
+
+  useEffect(() => {
+    const shopId = positiveNumber(effectiveShop?.id);
+    const fallbackCount = positiveNumber(effectiveShop?.followerCount);
+    const token = getAccessToken();
+
+    if (!shopId) {
+      setShopFollowState({
+        isFollowing: false,
+        canFollow: false,
+        isOwner: false,
+        followerCount: fallbackCount,
+        loading: false,
+        busy: false,
+      });
+      return;
+    }
+
+    if (!token) {
+      setShopFollowState((current) => ({
+        ...current,
+        isFollowing: false,
+        canFollow: false,
+        isOwner: false,
+        followerCount: fallbackCount,
+        loading: false,
+      }));
+      return;
+    }
+
+    let alive = true;
+    setShopFollowState((current) => ({
+      ...current,
+      followerCount: fallbackCount,
+      loading: true,
+    }));
+
+    getMarketplaceShopFollowStatus(shopId)
+      .then((res) => {
+        if (!alive) return;
+        const count = positiveNumber(res?.follower_count || res?.followers_count);
+        setShopFollowState((current) => ({
+          ...current,
+          isFollowing: Boolean(res?.is_following),
+          canFollow: Boolean(res?.can_follow),
+          isOwner: Boolean(res?.is_owner),
+          followerCount: count,
+          loading: false,
+        }));
+      })
+      .catch(() => {
+        if (!alive) return;
+        setShopFollowState((current) => ({
+          ...current,
+          isFollowing: false,
+          canFollow: false,
+          isOwner: false,
+          followerCount: fallbackCount,
+          loading: false,
+        }));
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [effectiveShop?.followerCount, effectiveShop?.id]);
+
+  const handleFollowShop = useCallback(async () => {
+    const shopId = positiveNumber(effectiveShop?.id);
+    if (!getAccessToken()) {
+      setNotice({
+        tone: "error",
+        text: "Sign in to follow this shop and receive GSN marketplace updates.",
+      });
+      return;
+    }
+    if (!shopId) {
+      setNotice({
+        tone: "error",
+        text: "This shop is still loading. Try again in a moment.",
+      });
+      return;
+    }
+
+    setShopFollowState((current) => ({ ...current, busy: true }));
+    try {
+      const res = await followMarketplaceShop(shopId);
+      const count = positiveNumber(res?.follower_count || res?.followers_count);
+      setShopFollowState((current) => ({
+        ...current,
+        isFollowing: true,
+        canFollow: true,
+        followerCount: count,
+        busy: false,
+      }));
+      setNotice({
+        tone: "success",
+        text: "You are now following this shop.",
+      });
+    } catch (err: any) {
+      setShopFollowState((current) => ({ ...current, busy: false }));
+      setNotice({
+        tone: "error",
+        text: safeStr(err?.message) || "GSN could not follow this shop right now.",
+      });
+    }
+  }, [effectiveShop?.id]);
+
+  const handleUnfollowShop = useCallback(async () => {
+    const shopId = positiveNumber(effectiveShop?.id);
+    if (!shopId) return;
+
+    setShopFollowState((current) => ({ ...current, busy: true }));
+    try {
+      const res = await unfollowMarketplaceShop(shopId);
+      const count = positiveNumber(res?.follower_count || res?.followers_count);
+      setShopFollowState((current) => ({
+        ...current,
+        isFollowing: false,
+        canFollow: true,
+        followerCount: count,
+        busy: false,
+      }));
+      setNotice({
+        tone: "success",
+        text: "You have unfollowed this shop.",
+      });
+    } catch (err: any) {
+      setShopFollowState((current) => ({ ...current, busy: false }));
+      setNotice({
+        tone: "error",
+        text: safeStr(err?.message) || "GSN could not unfollow this shop right now.",
+      });
+    }
+  }, [effectiveShop?.id]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -2355,6 +2526,10 @@ export default function ShopGalleryPage() {
     shopCommunityText,
     "GSN public marketplace"
   );
+  const shopFollowerText = formatShopFollowerCount(shopFollowState.followerCount);
+  const shopFollowSignedIn = Boolean(getAccessToken());
+  const shopFollowButtonDisabled =
+    shopLoadFailed || shopFollowState.loading || shopFollowState.busy;
   const verificationCommunityId = firstMeaningful(
     publicShopVerification?.community_id,
     effectiveShop?.clanId
@@ -3090,6 +3265,140 @@ export default function ShopGalleryPage() {
               >
                 {inlineShopIcon("shield", "#8C6829", isCompact ? 9 : 14)}
                 <span>Trusted marketplace. Real people. Real value.</span>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                  gap: isCompact ? 6 : 10,
+                  alignItems: "center",
+                  marginLeft: isCompact ? 84 : 0,
+                  minHeight: isCompact ? 88 : 54,
+                }}
+                aria-label="Shop follow controls"
+              >
+                <div
+                  style={{
+                    minHeight: isCompact ? 34 : 44,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: isCompact ? "center" : "flex-start",
+                    gap: isCompact ? 5 : 8,
+                    padding: isCompact ? "5px 8px" : "8px 12px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(214,170,69,0.24)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.94) 100%)",
+                    color: "#07172C",
+                    fontSize: isCompact ? 10 : 13,
+                    fontWeight: 850,
+                    boxShadow:
+                      "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {inlineShopIcon("shop", "#8C6829", isCompact ? 11 : 15)}
+                  <span>{shopFollowerText}</span>
+                </div>
+                {!shopFollowState.isOwner ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        shopFollowState.isFollowing && shopFollowSignedIn
+                          ? "minmax(0, 1fr) minmax(0, 1fr)"
+                          : "minmax(0, 1fr)",
+                      gap: isCompact ? 6 : 8,
+                      minWidth: isCompact ? 0 : 280,
+                    }}
+                  >
+                    {!shopFollowSignedIn ? (
+                      <SecondaryButton
+                        onClick={() =>
+                          setNotice({
+                            tone: "error",
+                            text: "Sign in to follow this shop and receive GSN marketplace updates.",
+                          })
+                        }
+                        minWidth={0}
+                        fullWidth
+                        stableHeight={isCompact ? 44 : 46}
+                        debugId="shop-gallery.public-shop.sign-in-follow"
+                        style={{
+                          ...secondaryBtn(false),
+                          minHeight: isCompact ? 44 : 46,
+                          borderRadius: isCompact ? 14 : 16,
+                          fontSize: isCompact ? 11 : 13,
+                          padding: isCompact ? "5px 8px" : "8px 12px",
+                          gap: isCompact ? 5 : 8,
+                        }}
+                      >
+                        {inlineShopIcon("id", "#8C6829", isCompact ? 12 : 15)}
+                        <span>Sign in to follow</span>
+                      </SecondaryButton>
+                    ) : shopFollowState.isFollowing ? (
+                      <>
+                        <SecondaryButton
+                          disabled
+                          minWidth={0}
+                          fullWidth
+                          stableHeight={isCompact ? 44 : 46}
+                          debugId="shop-gallery.public-shop.following"
+                          style={{
+                            ...secondaryBtn(true),
+                            minHeight: isCompact ? 44 : 46,
+                            borderRadius: isCompact ? 14 : 16,
+                            fontSize: isCompact ? 11 : 13,
+                            padding: isCompact ? "5px 8px" : "8px 12px",
+                            gap: isCompact ? 5 : 8,
+                          }}
+                        >
+                          {inlineShopIcon("shield", "#276E4A", isCompact ? 12 : 15)}
+                          <span>Following</span>
+                        </SecondaryButton>
+                        <SecondaryButton
+                          onClick={() => void handleUnfollowShop()}
+                          disabled={shopFollowButtonDisabled}
+                          minWidth={0}
+                          fullWidth
+                          stableHeight={isCompact ? 44 : 46}
+                          debugId="shop-gallery.public-shop.unfollow"
+                          style={{
+                            ...secondaryBtn(shopFollowButtonDisabled),
+                            minHeight: isCompact ? 44 : 46,
+                            borderRadius: isCompact ? 14 : 16,
+                            fontSize: isCompact ? 11 : 13,
+                            padding: isCompact ? "5px 8px" : "8px 12px",
+                            gap: isCompact ? 5 : 8,
+                          }}
+                        >
+                          {inlineShopIcon("vault", "#8C6829", isCompact ? 12 : 15)}
+                          <span>Unfollow</span>
+                        </SecondaryButton>
+                      </>
+                    ) : (
+                      <PrimaryButton
+                        onClick={() => void handleFollowShop()}
+                        disabled={shopFollowButtonDisabled || !shopFollowState.canFollow}
+                        minWidth={0}
+                        fullWidth
+                        stableHeight={isCompact ? 44 : 46}
+                        debugId="shop-gallery.public-shop.follow"
+                        style={{
+                          ...primaryBtn(shopFollowButtonDisabled || !shopFollowState.canFollow),
+                          minHeight: isCompact ? 44 : 46,
+                          borderRadius: isCompact ? 14 : 16,
+                          fontSize: isCompact ? 11 : 13,
+                          padding: isCompact ? "5px 8px" : "8px 12px",
+                          gap: isCompact ? 5 : 8,
+                        }}
+                      >
+                        {inlineShopIcon("shop", "#FFFFFF", isCompact ? 12 : 15)}
+                        <span>Follow Shop</span>
+                      </PrimaryButton>
+                    )}
+                  </div>
+                ) : null}
               </div>
               <div
                 style={{

@@ -23,13 +23,16 @@ from app.db.models import (
     MarketplaceProductRepost,
     MarketplaceReview,
     MarketplaceShop,
+    ShopFollower,
     User,
 )
+from app.db.notification_models import Notification
 from app.services.feature_entitlements_service import (
     consume_feature_units,
     get_active_feature_quantity,
     has_active_feature,
 )
+from app.services.notification_service import create_notification
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_domain_service import (
     archive_vault_offer_for_product,
@@ -464,6 +467,176 @@ def _shop_is_visible_in_clan(
         .first()
     )
     return membership is not None
+
+
+def _shop_follower_count(db: Session, *, shop_id: int) -> int:
+    return (
+        db.query(ShopFollower)
+        .filter(ShopFollower.shop_id == int(shop_id))
+        .count()
+    )
+
+
+def _shop_follower_row(
+    db: Session,
+    *,
+    shop_id: int,
+    follower_user_id: int,
+) -> Optional[ShopFollower]:
+    return (
+        db.query(ShopFollower)
+        .filter(
+            ShopFollower.shop_id == int(shop_id),
+            ShopFollower.follower_user_id == int(follower_user_id),
+        )
+        .first()
+    )
+
+
+def _current_user_can_see_shop(
+    db: Session,
+    *,
+    shop: MarketplaceShop,
+    user: User,
+) -> bool:
+    if _is_admin(user):
+        return True
+
+    if int(getattr(shop, "owner_user_id", 0) or 0) == int(user.id):
+        return True
+
+    active_clan_ids = _get_active_clan_ids_for_user(db=db, user_id=int(user.id))
+    return any(
+        _shop_is_visible_in_clan(db, shop=shop, clan_id=int(clan_id))
+        for clan_id in active_clan_ids
+    )
+
+
+def _follower_can_receive_shop_notice(
+    db: Session,
+    *,
+    shop: MarketplaceShop,
+    follower_user_id: int,
+    clan_ids: Optional[list[int]] = None,
+) -> bool:
+    follower_user_id = int(follower_user_id)
+    if follower_user_id == int(getattr(shop, "owner_user_id", 0) or 0):
+        return False
+
+    active_clan_ids = _get_active_clan_ids_for_user(db=db, user_id=follower_user_id)
+    if not active_clan_ids:
+        return False
+
+    active_set = {int(clan_id) for clan_id in active_clan_ids}
+    candidate_ids = (
+        [int(clan_id) for clan_id in clan_ids if int(clan_id) in active_set]
+        if clan_ids is not None
+        else active_clan_ids
+    )
+
+    return any(
+        _shop_is_visible_in_clan(db, shop=shop, clan_id=int(clan_id))
+        for clan_id in candidate_ids
+    )
+
+
+def _shop_public_action_url(
+    db: Session,
+    *,
+    shop: MarketplaceShop,
+    clan_id: Optional[int] = None,
+    product_id: Optional[int] = None,
+    broadcast_id: Optional[int] = None,
+) -> str:
+    owner = db.query(User).filter(User.id == int(shop.owner_user_id)).first()
+    gmfn_id = _safe_str(getattr(owner, "gmfn_id", None))
+    path = f"/shop/{gmfn_id}" if gmfn_id else "/app/shop"
+
+    params: list[str] = []
+    if clan_id is not None and int(clan_id) > 0:
+        params.append(f"clan_id={int(clan_id)}")
+    if product_id is not None and int(product_id) > 0:
+        params.append(f"product_id={int(product_id)}")
+    if broadcast_id is not None and int(broadcast_id) > 0:
+        params.append(f"broadcast_id={int(broadcast_id)}")
+
+    return f"{path}?{'&'.join(params)}" if params else path
+
+
+def _shop_notice_already_exists(
+    db: Session,
+    *,
+    user_id: int,
+    kind: str,
+    action_url: str,
+) -> bool:
+    return (
+        db.query(Notification.id)
+        .filter(
+            Notification.user_id == int(user_id),
+            Notification.kind == kind,
+            Notification.action_url == action_url,
+        )
+        .first()
+        is not None
+    )
+
+
+def _notify_shop_followers(
+    db: Session,
+    *,
+    shop: MarketplaceShop,
+    kind: str,
+    title: str,
+    message: str,
+    action_url: str,
+    clan_ids: Optional[list[int]] = None,
+) -> int:
+    follower_rows = (
+        db.query(ShopFollower)
+        .filter(ShopFollower.shop_id == int(shop.id))
+        .order_by(ShopFollower.created_at.asc(), ShopFollower.id.asc())
+        .all()
+    )
+
+    created = 0
+    seen_user_ids: set[int] = set()
+    for follower in follower_rows:
+        follower_user_id = int(follower.follower_user_id)
+        if follower_user_id in seen_user_ids:
+            continue
+        seen_user_ids.add(follower_user_id)
+
+        if not _follower_can_receive_shop_notice(
+            db,
+            shop=shop,
+            follower_user_id=follower_user_id,
+            clan_ids=clan_ids,
+        ):
+            continue
+
+        if _shop_notice_already_exists(
+            db,
+            user_id=follower_user_id,
+            kind=kind,
+            action_url=action_url,
+        ):
+            continue
+
+        create_notification(
+            db,
+            user_id=follower_user_id,
+            kind=kind,
+            title=title,
+            message=message,
+            action_url=action_url,
+            action_label="Open shop",
+            commit=False,
+            refresh=False,
+        )
+        created += 1
+
+    return created
 
 
 def _get_canonical_shop_by_owner(
@@ -970,6 +1143,7 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
 
     image_url = _get_shop_image_value(shop)
     public_slots_total = _shop_public_product_slots_total(db, shop=shop)
+    follower_count = _shop_follower_count(db, shop_id=int(shop.id))
 
     return {
         "id": int(shop.id),
@@ -1001,6 +1175,9 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
         "shop_product_slots_free": FREE_COMMUNITY_PRODUCT_SLOTS,
         "shop_product_slots_extra": max(0, public_slots_total - FREE_COMMUNITY_PRODUCT_SLOTS),
         "shop_product_slots_total": public_slots_total,
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+        "shop_follower_count": follower_count,
     }
 
 
@@ -1919,6 +2096,163 @@ def update_marketplace_shop(
     }
 
 
+@router.post("/shops/{shop_id}/follow")
+def follow_marketplace_shop(
+    shop_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(
+            MarketplaceShop.id == int(shop_id),
+            MarketplaceShop.is_active.is_(True),
+        )
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    if int(getattr(shop, "owner_user_id", 0) or 0) == int(current_user.id):
+        raise HTTPException(status_code=400, detail="Shop owners cannot follow their own shop")
+
+    if not _current_user_can_see_shop(db=db, shop=shop, user=current_user):
+        raise HTTPException(status_code=403, detail="This shop is not visible to this account")
+
+    existing = _shop_follower_row(
+        db,
+        shop_id=int(shop.id),
+        follower_user_id=int(current_user.id),
+    )
+    if existing:
+        follower_count = _shop_follower_count(db, shop_id=int(shop.id))
+        return {
+            "ok": True,
+            "shop_id": int(shop.id),
+            "is_following": True,
+            "already_following": True,
+            "follower_count": follower_count,
+            "followers_count": follower_count,
+        }
+
+    follower = ShopFollower(
+        shop_id=int(shop.id),
+        follower_user_id=int(current_user.id),
+        created_at=_now_utc(),
+    )
+    db.add(follower)
+    db.commit()
+
+    follower_count = _shop_follower_count(db, shop_id=int(shop.id))
+    return {
+        "ok": True,
+        "shop_id": int(shop.id),
+        "is_following": True,
+        "already_following": False,
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+    }
+
+
+@router.delete("/shops/{shop_id}/follow")
+def unfollow_marketplace_shop(
+    shop_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(shop_id))
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    existing = _shop_follower_row(
+        db,
+        shop_id=int(shop.id),
+        follower_user_id=int(current_user.id),
+    )
+    if existing:
+        db.delete(existing)
+        db.commit()
+
+    follower_count = _shop_follower_count(db, shop_id=int(shop.id))
+    return {
+        "ok": True,
+        "shop_id": int(shop.id),
+        "is_following": False,
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+    }
+
+
+@router.get("/shops/{shop_id}/followers/count")
+def get_marketplace_shop_follower_count(
+    shop_id: int,
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(
+            MarketplaceShop.id == int(shop_id),
+            MarketplaceShop.is_active.is_(True),
+        )
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    follower_count = _shop_follower_count(db, shop_id=int(shop.id))
+    return {
+        "ok": True,
+        "shop_id": int(shop.id),
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+    }
+
+
+@router.get("/shops/{shop_id}/follow-status")
+def get_marketplace_shop_follow_status(
+    shop_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(
+            MarketplaceShop.id == int(shop_id),
+            MarketplaceShop.is_active.is_(True),
+        )
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
+    is_owner = int(getattr(shop, "owner_user_id", 0) or 0) == int(current_user.id)
+    can_see_shop = _current_user_can_see_shop(db=db, shop=shop, user=current_user)
+    is_following = (
+        _shop_follower_row(
+            db,
+            shop_id=int(shop.id),
+            follower_user_id=int(current_user.id),
+        )
+        is not None
+    )
+    follower_count = _shop_follower_count(db, shop_id=int(shop.id))
+
+    return {
+        "ok": True,
+        "shop_id": int(shop.id),
+        "is_following": is_following,
+        "can_follow": bool(can_see_shop and not is_owner),
+        "can_see_shop": can_see_shop,
+        "is_owner": is_owner,
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+    }
+
+
 @router.get("/products")
 def list_marketplace_products(
     clan_id: Optional[int] = Query(default=None),
@@ -2189,6 +2523,22 @@ def create_marketplace_product(
         commit=False,
         refresh=False,
     )
+    if visibility_mode == VISIBILITY_COMMUNITY:
+        shop_name = _public_identity_name(getattr(shop, "name", None), fallback="A shop you follow")
+        _notify_shop_followers(
+            db,
+            shop=shop,
+            kind="marketplace.shop.product_created",
+            title="Shop update",
+            message=f"{shop_name} added a new product.",
+            action_url=_shop_public_action_url(
+                db,
+                shop=shop,
+                clan_id=resolved_clan_id,
+                product_id=int(product.id),
+            ),
+            clan_ids=[resolved_clan_id],
+        )
     db.commit()
 
     return {"ok": True, "item": _product_out(db, product)}
@@ -2230,6 +2580,14 @@ def update_marketplace_product(
     provided = _provided_model_fields(payload)
     changed = False
     removed_reposts = 0
+    previous_shop_id = int(product.shop_id)
+    previous_price = _safe_str(getattr(product, "price", None))
+    previous_currency = _safe_str(getattr(product, "currency", None))
+    previous_visibility = _safe_str(
+        getattr(product, "visibility_mode", None),
+        VISIBILITY_COMMUNITY,
+    )
+    previous_active = bool(getattr(product, "is_active", True))
 
     target_shop_id = int(product.shop_id)
     if "shop_id" in provided and payload.shop_id is not None and int(payload.shop_id) != int(product.shop_id):
@@ -2442,6 +2800,43 @@ def update_marketplace_product(
                 commit=False,
                 refresh=False,
             )
+            major_public_offer_update = (
+                target_active
+                and target_visibility == VISIBILITY_COMMUNITY
+                and not soft_remove_requested
+                and (
+                    previous_price != _safe_str(getattr(product, "price", None))
+                    or previous_currency != _safe_str(getattr(product, "currency", None))
+                    or previous_visibility != target_visibility
+                    or previous_shop_id != int(product.shop_id)
+                    or (not previous_active and bool(getattr(product, "is_active", True)))
+                )
+            )
+            if major_public_offer_update:
+                notify_shop = (
+                    db.query(MarketplaceShop)
+                    .filter(MarketplaceShop.id == int(product.shop_id))
+                    .first()
+                )
+                if notify_shop:
+                    shop_name = _public_identity_name(
+                        getattr(notify_shop, "name", None),
+                        fallback="A shop you follow",
+                    )
+                    _notify_shop_followers(
+                        db,
+                        shop=notify_shop,
+                        kind="marketplace.shop.product_updated",
+                        title="Shop offer updated",
+                        message=f"{shop_name} updated a shop offer.",
+                        action_url=_shop_public_action_url(
+                            db,
+                            shop=notify_shop,
+                            clan_id=resolved_clan_id,
+                            product_id=int(product.id),
+                        ),
+                        clan_ids=[resolved_clan_id],
+                    )
             db.commit()
             db.refresh(product)
         except ValueError as exc:
@@ -2898,6 +3293,22 @@ def repost_marketplace_product(
         commit=False,
         refresh=False,
     )
+    shop_name = _public_identity_name(getattr(shop, "name", None), fallback="A shop you follow")
+    _notify_shop_followers(
+        db,
+        shop=shop,
+        kind="marketplace.shop.spotlight_created",
+        title="Shop spotlight",
+        message=f"{shop_name} placed a shop item in Spotlight.",
+        action_url=_shop_public_action_url(
+            db,
+            shop=shop,
+            clan_id=target_clan_id,
+            product_id=int(product.id),
+            broadcast_id=int(broadcast.id),
+        ),
+        clan_ids=[target_clan_id],
+    )
     db.commit()
     db.refresh(repost)
     db.refresh(broadcast)
@@ -3311,12 +3722,39 @@ def create_marketplace_broadcast(
             commit=False,
             refresh=False,
         )
-    db.commit()
-
     primary_item = next(
         (x for x in created_items if int(x.clan_id) == int(resolved_clan_id)),
         created_items[0],
     )
+    if canonical_shop is not None:
+        shop_name = _public_identity_name(
+            getattr(canonical_shop, "name", None),
+            fallback="A shop you follow",
+        )
+        spotlight_publish = priority_mode == SPOTLIGHT_PAID
+        _notify_shop_followers(
+            db,
+            shop=canonical_shop,
+            kind=(
+                "marketplace.shop.spotlight_created"
+                if spotlight_publish
+                else "marketplace.shop.broadcast_created"
+            ),
+            title="Shop spotlight" if spotlight_publish else "Shop update",
+            message=(
+                f"{shop_name} posted a new shop spotlight."
+                if spotlight_publish
+                else f"{shop_name} posted a new shop update."
+            ),
+            action_url=_shop_public_action_url(
+                db,
+                shop=canonical_shop,
+                clan_id=int(primary_item.clan_id),
+                broadcast_id=int(primary_item.id),
+            ),
+            clan_ids=target_clan_ids,
+        )
+    db.commit()
 
     return {
         "ok": True,

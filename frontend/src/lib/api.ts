@@ -3405,6 +3405,35 @@ export async function getPublicMarketplaceShopByGmfnId(
   );
 }
 
+export async function followMarketplaceShop(shopId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/shops/${encodeURIComponent(String(shopId))}/follow`,
+    "POST",
+    {}
+  );
+}
+
+export async function unfollowMarketplaceShop(shopId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/shops/${encodeURIComponent(String(shopId))}/follow`,
+    "DELETE"
+  );
+}
+
+export async function getMarketplaceShopFollowerCount(shopId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/shops/${encodeURIComponent(String(shopId))}/followers/count`,
+    "GET"
+  );
+}
+
+export async function getMarketplaceShopFollowStatus(shopId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/shops/${encodeURIComponent(String(shopId))}/follow-status`,
+    "GET"
+  );
+}
+
 export async function createMarketplaceProduct(payload: {
   clan_id?: number | null;
   shop_id: number;

@@ -15,7 +15,9 @@ from app.db.models import (
     MarketplaceProduct,
     MarketplaceProductRepost,
     MarketplaceShop,
+    ShopFollower,
 )
+from app.db.notification_models import Notification
 
 
 def _ensure_marketplace_tables() -> None:
@@ -23,6 +25,8 @@ def _ensure_marketplace_tables() -> None:
     MarketplaceProduct.__table__.create(bind=engine, checkfirst=True)
     MarketplaceBroadcast.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProductRepost.__table__.create(bind=engine, checkfirst=True)
+    ShopFollower.__table__.create(bind=engine, checkfirst=True)
+    Notification.__table__.create(bind=engine, checkfirst=True)
     FeatureEntitlement.__table__.create(bind=engine, checkfirst=True)
     FeatureUsageEvent.__table__.create(bind=engine, checkfirst=True)
 
@@ -2250,3 +2254,177 @@ def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(
     assert status_after.json()["available_paid_credits"] == 1
     assert status_after.json()["active_paid_spotlights"] == 1
     assert status_after.json()["can_publish_paid_spotlight"] is False
+
+
+def test_shop_follow_status_count_and_unfollow(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-shop-follow-secret")
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'shop-owner@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-FOLLOWOWNER'),
+                    (2, 'shop-follower@example.com', 'hashed', 'Shop Follower', 'user', 'GMFN-U-FOLLOWER')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Follow Clan', 'Follow Marketplace', 'FOLLOW1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 1, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Followable Shop', 'Trusted shop updates', 1
+                )
+                """
+            )
+        )
+
+    token = create_access_token({"sub": "shop-follower@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    status_before = client.get("/marketplace/shops/1/follow-status", headers=headers)
+    assert status_before.status_code == 200, status_before.text
+    assert status_before.json()["is_following"] is False
+    assert status_before.json()["can_follow"] is True
+    assert status_before.json()["follower_count"] == 0
+
+    first_follow = client.post("/marketplace/shops/1/follow", headers=headers)
+    assert first_follow.status_code == 200, first_follow.text
+    assert first_follow.json()["is_following"] is True
+    assert first_follow.json()["already_following"] is False
+    assert first_follow.json()["follower_count"] == 1
+
+    second_follow = client.post("/marketplace/shops/1/follow", headers=headers)
+    assert second_follow.status_code == 200, second_follow.text
+    assert second_follow.json()["already_following"] is True
+    assert second_follow.json()["follower_count"] == 1
+
+    public_count = client.get("/marketplace/shops/1/followers/count")
+    assert public_count.status_code == 200, public_count.text
+    assert public_count.json()["follower_count"] == 1
+
+    unfollow = client.delete("/marketplace/shops/1/follow", headers=headers)
+    assert unfollow.status_code == 200, unfollow.text
+    assert unfollow.json()["is_following"] is False
+    assert unfollow.json()["follower_count"] == 0
+
+
+def test_shop_product_create_notifies_visible_followers_only(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-shop-follow-notification-secret")
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'notify-owner@example.com', 'hashed', 'Notify Owner', 'user', 'GMFN-U-NOTIFYOWNER'),
+                    (2, 'notify-follower@example.com', 'hashed', 'Notify Follower', 'user', 'GMFN-U-NOTIFYFOLLOW'),
+                    (3, 'notify-outsider@example.com', 'hashed', 'Notify Outsider', 'user', 'GMFN-U-NOTIFYOUT')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Visible Clan', 'Visible Marketplace', 'VISIBLE1'),
+                    (2, 'Outside Clan', 'Outside Marketplace', 'OUTSIDE1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 1, 2, 'member', 0),
+                    (3, 2, 3, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Visible Follow Shop', 'Trusted visible shop', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO shop_followers (id, shop_id, follower_user_id)
+                VALUES
+                    (1, 1, 2),
+                    (2, 1, 3)
+                """
+            )
+        )
+
+    owner_token = create_access_token({"sub": "notify-owner@example.com"})
+    owner_headers = {"Authorization": f"Bearer {owner_token}"}
+    created = client.post(
+        "/marketplace/products",
+        headers=owner_headers,
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "name": "Follower Rice",
+            "description": "Bag of rice for visible followers",
+            "price": "25",
+            "currency": "USD",
+            "image_url": "/uploads/marketplace/images/follower-rice.jpg",
+            "visibility_mode": "community_visible",
+        },
+    )
+    assert created.status_code == 200, created.text
+
+    with engine.begin() as conn:
+        notices = conn.execute(
+            text(
+                """
+                SELECT user_id, kind, title, message, action_url, action_label
+                FROM notifications
+                ORDER BY user_id ASC
+                """
+            )
+        ).fetchall()
+
+    assert len(notices) == 1
+    assert notices[0].user_id == 2
+    assert notices[0].kind == "marketplace.shop.product_created"
+    assert notices[0].title == "Shop update"
+    assert notices[0].message == "Visible Follow Shop added a new product."
+    assert notices[0].action_label == "Open shop"
+    assert "product_id=" in notices[0].action_url
