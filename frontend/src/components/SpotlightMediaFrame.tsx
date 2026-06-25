@@ -227,7 +227,15 @@ export default function SpotlightMediaFrame(
     props.audioUnlockStyle?.width,
     props.audioUnlockStyle?.minWidth,
   ].some((value) => typeof value === "number" && value <= 52);
-  const audioIconSize = audioUnlockIconOnly ? 30 : 28;
+  const audioUnlockButtonSize =
+    typeof props.audioUnlockStyle?.width === "number"
+      ? props.audioUnlockStyle.width
+      : typeof props.audioUnlockStyle?.minWidth === "number"
+      ? props.audioUnlockStyle.minWidth
+      : undefined;
+  const audioIconSize = audioUnlockIconOnly
+    ? Math.max(24, Math.min(30, (audioUnlockButtonSize || 44) - 14))
+    : 28;
 
   const audioUnlockButton = shouldShowAudioUnlock ? (
     <SecondaryButton
@@ -253,6 +261,8 @@ export default function SpotlightMediaFrame(
           "0 14px 28px rgba(2, 12, 27, 0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
         cursor: "pointer",
         touchAction: "manipulation",
+        boxSizing: "border-box",
+        overflowAnchor: "none",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -276,28 +286,42 @@ export default function SpotlightMediaFrame(
           minWidth: audioIconSize,
           display: "inline-grid",
           placeItems: "center",
+          flex: `0 0 ${audioIconSize}px`,
+          overflowAnchor: "none",
         }}
       >
         <GsnLegacyIcon name="speaker" size={audioIconSize} decorative />
-        {!audioUnlocked ? (
-          <span
-            data-spotlight-audio-muted-slash="true"
-            style={{
-              position: "absolute",
-              left: Math.max(4, Math.round(audioIconSize * 0.16)),
-              right: Math.max(4, Math.round(audioIconSize * 0.16)),
-              top: "50%",
-              height: Math.max(3, Math.round(audioIconSize * 0.12)),
-              borderRadius: 999,
-              background: "#0B2D4A",
-              boxShadow: "0 1px 0 rgba(255,255,255,0.68)",
-              transform: "translateY(-50%) rotate(-38deg)",
-              pointerEvents: "none",
-            }}
-          />
-        ) : null}
+        <span
+          data-spotlight-audio-muted-slash="true"
+          style={{
+            position: "absolute",
+            left: Math.max(4, Math.round(audioIconSize * 0.16)),
+            right: Math.max(4, Math.round(audioIconSize * 0.16)),
+            top: "50%",
+            height: Math.max(3, Math.round(audioIconSize * 0.12)),
+            borderRadius: 999,
+            background: "#0B2D4A",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.68)",
+            opacity: audioUnlocked ? 0 : 1,
+            transform: "translateY(-50%) rotate(-38deg)",
+            pointerEvents: "none",
+          }}
+        />
       </span>
-      {audioUnlockIconOnly ? null : <span>{audioVisibleLabel}</span>}
+      {audioUnlockIconOnly ? null : (
+        <span
+          style={{
+            display: "inline-block",
+            minWidth: 60,
+            textAlign: "left",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {audioVisibleLabel}
+        </span>
+      )}
     </SecondaryButton>
   ) : null;
 

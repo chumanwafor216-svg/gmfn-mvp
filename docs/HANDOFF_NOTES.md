@@ -14,6 +14,33 @@ Current status terms:
 - `Needs deploy`: must be pushed/deployed before Render can show it.
 - `Not started`: recorded but not yet repaired.
 
+## 2026-06-25 - Dashboard Spotlight Speaker Stability
+
+Owner report:
+- The speaker / sound button on the dashboard Spotlight was still jumpy on
+  phone.
+
+Local fix:
+- `frontend/src/components/SpotlightMediaFrame.tsx`
+  - keeps the Spotlight audio button's icon slot fixed;
+  - keeps the muted slash mounted and toggles opacity instead of mounting and
+    unmounting it;
+  - reserves label width for non-icon-only versions of the same shared control.
+
+Verification:
+- Passed `npm run audit:protected-button-freeze` from `frontend/`.
+- Passed `npm run audit:tap-stability` from `frontend/`.
+- Passed `npm run audit:button-stability` from `frontend/`.
+- Passed `npm run audit:dashboard-phone-buttons` from `frontend/`.
+- Passed `npm run audit:spotlight-controls` from `frontend/`.
+- Passed `npm run build` from `frontend/`.
+- `npm run audit:icon-protocol` still fails on an unrelated
+  `frontend/src/pages/TrustSlipPage.tsx` hero-icon rule; do not confuse that
+  with this Spotlight speaker fix.
+
+Status:
+- Needs deploy and owner phone test.
+
 ## 2026-06-25 - Post-Reconciliation Live Situation Report
 
 Owner report after the live duplicate merge:
