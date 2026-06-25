@@ -842,7 +842,7 @@ function desktopShell(): React.CSSProperties {
 function mobileShell(): React.CSSProperties {
   return {
     minHeight: "100svh",
-    height: "100svh",
+    height: "100dvh",
     background: gmfnBrand.gradients.pageWash,
     display: "flex",
     flexDirection: "column",

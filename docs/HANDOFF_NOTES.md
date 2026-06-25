@@ -1,3 +1,35 @@
+## 2026-06-25 - Mobile Shell Uses Dynamic Viewport Height
+
+- Trigger:
+  - continued the urgent Android drag/sticky-screen investigation after page
+    reveal and TrustSlip route-reset scroll calls were moved into shared
+    helpers. With page-local scroll movement removed, the next plausible
+    shell-level risk was the authenticated mobile app shell using fixed
+    `100svh` height while the browser chrome can expand/collapse.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - mobile shell now keeps `minHeight: "100svh"` but uses `height: "100dvh"`;
+    - this preserves the fixed app-shell model and normal-flow bottom rail,
+      while letting the shell track the current dynamic phone viewport.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - updated the mobile shell stability cage to expect the dynamic viewport
+      height contract.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - targeted ESLint on `AppLayout.tsx` and the tap-stability audit passed.
+  - `npm run build` passed.
+- Unabated truth:
+  - this is a small shell-level bet, not proof. It should help if Android
+    Chrome's changing viewport height was contributing to the glued/hanging
+    drag feel;
+  - the app still uses an inner `<main>` scroller with fixed top/bottom chrome,
+    so the owner's real phone remains the only decisive test;
+  - the in-app Browser connector was unavailable in this session
+    (`Browser is not available: iab`), so no browser smoke check was performed;
+  - this continuation is local and verified but not pushed, following the
+    current batch-first / push-last protocol.
+
 ## 2026-06-25 - TrustSlip Top Reset Uses Real Mobile Scroll Container
 
 - Trigger:
