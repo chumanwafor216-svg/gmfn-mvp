@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from sqlalchemy import String, cast
 from sqlalchemy.orm import Session
 
 from app.core.auth import PENDING_APPROVAL_SENTINEL
@@ -102,6 +103,34 @@ def _bulk_update(
         column=column_name,
         count=count,
         action="updated" if execute else "would_update",
+    )
+    return int(count)
+
+
+def _bulk_update_text_user_ref(
+    db: Session,
+    *,
+    model: Any,
+    column_name: str,
+    canonical_user_id: int,
+    duplicate_user_id: int,
+    execute: bool,
+    operations: list[dict[str, Any]],
+) -> int:
+    column = getattr(model, column_name)
+    query = db.query(model).filter(cast(column, String) == str(int(duplicate_user_id)))
+    count = query.count()
+    if count and execute:
+        # Some live pilot columns were created as text while the model is int.
+        # Only the no-match/count path is expected for current identity repair.
+        query.update({column_name: str(int(canonical_user_id))}, synchronize_session=False)
+    _operation(
+        operations,
+        table=model.__tablename__,
+        column=column_name,
+        count=count,
+        action="updated" if execute else "would_update",
+        note="Matched user reference by text-cast for live pilot schema compatibility.",
     )
     return int(count)
 
@@ -543,15 +572,26 @@ def reconcile_duplicate_identity(
     )
 
     for model, column_name in SIMPLE_REFERENCES:
-        _bulk_update(
-            db,
-            model=model,
-            column_name=column_name,
-            canonical_user_id=canonical_user_id,
-            duplicate_user_id=duplicate_user_id,
-            execute=execute,
-            operations=operations,
-        )
+        if model is Loan and column_name in {"borrower_user_id", "decision_by_user_id"}:
+            _bulk_update_text_user_ref(
+                db,
+                model=model,
+                column_name=column_name,
+                canonical_user_id=canonical_user_id,
+                duplicate_user_id=duplicate_user_id,
+                execute=execute,
+                operations=operations,
+            )
+        else:
+            _bulk_update(
+                db,
+                model=model,
+                column_name=column_name,
+                canonical_user_id=canonical_user_id,
+                duplicate_user_id=duplicate_user_id,
+                execute=execute,
+                operations=operations,
+            )
 
     retire_payload: Optional[dict[str, Any]] = None
     audit_event_id: Optional[int] = None

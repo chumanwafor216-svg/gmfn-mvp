@@ -419,12 +419,42 @@ Complaint ledger:
      - patched the helper to count `loans_as_borrower` by text-casting the
        borrower field and to return a small count error object instead of
        crashing the whole report if a count query fails.
+     - owner redeployed commit `5a1e908` and reran the helper successfully;
+     - live `GMFN-U-63655DE6` / user `13` is the rich record:
+       profile image present, active memberships `2`, active marketplace
+       products `12`, marketplace products `15`, marketplace broadcasts `28`,
+       payout destinations `1`, trust events as actor `81`, trust events as
+       subject `75`, and an approved join request;
+     - live `GMFN-U-226AD3FD` / user `15` is the weaker duplicate:
+       display name `Builders corporation`, email `chumanwafor216@gmail.com`,
+       phone `+447903165266`, active memberships `1`, active marketplace
+       shop `1`, zero active products/broadcasts/payout destinations, and only
+       `2` trust events as actor/subject;
+     - phone lookup for `+447903165266` matched one live user and showed the
+       rich profile-image/product/broadcast record, supporting
+       `GMFN-U-63655DE6` as the canonical identity;
+     - `GSN-U-22CCAD3FD` was a misread/mistyped variant; the actual found
+       duplicate is `GMFN-U-226AD3FD`;
+     - `GMFN-U-A66CF7C0` was not found in the captured Render inspector output.
+   - Merge-engine safety patch:
+     - the same live schema mismatch affects
+       `identity_reconciliation_service.py` because `loans.borrower_user_id`
+       behaves as character text on Render while the model compares as integer;
+     - patched the service to text-cast live loan user-reference lookups for
+       `Loan.borrower_user_id` and `Loan.decision_by_user_id` before running a
+       real Render reconciliation;
+     - passed `python -m py_compile
+       gmfn_backend\app\services\identity_reconciliation_service.py
+       gmfn_backend\inspect_identity.py`;
+     - passed `python -m pytest -q
+       gmfn_backend\tests\test_identity_reconciliation.py --basetemp
+       C:\tmp\pytest-gmfn-identity-live-schema` with 4 tests passing.
    - Unabated truth:
      - admin role is now confirmed in the live Render database for
        `GMFN-U-63655DE6`;
      - this does not by itself execute the identity merge;
-     - if phone sign-in reaches `GSN-U-22CCAD3FD`, that account may also need
-       to be merged or closed;
+     - if phone sign-in reaches `GMFN-U-226AD3FD`, that account likely needs
+       to be merged into `GMFN-U-63655DE6`;
      - the canonical account should be chosen only after comparing which live
        user owns the trusted phone, profile image, memberships, created
        communities, shops/products, broadcasts, TrustSlip, and trust events.
