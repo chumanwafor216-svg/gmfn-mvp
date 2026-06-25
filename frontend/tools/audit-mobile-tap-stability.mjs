@@ -89,6 +89,12 @@ for (const filePath of listSourceFiles(sourceRoot)) {
 const marketplacePagePath = join(sourceRoot, "pages", "MarketplacePage.tsx");
 const marketplaceLines = readFileSync(marketplacePagePath, "utf8").split(/\r?\n/);
 const marketplaceSource = marketplaceLines.join("\n");
+const financePagePath = join(sourceRoot, "pages", "FinancePage.tsx");
+const financePageSource = readFileSync(financePagePath, "utf8");
+const shopControlPagePath = join(sourceRoot, "pages", "ShopControlPage.tsx");
+const shopControlPageSource = readFileSync(shopControlPagePath, "utf8");
+const mobileRevealStabilityPath = join(sourceRoot, "lib", "mobileRevealStability.ts");
+const mobileRevealStabilitySource = readFileSync(mobileRevealStabilityPath, "utf8");
 const marketplaceWorkspacePath = join(
   sourceRoot,
   "pages",
@@ -1069,6 +1075,56 @@ for (const check of marketplaceLandingChecks) {
       line: 1,
       label: check.label,
       text: "Expected Marketplace landing-offset pattern was not found.",
+    });
+  }
+}
+
+const routeRevealChecks = [
+  {
+    file: mobileRevealStabilityPath,
+    source: mobileRevealStabilitySource,
+    label:
+      "Shared mobile reveal helper must avoid raw scrollIntoView and scroll the nearest real scroll container",
+    pattern:
+      /function scrollableAncestor\(target: HTMLElement\): HTMLElement \| null[\s\S]*?node\.scrollHeight > node\.clientHeight \+ 8[\s\S]*?export function revealElementWithoutJump\([\s\S]*?isComfortablyVisible\(target, container, offset\)[\s\S]*?container\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?window\.scrollTo\(\{ top, behavior: "auto" \}\)[\s\S]*?window\.requestAnimationFrame\(\(\) => \{[\s\S]*?activeElementIsEditable\(\)/,
+    forbidden: /scrollIntoView/,
+  },
+  {
+    file: communityHomePath,
+    source: communityHomeSource,
+    label:
+      "Community Home reveal buttons must use shared no-jump reveal instead of raw scrollIntoView",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?const revealCommunityTarget = useCallback\([\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "community-home"[\s\S]*?reason: "section-reveal"/,
+    forbidden: /revealCommunityTarget[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: financePagePath,
+    source: financePageSource,
+    label:
+      "Finance reveal buttons must use shared no-jump reveal instead of raw scrollIntoView",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?function revealFinanceSection\(targetId: string, attempt = 0\)[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "finance"[\s\S]*?reason: "section-reveal"/,
+    forbidden: /function revealFinanceSection[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: shopControlPagePath,
+    source: shopControlPageSource,
+    label:
+      "Shop Control reveal buttons must use shared no-jump reveal instead of raw scrollIntoView",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?const revealControlTarget = useCallback\(function revealControlTarget[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "shop-control"[\s\S]*?reason: "section-reveal"/,
+    forbidden: /revealControlTarget[\s\S]*?scrollIntoView/,
+  },
+];
+
+for (const check of routeRevealChecks) {
+  if (!check.pattern.test(check.source) || check.forbidden.test(check.source)) {
+    findings.push({
+      file: relative(frontendRoot, check.file),
+      line: 1,
+      label: check.label,
+      text: "Expected shared no-jump route reveal behavior was not found.",
     });
   }
 }

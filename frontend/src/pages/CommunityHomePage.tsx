@@ -13,6 +13,7 @@ import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
   getMarketplaceBroadcasts,
   getMyMarketplaceShop,
@@ -985,10 +986,14 @@ export default function CommunityHomePage() {
 
         const target = targetIds
           .map((id) => document.getElementById(id))
-          .find((el) => el && typeof el.scrollIntoView === "function");
+          .find((el): el is HTMLElement => el instanceof HTMLElement);
 
         if (target) {
-          target.scrollIntoView({ behavior: "auto", block: "start" });
+          revealElementWithoutJump(target, {
+            surface: "community-home",
+            targetId: target.id || targetIds[0] || "",
+            reason: "section-reveal",
+          });
           communityRevealFrameRef.current = null;
           return;
         }

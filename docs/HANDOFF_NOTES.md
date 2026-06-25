@@ -1,3 +1,42 @@
+## 2026-06-25 - Route Reveal Scrolls Moved Off Raw scrollIntoView
+
+- Trigger:
+  - continued the urgent phone drag/jumpy-button work after stabilizing the
+    shared bottom rail. The remaining high-risk pattern was route-local buttons
+    expanding a lane and immediately calling raw `scrollIntoView`.
+- Changed:
+  - `frontend/src/lib/mobileRevealStability.ts`
+    - added `revealElementWithoutJump`, a shared mobile-safe reveal helper;
+    - finds the nearest real scroll container instead of blindly asking the
+      browser to re-anchor the page;
+    - skips scrolling if the target is already comfortably visible;
+    - uses `scrollTo({ behavior: "auto" })`, never smooth scrolling;
+    - performs only a bounded one-frame correction and skips correction while an
+      editable field is active.
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - Community Home reveal buttons now use the shared no-jump helper.
+  - `frontend/src/pages/FinancePage.tsx`
+    - Finance detail lane reveals now use the shared no-jump helper.
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - Shop Control shortcut/hash reveals now use the shared no-jump helper.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - now protects the shared helper and the three route integrations against
+      returning to raw `scrollIntoView`.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:finance-money-summary-lane` passed.
+  - `npm run audit:shop-control-button-inventory` passed.
+  - `npm run audit:community-home-button-inventory` passed.
+  - targeted ESLint on touched files passed.
+  - `npm run build` passed.
+- Unabated truth:
+  - this should reduce jump after tapping lane/open buttons on Community Home,
+    Finance, and Shop Control. It does not yet cover every remaining raw reveal
+    in the repo; remaining likely passes include Demand Box, Trust Passport,
+    Create Entry, public shop hash landings, and Community Confirmation pages.
+
 ## 2026-06-25 - Mobile Bottom Rail Drag Conflict Removed
 
 - Trigger:

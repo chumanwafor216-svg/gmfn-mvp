@@ -20,6 +20,7 @@ import {
 } from "../lib/institutionalSurface";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
 
 type CollapseState = {
@@ -1635,7 +1636,11 @@ export default function FinancePage() {
       return;
     }
 
-    target.scrollIntoView({ behavior: "auto", block: "start" });
+    revealElementWithoutJump(target, {
+      surface: "finance",
+      targetId,
+      reason: "section-reveal",
+    });
   }
 
   if (loading) {

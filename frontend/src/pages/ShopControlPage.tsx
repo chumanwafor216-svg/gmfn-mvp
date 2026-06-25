@@ -43,6 +43,7 @@ import { publicFrontendUrl } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 import { rememberPublishRecovery } from "../lib/publishRecovery";
 import { navigateWithOrigin } from "../lib/nav";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
   OWNER_SHOP_HASHES,
   PAID_REPOST_HASH,
@@ -1241,9 +1242,10 @@ export default function ShopControlPage() {
     const target = document.getElementById(targetId);
     if (target) {
       cancelPendingControlReveal();
-      target.scrollIntoView({
-        behavior: "auto",
-        block: "start",
+      revealElementWithoutJump(target, {
+        surface: "shop-control",
+        targetId,
+        reason: "section-reveal",
       });
       return;
     }
