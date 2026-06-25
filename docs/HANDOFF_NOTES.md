@@ -68112,3 +68112,36 @@ GSN-branded invite composer and invite-entry continuity.
   - if the owner wants the invite to fit much more of one phone screen, the next
     honest step is copy condensation or a two-part collapsed evidence section,
     not more padding cuts.
+
+## 2026-06-25 - Active Pilot Identity Merge Follow-Up
+
+- Live situation reported after owner-confirmed merge:
+  - canonical/rich identity is `GMFN-U-63655DE6`;
+  - retired duplicate was `GMFN-U-226AD3FD`;
+  - public shop and Spotlight still appear on the canonical identity, which is
+    evidence that the main marketplace/spotlight ownership survived;
+  - Admin Tools was still not visible in the mobile Menu after signing into the
+    canonical account;
+  - TrustSlip, CCI/profile-integrity readings, and profile picture were still
+    not visibly restored from the owner's phone test.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - the app shell now preserves the previously verified cached role when its
+      own background `/auth/me` refresh returns no role;
+    - this prevents the mobile Menu from erasing `admin` immediately after
+      login/session validation already stored it.
+- Verification:
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - `npm --prefix frontend run build` still fails inside the sandbox with the
+    known Windows/esbuild `spawn EPERM`.
+  - Passed `npm run build` from `frontend` outside the sandbox.
+- Unabated truth:
+  - this is a targeted Admin Menu state fix only;
+  - it does not by itself recompute TrustSlip, CCI, or TrustScore;
+  - it does not repair any live database phone/identity fields;
+  - after deploy, test first by signing into `GMFN-U-63655DE6`, opening Menu,
+    and looking for `Admin Tools`;
+  - if Admin Tools appears but TrustSlip/CCI/profile remain wrong, the next
+    work is a backend/user-record repair pass, not another menu/layout fix.

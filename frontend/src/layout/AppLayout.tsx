@@ -1563,7 +1563,8 @@ export default function AppLayout() {
       if (!alive) return;
 
       const gmfnId = String(me?.gmfn_id || getStoredGmfnId() || "").trim();
-      const role = String(
+      const cachedRole = readRole();
+      const fetchedRole = String(
         me?.role ||
           me?.account_role ||
           me?.user_role ||
@@ -1573,6 +1574,7 @@ export default function AppLayout() {
       )
         .trim()
         .toLowerCase();
+      const role = fetchedRole || cachedRole;
       const clanRole = String(
         currentClan?.role ||
           currentClan?.member_role ||
@@ -1586,7 +1588,9 @@ export default function AppLayout() {
       setMyGmfnId(gmfnId);
       setMyRole(role);
       setMyClanRole(clanRole);
-      writeRole(role);
+      if (fetchedRole) {
+        writeRole(fetchedRole);
+      }
     })();
 
     return () => {
