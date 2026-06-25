@@ -101,22 +101,27 @@ Complaint ledger:
 
 7. Current publish/deploy state
    - Status: `Local ahead`, not Render-visible.
-   - Branch state after the local complaint-ledger commit:
-     - `main...origin/main [ahead 3]`.
+   - Branch state after the identity reconciliation complaint commit:
+     - `main...origin/main [ahead 4]`.
    - Local commits not pushed:
      - `92d0917 Simplify Finance mobile lanes`;
      - `c376408 Repair PWA shortcut cover entry`;
-     - `e6770d9 Record active pilot complaint ledger`.
+     - `e6770d9 Record active pilot complaint ledger`;
+     - `613f8d8 Record identity reconciliation complaint`.
    - Render currently only has the previous deployed batch ending at
      `17a9082`.
 
 8. Identity crisis / duplicate GSN identity pressure
-   - Status: `Recorded`, `Needs backend/data reconciliation plan`, `Needs phone
-     and Render confirmation`.
+   - Status: `Owner-confirmed duplicate`, `Needs backend/data reconciliation
+     plan`, `Needs phone and Render confirmation`.
    - Owner observation:
      - owner joined a community and also created a community with what appears
        to be the same real person/details, resulting in two different GSN
        identity numbers;
+     - owner has now confirmed they are the owner of both identity records;
+     - the active identity being used came through a join sent by another user,
+       while the second identity was created as a fresh create-community test
+       with a different phone/number path;
      - desired platform rule is one person, one global member number, with that
        same identity able to join and create multiple communities;
      - TrustSlip remains pending, CCI/profile/integrity readings do not update
@@ -152,6 +157,23 @@ Complaint ledger:
      - until that reconciliation exists or the owner signs into the original
        protected GSN identity, TrustSlip QR/code and phone-verified status
        should remain blocked rather than pretending the split identity is clean.
+   - Future app behavior requested by owner:
+     - if a new join/create attempt strongly matches an existing identity by
+       name, date of birth, address/place, official ID, bank/payout destination,
+       phone, or device evidence, the app should not silently issue a fresh GSN
+       number;
+     - it should ask the person to use the existing GSN ID, recover that
+       identity, or enter a controlled identity-review path;
+     - if the evidence is nearly certain but not fully verified yet, the system
+       should treat it as a review case rather than creating a clean second
+       identity.
+   - Recommended repair direction:
+     - do not delete the duplicate user row outright;
+     - create or use an admin-only reconciliation workflow that records the
+       canonical user, the duplicate user, the owner confirmation, the evidence
+       reviewed, and the exact records moved or left historical;
+     - after reconciliation, recalculate TrustSlip, CCI, profile/integrity, and
+       phone verification state against the canonical identity.
 
 ## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
 
