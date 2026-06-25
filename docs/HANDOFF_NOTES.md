@@ -449,12 +449,44 @@ Complaint ledger:
      - passed `python -m pytest -q
        gmfn_backend\tests\test_identity_reconciliation.py --basetemp
        C:\tmp\pytest-gmfn-identity-live-schema` with 4 tests passing.
+   - Live Render merge execution update:
+     - owner confirmed the Render frontend/backend had the merge-engine safety
+       patch live and used `/app/command-center/identity-risk`;
+     - first reconciliation attempt failed because the duplicate field contained
+       an internal space (`GMFN -U-226AD3FD`);
+     - corrected fields were canonical `GMFN-U-63655DE6` and duplicate
+       `GMFN-U-226AD3FD`;
+     - preview returned `ok: true`, `mode: dry_run`, canonical `user_id: 13`,
+       duplicate `user_id: 15`, and planned to move one clan membership plus
+       three trust events as actor and subject;
+     - preview showed the duplicate `marketplace_shops.owner_user_id` row as
+       `skipped_conflict` because the canonical user already has a unique shop;
+     - owner then executed the merge and the app showed `Merge executed` with
+       the backend warning: `Duplicate identity was retired after
+       owner-confirmed reconciliation. Review skipped_conflict rows before
+       declaring all evidence fully merged.`
+     - next live checks should be: refresh phone lineage for `+447903165266`,
+       confirm it no longer resolves to `GMFN-U-226AD3FD`, sign out/in, and
+       verify phone sign-in lands on canonical `GMFN-U-63655DE6`.
+   - Post-merge login repair update:
+     - after the owner executed the merge, both phone sign-in and canonical
+       `GMFN-U-63655DE6` sign-in were reported to bounce back to Welcome or show
+       invalid-details messaging;
+     - code inspection confirmed the reconciliation service retires the
+       duplicate user's password during merge, so the password that worked on
+       the duplicate identity can no longer authenticate;
+     - added `gmfn_backend/reset_login_password.py` as a Render-shell-only
+       helper so the owner can reset the canonical identity password with the
+       short command `python reset_login_password.py 63655DE6`;
+     - the helper does not create a public API route and does not hardcode the
+       owner's phone number.
    - Unabated truth:
      - admin role is now confirmed in the live Render database for
        `GMFN-U-63655DE6`;
-     - this does not by itself execute the identity merge;
-     - if phone sign-in reaches `GMFN-U-226AD3FD`, that account likely needs
-       to be merged into `GMFN-U-63655DE6`;
+     - the owner-reported live merge execution means the duplicate should now
+       be retired, but this still must be verified by phone lineage and sign-in;
+     - if phone sign-in still reaches `GMFN-U-226AD3FD`, the merge did not fully
+       repair the auth/phone path and needs a focused backend follow-up;
      - the canonical account should be chosen only after comparing which live
        user owns the trusted phone, profile image, memberships, created
        communities, shops/products, broadcasts, TrustSlip, and trust events.
