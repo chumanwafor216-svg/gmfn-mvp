@@ -101,13 +101,15 @@ Complaint ledger:
 
 7. Current publish/deploy state
    - Status: `Local ahead`, not Render-visible.
-   - Branch state after the identity reconciliation complaint commit:
-     - `main...origin/main [ahead 4]`.
+   - Branch state:
+     - local `main` has multiple commits not yet visible on Render; use
+       `git status -sb` for the exact current ahead count.
    - Local commits not pushed:
      - `92d0917 Simplify Finance mobile lanes`;
      - `c376408 Repair PWA shortcut cover entry`;
      - `e6770d9 Record active pilot complaint ledger`;
-     - `613f8d8 Record identity reconciliation complaint`.
+     - `613f8d8 Record identity reconciliation complaint`;
+     - `df547da Record owner-confirmed identity duplicate`.
    - Render currently only has the previous deployed batch ending at
      `17a9082`.
 
