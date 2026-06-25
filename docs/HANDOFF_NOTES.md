@@ -37,7 +37,19 @@ Confirmed truth from code and live evidence:
   whose file is absent on the live instance. Code can fall back cleanly, but it
   cannot recreate missing image bytes.
 
-Local fixes in the current unpublished batch:
+Fix batch pushed:
+- Commit `728202a` (`Repair admin identity recovery signals`) was pushed to
+  `origin/main`.
+- GitHub Backend Tests run `28181588957` passed.
+- GitHub Trigger Render Deploy run `28181853656` failed after the frontend
+  deploy hook accepted commit `728202a`.
+- Render frontend deploy id accepted: `dep-d8ukm9jtqb8s73bcv5n0`.
+- Backend deploy was not confirmed because GitHub secrets
+  `RENDER_API_KEY`/`RENDER_API_SERVICE_ID` are not configured. Until `gmfn-api`
+  is manually redeployed from Render or those secrets are fixed and the workflow
+  reruns, backend-only repairs below are not live.
+
+Fixes in commit `728202a`:
 - `frontend/src/layout/AppLayout.tsx`
   - refreshes `/auth/me` and current clan role when Menu or Tools opens;
   - immediately applies cached `gmfn_role` before the network refresh returns;
@@ -56,7 +68,7 @@ Local fixes in the current unpublished batch:
   - sets `phone_verified_at` only after the explicit flag;
   - records an `identity.phone_verified` TrustEvent audit record.
 
-Verification for the current unpublished batch:
+Verification for commit `728202a`:
 - Passed `python -m py_compile gmfn_backend\confirm_owner_phone.py
   gmfn_backend\app\services\trust_graph_service.py`.
 - Passed `npm --prefix frontend run audit:entry-auth`.
@@ -71,8 +83,11 @@ Verification for the current unpublished batch:
   a pass.
 
 Remaining live actions:
-- push/deploy this batch before expecting Admin Tools or CCI to change on
-  Render;
+- wait for the accepted frontend deploy before expecting Admin Tools/menu
+  refresh and profile-image fallback behavior to change on Render;
+- manually redeploy `gmfn-api` from Render, or configure GitHub
+  `RENDER_API_KEY` and `RENDER_API_SERVICE_ID`, before expecting CCI/trust graph
+  backend behavior or `confirm_owner_phone.py` to be live;
 - after backend deploy, run the owner-confirmed phone repair for
   `GMFN-U-63655DE6` if the owner wants TrustSlip to pass the phone gate;
 - after refreshing the phone session, confirm whether the profile image returns
