@@ -100,19 +100,36 @@ Complaint ledger:
      - do not start broad deletion without route ownership checks.
 
 7. Current publish/deploy state
-   - Status: `Local ahead`, not Render-visible.
+   - Status: `Pushed`, frontend deploy requested, backend deploy blocked by
+     missing Render API credentials.
    - Branch state:
-     - local `main` has multiple commits not yet visible on Render; use
-       `git status -sb` for the exact current ahead count.
-   - Local commits not pushed:
+     - `main` was pushed to GitHub through commit `c080796` on
+       `2026-06-25`.
+   - Commits included in the pushed batch:
      - `92d0917 Simplify Finance mobile lanes`;
      - `c376408 Repair PWA shortcut cover entry`;
      - `e6770d9 Record active pilot complaint ledger`;
      - `613f8d8 Record identity reconciliation complaint`;
      - `df547da Record owner-confirmed identity duplicate`;
-     - latest local commit: `Add admin identity reconciliation flow`.
-   - Render currently only has the previous deployed batch ending at
-     `17a9082`.
+     - `d535cae Avoid stale ahead count in handoff`;
+     - `ea94cda Add admin identity reconciliation flow`;
+     - `c080796 Cage admin identity reconciliation flow`.
+   - Render deploy attempt:
+     - manually triggered GitHub Actions workflow `Trigger Render Deploy`,
+       run `28152959553`, with `deploy_api=true`;
+     - frontend Render deploy hook accepted the request and returned deploy id
+       `dep-d8ud5qjtqb8s73b4elug`;
+     - backend deploy failed because GitHub Actions still has empty
+       `RENDER_API_KEY` / `RENDER_API_SERVICE_ID`;
+     - the workflow intentionally refuses the older backend deploy hook because
+       it previously accepted requests while the live API stayed stale.
+   - Remaining truth:
+     - frontend deployment was requested, not independently browser-confirmed in
+       this entry;
+     - backend API changes, including identity reconciliation, are not confirmed
+       live until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are
+       configured and the workflow succeeds, or the gmfn-api service is manually
+       deployed in Render and live identity-route checks pass.
 
 8. Identity crisis / duplicate GSN identity pressure
    - Status: `Local fixed`, `Needs deploy`, `Needs phone/Render execution with
@@ -234,7 +251,9 @@ Complaint ledger:
      - Passed `npm run audit:tap-stability` from `frontend`.
      - Passed `npm run build` from `frontend`.
    - Remaining truth:
-     - this is not live on Render until pushed/deployed;
+     - this was pushed to GitHub in commit `ea94cda` and caged by `c080796`,
+       but it is not confirmed live on the Render backend because the backend
+       deploy workflow failed on missing `RENDER_API_KEY`;
      - it cannot repair the owner account until the real canonical GSN/user ID
        and duplicate GSN/user ID are supplied and the admin runs preview, then
        execute after confirming the preview;
