@@ -209,6 +209,7 @@ function rememberRoleFrom(value: unknown): void {
     source?.role ||
       source?.account_role ||
       source?.user_role ||
+      (source?.is_admin === true || source?.isAdmin === true ? "admin" : "") ||
       (Array.isArray(source?.permissions) &&
       source.permissions.includes("admin")
         ? "admin"
@@ -217,7 +218,7 @@ function rememberRoleFrom(value: unknown): void {
     .trim()
     .toLowerCase();
 
-  writeStorage(GMFN_ROLE_KEY, role || null);
+  if (role) writeStorage(GMFN_ROLE_KEY, role);
 }
 
 export function isAuthenticated(): boolean {
@@ -587,6 +588,7 @@ export async function loginAndStore(username: string, password: string) {
     setStoredGmfnId(null);
   }
   rememberGmfnIdFrom(out);
+  rememberRoleFrom(out);
   rememberGmfnIdFrom(username);
   return out;
 }

@@ -101,6 +101,35 @@ function writeRole(role: string): void {
   }
 }
 
+const PILOT_ADMIN_GMFN_IDS = new Set(["GMFN-U-63655DE6"]);
+
+function normalizeShellGmfnId(value: unknown): string {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (!raw) return "";
+  const gmfn = raw.replace(/^GSN-/, "GMFN-");
+  return /^GMFN-[A-Z]-[A-Z0-9-]+$/.test(gmfn) ? gmfn : "";
+}
+
+function isPilotAdminGmfnId(value: unknown): boolean {
+  const gmfnId = normalizeShellGmfnId(value);
+  return Boolean(gmfnId && PILOT_ADMIN_GMFN_IDS.has(gmfnId));
+}
+
+function readPayloadRole(source: any): string {
+  return String(
+    source?.role ||
+      source?.account_role ||
+      source?.user_role ||
+      (source?.is_admin === true || source?.isAdmin === true ? "admin" : "") ||
+      (Array.isArray(source?.permissions) &&
+      source.permissions.includes("admin")
+        ? "admin"
+        : "")
+  )
+    .trim()
+    .toLowerCase();
+}
+
 function pathOnly(to: string): string {
   return String(to || "").split("?")[0].split("#")[0] || "/";
 }
@@ -1547,9 +1576,14 @@ export default function AppLayout() {
     return role === "admin";
   }, [myClanRole]);
 
+  const isPilotAdminIdentity = useMemo(
+    () => isPilotAdminGmfnId(myGmfnId),
+    [myGmfnId]
+  );
+
   const canUseAdminTools = useMemo(
-    () => isAdmin || isClanAdmin,
-    [isAdmin, isClanAdmin]
+    () => isAdmin || isClanAdmin || isPilotAdminIdentity,
+    [isAdmin, isClanAdmin, isPilotAdminIdentity]
   );
 
   const refreshIdentityContext = useCallback(
@@ -1565,18 +1599,12 @@ export default function AppLayout() {
       ]);
       if (!shouldApply()) return;
 
-      const gmfnId = String(me?.gmfn_id || getStoredGmfnId() || "").trim();
-      const fetchedRole = String(
-        me?.role ||
-          me?.account_role ||
-          me?.user_role ||
-          (Array.isArray(me?.permissions) && me.permissions.includes("admin")
-            ? "admin"
-            : "")
-      )
-        .trim()
-        .toLowerCase();
-      const role = fetchedRole || cachedRole;
+      const gmfnId = normalizeShellGmfnId(me?.gmfn_id || getStoredGmfnId());
+      const fetchedRole = readPayloadRole(me);
+      const role =
+        fetchedRole ||
+        cachedRole ||
+        (isPilotAdminGmfnId(gmfnId) ? "admin" : "");
       const clanRole = String(
         currentClan?.role ||
           currentClan?.member_role ||
@@ -1590,8 +1618,8 @@ export default function AppLayout() {
       setMyGmfnId(gmfnId);
       setMyRole(role);
       setMyClanRole(clanRole);
-      if (fetchedRole) {
-        writeRole(fetchedRole);
+      if (fetchedRole || role === "admin") {
+        writeRole(role);
       }
     },
     []
@@ -1800,6 +1828,14 @@ export default function AppLayout() {
     if (cachedRole) {
       setMyRole(cachedRole);
     }
+    const cachedGmfnId = getStoredGmfnId();
+    if (cachedGmfnId) {
+      setMyGmfnId(cachedGmfnId);
+      if (isPilotAdminGmfnId(cachedGmfnId)) {
+        setMyRole("admin");
+        writeRole("admin");
+      }
+    }
     void refreshIdentityContext();
     setIsActionsOpen(false);
     setIsDrawerOpen(true);
@@ -1813,6 +1849,14 @@ export default function AppLayout() {
     const cachedRole = readRole();
     if (cachedRole) {
       setMyRole(cachedRole);
+    }
+    const cachedGmfnId = getStoredGmfnId();
+    if (cachedGmfnId) {
+      setMyGmfnId(cachedGmfnId);
+      if (isPilotAdminGmfnId(cachedGmfnId)) {
+        setMyRole("admin");
+        writeRole("admin");
+      }
     }
     void refreshIdentityContext();
     setIsDrawerOpen(false);

@@ -20,10 +20,12 @@ Owner report after the live duplicate merge:
 - canonical sign-in now opens with `GMFN-U-63655DE6`;
 - spotlight and public shop survived, which confirms the rich account lineage
   is still present;
-- Admin Tools / main control is still not visible in the mobile Menu;
-- TrustSlip is still pending/unchanged;
-- CCI is still not counting;
-- profile picture is still missing.
+- TrustSlip eventually started reading after the owner-confirmed phone repair;
+- CCI / trust passport code eventually started reading;
+- spotlight and public shop are still present;
+- profile picture is still missing, but this is lower priority than identity
+  and admin access;
+- Admin Tools / main control is still not visible in the mobile Menu on Render.
 
 Confirmed truth from code and live evidence:
 - Admin Tools visibility is frontend shell/session-role state, not a backend
@@ -81,6 +83,41 @@ Verification for commit `728202a`:
   gmfn_backend\tests\test_focus_commitment_trust_events.py`.
 - A filtered join-request command selected zero tests, so it is not counted as
   a pass.
+
+Follow-up frontend admin-menu repair:
+- Owner reported on `2026-06-25` that TrustSlip and trust passport/CCI started
+  reading on Render after the backend repair, but `Admin Tools` still did not
+  appear in the mobile Menu.
+- Root diagnosis:
+  - backend identity repair is working;
+  - remaining defect is frontend shell/session role visibility;
+  - `frontend/src/lib/api.ts` could erase cached `gmfn_role` when a session
+    response omitted role data;
+  - `frontend/src/layout/AppLayout.tsx` needed a stronger bridge from the
+    repaired canonical admin identity to menu visibility while the app refreshes
+    `/auth/me`.
+- Local repair:
+  - `frontend/src/lib/api.ts` now only writes `gmfn_role` when a role is
+    present, so missing role data cannot clear a known admin role;
+  - login storage now also attempts to preserve role data if the login payload
+    ever includes it;
+  - `frontend/src/layout/AppLayout.tsx` now recognizes `role`, `account_role`,
+    `user_role`, `is_admin`, `isAdmin`, and admin permissions from session
+    payloads;
+  - `frontend/src/layout/AppLayout.tsx` includes a narrow pilot fallback for
+    owner-confirmed canonical admin ID `GMFN-U-63655DE6`, so opening Menu or
+    Tools can surface `Admin Tools` even if the role cache is temporarily weak.
+- Security truth:
+  - this frontend fallback only reveals the navigation link;
+  - backend `RequireAuth`/API role checks remain the real permission gate;
+  - the hard-coded pilot ID is technical debt and should be replaced by a
+    backend-owned claim or configuration before wider rollout.
+- Verification:
+  - Passed `npm --prefix frontend run audit:entry-auth`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - First sandboxed `npm --prefix frontend run build` failed with Windows
+    esbuild `spawn EPERM`, then the same build passed outside the sandbox.
 
 Remaining live actions:
 - wait for the accepted frontend deploy before expecting Admin Tools/menu
