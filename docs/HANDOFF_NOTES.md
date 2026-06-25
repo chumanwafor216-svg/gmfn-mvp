@@ -101,13 +101,57 @@ Complaint ledger:
 
 7. Current publish/deploy state
    - Status: `Local ahead`, not Render-visible.
-   - Branch state at the time this ledger was created:
-     - `main...origin/main [ahead 2]`.
+   - Branch state after the local complaint-ledger commit:
+     - `main...origin/main [ahead 3]`.
    - Local commits not pushed:
      - `92d0917 Simplify Finance mobile lanes`;
-     - `c376408 Repair PWA shortcut cover entry`.
+     - `c376408 Repair PWA shortcut cover entry`;
+     - `e6770d9 Record active pilot complaint ledger`.
    - Render currently only has the previous deployed batch ending at
      `17a9082`.
+
+8. Identity crisis / duplicate GSN identity pressure
+   - Status: `Recorded`, `Needs backend/data reconciliation plan`, `Needs phone
+     and Render confirmation`.
+   - Owner observation:
+     - owner joined a community and also created a community with what appears
+       to be the same real person/details, resulting in two different GSN
+       identity numbers;
+     - desired platform rule is one person, one global member number, with that
+       same identity able to join and create multiple communities;
+     - TrustSlip remains pending, CCI/profile/integrity readings do not update
+       correctly, and phone confirmation appears blocked by the identity split.
+   - Current admin evidence:
+     - `/app/command-center/identity-risk` shows `User #1` with
+       `Intervention required`;
+     - two `device_pattern_changed` signals are visible for user `1`, with
+       severities `5` and `3`, created on `2026-04-20T08:28:17.579605` and
+       `2026-04-19T21:04:26.327216`;
+     - the Phone Identity Lineage card explicitly says it is read-only and does
+       not merge, release, or verify a phone.
+   - Confirmed product rule from docs:
+     - one member has one global member ID;
+     - one member may belong to many communities;
+     - one member may create another community without becoming a different
+       person in the system.
+   - Confirmed code facts:
+     - entry creation already blocks some second-identity paths by existing
+       phone, bank destination, official ID, profile/DOB, and device/DOB
+       evidence;
+     - signed-in phone verification blocks active/protected or pending-join
+       phone ownership conflicts with `phone_owned_by_another_identity`;
+     - the current admin phone-lineage endpoint is diagnostic only.
+   - Unabated truth:
+     - this should not be fixed by forcing TrustSlip/CCI/profile to pass on the
+       duplicate row;
+     - the safe repair is identity reconciliation: identify the canonical GSN
+       identity, move or attach community memberships/created-community
+       ownership/evidence to that canonical identity as appropriate, then mark
+       the duplicate as merged/alias/closed or otherwise protected from future
+       use;
+     - until that reconciliation exists or the owner signs into the original
+       protected GSN identity, TrustSlip QR/code and phone-verified status
+       should remain blocked rather than pretending the split identity is clean.
 
 ## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
 
