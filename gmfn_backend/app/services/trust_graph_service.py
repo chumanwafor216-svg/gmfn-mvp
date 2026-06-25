@@ -6,7 +6,7 @@ from decimal import Decimal
 import json
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-from sqlalchemy import false, or_
+from sqlalchemy import String, cast, false, or_
 from sqlalchemy.orm import Session
 
 from app.db.models import ClanMembership, Loan, LoanGuarantor, TrustEvent, User
@@ -55,6 +55,17 @@ def _aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
 def _iso(dt: Optional[datetime]) -> Optional[str]:
     safe_dt = _aware_utc(dt)
     return safe_dt.isoformat() if safe_dt else None
+
+
+def _user_id_text_match(column: Any, user_id: int):
+    # Live pilot schemas have carried a few user-id references as text even
+    # where the model declares int. Text-cast avoids Postgres varchar=int errors.
+    return cast(column, String) == str(int(user_id))
+
+
+def _user_id_text_in(column: Any, user_ids: Iterable[int]):
+    ids = [str(int(user_id)) for user_id in user_ids]
+    return cast(column, String).in_(ids) if ids else false()
 
 
 def _parse_meta(event: TrustEvent) -> Dict[str, Any]:
@@ -912,7 +923,7 @@ def build_trust_graph(
     memberships = (
         db.query(ClanMembership)
         .filter(
-            ClanMembership.user_id == root_user_id,
+            _user_id_text_match(ClanMembership.user_id, root_user_id),
             ClanMembership.left_at.is_(None),
         )
         .order_by(ClanMembership.created_at.asc(), ClanMembership.id.asc())
@@ -926,7 +937,7 @@ def build_trust_graph(
         int(x[0])
         for x in (
             db.query(Loan.id)
-            .filter(Loan.borrower_user_id == root_user_id)
+            .filter(_user_id_text_match(Loan.borrower_user_id, root_user_id))
             .all()
         )
         if x and x[0] is not None
@@ -936,7 +947,9 @@ def build_trust_graph(
         int(x[0])
         for x in (
             db.query(LoanGuarantor.loan_id)
-            .filter(LoanGuarantor.guarantor_user_id == root_user_id)
+            .filter(
+                _user_id_text_match(LoanGuarantor.guarantor_user_id, root_user_id)
+            )
             .all()
         )
         if x and x[0] is not None
@@ -954,8 +967,8 @@ def build_trust_graph(
         db.query(TrustEvent)
         .filter(
             or_(
-                TrustEvent.actor_user_id == root_user_id,
-                TrustEvent.subject_user_id == root_user_id,
+                _user_id_text_match(TrustEvent.actor_user_id, root_user_id),
+                _user_id_text_match(TrustEvent.subject_user_id, root_user_id),
                 loan_clause,
             )
         )
@@ -1006,7 +1019,7 @@ def build_trust_graph(
         related_memberships = (
             db.query(ClanMembership)
             .filter(
-                ClanMembership.user_id.in_(sorted(user_ids)),
+                _user_id_text_in(ClanMembership.user_id, sorted(user_ids)),
                 ClanMembership.left_at.is_(None),
             )
             .all()

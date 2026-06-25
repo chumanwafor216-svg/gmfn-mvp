@@ -14,6 +14,71 @@ Current status terms:
 - `Needs deploy`: must be pushed/deployed before Render can show it.
 - `Not started`: recorded but not yet repaired.
 
+## 2026-06-25 - Post-Reconciliation Live Situation Report
+
+Owner report after the live duplicate merge:
+- canonical sign-in now opens with `GMFN-U-63655DE6`;
+- spotlight and public shop survived, which confirms the rich account lineage
+  is still present;
+- Admin Tools / main control is still not visible in the mobile Menu;
+- TrustSlip is still pending/unchanged;
+- CCI is still not counting;
+- profile picture is still missing.
+
+Confirmed truth from code and live evidence:
+- Admin Tools visibility is frontend shell/session-role state, not a backend
+  deploy problem by itself.
+- CCI was falling back because the live Render schema compared text user-id
+  columns with integer parameters in trust graph queries
+  (`character varying = integer`).
+- TrustSlip is intentionally blocked while `phone_verified_at` is empty; the
+  canonical user still showed `phone_verified: false` before this batch.
+- The profile image can still be missing if Render points at an upload path
+  whose file is absent on the live instance. Code can fall back cleanly, but it
+  cannot recreate missing image bytes.
+
+Local fixes in the current unpublished batch:
+- `frontend/src/layout/AppLayout.tsx`
+  - refreshes `/auth/me` and current clan role when Menu or Tools opens;
+  - immediately applies cached `gmfn_role` before the network refresh returns;
+  - intended result: an admin user should see `Admin Tools` in Menu/Tools after
+    sign-in without waiting for a full page reload.
+- `gmfn_backend/app/services/trust_graph_service.py`
+  - casts user-id comparisons to text for live pilot schema compatibility;
+  - intended result: CCI/trust graph should stop failing on
+    `character varying = integer`.
+- `frontend/src/pages/DashboardPage.tsx`
+  - stops a failed backend profile-image URL from permanently overriding stored
+    usable images or the initials fallback.
+- `gmfn_backend/confirm_owner_phone.py`
+  - adds an explicit owner-confirmed operational repair:
+    `python confirm_owner_phone.py --gmfn-id GMFN-U-63655DE6 --owner-confirmed`;
+  - sets `phone_verified_at` only after the explicit flag;
+  - records an `identity.phone_verified` TrustEvent audit record.
+
+Verification for the current unpublished batch:
+- Passed `python -m py_compile gmfn_backend\confirm_owner_phone.py
+  gmfn_backend\app\services\trust_graph_service.py`.
+- Passed `npm --prefix frontend run audit:entry-auth`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run audit:tap-stability`.
+- Passed `npm run build` from `frontend/`.
+- Passed `python -m pytest -q
+  gmfn_backend\tests\test_identity_reconciliation.py`.
+- Passed `python -m pytest -q
+  gmfn_backend\tests\test_focus_commitment_trust_events.py`.
+- A filtered join-request command selected zero tests, so it is not counted as
+  a pass.
+
+Remaining live actions:
+- push/deploy this batch before expecting Admin Tools or CCI to change on
+  Render;
+- after backend deploy, run the owner-confirmed phone repair for
+  `GMFN-U-63655DE6` if the owner wants TrustSlip to pass the phone gate;
+- after refreshing the phone session, confirm whether the profile image returns
+  or falls back to initials. If the Render upload file is genuinely missing,
+  the owner must re-upload the profile image.
+
 Complaint ledger:
 
 1. Phone drag / sticky scroll / jumpy buttons across the app

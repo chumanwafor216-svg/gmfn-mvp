@@ -1212,6 +1212,39 @@ function writeStoredImage(key: string | string[], value: string): boolean {
   }
 }
 
+function readStoredImageExcept(
+  key: string | string[],
+  blockedValue: string
+): string {
+  const blocked = safeStr(blockedValue);
+  try {
+    const keys = Array.isArray(key) ? key : [key];
+    for (const item of keys) {
+      const value = localStorage.getItem(item) || "";
+      if (value && value !== blocked) return value;
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+function removeStoredImageValue(key: string | string[], blockedValue: string): void {
+  const blocked = safeStr(blockedValue);
+  if (!blocked) return;
+
+  try {
+    const keys = Array.isArray(key) ? key : [key];
+    for (const item of Array.from(new Set(keys)).filter(Boolean)) {
+      if ((localStorage.getItem(item) || "") === blocked) {
+        localStorage.removeItem(item);
+      }
+    }
+  } catch {
+    // Local storage can be unavailable in private or embedded browser contexts.
+  }
+}
+
 function readFileAsDataUrl(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -2955,6 +2988,7 @@ export default function DashboardPage() {
   const [demandGuideOpen, setDemandGuideOpen] = useState<boolean>(false);
 
   const [avatarSrc, setAvatarSrc] = useState<string>("");
+  const [failedAvatarSrc, setFailedAvatarSrc] = useState<string>("");
   const [avatarStatus, setAvatarStatus] = useState<{
     tone: "success" | "error";
     text: string;
@@ -3046,18 +3080,23 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const backendAvatar = resolveDashboardAvatarSrc(me);
-    const storedAvatar = readStoredImage(dashboardAvatarStorageKeys);
-    const nextAvatar = backendAvatar || storedAvatar;
+    const usableBackendAvatar =
+      backendAvatar && backendAvatar !== failedAvatarSrc ? backendAvatar : "";
+    const storedAvatar = readStoredImageExcept(
+      dashboardAvatarStorageKeys,
+      failedAvatarSrc
+    );
+    const nextAvatar = usableBackendAvatar || storedAvatar;
     setAvatarSrc(nextAvatar);
 
-    if (backendAvatar) {
-      writeStoredImage(dashboardAvatarStorageKeys, backendAvatar);
+    if (usableBackendAvatar) {
+      writeStoredImage(dashboardAvatarStorageKeys, usableBackendAvatar);
     }
 
     if (nextAvatar && !readStoredImage(dashboardAvatarStorageKey)) {
       writeStoredImage(dashboardAvatarStorageKey, nextAvatar);
     }
-  }, [dashboardAvatarStorageKey, dashboardAvatarStorageKeys, me]);
+  }, [dashboardAvatarStorageKey, dashboardAvatarStorageKeys, failedAvatarSrc, me]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -5317,6 +5356,16 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
+  function handleAvatarImageError() {
+    const failed = safeStr(avatarSrc);
+    if (!failed) return;
+
+    setFailedAvatarSrc(failed);
+    removeStoredImageValue(dashboardAvatarStorageKeys, failed);
+    const fallback = readStoredImageExcept(dashboardAvatarStorageKeys, failed);
+    setAvatarSrc(fallback);
+  }
+
   function explainMissingAvatarForRemoval(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -6857,6 +6906,7 @@ export default function DashboardPage() {
                     <img
                       src={avatarSrc}
                       alt="Profile"
+                      onError={handleAvatarImageError}
                       style={{
                         width: "100%",
                         height: "100%",
@@ -8093,6 +8143,7 @@ export default function DashboardPage() {
                     <img
                       src={avatarSrc}
                       alt="Profile"
+                      onError={handleAvatarImageError}
                       style={{
                         width: "100%",
                         height: "100%",

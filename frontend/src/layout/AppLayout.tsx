@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getCurrentClan, getMe, getStoredGmfnId, logout } from "../lib/api";
 import {
@@ -1552,18 +1552,20 @@ export default function AppLayout() {
     [isAdmin, isClanAdmin]
   );
 
-  useEffect(() => {
-    let alive = true;
+  const refreshIdentityContext = useCallback(
+    async (shouldApply: () => boolean = () => true) => {
+      const cachedRole = readRole();
+      if (cachedRole && shouldApply()) {
+        setMyRole(cachedRole);
+      }
 
-    (async () => {
       const [me, currentClan] = await Promise.all([
         getMe().catch(() => null),
         getCurrentClan().catch(() => null),
       ]);
-      if (!alive) return;
+      if (!shouldApply()) return;
 
       const gmfnId = String(me?.gmfn_id || getStoredGmfnId() || "").trim();
-      const cachedRole = readRole();
       const fetchedRole = String(
         me?.role ||
           me?.account_role ||
@@ -1591,12 +1593,19 @@ export default function AppLayout() {
       if (fetchedRole) {
         writeRole(fetchedRole);
       }
-    })();
+    },
+    []
+  );
+
+  useEffect(() => {
+    let alive = true;
+
+    void refreshIdentityContext(() => alive);
 
     return () => {
       alive = false;
     };
-  }, []);
+  }, [refreshIdentityContext]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1787,6 +1796,11 @@ export default function AppLayout() {
   }
 
   function openDrawer() {
+    const cachedRole = readRole();
+    if (cachedRole) {
+      setMyRole(cachedRole);
+    }
+    void refreshIdentityContext();
     setIsActionsOpen(false);
     setIsDrawerOpen(true);
   }
@@ -1796,6 +1810,11 @@ export default function AppLayout() {
   }
 
   function openActions() {
+    const cachedRole = readRole();
+    if (cachedRole) {
+      setMyRole(cachedRole);
+    }
+    void refreshIdentityContext();
     setIsDrawerOpen(false);
     setIsActionsOpen(true);
   }
