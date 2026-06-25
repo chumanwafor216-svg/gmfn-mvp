@@ -142,6 +142,15 @@ const communityMarketplaceSpotlightSource = readFileSync(
   communityMarketplaceSpotlightPath,
   "utf8"
 );
+const communityShopControlPanelPath = join(
+  sourceRoot,
+  "components",
+  "CommunityShopControlPanel.tsx"
+);
+const communityShopControlPanelSource = readFileSync(
+  communityShopControlPanelPath,
+  "utf8"
+);
 const indexCssPath = join(sourceRoot, "index.css");
 const indexCssSource = readFileSync(indexCssPath, "utf8");
 const stableButtonPath = join(sourceRoot, "components", "StableButton.tsx");
@@ -822,6 +831,35 @@ for (const check of marketplaceActionSystemChecks) {
       text: "Expected Marketplace action stability pattern was not found.",
     });
   }
+}
+
+if (/function joinShareMessageCardStyle[\s\S]*?overscrollBehavior/.test(marketplaceSource)) {
+  findings.push({
+    file: relative(frontendRoot, marketplacePagePath),
+    line: 1,
+    label:
+      "Marketplace fixed share-message cards must not contain phone overscroll because they are not scroll surfaces",
+    text:
+      "Remove overscrollBehavior from joinShareMessageCardStyle so vertical drags stay with the page.",
+  });
+}
+
+if (
+  !/debugId="community-shop-control\.public-url"[\s\S]*?minWidth: 0[\s\S]*?maxWidth: "100%"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?whiteSpace: "nowrap"/.test(
+    communityShopControlPanelSource
+  ) ||
+  /debugId="community-shop-control\.public-url"[\s\S]*?overflowY: "auto"|debugId="community-shop-control\.public-url"[\s\S]*?overscrollBehavior: "contain"/.test(
+    communityShopControlPanelSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, communityShopControlPanelPath),
+    line: 1,
+    label:
+      "Community shop public URL must stay a fixed non-scrolling link surface on phone",
+    text:
+      "Expected the public URL link to use fixed ellipsis treatment without an inner vertical scroll trap.",
+  });
 }
 
 const communityHomePath = join(sourceRoot, "pages", "CommunityHomePage.tsx");

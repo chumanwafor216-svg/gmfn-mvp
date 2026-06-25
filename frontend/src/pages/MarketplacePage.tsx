@@ -2011,8 +2011,6 @@ function joinShareMessageCardStyle(isCompact: boolean): React.CSSProperties {
     height: isCompact ? 146 : 132,
     minHeight: isCompact ? 146 : 132,
     maxHeight: isCompact ? 146 : 132,
-    overscrollBehavior: "contain",
-    scrollbarWidth: "thin",
   };
 }
 

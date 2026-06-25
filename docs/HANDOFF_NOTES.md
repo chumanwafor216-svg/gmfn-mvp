@@ -1,3 +1,39 @@
+## 2026-06-25 - Removed Tiny Content Scroll Traps From Phone Drag Path
+
+- Trigger:
+  - continued the urgent phone drag/jumpy-button work after the mobile shell
+    started releasing native vertical drag. The next source scan found two
+    normal-content surfaces with unnecessary overscroll containment: a tiny
+    Community shop public URL box and a fixed Marketplace join-share message
+    card.
+- Changed:
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+    - the public shop URL preview is no longer a 60px internal vertical
+      scroller;
+    - it remains fixed-height and tappable, but uses single-line ellipsis so a
+      phone drag over the card stays with the page instead of getting caught in
+      a tiny child scroll area.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - removed unused overscroll containment from the fixed join-share message
+      card.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - added guards for the non-scrolling Community shop public URL surface and
+      the Marketplace fixed share-message card.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - targeted ESLint on the touched frontend files and audit passed.
+  - `npm run build` passed.
+- Unabated truth:
+  - this is another small drag-path cleanup, not a claim that every possible
+    Android sticky zone is gone;
+  - overlays and body-level containment still remain intentionally contained;
+  - the only remaining normal-looking contained surface found in the broad scan
+    is a Dashboard attention popup, which is overlay behavior and was not
+    changed because Dashboard is high-risk/frozen in several places;
+  - this continuation is local and verified but not pushed, following the
+    current batch-first / push-last protocol.
+
 ## 2026-06-25 - Mobile Main Scroll Releases Native Android Drag
 
 - Trigger:

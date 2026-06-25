@@ -835,12 +835,12 @@ export default function CommunityShopControlPanel({
                       padding: "10px 12px",
                       wordBreak: "break-word",
                       overflowWrap: "anywhere",
+                      display: "flex",
+                      alignItems: "center",
                       height: 60,
                       minHeight: 60,
                       maxHeight: 60,
-                      overflowY: "auto",
-                      overscrollBehavior: "contain",
-                      scrollbarWidth: "thin",
+                      overflow: "hidden",
                     }}
                   >
                     {publicShopLink ? (
@@ -855,8 +855,11 @@ export default function CommunityShopControlPanel({
                           textDecoration: "underline",
                           textUnderlineOffset: 3,
                           touchAction: "manipulation",
-                          overflowWrap: "anywhere",
-                          wordBreak: "break-word",
+                          minWidth: 0,
+                          maxWidth: "100%",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         {publicShopLink}
