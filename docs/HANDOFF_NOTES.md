@@ -338,6 +338,39 @@ Complaint ledger:
        the Render canonical identity;
      - do not execute a Render merge until the Render backend is deployed and
        the live admin preview confirms the canonical/duplicate pair.
+   - Canonical not found follow-up on `2026-06-25`:
+     - owner reported that the deployed frontend at commit `1530af5` still
+       showed `Canonical user was not found`;
+     - repository was clean and `HEAD` equaled `origin/main`, so there was
+       nothing unpushed from the prior frontend/admin-session fix;
+     - live API identity route audit passed, proving the backend route exists
+       on Render;
+     - code inspection found the reconciliation resolver matched `User.gmfn_id`
+       exactly after uppercasing only;
+     - risk: if Render stores the active identity as `GSN-U-63655DE6` but the
+       UI submits `GMFN-U-63655DE6`, the resolver returns `Canonical user was
+       not found` even though it is the same displayed GSN identity;
+     - patched `gmfn_backend/app/api/routes/identity_risk.py` so admin
+       reconciliation lookup tries both `GSN-` and `GMFN-` aliases for the same
+       user ID string;
+     - added
+       `test_admin_identity_reconciliation_accepts_gsn_gmfn_alias_ids` in
+       `gmfn_backend/tests/test_identity_reconciliation.py`.
+   - Verification for alias patch:
+     - Passed `python -m py_compile
+       gmfn_backend\app\api\routes\identity_risk.py
+       gmfn_backend\tests\test_identity_reconciliation.py`.
+     - Passed `python -m pytest -q
+       gmfn_backend\tests\test_identity_reconciliation.py --basetemp
+       C:\tmp\pytest-gmfn-identity-alias` with 4 tests passing.
+   - Remaining truth:
+     - this alias fix is backend code and must be pushed and deployed to
+       `gmfn-api` before Render can stop failing on the prefix mismatch;
+     - if Render still says canonical not found after this backend deploy is
+       confirmed, then the live database does not contain either
+       `GSN-U-63655DE6` or `GMFN-U-63655DE6`, and the next step is to look up
+       the canonical by numeric user id or phone lineage from the live admin
+       data.
 
 ## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
 

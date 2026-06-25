@@ -154,6 +154,29 @@ def test_admin_identity_reconciliation_dry_run_does_not_mutate(client):
         assert int(slip.holder_user_id) == int(duplicate.id)
 
 
+def test_admin_identity_reconciliation_accepts_gsn_gmfn_alias_ids(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_confirmed_duplicate_pair()
+
+    with SessionLocal() as db:
+        canonical = db.query(User).filter(User.gmfn_id == "GMFN-U-CANONICAL").one()
+        canonical.gmfn_id = "GSN-U-CANONICAL"
+        db.add(canonical)
+        db.commit()
+
+    res = client.post(
+        "/identity-risk/admin/reconcile-duplicate",
+        json={
+            "canonical_gmfn_id": "GMFN-U-CANONICAL",
+            "duplicate_gmfn_id": "GSN-U-DUPLICATE",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+
+    assert res.status_code == 200, res.text
+    assert res.json()["mode"] == "dry_run"
+
+
 def test_admin_identity_reconciliation_requires_owner_confirmation_for_execute(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
     _seed_confirmed_duplicate_pair()

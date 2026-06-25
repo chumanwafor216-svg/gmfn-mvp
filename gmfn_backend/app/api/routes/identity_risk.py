@@ -180,7 +180,13 @@ def _resolve_reconcile_user(
     if user_id is not None:
         user = query.filter(User.id == int(user_id)).first()
     else:
-        user = query.filter(User.gmfn_id == str(gmfn_id or "").strip().upper()).first()
+        raw_gmfn_id = str(gmfn_id or "").strip().upper()
+        candidate_ids = [raw_gmfn_id]
+        if raw_gmfn_id.startswith("GMFN-"):
+            candidate_ids.append(f"GSN-{raw_gmfn_id[5:]}")
+        elif raw_gmfn_id.startswith("GSN-"):
+            candidate_ids.append(f"GMFN-{raw_gmfn_id[4:]}")
+        user = query.filter(User.gmfn_id.in_(candidate_ids)).first()
 
     if user is None:
         raise HTTPException(status_code=404, detail=f"{label} user was not found")
