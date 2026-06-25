@@ -88,3 +88,10 @@ The protected freeze is source-level and audit-level. It does not prove that the
 physical phone experience is perfect. The product owner has judged Community
 Home, Dashboard, and Shop Control close enough for now, roughly usable enough to
 shield while the team turns to the next unstable page family.
+
+As of 2026-06-25, the authenticated mobile bottom rail is intentionally a
+five-anchor rail: Dashboard, Community, Marketplace, Shop, and Profile. Finance,
+Loans, Trust, Admin, Shop Control, Identity, and related detail tools remain
+reachable through the drawer and route-local task/action surfaces. Do not restore
+the old seven-plus-domain bottom rail unless the product owner explicitly
+reopens the Present-style mobile benchmark decision.

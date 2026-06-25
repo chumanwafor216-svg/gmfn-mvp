@@ -21,7 +21,7 @@ const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
   pageTools: 7,
-  bottom: 7,
+  bottom: 5,
 };
 const expectedMobileShellActionCount = Object.values(
   expectedMobileShellBreakdown
@@ -370,8 +370,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?makeFinanceItem\(\)[\s\S]*?makeLoansItem\("Loans"\)[\s\S]*?label: "Trust"[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
-  "Community Home mobile bottom rail must count the seven normal route buttons: Dashboard, Community, Marketplace, Public Shop, Finance, Loans, and Trust."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
+  "Community Home mobile bottom rail must count the five stable route anchors: Dashboard, Community, Marketplace, Shop, and Profile."
 );
 
 assertLayoutContains(

@@ -255,6 +255,14 @@ function makeGuideItem(): NavLinkItem {
   };
 }
 
+function makeProfileItem(): NavLinkItem {
+  return {
+    label: "Profile",
+    to: "/app/my-gmfn-and-i",
+    match: (pathname) => pathname === "/app/my-gmfn-and-i",
+  };
+}
+
 function makeAdminItem(): NavLinkItem {
   return {
     label: "Admin Tools",
@@ -1888,27 +1896,15 @@ export default function AppLayout() {
           pathname.startsWith("/app/community/"),
       },
       makeMarketplaceItem(),
-      makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
-      makeFinanceItem(),
-      makeLoansItem("Loans"),
       {
-        ...makeTrustPassportItem(),
-        label: "Trust",
+        ...makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
+        label: "Shop",
       },
+      makeProfileItem(),
     ];
 
-    if (canUseAdminTools) {
-      const adminItem = makeAdminItem();
-      items.push({
-        label: "Admin",
-        to: adminItem.to,
-        match: adminItem.match,
-        disabled: adminItem.disabled,
-      });
-    }
-
-    return items.filter((item) => !item.disabled || item.label === "Public Shop");
-  }, [canUseAdminTools, myShopGalleryDisabled, myShopGalleryTo]);
+    return items.filter((item) => !item.disabled || item.label === "Shop");
+  }, [myShopGalleryDisabled, myShopGalleryTo]);
 
   const mobileDrawerGroups = useMemo<MobileDrawerGroup[]>(() => {
     if (taskMode) {

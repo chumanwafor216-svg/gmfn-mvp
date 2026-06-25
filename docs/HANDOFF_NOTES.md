@@ -1,3 +1,96 @@
+## 2026-06-25 - Present-Style Five-Anchor Mobile Rail Implemented
+
+- Trigger:
+  - owner said "lets get it done" after confirming the June 23/24 PRESENT
+    benchmark is the right starting point for GSN mobile cleanup.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - authenticated mobile bottom rail is now five anchors:
+      Dashboard, Community, Marketplace, Shop, Profile;
+    - `Shop` keeps the existing Public Shop route contract and disabled-visible
+      protection while the member GSN ID is still loading;
+    - `Profile` routes to the existing `/app/my-gmfn-and-i` surface because the
+      app does not currently have an active `/app/profile` route contract;
+    - Finance, Loans, Trust, Admin Tools, Shop Control, Identity, Notifications,
+      and Settings remain reachable through the drawer and/or route-local tools,
+      but no longer compete on the persistent phone rail.
+  - `frontend/tools/audit-dashboard-button-inventory.mjs`
+  - `frontend/tools/audit-community-home-button-inventory.mjs`
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+  - `frontend/tools/audit-notifications-button-inventory.mjs`
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated the source-level cages from the old seven-anchor mobile rail to
+      the new five-anchor rail.
+  - `docs/BUTTON_STABILITY_FREEZE.md`
+    - records that the protected current truth is now the five-anchor rail and
+      that the old seven-plus-domain rail should not be restored casually.
+- Verification:
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `node tools/audit-marketplace-button-inventory.mjs` passed.
+  - `node tools/audit-dashboard-button-inventory.mjs` passed.
+  - `node tools/audit-community-home-button-inventory.mjs` passed.
+  - `node tools/audit-notifications-button-inventory.mjs` passed.
+  - targeted ESLint on touched files passed via local ESLint binary.
+  - `npm run build` passed.
+- Known caveat:
+  - `npm run lint -- ...` still invokes `eslint .` because of the package
+    script shape and reports a pre-existing full-repo issue in
+    `frontend/server.mjs` (`URLSearchParams` no-undef), plus existing hook
+    warnings in `BuildFirstCirclePage.tsx`. The touched files lint clean.
+- Unabated truth:
+  - this removes a major source of phone rail crowding, but it does not by
+    itself make every GSN page Present-easy. The next honest step is route-local
+    density cleanup, especially where pages still expose too many job buttons at
+    once.
+
+## 2026-06-25 - Present-Style Mobile Benchmark Recorded For GSN
+
+- Trigger:
+  - owner located the missing June 23/24 PRESENT benchmark context and asked
+    whether GSN can adopt that same mobile ease without breaking frozen work.
+- Confirmed reference:
+  - the relevant source was mainly in `present-mvp`:
+    - `docs/HANDOFF_2026-06-23_USER_FACING_BENCHMARK_STATUS.md`
+    - `docs/HANDOFF_2026-06-24_BENCHMARK_SURFACE_PASS.md`
+    - `docs/HANDOFF_2026-06-24_ENTRY_SPLIT.md`
+    - `docs/USER_FACING_PRODUCTION_BENCHMARK.md`
+  - the transferable lesson is not only anti-jump button code. It is the
+    combination of a compact bottom navigation, five stable mental anchors,
+    one dominant action per screen, reduced shell chrome, and secondary work
+    opening in-flow instead of crowding the persistent rail.
+- Recorded in this repo:
+  - `docs/GSN_PRESENT_STYLE_MOBILE_BENCHMARK.md`
+- Engineering position:
+  - GSN can begin this successfully without unfreezing the whole app.
+  - Safe first work is documentation, route-local simplification, route-local
+    lane grouping, and audits that measure the current shell/page density.
+  - Changing `frontend/src/layout/AppLayout.tsx` bottom rail item count,
+    protected page action counts, mobile shell controls, or shared tap guard
+    behavior is high-risk and requires intentional audit/freeze updates.
+- Shell reality before the implementation slice:
+  - GSN mobile bottom rail exposed more than the target five anchors:
+    Dashboard, Community, Marketplace, Public Shop, Finance, Loans, Trust, and
+    Admin when admin is available.
+  - The target benchmark is Dashboard, Community, Marketplace, Shop, Profile,
+    with Finance/Loans/Trust/Identity/Admin/Shop Control reachable as contextual
+    tasks, tools, drawers, or page routes rather than all competing in the
+    persistent bottom rail.
+- Next recommended implementation step:
+  - run a focused authenticated-shell audit that compares current GSN bottom
+    navigation, drawer groups, page tools, and protected freeze cages against
+    `docs/GSN_PRESENT_STYLE_MOBILE_BENCHMARK.md`;
+  - then choose one route-local pilot surface before touching global bottom nav.
+- Unabated truth:
+  - if GSN only changes icons or button styling, it will still feel heavier than
+    PRESENT.
+  - if GSN changes the bottom rail before reducing page density, it may look
+    simpler but still feel difficult.
+  - the right path is staged: route-local proof first, global shell
+    simplification second, protected audit updates throughout.
+
 ## 2026-06-21 - Admin Phone Identity Lineage Diagnostic
 
 - Trigger:

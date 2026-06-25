@@ -28,7 +28,7 @@ const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
   pageTools: 7,
-  bottom: 7,
+  bottom: 5,
 };
 const expectedMobileShellActionCount = Object.values(
   expectedMobileShellBreakdown
@@ -297,8 +297,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /data-gmfn-bottom-nav="true"[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label/,
-  "Notifications mobile route must keep the shared bottom-nav action roots counted."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?makeProfileItem\(\)[\s\S]*?data-gmfn-bottom-nav="true"[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label/,
+  "Notifications mobile route must keep the five-anchor shared bottom-nav action roots counted."
 );
 
 assertLayoutContains(

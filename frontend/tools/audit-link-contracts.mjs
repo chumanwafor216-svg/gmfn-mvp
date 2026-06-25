@@ -736,8 +736,8 @@ assertContains(
 
 assertContains(
   "src/layout/AppLayout.tsx",
-  /return items\.filter\(\(item\) => !item\.disabled \|\| item\.label === "Public Shop"\);/,
-  "Mobile bottom domain rail must keep Public Shop visible while the member GSN ID is pending."
+  /return items\.filter\(\(item\) => !item\.disabled \|\| item\.label === "Shop"\);/,
+  "Mobile bottom rail must keep the Shop anchor visible while the member GSN ID is pending."
 );
 
 assertContains(
