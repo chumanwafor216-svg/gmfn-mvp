@@ -36,6 +36,7 @@ import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
@@ -1842,16 +1843,10 @@ export default function ShopGalleryPage() {
       const target = document.getElementById(targetId);
       if (!target) return;
 
-      const topNavOffset = Math.min(
-        92,
-        Math.max(12, Math.round((window.innerHeight || 0) * 0.07))
-      );
-      const targetTop =
-        target.getBoundingClientRect().top + window.scrollY - topNavOffset;
-
-      window.scrollTo({
-        top: Math.max(0, targetTop),
-        behavior: "auto",
+      revealElementWithoutJump(target, {
+        surface: "public-shop",
+        targetId,
+        reason: "hash-landing",
       });
     },
     []

@@ -30,6 +30,7 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
 type ConfirmationRow = {
   id: number;
@@ -1085,10 +1086,14 @@ function CommunityConfirmationInboxPage() {
         : "";
     if (!targetId) return;
     const timer = window.setTimeout(() => {
-      document.getElementById(targetId)?.scrollIntoView({
-        block: "center",
-        behavior: "auto",
-      });
+      const target = document.getElementById(targetId);
+      if (target) {
+        revealElementWithoutJump(target, {
+          surface: "community-confirmation-inbox",
+          targetId,
+          reason: "focused-request",
+        });
+      }
     }, 140);
     return () => window.clearTimeout(timer);
   }, [

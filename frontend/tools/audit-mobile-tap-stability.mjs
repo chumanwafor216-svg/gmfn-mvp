@@ -93,6 +93,32 @@ const financePagePath = join(sourceRoot, "pages", "FinancePage.tsx");
 const financePageSource = readFileSync(financePagePath, "utf8");
 const shopControlPagePath = join(sourceRoot, "pages", "ShopControlPage.tsx");
 const shopControlPageSource = readFileSync(shopControlPagePath, "utf8");
+const demandBoxPagePath = join(sourceRoot, "pages", "DemandBoxPage.tsx");
+const demandBoxPageSource = readFileSync(demandBoxPagePath, "utf8");
+const createEntryPagePath = join(sourceRoot, "pages", "CreateEntryPage.tsx");
+const createEntryPageSource = readFileSync(createEntryPagePath, "utf8");
+const trustScorePagePath = join(sourceRoot, "pages", "TrustScorePage.tsx");
+const trustScorePageSource = readFileSync(trustScorePagePath, "utf8");
+const confirmationInboxPagePath = join(
+  sourceRoot,
+  "pages",
+  "CommunityConfirmationInboxPage.tsx"
+);
+const confirmationInboxPageSource = readFileSync(
+  confirmationInboxPagePath,
+  "utf8"
+);
+const confirmationPolicyPagePath = join(
+  sourceRoot,
+  "pages",
+  "CommunityConfirmationPolicyPage.tsx"
+);
+const confirmationPolicyPageSource = readFileSync(
+  confirmationPolicyPagePath,
+  "utf8"
+);
+const shopGalleryPagePath = join(sourceRoot, "pages", "ShopGalleryPage.tsx");
+const shopGalleryPageSource = readFileSync(shopGalleryPagePath, "utf8");
 const mobileRevealStabilityPath = join(sourceRoot, "lib", "mobileRevealStability.ts");
 const mobileRevealStabilitySource = readFileSync(mobileRevealStabilityPath, "utf8");
 const marketplaceWorkspacePath = join(
@@ -1115,6 +1141,60 @@ const routeRevealChecks = [
     pattern:
       /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?const revealControlTarget = useCallback\(function revealControlTarget[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "shop-control"[\s\S]*?reason: "section-reveal"/,
     forbidden: /revealControlTarget[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: demandBoxPagePath,
+    source: demandBoxPageSource,
+    label:
+      "Demand Box create reveal must use shared no-jump reveal instead of raw scrollIntoView",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?const revealDemandCreate = useCallback\([\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "demand-box"[\s\S]*?reason: "create-reveal"/,
+    forbidden: /revealDemandCreate[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: createEntryPagePath,
+    source: createEntryPageSource,
+    label:
+      "Create Community panel focus must use shared no-jump reveal instead of raw scrollIntoView",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?function focusPanel\(next: "details" \| "verification" \| "community"\)[\s\S]*?revealElementWithoutJump\(node, \{[\s\S]*?surface: "create-entry"[\s\S]*?reason: "panel-focus"/,
+    forbidden: /function focusPanel[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: trustScorePagePath,
+    source: trustScorePageSource,
+    label:
+      "Trust Passport pressure notes reveal must use shared no-jump reveal instead of raw scrollIntoView",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?function scrollToPressureNotes\(\)[\s\S]*?revealElementWithoutJump\(pressureSectionRef\.current, \{[\s\S]*?surface: "trust-passport"[\s\S]*?reason: "pressure-notes"/,
+    forbidden: /function scrollToPressureNotes[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: confirmationInboxPagePath,
+    source: confirmationInboxPageSource,
+    label:
+      "Community Confirmation Inbox focused request reveal must use shared no-jump reveal instead of raw scrollIntoView",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?const target = document\.getElementById\(targetId\);[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "community-confirmation-inbox"[\s\S]*?reason: "focused-request"/,
+    forbidden: /focused-request[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: confirmationPolicyPagePath,
+    source: confirmationPolicyPageSource,
+    label:
+      "Community Confirmation Policy member witness reveal must use shared no-jump reveal instead of raw scrollIntoView",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?const target = document\.getElementById\(targetId\);[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "community-confirmation-policy"[\s\S]*?reason: "member-witness"/,
+    forbidden: /member-witness[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: shopGalleryPagePath,
+    source: shopGalleryPageSource,
+    label:
+      "Public Shop hash landing reveal must use shared no-jump reveal while preserving late-layout retries",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?scrollGalleryTargetIntoView[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "public-shop"[\s\S]*?reason: "hash-landing"[\s\S]*?\[120, 320, 700, 1100\]\.forEach/,
+    forbidden: /scrollGalleryTargetIntoView[\s\S]*?window\.scrollTo/,
   },
 ];
 

@@ -850,8 +850,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /scrollGalleryTargetIntoView[\s\S]*?window\.scrollTo[\s\S]*?\[120, 320, 700, 1100\]\.forEach/,
-  "Public shop hash landing must perform repeated mobile-safe reveal passes so late layout shifts cannot pull visitors back above Shop Diaries or the selected block."
+  /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?scrollGalleryTargetIntoView[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "public-shop"[\s\S]*?reason: "hash-landing"[\s\S]*?\[120, 320, 700, 1100\]\.forEach/,
+  "Public shop hash landing must perform repeated no-jump reveal passes so late layout shifts cannot pull visitors back above Shop Diaries or the selected block."
 );
 
 assertNotContains(

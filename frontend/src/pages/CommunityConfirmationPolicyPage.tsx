@@ -33,6 +33,7 @@ import {
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
 type Policy = {
   relay_enabled?: boolean | null;
@@ -836,10 +837,14 @@ function CommunityConfirmationPolicyPage() {
       const targetId = memberWitnessRequestToken
         ? "member-witness-request-review"
         : "member-witness";
-      document.getElementById(targetId)?.scrollIntoView({
-        behavior: "auto",
-        block: "start",
-      });
+      const target = document.getElementById(targetId);
+      if (target) {
+        revealElementWithoutJump(target, {
+          surface: "community-confirmation-policy",
+          targetId,
+          reason: "member-witness",
+        });
+      }
     }, loading || memberWitnessRequestLoading ? 260 : 90);
 
     return () => window.clearTimeout(timer);

@@ -26,6 +26,7 @@ import {
   updateMarketplaceRequestStatus,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
 type DemandRow = {
   id?: number;
@@ -611,9 +612,10 @@ export default function DemandBoxPage() {
       return;
     }
 
-    target.scrollIntoView({
-      behavior: "auto",
-      block: "start",
+    revealElementWithoutJump(target, {
+      surface: "demand-box",
+      targetId: "demand-box-create",
+      reason: "create-reveal",
     });
 
     demandCreateRevealRef.current = null;
@@ -1262,7 +1264,7 @@ export default function DemandBoxPage() {
               }}
             >
               Create only one clear request at a time. Mark it fulfilled or
-              cancel it when the need is resolved.
+              cancel it when the need is settled.
             </div>
           </div>
         </div>

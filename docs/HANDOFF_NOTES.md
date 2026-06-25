@@ -1,3 +1,58 @@
+## 2026-06-25 - Remaining Route Reveals Moved To No-Jump Helper
+
+- Trigger:
+  - continued the urgent phone drag/jumpy-button cleanup after the first
+    `scrollIntoView` pass. The owner’s complaint is still that phone dragging
+    can feel glued/hanging and buttons can appear to jump after taps.
+- Changed:
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - Demand Box create reveal now uses `revealElementWithoutJump`;
+    - restored the audited one-active-request guidance wording.
+  - `frontend/src/pages/CreateEntryPage.tsx`
+    - Create Community panel focus now uses the shared no-jump reveal helper.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport pressure-note reveal now uses the shared no-jump helper.
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - focused request reveal now uses the shared no-jump helper.
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - member witness reveal now uses the shared no-jump helper.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - public shop hash/block landing now uses the shared no-jump helper while
+      keeping the delayed retry passes for late-loading shop content.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - now protects Demand Box, Create Entry, Trust Passport, Community
+      Confirmation Inbox, Community Confirmation Policy, and Public Shop
+      against returning to raw `scrollIntoView` or route-local `window.scrollTo`
+      reveal logic.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - now expects Public Shop hash landing to use the shared helper while
+      preserving its retry timing.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:demand-box-front-package` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:trust-passport-community-confirmation-lane` passed.
+  - `npm run audit:shop-gallery-button-inventory` passed.
+  - targeted ESLint on touched frontend files passed.
+  - `npm run build` passed.
+  - `git diff --check` passed, with only normal CRLF warnings from Git.
+- Unabated truth:
+  - `rg` now finds no raw `scrollIntoView` in `frontend/src/pages`,
+    `frontend/src/components`, or `frontend/src/lib`;
+  - remaining page-local raw `window.scrollTo` is only the TrustSlip no-hash
+    top restore; the other `scrollTo` hits are shared stability/clipboard
+    helpers;
+  - this is a broad code-side fix for route reveal jumpiness, but the owner’s
+    real Android phone still needs to verify the tactile drag improvement;
+  - `npm run audit:trust-actions` still fails on older unrelated wording/route
+    expectations in TrustSlip, Guarantor Inbox, Loan Summary, and Money In;
+  - `npm run audit:trust-passport-button-inventory` still has stale/non-batch
+    expectations for Trust Passport pressure-scroll geometry and public-record
+    CTA shape. Those were not folded into this scrolling fix.
+
 ## 2026-06-25 - Route Reveal Scrolls Moved Off Raw scrollIntoView
 
 - Trigger:

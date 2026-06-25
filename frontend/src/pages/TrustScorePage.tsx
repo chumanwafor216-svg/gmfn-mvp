@@ -40,6 +40,7 @@ import { buildTrustPassportSnapshot } from "../lib/trustDocumentSnapshots";
 import { TRUST_BAND_SHORT_LABELS } from "../lib/trustBandLanguage";
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
 type NoticeTone = "success" | "error";
 
@@ -2241,9 +2242,13 @@ export default function TrustScorePage() {
       text: "Opened the pressure notes. This is where the page explains what helps trust and what needs care.",
     });
     window.setTimeout(() => {
-      pressureSectionRef.current?.scrollIntoView({
-        block: "start",
-      });
+      if (pressureSectionRef.current) {
+        revealElementWithoutJump(pressureSectionRef.current, {
+          surface: "trust-passport",
+          targetId: "pressure-notes",
+          reason: "pressure-notes",
+        });
+      }
     }, 60);
   }
 

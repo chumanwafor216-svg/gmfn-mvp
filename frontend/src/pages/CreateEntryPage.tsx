@@ -44,6 +44,7 @@ import {
   evidenceRequirementForCountry,
 } from "../lib/identityEvidenceRequirements";
 import { structuredErrorDetail } from "../lib/structuredErrors";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
 type FeedbackTarget =
   | "global"
@@ -1709,7 +1710,11 @@ export default function CreateEntryPage() {
     const reveal = () => {
       const node = map[next].current;
       if (node) {
-        node.scrollIntoView({ behavior: "auto", block: "start" });
+        revealElementWithoutJump(node, {
+          surface: "create-entry",
+          targetId: next,
+          reason: "panel-focus",
+        });
         panelRevealFrameRef.current = null;
         return;
       }
