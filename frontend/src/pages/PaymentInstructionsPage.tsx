@@ -1969,7 +1969,7 @@ export default function PaymentInstructionsPage() {
                     fullWidth
                     style={moneyInActionButtonStyle("secondary", paymentConfirmed)}
                   >
-                    {moneyInActionText("check", paymentConfirmed ? "Declared" : "Confirm paid")}
+                    {moneyInActionText("check", paymentConfirmed ? "Declared" : "Declare paid")}
                   </SecondaryButton>
                 </div>
               </div>

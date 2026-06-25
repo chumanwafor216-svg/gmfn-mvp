@@ -119,8 +119,8 @@ for (const file of trustDomainFiles) {
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /function trustSlipVerifyFrontendPath\(code: string, fallback = ""\): string \{[\s\S]*?return `\/trust-slips\/verify\/\$\{encodeURIComponent\(cleanCode\)\}\/page`;[\s\S]*?return rawFallback\.startsWith\("\/trust-slips\/verify"\) \? rawFallback : "";/,
-  "TrustSlip verify links must prefer the public TrustSlip verification paper with a code and reject unrelated fallback routes."
+  /function trustSlipVerifyFrontendPath\(code: string, fallback = ""\): string \{[\s\S]*?return `\/t\/\$\{encodeURIComponent\(cleanCode\)\}`;[\s\S]*?const oldVerifyMatch = url\.pathname\.match\(\^?\/?[\s\S]*?trust-slips[\s\S]*?verify[\s\S]*?\);[\s\S]*?return `\/t\/\$\{encodeURIComponent\(decodeURIComponent\(oldVerifyMatch\[1\]\)\)\}\$\{url\.search\}\$\{url\.hash\}`;[\s\S]*?const oldRawMatch = rawFallback\.match\(\^?\/?[\s\S]*?trust-slips[\s\S]*?verify[\s\S]*?\);[\s\S]*?return `\/t\/\$\{encodeURIComponent\(decodeURIComponent\(oldRawMatch\[1\]\)\)\}`;[\s\S]*?return rawFallback\.startsWith\("\/t\/"\) \? rawFallback : "";/,
+  "TrustSlip verify links must prefer the current short public TrustSlip verification route with a code and reject unrelated fallback routes."
 );
 
 assertContains(
@@ -131,8 +131,8 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /TRUST_SLIP_MOBILE_SCROLL_CLEARANCE[\s\S]*?function trustSlipScrollClearance\(isCompact: boolean\)[\s\S]*?scrollMarginTop: isCompact \? TRUST_SLIP_MOBILE_SCROLL_CLEARANCE : 24[\s\S]*?if \(location\.hash\) return undefined;[\s\S]*?window\.scrollTo\(\{ left: 0, top: 0, behavior: "auto" \}\);/,
-  "TrustSlip must reset non-hash route loads and reserve mobile scroll clearance so sticky app chrome cannot hide paper section headings."
+  /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?TRUST_SLIP_MOBILE_SCROLL_CLEARANCE[\s\S]*?function trustSlipScrollClearance\(isCompact: boolean\)[\s\S]*?scrollMarginTop: isCompact \? TRUST_SLIP_MOBILE_SCROLL_CLEARANCE : 24[\s\S]*?const pageTopRef = useRef<HTMLDivElement \| null>\(null\);[\s\S]*?if \(location\.hash\) return undefined;[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "trust-slip"[\s\S]*?reason: "route-reset"[\s\S]*?ref=\{pageTopRef\}/,
+  "TrustSlip must reset non-hash route loads through the real mobile scroll container and reserve mobile scroll clearance so sticky app chrome cannot hide paper section headings."
 );
 
 assertContains(

@@ -63,7 +63,7 @@ function requirePattern(pattern, message) {
     "Demand Box current-state card must show a simple next step.",
   ],
   [
-    /Create only one clear request at a time\. Mark it fulfilled or\s+cancel it when the need is settled\./,
+    /Create only one clear request at a time\. Mark it fulfilled or\s+cancel it when the need is resolved\./,
     "Demand Box must keep one active request guidance visible.",
   ],
   [

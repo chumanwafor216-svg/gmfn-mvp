@@ -1264,7 +1264,7 @@ export default function DemandBoxPage() {
               }}
             >
               Create only one clear request at a time. Mark it fulfilled or
-              cancel it when the need is settled.
+              cancel it when the need is resolved.
             </div>
           </div>
         </div>

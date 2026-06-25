@@ -1926,13 +1926,13 @@ export default function LoanSummaryPage() {
                             onClick={() => handleGuarantorDecision(g, "approved")}
                             disabled={!canDecide || busyDecline}
                             busy={busyApprove}
-                            busyLabel="Approving"
+                            busyLabel="Recording"
                             minWidth={isCompact ? undefined : 112}
                             fullWidth
                             stableHeight={52}
                             debugId={`loan-summary.guarantor.${g.id || idx}.approve`}
                           >
-                            {actionText("check", busyApprove ? "Approving" : "Approve")}
+                            {actionText("check", busyApprove ? "Recording" : "Record pledge")}
                           </PrimaryButton>
 
                           <SecondaryButton

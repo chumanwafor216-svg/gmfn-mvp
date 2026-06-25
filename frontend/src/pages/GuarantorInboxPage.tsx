@@ -1325,8 +1325,8 @@ export default function GuarantorInboxPage() {
                               style={guarantorInboxPrimaryButtonStyle(Boolean(busyDecisionKey))}
                             >
                               {busyDecisionKey === `${row.loanId}-${row.id}-approved`
-                                ? guarantorInboxActionText("refresh", "Approving", 20)
-                                : guarantorInboxActionText("check", "Approve", 20)}
+                                ? guarantorInboxActionText("refresh", "Recording", 20)
+                                : guarantorInboxActionText("check", "Record pledge", 20)}
                             </PrimaryButton>
                             <SecondaryButton
                               onClick={() => void handleDecision(row, "declined")}

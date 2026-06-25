@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
@@ -25,6 +25,7 @@ import { navigateWithOrigin } from "../lib/nav";
 import { resolveSharedProfileImage } from "../lib/profileImage";
 import { publicCommunityMemberCredentialPath } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { buildTrustSlipActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
@@ -1505,6 +1506,7 @@ function mergeFreshTrustSlipSummary(
 export default function TrustSlipPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const pageTopRef = useRef<HTMLDivElement | null>(null);
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
   const routes = useMemo(
     () => ({
@@ -1561,7 +1563,14 @@ export default function TrustSlipPage() {
     if (location.hash) return undefined;
 
     const restoreTop = () => {
-      window.scrollTo({ left: 0, top: 0, behavior: "auto" });
+      const target = pageTopRef.current;
+      if (!target) return;
+
+      revealElementWithoutJump(target, {
+        surface: "trust-slip",
+        targetId: "trust-slip-page-top",
+        reason: "route-reset",
+      });
     };
 
     restoreTop();
@@ -2579,6 +2588,7 @@ export default function TrustSlipPage() {
   if (loading) {
     return (
       <div
+        ref={pageTopRef}
         style={{
           maxWidth: 1180,
           margin: "0 auto",
@@ -2609,6 +2619,7 @@ export default function TrustSlipPage() {
   if (trustSlipPaperFrameEnabled) {
     return (
       <div
+        ref={pageTopRef}
         style={trustSlipPageShell()}
       >
         <style>{`
@@ -3658,6 +3669,7 @@ export default function TrustSlipPage() {
 
   return (
     <div
+      ref={pageTopRef}
       style={{
         maxWidth: 1180,
         margin: "0 auto",

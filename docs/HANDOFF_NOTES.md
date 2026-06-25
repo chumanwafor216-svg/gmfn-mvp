@@ -1,3 +1,59 @@
+## 2026-06-25 - TrustSlip Top Reset Uses Real Mobile Scroll Container
+
+- Trigger:
+  - continued the urgent phone drag/jumpy-button work after removing raw
+    route-reveal `scrollIntoView` calls. The next small offender was
+    TrustSlip's non-hash route-load reset, which still called `window.scrollTo`
+    even though authenticated mobile pages scroll inside the app shell's real
+    `<main>` container.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - added a top-of-page ref in every TrustSlip render branch;
+    - replaced the non-hash route reset's raw `window.scrollTo` with
+      `revealElementWithoutJump`, so it scrolls the actual mobile scroll
+      container and keeps the one-frame bounded correction behavior;
+    - kept hash routes untouched so deep verification/hash landings are not
+      pulled back to the top.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - now protects the TrustSlip route reset from returning to raw window
+      scrolling.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated the TrustSlip route-reset expectation to the shared helper;
+    - updated the TrustSlip verify-link expectation to the current `/t/{code}`
+      public route, while preserving legacy `/trust-slips/verify/{code}`
+      normalization as compatibility.
+  - `frontend/src/pages/DemandBoxPage.tsx`
+    - corrected the one-active-request guidance back to `resolved` instead of
+      finance-flavored `settled`.
+  - `frontend/src/pages/GuarantorInboxPage.tsx`,
+    `frontend/src/pages/LoanSummaryPage.tsx`, and
+    `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - tightened visible action language so guarantor actions say they record a
+      pledge decision and Money In says `Declare paid`, not `Confirm paid`.
+  - matching audits were updated in
+    `frontend/tools/audit-button-stability.mjs` and
+    `frontend/tools/audit-demand-box-front-package.mjs`.
+- Verification:
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:demand-box-front-package` passed.
+  - `npm run audit:link-contracts` passed.
+  - targeted ESLint on touched frontend files passed.
+  - `npm run build` passed.
+  - `git diff --check` passed, with only normal CRLF warnings from Git.
+- Unabated truth:
+  - `rg` now finds no page-local `scrollIntoView` or page-local
+    `window.scrollTo` in `frontend/src/pages`; remaining scroll calls are in
+    shared helpers only;
+  - the authenticated mobile app shell still uses an inner `<main>` scroll
+    container with fixed top/bottom chrome, so the real Android phone remains
+    the final judge for whether drag now feels free enough;
+  - this continuation is local and verified but not pushed, because the current
+    project protocol is batch-first / push-last unless the owner says the batch
+    is ready to publish.
+
 ## 2026-06-25 - Remaining Route Reveals Moved To No-Jump Helper
 
 - Trigger:

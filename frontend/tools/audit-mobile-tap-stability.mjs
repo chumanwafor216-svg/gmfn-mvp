@@ -99,6 +99,8 @@ const createEntryPagePath = join(sourceRoot, "pages", "CreateEntryPage.tsx");
 const createEntryPageSource = readFileSync(createEntryPagePath, "utf8");
 const trustScorePagePath = join(sourceRoot, "pages", "TrustScorePage.tsx");
 const trustScorePageSource = readFileSync(trustScorePagePath, "utf8");
+const trustSlipPagePath = join(sourceRoot, "pages", "TrustSlipPage.tsx");
+const trustSlipPageSource = readFileSync(trustSlipPagePath, "utf8");
 const confirmationInboxPagePath = join(
   sourceRoot,
   "pages",
@@ -1168,6 +1170,15 @@ const routeRevealChecks = [
     pattern:
       /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?function scrollToPressureNotes\(\)[\s\S]*?revealElementWithoutJump\(pressureSectionRef\.current, \{[\s\S]*?surface: "trust-passport"[\s\S]*?reason: "pressure-notes"/,
     forbidden: /function scrollToPressureNotes[\s\S]*?scrollIntoView/,
+  },
+  {
+    file: trustSlipPagePath,
+    source: trustSlipPageSource,
+    label:
+      "TrustSlip non-hash route reset must use shared no-jump reveal instead of raw window scrolling",
+    pattern:
+      /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?const pageTopRef = useRef<HTMLDivElement \| null>\(null\);[\s\S]*?if \(location\.hash\) return undefined;[\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "trust-slip"[\s\S]*?reason: "route-reset"[\s\S]*?ref=\{pageTopRef\}/,
+    forbidden: /restoreTop[\s\S]*?window\.scrollTo/,
   },
   {
     file: confirmationInboxPagePath,
