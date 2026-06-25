@@ -259,6 +259,32 @@ Complaint ledger:
        execute after confirming the preview;
      - if the preview reports `skipped_conflict` rows, those rows must be
        reviewed before saying every evidence source has fully merged.
+   - Local execution update on `2026-06-25`:
+     - restarted/confirmed the local backend on `0.0.0.0:8012`; health returned
+       `{"ok": true, "dev_mode": true}`;
+     - confirmed local OpenAPI now includes
+       `/identity-risk/admin/reconcile-duplicate`;
+     - dry-run with canonical `GMFN-U-9867079C` and duplicate
+       `GMFN-U-A66CF7C0` succeeded;
+     - dry-run with canonical `GSN-U-63655DE6` failed locally with
+       `Canonical user was not found`, matching the owner's note that this is
+       the Render/join identity rather than the local SQLite builder identity;
+     - executed the local merge into `GMFN-U-9867079C` after owner confirmation;
+     - local duplicate user `2` is now retired as `MERGED-U-000002` /
+       `merged-user-2@merged.gmfn.local`;
+     - local join requests `1`, `2`, and `3` now point to user `1`;
+     - local duplicate memberships were closed where user `1` already belonged;
+     - local TrustEvent audit id `388` records
+       `identity.duplicate_reconciled` with dedupe key
+       `identity-reconcile:1:2`.
+   - Render identity direction:
+     - owner clarified that `GSN-U-63655DE6` is the GSN identity mostly used on
+       Render after joining a group;
+     - `GMFN-U-A66CF7C0` is still a duplicate candidate;
+     - `GMFN-U-9867079C` is local-builder history and should not be assumed as
+       the Render canonical identity;
+     - do not execute a Render merge until the Render backend is deployed and
+       the live admin preview confirms the canonical/duplicate pair.
 
 ## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
 
