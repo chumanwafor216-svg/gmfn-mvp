@@ -118,6 +118,21 @@ Follow-up frontend admin-menu repair:
   - Passed `npm --prefix frontend run audit:tap-stability`.
   - First sandboxed `npm --prefix frontend run build` failed with Windows
     esbuild `spawn EPERM`, then the same build passed outside the sandbox.
+- Publish/deploy update:
+  - committed as `c6b6858 Restore pilot admin menu visibility`;
+  - pushed to `origin/main`;
+  - GitHub Actions `Trigger Render Deploy` run `28186007948` succeeded with
+    `deploy_api=false`;
+  - Render frontend deploy hook accepted deploy id
+    `dep-d8ulmb1o3t8c73dto3u0` for commit `c6b6858`;
+  - local production build generated main bundle `assets/index-RVDSIwzi.js`;
+  - live `https://gmfn-frontend.onrender.com/` still served old bundle
+    `assets/index-BTvmCKEr.js` after cache-busted polling on
+    `2026-06-25`;
+  - unabated truth: the fix is pushed and the deploy hook was accepted, but the
+    live frontend was not yet serving the corrected build at the time of this
+    note. Check Render deploy `dep-d8ulmb1o3t8c73dto3u0` before treating the
+    Admin Tools menu fix as phone-visible on Render.
 
 Remaining live actions:
 - wait for the accepted frontend deploy before expecting Admin Tools/menu
