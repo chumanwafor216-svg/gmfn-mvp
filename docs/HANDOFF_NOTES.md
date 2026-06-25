@@ -371,6 +371,18 @@ Complaint ledger:
        `GSN-U-63655DE6` or `GMFN-U-63655DE6`, and the next step is to look up
        the canonical by numeric user id or phone lineage from the live admin
        data.
+   - Publish/deploy update:
+     - committed and pushed as
+       `1b66267 Accept GSN aliases in identity reconciliation`;
+     - triggered GitHub Actions `Trigger Render Deploy` run `28158578687`
+       with `deploy_api=true`;
+     - frontend deploy hook accepted deploy id `dep-d8uep04m0tmc73a56000` for
+       commit `1b66267`;
+     - backend deploy failed because GitHub Actions still has empty
+       `RENDER_API_KEY`;
+     - unabated truth: the alias fix is in GitHub, but it is not confirmed live
+       on `gmfn-api`; Render must get the backend deploy manually or via
+       configured `RENDER_API_KEY` / `RENDER_API_SERVICE_ID`.
 
 ## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
 
