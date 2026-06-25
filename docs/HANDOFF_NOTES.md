@@ -383,6 +383,42 @@ Complaint ledger:
      - unabated truth: the alias fix is in GitHub, but it is not confirmed live
        on `gmfn-api`; Render must get the backend deploy manually or via
        configured `RENDER_API_KEY` / `RENDER_API_SERVICE_ID`.
+   - Render admin promotion update:
+     - owner opened the Render Web Shell for `gmfn-api` at
+       `~/project/src/gmfn_backend`;
+     - `python set_admin.py -h` showed the updated script with `--email`,
+       `--gmfn-id`, `--phone`, and `--role`;
+     - first typed attempt used a truncated ID (`GSN-U-63655`) and correctly
+       returned `User not found`;
+     - second attempt with the full live identity succeeded:
+       `python set_admin.py --gmfn-id GSN-U-63655DE6`;
+     - Render printed success for live `user_id: 13`, `gmfn_id:
+       GMFN-U-63655DE6`, `phone_e164: +447903165266`, and `role: admin`;
+     - next required owner action is to refresh live frontend auth state at
+       `https://gmfn-frontend.onrender.com/reset`, sign in again with the live
+       GSN/GSM identity, then retest Admin Tools and Identity Risk on Render.
+   - Live identity split follow-up:
+     - owner then reported that signing into Render by phone opens an admin
+       account with a different/new GSN ID, `GSN-U-22CCAD3FD`;
+     - signing into the main Render ID `GMFN-U-63655DE6` opens a different
+       record where the photo/details appear detached, while Spotlight/history
+       still remain;
+     - do not execute reconciliation until the live records are mapped;
+     - added read-only Render shell helper `gmfn_backend/inspect_identity.py`
+       to inspect candidate users by `--gmfn-id`, `--phone`, and `--email`,
+       including profile image, phone verification, role, memberships, created
+       communities, shops/products, broadcasts, TrustSlip, trust events,
+       identity-risk signals, device fingerprints, loans, payout destinations,
+       and recovery profile counts.
+   - Unabated truth:
+     - admin role is now confirmed in the live Render database for
+       `GMFN-U-63655DE6`;
+     - this does not by itself execute the identity merge;
+     - if phone sign-in reaches `GSN-U-22CCAD3FD`, that account may also need
+       to be merged or closed;
+     - the canonical account should be chosen only after comparing which live
+       user owns the trusted phone, profile image, memberships, created
+       communities, shops/products, broadcasts, TrustSlip, and trust events.
 
 ## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
 
