@@ -5,9 +5,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = join(frontendRoot, "..");
 
 function read(relativePath) {
   return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function readRepo(relativePath) {
+  return readFileSync(join(repoRoot, relativePath), "utf8");
 }
 
 const findings = [];
@@ -26,6 +31,19 @@ const adminOpsFiles = [
 
 function assertContains(file, pattern, message) {
   const text = read(file);
+
+  if (!pattern.test(text)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Expected pattern was not found.",
+    });
+  }
+}
+
+function assertRepoContains(file, pattern, message) {
+  const text = readRepo(file);
 
   if (!pattern.test(text)) {
     findings.push({
@@ -182,6 +200,54 @@ assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
   /debugId=\{`admin-identity-risk\.\$\{g\.userId\}\.details`\}/,
   "Admin Identity Risk disclosure rows must remain traceable."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
+  /postAdminIdentityReconciliation[\s\S]*?owner_confirmed: reconcileOwnerConfirmed[\s\S]*?execute,/,
+  "Admin Identity Risk reconciliation must send owner confirmation and execute mode to the backend."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
+  /debugId="admin-identity-risk\.reconcile\.preview"[\s\S]*?debugId="admin-identity-risk\.reconcile\.execute"[\s\S]*?debugId="admin-identity-risk\.reconcile\.raw"/,
+  "Admin Identity Risk reconciliation preview, execute, and raw-result controls must remain traceable."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
+  /Preview merge[\s\S]*?Execute merge[\s\S]*?Full reconciliation record/,
+  "Admin Identity Risk reconciliation must keep preview-first and full-record review language visible."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
+  /Owner confirmed both records are the same person[\s\S]*?!reconcileOwnerConfirmed/,
+  "Admin Identity Risk execute action must stay disabled until owner confirmation is checked."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /export async function postAdminIdentityReconciliation[\s\S]*?owner_confirmed\?: boolean;[\s\S]*?execute\?: boolean;[\s\S]*?return httpJson\("\/identity-risk\/admin\/reconcile-duplicate", "POST", payload\);/,
+  "Frontend API client must keep the admin duplicate-reconciliation route and owner-confirmation payload fields."
+);
+
+assertRepoContains(
+  "gmfn_backend/app/api/routes/identity_risk.py",
+  /class AdminIdentityReconcileIn\(BaseModel\):[\s\S]*?owner_confirmed: bool = False[\s\S]*?execute: bool = False[\s\S]*?@router\.post\("\/admin\/reconcile-duplicate"\)[\s\S]*?_require_admin\(current_user\)[\s\S]*?return reconcile_duplicate_identity\([\s\S]*?owner_confirmed=bool\(payload\.owner_confirmed\)[\s\S]*?execute=bool\(payload\.execute\)/,
+  "Backend identity-risk route must stay admin-only and pass owner confirmation into duplicate reconciliation."
+);
+
+assertRepoContains(
+  "gmfn_backend/app/services/identity_reconciliation_service.py",
+  /PENDING_APPROVAL_SENTINEL[\s\S]*?def reconcile_duplicate_identity\([\s\S]*?if execute and not owner_confirmed:[\s\S]*?Owner confirmation is required[\s\S]*?identity\.duplicate_reconciled[\s\S]*?skipped_conflict/,
+  "Identity reconciliation service must keep the no-delete retirement path, owner-confirmed execute gate, audit event, and skipped-conflict warning path."
+);
+
+assertRepoContains(
+  "gmfn_backend/tests/test_identity_reconciliation.py",
+  /test_admin_identity_reconciliation_dry_run_does_not_mutate[\s\S]*?test_admin_identity_reconciliation_requires_owner_confirmation_for_execute[\s\S]*?test_admin_identity_reconciliation_executes_owner_confirmed_merge[\s\S]*?identity\.duplicate_reconciled/,
+  "Identity reconciliation must keep tests for dry-run safety, owner confirmation, execution, and audit logging."
 );
 
 if (findings.length > 0) {

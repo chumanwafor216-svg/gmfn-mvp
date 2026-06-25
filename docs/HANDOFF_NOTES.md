@@ -197,6 +197,10 @@ Complaint ledger:
      - `gmfn_backend/tests/test_identity_reconciliation.py`
        - added coverage for dry-run safety, owner-confirmation requirement, and
          owner-confirmed execution.
+     - `frontend/tools/audit-admin-ops-actions.mjs`
+       - now cages the reconciliation UI, API client, admin-only backend route,
+         owner-confirmation execute gate, duplicate retirement/audit trail, and
+         dry-run/execute tests so the flow cannot quietly weaken.
    - Verification:
      - Passed `python -m py_compile
        gmfn_backend\app\api\routes\identity_risk.py
@@ -221,6 +225,11 @@ Complaint ledger:
        src/lib/api.ts` from `frontend`.
      - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
      - Passed `npm run audit:admin-ops-actions` from `frontend`.
+     - Passed `npm exec -- eslint tools/audit-admin-ops-actions.mjs` from
+       `frontend`.
+     - Passed `python -m pytest -q
+       gmfn_backend\tests\test_identity_reconciliation.py --basetemp
+       C:\tmp\pytest-gmfn-identity-reconciliation-audit`.
      - Passed `npm run audit:protected-button-freeze` from `frontend`.
      - Passed `npm run audit:tap-stability` from `frontend`.
      - Passed `npm run build` from `frontend`.
