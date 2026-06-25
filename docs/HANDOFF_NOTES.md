@@ -1,3 +1,36 @@
+## 2026-06-25 - Mobile Main Scroll Releases Native Android Drag
+
+- Trigger:
+  - continued the urgent phone drag/jumpy-button investigation after dynamic
+    viewport height passed checks. The remaining shell-level suspect was double
+    scroll containment: the page body already contains overscroll, while the
+    authenticated mobile `<main>` pane also used `overscrollBehaviorY:
+    "contain"`.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - mobile `<main>` now uses `overscrollBehaviorY: "auto"` instead of
+      hard-containing the inner pane;
+    - added `data-gmfn-mobile-scroll-root="true"` on the mobile `<main>` so the
+      real phone scroll surface is explicit in the DOM.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - updated the mobile shell audit to preserve native vertical drag release
+      and the scroll-root marker.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - targeted ESLint on `AppLayout.tsx` and the tap-stability audit passed.
+  - `npm run build` passed.
+- Unabated truth:
+  - this is a small, reversible shell fix aimed directly at the sticky
+    drag/release complaint. It should reduce the hard-edge feeling created by an
+    inner fixed-height scroller on Android;
+  - the app still uses a fixed shell with an inner mobile content scroller, so
+    this is not the larger natural-body-scroll redesign;
+  - the owner's real Android phone remains the decisive test before pushing
+    deeper structural shell work;
+  - this continuation is local and verified but not pushed, following the
+    current batch-first / push-last protocol.
+
 ## 2026-06-25 - Mobile Shell Uses Dynamic Viewport Height
 
 - Trigger:

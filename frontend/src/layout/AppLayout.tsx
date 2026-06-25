@@ -1032,7 +1032,7 @@ function mainContent(
     overflowX: "hidden",
     overflowY: isMobile ? "auto" : undefined,
     WebkitOverflowScrolling: isMobile ? "touch" : undefined,
-    overscrollBehaviorY: isMobile ? "contain" : undefined,
+    overscrollBehaviorY: isMobile ? "auto" : undefined,
     touchAction: isMobile ? "pan-y pinch-zoom" : undefined,
     flex: isMobile ? "1 1 auto" : undefined,
     minHeight: isMobile ? 0 : undefined,
@@ -2341,6 +2341,7 @@ export default function AppLayout() {
       )}
 
       <main
+        data-gmfn-mobile-scroll-root={isMobile ? "true" : undefined}
         style={mainContent(isMobile, !!taskMode)}
       >
         {originPath && originMeta ? (

@@ -996,9 +996,9 @@ const appShellChecks = [
   },
   {
     label:
-      "Mobile app shell must keep the bottom rail visible while main content keeps vertical drags contained",
+      "Mobile app shell must keep the bottom rail visible while main content keeps native vertical drag release",
     pattern:
-      /function mobileShell\(\): React\.CSSProperties[\s\S]*?minHeight: "100svh"[\s\S]*?height: "100dvh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "contain" : undefined[\s\S]*?touchAction: isMobile \? "pan-y pinch-zoom" : undefined[\s\S]*?minHeight: isMobile \? 0 : undefined/,
+      /function mobileShell\(\): React\.CSSProperties[\s\S]*?minHeight: "100svh"[\s\S]*?height: "100dvh"[\s\S]*?overflow: "hidden"[\s\S]*?function mainContent\([\s\S]*?overflowY: isMobile \? "auto" : undefined[\s\S]*?WebkitOverflowScrolling: isMobile \? "touch" : undefined[\s\S]*?overscrollBehaviorY: isMobile \? "auto" : undefined[\s\S]*?touchAction: isMobile \? "pan-y pinch-zoom" : undefined[\s\S]*?minHeight: isMobile \? 0 : undefined[\s\S]*?<main[\s\S]*?data-gmfn-mobile-scroll-root=\{isMobile \? "true" : undefined\}/,
   },
   {
     label:
