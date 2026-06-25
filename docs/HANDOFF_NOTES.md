@@ -64,8 +64,8 @@ Complaint ledger:
        refresh, or may need shortcut recreation if Android keeps old metadata.
 
 4. Admin command centre location and protection
-   - Status: `Local fixed`, `Needs phone navigation visibility test`,
-     `Needs deploy`.
+   - Status: `Pushed`, `Deploy requested`, `Needs phone navigation visibility
+     test`.
    - Current route:
      - `/app/command-center`.
    - Current menu label:
@@ -104,11 +104,33 @@ Complaint ledger:
      - Passed `npm run build`.
      - In-app Browser was unavailable and Playwright's Chromium binary is not
        installed locally, so no browser screenshot check was completed.
+   - Publish/deploy update:
+     - committed as `a22b8d6 Stabilize admin auth recovery on phone`;
+     - pushed to `origin/main`;
+     - triggered GitHub Actions `Trigger Render Deploy` run `28157298454` with
+       `deploy_api=false`;
+     - workflow succeeded and Render accepted frontend deploy id
+       `dep-d8uee4o0697c73f0bj40` for commit `a22b8d6`;
+     - live `https://gmfn-frontend.onrender.com` returned `200 OK`;
+     - unabated truth: this proves the frontend deploy hook accepted the deploy
+       and the site responds, but it is not a browser-level confirmation that
+       the new JS bundle has finished rolling out on every device cache.
    - Phone recovery instruction:
      - if the phone still bounces after this local frontend reloads, open
        `http://192.168.1.13:5180/reset` once, then sign in again with the local
        canonical admin identity `GMFN-U-9867079C` / `admin@test.com`; this clears
        any token or GSN ID left from the retired duplicate.
+   - Local connection update:
+     - owner reported the local phone URL stopped opening;
+     - confirmed backend `http://127.0.0.1:8012/health` still returned
+       `{"ok": true, "dev_mode": true}`;
+     - confirmed frontend `http://127.0.0.1:5180` and
+       `http://192.168.1.13:5180` were initially down;
+     - sandboxed Vite start failed with `spawn EPERM` from esbuild;
+     - restarted Vite outside the sandbox on `0.0.0.0:5180`;
+     - confirmed both `http://127.0.0.1:5180` and
+       `http://192.168.1.13:5180` now return `200 OK`;
+     - Vite log reports the phone URL as `http://192.168.1.13:5180/`.
 
 5. Trust location after reshuffle
    - Status: `Confirmed from code`, no repair made.
