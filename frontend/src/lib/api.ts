@@ -162,6 +162,7 @@ const GMFN_ENTRY_MODE_KEY = "gmfn_entry_mode";
 const GMFN_ENTRY_INVITE_CODE_KEY = "gmfn_entry_invite_code";
 const GMFN_ENTRY_CREATE_CODE_KEY = "gmfn_entry_create_code";
 const GMFN_MY_SETTINGS_KEY = "gmfn_my_settings";
+const GMFN_ROLE_KEY = "gmfn_role";
 
 export function getAccessToken(): string | null {
   return readStorage(ACCESS_TOKEN_KEY);
@@ -200,6 +201,23 @@ function rememberGmfnIdFrom(value: unknown): void {
     source?.gmfn_id || source?.gmfnId || source?.gmfnID
   );
   if (gmfnId) setStoredGmfnId(gmfnId);
+}
+
+function rememberRoleFrom(value: unknown): void {
+  const source = value as any;
+  const role = String(
+    source?.role ||
+      source?.account_role ||
+      source?.user_role ||
+      (Array.isArray(source?.permissions) &&
+      source.permissions.includes("admin")
+        ? "admin"
+        : "")
+  )
+    .trim()
+    .toLowerCase();
+
+  writeStorage(GMFN_ROLE_KEY, role || null);
 }
 
 export function isAuthenticated(): boolean {
@@ -319,7 +337,7 @@ export function logout(): void {
   setSelectedClanId(null);
   try {
     if (typeof window !== "undefined") {
-      window.localStorage.removeItem("gmfn_role");
+      window.localStorage.removeItem(GMFN_ROLE_KEY);
     }
   } catch {
     // ignore storage cleanup issues during logout
@@ -576,6 +594,7 @@ export async function loginAndStore(username: string, password: string) {
 export async function getMe() {
   const out = await httpJson("/auth/me", "GET");
   rememberGmfnIdFrom(out);
+  rememberRoleFrom(out);
   return out;
 }
 
@@ -602,6 +621,7 @@ export async function getMeWithToken(
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   const out = await readJsonOrTextSafe(res);
   rememberGmfnIdFrom(out);
+  rememberRoleFrom(out);
   return out;
 }
 

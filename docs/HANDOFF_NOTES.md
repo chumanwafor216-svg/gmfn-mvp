@@ -479,7 +479,34 @@ Complaint ledger:
        helper so the owner can reset the canonical identity password with the
        short command `python reset_login_password.py 63655DE6`;
      - the helper does not create a public API route and does not hardcode the
-       owner's phone number.
+       owner's phone number;
+     - owner manually deployed the backend helper to Render, ran it in the
+       `gmfn-api` Web Shell, and received `ok: True` for live user `13`,
+       canonical `GMFN-U-63655DE6`, role `admin`;
+     - Passlib printed a bcrypt `__about__` compatibility traceback before the
+       success payload, but the final `ok: True` confirms the password hash was
+       written and committed.
+   - Post-reset phone report:
+     - owner signed in with canonical `GMFN-U-63655DE6`;
+     - the account opened and still showed the older/richer account evidence:
+       Spotlight remained active and shops remained present;
+     - TrustSlip still looked unchanged;
+     - the profile picture appeared missing;
+     - the main menu did not show `Admin Tools`, even though live database role
+       had been confirmed as `admin`.
+   - Frontend admin-menu repair:
+     - `frontend/src/lib/api.ts` now records `gmfn_role` whenever `/auth/me`
+       succeeds through either `getMe()` or `getMeWithToken()`;
+     - this lets Login, RequireAuth, and AppLayout converge on the same backend
+       role truth instead of waiting for a later layout-only role refresh;
+     - expected behavior after deploy and fresh phone session: signing in as
+       `GMFN-U-63655DE6` should expose `Menu -> Admin Tools` again.
+   - Verification for admin-menu repair:
+     - Passed `npm --prefix frontend run audit:entry-auth`.
+     - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+     - Passed `npm --prefix frontend run audit:tap-stability`.
+     - `npm --prefix frontend run build` failed inside the sandbox with known
+       local esbuild `spawn EPERM`, then passed outside the sandbox.
    - Unabated truth:
      - admin role is now confirmed in the live Render database for
        `GMFN-U-63655DE6`;
@@ -487,6 +514,9 @@ Complaint ledger:
        be retired, but this still must be verified by phone lineage and sign-in;
      - if phone sign-in still reaches `GMFN-U-226AD3FD`, the merge did not fully
        repair the auth/phone path and needs a focused backend follow-up;
+     - if the profile picture remains missing after a fresh session, inspect
+       user `13`'s `profile_image_url` and whether the referenced upload file
+       exists on the live service;
      - the canonical account should be chosen only after comparing which live
        user owns the trusted phone, profile image, memberships, created
        communities, shops/products, broadcasts, TrustSlip, and trust events.
