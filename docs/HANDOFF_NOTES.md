@@ -1,3 +1,48 @@
+## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
+
+- Trigger:
+  - owner reported a parity difference between local phone shortcut behavior and
+    Render phone shortcut behavior: local shortcut opens Cover first, while the
+    Render shortcut opened Welcome first. Desired behavior is Cover first, then
+    Continue to Welcome.
+- Confirmed facts:
+  - live Render `manifest.json` already has `"start_url": "/cover?source=pwa"`;
+  - live Render `/welcome` currently returns the static app shell as `200 OK`
+    rather than an HTTP redirect because Render is serving the Vite static
+    build;
+  - the live HTML shell does contain the browser-side `/welcome` to `/cover`
+    redirect, so a current shell should self-correct;
+  - the remaining likely cause is an older installed phone shortcut or stale
+    service-worker shell that still launches `/welcome`.
+- Changed:
+  - `frontend/public/sw.js`
+    - bumped the service-worker cache from `gsn-pwa-shell-v10` to
+      `gsn-pwa-shell-v11`;
+    - added `/cover?source=pwa` to the shell cache;
+    - added a navigation-level service-worker redirect from bare `/welcome` to
+      `/cover`, preserving other query params and allowing
+      `/welcome?entry_from=cover`.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - now guards the Cover-first cached start URL and the service-worker
+      `/welcome` repair redirect.
+  - `docs/SCREEN_SPECS.md`
+    - corrected the PWA home-screen rule to document `/cover?source=pwa` as the
+      intended phone shortcut entry instead of the older dashboard-first note.
+- Verification:
+  - Passed `npm run audit:link-contracts`.
+  - Passed `npm run audit:entry-auth`.
+  - Passed `npm run audit:route-fallthrough`.
+  - Passed `npm run audit:protected-button-freeze`.
+  - Passed targeted `npx eslint` on `public/sw.js` and the link audit.
+  - Passed `npm run build`.
+  - Passed `git diff --check`.
+- Unabated truth:
+  - this repair is local only until pushed and deployed to Render;
+  - already-installed phone shortcuts can keep stale launch metadata until the
+    browser updates the service worker or the shortcut is recreated, but this
+    change gives the deployed service worker its own Cover-first repair once it
+    takes control.
+
 ## 2026-06-25 - Finance Phone Front Door Simplified Locally
 
 - Trigger:

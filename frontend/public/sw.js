@@ -1,9 +1,10 @@
-/* global caches, fetch, self, URL */
+/* global caches, fetch, Response, self, URL */
 
-const CACHE_VERSION = "gsn-pwa-shell-v10";
+const CACHE_VERSION = "gsn-pwa-shell-v11";
 const SHELL_ASSETS = [
   "/",
   "/cover",
+  "/cover?source=pwa",
   "/manifest.json",
   "/manifest.webmanifest",
   "/gsn-app-icon.svg",
@@ -52,6 +53,18 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/uploads")) return;
 
   if (request.mode === "navigate") {
+    const entryFrom = String(url.searchParams.get("entry_from") || "")
+      .trim()
+      .toLowerCase();
+
+    if (url.pathname === "/welcome" && entryFrom !== "cover") {
+      const target = new URL("/cover", self.location.origin);
+      url.searchParams.delete("entry_from");
+      target.search = url.searchParams.toString();
+      event.respondWith(Response.redirect(target.toString(), 302));
+      return;
+    }
+
     event.respondWith(
       fetch(request, { cache: "no-store" }).catch(() =>
         caches.match("/cover").then((res) => res || caches.match("/"))

@@ -79,9 +79,10 @@ Rules:
   web build must not actively trigger the native Android app-install prompt.
   Use browser home-screen/bookmark steps until a verified Android package or
   WebAPK-safe path exists.
-- The phone-screen shortcut should open the authenticated app entry at
-  `/app/dashboard?source=pwa`. If no valid session exists, the normal auth guard
-  sends the user to Sign In.
+- The phone-screen shortcut should open the public entry at
+  `/cover?source=pwa` first. Cover then continues to Welcome. If a valid signed-in
+  session is already present, the normal public-entry guard may carry the member
+  onward to the authenticated app instead of trapping them on entry screens.
 - Cover and Welcome must remain free to view for ordinary public browsing, but
   they must not trap signed-in PWA users away from the real app shell.
 - The prompt must not show competing install buttons. Use one clear button that
