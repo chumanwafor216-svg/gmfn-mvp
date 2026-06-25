@@ -712,8 +712,15 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function joinShareMessageCardStyle\(isCompact: boolean\): React\.CSSProperties[\s\S]*?height: isCompact \? 146 : 132,[\s\S]*?maxHeight: isCompact \? 146 : 132,[\s\S]*?overscrollBehavior: "contain",/,
+  /function joinShareMessageCardStyle\(isCompact: boolean\): React\.CSSProperties[\s\S]*?height: isCompact \? 146 : 132,[\s\S]*?minHeight: isCompact \? 146 : 132,[\s\S]*?maxHeight: isCompact \? 146 : 132,[\s\S]*?\};/,
   "The Join this community message preview must stay fixed-height so the lane does not reflow after invite creation."
+);
+
+assertFunctionNotContains(
+  "src/pages/MarketplacePage.tsx",
+  "joinShareMessageCardStyle",
+  /overscrollBehavior/,
+  "The Join this community message preview must not add an inner overscroll trap on phone."
 );
 
 assertContains(

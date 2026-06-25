@@ -160,12 +160,9 @@ export default function OwnerOnlySurfaceNav({
       </div>
       <div
         style={{
-          display: compact ? "flex" : "grid",
+          display: "grid",
           gridTemplateColumns: navGridTemplateColumns,
           gap: compact ? 6 : 8,
-          overflowX: compact ? "auto" : undefined,
-          overscrollBehaviorX: compact ? "contain" : undefined,
-          scrollbarWidth: compact ? "none" : undefined,
           paddingBottom: compact ? 1 : undefined,
         }}
       >
@@ -177,8 +174,7 @@ export default function OwnerOnlySurfaceNav({
             stableHeight={compact ? 38 : 52}
             debugId={link.debugId}
             style={{
-              flex: compact ? "0 0 auto" : undefined,
-              minWidth: compact ? 94 : 0,
+              minWidth: 0,
               fontSize: compact ? 10 : 13,
               borderRadius: compact ? 11 : 13,
               padding: compact ? "5px 8px" : "8px 10px",

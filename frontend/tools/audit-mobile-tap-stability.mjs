@@ -151,6 +151,12 @@ const communityShopControlPanelSource = readFileSync(
   communityShopControlPanelPath,
   "utf8"
 );
+const ownerOnlySurfaceNavPath = join(
+  sourceRoot,
+  "components",
+  "OwnerOnlySurfaceNav.tsx"
+);
+const ownerOnlySurfaceNavSource = readFileSync(ownerOnlySurfaceNavPath, "utf8");
 const indexCssPath = join(sourceRoot, "index.css");
 const indexCssSource = readFileSync(indexCssPath, "utf8");
 const stableButtonPath = join(sourceRoot, "components", "StableButton.tsx");
@@ -859,6 +865,24 @@ if (
       "Community shop public URL must stay a fixed non-scrolling link surface on phone",
     text:
       "Expected the public URL link to use fixed ellipsis treatment without an inner vertical scroll trap.",
+  });
+}
+
+if (
+  !/const navGridTemplateColumns = compact[\s\S]*?repeat\(auto-fit, minmax\(78px, 1fr\)\)[\s\S]*?<div[\s\S]*?display: "grid"[\s\S]*?gridTemplateColumns: navGridTemplateColumns[\s\S]*?<StableCtaLink[\s\S]*?stableHeight=\{compact \? 38 : 52\}[\s\S]*?minWidth: 0/.test(
+    ownerOnlySurfaceNavSource
+  ) ||
+  /overflowX: compact|overscrollBehaviorX: compact|scrollbarWidth: compact|flex: compact \?/.test(
+    ownerOnlySurfaceNavSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, ownerOnlySurfaceNavPath),
+    line: 1,
+    label:
+      "Owner surface shortcut nav must wrap into fixed cells instead of adding a horizontal phone scroller",
+    text:
+      "Expected compact owner shortcuts to use the grid template with fixed-height links and no overflowX/overscroll horizontal lane.",
   });
 }
 

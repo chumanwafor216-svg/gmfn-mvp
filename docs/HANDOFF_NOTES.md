@@ -1,3 +1,41 @@
+## 2026-06-25 - Public Shop Owner Shortcuts No Longer Scroll Horizontally
+
+- Trigger:
+  - continued the urgent phone drag/jumpy-button work after content-level
+    scroll traps were removed. The remaining suspicious non-overlay surface was
+    `OwnerOnlySurfaceNav`: the audit already described wrapped stable owner
+    shortcut cells, but the compact implementation still used a horizontal
+    flex scroller.
+- Changed:
+  - `frontend/src/components/OwnerOnlySurfaceNav.tsx`
+    - compact owner shortcuts now render as a wrapping grid instead of a
+      horizontal `overflowX` strip;
+    - removed compact horizontal overscroll containment and fixed-width flex
+      cells;
+    - kept the existing fixed-height `StableCtaLink` buttons and owner/public
+      visibility contract.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - added a guard that compact owner shortcuts must remain wrapped fixed
+      cells with no horizontal scroll lane.
+  - `frontend/tools/audit-link-contracts.mjs`
+    - updated the Join this community fixed-height message-preview contract so
+      it no longer requires the removed Marketplace overscroll trap.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `node tools/audit-shop-gallery-button-inventory.mjs` passed.
+  - `node tools/audit-button-stability.mjs` passed.
+  - `npm run audit:link-contracts` passed.
+  - targeted ESLint on touched files and audits passed.
+  - `npm run build` passed.
+- Unabated truth:
+  - this removes a real horizontal phone-drag lane from Public Shop owner
+    shortcuts, but it does not prove the whole app is perfect on Android;
+  - remaining containment is now mostly body-level, intentional app overlays,
+    bottom-nav tap handling, and the Dashboard attention popup overlay;
+  - this continuation is local and verified but not pushed, following the
+    current batch-first / push-last protocol.
+
 ## 2026-06-25 - Removed Tiny Content Scroll Traps From Phone Drag Path
 
 - Trigger:
