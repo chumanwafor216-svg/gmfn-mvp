@@ -1,3 +1,114 @@
+## 2026-06-25 - Active Pilot Complaint Ledger
+
+Purpose:
+- Keep every owner/community testing complaint from this morning in one place
+  while the owner continues reporting observations.
+- Do not treat a complaint as finished just because code was changed. Use the
+  status below until phone/Render evidence confirms it.
+
+Current status terms:
+- `Render confirmed`: pushed, deployed, and checked on Render.
+- `Local fixed`: code is committed locally and audits/build passed, but it is
+  not live on Render.
+- `Needs phone test`: must be checked on the owner's real phone.
+- `Needs deploy`: must be pushed/deployed before Render can show it.
+- `Not started`: recorded but not yet repaired.
+
+Complaint ledger:
+
+1. Phone drag / sticky scroll / jumpy buttons across the app
+   - Status: partly `Render confirmed`, still `Needs phone test`.
+   - Work already pushed and Render-confirmed through commit `17a9082`.
+   - Covered changes:
+     - TrustSlip route reset moved to shared no-jump helper;
+     - mobile shell uses dynamic viewport height;
+     - mobile main scroll releases native Android drag;
+     - tiny content scroll traps removed;
+     - Public Shop owner shortcuts no longer use horizontal scroll.
+   - Remaining truth:
+     - real Android phone remains the deciding test;
+     - if still sticky, inspect the exact route/section where the phone catches.
+
+2. Finance page feels busy/jumpy and exposes too many buttons
+   - Status: `Local fixed`, `Needs phone test`, `Needs deploy`.
+   - Local commit: `92d0917 Simplify Finance mobile lanes`.
+   - Current local behavior:
+     - phone first screen shows Money In, Money Summary, Records / Events;
+     - Banking Rails moves under `More lanes` on phone;
+     - Money Out, Payout Details, Signals / Readiness, and Trust Passport are
+       also under `More lanes`;
+     - `View Finance Signals` now uses the one-lane detail helper.
+   - Remaining truth:
+     - not pushed to GitHub;
+     - not deployed to Render;
+     - not yet confirmed on the owner's phone.
+
+3. Render phone shortcut opens Welcome instead of Cover
+   - Status: `Local fixed`, `Needs deploy`, `Needs phone test`.
+   - Local commit: `c376408 Repair PWA shortcut cover entry`.
+   - Desired behavior:
+     - phone-screen shortcut opens Cover first;
+     - Cover Continue opens Welcome.
+   - Confirmed facts:
+     - current Render manifest already says `/cover?source=pwa`;
+     - current Render shell has a browser-side Welcome-to-Cover correction;
+     - old installed phone shortcuts or stale service-worker shells can still
+       launch `/welcome`.
+   - Local repair:
+     - service worker cache bumped to `gsn-pwa-shell-v11`;
+     - service worker caches `/cover?source=pwa`;
+     - service worker redirects bare `/welcome` to `/cover` before React loads.
+   - Remaining truth:
+     - not pushed/deployed yet;
+     - old installed shortcuts may still need the browser/service worker to
+       refresh, or may need shortcut recreation if Android keeps old metadata.
+
+4. Admin command centre location and protection
+   - Status: `Confirmed from code`, `Needs phone navigation visibility test`.
+   - Current route:
+     - `/app/command-center`.
+   - Current menu label:
+     - `Admin Tools`.
+   - Current page title:
+     - `Trust Command Centre`.
+   - Access protection:
+     - `/app/command-center` is guarded by
+       `RequireAuth requireRole="adminOrClanAdmin"`;
+     - deeper platform-only admin pages are guarded by
+       `RequireAuth requireRole="admin"`.
+   - Remaining truth:
+     - route protection exists;
+     - still needs phone confirmation that the menu exposes `Admin Tools` when
+       the logged-in account really has platform-admin or community-admin role.
+
+5. Trust location after reshuffle
+   - Status: `Confirmed from code`, no repair made.
+   - Current route:
+     - `/app/trust`.
+   - Current aliases:
+     - `/app/trust-passport` redirects to `/app/trust`;
+     - Finance `Trust Passport` route also resolves to `/app/trust`.
+
+6. Wider duplicate buttons / duplicate notification surfaces
+   - Status: `Not started`, pending owner complaint collection.
+   - Owner concern:
+     - some areas show repeated actions, repeated notification-like functions,
+       or too many similar route buttons.
+   - Recommended process:
+     - collect all examples first;
+     - then audit one domain at a time;
+     - do not start broad deletion without route ownership checks.
+
+7. Current publish/deploy state
+   - Status: `Local ahead`, not Render-visible.
+   - Branch state at the time this ledger was created:
+     - `main...origin/main [ahead 2]`.
+   - Local commits not pushed:
+     - `92d0917 Simplify Finance mobile lanes`;
+     - `c376408 Repair PWA shortcut cover entry`.
+   - Render currently only has the previous deployed batch ending at
+     `17a9082`.
+
 ## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
 
 - Trigger:
