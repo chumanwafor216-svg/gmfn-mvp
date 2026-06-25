@@ -209,6 +209,17 @@ cd gmfn_backend
 python set_admin.py --email you@example.com
 ```
 
+If the account is easier to identify by GSN ID or verified phone number, use
+one of:
+
+```bash
+cd gmfn_backend
+python set_admin.py --gmfn-id GSN-U-63655DE6
+python set_admin.py --phone +447903165266
+```
+
+Provide exactly one of `--email`, `--gmfn-id`, or `--phone`.
+
 The script now uses the active configured database instead of a local SQLite path:
 
 - [gmfn_backend/set_admin.py](/abs/path/C:/Users/chukwuma%20pc/gmfn_mvp/gmfn_backend/set_admin.py:1)
