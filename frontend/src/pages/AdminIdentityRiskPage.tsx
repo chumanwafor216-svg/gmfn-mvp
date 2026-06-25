@@ -7,7 +7,11 @@ import {
   institutionalInnerCard,
   institutionalPageCard,
 } from "../lib/institutionalSurface";
-import { getAdminIdentityRisk, getAdminPhoneIdentityLineage } from "../lib/api";
+import {
+  getAdminIdentityRisk,
+  getAdminPhoneIdentityLineage,
+  postAdminIdentityReconciliation,
+} from "../lib/api";
 
 function safeStr(x: any): string {
   return String(x ?? "");
@@ -224,6 +228,13 @@ export default function AdminIdentityRiskPage() {
   const [phoneLineage, setPhoneLineage] = useState<any>(null);
   const [phoneLineageErr, setPhoneLineageErr] = useState("");
   const [phoneLineageBusy, setPhoneLineageBusy] = useState(false);
+  const [canonicalIdentity, setCanonicalIdentity] = useState("");
+  const [duplicateIdentity, setDuplicateIdentity] = useState("");
+  const [reconcileOwnerConfirmed, setReconcileOwnerConfirmed] = useState(false);
+  const [reconcileNote, setReconcileNote] = useState("");
+  const [reconcileBusy, setReconcileBusy] = useState<"preview" | "execute" | "">("");
+  const [reconcileResult, setReconcileResult] = useState<any>(null);
+  const [reconcileErr, setReconcileErr] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -272,6 +283,38 @@ export default function AdminIdentityRiskPage() {
       setPhoneLineageErr(String(e?.message || e || "Unable to load phone lineage."));
     } finally {
       setPhoneLineageBusy(false);
+    }
+  }
+
+  function identityLookupPayload(value: string, prefix: "canonical" | "duplicate") {
+    const cleaned = safeStr(value).trim().toUpperCase();
+    if (/^\d+$/.test(cleaned)) {
+      return { [`${prefix}_user_id`]: Number(cleaned) };
+    }
+    return { [`${prefix}_gmfn_id`]: cleaned };
+  }
+
+  async function handleIdentityReconciliation(execute: boolean) {
+    if (reconcileBusy) return;
+    const canonical = safeStr(canonicalIdentity).trim();
+    const duplicate = safeStr(duplicateIdentity).trim();
+    if (!canonical || !duplicate) return;
+
+    setReconcileBusy(execute ? "execute" : "preview");
+    setReconcileErr("");
+    try {
+      const res = await postAdminIdentityReconciliation({
+        ...identityLookupPayload(canonical, "canonical"),
+        ...identityLookupPayload(duplicate, "duplicate"),
+        owner_confirmed: reconcileOwnerConfirmed,
+        execute,
+        reviewer_note: safeStr(reconcileNote).trim() || undefined,
+      });
+      setReconcileResult(res || null);
+    } catch (e: any) {
+      setReconcileErr(String(e?.message || e || "Unable to reconcile identities."));
+    } finally {
+      setReconcileBusy("");
     }
   }
 
@@ -455,6 +498,187 @@ export default function AdminIdentityRiskPage() {
                 }}
               >
                 {JSON.stringify(phoneLineage, null, 2)}
+              </pre>
+            </details>
+          </div>
+        ) : null}
+      </div>
+
+      <div style={{ ...card(), marginTop: 18 }}>
+        <div>{sectionLabelWithIcon("identity-card", "Identity reconciliation")}</div>
+        <div style={{ marginTop: 10, ...helperText() }}>
+          Merge an owner-confirmed duplicate into the canonical GSN identity.
+          Preview first. Execute only after the owner has confirmed both records
+          belong to the same person.
+        </div>
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 10,
+          }}
+        >
+          <input
+            value={canonicalIdentity}
+            onChange={(event) => setCanonicalIdentity(event.target.value)}
+            placeholder="Canonical GSN ID or user ID"
+            style={{
+              width: "100%",
+              minHeight: 52,
+              boxSizing: "border-box",
+              borderRadius: 16,
+              border: "1px solid rgba(20,52,83,0.22)",
+              background: "#FFFFFF",
+              color: "#0B1F33",
+              fontSize: 16,
+              fontWeight: 900,
+              padding: "0 14px",
+            }}
+          />
+          <input
+            value={duplicateIdentity}
+            onChange={(event) => setDuplicateIdentity(event.target.value)}
+            placeholder="Duplicate GSN ID or user ID"
+            style={{
+              width: "100%",
+              minHeight: 52,
+              boxSizing: "border-box",
+              borderRadius: 16,
+              border: "1px solid rgba(20,52,83,0.22)",
+              background: "#FFFFFF",
+              color: "#0B1F33",
+              fontSize: 16,
+              fontWeight: 900,
+              padding: "0 14px",
+            }}
+          />
+        </div>
+        <textarea
+          value={reconcileNote}
+          onChange={(event) => setReconcileNote(event.target.value)}
+          placeholder="Reviewer note"
+          style={{
+            marginTop: 10,
+            width: "100%",
+            minHeight: 86,
+            boxSizing: "border-box",
+            borderRadius: 16,
+            border: "1px solid rgba(20,52,83,0.22)",
+            background: "#FFFFFF",
+            color: "#0B1F33",
+            fontSize: 16,
+            fontWeight: 800,
+            padding: 14,
+            resize: "vertical",
+          }}
+        />
+        <label
+          style={{
+            marginTop: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            color: "#0B1F33",
+            fontWeight: 900,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={reconcileOwnerConfirmed}
+            onChange={(event) => setReconcileOwnerConfirmed(event.target.checked)}
+            style={{ width: 18, height: 18 }}
+          />
+          <span>Owner confirmed both records are the same person</span>
+        </label>
+        <div
+          style={{
+            marginTop: 14,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+        >
+          <PrimaryButton
+            type="button"
+            busy={reconcileBusy === "preview"}
+            busyLabel="Previewing..."
+            disabled={!safeStr(canonicalIdentity).trim() || !safeStr(duplicateIdentity).trim()}
+            stableHeight={52}
+            minWidth={132}
+            debugId="admin-identity-risk.reconcile.preview"
+            onClick={() => handleIdentityReconciliation(false)}
+          >
+            Preview merge
+          </PrimaryButton>
+          <PrimaryButton
+            type="button"
+            busy={reconcileBusy === "execute"}
+            busyLabel="Merging..."
+            disabled={
+              !safeStr(canonicalIdentity).trim() ||
+              !safeStr(duplicateIdentity).trim() ||
+              !reconcileOwnerConfirmed
+            }
+            stableHeight={52}
+            minWidth={150}
+            debugId="admin-identity-risk.reconcile.execute"
+            onClick={() => handleIdentityReconciliation(true)}
+          >
+            Execute merge
+          </PrimaryButton>
+        </div>
+
+        {reconcileErr ? (
+          <div
+            style={{
+              marginTop: 12,
+              ...institutionalInnerCard("#FEF2F2"),
+              color: "#991B1B",
+              fontWeight: 900,
+            }}
+          >
+            {reconcileErr}
+          </div>
+        ) : null}
+
+        {reconcileResult ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+            <div
+              style={{
+                ...institutionalInnerCard(
+                  reconcileResult.mode === "execute" ? "#F0FDF4" : "#F8FBFF"
+                ),
+                border: "1px solid rgba(20,52,83,0.18)",
+              }}
+            >
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                {reconcileResult.mode === "execute" ? "Merge executed" : "Merge preview"}
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                {safeStr(reconcileResult.warning || "Review the operation record before continuing.")}
+              </div>
+            </div>
+            <details>
+              <StableDisclosureSummary
+                style={summaryToggle()}
+                debugId="admin-identity-risk.reconcile.raw"
+              >
+                {labelWithIcon("document", "Full reconciliation record")}
+              </StableDisclosureSummary>
+              <pre
+                style={{
+                  marginTop: 12,
+                  background: "#0B1F33",
+                  color: "#E5E7EB",
+                  padding: 16,
+                  borderRadius: 14,
+                  fontSize: 13,
+                  overflow: "auto",
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {JSON.stringify(reconcileResult, null, 2)}
               </pre>
             </details>
           </div>

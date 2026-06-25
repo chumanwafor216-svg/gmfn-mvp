@@ -2713,6 +2713,18 @@ export async function getAdminPhoneIdentityLineage(phoneE164: string): Promise<a
   );
 }
 
+export async function postAdminIdentityReconciliation(payload: {
+  canonical_user_id?: number | null;
+  canonical_gmfn_id?: string | null;
+  duplicate_user_id?: number | null;
+  duplicate_gmfn_id?: string | null;
+  owner_confirmed?: boolean;
+  execute?: boolean;
+  reviewer_note?: string | null;
+}): Promise<any> {
+  return httpJson("/identity-risk/admin/reconcile-duplicate", "POST", payload);
+}
+
 export async function getMyNotifications(
   limit: number = 50,
   unreadOnly: boolean = false

@@ -109,13 +109,14 @@ Complaint ledger:
      - `c376408 Repair PWA shortcut cover entry`;
      - `e6770d9 Record active pilot complaint ledger`;
      - `613f8d8 Record identity reconciliation complaint`;
-     - `df547da Record owner-confirmed identity duplicate`.
+     - `df547da Record owner-confirmed identity duplicate`;
+     - latest local commit: `Add admin identity reconciliation flow`.
    - Render currently only has the previous deployed batch ending at
      `17a9082`.
 
 8. Identity crisis / duplicate GSN identity pressure
-   - Status: `Owner-confirmed duplicate`, `Needs backend/data reconciliation
-     plan`, `Needs phone and Render confirmation`.
+   - Status: `Local fixed`, `Needs deploy`, `Needs phone/Render execution with
+     the real canonical and duplicate IDs`.
    - Owner observation:
      - owner joined a community and also created a community with what appears
        to be the same real person/details, resulting in two different GSN
@@ -176,6 +177,60 @@ Complaint ledger:
        reviewed, and the exact records moved or left historical;
      - after reconciliation, recalculate TrustSlip, CCI, profile/integrity, and
        phone verification state against the canonical identity.
+   - Local implementation:
+     - `gmfn_backend/app/services/identity_reconciliation_service.py`
+       - added an owner-confirmed duplicate reconciliation service;
+       - dry-run previews the records that would move;
+       - execute requires `owner_confirmed=true`;
+       - moves non-conflicting core records to the canonical user;
+       - closes duplicate memberships where the canonical user already belongs;
+       - retires the duplicate login/phone/GSN ID without deleting the row;
+       - records an `identity.duplicate_reconciled` TrustEvent audit trail.
+     - `gmfn_backend/app/api/routes/identity_risk.py`
+       - added admin-only `POST /identity-risk/admin/reconcile-duplicate`.
+     - `frontend/src/lib/api.ts`
+       - added `postAdminIdentityReconciliation`.
+     - `frontend/src/pages/AdminIdentityRiskPage.tsx`
+       - added an Admin Identity Risk reconciliation card with canonical ID,
+         duplicate ID, reviewer note, owner-confirmed checkbox, preview, execute,
+         and raw result disclosure.
+     - `gmfn_backend/tests/test_identity_reconciliation.py`
+       - added coverage for dry-run safety, owner-confirmation requirement, and
+         owner-confirmed execution.
+   - Verification:
+     - Passed `python -m py_compile
+       gmfn_backend\app\api\routes\identity_risk.py
+       gmfn_backend\app\services\identity_reconciliation_service.py
+       gmfn_backend\tests\test_identity_reconciliation.py`.
+     - Passed `python -m pytest -q
+       gmfn_backend\tests\test_identity_reconciliation.py --basetemp
+       C:\tmp\pytest-gmfn-identity-reconciliation`.
+     - Passed `python -m pytest -q gmfn_backend\tests\test_join_requests.py -k
+       "existing_phone_requires_gsn_id or existing_gmfn_id_reuses_global_identity
+       or join_identity_match_review_required or
+       existing_member_creates_second_community_without_new_identity or
+       direct_clan_join_reuses_existing_identity" --basetemp
+       C:\tmp\pytest-gmfn-join-identity-guards`.
+     - Passed `python -m pytest -q gmfn_backend\tests\test_entry_create.py -k
+       "blocks_second_identity_with_existing_bank_destination or
+       blocks_second_identity_with_existing_official_id or
+       blocks_second_identity_with_same_name_dob_profile or
+       blocks_second_identity_with_same_device_and_dob or phone_lineage_lookup"
+       --basetemp C:\tmp\pytest-gmfn-entry-identity-guards`.
+     - Passed `npm exec -- eslint src/pages/AdminIdentityRiskPage.tsx
+       src/lib/api.ts` from `frontend`.
+     - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+     - Passed `npm run audit:admin-ops-actions` from `frontend`.
+     - Passed `npm run audit:protected-button-freeze` from `frontend`.
+     - Passed `npm run audit:tap-stability` from `frontend`.
+     - Passed `npm run build` from `frontend`.
+   - Remaining truth:
+     - this is not live on Render until pushed/deployed;
+     - it cannot repair the owner account until the real canonical GSN/user ID
+       and duplicate GSN/user ID are supplied and the admin runs preview, then
+       execute after confirming the preview;
+     - if the preview reports `skipped_conflict` rows, those rows must be
+       reviewed before saying every evidence source has fully merged.
 
 ## 2026-06-25 - PWA Shortcut Cover-First Repair Prepared Locally
 

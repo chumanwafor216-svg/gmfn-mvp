@@ -10,6 +10,7 @@ from app.core.auth import get_current_user
 from app.core.auth import is_user_activation_pending
 from app.db.database import get_db
 from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
+from app.services.identity_reconciliation_service import reconcile_duplicate_identity
 from app.services.identity_service import (
     get_identity_recovery_summary,
     get_identity_risk_summary,
@@ -152,6 +153,40 @@ class RecoveryVerifyIn(BaseModel):
     answers: list[str] = Field(..., min_length=3, max_length=3)
 
 
+class AdminIdentityReconcileIn(BaseModel):
+    canonical_user_id: int | None = Field(default=None, ge=1)
+    canonical_gmfn_id: str | None = Field(default=None, min_length=6, max_length=64)
+    duplicate_user_id: int | None = Field(default=None, ge=1)
+    duplicate_gmfn_id: str | None = Field(default=None, min_length=6, max_length=64)
+    owner_confirmed: bool = False
+    execute: bool = False
+    reviewer_note: str | None = Field(default=None, max_length=600)
+
+
+def _resolve_reconcile_user(
+    db: Session,
+    *,
+    user_id: int | None,
+    gmfn_id: str | None,
+    label: str,
+) -> User:
+    if user_id is None and not str(gmfn_id or "").strip():
+        raise HTTPException(
+            status_code=400,
+            detail=f"{label} user_id or gmfn_id is required",
+        )
+
+    query = db.query(User)
+    if user_id is not None:
+        user = query.filter(User.id == int(user_id)).first()
+    else:
+        user = query.filter(User.gmfn_id == str(gmfn_id or "").strip().upper()).first()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail=f"{label} user was not found")
+    return user
+
+
 @router.post("/observe")
 def observe_identity(
     request: Request,
@@ -272,3 +307,40 @@ def admin_phone_identity_lineage(
             "or move a phone number."
         ),
     }
+
+
+@router.post("/admin/reconcile-duplicate")
+def admin_reconcile_duplicate_identity(
+    payload: AdminIdentityReconcileIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_admin(current_user)
+
+    canonical = _resolve_reconcile_user(
+        db,
+        user_id=payload.canonical_user_id,
+        gmfn_id=payload.canonical_gmfn_id,
+        label="Canonical",
+    )
+    duplicate = _resolve_reconcile_user(
+        db,
+        user_id=payload.duplicate_user_id,
+        gmfn_id=payload.duplicate_gmfn_id,
+        label="Duplicate",
+    )
+
+    try:
+        return reconcile_duplicate_identity(
+            db,
+            canonical_user=canonical,
+            duplicate_user=duplicate,
+            actor_user_id=int(current_user.id),
+            owner_confirmed=bool(payload.owner_confirmed),
+            execute=bool(payload.execute),
+            reviewer_note=str(payload.reviewer_note or "").strip(),
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
