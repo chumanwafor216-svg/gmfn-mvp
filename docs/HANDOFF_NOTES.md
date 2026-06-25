@@ -410,6 +410,15 @@ Complaint ledger:
        communities, shops/products, broadcasts, TrustSlip, trust events,
        identity-risk signals, device fingerprints, loans, payout destinations,
        and recovery profile counts.
+     - owner tested the helper on Render; `--gmfn-id GSN-U-22CCAD3FD` and
+       `--gmfn-id GMFN-U-A66CF7C0` returned `matched_user_count: 0` in the
+       captured output;
+     - owner also hit a helper crash for `GMFN-U-63655DE6` because Render's
+       live `loans.borrower_user_id` behaves as character text while the model
+       comparison was compiled as integer;
+     - patched the helper to count `loans_as_borrower` by text-casting the
+       borrower field and to return a small count error object instead of
+       crashing the whole report if a count query fails.
    - Unabated truth:
      - admin role is now confirmed in the live Render database for
        `GMFN-U-63655DE6`;

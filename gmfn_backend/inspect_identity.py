@@ -5,7 +5,7 @@ import json
 from collections import Counter
 from typing import Any
 
-from sqlalchemy import func, or_
+from sqlalchemy import String, cast, func, or_
 
 
 def parse_args() -> argparse.Namespace:
@@ -92,6 +92,22 @@ def _count(db: Any, model: Any, **filters: Any) -> int:
     return int(query.count())
 
 
+def _count_text_match(db: Any, model: Any, field: str, value: object) -> int:
+    query = db.query(model).filter(cast(getattr(model, field), String) == str(value))
+    return int(query.count())
+
+
+def _safe_count(label: str, fn: Any, db: Any) -> int | dict[str, str]:
+    try:
+        return int(fn())
+    except Exception as exc:
+        db.rollback()
+        return {
+            "error": str(exc).splitlines()[0],
+            "label": label,
+        }
+
+
 def _status_counts(db: Any, model: Any, user_field: str, user_id: int, status_field: str) -> dict[str, int]:
     rows = (
         db.query(getattr(model, status_field))
@@ -169,7 +185,11 @@ def _user_report(db: Any, user: Any) -> dict[str, Any]:
             "trust_events_as_subject": _count(db, TrustEvent, subject_user_id=user_id),
             "identity_risk_signals": _count(db, IdentityRiskSignal, user_id=user_id),
             "device_fingerprints": _count(db, DeviceFingerprint, user_id=user_id),
-            "loans_as_borrower": _count(db, Loan, borrower_user_id=user_id),
+            "loans_as_borrower": _safe_count(
+                "loans_as_borrower",
+                lambda: _count_text_match(db, Loan, "borrower_user_id", user_id),
+                db,
+            ),
             "payout_destinations": _count(db, UserPayoutDestination, user_id=user_id),
             "recovery_profiles": _count(db, IdentityRecoveryProfile, user_id=user_id),
         },
