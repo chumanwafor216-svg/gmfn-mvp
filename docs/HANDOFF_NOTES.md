@@ -64,7 +64,8 @@ Complaint ledger:
        refresh, or may need shortcut recreation if Android keeps old metadata.
 
 4. Admin command centre location and protection
-   - Status: `Confirmed from code`, `Needs phone navigation visibility test`.
+   - Status: `Local fixed`, `Needs phone navigation visibility test`,
+     `Needs deploy`.
    - Current route:
      - `/app/command-center`.
    - Current menu label:
@@ -80,6 +81,34 @@ Complaint ledger:
      - route protection exists;
      - still needs phone confirmation that the menu exposes `Admin Tools` when
        the logged-in account really has platform-admin or community-admin role.
+   - Local phone bounce update on `2026-06-25`:
+     - owner reported that tapping Menu -> Admin on local phone was throwing
+       the session back toward Welcome/sign-in after the local identity merge;
+     - backend checks showed local `/auth/me` still returns canonical admin
+       user `1` / `GMFN-U-9867079C`;
+     - frontend proxy checks through `http://127.0.0.1:5180/api/auth/me` and
+       `/api/auth/login` also succeeded, including sign-in by
+       `admin@test.com`, `GMFN-U-9867079C`, and `+447903165266`;
+     - likely real cause is either stale phone browser storage after retiring
+       duplicate `GMFN-U-A66CF7C0`, or a short phone/API session-check wobble
+       while entering a guarded admin route;
+     - `frontend/src/components/RequireAuth.tsx` now keeps an admin-only route
+       open during a network/session-check wobble when a token exists and the
+       cached local role is already `admin`; backend admin APIs still enforce
+       the real permission.
+   - Verification for the bounce patch:
+     - Passed `npm run audit:entry-auth`.
+     - Passed `npm run audit:protected-button-freeze`.
+     - Passed `npm run audit:tap-stability`.
+     - Passed `npm exec -- tsc -b --pretty false`.
+     - Passed `npm run build`.
+     - In-app Browser was unavailable and Playwright's Chromium binary is not
+       installed locally, so no browser screenshot check was completed.
+   - Phone recovery instruction:
+     - if the phone still bounces after this local frontend reloads, open
+       `http://192.168.1.13:5180/reset` once, then sign in again with the local
+       canonical admin identity `GMFN-U-9867079C` / `admin@test.com`; this clears
+       any token or GSN ID left from the retired duplicate.
 
 5. Trust location after reshuffle
    - Status: `Confirmed from code`, no repair made.
@@ -103,7 +132,7 @@ Complaint ledger:
    - Status: `Pushed`, frontend deploy requested, backend deploy blocked by
      missing Render API credentials.
    - Branch state:
-     - `main` was pushed to GitHub through commit `c080796` on
+     - `main` was pushed to GitHub through commit `8f3aa37` on
        `2026-06-25`.
    - Commits included in the pushed batch:
      - `92d0917 Simplify Finance mobile lanes`;
@@ -113,7 +142,9 @@ Complaint ledger:
      - `df547da Record owner-confirmed identity duplicate`;
      - `d535cae Avoid stale ahead count in handoff`;
      - `ea94cda Add admin identity reconciliation flow`;
-     - `c080796 Cage admin identity reconciliation flow`.
+     - `c080796 Cage admin identity reconciliation flow`;
+     - `b27d70f Record Render deploy blockage`;
+     - `8f3aa37 Record local identity merge execution`.
    - Render deploy attempt:
      - manually triggered GitHub Actions workflow `Trigger Render Deploy`,
        run `28152959553`, with `deploy_api=true`;

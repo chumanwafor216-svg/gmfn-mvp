@@ -71,6 +71,24 @@ function hasAdminAccess(me: any): boolean {
   return role === "admin";
 }
 
+function readCachedRole(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return String(window.localStorage.getItem("gmfn_role") || "")
+      .trim()
+      .toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function cachedRoleAllows(requireRole: Props["requireRole"]): boolean {
+  const role = readCachedRole();
+  if (requireRole === "admin") return role === "admin";
+  if (requireRole === "adminOrClanAdmin") return role === "admin";
+  return false;
+}
+
 function resolveClanRole(currentClan: any): string {
   return String(
     currentClan?.role ||
@@ -282,6 +300,15 @@ export default function RequireAuth({ children, requireRole }: Props) {
             setAccessToken(null);
             setStoredGmfnId(null);
             setSelectedClanId(null);
+          }
+          if (
+            requireRole &&
+            isNetworkSessionError(meError) &&
+            cachedRoleAllows(requireRole)
+          ) {
+            setContinuityBlock(null);
+            finish(true);
+            return;
           }
           if (!requireRole && isNetworkSessionError(meError)) {
             setContinuityBlock(null);
