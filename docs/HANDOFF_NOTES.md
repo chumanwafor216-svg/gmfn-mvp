@@ -1,3 +1,46 @@
+## 2026-06-25 - Mobile Bottom Rail Drag Conflict Removed
+
+- Trigger:
+  - owner clarified that the urgent issue is phone drag/stickiness and jumpy
+    buttons: when dragging up/down, the screen can feel glued, hang, then
+    release.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - removed the old bottom-rail horizontal scrolling mechanics after the rail
+      was reduced to five anchors;
+    - removed `mobileBottomNavRef` and the active-item `requestAnimationFrame`
+      `scrollTo` recentering effect;
+    - changed the mobile bottom rail from a horizontal flex scroller to a fixed
+      five-column grid;
+    - removed scroll snap and `pan-x` touch handling from the rail;
+    - set bottom rail and item touch handling to tap-only `manipulation`;
+    - kept the existing bottom-nav action roots and active markers so the shared
+      tap guard still recognizes bottom-nav interception.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - now protects the fixed-slot, tap-only bottom rail contract.
+  - `docs/BUTTON_STABILITY_FREEZE.md`
+    - records that the five-anchor rail must not restore horizontal rail
+      scrolling, scroll snap, or active-item auto-centering.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:protected-button-freeze` passed.
+  - `npm run audit:link-contracts` passed.
+  - `node tools/audit-dashboard-button-inventory.mjs` passed.
+  - `node tools/audit-community-home-button-inventory.mjs` passed.
+  - `node tools/audit-marketplace-button-inventory.mjs` passed.
+  - `node tools/audit-notifications-button-inventory.mjs` passed.
+  - targeted ESLint on touched files passed.
+  - `npm run build` passed.
+  - local browser launch succeeded after escalation, but `/app/dashboard`
+    redirected to `/login?session=expired`, so it could not visually inspect the
+    authenticated bottom rail without a valid local session.
+- Unabated truth:
+  - this removes a real global-shell source of sticky phone drag and bottom-nav
+    jumpiness. It does not solve every page-local jump yet. The next likely
+    offenders are route-local `scrollIntoView`/reveal flows on Community Home,
+    Finance, Shop Control, Demand Box, and Trust/Marketplace detail lanes.
+
 ## 2026-06-25 - Present-Style Five-Anchor Mobile Rail Implemented
 
 - Trigger:

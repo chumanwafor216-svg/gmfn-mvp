@@ -974,9 +974,9 @@ const appShellChecks = [
   },
   {
     label:
-      "Mobile bottom rail must scroll horizontally without stealing vertical page momentum",
+      "Mobile bottom rail must stay fixed-slot and tap-only so it cannot fight vertical phone drags",
     pattern:
-      /function bottomNav\(\): React\.CSSProperties \{[\s\S]*?overflowX: "auto"[\s\S]*?overflowY: "hidden"[\s\S]*?WebkitOverflowScrolling: "touch"[\s\S]*?overscrollBehaviorX: "contain"[\s\S]*?overscrollBehaviorY: "none"[\s\S]*?touchAction: "pan-x pinch-zoom"[\s\S]*?const bottomNav = mobileBottomNavRef\.current;[\s\S]*?bottomNav\.scrollTo\(\{[\s\S]*?left: Math\.max\(nextLeft, 0\),[\s\S]*?behavior: "auto",[\s\S]*?}\);/,
+      /function bottomNav\(\): React\.CSSProperties \{[\s\S]*?display: "grid"[\s\S]*?gridTemplateColumns: "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?overflowX: "hidden"[\s\S]*?overscrollBehaviorX: "none"[\s\S]*?overscrollBehaviorY: "none"[\s\S]*?touchAction: "manipulation"[\s\S]*?function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties \{[\s\S]*?width: "100%"[\s\S]*?minWidth: 0[\s\S]*?touchAction: "manipulation"/,
   },
   {
     label:

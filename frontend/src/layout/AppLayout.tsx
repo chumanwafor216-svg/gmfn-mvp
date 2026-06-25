@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { getCurrentClan, getMe, getStoredGmfnId, logout } from "../lib/api";
 import {
@@ -1401,21 +1401,20 @@ function bottomNav(): React.CSSProperties {
     position: "relative",
     zIndex: 1,
     flexShrink: 0,
-    display: "flex",
-    gap: 7,
-    justifyContent: "flex-start",
-    overflowX: "auto",
+    display: "grid",
+    gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+    gap: 6,
+    justifyContent: "stretch",
+    overflowX: "hidden",
     overflowY: "hidden",
     padding: "7px 9px calc(9px + env(safe-area-inset-bottom, 0px))",
     background: "rgba(244,248,255,0.99)",
     borderTop: "1px solid rgba(29,95,212,0.12)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.76)",
-    WebkitOverflowScrolling: "touch",
-    overscrollBehaviorX: "contain",
+    overscrollBehaviorX: "none",
     overscrollBehaviorY: "none",
-    touchAction: "pan-x pinch-zoom",
+    touchAction: "manipulation",
     pointerEvents: "none",
-    scrollSnapType: "x proximity",
     scrollbarWidth: "none",
     msOverflowStyle: "none",
   };
@@ -1423,19 +1422,19 @@ function bottomNav(): React.CSSProperties {
 
 function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   return {
-    flex: "0 0 auto",
-    minWidth: 60,
+    width: "100%",
+    minWidth: 0,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     height: 42,
     minHeight: 42,
     maxHeight: 42,
-    padding: "8px 9px",
+    padding: "8px 4px",
     borderRadius: 12,
     textDecoration: "none",
     textAlign: "center",
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: active ? 900 : 800,
     color: disabled ? "#94A3B8" : active ? "#0A4FB5" : "#27435F",
     background: active
@@ -1447,8 +1446,8 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
-    scrollSnapAlign: "center",
     pointerEvents: "auto",
+    touchAction: "manipulation",
     cursor: disabled ? "not-allowed" : "pointer",
     boxShadow: active
       ? "inset 0 0 0 1px rgba(29,95,212,0.08)"
@@ -1526,7 +1525,6 @@ export default function AppLayout() {
     () => communityIdFromSearch(location.search),
     [location.search]
   );
-  const mobileBottomNavRef = useRef<HTMLElement | null>(null);
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1763,42 +1761,6 @@ export default function AppLayout() {
       document.body.style.overflow = previousOverflow;
     };
   }, [isDrawerOpen, isActionsOpen, isMobile]);
-
-  useEffect(() => {
-    if (!isMobile) return;
-    if (!mobileBottomNavRef.current) return;
-
-    const activeItem = mobileBottomNavRef.current.querySelector<HTMLElement>(
-      '[data-bottom-nav-active="true"]'
-    );
-
-    if (!activeItem) return;
-
-    const frame = window.requestAnimationFrame(() => {
-      const bottomNav = mobileBottomNavRef.current;
-      if (!bottomNav) return;
-
-      const navRect = bottomNav.getBoundingClientRect();
-      const itemRect = activeItem.getBoundingClientRect();
-      const isVisible =
-        navRect &&
-        itemRect.left >= navRect.left + 8 &&
-        itemRect.right <= navRect.right - 8;
-
-      if (isVisible) return;
-
-      const nextLeft =
-        activeItem.offsetLeft -
-        Math.max((bottomNav.clientWidth - activeItem.offsetWidth) / 2, 0);
-
-      bottomNav.scrollTo({
-        left: Math.max(nextLeft, 0),
-        behavior: "auto",
-      });
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [isMobile, location.pathname, location.search, canUseAdminTools]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2409,11 +2371,7 @@ export default function AppLayout() {
       </main>
 
       {showMobileBottomRail ? (
-        <nav
-          ref={mobileBottomNavRef}
-          data-gmfn-bottom-nav="true"
-          style={bottomNav()}
-        >
+        <nav data-gmfn-bottom-nav="true" style={bottomNav()}>
           {mobileBottomItems.map((item) => (
             <StableCtaLink
               key={`bottom-${item.label}-${item.to}`}

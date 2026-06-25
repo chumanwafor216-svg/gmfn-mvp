@@ -95,3 +95,8 @@ Loans, Trust, Admin, Shop Control, Identity, and related detail tools remain
 reachable through the drawer and route-local task/action surfaces. Do not restore
 the old seven-plus-domain bottom rail unless the product owner explicitly
 reopens the Present-style mobile benchmark decision.
+
+That five-anchor rail is also intentionally fixed-slot and tap-only. It must not
+restore horizontal rail scrolling, scroll snap, or active-item auto-centering,
+because those mechanics can fight vertical phone drags and make the screen feel
+sticky before it releases.
