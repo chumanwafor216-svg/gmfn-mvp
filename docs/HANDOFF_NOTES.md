@@ -70197,6 +70197,32 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Loan Summary shows support purpose
+
+- Trigger:
+  - after making support request purpose required and exposing it from the
+    backend summary contract, the Loan Summary screen still needed to show that
+    purpose to the user.
+- Unabated truth:
+  - backend truth without visible user context is incomplete for pilot testing;
+  - this slice only presents the stored purpose, it does not change loan
+    approval, guarantor selection, payout, or repayment logic.
+- Changed:
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+    - reads `summary.purpose` with `summary.note` as fallback;
+    - shows the purpose in the fixed support context badges;
+    - adds purpose to the Summary Facts tiles;
+    - includes the purpose in the copied GSN support summary snapshot.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm run build` from `frontend` after sandbox escalation.
+- Still not changed:
+  - no new backend fields were added in this slice;
+  - no payout automation or approval PIN trigger was added.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Support expiry route pinned by backend test
 
 - Trigger:

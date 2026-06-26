@@ -907,6 +907,7 @@ export default function LoanSummaryPage() {
   }, [feedback]);
 
   const currency = summary?.currency ?? "NGN";
+  const supportPurpose = firstTruthy(summary?.purpose, summary?.note);
   const isAdmin =
     lc(firstTruthy(me?.role, (me as any)?.account_role, (me as any)?.user_role)) ===
     "admin";
@@ -1234,7 +1235,9 @@ export default function LoanSummaryPage() {
 
     return buildGsnSupportEvidencePackage({
       title: "GSN Support Summary Snapshot",
-      purpose: "Review current support status, supporter state, and repayment evidence.",
+      purpose: supportPurpose
+        ? `Review support request: ${supportPurpose}`
+        : "Review current support status, supporter state, and repayment evidence.",
       reference: `support-${summary.id}`,
       memberName,
       gsnId: gmfnId,
@@ -1246,6 +1249,7 @@ export default function LoanSummaryPage() {
       amount: fmtMoney(n(summary.amount), currency),
       status: safeStr(summary.status),
       detailLines: [
+        supportPurpose ? `Purpose: ${supportPurpose}` : "",
         `Supporters needed: ${requiredCount}`,
         `Recorded support: ${approvedCount}`,
         `Pending supporters: ${pendingGuarantors.length}`,
@@ -1270,6 +1274,7 @@ export default function LoanSummaryPage() {
     requiredCount,
     summary,
     summaryNextStep,
+    supportPurpose,
   ]);
 
   if (!numericLoanId) {
@@ -1469,6 +1474,9 @@ export default function LoanSummaryPage() {
               <span style={badge(false)}>GSN ID: {gmfnId}</span>
               <span style={badge(false)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
+              {supportPurpose ? (
+                <span style={badge(false)}>Purpose: {supportPurpose}</span>
+              ) : null}
               <span style={badge(false)}>Current step: Support summary</span>
             </div>
 
@@ -1608,6 +1616,21 @@ export default function LoanSummaryPage() {
               gap: 12,
             }}
           >
+            <div style={statTile()}>
+              <div style={sectionLabel()}>Purpose</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: 17,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {supportPurpose || "Not stated"}
+              </div>
+            </div>
+
             <div style={statTile()}>
               <div style={sectionLabel()}>Amount</div>
               <div
