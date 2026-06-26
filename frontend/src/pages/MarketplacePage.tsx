@@ -4242,11 +4242,13 @@ export default function MarketplacePage() {
 
   const scrollToMarketplaceSection = useCallback(function scrollToMarketplaceSection(
     id: string,
-    attempt = 0
+    attempt = 0,
+    force = false
   ) {
     if (
-      marketplaceActiveElementIsEditable() ||
-      marketplaceRecentlyInteractedWithField()
+      !force &&
+      (marketplaceActiveElementIsEditable() ||
+        marketplaceRecentlyInteractedWithField())
     ) {
       pendingMarketplaceSectionRef.current = "";
       traceMarketplaceLanding({
@@ -4291,7 +4293,7 @@ export default function MarketplacePage() {
     if (attempt >= 7) return;
     scrollFrameRef.current = window.requestAnimationFrame(() => {
       scrollFrameRef.current = null;
-      scrollToMarketplaceSection(id, attempt + 1);
+      scrollToMarketplaceSection(id, attempt + 1, force);
     });
   }, []);
 
@@ -4302,12 +4304,17 @@ export default function MarketplacePage() {
   }, [cancelMarketplaceSectionScroll]);
 
   const scheduleMarketplaceSectionScroll = useCallback(
-    function scheduleMarketplaceSectionScroll(sectionId: string) {
+    function scheduleMarketplaceSectionScroll(
+      sectionId: string,
+      opts?: { force?: boolean }
+    ) {
       if (typeof window === "undefined") return;
+      const force = Boolean(opts?.force);
       cancelMarketplaceSectionScroll();
       if (
-        marketplaceActiveElementIsEditable() ||
-        marketplaceRecentlyInteractedWithField()
+        !force &&
+        (marketplaceActiveElementIsEditable() ||
+          marketplaceRecentlyInteractedWithField())
       ) {
         pendingMarketplaceSectionRef.current = "";
         traceMarketplaceLanding({
@@ -4325,7 +4332,7 @@ export default function MarketplacePage() {
       scrollFrameRef.current = window.requestAnimationFrame(() => {
         scrollFrameRef.current = window.requestAnimationFrame(() => {
           scrollFrameRef.current = null;
-          scrollToMarketplaceSection(sectionId);
+          scrollToMarketplaceSection(sectionId, 0, force);
           if (pendingMarketplaceSectionRef.current === sectionId) {
             pendingMarketplaceSectionRef.current = "";
           }
@@ -5046,7 +5053,9 @@ export default function MarketplacePage() {
       }
     }
 
-    scrollToMarketplaceSection("marketplace-loans-support");
+    scheduleMarketplaceSectionScroll("marketplace-loans-support", {
+      force: true,
+    });
     clearMarketplaceHash();
   }, [
     location.hash,
@@ -5054,7 +5063,7 @@ export default function MarketplacePage() {
     location.search,
     activeCommunityId,
     currentGmfnId,
-    scrollToMarketplaceSection,
+    scheduleMarketplaceSectionScroll,
   ]);
 
   useEffect(() => {

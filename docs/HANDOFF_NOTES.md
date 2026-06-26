@@ -69203,6 +69203,37 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Force Marketplace Support Requests landing after Money Out
+
+- Trigger:
+  - owner phone-tested again and reported that Money Out `Continue` still
+    dumped the user on the Marketplace page instead of landing directly on the
+    Support Requests lane shown in the supplied screenshots.
+- Root cause found:
+  - the URL target was already `/app/marketplace?...#marketplace-loans-support`,
+    but Marketplace attempted to scroll immediately after opening the section;
+  - on phone this could run before React rendered the opened support section,
+    or the route landing could be skipped by the recent-field-touch guard after
+    the user typed in Money Out.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added a forced section landing mode for deliberate route-hash landings;
+    - the `#marketplace-loans-support` route effect now schedules the scroll
+      after the support section opens and bypasses the field-touch skip guard;
+    - normal in-page Marketplace section clicks keep the existing guarded
+      behavior.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+- Unabated truth:
+  - this fixes the landing reliability, not the loan business logic itself;
+  - Money Out still relies on the existing stored handoff for amount/purpose,
+    and Marketplace Support Requests remains the active continuation lane.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Restore Marketplace Support Requests as the real continuation
 
 - Trigger:
