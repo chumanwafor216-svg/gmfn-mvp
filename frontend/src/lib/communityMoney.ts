@@ -1134,11 +1134,26 @@ export async function saveCommunitySettlementDestination(
   };
 
   let viaWrapper = null;
+  let saveError: any = null;
   if (typeof (api as any).updateWithdrawalDestination === "function") {
-    viaWrapper = await (api as any).updateWithdrawalDestination(payload).catch(() => null);
+    viaWrapper = await (api as any)
+      .updateWithdrawalDestination(payload)
+      .catch((error: any) => {
+        saveError = error;
+        return null;
+      });
   }
   if (!viaWrapper && typeof (api as any).saveWithdrawalDestination === "function") {
-    viaWrapper = await (api as any).saveWithdrawalDestination(payload).catch(() => null);
+    viaWrapper = await (api as any)
+      .saveWithdrawalDestination(payload)
+      .catch((error: any) => {
+        saveError = error;
+        return null;
+      });
+  }
+
+  if (!viaWrapper && saveError) {
+    throw saveError;
   }
 
   const src =

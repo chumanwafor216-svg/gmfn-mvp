@@ -69049,3 +69049,35 @@ GSN-branded invite composer and invite-entry continuity.
   - this fixes the visibility of the save result; it does not prove the live
     backend accepted the saved bank details until the owner retries after the
     frontend deploy completes.
+
+### Follow-up same day - Removed unnecessary GSN ID block from Money Out save
+
+- Trigger:
+  - owner retried Money Out Rail after the toast visibility fix and saw the
+    now-visible message: `Your GSN ID is not ready yet.`
+- Root cause:
+  - Marketplace was blocking personal payout-account saving when `me.gmfn_id`
+    was missing from the frontend session object.
+  - The backend payout destination route is session-backed and already knows
+    the signed-in user from the token, so the frontend should not block this
+    save just because that display id field is late/missing.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - `currentGmfnId` now falls back to `getStoredGmfnId()`;
+    - Money Out Rail save no longer blocks on a missing frontend GSN ID;
+    - when no GSN ID is visible, the save still calls the session-backed payout
+      API and updates local UI from the returned destination.
+  - `frontend/src/lib/communityMoney.ts`
+    - payout save helper no longer silently falls back to local data if both
+      API save attempts fail;
+    - Marketplace now shows the backend/API error text when saving fails.
+- Verification:
+  - Passed `npm run audit:marketplace-button-inventory` from `frontend`.
+  - Passed `npm run audit:marketplace-money-pool-lane` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this should clear the false `GSN ID is not ready yet` blocker;
+  - if the save still fails after deploy, the toast should now show the real
+    backend/API reason rather than pretending local data was saved.

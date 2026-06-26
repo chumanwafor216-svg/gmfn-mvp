@@ -60,6 +60,7 @@ import {
   getPoolMe,
   getRoscaCycles,
   getSelectedClanId,
+  getStoredGmfnId,
   listMyPaymentInstructionExpectedPayments,
   recordRoscaCyclePayout,
   setSelectedClanId,
@@ -3725,7 +3726,7 @@ export default function MarketplacePage() {
     [routeRepostBlockNumber, routeRepostProductId, routeRepostSource]
   );
   const selectedClanId = routeSelectedClanId || Number(getSelectedClanId() || 0);
-  const currentGmfnId = safeStr(me?.gmfn_id || "");
+  const currentGmfnId = firstTruthy(me?.gmfn_id, getStoredGmfnId());
   const publicShopOwnerId = firstTruthy(
     publicShopRecord?.owner_gmfn_id,
     publicShopRecord?.gmfn_id,
@@ -5589,28 +5590,21 @@ export default function MarketplacePage() {
   }
 
   async function saveMoneyOutDestination() {
-    if (!currentGmfnId) {
-      setNotice({
-        tone: "error",
-        text: "Your GSN ID is not ready yet.",
-      });
-      return;
-    }
-
     const destinationCommunityId = activeCommunityId || selectedClanId || 0;
+    const destinationGmfnId = currentGmfnId || "";
 
     setSavingMoneyOutDestination(true);
     try {
       const saved = await saveCommunitySettlementDestination(
         destinationCommunityId,
-        currentGmfnId,
+        destinationGmfnId,
         moneyOutDestinationDraft
       );
 
-      const refreshed = destinationCommunityId
+      const refreshed = destinationCommunityId && destinationGmfnId
         ? await getCommunityMoneySurface(
             destinationCommunityId,
-            currentGmfnId,
+            destinationGmfnId,
             firstTruthy(saved?.currency, moneySurface?.poolCurrency, "GBP")
           ).catch(() => null)
         : null;
@@ -5634,10 +5628,12 @@ export default function MarketplacePage() {
         tone: "success",
         text: "Money out destination saved.",
       });
-    } catch {
+    } catch (error: any) {
       setNotice({
         tone: "error",
-        text: "Money out destination could not be saved.",
+        text:
+          safeStr(error?.message) ||
+          "Money out destination could not be saved.",
       });
     } finally {
       setSavingMoneyOutDestination(false);
