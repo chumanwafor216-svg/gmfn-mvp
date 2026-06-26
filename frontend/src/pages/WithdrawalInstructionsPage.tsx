@@ -758,10 +758,10 @@ export default function WithdrawalInstructionsPage() {
         "money-out.route.workbench"
       ),
       supportStart: routeTarget(
-        "loans",
+        "marketplace",
         selectedClanId,
         "money-out.route.support-start",
-        "loans-support-overview"
+        "marketplace-loans-support"
       ),
       loans: routeTarget("loans", selectedClanId, "money-out.route.loans"),
       notifications: routeTarget(

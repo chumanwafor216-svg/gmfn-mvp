@@ -69203,6 +69203,44 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Restore Marketplace Support Requests as the real continuation
+
+- Trigger:
+  - owner clarified with phone screenshots that the first three Marketplace
+    Support Requests screens are the correct continuation after Money Out;
+  - the outside `/app/loans` page is not the main continuation for this step;
+    it should remain a deeper/subordinate support guide, opened only when the
+    inside Marketplace support lane needs it.
+- Corrected:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - Money Out support-needed `Continue` again resolves to
+      `/app/marketplace?...#marketplace-loans-support`;
+    - this uses the existing Marketplace hash effect that opens the support
+      lane, scrolls to it, and pre-fills amount/purpose from the stored Money
+      Out handoff.
+  - `frontend/src/pages/LoansPage.tsx`
+    - when a Money Out handoff exists, the outer Loans page primary action now
+      sends the user back into the inside Marketplace Support Requests lane;
+    - the page copy now describes that as opening the inside Marketplace
+      support lane, not continuing on the outside Loans page.
+- Confirmed from code:
+  - Marketplace already handles `#marketplace-loans-support` by opening only
+    the support section and reading `gmfn.withdrawal.task.v5` for the saved
+    amount and purpose;
+  - no support/readiness/suggestions pages were deleted.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+- Unabated truth:
+  - this supersedes the previous local routing choice that landed support on
+    the outside Loans page;
+  - the correct user-facing continuation is the Marketplace Support Requests
+    lane shown in the owner screenshots.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Guided Withdrawal lands directly on Loans & Support
 
 - Trigger:
