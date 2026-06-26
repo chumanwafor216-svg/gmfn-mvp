@@ -924,14 +924,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /Use the exact reference\. If automatic matching is not live yet, note your screenshot here and share it if finance asks\./,
-  "Money In payment instruction must keep user-facing payment guidance while avoiding confirmed-receipt or backend-upload wording."
+  /Use the exact reference\. Upload proof here if automatic matching is not live yet\./,
+  "Money In payment instruction must keep user-facing payment guidance while avoiding confirmed-receipt wording."
 );
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /Payment noted\. GSN finance will match it with the bank record\. Share your screenshot if they ask\./,
-  "Money In success notice must frame the action as a member note awaiting finance matching."
+  /Proof uploaded for finance review\. It does not confirm payment yet\./,
+  "Money In proof upload must frame the action as review evidence, not confirmed receipt."
 );
 
 assertContains(

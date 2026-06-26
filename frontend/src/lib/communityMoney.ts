@@ -46,6 +46,7 @@ export type PaymentRailContext = {
 };
 
 export type CommunityMoneyRoute = {
+  expectedPaymentId?: number | null;
   title: string;
   detail: string;
   status: string;
@@ -912,6 +913,7 @@ export async function createPoolDepositInstruction(params: {
   const settlement = communityPayIn || normalized.settlement || rail?.settlement || null;
 
   return {
+    expectedPaymentId: normalized.expectedPaymentId,
     title: "Generated Pool Deposit Instruction",
     detail: [
       settlement?.railName

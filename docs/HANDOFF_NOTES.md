@@ -70006,6 +70006,65 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Money In proof upload attached to expected payments
+
+- Trigger:
+  - continued the Money In / Money Out / Support audit work after confirming
+    that the Money In proof action was still only a local phone note;
+  - owner wants system-level corrections, not page-only language.
+- Unabated truth:
+  - before this slice, selecting a screenshot could set the local Money In task
+    to `paymentConfirmed`;
+  - that was too strong because a screenshot is review evidence, not a bank
+    match and not confirmed receipt;
+  - automatic bank reconciliation and payout movement are still not added here.
+- Changed:
+  - `gmfn_backend/app/api/routes/payment_instructions.py`
+    - added `POST /payment-instructions/expected/{expected_payment_id}/proof`;
+    - accepts JPG, PNG, WEBP, or PDF proof up to 10MB;
+    - stores files under `/uploads/payment-proofs/...`;
+    - requires same clan, same expected-payment owner unless admin, and exact
+      generated reference match;
+    - appends proof metadata to `ExpectedPayment.meta_json` under
+      `payment_proofs`, `latest_payment_proof`, and `proof_status`;
+    - does not change expected-payment status to paid/confirmed.
+  - `frontend/src/lib/api.ts`
+    - added `uploadPaymentInstructionProofFile`.
+  - `frontend/src/lib/communityMoney.ts`
+    - carries `expectedPaymentId` from generated pool deposit instructions into
+      the Money In route state.
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - changed the proof action to `Upload proof`;
+    - uploads proof against the generated expected payment when the reference
+      is fresh;
+    - falls back honestly to `Screenshot noted on this phone only` when an old
+      cached instruction has no expected-payment id or upload fails;
+    - no longer marks proof upload as payment confirmation;
+    - separates `Proof uploaded`, `Payment noted`, and `Matched by bank`.
+  - frontend audits:
+    - updated Money In/Money Out lane audit, trust action audit, and button
+      stability audit to protect the new proof-review truth.
+  - `gmfn_backend/tests/test_community_pay_in_accounts.py`
+    - added proof-upload tests for successful proof metadata attachment and
+      wrong-reference rejection.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_pay_in_accounts.py`.
+  - Passed `npm --prefix frontend run audit:finance-money-movement-lanes`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `node frontend\tools\audit-gsn-visible-language.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - First `npm --prefix frontend run build` failed with `spawn EPERM` when
+    Vite/esbuild tried to spawn inside the sandbox; reran with approved build
+    escalation and it passed.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Still not changed:
+  - no bank API reconciliation automation was added;
+  - no payment status is marked confirmed from proof upload alone;
+  - no payout automation or approval-to-PIN trigger was added.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Money Out normal withdrawal made one-tap and narrower
 
 - Trigger:

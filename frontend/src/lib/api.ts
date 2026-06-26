@@ -4026,6 +4026,23 @@ export async function deleteMarketplaceBroadcast(
   );
 }
 
+export async function uploadPaymentInstructionProofFile(
+  expectedPaymentId: number,
+  file: File,
+  clanId: number,
+  reference: string
+): Promise<any> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("clan_id", String(clanId));
+  fd.append("reference", String(reference || ""));
+
+  return httpMultipart(
+    `/payment-instructions/expected/${encodeURIComponent(String(expectedPaymentId))}/proof`,
+    fd
+  );
+}
+
 export async function uploadMarketplaceImageFile(
   file: File,
   clanId?: number | null

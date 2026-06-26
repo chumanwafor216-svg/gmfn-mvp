@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import json
+import shutil
+from pathlib import Path
+
 from sqlalchemy import text
 
 from app.db.database import engine
+
+
+TEST_UPLOAD_ROOT = Path(__file__).resolve().parents[1] / "test_uploads_payment_proofs"
 
 
 def _payload() -> dict:
@@ -92,3 +99,96 @@ def test_pool_instruction_uses_saved_community_pay_in_account(
     assert body["settlement"]["account_name"] == "Aberdeen Community Pool"
     assert body["settlement"]["account_number"] == "52785706"
     assert body["settlement"]["configured"] is True
+
+
+def test_pool_payment_proof_upload_attaches_to_expected_payment(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+    monkeypatch,
+):
+    shutil.rmtree(TEST_UPLOAD_ROOT, ignore_errors=True)
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(TEST_UPLOAD_ROOT))
+
+    res = client.post(
+        "/payment-instructions/pool",
+        json={
+            "clan_id": 1,
+            "amount": "20.00",
+            "currency": "GBP",
+            "contribution_reason": "Yearly contribution",
+        },
+    )
+    assert res.status_code == 200
+    instruction = res.json()
+    expected_payment_id = int(instruction["expected_payment_id"])
+
+    upload_res = client.post(
+        f"/payment-instructions/expected/{expected_payment_id}/proof",
+        data={
+            "clan_id": "1",
+            "reference": instruction["reference_display"],
+        },
+        files={
+            "file": ("proof.png", b"\x89PNG\r\n\x1a\nproof", "image/png"),
+        },
+    )
+    assert upload_res.status_code == 200
+    body = upload_res.json()
+    assert body["status"] == "expected"
+    assert body["proof"]["proof_status"] == "submitted"
+    assert body["proof"]["url"].startswith("/uploads/payment-proofs/")
+    assert body["meta"]["proof_status"] == "submitted"
+
+    with engine.begin() as conn:
+        row = conn.execute(
+            text(
+                """
+                SELECT meta_json, status
+                FROM expected_payments
+                WHERE id = :id
+                """
+            ),
+            {"id": expected_payment_id},
+        ).mappings().one()
+
+    meta = json.loads(row["meta_json"])
+    assert row["status"] == "expected"
+    assert meta["proof_status"] == "submitted"
+    assert meta["payment_proofs"][0]["original_filename"] == "proof.png"
+    shutil.rmtree(TEST_UPLOAD_ROOT, ignore_errors=True)
+
+
+def test_pool_payment_proof_rejects_wrong_reference(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+    monkeypatch,
+):
+    shutil.rmtree(TEST_UPLOAD_ROOT, ignore_errors=True)
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(TEST_UPLOAD_ROOT))
+
+    res = client.post(
+        "/payment-instructions/pool",
+        json={
+            "clan_id": 1,
+            "amount": "20.00",
+            "currency": "GBP",
+            "contribution_reason": "Yearly contribution",
+        },
+    )
+    assert res.status_code == 200
+    instruction = res.json()
+
+    upload_res = client.post(
+        f"/payment-instructions/expected/{int(instruction['expected_payment_id'])}/proof",
+        data={
+            "clan_id": "1",
+            "reference": "WRONG-REFERENCE",
+        },
+        files={
+            "file": ("proof.png", b"\x89PNG\r\n\x1a\nproof", "image/png"),
+        },
+    )
+    assert upload_res.status_code == 400
+    shutil.rmtree(TEST_UPLOAD_ROOT, ignore_errors=True)

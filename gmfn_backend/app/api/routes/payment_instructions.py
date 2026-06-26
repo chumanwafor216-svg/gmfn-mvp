@@ -1,11 +1,14 @@
 ﻿from __future__ import annotations
 
 import json
-from datetime import datetime
+import os
+import secrets
+from datetime import datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -26,7 +29,10 @@ from app.services.payment_instruction_service import (
     create_spotlight_subscription_instruction,
     create_vault_subscription_instruction,
 )
-from app.services.expected_payments_service import list_expected_payments
+from app.services.expected_payments_service import (
+    get_expected_payment_by_id,
+    list_expected_payments,
+)
 from app.services.community_pay_in_account_service import get_community_pay_in_settlement
 from app.services.feature_entitlements_service import (
     consume_feature_units,
@@ -42,6 +48,16 @@ from app.services.vault_domain_service import (
 )
 
 router = APIRouter(prefix="/payment-instructions", tags=["payment-instructions"])
+
+PAYMENT_PROOF_MAX_BYTES = 10 * 1024 * 1024
+PAYMENT_PROOF_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
+PAYMENT_PROOF_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+}
+GENERIC_UPLOAD_CONTENT_TYPES = {"", "application/octet-stream", "binary/octet-stream"}
 
 
 def _safe_int(value: Any, default: int = 0) -> int:
@@ -88,6 +104,82 @@ def _safe_meta_json(raw: Optional[str]) -> Dict[str, Any]:
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _uploads_root() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
+
+
+def _payment_proof_dir() -> Path:
+    return _uploads_root() / "payment-proofs"
+
+
+def _safe_ext(filename: Optional[str]) -> str:
+    if not filename:
+        return ""
+    return Path(filename).suffix.lower().strip()
+
+
+def _safe_original_name(filename: Optional[str]) -> str:
+    name = Path(str(filename or "payment-proof")).name.strip()
+    return name[:180] or "payment-proof"
+
+
+def _normalize_content_type(content_type: str) -> str:
+    value = str(content_type or "").strip().lower()
+    if ";" in value:
+        value = value.split(";", 1)[0].strip()
+    if value == "image/jpg":
+        return "image/jpeg"
+    return value
+
+
+def _normalize_reference_for_compare(value: Any) -> str:
+    return "".join(ch for ch in str(value or "").upper() if ch.isalnum())
+
+
+async def _store_payment_proof_file(file: UploadFile) -> Dict[str, Any]:
+    ext = _safe_ext(file.filename)
+    if ext not in PAYMENT_PROOF_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Use a JPG, PNG, WEBP, or PDF payment proof.",
+        )
+
+    content_type = _normalize_content_type(file.content_type or "")
+    if content_type not in PAYMENT_PROOF_CONTENT_TYPES:
+        if content_type not in GENERIC_UPLOAD_CONTENT_TYPES:
+            raise HTTPException(
+                status_code=400,
+                detail="Use a JPG, PNG, WEBP, or PDF payment proof.",
+            )
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Payment proof file is empty.")
+    if len(data) > PAYMENT_PROOF_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail="Payment proof is too large. Use a file under 10MB.",
+        )
+
+    upload_dir = _payment_proof_dir()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{_now_utc().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(8)}{ext}"
+    (upload_dir / stored_name).write_bytes(data)
+
+    return {
+        "url": f"/uploads/payment-proofs/{stored_name}",
+        "stored_filename": stored_name,
+        "original_filename": _safe_original_name(file.filename),
+        "content_type": content_type or "application/octet-stream",
+        "size_bytes": len(data),
+    }
 
 
 def _require_shop_owner(
@@ -246,6 +338,70 @@ def create_pool_instruction(
     )
     out["settlement"] = get_community_pay_in_settlement(db, clan_id=int(payload.clan_id))
     out["instruction_type"] = "pool_deposit"
+    return out
+
+
+@router.post("/expected/{expected_payment_id}/proof")
+async def upload_expected_payment_proof(
+    expected_payment_id: int,
+    clan_id: int = Form(...),
+    reference: str = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    row = get_expected_payment_by_id(
+        db,
+        expected_payment_id=int(expected_payment_id),
+    )
+    if not row or int(row.clan_id) != int(clan_id):
+        raise HTTPException(status_code=404, detail="Expected payment not found")
+
+    is_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
+    if int(row.user_id) != int(current_user.id) and not is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only upload proof for your own payment reference.",
+        )
+
+    submitted_reference = _normalize_reference_for_compare(reference)
+    expected_reference = _normalize_reference_for_compare(
+        getattr(row, "reference_normalized", None)
+        or getattr(row, "reference_display", None)
+    )
+    if not submitted_reference or submitted_reference != expected_reference:
+        raise HTTPException(
+            status_code=400,
+            detail="Reference does not match this expected payment.",
+        )
+
+    stored = await _store_payment_proof_file(file)
+    submitted_at = _now_utc().isoformat()
+    proof = {
+        **stored,
+        "submitted_at": submitted_at,
+        "submitted_by_user_id": int(current_user.id),
+        "proof_status": "submitted",
+    }
+
+    meta = _safe_meta_json(getattr(row, "meta_json", None))
+    proofs = meta.get("payment_proofs")
+    if not isinstance(proofs, list):
+        proofs = []
+    proofs.append(proof)
+    meta["payment_proofs"] = proofs[-10:]
+    meta["latest_payment_proof"] = proof
+    meta["proof_status"] = "submitted"
+    meta["proof_status_text"] = "Submitted for finance review"
+    meta["proof_submitted_at"] = submitted_at
+
+    row.meta_json = json.dumps(meta, ensure_ascii=False)
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+
+    out = _expected_payment_out(row)
+    out["proof"] = proof
     return out
 
 

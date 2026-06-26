@@ -39,6 +39,7 @@ type PersistedDepositTask = {
   paymentConfirmedAt?: string | null;
   proofFileName?: string | null;
   proofRecordedAt?: string | null;
+  proofUploaded?: boolean;
   updatedAt?: string | null;
 };
 
@@ -766,6 +767,8 @@ export default function PaymentInstructionsPage() {
   );
   const [proofFileName, setProofFileName] = useState<string>("");
   const [proofRecordedAt, setProofRecordedAt] = useState<string | null>(null);
+  const [proofUploaded, setProofUploaded] = useState<boolean>(false);
+  const [uploadingProof, setUploadingProof] = useState<boolean>(false);
 
   useEffect(() => {
     if (routeClanId > 0) {
@@ -837,6 +840,7 @@ export default function PaymentInstructionsPage() {
           setPaymentConfirmedAt(null);
           setProofFileName("");
           setProofRecordedAt(null);
+          setProofUploaded(false);
           return;
         }
 
@@ -863,6 +867,7 @@ export default function PaymentInstructionsPage() {
         setPaymentConfirmedAt(stored?.paymentConfirmedAt || null);
         setProofFileName(safeStr(stored?.proofFileName));
         setProofRecordedAt(stored?.proofRecordedAt || null);
+        setProofUploaded(Boolean(stored?.proofUploaded));
       } finally {
         if (alive) setLoading(false);
       }
@@ -887,6 +892,7 @@ export default function PaymentInstructionsPage() {
       paymentConfirmedAt,
       proofFileName,
       proofRecordedAt,
+      proofUploaded,
       updatedAt: new Date().toISOString(),
     } as PersistedDepositTask);
   }, [
@@ -900,6 +906,7 @@ export default function PaymentInstructionsPage() {
     paymentConfirmedAt,
     proofFileName,
     proofRecordedAt,
+    proofUploaded,
   ]);
 
   const memberName = useMemo(() => {
@@ -1001,16 +1008,6 @@ export default function PaymentInstructionsPage() {
       };
     }
 
-    if (!paymentConfirmed) {
-      return {
-        tone: "blue" as const,
-        step: "Payment",
-        title: "Pay this account.",
-        detail:
-          "Use the exact reference. If automatic matching is not live yet, note your screenshot here and share it if finance asks.",
-      };
-    }
-
     if (matchedEvent) {
       return {
         tone: "green" as const,
@@ -1024,21 +1021,34 @@ export default function PaymentInstructionsPage() {
     if (proofFileName) {
       return {
         tone: "gold" as const,
-        step: "Proof noted",
-        title: "Screenshot noted on this phone.",
+        step: proofUploaded ? "Proof uploaded" : "Proof noted",
+        title: proofUploaded
+          ? "Proof uploaded for finance review."
+          : "Screenshot noted on this phone.",
+        detail: proofUploaded
+          ? "Finance can review this proof against the generated reference. It does not confirm payment yet."
+          : "This note stays on this device. Generate a fresh reference if you need to upload proof for review.",
+      };
+    }
+
+    if (paymentConfirmed) {
+      return {
+        tone: "gold" as const,
+        step: "Payment noted",
+        title: "Payment noted.",
         detail:
-          "This note stays on this device. Send the screenshot to finance if they ask for it.",
+          "GSN finance still needs a bank match or proof review before this is confirmed.",
       };
     }
 
     return {
-      tone: "gold" as const,
-      step: "Waiting",
-      title: "Waiting for bank match.",
+      tone: "blue" as const,
+      step: "Payment",
+      title: "Pay this account.",
       detail:
-        "Waiting for a bank match.",
+        "Use the exact reference. Upload proof here if automatic matching is not live yet.",
     };
-  }, [instruction, paymentConfirmed, matchedEvent, proofFileName]);
+  }, [instruction, paymentConfirmed, matchedEvent, proofFileName, proofUploaded]);
 
   const resultTone = useMemo(() => {
     if (inferredResult.tone === "green") {
@@ -1138,6 +1148,7 @@ export default function PaymentInstructionsPage() {
       setPaymentConfirmedAt(null);
       setProofFileName("");
       setProofRecordedAt(null);
+      setProofUploaded(false);
 
       setNotice(null);
     } catch (e: any) {
@@ -1167,7 +1178,7 @@ export default function PaymentInstructionsPage() {
 
     setNotice({
       tone: "success",
-      text: "Payment noted. GSN finance will match it with the bank record. Share your screenshot if they ask.",
+      text: "Payment noted. GSN finance still needs a bank match or proof review before this is confirmed.",
     });
   }
 
@@ -1179,6 +1190,8 @@ export default function PaymentInstructionsPage() {
     setPaymentConfirmedAt(null);
     setProofFileName("");
     setProofRecordedAt(null);
+    setProofUploaded(false);
+    setProofUploaded(false);
 
     if (selectedClanId && currentGmfnId) {
       writeLocalJSON(taskStorageKey(selectedClanId, currentGmfnId, selectedCurrency), null);
@@ -1305,7 +1318,7 @@ export default function PaymentInstructionsPage() {
     });
   }
 
-  function handleProofSelected(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleProofSelected(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] || null;
 
     if (!instruction) {
@@ -1320,15 +1333,48 @@ export default function PaymentInstructionsPage() {
     if (!file) return;
 
     const recordedAt = new Date().toISOString();
-    setProofFileName(file.name || "payment screenshot");
-    setProofRecordedAt(recordedAt);
-    setPaymentConfirmed(true);
-    setPaymentConfirmedAt((current) => current || recordedAt);
+    const expectedPaymentId = Number(instruction.expectedPaymentId || 0);
+    const reference = firstTruthy(instruction.reference);
 
-    setNotice({
-      tone: "success",
-      text: "Screenshot noted on this phone. It is not uploaded yet.",
-    });
+    if (!expectedPaymentId || !selectedClanId || !reference) {
+      setProofFileName(file.name || "payment screenshot");
+      setProofRecordedAt(recordedAt);
+      setProofUploaded(false);
+      setNotice({
+        tone: "error",
+        text: "Screenshot noted on this phone only. Generate a fresh reference to upload proof.",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    setUploadingProof(true);
+    try {
+      await (api as any).uploadPaymentInstructionProofFile(
+        expectedPaymentId,
+        file,
+        selectedClanId,
+        reference
+      );
+      setProofFileName(file.name || "payment screenshot");
+      setProofRecordedAt(recordedAt);
+      setProofUploaded(true);
+      setNotice({
+        tone: "success",
+        text: "Proof uploaded for finance review. It does not confirm payment yet.",
+      });
+    } catch (err) {
+      setProofFileName(file.name || "payment screenshot");
+      setProofRecordedAt(recordedAt);
+      setProofUploaded(false);
+      setNotice({
+        tone: "error",
+        text: "Upload failed. Screenshot noted on this phone only.",
+      });
+    } finally {
+      setUploadingProof(false);
+      event.target.value = "";
+    }
   }
 
   function toggleSection(key: keyof CollapseState) {
@@ -1644,6 +1690,7 @@ export default function PaymentInstructionsPage() {
               setPaymentConfirmedAt(null);
               setProofFileName("");
               setProofRecordedAt(null);
+              setProofUploaded(false);
             }}
             disabled={generatingInstruction}
             placeholder="Enter amount"
@@ -1716,6 +1763,7 @@ export default function PaymentInstructionsPage() {
               setPaymentConfirmedAt(null);
               setProofFileName("");
               setProofRecordedAt(null);
+              setProofUploaded(false);
             }}
             disabled={generatingInstruction}
             placeholder="Monthly contribution, personal pool..."
@@ -1854,8 +1902,12 @@ export default function PaymentInstructionsPage() {
                 ? "Generate first"
                 : matchedEvent
                   ? "Matched by bank"
+                  : proofUploaded
+                    ? "Proof uploaded"
                   : paymentConfirmed
                     ? "Payment noted"
+                    : proofFileName
+                      ? "Proof noted"
                     : "Ready to pay",
               color: matchedEvent ? "#2E9B62" : "#92400E",
             },
@@ -2101,7 +2153,7 @@ export default function PaymentInstructionsPage() {
                 }}
               >
                 Bank API match confirms automatically when connected. For now,
-                note your screenshot here and share it if finance asks.
+                upload proof here so finance can review it.
               </div>
 
               <div
@@ -2162,17 +2214,21 @@ export default function PaymentInstructionsPage() {
                     alignItems: "center",
                     justifyContent: "center",
                     border: "1px solid rgba(11,99,209,0.12)",
-                    background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%)",
-                    color: "#0B63D1",
+                    background: uploadingProof
+                      ? "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)"
+                      : "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%)",
+                    color: uploadingProof ? "#64748B" : "#0B63D1",
                     boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+                    pointerEvents: uploadingProof ? "none" : "auto",
                   }}
                 >
-                  {moneyInActionText("proof", "Note screenshot")}
+                  {moneyInActionText("proof", uploadingProof ? "Uploading..." : "Upload proof")}
                 </label>
                 <input
                   id="money-in-payment-proof"
                   type="file"
                   accept="image/*,.pdf"
+                  disabled={uploadingProof}
                   onChange={handleProofSelected}
                   data-gmfn-field="true"
                   data-cta-id="money-in.payment-proof-input"
@@ -2202,10 +2258,10 @@ export default function PaymentInstructionsPage() {
                 }}
               >
                 {proofFileName
-                  ? `Screenshot noted on this phone: ${proofFileName}${
+                  ? `${proofUploaded ? "Proof uploaded for finance review" : "Screenshot noted on this phone only"}: ${proofFileName}${
                       proofRecordedAt ? ` at ${safeDateTime(proofRecordedAt)}` : ""
                     }`
-                  : "No screenshot noted on this phone yet."}
+                  : "No proof uploaded yet."}
               </div>
             </div>
           ) : null}
@@ -2265,7 +2321,7 @@ export default function PaymentInstructionsPage() {
               fontWeight: 800,
             }}
           >
-            After transfer, note your screenshot here if finance may need it.
+            After transfer, upload proof here if finance may need it.
           </span>
         </div>
       </section>
@@ -2307,7 +2363,7 @@ export default function PaymentInstructionsPage() {
           label="Help"
           what="Use the amount, account, and reference shown here."
           why="The reference links your transfer to this payment."
-          next="Pay from your bank, then note your screenshot here if needed."
+          next="Pay from your bank, then upload proof here if needed."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -2702,7 +2758,7 @@ export default function PaymentInstructionsPage() {
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                  Generate, pay with the exact reference, then note your screenshot here if needed.
+                  Generate, pay with the exact reference, then upload proof here if needed.
                 </div>
               </div>
             </div>
