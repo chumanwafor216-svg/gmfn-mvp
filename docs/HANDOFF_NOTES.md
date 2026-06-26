@@ -69203,6 +69203,68 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Latest follow-up - Money Out phone-test gap closed locally
+
+- Owner phone-tested Money Out and found the previous fix was incomplete on the
+  actual Guided Withdrawal screen.
+- Corrected locally in `frontend/src/pages/WithdrawalInstructionsPage.tsx`:
+  - top money snapshot now shows `Total pool`, `Available now`, `Held back`,
+    and `Owed/details`;
+  - removed the duplicate first-screen `Guarantees held` fact;
+  - when `Continue` is tapped and the amount is above the effective available
+    balance, Money Out now saves the existing support handoff and immediately
+    navigates to `/app/loans`;
+  - direct-withdrawal amounts still remain on Money Out for direct request.
+- Verification passed from `frontend`:
+  - `npm exec -- tsc -b --pretty false`;
+  - `npm run audit:finance-actions`;
+  - `npm run audit:finance-money-movement-lanes`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:protected-button-freeze`;
+  - `npm run audit:finance-front-package`;
+  - `npm run audit:finance-button-inventory`;
+  - `npm run build`.
+- Deployment state:
+  - local only; not pushed or deployed yet.
+
+### Follow-up same day - Money Out immediate support handoff correction
+
+- Trigger:
+  - owner phone-tested Money Out from Marketplace -> Finance and Pool ->
+    Money Out and confirmed two remaining gaps:
+    1. the top money snapshot still showed the old/confusing fact set;
+    2. entering an amount above available balance and tapping `Continue` still
+       left the user on Money Out with support content lower down instead of
+       taking the user straight to Loans & Support.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - changed the compact money snapshot to the agreed user-facing facts:
+      `Total pool`, `Available now`, `Held back`, and `Owed/details`;
+    - removed the duplicate first-screen `Guarantees held` label from the
+      compact money snapshot because it was repeating the held/locked meaning
+      and making the screen harder to read;
+    - changed `Continue` so when the requested amount is above the effective
+      available balance it immediately saves the Money Out support handoff and
+      navigates to `/app/loans`;
+    - kept direct-withdrawal behavior on Money Out for amounts within the
+      member's available pool.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:finance-front-package` from `frontend`.
+  - Passed `npm run audit:finance-button-inventory` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this corrects the frontend behavior the owner observed;
+  - it still depends on the existing Loans & Support backend/readiness routes
+    after handoff;
+  - it does not implement automatic bank payout execution.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Deterministic support expiry and locked-money release
 
 - Trigger:

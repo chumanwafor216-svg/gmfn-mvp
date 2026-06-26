@@ -965,10 +965,6 @@ export default function WithdrawalInstructionsPage() {
   const effectiveAvailableText = safeStr(moneySurface?.effectiveAvailable || "");
   const effectiveAvailableKnown = Boolean(effectiveAvailableText);
   const reservedPoolDisplay = `${safeStr(moneySurface?.reservedPool || "0.00")} ${poolCurrency}`;
-  const guaranteeLockedDisplay = `${safeStr(
-    moneySurface?.guarantorExposure?.totalLocked || "0.00"
-  )} ${poolCurrency}`;
-
   const requestedAmount = parseMoneyNumber(amountInput);
   const effectiveAvailableNumber = effectiveAvailableKnown
     ? parseMoneyNumber(effectiveAvailableText)
@@ -1313,6 +1309,12 @@ export default function WithdrawalInstructionsPage() {
 
     setDecisionChecked(true);
 
+    if (requiresSupport) {
+      persistSupportHandoff();
+      navigateWithOrigin(navigate, routes.loans, location);
+      return;
+    }
+
     try {
       const amount = encodeURIComponent(fmtMoney(requestedAmount));
       const [readinessRes, preflightRes] = await Promise.all([
@@ -1330,12 +1332,6 @@ export default function WithdrawalInstructionsPage() {
       setBorrowerPreflight(preflightRes);
     } catch {
       // The local amount decision still works from the pool reading.
-    }
-
-    if (requiresSupport) {
-      persistSupportHandoff();
-      showNotice("success", "Support is needed. Continue in Loans & Support.");
-      return;
     }
 
     showNotice("success", "This amount fits your available pool. Review payout details, then request withdrawal.");
@@ -1895,8 +1891,8 @@ export default function WithdrawalInstructionsPage() {
             {iconLabel("financeInstitution", "Your money here")}
             <div style={{ marginTop: 6, ...helperText(), fontSize: isCompact ? 13 : 14.5, lineHeight: 1.3 }}>
               {isCompact
-                ? `Pool: ${communityPoolDisplay}`
-                : `Pool balance: ${communityPoolDisplay}. Details opens the full finance record.`}
+                ? "This community money position."
+                : "Details opens your full finance record for this community."}
             </div>
           </div>
 
@@ -1919,6 +1915,13 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div style={{ ...statTile(), minHeight: isCompact ? 74 : undefined, padding: isCompact ? "10px 11px" : 14 }}>
+            <div style={sectionLabel()}>Total pool</div>
+            <div style={{ marginTop: 7, color: "#D8F6E4", fontSize: isCompact ? 15 : 18, fontWeight: 1000 }}>
+              {communityPoolDisplay}
+            </div>
+          </div>
+
+          <div style={{ ...statTile(), minHeight: isCompact ? 74 : undefined, padding: isCompact ? "10px 11px" : 14 }}>
             <div style={sectionLabel()}>Available now</div>
             <div style={{ marginTop: 7, color: "#D8F6E4", fontSize: isCompact ? 15 : 18, fontWeight: 1000 }}>
               {effectiveAvailableDisplay}
@@ -1933,16 +1936,9 @@ export default function WithdrawalInstructionsPage() {
           </div>
 
           <div style={{ ...statTile(), minHeight: isCompact ? 74 : undefined, padding: isCompact ? "10px 11px" : 14 }}>
-            <div style={sectionLabel()}>Guarantees held</div>
-            <div style={{ marginTop: 7, color: "#F8FBFF", fontSize: isCompact ? 15 : 18, fontWeight: 1000 }}>
-              {guaranteeLockedDisplay}
-            </div>
-          </div>
-
-          <div style={{ ...statTile(), minHeight: isCompact ? 74 : undefined, padding: isCompact ? "10px 11px" : 14 }}>
-            <div style={sectionLabel()}>Owed here</div>
+            <div style={sectionLabel()}>Owed/details</div>
             <div style={{ marginTop: 7, color: "#E6EEF8", fontSize: isCompact ? 14 : 16, fontWeight: 1000, lineHeight: 1.25 }}>
-              See Finance
+              Open details
             </div>
           </div>
         </div>
