@@ -69321,3 +69321,79 @@ GSN-branded invite composer and invite-entry continuity.
     remains a later backend/payment integration step.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Money In / Money Out / Loans support surface narrowing
+
+- Trigger:
+  - owner asked to keep both Money In and Money Out very simple, with only one
+    or two visible actions at the surface and all deeper support/loan machinery
+    hidden behind the correct backend-backed domain.
+  - Owner also confirmed that backend truth should constrain the frontend:
+    present and connect existing routes cleanly instead of creating duplicate
+    pages or fake flows.
+- Confirmed from code:
+  - Money In remains `/app/payment/pool`.
+  - Money Out remains `/app/withdrawal-instructions`.
+  - Loans & Support remains `/app/loans`.
+  - legacy loan-support aliases already redirect to `/app/loans`.
+  - Money Out already persists a withdrawal support handoff in
+    `gmfn.withdrawal.task.v5`; Loan Readiness, Suggestions, and Workbench
+    already read that handoff.
+- Changed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - compact Money In now hides the community identity block and stepper;
+    - compact Money In shows the amount, currency, purpose, and one primary
+      `Generate reference` action first;
+    - `Refresh` and `Reset` remain available in source/audits but are no
+      longer competing first-screen phone actions;
+    - the generated reference summary, `Pay this account`, bank details, copy,
+      `I paid`, and screenshot proof surfaces render only after a reference is
+      generated.
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - support-needed withdrawal now says `Continue in Loans & Support`;
+    - support-needed withdrawal now routes to `/app/loans` instead of exposing
+      Readiness, Suggestions, and Workbench as three competing surface buttons;
+    - the result action for support-needed withdrawal is one primary
+      `Loans & Support` action.
+  - `frontend/src/pages/LoansPage.tsx`
+    - reads the existing Money Out handoff from local storage using the same
+      v5/v4 keys as Loan Readiness/Suggestions/Workbench;
+    - if a withdrawal support handoff exists, the hero changes to
+      `Withdrawal support`, explains that Money Out sent the user there, and
+      makes `Check readiness` the primary action;
+    - resets the Loans page local collapse key to v2 so old browser storage
+      does not keep the noisy route grid open;
+    - support summary and deeper support tools now default collapsed;
+    - compact phone view hides the long `How to read this page`, queues, and
+      bottom explanatory note.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:finance-front-package` from `frontend`.
+  - Passed `npm run audit:finance-button-inventory` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:global-action-debugids` from `frontend`.
+  - Passed `npm run audit:global-raw-action-elements` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Screenshot attempt:
+  - local Vite on `http://127.0.0.1:5180` was reachable and hot-updated the
+    changed pages;
+  - in-app browser was unavailable in this session;
+  - Playwright's bundled Chromium was missing, then local Chrome needed
+    elevated launch permission;
+  - elevated Chrome screenshot pass succeeded technically, but all protected
+    routes redirected to `/login?session=expired`;
+  - the generated login-redirect screenshots were removed to avoid misleading
+    future review;
+  - visual phone proof still requires a signed-in browser/phone session.
+- Unabated truth:
+  - this is a frontend system-level route connection and presentation fix;
+  - it does not create automatic bank payout, guarantor PIN payout execution,
+    or a new backend loan lifecycle;
+  - the existing deeper loan/readiness/workbench pages still carry the backend
+    support details after the user enters Loans & Support.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

@@ -1334,7 +1334,7 @@ export default function WithdrawalInstructionsPage() {
 
     if (requiresSupport) {
       persistSupportHandoff();
-      showNotice("success", "Support is needed. GSN can continue to readiness and supporter suggestions.");
+      showNotice("success", "Support is needed. Continue in Loans & Support.");
       return;
     }
 
@@ -1369,7 +1369,7 @@ export default function WithdrawalInstructionsPage() {
 
     persistSupportHandoff();
 
-    navigateWithOrigin(navigate, routes.loanReadiness, location);
+    navigateWithOrigin(navigate, routes.loans, location);
   }
 
   async function handleRefresh() {
@@ -2911,7 +2911,7 @@ export default function WithdrawalInstructionsPage() {
                       ? "Wait for the pool reading before this route decides."
                       : !requiresSupport
                       ? "This amount can proceed directly once rail and payout are ready."
-                      : "This amount needs support. Continue into readiness, fit, and workbench."}
+                      : "This amount needs support. Continue in Loans & Support."}
                   </div>
                 </div>
 
@@ -2979,30 +2979,12 @@ export default function WithdrawalInstructionsPage() {
                 {requiresSupport ? (
                   <>
                       <StableCtaLink
-                        to={routes.loanReadiness}
-                        debugId="money-out.result.open-readiness"
+                        to={routes.loans}
+                        debugId="money-out.result.open-loans"
                         stableHeight={52}
-                        style={moneyOutActionButtonStyle("secondary")}
+                        style={moneyOutActionButtonStyle("primary")}
                       >
-                        Readiness
-                      </StableCtaLink>
-
-                      <StableCtaLink
-                        to={routes.loanSuggestions}
-                        debugId="money-out.result.open-suggestions"
-                        stableHeight={52}
-                        style={moneyOutActionButtonStyle("secondary")}
-                      >
-                        Suggestions
-                      </StableCtaLink>
-
-                      <StableCtaLink
-                        to={routes.loanWorkbench}
-                        debugId="money-out.result.open-workbench"
-                        stableHeight={52}
-                        style={moneyOutActionButtonStyle("secondary")}
-                      >
-                        Workbench
+                        Loans & Support
                       </StableCtaLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (

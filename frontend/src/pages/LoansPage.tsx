@@ -43,6 +43,15 @@ type GuarantorInboxRow = {
   createdAt?: string | null;
 };
 
+type PersistedWithdrawalTask = {
+  amountInput: string;
+  noteInput: string;
+  latestWithdrawalResult: any | null;
+  handoffMode?: string;
+  supportGap?: string;
+  updatedAt?: string | null;
+};
+
 type CollapseState = {
   overview: boolean;
   focus: boolean;
@@ -51,7 +60,11 @@ type CollapseState = {
   routes: boolean;
 };
 
-const LOANS_UI_STORAGE_KEY = "gmfn.loans.sections.v1";
+const LOANS_UI_STORAGE_KEY = "gmfn.loans.sections.v2";
+const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = [
+  "gmfn.withdrawal.task.v5",
+  "gmfn.withdrawal.task.v4",
+];
 
 const FINAL_LOAN_STATUSES = new Set([
   "approved",
@@ -419,12 +432,24 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
+    overview: true,
     focus: false,
     borrower: false,
     guarantor: false,
-    routes: false,
+    routes: true,
   };
+}
+
+function readWithdrawalTask(clanId: number, gmfnId: string): PersistedWithdrawalTask | null {
+  if (!clanId || !gmfnId) return null;
+
+  for (const prefix of WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES) {
+    const key = `${prefix}.${gmfnId || "me"}.${clanId || 0}`;
+    const value = readLocalJSON<PersistedWithdrawalTask | null>(key, null);
+    if (value) return value;
+  }
+
+  return null;
 }
 
 function normalizeCollapseState(raw: any): CollapseState {
@@ -510,6 +535,7 @@ export default function LoansPage() {
 
   const [loading, setLoading] = useState(true);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [me, setMe] = useState<any>(null);
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [guarantorInbox, setGuarantorInbox] = useState<GuarantorInboxRow[]>([]);
@@ -553,6 +579,11 @@ export default function LoansPage() {
             ? (api as any).getCurrentClan().catch(() => null)
             : Promise.resolve(null);
 
+        const mePromise =
+          typeof (api as any).getMe === "function"
+            ? (api as any).getMe().catch(() => null)
+            : Promise.resolve(null);
+
         const poolPromise =
           typeof (api as any).getPoolMe === "function"
             ? (api as any)
@@ -576,8 +607,9 @@ export default function LoansPage() {
                 .catch(() => ({ items: [] }))
             : Promise.resolve({ items: [] });
 
-        const [clanRes, poolRes, loansRes, guarantorRes, guidanceRes] =
+        const [meRes, clanRes, poolRes, loansRes, guarantorRes, guidanceRes] =
           await Promise.all([
+            mePromise,
             clanPromise,
             poolPromise,
             loansPromise,
@@ -601,6 +633,7 @@ export default function LoansPage() {
         );
 
         setCurrentClan(clanRes || null);
+        setMe(meRes || null);
         setPoolInfo(poolRes);
         setLoans(filteredLoans);
         setGuarantorInbox(normalizedGuarantorRows);
@@ -638,8 +671,28 @@ export default function LoansPage() {
     () => activeLoans.filter(isGuarantorLoan),
     [activeLoans]
   );
+  const withdrawalTask = useMemo(
+    () => readWithdrawalTask(selectedClanId, safeStr(me?.gmfn_id)),
+    [selectedClanId, me]
+  );
+  const hasWithdrawalSupportHandoff = Boolean(
+    withdrawalTask &&
+      (safeStr(withdrawalTask.handoffMode) === "withdrawal-support" ||
+        safeStr(withdrawalTask.supportGap))
+  );
+  const withdrawalAmountText = firstTruthy(withdrawalTask?.amountInput, "requested amount");
+  const withdrawalSupportGapText = firstTruthy(withdrawalTask?.supportGap, "");
 
   const supportFocus = useMemo(() => {
+    if (hasWithdrawalSupportHandoff) {
+      return {
+        title: "This withdrawal needs support",
+        detail: withdrawalSupportGapText
+          ? `Requested: ${withdrawalAmountText}. Support needed: ${withdrawalSupportGapText}.`
+          : `Requested: ${withdrawalAmountText}. Continue the support check here.`,
+      };
+    }
+
     if (guarantorInbox.length > 0) {
       const first = guarantorInbox[0];
       return {
@@ -691,7 +744,15 @@ export default function LoansPage() {
       detail:
         "No urgent borrower-side or guarantor-side support pressure is currently shown.",
     };
-  }, [guarantorInbox, borrowerLoans, guarantorLoans, guidance]);
+  }, [
+    hasWithdrawalSupportHandoff,
+    withdrawalAmountText,
+    withdrawalSupportGapText,
+    guarantorInbox,
+    borrowerLoans,
+    guarantorLoans,
+    guidance,
+  ]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -766,11 +827,11 @@ export default function LoansPage() {
               style={{
                 color: "#F8FBFF",
                 fontWeight: 900,
-                fontSize: isCompact ? 34 : 46,
+                fontSize: isCompact ? 30 : 46,
                 lineHeight: 1.1,
               }}
             >
-              Loans & Support
+              {hasWithdrawalSupportHandoff ? "Withdrawal support" : "Loans & Support"}
             </div>
 
             <div
@@ -785,7 +846,9 @@ export default function LoansPage() {
             />
 
             <div style={{ marginTop: 14, ...helperText(), color: "#D7E3F1", maxWidth: 640 }}>
-              Your community workspace for borrower steps, guarantor responses, repayment movement, and support routes.
+              {hasWithdrawalSupportHandoff
+                ? "Money Out sent this here because the amount needs support."
+                : "Borrow, support, respond, and repay inside this community."}
             </div>
 
             <div
@@ -797,6 +860,9 @@ export default function LoansPage() {
               }}
             >
               <span style={badge(false)}>Community: {communityLabel}</span>
+              {hasWithdrawalSupportHandoff ? (
+                <span style={badge(false)}>Money Out support needed</span>
+              ) : null}
               <span style={badge(false)}>Active support items: {activeLoans.length}</span>
               <span style={badge(false)}>
                 Pending guarantor requests: {guarantorInbox.length}
@@ -804,7 +870,7 @@ export default function LoansPage() {
             </div>
 
             <StableCtaLink
-              to={routes.startSupport}
+              to={hasWithdrawalSupportHandoff ? routes.readiness : routes.startSupport}
               debugId="loans.hero.start-support"
               stableHeight={isCompact ? 58 : 68}
               fullWidth={isCompact}
@@ -821,9 +887,13 @@ export default function LoansPage() {
             >
               {routeIcon("spark", true, isCompact)}
               <div>
-                <div style={routeTitleStyle(isCompact)}>Start Support Request</div>
+                <div style={routeTitleStyle(isCompact)}>
+                  {hasWithdrawalSupportHandoff ? "Check readiness" : "Start Support Request"}
+                </div>
                 <div style={routeHelperStyle(isCompact)}>
-                  Begin or continue the borrower-side flow.
+                  {hasWithdrawalSupportHandoff
+                    ? "Use the saved Money Out amount."
+                    : "Begin or continue the borrower-side flow."}
                 </div>
               </div>
             </StableCtaLink>
@@ -831,8 +901,8 @@ export default function LoansPage() {
           <div
             style={{
               ...softCard("#FFFFFF"),
-              minHeight: 230,
-              display: "grid",
+              minHeight: isCompact ? 0 : 230,
+              display: isCompact ? "none" : "grid",
               alignContent: "center",
               justifyItems: "center",
               textAlign: "center",
@@ -1037,6 +1107,7 @@ export default function LoansPage() {
 
           {!isCompact ? <div style={{ background: "#D8E3EE" }} /> : null}
 
+          {!isCompact ? (
           <div>
             <div style={sectionLabel()}>How to read this page</div>
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -1051,20 +1122,46 @@ export default function LoansPage() {
               </div>
             </div>
           </div>
+          ) : null}
         </div>
       </section>
 
       <section id="loans-next-routes" style={pageCard("#FFFFFF")}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {routeIcon("globe")}
-          <div>
-            <div style={sectionLabel()}>Live support modules</div>
-            <div style={{ marginTop: 4, ...helperText() }}>
-              Choose the next route based on your task.
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {routeIcon("globe")}
+            <div>
+              <div style={sectionLabel()}>More support tools</div>
+              <div style={{ marginTop: 4, ...helperText() }}>
+                Open only when you need a deeper step.
+              </div>
             </div>
           </div>
+
+          <SubtleButton
+            onClick={() => toggleSection("routes")}
+            minWidth={132}
+            stableHeight={48}
+            debugId="loans.toggle-routes"
+            style={{
+              borderRadius: 999,
+              whiteSpace: "nowrap",
+              flex: "0 0 auto",
+            }}
+          >
+            {collapsed.routes ? "Open tools" : "Hide tools"}
+          </SubtleButton>
         </div>
 
+        {!collapsed.routes ? (
         <div
           style={{
             marginTop: 16,
@@ -1217,8 +1314,10 @@ export default function LoansPage() {
             </div>
           </StableCtaLink>
         </div>
+        ) : null}
       </section>
 
+      {!isCompact ? (
       <section id="loans-queues-flows" style={pageCard("#FFFFFF")}>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {routeIcon("community")}
@@ -1292,7 +1391,9 @@ export default function LoansPage() {
           </div>
         </div>
       </section>
+      ) : null}
 
+      {!isCompact ? (
       <section
         style={{
           ...pageCard("#FFFBEF"),
@@ -1311,6 +1412,7 @@ export default function LoansPage() {
           </div>
         </div>
       </section>
+      ) : null}
 
     </div>
   );

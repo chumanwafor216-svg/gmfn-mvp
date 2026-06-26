@@ -1441,7 +1441,7 @@ export default function PaymentInstructionsPage() {
         {notice?.text || "Money In status"}
       </div>
 
-      {compactGeneratedLayout ? null : (
+      {isCompact || compactGeneratedLayout ? null : (
         <section style={moneyInDarkPanel(0)}>
           <div
             style={{
@@ -1484,6 +1484,7 @@ export default function PaymentInstructionsPage() {
         </section>
       )}
 
+      {!isCompact ? (
       <section style={moneyInDarkPanel(compactGeneratedLayout ? 8 : 14)}>
         <div
           style={{
@@ -1537,6 +1538,7 @@ export default function PaymentInstructionsPage() {
           ))}
         </div>
       </section>
+      ) : null}
 
       <section style={moneyInDarkPanel(compactGeneratedLayout ? 10 : isCompact ? 16 : 22)}>
         <div
@@ -1739,42 +1741,47 @@ export default function PaymentInstructionsPage() {
             )}
           </PrimaryButton>
 
-          <SecondaryButton
-            onClick={() => void handleRefreshRoute()}
-            disabled={generatingInstruction || refreshingRoute}
-            debugId="money-in.refresh-route"
-            stableHeight={52}
-            fullWidth
-            style={moneyInActionButtonStyle(
-              "secondary",
-              generatingInstruction || refreshingRoute
-            )}
-          >
-            {moneyInActionText("refresh", refreshingRoute ? "Refreshing" : "Refresh")}
-          </SecondaryButton>
+          {!isCompact ? (
+            <SecondaryButton
+              onClick={() => void handleRefreshRoute()}
+              disabled={generatingInstruction || refreshingRoute}
+              debugId="money-in.refresh-route"
+              stableHeight={52}
+              fullWidth
+              style={moneyInActionButtonStyle(
+                "secondary",
+                generatingInstruction || refreshingRoute
+              )}
+            >
+              {moneyInActionText("refresh", refreshingRoute ? "Refreshing" : "Refresh")}
+            </SecondaryButton>
+          ) : null}
 
-          <SubtleButton
-            onClick={handleResetTask}
-            stableHeight={52}
-            debugId="money-in.reset-task"
-            fullWidth={isCompact}
-            style={{
-              ...moneyInActionButtonStyle("soft"),
-              gridColumn: undefined,
-              justifySelf: isCompact ? "stretch" : "center",
-              minWidth: isCompact ? 0 : 132,
-              border: "1px solid rgba(11,99,209,0.12)",
-              background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%)",
-              boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
-              color: "#0B63D1",
-            }}
-          >
-            {moneyInActionText("refresh", "Reset")}
-          </SubtleButton>
+          {!isCompact ? (
+            <SubtleButton
+              onClick={handleResetTask}
+              stableHeight={52}
+              debugId="money-in.reset-task"
+              fullWidth={isCompact}
+              style={{
+                ...moneyInActionButtonStyle("soft"),
+                gridColumn: undefined,
+                justifySelf: isCompact ? "stretch" : "center",
+                minWidth: isCompact ? 0 : 132,
+                border: "1px solid rgba(11,99,209,0.12)",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%)",
+                boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+                color: "#0B63D1",
+              }}
+            >
+              {moneyInActionText("refresh", "Reset")}
+            </SubtleButton>
+          ) : null}
         </div>
 
       </section>
 
+      {instructionReady ? (
       <section style={moneyInWhitePanel(12)}>
         <div
           style={{
@@ -1869,7 +1876,9 @@ export default function PaymentInstructionsPage() {
           ))}
         </div>
       </section>
+      ) : null}
 
+      {instructionReady ? (
       <section
         style={{
           ...moneyInWhitePanel(12),
@@ -2172,7 +2181,9 @@ export default function PaymentInstructionsPage() {
           ) : null}
         </div>
       </section>
+      ) : null}
 
+      {instructionReady ? (
       <section style={{ display: "grid", gap: 12 }}>
         <div style={moneyInNoticeStrip("#D6AA45")}>
           <span
@@ -2228,6 +2239,7 @@ export default function PaymentInstructionsPage() {
           </span>
         </div>
       </section>
+      ) : null}
 
       {instruction && !isCompact ? (
       <section style={pageCard("#FFFFFF")}>
