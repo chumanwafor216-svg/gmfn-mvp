@@ -1427,6 +1427,7 @@ export async function createLoanRequest(payload: {
   amount: string | number;
   currency?: string | null;
   duration_days?: number | null;
+  repayment_cadence?: string | null;
   purpose?: string | null;
   note?: string | null;
 }): Promise<any> {
@@ -1440,6 +1441,7 @@ export async function createLoanRequest(payload: {
   const clanId = Number(effectiveClanId || 0);
   const currency = String(payload?.currency || "").trim();
   const durationDays = Number(payload?.duration_days || 0);
+  const repaymentCadence = String(payload?.repayment_cadence || "").trim();
   const purpose = String(payload?.purpose || "").trim();
   const note = String(payload?.note || "").trim();
 
@@ -1460,6 +1462,11 @@ export async function createLoanRequest(payload: {
     cleaned.duration_days = durationDays;
     cleaned.term_days = durationDays;
     cleaned.duration = durationDays;
+  }
+
+  if (repaymentCadence) {
+    cleaned.repayment_cadence = repaymentCadence;
+    cleaned.cadence = repaymentCadence;
   }
 
   if (purpose) {

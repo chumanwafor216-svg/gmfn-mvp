@@ -16,6 +16,8 @@ class LoanCreate(BaseModel):
     amount: str  # Decimal string at API boundary
     currency: str = "NGN"
     purpose: Optional[str] = None
+    duration_days: Optional[int] = Field(default=None, ge=1, le=365)
+    repayment_cadence: Optional[Literal["weekly", "biweekly", "monthly"]] = None
 
 
 class LoanUpdate(BaseModel):

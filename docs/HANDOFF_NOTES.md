@@ -69332,6 +69332,65 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Support request agreement line bridged
+
+- Trigger:
+  - owner asked to continue after the fintech line audit and specifically
+    called out missing loan/support pieces: duration, service charge,
+    guarantors, repayment plan, commitment feed, and TrustEvent feed.
+- Unabated truth before this change:
+  - backend loan creation already computed pool coverage, guarantee gap,
+    guarantors required, guarantor requests, guarantor approval locks, and
+    TrustEvents;
+  - backend fee rules already existed: 2% pool-only, 5% guarantor-backed, with
+    guarantor reward pool split from guarantor-backed fees;
+  - however, `LoanCreate` did not accept repayment cadence, duration was being
+    sent by frontend but ignored by backend schema, and no repayment commitment
+    TrustEvent was written from the support request itself.
+- Changed:
+  - `gmfn_backend/app/schemas/loans.py`
+    - `LoanCreate` now accepts `duration_days` and `repayment_cadence`
+      (`weekly`, `biweekly`, `monthly`).
+  - `gmfn_backend/app/api/routes/loans.py`
+    - loan creation now sets `due_at` from `duration_days`;
+    - loan creation now computes and stores service fee, net disbursed amount,
+      guarantor reward pool, platform revenue, and remaining amount at draft
+      creation time;
+    - `loan.created` TrustEvent meta now includes duration, cadence, due date,
+      and fee preview;
+    - loan creation also writes a `commitment.created` TrustEvent with source
+      `loan_support_request`, so the repayment promise enters the same
+      commitment evidence channel used by TrustSlip.
+  - `frontend/src/lib/api.ts`
+    - `createLoanRequest` now sends `repayment_cadence`.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Support Requests now asks for repayment plan;
+    - Support Requests shows an `Agreement preview` with requested amount,
+      service fee, net amount, repay-by date, and plan before starting;
+    - draft status can display backend fee/due-date values once the draft is
+      created.
+  - `frontend/tools/audit-marketplace-support-lane.mjs`
+    - support-lane audit now requires repayment cadence and agreement preview.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:marketplace-money-pool-lane` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `python -m pytest -q gmfn_backend\tests -k "loan or guarantor"`.
+  - Passed `git diff --check`.
+- Still not changed:
+  - no automated bank payout provider integration was added;
+  - no guarantor-approval PIN or automatic payout trigger was added;
+  - repayment cadence is recorded as TrustEvent/commitment evidence and UI
+    agreement context, not yet as a full repayment schedule table.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Fintech line audit and payout rail ownership correction
 
 - Trigger:

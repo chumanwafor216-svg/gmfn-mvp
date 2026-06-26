@@ -1,7 +1,7 @@
 # app/api/routes/loans.py
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
 from typing import Any
@@ -39,6 +39,7 @@ from app.services.loans_service import (
 )
 from app.services.pool_service import compute_pool_balances
 from app.services.repayments_service import create_repayment, list_repayments
+from app.services.fees import calc_loan_financials
 from app.services.trust_events_services import log_trust_event
 from app.services.trust_score_service import loan_policy_for_band, trust_enforcement_enabled
 
@@ -124,6 +125,13 @@ def create_loan(
     new_status = "approved" if within_pool else "pending"
     decision_by_user_id = _uid(current_user) if within_pool else None
     decision_at = datetime.now(timezone.utc) if within_pool else None
+    duration_days = int(getattr(payload, "duration_days", None) or 0)
+    due_at = (
+        datetime.now(timezone.utc) + timedelta(days=duration_days)
+        if duration_days > 0
+        else None
+    )
+    repayment_cadence = (getattr(payload, "repayment_cadence", None) or "").strip().lower()
 
     if trust_enforcement_enabled():
         band = getattr(current_user, "trust_band", None) or "C"
@@ -141,12 +149,25 @@ def create_loan(
             guarantors_required = max(int(guarantors_required), policy_min)
             guarantors_required = min(12, int(guarantors_required))
 
+    service_fee, net_disbursed, guarantor_pool, platform_revenue = calc_loan_financials(
+        db,
+        loan_id=0,
+        amount=requested,
+        guarantors_required=int(guarantors_required),
+    )
+
     loan = Loan(
         clan_id=clan.id,
         borrower_user_id=_uid(current_user),
         amount=requested,
         currency=ccy,
         status=new_status,
+        service_fee=service_fee,
+        net_disbursed_amount=net_disbursed,
+        guarantor_pool=guarantor_pool,
+        platform_revenue=platform_revenue,
+        remaining_amount=requested,
+        due_at=due_at,
         guarantors_required=int(guarantors_required),
         personal_pool_at_request=personal_pool,
         pool_used=pool_used,
@@ -181,6 +202,13 @@ def create_loan(
             "amount": str(requested),
             "currency": loan.currency,
             "status": loan.status,
+            "duration_days": int(duration_days),
+            "repayment_cadence": repayment_cadence or None,
+            "due_at": due_at.isoformat() if due_at else None,
+            "service_fee": str(service_fee),
+            "net_disbursed_amount": str(net_disbursed),
+            "guarantor_pool": str(guarantor_pool),
+            "platform_revenue": str(platform_revenue),
             "guarantors_required": int(guarantors_required),
             "within_personal_pool": bool(within_pool),
             "personal_pool_at_request": str(personal_pool),
@@ -188,6 +216,41 @@ def create_loan(
             "guarantee_gap": str(guarantee_gap),
         },
     )
+
+    if duration_days > 0:
+        local_commitment_id = f"loan-{int(loan.id)}-repayment"
+        log_trust_event(
+            db,
+            event_type="commitment.created",
+            clan_id=int(clan.id),
+            loan_id=int(loan.id),
+            guarantor_id=None,
+            actor_user_id=_uid(current_user),
+            subject_user_id=_uid(current_user),
+            meta={
+                "reason": "loan_repayment_commitment_created",
+                "source": "loan_support_request",
+                "local_commitment_id": local_commitment_id,
+                "local_event_id": f"{local_commitment_id}-created",
+                "title": f"Repay support request #{int(loan.id)}",
+                "category": "repayment",
+                "target_value": str(requested),
+                "current_value": "0",
+                "progress_value": "0",
+                "unit": loan.currency,
+                "due_date": due_at.isoformat() if due_at else None,
+                "cadence": repayment_cadence or None,
+                "duration_days": int(duration_days),
+                "service_fee": str(service_fee),
+                "net_disbursed_amount": str(net_disbursed),
+                "guarantors_required": int(guarantors_required),
+                "reader_note": (
+                    "This commitment was created from a loan/support request. "
+                    "It records the repayment promise, but payment completion "
+                    "still depends on repayment evidence."
+                ),
+            },
+        )
 
     if within_pool:
         log_trust_event(

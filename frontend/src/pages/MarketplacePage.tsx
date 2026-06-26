@@ -311,6 +311,10 @@ type LoanDraftSummary = {
   status?: string | null;
   amount?: string | number | null;
   currency?: string | null;
+  service_fee?: string | number | null;
+  net_disbursed_amount?: string | number | null;
+  guarantor_pool?: string | number | null;
+  platform_revenue?: string | number | null;
   remaining_amount?: string | number | null;
   guarantors_required?: number | null;
   approved_guarantors?: number | null;
@@ -1411,6 +1415,10 @@ function normalizeLoanSummary(raw: any): LoanDraftSummary | null {
     status: firstTruthy(src?.status),
     amount: firstDefined(src?.amount),
     currency: firstTruthy(src?.currency, "NGN"),
+    service_fee: firstDefined(src?.service_fee),
+    net_disbursed_amount: firstDefined(src?.net_disbursed_amount),
+    guarantor_pool: firstDefined(src?.guarantor_pool),
+    platform_revenue: firstDefined(src?.platform_revenue),
     remaining_amount: firstDefined(src?.remaining_amount),
     guarantors_required: positiveNumber(src?.guarantors_required) || undefined,
     approved_guarantors: positiveNumber(src?.approved_guarantors) || undefined,
@@ -1546,6 +1554,32 @@ function safeDateTime(x: any): string {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
+}
+
+function supportCadenceLabel(value: any): string {
+  const cadence = safeStr(value).toLowerCase();
+  if (cadence === "weekly") return "Weekly";
+  if (cadence === "biweekly") return "Every 2 weeks";
+  if (cadence === "monthly") return "Monthly";
+  return "Choose a plan";
+}
+
+function supportDueDateLabel(durationDays: number): string {
+  if (!durationDays) return "After duration is set";
+  const due = new Date();
+  due.setDate(due.getDate() + durationDays);
+  return due.toLocaleDateString();
+}
+
+function supportFeePreview(amount: number, guarantorsRequired: number) {
+  const rate = guarantorsRequired > 0 ? 0.05 : 0.02;
+  const fee = Math.round(amount * rate * 100) / 100;
+  const net = Math.max(0, Math.round((amount - fee) * 100) / 100);
+  return {
+    fee: fee.toFixed(2),
+    net: net.toFixed(2),
+    rateLabel: guarantorsRequired > 0 ? "5%" : "2%",
+  };
 }
 
 function marketplaceSurface(bg: string): string {
@@ -3639,6 +3673,7 @@ export default function MarketplacePage() {
 
   const [loanAmount, setLoanAmount] = useState("");
   const [loanDurationDays, setLoanDurationDays] = useState("");
+  const [loanRepaymentCadence, setLoanRepaymentCadence] = useState("weekly");
   const [loanPurpose, setLoanPurpose] = useState("");
   const [selectedSupporters, setSelectedSupporters] = useState<SuggestedSupporter[]>(
     []
@@ -4469,6 +4504,7 @@ export default function MarketplacePage() {
     if (opts?.clearInputs) {
       setLoanAmount("");
       setLoanDurationDays("");
+      setLoanRepaymentCadence("weekly");
       setLoanPurpose("");
     }
   }
@@ -6148,6 +6184,11 @@ export default function MarketplacePage() {
       return;
     }
 
+    if (!safeStr(loanRepaymentCadence)) {
+      showNotice("error", "Choose how you plan to repay.");
+      return;
+    }
+
     setStartingLoanDraft(true);
 
     try {
@@ -6156,6 +6197,7 @@ export default function MarketplacePage() {
         currency: poolCurrency,
         clan_id: activeCommunityId,
         duration_days: durationDays,
+        repayment_cadence: safeStr(loanRepaymentCadence),
         purpose: safeStr(loanPurpose),
         note: safeStr(loanPurpose),
       });
@@ -6360,6 +6402,17 @@ export default function MarketplacePage() {
     loanDraftSummary?.approved_guarantors
   );
   const sentGuarantorCount = positiveNumber(loanDraftSummary?.guarantors_total);
+  const agreementAmount = positiveNumber(loanDraftSummary?.amount || loanAmount);
+  const agreementDurationDays = positiveNumber(loanDurationDays);
+  const feePreview = supportFeePreview(agreementAmount, requiredGuarantorCount);
+  const agreementServiceFee = safeStr(loanDraftSummary?.service_fee || feePreview.fee);
+  const agreementNetAmount = safeStr(
+    loanDraftSummary?.net_disbursed_amount || feePreview.net
+  );
+  const agreementDueAt = safeStr(loanDraftSummary?.due_at)
+    ? safeDateTime(loanDraftSummary?.due_at)
+    : supportDueDateLabel(agreementDurationDays);
+  const agreementRepaymentCadence = supportCadenceLabel(loanRepaymentCadence);
   const supportProcessBusy =
     startingLoanDraft ||
     loadingSuggestions ||
@@ -10774,6 +10827,21 @@ export default function MarketplacePage() {
                 </div>
 
                 <div style={{ gridColumn: "1 / span 2" }}>
+                  <div style={sectionLabel()}>Repayment plan</div>
+                  <select
+                    {...marketplaceFieldTouchProps("marketplace.support.repayment-cadence")}
+                    value={loanRepaymentCadence}
+                    onChange={(e) => setLoanRepaymentCadence(e.target.value)}
+                    disabled={supportProcessBusy}
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Every 2 weeks</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+
+                <div style={{ gridColumn: "1 / span 2" }}>
                   <div style={sectionLabel()}>Purpose / note</div>
                   <textarea
                     {...marketplaceFieldTouchProps("marketplace.support.purpose")}
@@ -10787,6 +10855,58 @@ export default function MarketplacePage() {
                       minHeight: isCompact ? 72 : 96,
                     }}
                   />
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
+                <div style={sectionLabel()}>Agreement preview</div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  GSN records this as a support request and repayment commitment.
+                </div>
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "repeat(2, minmax(0, 1fr))"
+                      : "repeat(4, minmax(0, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  <div style={innerCard("#FFFFFF")}>
+                    <div style={sectionLabel()}>Requested</div>
+                    <div style={{ marginTop: 6, color: "#07172C", fontWeight: 950 }}>
+                      {agreementAmount
+                        ? `${agreementAmount.toFixed(2)} ${poolCurrency}`
+                        : "Enter amount"}
+                    </div>
+                  </div>
+                  <div style={innerCard("#FFFFFF")}>
+                    <div style={sectionLabel()}>Service fee</div>
+                    <div style={{ marginTop: 6, color: "#07172C", fontWeight: 950 }}>
+                      {agreementAmount
+                        ? `${agreementServiceFee} ${poolCurrency}`
+                        : "After amount"}
+                    </div>
+                  </div>
+                  <div style={innerCard("#FFFFFF")}>
+                    <div style={sectionLabel()}>You receive</div>
+                    <div style={{ marginTop: 6, color: "#07172C", fontWeight: 950 }}>
+                      {agreementAmount
+                        ? `${agreementNetAmount} ${poolCurrency}`
+                        : "After amount"}
+                    </div>
+                  </div>
+                  <div style={innerCard("#FFFFFF")}>
+                    <div style={sectionLabel()}>Repay by</div>
+                    <div style={{ marginTop: 6, color: "#07172C", fontWeight: 950 }}>
+                      {agreementDueAt}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  Plan: {agreementRepaymentCadence}. Fee rule shown here follows the current
+                  GSN support rule and is confirmed when the draft is created.
                 </div>
               </div>
 

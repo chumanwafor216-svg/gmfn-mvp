@@ -107,6 +107,8 @@ if (!supportSection.text) {
     /No draft yet/,
     /Guarantors: \{requiredGuarantorCount \|\| "not checked"\}/,
     /Fit: \{suggestedSupporters\.length\}/,
+    /Repayment plan[\s\S]*?marketplaceFieldTouchProps\("marketplace\.support\.repayment-cadence"\)[\s\S]*?Weekly[\s\S]*?Every 2 weeks[\s\S]*?Monthly/,
+    /Agreement preview[\s\S]*?Requested[\s\S]*?Service fee[\s\S]*?You receive[\s\S]*?Repay by[\s\S]*?Plan: \{agreementRepaymentCadence\}/,
     /debugId="marketplace\.support\.deeper-pages\.summary"[\s\S]*?Deeper support pages/,
     /debugId="marketplace\.support\.start-request"[\s\S]*?handleStartLoanDraft/,
     /debugId="marketplace\.support\.loan-readiness"[\s\S]*?openMarketplaceCta\(event, "loanReadiness"\)/,
