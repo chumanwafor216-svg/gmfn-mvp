@@ -69744,3 +69744,39 @@ GSN-branded invite composer and invite-entry continuity.
   - deeper loan/readiness/suggestion/workbench tools were not deleted.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Money Out support target corrected back to Support Requests
+
+- Trigger:
+  - owner confirmed the direct `/app/loans` continuation opened the wrong page:
+    the old Loans & Support surface with Loan Readiness, Loan Suggestions, and
+    related deeper tools;
+  - owner clarified the desired continuation is the inner Marketplace
+    `Support Requests` lane, the one with the guided Step 1 / Step 2 / Step 3
+    support request surface.
+- Unabated truth:
+  - the previous commit `68da6f2` connected to the wrong destination;
+  - `/app/loans` is not the requested surface for this Money Out handoff.
+- Screenshot attempt:
+  - attempted a local browser screenshot of `/app/loans`;
+  - a fresh browser session redirected to `/login?session=expired`, so the
+    screenshot only proved protected-route auth, not the target UI;
+  - the generated login screenshot was removed to avoid misleading review.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - support-needed Money Out now says `Support Requests`, not
+      `Loans & Support`;
+    - after `Continue`, Money Out still stays in place and explains that the
+      request needs support;
+    - the follow-up action routes to Marketplace with:
+      `support_flow=money-out&focus=support#marketplace-loans-support`;
+    - this targets the inner Marketplace `Support Requests` lane rather than
+      the old `/app/loans` page.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
