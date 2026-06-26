@@ -80,8 +80,8 @@ assertContains(
 
 assertContains(
   "moneyOutPage",
-  /sectionLabel="Money Out"[\s\S]*?title="Guided Withdrawal"[\s\S]*?debugId="money-out\.continue-direct"[\s\S]*?debugId="money-out\.route\.finance"/,
-  "Money Out route page must remain a guided withdrawal page with a traceable route back to Finance."
+  /sectionLabel="Money Out"[\s\S]*?title="Normal Withdrawal"[\s\S]*?debugId="money-out\.continue-direct"[\s\S]*?debugId="money-out\.route\.finance"/,
+  "Money Out route page must remain a normal withdrawal page with a traceable route back to Finance."
 );
 
 assertContains(

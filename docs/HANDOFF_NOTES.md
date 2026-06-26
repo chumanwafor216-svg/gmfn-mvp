@@ -1,3 +1,50 @@
+## 2026-06-26 - Money Out normal withdrawal copy and decision cleanup
+
+Owner correction:
+- Normal Money Out is withdrawing the member's own available money. It should
+  not feel like a loan request.
+- The first step should be amount-only. No purpose is required for normal
+  withdrawal.
+- If the amount fits the available balance, GSN should generate a withdrawal
+  code/reference for pilot reconciliation. Money does not move on this page.
+- If the amount is above the available balance, GSN must say so and open the
+  support/guarantor path.
+
+Local change:
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - changed the page title from `Guided Withdrawal` to `Normal Withdrawal`;
+  - reduced the main request lane to the amount field and removed the exposed
+    purpose field from the primary surface;
+  - removed loan-readiness/preflight calls from the direct own-money branch;
+  - changed the direct action wording from request/submission language to
+    `Generate code`;
+  - changed result copy to say the generated code/reference is for pilot admin
+    reconciliation and that money has not moved yet;
+  - keeps the support route only for the insufficient-available-balance branch.
+- `frontend/tools/audit-finance-money-movement-lanes.mjs`
+  - updated the Money Out route title cage to `Normal Withdrawal`.
+- `frontend/tools/audit-button-stability.mjs`
+  - updated the Marketplace scroll-helper cage to match the existing
+    `scrollToMarketplaceSection(sectionId, attempt, force)` call shape, while
+    preserving the same landing-helper/pending-scroll rule.
+
+Verification passed locally:
+- `npm run audit:finance-actions`
+- `npm run audit:finance-money-movement-lanes`
+- `npm run audit:button-stability`
+- `npm run audit:protected-button-freeze`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Unabated truth:
+- I could not capture an authenticated Money Out screenshot from this Codex
+  browser context. Headless Chrome could write a screenshot, but the protected
+  route redirects to sign-in without the owner's live phone session.
+- This does not implement automated bank payout. It keeps the honest pilot
+  behavior: generate a code/reference, then reconcile with admin and bank proof.
+- This is local code until pushed/deployed.
+
 ## 2026-06-26 - Marketplace money lanes front-door separation
 
 Owner correction:

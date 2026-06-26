@@ -85,97 +85,6 @@ function defaultDestination(): CommunitySettlementDestination {
   };
 }
 
-function apiBase(): string {
-  const raw =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      (import.meta as any).env.VITE_API_BASE_URL) ||
-    "/api";
-
-  return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function buildHeaders(clanId?: number): Record<string, string> {
-  const token =
-    typeof (api as any).getAccessToken === "function"
-      ? safeStr((api as any).getAccessToken())
-      : "";
-
-  const headers: Record<string, string> = {
-    accept: "application/json",
-  };
-
-  if (clanId && Number.isFinite(Number(clanId)) && Number(clanId) > 0) {
-    headers["X-Clan-Id"] = String(clanId);
-  }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
-}
-
-async function fetchJson(path: string, clanId?: number): Promise<any | null> {
-  const res = await fetch(`${apiBase()}${path}`, {
-    method: "GET",
-    headers: buildHeaders(clanId),
-    credentials: "include",
-  });
-
-  const text = await res.text();
-  let payload: any = null;
-
-  try {
-    payload = text ? JSON.parse(text) : null;
-  } catch {
-    payload = text;
-  }
-
-  if (!res.ok) {
-    throw new Error(
-      safeStr(payload?.detail) ||
-        safeStr(payload?.message) ||
-        `Request failed (${res.status})`
-    );
-  }
-
-  return payload;
-}
-
-function extractRecommendation(raw: any): string {
-  return firstTruthy(
-    raw?.recommendation,
-    raw?.readiness?.recommendation,
-    raw?.decision?.recommendation
-  );
-}
-
-function extractGuarantorCount(raw: any): number {
-  const candidates = [
-    raw?.guarantors_required,
-    raw?.required_guarantors,
-    raw?.coverage?.guarantors_required,
-    raw?.decision?.guarantors_required,
-    raw?.readiness?.guarantors_required,
-  ];
-
-  for (const candidate of candidates) {
-    const n = Number(candidate);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-
-  return 0;
-}
-
-function extractSuggestedSafeAmount(raw: any): string {
-  return firstTruthy(
-    raw?.suggested_safe_amount,
-    raw?.coverage?.suggested_safe_amount,
-    raw?.readiness?.coverage?.suggested_safe_amount
-  );
-}
-
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
@@ -848,9 +757,6 @@ export default function WithdrawalInstructionsPage() {
     null
   );
 
-  const [readinessPlan, setReadinessPlan] = useState<any>(null);
-  const [borrowerPreflight, setBorrowerPreflight] = useState<any>(null);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -920,14 +826,10 @@ export default function WithdrawalInstructionsPage() {
           ),
           currency: firstTruthy(nextDestination.currency, surface?.poolCurrency),
         });
-        setReadinessPlan(null);
-        setBorrowerPreflight(null);
       } else {
         setMoneySurface(null);
         setWithdrawalRoute(null);
         setDestination(defaultDestination());
-        setReadinessPlan(null);
-        setBorrowerPreflight(null);
       }
     } finally {
       if (showLoading) setLoading(false);
@@ -1018,11 +920,6 @@ export default function WithdrawalInstructionsPage() {
   const payoutNeedsSortCode = needsUkSortCode(destination, me, poolCurrency);
   const payoutReady = destinationReady(destination, payoutNeedsSortCode);
 
-  const readinessRecommendation = extractRecommendation(readinessPlan);
-  const suggestedSafeAmount = extractSuggestedSafeAmount(readinessPlan);
-  const suggestedGuarantorCount =
-    extractGuarantorCount(readinessPlan) || extractGuarantorCount(borrowerPreflight);
-
   const settlementRouteLines = useMemo(
     () => splitRouteLines(activeWithdrawalRoute),
     [activeWithdrawalRoute]
@@ -1050,7 +947,7 @@ export default function WithdrawalInstructionsPage() {
         step: "Amount",
         title: "Enter how much you want to withdraw.",
         detail:
-          "The amount leads the decision. It determines whether this remains a direct withdrawal or becomes support-backed.",
+          "GSN checks this against your available balance before anything else.",
       };
     }
 
@@ -1060,26 +957,26 @@ export default function WithdrawalInstructionsPage() {
         step: "Reading",
         title: "Waiting for the effective-available pool reading.",
         detail:
-          "This withdrawal cannot be classified as direct or support-backed until the effective-available reading is visible.",
+          "GSN needs the available-balance reading before it can generate a code or open support.",
       };
     }
 
     if (!requiresSupport) {
       return {
         tone: "green" as const,
-        step: "Direct request",
-        title: "This amount can be requested here.",
+        step: "Own money",
+        title: "This can be withdrawn from your available balance.",
         detail:
-          "No guarantor is required. GSN records the withdrawal request; payout execution remains a separate confirmation step.",
+          "No guarantor is needed. Generate the withdrawal code, then use it for pilot reconciliation.",
       };
     }
 
     return {
       tone: "gold" as const,
-      step: "Support-backed continuation",
-      title: "This withdrawal becomes support-backed.",
+      step: "Needs support",
+      title: "Your available balance is not enough for this amount.",
       detail:
-        "The requested amount is above your effective available pool. Continue to Support Requests to finish this request.",
+        "Open support so GSN can guide the guarantor or loan path.",
     };
   }, [
     selectedClanId,
@@ -1258,7 +1155,7 @@ export default function WithdrawalInstructionsPage() {
     if (requiresSupport) {
       showNotice(
         "error",
-        "This withdrawal requires support continuation instead of direct submission."
+        "Your available balance is not enough for this amount. Open support instead."
       );
       return;
     }
@@ -1270,11 +1167,11 @@ export default function WithdrawalInstructionsPage() {
         clanId: selectedClanId,
         amount: fmtMoney(requestedAmount),
         currency: poolCurrency,
-        note: safeStr(noteInput || "Direct withdrawal request"),
+        note: safeStr(noteInput || "Normal withdrawal code request"),
       });
 
       if (!res) {
-        showNotice("error", "Withdrawal request could not be submitted.");
+        showNotice("error", "Withdrawal code could not be generated.");
         return;
       }
 
@@ -1283,7 +1180,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Withdrawal request recorded. Use the reference for admin payout. Money has not moved yet."
+        "Withdrawal code generated. Money has not moved yet. Send the code and bank slip to admin for pilot reconciliation."
       );
     } finally {
       setSubmittingWithdrawal(false);
@@ -1312,32 +1209,16 @@ export default function WithdrawalInstructionsPage() {
       persistSupportHandoff();
       showNotice(
         "success",
-        "This request needs support. Continue to Support Requests."
+        "Your available balance is not enough. Opening Support Requests."
       );
       navigateWithOrigin(navigate, routes.supportStart, location);
       return;
     }
 
-    try {
-      const amount = encodeURIComponent(fmtMoney(requestedAmount));
-      const [readinessRes, preflightRes] = await Promise.all([
-        fetchJson(
-          `/loans/readiness/plan?clan_id=${selectedClanId}&requested_amount=${amount}`,
-          selectedClanId
-        ).catch(() => null),
-        fetchJson(
-          `/loans/borrower/preflight?clan_id=${selectedClanId}&requested_amount=${amount}`,
-          selectedClanId
-        ).catch(() => null),
-      ]);
-
-      setReadinessPlan(readinessRes);
-      setBorrowerPreflight(preflightRes);
-    } catch {
-      // The local amount decision still works from the pool reading.
-    }
-
-    showNotice("success", "This amount fits your available pool. Review payout details, then request withdrawal.");
+    showNotice(
+      "success",
+      "This amount fits your available balance. Generate the withdrawal code."
+    );
   }
 
   function handleContinueToSupportPath() {
@@ -1352,7 +1233,7 @@ export default function WithdrawalInstructionsPage() {
     }
 
     if (!requiresSupport) {
-      showNotice("error", "This amount still fits direct withdrawal.");
+      showNotice("error", "This amount fits your available balance. Generate the withdrawal code here.");
       return;
     }
 
@@ -1454,7 +1335,7 @@ export default function WithdrawalInstructionsPage() {
         ? "Support gap: Awaiting calculation"
         : requiresSupport
         ? `Support gap: ${fmtMoney(supportGap)} ${poolCurrency}`
-        : "Direct withdrawal available",
+        : "Withdrawal code can be generated",
       destination.destinationName
         ? `Payout account: ${destination.destinationName}`
         : "",
@@ -1526,11 +1407,11 @@ export default function WithdrawalInstructionsPage() {
   const latestResultText = latestWithdrawalResult
     ? firstTruthy(
         latestWithdrawalResult?.reference
-          ? `Request recorded: ${safeStr(latestWithdrawalResult.reference)}`
+          ? `Withdrawal code: ${safeStr(latestWithdrawalResult.reference)}`
           : "",
         latestWithdrawalResult?.status,
         latestWithdrawalResult?.state,
-        "Request recorded"
+        "Withdrawal code generated"
       )
     : "Awaiting";
 
@@ -1547,8 +1428,8 @@ export default function WithdrawalInstructionsPage() {
       >
         <PageTopNav
           sectionLabel="Money Out"
-          title="Guided Withdrawal"
-          subtitle="Loading the withdrawal flow..."
+          title="Normal Withdrawal"
+          subtitle="Loading your available-balance check..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.marketplace}
@@ -1576,8 +1457,8 @@ export default function WithdrawalInstructionsPage() {
     >
       <PageTopNav
         sectionLabel="Money Out"
-        title="Guided Withdrawal"
-        subtitle="Enter amount. GSN checks whether it is direct or needs support."
+        title="Normal Withdrawal"
+        subtitle="Withdraw your available money. Support opens only when the amount is above your balance."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.marketplace}
@@ -1694,7 +1575,7 @@ export default function WithdrawalInstructionsPage() {
                 requestedAmount <= 0
             )}
           >
-            {submittingWithdrawal ? "Submitting..." : "Request withdrawal"}
+            {submittingWithdrawal ? "Generating..." : "Generate code"}
           </PrimaryButton>
         ) : (
           <PrimaryButton
@@ -1708,7 +1589,7 @@ export default function WithdrawalInstructionsPage() {
               requestedAmount <= 0
             )}
           >
-            Support Requests
+            Open support
           </PrimaryButton>
         )}
 
@@ -2098,9 +1979,9 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            {iconLabel("wallet", "Withdrawal request")}
+            {iconLabel("wallet", "Normal withdrawal")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Enter amount, then Continue.
+              Enter amount. If it fits your available balance, GSN generates a withdrawal code.
             </div>
           </div>
 
@@ -2153,13 +2034,13 @@ export default function WithdrawalInstructionsPage() {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Amount and route logic</div>
+              <div style={sectionLabel()}>Withdrawal amount</div>
 
               <div
                 style={{
                   marginTop: 14,
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gridTemplateColumns: "1fr",
                   gap: 12,
                 }}
               >
@@ -2170,8 +2051,6 @@ export default function WithdrawalInstructionsPage() {
                     onChange={(e) => {
                       setAmountInput(e.target.value);
                       setDecisionChecked(false);
-                      setReadinessPlan(null);
-                      setBorrowerPreflight(null);
                       setLatestWithdrawalResult(null);
                     }}
                     placeholder="0.00"
@@ -2180,15 +2059,6 @@ export default function WithdrawalInstructionsPage() {
                   />
                 </div>
 
-                <div>
-                  <div style={sectionLabel()}>Purpose</div>
-                  <input
-                    value={noteInput}
-                    onChange={(e) => setNoteInput(e.target.value)}
-                    placeholder="Purpose (optional)"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
               </div>
 
               <div
@@ -2197,7 +2067,7 @@ export default function WithdrawalInstructionsPage() {
                   ...helperText(),
                 }}
               >
-                Purpose is optional. It helps the community understand the request.
+                This is your money. No purpose is needed for a normal withdrawal.
               </div>
 
               {(!isCompact || decisionChecked) ? (
@@ -2210,7 +2080,7 @@ export default function WithdrawalInstructionsPage() {
                 }}
               >
                 <div style={innerCard("#FFFFFF")}>
-                  {iconLabel("shield", "Path Status")}
+                  {iconLabel("shield", "Withdrawal status")}
                   <div
                     style={{
                       marginTop: 8,
@@ -2225,8 +2095,8 @@ export default function WithdrawalInstructionsPage() {
                       : !decisionChecked
                       ? "Ready to check"
                       : requiresSupport
-                      ? "Support-backed withdrawal required"
-                      : "Direct withdrawal available"}
+                      ? "Support is needed"
+                      : "Code can be generated"}
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     {!effectiveAvailableKnown
@@ -2235,27 +2105,17 @@ export default function WithdrawalInstructionsPage() {
                       ? "Press Continue so GSN can read this amount against your available pool."
                       : requiresSupport
                       ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your effective available pool is ${effectiveAvailableText} ${poolCurrency}.`
-                      : "This amount fits the available pool."}
+                      : "This amount fits your available balance."}
                   </div>
                 </div>
 
                 {!isCompact ? (
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Safe route check</div>
+                  <div style={sectionLabel()}>Support route</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    {[
-                      readinessRecommendation
-                        ? `Readiness recommendation: ${readinessRecommendation}`
-                        : "",
-                      suggestedSafeAmount
-                        ? `Suggested safe amount: ${suggestedSafeAmount}`
-                        : "",
-                      suggestedGuarantorCount > 0
-                        ? `Guarantor count currently suggested: ${suggestedGuarantorCount}`
-                        : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" | ") || "Open Support Requests if the amount needs backing."}
+                    {requiresSupport
+                      ? "This amount is above your available balance. Support continues the guarantor or loan path."
+                      : "Support stays closed because this amount fits your available balance."}
                   </div>
                 </div>
                 ) : null}
@@ -2306,8 +2166,8 @@ export default function WithdrawalInstructionsPage() {
                     )}
                   >
                     {submittingWithdrawal
-                      ? "Submitting..."
-                      : "Request withdrawal"}
+                      ? "Generating..."
+                      : "Generate code"}
                   </PrimaryButton>
                 ) : (
                   <PrimaryButton
@@ -2321,7 +2181,7 @@ export default function WithdrawalInstructionsPage() {
                       requestedAmount <= 0
                     )}
                   >
-                    Support Requests
+                    Open support
                   </PrimaryButton>
                 )}
 
@@ -2872,7 +2732,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Execution & Result</div>
+            <div style={sectionLabel()}>Code & Result</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {latestResultText}
             </div>
@@ -2931,24 +2791,24 @@ export default function WithdrawalInstructionsPage() {
                       ? "Awaiting pool reading"
                       : requiresSupport
                       ? "Support-backed withdrawal"
-                      : "Direct withdrawal"}
+                      : "Normal withdrawal"}
                   </div>
                 </div>
 
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Route reading</div>
+                  <div style={sectionLabel()}>What happens next</div>
                   <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                     {!effectiveAvailableKnown
                       ? "Wait for the pool reading before this route decides."
                       : !requiresSupport
-                      ? "This request is recorded with a reference. Admin payout/manual release is still separate for the pilot."
-                      : "This request needs support. Continue to Support Requests."}
+                      ? "Use the generated code with your bank slip. Admin reconciles it during the pilot."
+                      : "Your available balance is not enough. Continue through Support Requests."}
                   </div>
                 </div>
 
                 {latestWithdrawalResult ? (
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>Latest direct withdrawal result</div>
+                    <div style={sectionLabel()}>Latest withdrawal code</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       {[
                         firstTruthy(
@@ -2961,7 +2821,7 @@ export default function WithdrawalInstructionsPage() {
                             )}`
                           : "",
                         latestWithdrawalResult?.reference
-                          ? `Reference: ${safeStr(latestWithdrawalResult.reference)}`
+                          ? `Code: ${safeStr(latestWithdrawalResult.reference)}`
                           : "",
                         latestWithdrawalResult?.amount
                           ? `Amount: ${safeStr(latestWithdrawalResult.amount)} ${safeStr(
@@ -2981,7 +2841,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Execution actions</div>
+              <div style={sectionLabel()}>Next actions</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 {!effectiveAvailableKnown ? (
@@ -2995,14 +2855,14 @@ export default function WithdrawalInstructionsPage() {
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Use the decision lane above</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Submit the request here. GSN records a reference for admin payout.
+                      Generate the withdrawal code here. Money does not move on this page.
                     </div>
                   </div>
                 ) : requiresSupport && !withdrawalCanWidenRoutes ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Support path chosen</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Continue to Support Requests instead of repeating the same decision.
+                      Open support so GSN can guide the guarantor or loan path.
                     </div>
                   </div>
                 ) : null}
@@ -3015,7 +2875,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={52}
                         style={moneyOutActionButtonStyle("primary")}
                       >
-                        Support Requests
+                        Open support
                       </StableCtaLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (
@@ -3065,8 +2925,8 @@ export default function WithdrawalInstructionsPage() {
               {withdrawalCanWidenRoutes
                 ? "Related routes reopen after a visible result."
                 : requiresSupport
-                ? "Support is required. Continue to Support Requests."
-                : "Keep this task focused on amount, rail, payout, and result."}
+                ? "Support is required. Open support."
+                : "Keep this task focused on amount, code, payout account, and result."}
             </div>
           </div>
 

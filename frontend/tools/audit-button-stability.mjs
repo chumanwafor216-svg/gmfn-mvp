@@ -229,7 +229,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /import \{[\s\S]*?marketplaceSectionStyle[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\} from "\.\.\/lib\/marketplaceActionStability";[\s\S]*?scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?scrollToMarketplaceSection\(sectionId\)[\s\S]*?pendingMarketplaceSectionRef\.current = ""[\s\S]*?marketplaceSectionStyle\(\)/,
+  /import \{[\s\S]*?marketplaceSectionStyle[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\} from "\.\.\/lib\/marketplaceActionStability";[\s\S]*?scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?scrollToMarketplaceSection\(sectionId[\s\S]*?\)[\s\S]*?pendingMarketplaceSectionRef\.current = ""[\s\S]*?marketplaceSectionStyle\(\)/,
   "Marketplace section buttons must use the shared Marketplace landing helper, settle once after React commit, clear pending scroll, and keep section scroll margins."
 );
 
