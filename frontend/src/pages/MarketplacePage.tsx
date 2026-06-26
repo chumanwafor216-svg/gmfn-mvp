@@ -3438,16 +3438,22 @@ function marketplaceJoinFixedFieldStyle(
   };
 }
 
-function noticeCard(tone: NoticeTone): React.CSSProperties {
+function noticeCard(tone: NoticeTone, isCompact = false): React.CSSProperties {
   return {
     ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
     position: "fixed",
     left: "50%",
-    bottom: 18,
+    bottom: isCompact
+      ? "calc(104px + env(safe-area-inset-bottom, 0px))"
+      : 18,
     transform: "translateX(-50%)",
-    width: "min(720px, calc(100vw - 32px))",
-    zIndex: 80,
-    pointerEvents: "none",
+    width: isCompact ? "min(520px, calc(100vw - 24px))" : "min(720px, calc(100vw - 32px))",
+    zIndex: 320,
+    pointerEvents: "auto",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
     color: tone === "success" ? "#166534" : "#991B1B",
     border:
       tone === "success"
@@ -3456,6 +3462,25 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
     fontWeight: 800,
     boxShadow:
       "0 18px 42px rgba(10,24,49,0.20), inset 0 1px 0 rgba(255,255,255,0.82)",
+  };
+}
+
+function noticeCloseButtonStyle(tone: NoticeTone): React.CSSProperties {
+  return {
+    width: 34,
+    height: 34,
+    minWidth: 34,
+    borderRadius: 999,
+    border:
+      tone === "success"
+        ? "1px solid rgba(22,101,52,0.18)"
+        : "1px solid rgba(153,27,27,0.18)",
+    background: "rgba(255,255,255,0.72)",
+    color: tone === "success" ? "#166534" : "#991B1B",
+    fontWeight: 950,
+    fontSize: 16,
+    lineHeight: 1,
+    cursor: "pointer",
   };
 }
 
@@ -6500,7 +6525,25 @@ export default function MarketplacePage() {
   if (!activeCommunityId || !selectedCommunity) {
     return (
       <MarketplaceShell isCompact={isCompact}>
-        {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+        {notice ? (
+          <div
+            role="status"
+            aria-live="polite"
+            style={noticeCard(notice.tone, isCompact)}
+          >
+            <span style={{ minWidth: 0, overflowWrap: "break-word" }}>
+              {notice.text}
+            </span>
+            <button
+              type="button"
+              aria-label="Close status message"
+              onClick={() => setNotice(null)}
+              style={noticeCloseButtonStyle(notice.tone)}
+            >
+              x
+            </button>
+          </div>
+        ) : null}
 
         <DomainIntroToggle
           title="Your Marketplace"
@@ -6570,7 +6613,25 @@ export default function MarketplacePage() {
 
   return (
     <MarketplaceShell isCompact={isCompact}>
-      {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+      {notice ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={noticeCard(notice.tone, isCompact)}
+        >
+          <span style={{ minWidth: 0, overflowWrap: "break-word" }}>
+            {notice.text}
+          </span>
+          <button
+            type="button"
+            aria-label="Close status message"
+            onClick={() => setNotice(null)}
+            style={noticeCloseButtonStyle(notice.tone)}
+          >
+            x
+          </button>
+        </div>
+      ) : null}
 
       <section style={marketplaceOsSectionStyle(isCompact)}>
         <div style={marketplaceOsHeaderStyle(isCompact)}>

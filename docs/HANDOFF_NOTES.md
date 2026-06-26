@@ -69025,3 +69025,27 @@ GSN-branded invite composer and invite-entry continuity.
     (`UserPayoutDestination` per user);
   - per-marketplace payout accounts would require a deliberate new schema and
     reconciliation model, not just a frontend label change.
+
+### Follow-up same day - Raised Marketplace save feedback above bottom nav
+
+- Trigger:
+  - owner saved Money Out Rail details on phone, but the success/error message
+    appeared underneath the bottom navigation tabs (`Dashboard`, `Community`,
+    `Marketplace`, `Shop`, `Profile`), so the owner could not tell whether the
+    bank details were saved.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace notice toast now sits above the mobile bottom nav using
+      `calc(104px + env(safe-area-inset-bottom, 0px))`;
+    - z-index raised so route tabs cannot cover save feedback;
+    - notice now renders as an accessible `role="status"` message with a small
+      `x` dismiss button.
+- Verification:
+  - Passed `npm run audit:marketplace-button-inventory` from `frontend`.
+  - Passed `npm run audit:marketplace-money-pool-lane` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this fixes the visibility of the save result; it does not prove the live
+    backend accepted the saved bank details until the owner retries after the
+    frontend deploy completes.
