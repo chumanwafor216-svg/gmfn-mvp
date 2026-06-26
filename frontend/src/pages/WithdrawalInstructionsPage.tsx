@@ -806,6 +806,7 @@ export default function WithdrawalInstructionsPage() {
 
   const [amountInput, setAmountInput] = useState("");
   const [noteInput, setNoteInput] = useState("");
+  const [decisionChecked, setDecisionChecked] = useState(false);
 
   useEffect(() => {
     if (routeClanId > 0) {
@@ -866,13 +867,11 @@ export default function WithdrawalInstructionsPage() {
       const resolvedGmfnId = firstTruthy(meRes?.gmfn_id);
 
       if (selectedClanId && resolvedGmfnId) {
-        const [surface, readinessRes, preflightRes] = await Promise.all([
-          getCommunityMoneySurface(selectedClanId, resolvedGmfnId, "NGN").catch(
-            () => null
-          ),
-          fetchJson("/loans/readiness/plan", selectedClanId).catch(() => null),
-          fetchJson("/loans/borrower/preflight", selectedClanId).catch(() => null),
-        ]);
+        const surface = await getCommunityMoneySurface(
+          selectedClanId,
+          resolvedGmfnId,
+          "NGN"
+        ).catch(() => null);
 
         setMoneySurface(surface);
         setWithdrawalRoute(surface?.withdrawalRoute || null);
@@ -890,8 +889,8 @@ export default function WithdrawalInstructionsPage() {
           ),
           currency: firstTruthy(nextDestination.currency, surface?.poolCurrency),
         });
-        setReadinessPlan(readinessRes);
-        setBorrowerPreflight(preflightRes);
+        setReadinessPlan(null);
+        setBorrowerPreflight(null);
       } else {
         setMoneySurface(null);
         setWithdrawalRoute(null);
@@ -962,8 +961,13 @@ export default function WithdrawalInstructionsPage() {
   }, [currentClan]);
 
   const poolCurrency = safeStr(moneySurface?.poolCurrency || "NGN");
+  const communityPoolDisplay = `${safeStr(moneySurface?.poolAmount || "0.00")} ${poolCurrency}`;
   const effectiveAvailableText = safeStr(moneySurface?.effectiveAvailable || "");
   const effectiveAvailableKnown = Boolean(effectiveAvailableText);
+  const reservedPoolDisplay = `${safeStr(moneySurface?.reservedPool || "0.00")} ${poolCurrency}`;
+  const guaranteeLockedDisplay = `${safeStr(
+    moneySurface?.guarantorExposure?.totalLocked || "0.00"
+  )} ${poolCurrency}`;
 
   const requestedAmount = parseMoneyNumber(amountInput);
   const effectiveAvailableNumber = effectiveAvailableKnown
@@ -1291,6 +1295,52 @@ export default function WithdrawalInstructionsPage() {
     }
   }
 
+  async function handleCheckWithdrawalPath() {
+    if (!selectedClanId) {
+      showNotice("error", "Select a community first.");
+      return;
+    }
+
+    if (requestedAmount <= 0) {
+      showNotice("error", "Enter a valid amount.");
+      return;
+    }
+
+    if (!effectiveAvailableKnown) {
+      showNotice("error", "Wait for the available balance first.");
+      return;
+    }
+
+    setDecisionChecked(true);
+
+    try {
+      const amount = encodeURIComponent(fmtMoney(requestedAmount));
+      const [readinessRes, preflightRes] = await Promise.all([
+        fetchJson(
+          `/loans/readiness/plan?clan_id=${selectedClanId}&requested_amount=${amount}`,
+          selectedClanId
+        ).catch(() => null),
+        fetchJson(
+          `/loans/borrower/preflight?clan_id=${selectedClanId}&requested_amount=${amount}`,
+          selectedClanId
+        ).catch(() => null),
+      ]);
+
+      setReadinessPlan(readinessRes);
+      setBorrowerPreflight(preflightRes);
+    } catch {
+      // The local amount decision still works from the pool reading.
+    }
+
+    if (requiresSupport) {
+      persistSupportHandoff();
+      showNotice("success", "Support is needed. GSN can continue to readiness and supporter suggestions.");
+      return;
+    }
+
+    showNotice("success", "This amount fits your available pool. Review payout details, then request withdrawal.");
+  }
+
   function handleContinueToSupportPath() {
     if (requestedAmount <= 0) {
       showNotice("error", "Enter a valid amount first.");
@@ -1453,6 +1503,7 @@ export default function WithdrawalInstructionsPage() {
   function handleResetTask() {
     setAmountInput("");
     setNoteInput("");
+    setDecisionChecked(false);
     setLatestWithdrawalResult(null);
     showNotice("success", "Withdrawal task reset.");
   }
@@ -1466,6 +1517,8 @@ export default function WithdrawalInstructionsPage() {
   const supportGapDisplay =
     requestedAmount <= 0
       ? "Awaiting amount"
+      : !decisionChecked
+      ? "Press Continue"
       : !effectiveAvailableKnown
       ? "Awaiting pool reading"
       : requiresSupport
@@ -1474,6 +1527,8 @@ export default function WithdrawalInstructionsPage() {
   const pathDisplay =
     requestedAmount <= 0
       ? "Awaiting amount"
+      : !decisionChecked
+      ? "Press Continue"
       : !effectiveAvailableKnown
       ? "Awaiting pool reading"
       : requiresSupport
@@ -1611,6 +1666,22 @@ export default function WithdrawalInstructionsPage() {
           >
             Awaiting
           </PrimaryButton>
+        ) : !decisionChecked ? (
+          <PrimaryButton
+            onClick={() => void handleCheckWithdrawalPath()}
+            disabled={
+              requestedAmount <= 0
+            }
+            debugId="money-out.front-continue-direct"
+            stableHeight={52}
+            fullWidth
+            style={moneyOutActionButtonStyle(
+              "primary",
+              requestedAmount <= 0
+            )}
+          >
+            Continue
+          </PrimaryButton>
         ) : !requiresSupport ? (
           <PrimaryButton
             onClick={() => void handleDirectWithdrawal()}
@@ -1631,7 +1702,7 @@ export default function WithdrawalInstructionsPage() {
                 !payoutReady
             )}
           >
-            {submittingWithdrawal ? "Submitting..." : "Check path"}
+            {submittingWithdrawal ? "Submitting..." : "Request withdrawal"}
           </PrimaryButton>
         ) : (
           <PrimaryButton
@@ -1671,27 +1742,32 @@ export default function WithdrawalInstructionsPage() {
       </div>
       ) : null}
 
+      {!isCompact ? (
       <section
-        style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
+        style={{
+          ...pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)"),
+          padding: 20,
+          borderRadius: 24,
+        }}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "58px minmax(0, 1fr)" : "112px minmax(0, 1fr)",
-            gap: isCompact ? 12 : 18,
+            gridTemplateColumns: "112px minmax(0, 1fr)",
+            gap: 18,
             alignItems: "center",
           }}
         >
           <div
             aria-hidden="true"
             style={{
-              width: isCompact ? 58 : 96,
-              height: isCompact ? 58 : 96,
-              borderRadius: isCompact ? 18 : 24,
+              width: 96,
+              height: 96,
+              borderRadius: 24,
               display: "grid",
               placeItems: "center",
               color: "#A9D5FF",
-              fontSize: isCompact ? 29 : 44,
+              fontSize: 44,
               background:
                 "radial-gradient(circle at 30% 20%, rgba(49,132,255,0.42), rgba(16,54,94,0.9) 64%, rgba(7,20,36,0.98))",
               border: "1px solid rgba(78,143,231,0.34)",
@@ -1699,7 +1775,7 @@ export default function WithdrawalInstructionsPage() {
                 "0 22px 42px rgba(2,6,23,0.32), inset 0 1px 0 rgba(255,255,255,0.10)",
             }}
           >
-            <GsnLegacyIcon name="wallet" size={isCompact ? 42 : 64} />
+            <GsnLegacyIcon name="wallet" size={64} />
           </div>
 
           <div>
@@ -1710,15 +1786,15 @@ export default function WithdrawalInstructionsPage() {
                 marginTop: 5,
                 color: "#F8FBFF",
                 fontWeight: 1000,
-                fontSize: isCompact ? 25 : 40,
-                lineHeight: isCompact ? 1.02 : 1.06,
+                fontSize: 40,
+                lineHeight: 1.06,
               }}
             >
-              Withdraw from this community
+              Guided withdrawal
             </div>
 
-            <div style={{ marginTop: 8, ...helperText(), maxWidth: 720, lineHeight: 1.45 }}>
-              Enter the amount, keep your payout account ready, then submit or continue to support.
+            <div style={{ marginTop: 6, ...helperText(), maxWidth: 720, lineHeight: 1.35 }}>
+              Check your money, enter amount, continue.
             </div>
 
             <div
@@ -1733,14 +1809,12 @@ export default function WithdrawalInstructionsPage() {
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
               <span style={badge(false)}>Amount: {requestedAmountDisplay}</span>
               <span style={badge(false)}>Available: {effectiveAvailableDisplay}</span>
+              <span style={badge(false)}>Held: {reservedPoolDisplay}</span>
               <span style={badge(false)}>Path: {pathDisplay}</span>
-              <span style={badge(false)}>Payout: {payoutReady ? "Ready" : "Needed"}</span>
-              <span style={badge(false)}>Rail: {communityRailReady ? "Ready" : "Needed"}</span>
             </div>
           </div>
         </div>
 
-        {!isCompact ? (
           <div
             style={{
               marginTop: 18,
@@ -1804,12 +1878,78 @@ export default function WithdrawalInstructionsPage() {
             </div>
           ))}
           </div>
-        ) : null}
 
+      </section>
+      ) : null}
+
+      <section style={{ ...pageCard("#FFFFFF"), padding: isCompact ? 12 : 20 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) auto",
+            gap: isCompact ? 8 : 12,
+            alignItems: "center",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            {iconLabel("financeInstitution", "Your money here")}
+            <div style={{ marginTop: 6, ...helperText(), fontSize: isCompact ? 13 : 14.5, lineHeight: 1.3 }}>
+              {isCompact
+                ? `Pool: ${communityPoolDisplay}`
+                : `Pool balance: ${communityPoolDisplay}. Details opens the full finance record.`}
+            </div>
+          </div>
+
+          <StableCtaLink
+            to={routes.finance}
+            debugId="money-out.summary.open-finance"
+            stableHeight={isCompact ? 40 : 52}
+            style={moneyOutActionButtonStyle("secondary")}
+          >
+            Details
+          </StableCtaLink>
+        </div>
+
+        <div
+          style={{
+            marginTop: isCompact ? 10 : 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+            gap: isCompact ? 8 : 10,
+          }}
+        >
+          <div style={{ ...statTile(), minHeight: isCompact ? 74 : undefined, padding: isCompact ? "10px 11px" : 14 }}>
+            <div style={sectionLabel()}>Available now</div>
+            <div style={{ marginTop: 7, color: "#D8F6E4", fontSize: isCompact ? 15 : 18, fontWeight: 1000 }}>
+              {effectiveAvailableDisplay}
+            </div>
+          </div>
+
+          <div style={{ ...statTile(), minHeight: isCompact ? 74 : undefined, padding: isCompact ? "10px 11px" : 14 }}>
+            <div style={sectionLabel()}>Held back</div>
+            <div style={{ marginTop: 7, color: "#FCD34D", fontSize: isCompact ? 15 : 18, fontWeight: 1000 }}>
+              {reservedPoolDisplay}
+            </div>
+          </div>
+
+          <div style={{ ...statTile(), minHeight: isCompact ? 74 : undefined, padding: isCompact ? "10px 11px" : 14 }}>
+            <div style={sectionLabel()}>Guarantees held</div>
+            <div style={{ marginTop: 7, color: "#F8FBFF", fontSize: isCompact ? 15 : 18, fontWeight: 1000 }}>
+              {guaranteeLockedDisplay}
+            </div>
+          </div>
+
+          <div style={{ ...statTile(), minHeight: isCompact ? 74 : undefined, padding: isCompact ? "10px 11px" : 14 }}>
+            <div style={sectionLabel()}>Owed here</div>
+            <div style={{ marginTop: 7, color: "#E6EEF8", fontSize: isCompact ? 14 : 16, fontWeight: 1000, lineHeight: 1.25 }}>
+              See Finance
+            </div>
+          </div>
+        </div>
       </section>
 
       {!isCompact ? (
-      <section style={pageCard("#FFFFFF")}>
+      <section style={{ ...pageCard("#FFFFFF"), padding: isCompact ? 14 : 20 }}>
         <div
           style={{
             display: "flex",
@@ -1954,21 +2094,23 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            {iconLabel("wallet", "Withdraw")}
+            {iconLabel("wallet", "Withdrawal request")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Amount first. If it is above your available pool, GSN sends you to support.
+              Enter amount, then Continue. GSN checks whether it is direct or needs support.
             </div>
           </div>
 
-          <SubtleButton
-            onClick={() => toggleSection("request")}
-            minWidth={128}
-            stableHeight={52}
-            debugId="money-out.toggle-request"
-            style={moneyOutCollapseButtonStyle()}
-          >
-            {collapsed.request ? "Open" : "Hide"}
-          </SubtleButton>
+          {!isCompact ? (
+            <SubtleButton
+              onClick={() => toggleSection("request")}
+              minWidth={128}
+              stableHeight={52}
+              debugId="money-out.toggle-request"
+              style={moneyOutCollapseButtonStyle()}
+            >
+              {collapsed.request ? "Open" : "Hide"}
+            </SubtleButton>
+          ) : null}
         </div>
 
         {!collapsed.request ? (
@@ -1998,6 +2140,9 @@ export default function WithdrawalInstructionsPage() {
                     value={amountInput}
                     onChange={(e) => {
                       setAmountInput(e.target.value);
+                      setDecisionChecked(false);
+                      setReadinessPlan(null);
+                      setBorrowerPreflight(null);
                       setLatestWithdrawalResult(null);
                     }}
                     placeholder="0.00"
@@ -2007,11 +2152,11 @@ export default function WithdrawalInstructionsPage() {
                 </div>
 
                 <div>
-                  <div style={sectionLabel()}>Optional note</div>
+                  <div style={sectionLabel()}>Purpose</div>
                   <input
                     value={noteInput}
                     onChange={(e) => setNoteInput(e.target.value)}
-                    placeholder="Optional note"
+                    placeholder="Purpose (optional)"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
@@ -2023,7 +2168,7 @@ export default function WithdrawalInstructionsPage() {
                   ...helperText(),
                 }}
               >
-                Purpose is optional, but it helps the community read the request.
+                Purpose is optional. It helps the community understand the request.
               </div>
 
               <div
@@ -2047,6 +2192,8 @@ export default function WithdrawalInstructionsPage() {
                   >
                     {!effectiveAvailableKnown
                       ? "Waiting for effective-available reading"
+                      : !decisionChecked
+                      ? "Ready to check"
                       : requiresSupport
                       ? "Support-backed withdrawal required"
                       : "Direct withdrawal available"}
@@ -2054,6 +2201,8 @@ export default function WithdrawalInstructionsPage() {
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     {!effectiveAvailableKnown
                       ? "Waiting for the pool reading."
+                      : !decisionChecked
+                      ? "Press Continue so GSN can read this amount against your available pool."
                       : requiresSupport
                       ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your effective available pool is ${effectiveAvailableText} ${poolCurrency}.`
                       : "This amount fits the available pool."}
@@ -2084,7 +2233,6 @@ export default function WithdrawalInstructionsPage() {
 
             </div>
 
-            {!isCompact ? (
             <div style={softCard("#FFFFFF")}>
               <div style={sectionLabel()}>Actions</div>
 
@@ -2098,6 +2246,17 @@ export default function WithdrawalInstructionsPage() {
                     style={moneyOutActionButtonStyle("primary", true)}
                   >
                     Awaiting
+                  </PrimaryButton>
+                ) : !decisionChecked ? (
+                  <PrimaryButton
+                    onClick={() => void handleCheckWithdrawalPath()}
+                    disabled={requestedAmount <= 0}
+                    debugId="money-out.continue-direct"
+                    minWidth={isCompact ? undefined : 144}
+                    stableHeight={52}
+                    style={moneyOutActionButtonStyle("primary", requestedAmount <= 0)}
+                  >
+                    Continue
                   </PrimaryButton>
                 ) : !requiresSupport ? (
                   <PrimaryButton
@@ -2121,7 +2280,7 @@ export default function WithdrawalInstructionsPage() {
                   >
                     {submittingWithdrawal
                       ? "Submitting..."
-                      : "Check path"}
+                      : "Request withdrawal"}
                   </PrimaryButton>
                 ) : (
                   <PrimaryButton
@@ -2159,7 +2318,6 @@ export default function WithdrawalInstructionsPage() {
                 </SubtleButton>
               </div>
             </div>
-            ) : null}
           </div>
         ) : null}
       </section>
@@ -2671,7 +2829,7 @@ export default function WithdrawalInstructionsPage() {
       </section>
       ) : null}
 
-      {(latestWithdrawalResult || requiresSupport || !collapsed.result) ? (
+      {(latestWithdrawalResult || (decisionChecked && requiresSupport) || !collapsed.result) ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{

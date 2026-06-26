@@ -69202,3 +69202,63 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Money Out amount-first guided withdrawal refinement
+
+- Trigger:
+  - owner clarified the intended Money Out flow:
+    1. show the user this marketplace/community money position first;
+    2. show available amount, held/locked amount, and what is owed or where to
+       see the full owed record;
+    3. then ask for the withdrawal amount and purpose;
+    4. `Continue` should check whether the amount can go direct or needs
+       support;
+    5. support/readiness/suggestions/workbench should stay behind the visible
+       flow until needed.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - added an amount-first decision state so `Continue` now checks the amount
+      before showing direct-withdrawal or support-backed next steps;
+    - moved borrower readiness/preflight calls out of page load and into the
+      `Continue` action, because those backend routes require a real
+      `requested_amount`;
+    - added a compact `Your money here` snapshot above the amount form showing:
+      available now, held back, guarantees held, and owed-details link;
+    - kept the exact owed/repayment amount truthful by linking to Finance,
+      because the Money Out surface does not yet receive the full borrower
+      repayment total directly;
+    - removed the duplicate compact hero so phone users reach the amount form
+      in the first viewport;
+    - kept payout account, community rail, direct withdrawal request, support
+      handoff, copy, refresh, and route links behind the existing guarded flow.
+  - `frontend/src/layout/AppLayout.tsx`
+    - corrected the focused task header for `/app/withdrawal-instructions` from
+      generic `Finance task` to `Money Out`;
+    - kept Payment Rails and Payout Details under the existing `Finance task`
+      label.
+- Screenshot evidence:
+  - captured a mocked authenticated phone viewport at
+    `screenshots/money-out-guided-withdrawal-mocked-viewport.png`;
+  - this screenshot proves layout/order only, not real backend persistence or
+    live Render behavior;
+  - mocked data used: pool `120.00 GBP`, available `85.00 GBP`, held back
+    `35.00 GBP`, guarantees held `25.00 GBP`.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:global-action-debugids` from `frontend`.
+  - Passed `npm run audit:global-raw-action-elements` from `frontend`.
+  - Passed `npm run audit:finance-button-inventory` from `frontend`.
+  - Passed `npm run audit:finance-front-package` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this is still not a real automatic bank-transfer payout system;
+  - current direct Money Out records a withdrawal request, and support-backed
+    withdrawal sends the user toward readiness/suggestions/workbench;
+  - real bank-triggered transfer and PIN/guarantor authorization automation
+    remains a later backend/payment integration step.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

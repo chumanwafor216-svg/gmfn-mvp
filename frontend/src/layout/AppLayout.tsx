@@ -458,10 +458,23 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     };
   }
 
+  if (pathname === "/app/withdrawal-instructions") {
+    return {
+      title: "Money Out",
+      hint:
+        "Enter amount, check the path, then continue directly or with support.",
+      actions: [
+        makeFinanceItem(),
+        makeMarketplaceItem(),
+        makeCommunityItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
   if (
     pathname === "/app/payment-rails" ||
-    pathname === "/app/payout-details" ||
-    pathname === "/app/withdrawal-instructions"
+    pathname === "/app/payout-details"
   ) {
     return {
       title: "Finance task",
