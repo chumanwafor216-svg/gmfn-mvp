@@ -2992,6 +2992,7 @@ export default function ShopGalleryPage() {
         links={memberSurfaceLinks}
         refreshKey={shopReconnectRetryKey}
         requireOwnerMatch={true}
+        collapseOnCompact={true}
       />
 
       <GsnInstallPrompt
