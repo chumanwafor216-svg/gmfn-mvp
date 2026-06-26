@@ -68,6 +68,11 @@ assertContains(
   "Money Out support handoff must prefill the Support Requests amount and purpose when stored handoff data exists."
 );
 
+assertContains(
+  /function handleStartLoanDraft\(\)[\s\S]*?if \(!safeStr\(loanRepaymentCadence\)\)[\s\S]*?Choose how you plan to repay[\s\S]*?if \(!safeStr\(loanPurpose\)\)[\s\S]*?State what the support is for\./,
+  "Support Requests must require a purpose before creating a backend support draft."
+);
+
 const supportSection = sectionBetween(
   /id="marketplace-loans-support"/,
   /<\/MarketplaceShell>/

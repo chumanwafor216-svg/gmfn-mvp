@@ -171,6 +171,11 @@ def create_loan(
     )
     repayment_cadence = (getattr(payload, "repayment_cadence", None) or "").strip().lower()
     purpose = (getattr(payload, "purpose", None) or "").strip()
+    if not purpose:
+        raise HTTPException(
+            status_code=400,
+            detail="Purpose is required for a support request.",
+        )
     purpose_note = f"Purpose={purpose}. " if purpose else ""
 
     if trust_enforcement_enabled():
@@ -711,6 +716,7 @@ def get_loan_summary(
         "status": loan.status,
         "amount": s(getattr(loan, "amount", 0) or 0),
         "currency": loan.currency,
+        "purpose": _loan_purpose_from_events(db, int(loan.id)),
         "service_fee": s(getattr(loan, "service_fee", 0) or 0),
         "net_disbursed_amount": s(getattr(loan, "net_disbursed_amount", 0) or 0),
         "guarantor_pool": s(getattr(loan, "guarantor_pool", 0) or 0),

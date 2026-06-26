@@ -70197,6 +70197,51 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Support request purpose made backend truth
+
+- Trigger:
+  - the owner asked to keep tightening Money Out / Support & Loans without
+    duplicating pages, and to make sure the visible support flow is backed by
+    backend truth.
+- Unabated truth:
+  - before this slice, the Marketplace support form collected a purpose and
+    the loan create path could preserve it, but the backend still allowed a
+    support request without a purpose;
+  - loan summaries also did not expose the stored purpose, so later screens
+    could lose the reason for the support request.
+- Changed:
+  - `gmfn_backend/app/api/routes/loans.py`
+    - `POST /loans` now rejects blank purpose with
+      `Purpose is required for a support request.`;
+    - `GET /loans/{loan_id}/summary` now returns the purpose stored in the
+      original `loan.created` trust event.
+  - `gmfn_backend/app/api/routes/loan_summary.py`
+    - kept the parallel loan summary route aligned by reading purpose from
+      `loan.created` trust-event metadata, even though the mounted route is
+      currently the one in `loans.py`.
+  - `gmfn_backend/app/schemas/loans.py`
+    - added `purpose` to `LoanSummaryOut`.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - blocks support draft creation until the user states what the support is
+      for.
+  - `frontend/tools/audit-marketplace-support-lane.mjs`
+    - added a regression check for the purpose requirement.
+  - `gmfn_backend/tests/test_loan_pool_event_truth.py`
+    - added backend rejection coverage for blank purpose;
+    - added summary coverage proving purpose remains visible after creation.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py`.
+  - Passed `npm --prefix frontend run audit:marketplace-support-lane`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+- Still not changed:
+  - no payout automation was added;
+  - no approval-to-PIN trigger was added;
+  - no readiness/suggestion/workbench engine was deleted or merged;
+  - dispute/fraud handling is still not implemented beyond manual support
+    expectations.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Money In proof upload attached to expected payments
 
 - Trigger:

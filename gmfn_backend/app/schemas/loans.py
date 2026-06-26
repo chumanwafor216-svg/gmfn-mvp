@@ -109,6 +109,7 @@ class LoanSummaryOut(BaseModel):
 
     amount: Decimal
     currency: str
+    purpose: Optional[str] = None
 
     service_fee: Decimal
     net_disbursed_amount: Decimal

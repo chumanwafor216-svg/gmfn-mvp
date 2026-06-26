@@ -6215,6 +6215,11 @@ export default function MarketplacePage() {
       return;
     }
 
+    if (!safeStr(loanPurpose)) {
+      showNotice("error", "State what the support is for.");
+      return;
+    }
+
     setStartingLoanDraft(true);
 
     try {

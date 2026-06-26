@@ -1,13 +1,37 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.core.auth import get_current_user
 from app.core.clan_auth import get_current_clan_membership
-from app.db.models import User, Loan, LoanGuarantor, ClanMembership
+from app.db.models import User, Loan, LoanGuarantor, ClanMembership, TrustEvent
 from app.schemas.loans import LoanSummaryOut
 
 router = APIRouter(prefix="/loans", tags=["loans"])
+
+
+def _loan_purpose_from_events(db: Session, loan_id: int) -> str | None:
+    event = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.loan_id == int(loan_id))
+        .filter(TrustEvent.event_type == "loan.created")
+        .order_by(TrustEvent.id.asc())
+        .first()
+    )
+    if not event:
+        return None
+
+    meta = getattr(event, "meta", None)
+    if not isinstance(meta, dict):
+        try:
+            meta = json.loads(getattr(event, "meta_json", None) or "{}")
+        except Exception:
+            meta = {}
+
+    purpose = str((meta or {}).get("purpose") or "").strip()
+    return purpose or None
 
 
 @router.get("/{loan_id}/summary", response_model=LoanSummaryOut)
@@ -51,6 +75,7 @@ def get_loan_summary(
         status=loan.status,
         amount=float(loan.amount),
         currency=loan.currency,
+        purpose=_loan_purpose_from_events(db, int(loan.id)),
 
         service_fee=float(getattr(loan, "service_fee", 0) or 0),
         net_disbursed_amount=float(getattr(loan, "net_disbursed_amount", 0) or 0),

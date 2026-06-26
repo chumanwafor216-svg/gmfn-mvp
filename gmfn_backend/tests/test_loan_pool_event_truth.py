@@ -31,7 +31,12 @@ def test_loan_creation_uses_confirmed_pool_events_for_pool_truth(
 
     response = client.post(
         "/loans",
-        json={"clan_id": 1, "amount": "400", "currency": "NGN"},
+        json={
+            "clan_id": 1,
+            "amount": "400",
+            "currency": "NGN",
+            "purpose": "Family support",
+        },
     )
 
     assert response.status_code == 201, response.text
@@ -61,7 +66,12 @@ def test_loan_creation_does_not_use_legacy_membership_balance_as_money_truth(
 
     response = client.post(
         "/loans",
-        json={"clan_id": 1, "amount": "400", "currency": "NGN"},
+        json={
+            "clan_id": 1,
+            "amount": "400",
+            "currency": "NGN",
+            "purpose": "Family support",
+        },
     )
 
     assert response.status_code == 201, response.text
@@ -73,8 +83,27 @@ def test_loan_creation_does_not_use_legacy_membership_balance_as_money_truth(
     assert data["guarantors_required"] > 0
 
 
+def test_loan_creation_requires_support_purpose(
+    client,
+    override_clan_ctx_member,
+    seed_clan_member_membership,
+):
+    response = client.post(
+        "/loans",
+        json={
+            "clan_id": 1,
+            "amount": "400",
+            "currency": "NGN",
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"] == "Purpose is required for a support request."
+
+
 def test_auto_approved_loan_creates_repayment_expectation_with_plan(
     client,
+    override_current_user_user,
     override_clan_ctx_member,
     seed_clan_member_membership,
 ):
@@ -112,6 +141,10 @@ def test_auto_approved_loan_creates_repayment_expectation_with_plan(
     listed = listed_response.json()
     assert listed["items"][0]["id"] == data["id"]
     assert listed["items"][0]["purpose"] == "School fees"
+
+    summary_response = client.get(f"/loans/{int(data['id'])}/summary")
+    assert summary_response.status_code == 200, summary_response.text
+    assert summary_response.json()["purpose"] == "School fees"
 
     with engine.begin() as conn:
         expected = conn.execute(
@@ -207,6 +240,7 @@ def test_pending_support_loan_does_not_create_repayment_expectation_too_early(
             "clan_id": 1,
             "amount": "400",
             "currency": "NGN",
+            "purpose": "Community support",
             "duration_days": 30,
             "repayment_cadence": "monthly",
         },
