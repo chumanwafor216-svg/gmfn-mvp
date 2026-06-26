@@ -11400,7 +11400,7 @@ export default function MarketplacePage() {
                           lineHeight: 1.35,
                         }}
                       >
-                        {firstTruthy(item?.title, "Loan and support item")}
+                        {firstTruthy(item?.title, "Support item")}
                       </div>
 
                       <div
@@ -11430,10 +11430,10 @@ export default function MarketplacePage() {
                       >
                         {firstTruthy(
                           item?.borrower_name
-                            ? `Borrower: ${item.borrower_name}`
+                            ? `Requested by: ${item.borrower_name}`
                             : "",
                           item?.guarantor_name
-                            ? `Guarantor: ${item.guarantor_name}`
+                            ? `Supporter: ${item.guarantor_name}`
                             : "",
                           item?.created_at ? `Started: ${safeDateTime(item.created_at)}` : "",
                           "This support item is visible in your current community."

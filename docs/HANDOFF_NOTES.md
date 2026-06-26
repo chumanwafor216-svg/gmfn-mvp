@@ -112,6 +112,33 @@ Truth / remaining risk:
 - No automatic payout release, bank API payout trigger, support approval PIN,
   or backend money movement was added. This is a wording and audit-cage slice.
 
+## 2026-06-26 - Marketplace Support Requests item wording tightened
+
+Owner request:
+- Continue polishing the Support & Loans path so the visible user language does
+  not expose old borrower/guarantor wording where simple support wording is
+  clearer.
+
+Local frontend cleanup:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - visible support item fallback now says `Support item`;
+  - visible item detail now says `Requested by` and `Supporter` instead of
+    `Borrower` and `Guarantor`.
+- `frontend/tools/audit-marketplace-support-lane.mjs`
+  - audit now protects the simpler visible support item wording and blocks the
+    old visible labels inside the Support Requests lane.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `node frontend/tools/audit-gsn-visible-language.mjs`
+- `npm --prefix frontend run audit:loans-actions`
+
+Truth / remaining risk:
+- Local commit only in `ef23c25e`; not pushed or deployed yet because current
+  Git publishing is batch-frozen by `docs/FREEZE_POLICY.md`.
+- Internal backend/API/debug identifiers still use borrower/guarantor where the
+  existing contracts require them.
+
 ## 2026-06-26 - Shared support wording and visible-language sweep
 
 Owner request:

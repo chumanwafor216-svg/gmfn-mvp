@@ -124,6 +124,9 @@ if (!supportSection.text) {
     /debugId="marketplace\.support\.finance"[\s\S]*?openMarketplaceCta\(event, "finance"\)/,
     /debugId="marketplace\.support\.full-loans"[\s\S]*?openMarketplaceCta\(event, "loans"\)/,
     /debugId="marketplace\.support\.send-guarantor-requests"[\s\S]*?showGuarantorRequestBlockedNotice/,
+    /firstTruthy\(item\?\.title, "Support item"\)/,
+    /Requested by: \$\{item\.borrower_name\}/,
+    /Supporter: \$\{item\.guarantor_name\}/,
   ].forEach((pattern) => {
     if (!pattern.test(supportSection.text)) {
       addFinding(
@@ -139,6 +142,14 @@ if (!supportSection.text) {
       supportSection.start,
       "Support Requests detail section must not expose other major lane responsibilities.",
       "Support may link to Finance and Loans, but must not expose shop, trade, trust, ROSCA, or Money Pool lane content."
+    );
+  }
+
+  if (/(Loan and support item|Borrower:|Guarantor:)/.test(supportSection.text)) {
+    addFinding(
+      supportSection.start,
+      "Support Requests visible item cards must use simple support wording, not borrower/guarantor labels.",
+      "Use Support item, Requested by, and Supporter."
     );
   }
 }
