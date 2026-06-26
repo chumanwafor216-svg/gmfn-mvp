@@ -86,8 +86,14 @@ assertContains(
   {
     id: "marketplace.tile.money",
     glyph: "pool",
-    label: "Finance & Pool",
-    tags: ["Money In", "Money Out", "Banking Rails"],
+    label: "Money In / Pool",
+    tags: ["Money In", "Pool", "Pay-In Rail"],
+  },
+  {
+    id: "marketplace.tile.withdrawal",
+    glyph: "card",
+    label: "Money Out / Withdrawal",
+    tags: ["Own Money", "Payout Account", "Check First"],
   },
   {
     id: "marketplace.tile.rosca",

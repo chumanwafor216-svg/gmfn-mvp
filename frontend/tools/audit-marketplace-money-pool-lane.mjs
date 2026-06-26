@@ -44,8 +44,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Finance & Pool[\s\S]*?Pool, money in\/out, and banking[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Marketplace Rails/,
-  "Finance & Pool grouped card must stay the guided money launcher and open only the money section."
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In and this marketplace pool"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money In \/ Pool[\s\S]*?Put money into this marketplace pool\.[\s\S]*?Money In[\s\S]*?Pool[\s\S]*?Pay-In Rail/,
+  "Money In / Pool grouped card must stay the guided pay-in launcher and open only the money section."
+);
+
+assertContains(
+  /debugId="marketplace\.tile\.withdrawal"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?Money Out \/ Withdrawal[\s\S]*?Withdraw your own available money\./,
+  "Normal Money Out / Withdrawal must stay a separate Marketplace front-door action from Money In / Pool."
 );
 
 assertContains(
@@ -100,8 +105,8 @@ if (!moneySection.text) {
   }
 
   [
-    /Money Pool/,
-    /This marketplace's pool, money in, and money out\./,
+    /Money In \/ Pool/,
+    /Pay into this marketplace pool and check the receiving rail\./,
     /marketplaceMoneyRouteCardStyle\(isCompact, true\)/,
     /Visible Pool[\s\S]*?Current pool view/,
     /Money In Rail[\s\S]*?Pay this account/,

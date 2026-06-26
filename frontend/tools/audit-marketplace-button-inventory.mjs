@@ -19,10 +19,10 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 69;
+const expectedStableActionCount = 70;
 const expectedNativeFieldCount = 34;
 const expectedSourceBreakdown = {
-  front: 11,
+  front: 12,
   body: 58,
 };
 const expectedVisibleIntentActionCount = 5;
@@ -350,8 +350,13 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Finance & Pool[\s\S]*?Pool, money in\/out, and banking[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Marketplace Rails/,
-  "Marketplace Finance & Pool grouped card must open the money section only and show money route tags."
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In and this marketplace pool"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money In \/ Pool[\s\S]*?Put money into this marketplace pool\.[\s\S]*?Money In[\s\S]*?Pool[\s\S]*?Pay-In Rail/,
+  "Marketplace Money In / Pool card must open the money section only and must not mix normal withdrawal into its front-door label."
+);
+
+assertContains(
+  /debugId="marketplace\.tile\.withdrawal"[\s\S]*?aria-label="Open normal Money Out withdrawal for this marketplace"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?<MarketplaceGlyph name="card"[\s\S]*?Money Out \/ Withdrawal[\s\S]*?Withdraw your own available money\.[\s\S]*?Own Money[\s\S]*?Payout Account[\s\S]*?Check First/,
+  "Marketplace must expose normal Money Out / Withdrawal as a separate front-door route from Support & Loans."
 );
 
 assertContains(
@@ -400,7 +405,7 @@ assertContains(
 );
 
 assertContains(
-  /id="marketplace-money-routes"[\s\S]*?Money Pool[\s\S]*?This marketplace's pool, money in, and money out\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Money In Rail[\s\S]*?Pay this account[\s\S]*?Money Out Rail[\s\S]*?My personal payout account/,
+  /id="marketplace-money-routes"[\s\S]*?Money In \/ Pool[\s\S]*?Pay into this marketplace pool and check the receiving rail\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Money In Rail[\s\S]*?Pay this account[\s\S]*?Money Out Rail[\s\S]*?My personal payout account/,
   "Marketplace money route detail must keep the compact Money Pool reference-card structure."
 );
 
@@ -688,6 +693,7 @@ const expectedOrder = [
   exactDebugId("marketplace.empty.dashboard"),
   exactDebugId("marketplace.tile.trust"),
   exactDebugId("marketplace.tile.money"),
+  exactDebugId("marketplace.tile.withdrawal"),
   exactDebugId("marketplace.tile.rosca"),
   exactDebugId("marketplace.tile.members"),
   exactDebugId("marketplace.tile.support"),

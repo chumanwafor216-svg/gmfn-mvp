@@ -380,8 +380,20 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?pendingMarketplaceSectionRef[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?scrollToMarketplaceSection\(sectionId\)[\s\S]*?pendingMarketplaceSectionRef\.current = ""[\s\S]*?useEffect\(\(\) => \{[\s\S]*?pendingMarketplaceSectionRef\.current[\s\S]*?scheduleMarketplaceSectionScroll\(sectionId\)[\s\S]*?function openMarketplaceSection[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, key\)\)[\s\S]*?id="marketplace-money-routes"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-owned-links"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-members-shops"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-loans-support"[\s\S]*?marketplaceSectionStyle\(\)/,
-  "Marketplace front page section buttons must mark opened sections as touched, land once after React commit, clear pending scroll, and use the shared phone-safe section helper."
+  /scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?pendingMarketplaceSectionRef[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?scrollToMarketplaceSection\(sectionId[\s\S]*?pendingMarketplaceSectionRef\.current = ""[\s\S]*?useEffect\(\(\) => \{[\s\S]*?pendingMarketplaceSectionRef\.current[\s\S]*?scheduleMarketplaceSectionScroll\(sectionId[\s\S]*?function openMarketplaceSection[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, key\)\)[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\(key\)\)[\s\S]*?scheduleMarketplaceSectionScroll\(sectionId\)/,
+  "Marketplace section-opening buttons must mark opened sections as touched, land once after React commit, clear pending scroll, and use the shared phone-safe section helper."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.tile\.withdrawal"[\s\S]*?aria-label="Open normal Money Out withdrawal for this marketplace"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?Money Out \/ Withdrawal/,
+  "Marketplace normal withdrawal must be a direct Money Out route action, not a Support & Loans section opener."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /id="marketplace-money-routes"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-owned-links"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-members-shops"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-loans-support"[\s\S]*?marketplaceSectionStyle\(\)/,
+  "Marketplace major sections must keep the shared phone-safe section style."
 );
 
 assertContains(

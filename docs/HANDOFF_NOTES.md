@@ -1,3 +1,47 @@
+## 2026-06-26 - Marketplace money lanes front-door separation
+
+Owner correction:
+- Money In / Pool, normal Money Out / Withdrawal, and Support & Loans are
+  different user intentions.
+- Normal Money Out is not automatically a loan. Support & Loans should only take
+  over when a withdrawal decision needs backing/guarantors.
+
+Local change:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - changed the old mixed front card from `Finance & Pool` to `Money In / Pool`;
+  - removed normal-withdrawal wording from that card's front-door tags;
+  - added a separate `Money Out / Withdrawal` front-door action that routes
+    directly to the existing Money Out / guided withdrawal page;
+  - kept the existing Money In rail, Money Out rail, and Support Requests lane
+    intact rather than deleting or merging backend-owned flow logic.
+- Updated Marketplace audits so the new separation is caged:
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+  - `frontend/tools/audit-marketplace-button-lines.mjs`
+  - `frontend/tools/audit-marketplace-actions.mjs`
+  - `frontend/tools/audit-marketplace-front-package.mjs`
+  - `frontend/tools/audit-marketplace-money-pool-lane.mjs`
+  - `frontend/tools/audit-marketplace-touch-blockers.mjs`
+
+Verification passed locally:
+- `npm run audit:marketplace-button-inventory`
+- `npm run audit:marketplace-button-lines`
+- `npm run audit:marketplace-actions`
+- `npm run audit:marketplace-money-pool-lane`
+- `npm run audit:marketplace-support-lane`
+- `npm run audit:marketplace-front-package`
+- `npm run audit:protected-button-freeze`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Unabated truth:
+- This is local code only at this point; it has not been pushed or deployed in
+  this entry.
+- This changes the Marketplace front door and route protection, not backend
+  payout automation or loan approval logic.
+- Phone screenshot/browser verification was not completed in this entry because
+  authenticated in-app browser access was not available.
+
 ## 2026-06-25 - Active Pilot Complaint Ledger
 
 Purpose:

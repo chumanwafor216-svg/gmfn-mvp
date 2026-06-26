@@ -6853,7 +6853,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.money"
-              aria-label="Open Money In, Money Out, dues and contributions"
+              aria-label="Open Money In and this marketplace pool"
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
@@ -6870,10 +6870,10 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Finance & Pool
+                  Money In / Pool
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Pool, money in/out, and banking.
+                  Put money into this marketplace pool.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
@@ -6884,12 +6884,58 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
-                    Money Out
+                    Pool
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
-                    Banking Rails
+                    Pay-In Rail
+                  </span>
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph name="chevron" size={18} />
+              </span>
+            </StableButton>
+
+            <StableButton
+              type="button"
+              debugId="marketplace.tile.withdrawal"
+              aria-label="Open normal Money Out withdrawal for this marketplace"
+              onClick={(event) => openMarketplaceCta(event, "moneyOut")}
+              style={marketplaceFrontLaneCardStyle(isCompact)}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceFrontLaneIconStyle(
+                  "linear-gradient(180deg, #08264B 0%, #061827 100%)",
+                  isCompact
+                )}
+              >
+                <MarketplaceGlyph name="card" size={isCompact ? 26 : 34} />
+              </span>
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  Money Out / Withdrawal
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  Withdraw your own available money.
+                </span>
+                <span style={marketplaceFrontTagRowStyle(isCompact)}>
+                  <span
+                    style={marketplaceFrontTagStyle("#08264B", "#EAF3FF", isCompact)}
+                  >
+                    Own Money
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#08264B", "#EAF3FF", isCompact)}
+                  >
+                    Payout Account
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#08264B", "#EAF3FF", isCompact)}
+                  >
+                    Check First
                   </span>
                 </span>
               </span>
@@ -7392,7 +7438,7 @@ export default function MarketplacePage() {
                   overflowWrap: "break-word",
                 }}
               >
-                Money Pool
+                Money In / Pool
               </div>
               <div
                 style={{
@@ -7403,7 +7449,7 @@ export default function MarketplacePage() {
                   lineHeight: 1.25,
                 }}
               >
-                This marketplace's pool, money in, and money out.
+                Pay into this marketplace pool and check the receiving rail.
               </div>
             </div>
           </div>

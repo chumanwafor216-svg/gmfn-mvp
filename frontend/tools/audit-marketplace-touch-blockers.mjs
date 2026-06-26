@@ -201,11 +201,7 @@ assertContains(
   "Marketplace hash landings must keep a one-shot ref so route hashes cannot repeatedly drag the screen."
 );
 
-for (const hash of [
-  "marketplace-loans-support",
-  "marketplace-rosca",
-  "marketplace-owned-links",
-]) {
+for (const hash of ["marketplace-rosca", "marketplace-owned-links"]) {
   assertContains(
     marketplaceFile,
     marketplaceSource,
@@ -215,6 +211,13 @@ for (const hash of [
     `Marketplace ${hash} route landing must scroll once and clear the hash instead of fighting user scrolling.`
   );
 }
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /const isMoneyOutSupportFlow =[\s\S]*?routeSupportFlow === "money-out" && routeFocus === "support"[\s\S]*?if \(hash !== "marketplace-loans-support" && !isMoneyOutSupportFlow\) return;[\s\S]*?const landingTarget = "marketplace-loans-support"[\s\S]*?routeHashLandingAppliedRef\.current === landingToken[\s\S]*?routeHashLandingAppliedRef\.current = landingToken;[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, "support"\)\)[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\("support"\)\)[\s\S]*?scheduleMarketplaceSectionScroll\("marketplace-loans-support", \{\s*force: true,\s*\}\);[\s\S]*?clearMarketplaceHash\(\);/,
+  "Marketplace marketplace-loans-support landing must accept direct hashes and Money Out support handoffs, then use the scheduled forced phone-safe scroll once and clear the hash."
+);
 
 if (findings.length) {
   console.error("Marketplace touch-blocker line audit failed:");
