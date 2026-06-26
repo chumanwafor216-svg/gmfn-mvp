@@ -69780,3 +69780,32 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `git diff --check`.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Money Out Continue now opens Support Requests immediately
+
+- Trigger:
+  - owner clarified that after Money Out decides the amount requires
+    guarantor/support, the same `Continue` tap must lead the user directly to
+    the Support Requests lane;
+  - showing a message and waiting for a second tap still leaves users hunting
+    for the next step.
+- Unabated truth:
+  - the previous local state still required a second tap after the support
+    decision;
+  - that did not satisfy the guided-flow requirement.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - when `Continue` detects support is required, Money Out now persists the
+      handoff and immediately navigates to:
+      `support_flow=money-out&focus=support#marketplace-loans-support`;
+    - this preserves the `Support Requests` target and removes the extra
+      follow-up tap.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

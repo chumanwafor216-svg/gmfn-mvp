@@ -1314,6 +1314,7 @@ export default function WithdrawalInstructionsPage() {
         "success",
         "This request needs support. Continue to Support Requests."
       );
+      navigateWithOrigin(navigate, routes.supportStart, location);
       return;
     }
 
