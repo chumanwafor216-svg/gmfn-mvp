@@ -70197,6 +70197,38 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Support expiry route pinned by backend test
+
+- Trigger:
+  - owner required deterministic support/guarantor handling: if guarantors do
+    not complete within the response window, the system must not stay quiet or
+    keep support money locked indefinitely.
+- Unabated truth:
+  - the deterministic engine already existed in
+    `gmfn_backend/app/services/guarantor_expiry_service.py`;
+  - it already expires unanswered guarantor requests, cancels incomplete stale
+    support loans after the grace window, and releases locked guarantor
+    exposure through `cancel_loan`;
+  - this slice did not invent a new engine or change payout automation.
+- Changed:
+  - `gmfn_backend/tests/test_loan_pool_event_truth.py`
+    - added route-level coverage for
+      `POST /loans/support-expiry/run`;
+    - the test creates an incomplete support request with one approved locked
+      guarantor and one stale unanswered guarantor;
+    - verifies the route expires the unanswered guarantor, cancels the
+      incomplete loan, releases the locked guarantor exposure, and records the
+      expected TrustEvents.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py`.
+- Still not changed:
+  - no automatic payout release was added;
+  - no approval PIN trigger was added;
+  - no new frontend support timeout UI was added in this slice because the
+    support lane already explains the response/grace window.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Money In local note no longer unlocks routes
 
 - Trigger:

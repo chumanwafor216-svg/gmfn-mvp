@@ -101,6 +101,126 @@ def test_loan_creation_requires_support_purpose(
     assert response.json()["detail"] == "Purpose is required for a support request."
 
 
+def test_admin_support_expiry_sweep_cancels_incomplete_request_and_releases_locks(
+    client,
+    override_clan_ctx_admin,
+    seed_clan_admin_membership,
+):
+    old = datetime.now(timezone.utc) - timedelta(hours=27)
+
+    db = SessionLocal()
+    try:
+        borrower = User(
+            id=2,
+            email="borrower@example.com",
+            hashed_password="x",
+            role="user",
+        )
+        guarantor_one = User(
+            id=3,
+            email="guarantor-one@example.com",
+            hashed_password="x",
+            role="user",
+        )
+        guarantor_two = User(
+            id=4,
+            email="guarantor-two@example.com",
+            hashed_password="x",
+            role="user",
+        )
+        db.add_all([borrower, guarantor_one, guarantor_two])
+        db.flush()
+        db.add_all(
+            [
+                ClanMembership(clan_id=1, user_id=2, role="user"),
+                ClanMembership(clan_id=1, user_id=3, role="user"),
+                ClanMembership(clan_id=1, user_id=4, role="user"),
+            ]
+        )
+        loan = Loan(
+            clan_id=1,
+            borrower_user_id=2,
+            amount=Decimal("100.00"),
+            currency="NGN",
+            status="incomplete",
+            guarantors_required=2,
+            guarantee_gap=Decimal("100.00"),
+            guarantor_pool=Decimal("50.00"),
+            service_fee=Decimal("0"),
+            net_disbursed_amount=Decimal("0"),
+            platform_revenue=Decimal("0"),
+            paid_total=Decimal("0"),
+            remaining_amount=Decimal("100.00"),
+            created_at=old,
+        )
+        db.add(loan)
+        db.flush()
+        approved = LoanGuarantor(
+            loan_id=loan.id,
+            clan_id=1,
+            guarantor_user_id=3,
+            pledge_amount=Decimal("50.00"),
+            status="approved",
+            is_locked=True,
+            locked_amount=Decimal("50.00"),
+            released_amount=Decimal("0"),
+            responded_at=old,
+            created_at=old,
+        )
+        pending = LoanGuarantor(
+            loan_id=loan.id,
+            clan_id=1,
+            guarantor_user_id=4,
+            pledge_amount=Decimal("50.00"),
+            status="pending",
+            is_locked=False,
+            locked_amount=Decimal("0"),
+            released_amount=Decimal("0"),
+            created_at=old,
+        )
+        db.add_all([approved, pending])
+        db.commit()
+        loan_id = int(loan.id)
+        approved_id = int(approved.id)
+        pending_id = int(pending.id)
+    finally:
+        db.close()
+
+    response = client.post(
+        "/loans/support-expiry/run?response_hours=24&cancel_grace_hours=1&limit=10"
+    )
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["expired_guarantors"] == 1
+    assert data["cancelled_loans"] == 1
+    assert data["cancelled_loan_ids"] == [loan_id]
+
+    with SessionLocal() as check_db:
+        loan = check_db.get(Loan, loan_id)
+        approved = check_db.get(LoanGuarantor, approved_id)
+        pending = check_db.get(LoanGuarantor, pending_id)
+        events = (
+            check_db.query(TrustEvent)
+            .filter(TrustEvent.loan_id == loan_id)
+            .all()
+        )
+
+        assert loan is not None
+        assert loan.status == "cancelled"
+        assert approved is not None
+        assert approved.is_locked is False
+        assert approved.locked_amount == Decimal("0.00")
+        assert approved.released_amount == Decimal("50.00")
+        assert pending is not None
+        assert pending.status == "expired"
+
+        event_types = {event.event_type for event in events}
+        assert "guarantor_expired" in event_types
+        assert "loan_cancelled" in event_types
+        assert "guarantee.released" in event_types
+
+
 def test_auto_approved_loan_creates_repayment_expectation_with_plan(
     client,
     override_current_user_user,
