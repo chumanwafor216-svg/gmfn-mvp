@@ -1,3 +1,44 @@
+## 2026-06-26 - Money proof and withdrawal reference wording tightened
+
+Owner request:
+- Continue closing the Money In / Money Out / Support lane gaps and audit the
+  wording so pilot users are not told money movement is more automated than it
+  is.
+
+Local frontend cleanup:
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - Money In screenshot language now says the screenshot is noted on this
+    phone and may need to be shared with finance if requested.
+  - The proof action label now reads "Note screenshot" instead of implying a
+    backend upload.
+  - Payment note success now says finance matches the bank record; it no
+    longer implies the local screenshot is automatically submitted.
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - Normal Money Out now says it creates a withdrawal request reference, not a
+    payout or withdrawal code.
+  - Direct-withdrawal success still states finance reviews before money moves.
+- `frontend/tools/audit-finance-money-movement-lanes.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+- `frontend/tools/audit-button-stability.mjs`
+  - audits now protect the stricter proof/reference wording.
+
+Verification:
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `node frontend/tools/audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local frontend wording/audit correction only.
+- No backend proof upload, automatic payout release, bank payout provider, or
+  support approval PIN automation was added in this slice.
+- Screenshot proof is still local browser/device state unless a separate
+  backend upload route is implemented later.
+- Not pushed or deployed yet because current Git publishing is batch-frozen by
+  `docs/FREEZE_POLICY.md`.
+
 ## 2026-06-26 - Support Requests identity context tightened
 
 Owner request:

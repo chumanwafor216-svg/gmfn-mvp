@@ -86,14 +86,14 @@ assertContains(
 
 assertContains(
   "moneyInPage",
-  /Reference ready\. Pay this account with the exact reference\.[\s\S]*?Pay-in account is not ready for this marketplace\. Add the receiving account first\.[\s\S]*?add your payment screenshot after transfer\./,
-  "Money In route page must keep the pay-account panel direct, marketplace-scoped, and screenshot-aware."
+  /Reference ready\. Pay this account with the exact reference\.[\s\S]*?Pay-in account is not ready for this marketplace\. Add the receiving account first\.[\s\S]*?note your screenshot here and share it if finance asks\./,
+  "Money In route page must keep the pay-account panel direct, marketplace-scoped, and honest about local screenshot notes."
 );
 
 assertContains(
   "moneyInPage",
-  /Use the exact reference\. If automatic matching is not live yet, add a screenshot after transfer\.[\s\S]*?Payment note saved\. GSN will match it with the bank record or screenshot\./,
-  "Money In route page must describe the manual note/screenshot fallback in user-facing language."
+  /Use the exact reference\. If automatic matching is not live yet, note your screenshot here and share it if finance asks\.[\s\S]*?Payment noted\. GSN finance will match it with the bank record\. Share your screenshot if they ask\./,
+  "Money In route page must describe the finance-match and local screenshot-note fallback in user-facing language."
 );
 
 assertContains(
@@ -111,13 +111,13 @@ assertContains(
 assertContains(
   "moneyOutPage",
   /if \(requiresSupport\) \{[\s\S]*?navigateWithOrigin\(navigate, routes\.supportStart, location\);[\s\S]*?return;[\s\S]*?\}[\s\S]*?await handleDirectWithdrawal\(\);/,
-  "Money Out Continue must route over-limit requests to Support Requests and generate the normal withdrawal code directly when the amount fits."
+  "Money Out Continue must route over-limit requests to Support Requests and create a normal withdrawal request reference directly when the amount fits."
 );
 
 assertContains(
   "moneyOutPage",
-  /Add your payout account first so GSN knows where this withdrawal should go\.[\s\S]*?Withdrawal code generated\. Use it with your transfer proof; GSN finance reviews before money moves\./,
-  "Money Out normal withdrawal must require a payout account and keep code generation separate from money movement."
+  /Add your payout account first so GSN knows where this withdrawal should go\.[\s\S]*?Withdrawal request reference created\. Use it with your transfer proof; GSN finance reviews before money moves\./,
+  "Money Out normal withdrawal must require a payout account and keep request-reference creation separate from money movement."
 );
 
 assertContains(

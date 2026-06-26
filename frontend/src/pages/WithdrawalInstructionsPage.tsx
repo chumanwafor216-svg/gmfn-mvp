@@ -932,7 +932,7 @@ export default function WithdrawalInstructionsPage() {
         step: "Reading",
         title: "Waiting for the effective-available pool reading.",
         detail:
-          "GSN needs the available-balance reading before it can generate a code or open support.",
+          "GSN needs the available-balance reading before it can create a request reference or open support.",
       };
     }
 
@@ -942,7 +942,7 @@ export default function WithdrawalInstructionsPage() {
         step: "Own money",
         title: "This can be withdrawn from your available balance.",
         detail:
-          "No guarantor is needed. Press Continue to generate the withdrawal code when your payout account is ready.",
+          "No supporter is needed. Press Continue to create the withdrawal request reference when your payout account is ready.",
       };
     }
 
@@ -1151,11 +1151,11 @@ export default function WithdrawalInstructionsPage() {
         clanId: selectedClanId,
         amount: fmtMoney(requestedAmount),
         currency: poolCurrency,
-        note: safeStr(noteInput || "Normal withdrawal code request"),
+        note: safeStr(noteInput || "Normal withdrawal request reference"),
       });
 
       if (!res) {
-        showNotice("error", "Withdrawal code could not be generated.");
+        showNotice("error", "Withdrawal request reference could not be created.");
         return;
       }
 
@@ -1164,7 +1164,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Withdrawal code generated. Use it with your transfer proof; GSN finance reviews before money moves."
+        "Withdrawal request reference created. Use it with your transfer proof; GSN finance reviews before money moves."
       );
     } finally {
       setSubmittingWithdrawal(false);
@@ -1214,7 +1214,7 @@ export default function WithdrawalInstructionsPage() {
     }
 
     if (!requiresSupport) {
-      showNotice("error", "This amount fits your available balance. Press Continue to generate the withdrawal code here.");
+      showNotice("error", "This amount fits your available balance. Press Continue to create the withdrawal request reference here.");
       return;
     }
 
@@ -1316,7 +1316,7 @@ export default function WithdrawalInstructionsPage() {
         ? "Support gap: Awaiting calculation"
         : requiresSupport
         ? `Support gap: ${fmtMoney(supportGap)} ${poolCurrency}`
-        : "Withdrawal code can be generated",
+        : "Withdrawal request reference can be created",
       destination.destinationName
         ? `Payout account: ${destination.destinationName}`
         : "",
@@ -1388,11 +1388,11 @@ export default function WithdrawalInstructionsPage() {
   const latestResultText = latestWithdrawalResult
     ? firstTruthy(
         latestWithdrawalResult?.reference
-          ? `Withdrawal code: ${safeStr(latestWithdrawalResult.reference)}`
+          ? `Request reference: ${safeStr(latestWithdrawalResult.reference)}`
           : "",
         latestWithdrawalResult?.status,
         latestWithdrawalResult?.state,
-        "Withdrawal code generated"
+        "Withdrawal request reference created"
       )
     : "Awaiting";
 
@@ -1559,10 +1559,10 @@ export default function WithdrawalInstructionsPage() {
             )}
           >
             {latestWithdrawalResult
-              ? "Code ready"
+              ? "Reference ready"
               : submittingWithdrawal
-              ? "Generating..."
-              : "Generate code"}
+              ? "Creating..."
+              : "Create reference"}
           </PrimaryButton>
         ) : (
           <PrimaryButton
@@ -1968,7 +1968,7 @@ export default function WithdrawalInstructionsPage() {
           <div>
             {iconLabel("wallet", "Normal withdrawal")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Enter amount. If it fits your available balance, GSN generates a withdrawal code.
+              Enter amount. If it fits your available balance, GSN creates a withdrawal request reference.
             </div>
           </div>
 
@@ -2089,8 +2089,8 @@ export default function WithdrawalInstructionsPage() {
                       : requiresSupport
                       ? "Support is needed"
                       : latestWithdrawalResult
-                      ? "Code generated"
-                      : "Code can be generated"}
+                      ? "Reference created"
+                      : "Reference can be created"}
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     {!effectiveAvailableKnown
@@ -2100,7 +2100,7 @@ export default function WithdrawalInstructionsPage() {
                       : requiresSupport
                       ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your effective available pool is ${effectiveAvailableText} ${poolCurrency}.`
                       : latestWithdrawalResult
-                      ? "Use the code with your transfer proof. GSN finance reviews before money moves."
+                      ? "Use the reference with your transfer proof. GSN finance reviews before money moves."
                       : "This amount fits your available balance."}
                   </div>
                 </div>
@@ -2164,10 +2164,10 @@ export default function WithdrawalInstructionsPage() {
                     )}
                   >
                     {latestWithdrawalResult
-                      ? "Code ready"
+                      ? "Reference ready"
                       : submittingWithdrawal
-                      ? "Generating..."
-                      : "Generate code"}
+                      ? "Creating..."
+                      : "Create reference"}
                   </PrimaryButton>
                 ) : (
                   <PrimaryButton
@@ -2732,7 +2732,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Withdrawal code</div>
+            <div style={sectionLabel()}>Withdrawal request reference</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {latestResultText}
             </div>
@@ -2801,14 +2801,14 @@ export default function WithdrawalInstructionsPage() {
                     {!effectiveAvailableKnown
                       ? "Wait for the pool reading before this route decides."
                       : !requiresSupport
-                      ? "Use the generated code with your bank slip. Admin reconciles it during the pilot."
+                      ? "Use the request reference with your bank slip. Admin reconciles it during the pilot."
                       : "Your available balance is not enough. Continue through Support Requests."}
                   </div>
                 </div>
 
                 {latestWithdrawalResult ? (
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>Latest withdrawal code</div>
+                    <div style={sectionLabel()}>Latest request reference</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       {[
                         firstTruthy(
@@ -2821,7 +2821,7 @@ export default function WithdrawalInstructionsPage() {
                             )}`
                           : "",
                         latestWithdrawalResult?.reference
-                          ? `Code: ${safeStr(latestWithdrawalResult.reference)}`
+                          ? `Reference: ${safeStr(latestWithdrawalResult.reference)}`
                           : "",
                         latestWithdrawalResult?.amount
                           ? `Amount: ${safeStr(latestWithdrawalResult.amount)} ${safeStr(

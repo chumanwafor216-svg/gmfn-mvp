@@ -1007,7 +1007,7 @@ export default function PaymentInstructionsPage() {
         step: "Payment",
         title: "Pay this account.",
         detail:
-          "Use the exact reference. If automatic matching is not live yet, add a screenshot after transfer.",
+          "Use the exact reference. If automatic matching is not live yet, note your screenshot here and share it if finance asks.",
       };
     }
 
@@ -1024,10 +1024,10 @@ export default function PaymentInstructionsPage() {
     if (proofFileName) {
       return {
         tone: "gold" as const,
-        step: "Proof recorded",
-        title: "Screenshot added.",
+        step: "Proof noted",
+        title: "Screenshot noted on this phone.",
         detail:
-          "Screenshot saved for checking while bank API match is not automatic.",
+          "This note stays on this device. Send the screenshot to finance if they ask for it.",
       };
     }
 
@@ -1167,7 +1167,7 @@ export default function PaymentInstructionsPage() {
 
     setNotice({
       tone: "success",
-      text: "Payment note saved. GSN will match it with the bank record or screenshot.",
+      text: "Payment noted. GSN finance will match it with the bank record. Share your screenshot if they ask.",
     });
   }
 
@@ -1327,7 +1327,7 @@ export default function PaymentInstructionsPage() {
 
     setNotice({
       tone: "success",
-      text: "Payment screenshot recorded for checking.",
+      text: "Screenshot noted on this phone. It is not uploaded yet.",
     });
   }
 
@@ -2101,7 +2101,7 @@ export default function PaymentInstructionsPage() {
                 }}
               >
                 Bank API match confirms automatically when connected. For now,
-                add your payment screenshot after transfer.
+                note your screenshot here and share it if finance asks.
               </div>
 
               <div
@@ -2167,7 +2167,7 @@ export default function PaymentInstructionsPage() {
                     boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
                   }}
                 >
-                  {moneyInActionText("proof", "Add screenshot")}
+                  {moneyInActionText("proof", "Note screenshot")}
                 </label>
                 <input
                   id="money-in-payment-proof"
@@ -2202,10 +2202,10 @@ export default function PaymentInstructionsPage() {
                 }}
               >
                 {proofFileName
-                  ? `Screenshot recorded: ${proofFileName}${
+                  ? `Screenshot noted on this phone: ${proofFileName}${
                       proofRecordedAt ? ` at ${safeDateTime(proofRecordedAt)}` : ""
                     }`
-                  : "No screenshot recorded yet."}
+                  : "No screenshot noted on this phone yet."}
               </div>
             </div>
           ) : null}
@@ -2265,7 +2265,7 @@ export default function PaymentInstructionsPage() {
               fontWeight: 800,
             }}
           >
-            After transfer, add your screenshot if needed.
+            After transfer, note your screenshot here if finance may need it.
           </span>
         </div>
       </section>
@@ -2307,7 +2307,7 @@ export default function PaymentInstructionsPage() {
           label="Help"
           what="Use the amount, account, and reference shown here."
           why="The reference links your transfer to this payment."
-          next="Pay from your bank, then add your screenshot if needed."
+          next="Pay from your bank, then note your screenshot here if needed."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -2702,7 +2702,7 @@ export default function PaymentInstructionsPage() {
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                  Generate, pay with the exact reference, then add your screenshot if needed.
+                  Generate, pay with the exact reference, then note your screenshot here if needed.
                 </div>
               </div>
             </div>

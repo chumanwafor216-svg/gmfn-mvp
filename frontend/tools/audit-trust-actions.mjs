@@ -924,14 +924,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /Use the exact reference\. If automatic matching is not live yet, add a screenshot after transfer\./,
-  "Money In payment instruction must keep user-facing payment guidance while avoiding confirmed-receipt wording."
+  /Use the exact reference\. If automatic matching is not live yet, note your screenshot here and share it if finance asks\./,
+  "Money In payment instruction must keep user-facing payment guidance while avoiding confirmed-receipt or backend-upload wording."
 );
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /Payment note saved\. GSN will match it with the bank record or screenshot\./,
-  "Money In success notice must frame the action as a member note awaiting bank or screenshot matching."
+  /Payment noted\. GSN finance will match it with the bank record\. Share your screenshot if they ask\./,
+  "Money In success notice must frame the action as a member note awaiting finance matching."
 );
 
 assertContains(
@@ -990,8 +990,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
-  /Withdrawal code generated\. Use it with your transfer proof; GSN finance reviews before money moves\./,
-  "Withdrawal Instructions must separate code generation and transfer proof from payout execution."
+  /Withdrawal request reference created\. Use it with your transfer proof; GSN finance reviews before money moves\./,
+  "Withdrawal Instructions must separate request-reference creation and transfer proof from payout execution."
 );
 
 assertContains(
