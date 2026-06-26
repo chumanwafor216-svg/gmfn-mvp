@@ -3708,8 +3708,10 @@ export default function MarketplacePage() {
   );
 
   const activeCommunityId = useMemo(() => {
-    return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
-  }, [selectedCommunity]);
+    return positiveNumber(
+      selectedCommunity?.id || selectedCommunity?.clan_id || selectedClanId
+    );
+  }, [selectedCommunity, selectedClanId]);
 
   const myShopTo = useMemo(() => {
     return currentGmfnId ? publicShopPath(currentGmfnId) : "";
@@ -5562,27 +5564,31 @@ export default function MarketplacePage() {
   }
 
   async function saveMoneyOutDestination() {
-    if (!activeCommunityId || !currentGmfnId) {
+    if (!currentGmfnId) {
       setNotice({
         tone: "error",
-        text: "Select a marketplace before saving money out.",
+        text: "Your GSN ID is not ready yet.",
       });
       return;
     }
 
+    const destinationCommunityId = activeCommunityId || selectedClanId || 0;
+
     setSavingMoneyOutDestination(true);
     try {
       const saved = await saveCommunitySettlementDestination(
-        activeCommunityId,
+        destinationCommunityId,
         currentGmfnId,
         moneyOutDestinationDraft
       );
 
-      const refreshed = await getCommunityMoneySurface(
-        activeCommunityId,
-        currentGmfnId,
-        firstTruthy(saved?.currency, moneySurface?.poolCurrency, "GBP")
-      ).catch(() => null);
+      const refreshed = destinationCommunityId
+        ? await getCommunityMoneySurface(
+            destinationCommunityId,
+            currentGmfnId,
+            firstTruthy(saved?.currency, moneySurface?.poolCurrency, "GBP")
+          ).catch(() => null)
+        : null;
 
       if (refreshed) {
         setMoneySurface(refreshed);
@@ -7453,7 +7459,7 @@ export default function MarketplacePage() {
                   {payoutReady ? payoutSummary(moneySurface) : "Not ready"}
                 </div>
                 <div style={marketplaceMoneyHelperStyle(isCompact)}>
-                  Where my approved withdrawal goes
+                  My personal payout account
                 </div>
                 <StableButton
                   debugId="marketplace.money.money-out-destination"
@@ -7688,7 +7694,7 @@ export default function MarketplacePage() {
                         fontWeight: 1000,
                       }}
                     >
-                      My payout destination
+                      My personal payout account
                     </div>
                   </div>
                   <span style={marketplaceMoneyStatusPillStyle(payoutReady)}>

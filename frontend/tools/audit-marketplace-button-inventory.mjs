@@ -400,7 +400,7 @@ assertContains(
 );
 
 assertContains(
-  /id="marketplace-money-routes"[\s\S]*?Money Pool[\s\S]*?This marketplace's pool, money in, and money out\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Money In Rail[\s\S]*?Pay this account[\s\S]*?Money Out Rail[\s\S]*?Where my approved withdrawal goes/,
+  /id="marketplace-money-routes"[\s\S]*?Money Pool[\s\S]*?This marketplace's pool, money in, and money out\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Money In Rail[\s\S]*?Pay this account[\s\S]*?Money Out Rail[\s\S]*?My personal payout account/,
   "Marketplace money route detail must keep the compact Money Pool reference-card structure."
 );
 
@@ -658,7 +658,7 @@ assertContains(
 );
 
 assertContains(
-  /Money Out Rail[\s\S]{0,1500}Where my approved withdrawal goes[\s\S]{0,1500}debugId="marketplace\.money\.money-out-destination"[\s\S]{0,1500}setPayInEditorOpen\(false\)[\s\S]{0,1500}setMoneyOutEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
+  /Money Out Rail[\s\S]{0,1500}My personal payout account[\s\S]{0,1500}debugId="marketplace\.money\.money-out-destination"[\s\S]{0,1500}setPayInEditorOpen\(false\)[\s\S]{0,1500}setMoneyOutEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
   "Marketplace Money Out Rail card button must open the payout destination editor in the money section."
 );
 

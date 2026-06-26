@@ -105,13 +105,13 @@ if (!moneySection.text) {
     /marketplaceMoneyRouteCardStyle\(isCompact, true\)/,
     /Visible Pool[\s\S]*?Current pool view/,
     /Money In Rail[\s\S]*?Pay this account/,
-    /Money Out Rail[\s\S]*?Where my approved withdrawal goes/,
+    /Money Out Rail[\s\S]*?My personal payout account/,
     /Money In Rail[\s\S]*?Receiving account for this marketplace[\s\S]*?debugId="marketplace\.money\.pay-in-account-save"/,
-    /Money Out Rail[\s\S]*?My payout destination[\s\S]*?debugId="marketplace\.money\.money-out-destination-save"/,
+    /Money Out Rail[\s\S]*?My personal payout account[\s\S]*?debugId="marketplace\.money\.money-out-destination-save"/,
     /debugId="marketplace\.money\.money-in"[\s\S]*?openMarketplaceCta\(event, "moneyIn"\)[\s\S]*?<MarketplaceGlyph name="cash"/,
     /debugId="marketplace\.money\.money-out"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?<MarketplaceGlyph name="card"/,
     /Money In Rail[\s\S]*?Pay this account[\s\S]*?debugId="marketplace\.money\.pay-in-account"[\s\S]*?(Set rail|Open rail|Close rail)/,
-    /Money Out Rail[\s\S]*?Where my approved withdrawal goes[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?(Set rail|Open rail|Close rail)/,
+    /Money Out Rail[\s\S]*?My personal payout account[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?(Set rail|Open rail|Close rail)/,
     /style=\{\{[\s\S]*?\.\.\.marketplaceInlineActionsStyle\(isCompact\)[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
   ].forEach((pattern) => {
     if (!pattern.test(moneySection.text)) {

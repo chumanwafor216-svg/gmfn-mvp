@@ -68992,3 +68992,36 @@ GSN-branded invite composer and invite-entry continuity.
   - backend Render deploy is still blocked until GitHub has `RENDER_API_KEY`
     and preferably `RENDER_API_SERVICE_ID`, so saved Money In Rail data may not
     be live even after the frontend deploy hook succeeds.
+
+### Follow-up same day - Clarified Money Out Rail as personal payout account
+
+- Trigger:
+  - owner tried setting Money Out Rail from Marketplace and was blocked with
+    community-selection wording even though the visible Marketplace/community
+    context was already active.
+  - owner asked whether Money Out should be per-community or tied to one
+    personal GSN identity for accountability.
+- Decision:
+  - Money In Rail remains marketplace/community-owned because each community
+    needs its own receiving account.
+  - Money Out Rail should be personal by default: one payout account tied to the
+    signed-in GSN identity.
+  - Withdrawal ledger records still carry the source community, amount,
+    approval, guarantor/support context, and trust events, so community
+    accounting remains intact without forcing a separate bank destination for
+    every community.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - active Marketplace community now falls back to the selected clan id when
+      the full community row is late/missing;
+    - Money Out Rail saving no longer blocks on missing community context as
+      long as the signed-in GSN ID is ready;
+    - visible copy changed to `My personal payout account`.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+  - `frontend/tools/audit-marketplace-money-pool-lane.mjs`
+    - audits now protect the personal payout-account language.
+- Unabated truth:
+  - the backend payout destination model is already personal
+    (`UserPayoutDestination` per user);
+  - per-marketplace payout accounts would require a deliberate new schema and
+    reconciliation model, not just a frontend label change.
