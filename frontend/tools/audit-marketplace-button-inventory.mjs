@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 68;
+const expectedStableActionCount = 69;
 const expectedNativeFieldCount = 34;
 const expectedSourceBreakdown = {
   front: 11,
-  body: 57,
+  body: 58,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -766,6 +766,7 @@ const expectedOrder = [
     /debugId=\{`marketplace\.support\.selected\.\$\{item\.key\}\.remove`\}/
   ),
   exactDebugId("marketplace.support.send-guarantor-requests"),
+  exactDebugId("marketplace.notice.close"),
 ];
 
 let cursor = -1;

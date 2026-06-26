@@ -2694,7 +2694,7 @@ export default function TrustSlipPage() {
               >
                 <div style={trustSlipOfficialWordmark(isCompact)}>
                   <span style={trustSlipOfficialIconBox(isCompact)}>
-                    <GsnLegacyIcon name="shield" size={isCompact ? 38 : 44} />
+                    <GsnLegacyIcon name="evidence" size={40} />
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <div
@@ -2767,7 +2767,7 @@ export default function TrustSlipPage() {
                       textTransform: "uppercase",
                     }}
                   >
-                    GSN - Public View
+                    <span>GSN</span> - Public View
                     <br />
                     <span style={{ color: "#AFC4D9", fontWeight: 850, textTransform: "none", letterSpacing: 0 }}>
                       Record anchor {communityRef}
@@ -2978,7 +2978,7 @@ export default function TrustSlipPage() {
               >
                 {[
                   { label: "Security", value: trustSlipSecurityLabel, icon: "shield" as GsnIconName },
-                  { label: "Status", value: trustSlipPublicStatus, icon: "globe" as GsnIconName },
+                  { label: "Status", value: trustSlipPublicStatus, icon: "evidence" as GsnIconName },
                   { label: "Identity check", value: identityCheckLabel || "Phone verified", icon: "phone" as GsnIconName },
                   {
                     label: "Holder check",

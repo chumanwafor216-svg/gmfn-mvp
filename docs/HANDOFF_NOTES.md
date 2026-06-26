@@ -69081,3 +69081,49 @@ GSN-branded invite composer and invite-entry continuity.
   - this should clear the false `GSN ID is not ready yet` blocker;
   - if the save still fails after deploy, the toast should now show the real
     backend/API reason rather than pretending local data was saved.
+
+### Follow-up same day - System-level button and icon polish sweep
+
+- Trigger:
+  - owner asked that the current corrections be done at system level, with
+    unstable buttons, weak icons, and rough page polish tightened before more
+    tester review.
+- Found:
+  - `audit:global-raw-action-elements` and `audit:button-stability` were failing
+    because the Marketplace save/error toast used a raw `<button>` close
+    control instead of the shared stable action primitive.
+  - `audit:icon-protocol` was failing because the TrustSlip hero still used a
+    generic shield/globe-style meaning where the evidence/certificate meaning
+    is required.
+  - `audit:gsn-visible-language` was failing because the Trust Command Centre
+    was missing the required `Confirm community-admin exposure access` phrase.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - extracted a route-local `MarketplaceNoticeToast`;
+    - replaced both raw toast close buttons with one audited `StableButton`
+      source action using `debugId="marketplace.notice.close"`;
+    - kept the toast above the mobile bottom nav and preserved `role="status"`.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - updated the Marketplace source action inventory from 68 to 69 stable
+      actions and caged the new notice close action.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed the TrustSlip first-viewport mark to the certificate/evidence icon;
+    - changed the status chip icon from generic globe to evidence meaning.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - restored the required community-admin exposure access wording.
+- Verification:
+  - Passed `npm run audit:global-raw-action-elements` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:icon-protocol` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run audit:marketplace-button-inventory` from `frontend`.
+  - Passed `npm run audit:global-action-debugids` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:marketplace-money-pool-lane` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this is system-level in the frontend sense because the shared audits and
+    route inventory now protect the corrected behavior;
+  - it does not solve the earlier backend Render deployment gap for Money In
+    Rail persistence, which still needs backend Render secrets/deploy evidence.

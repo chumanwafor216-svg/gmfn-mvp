@@ -6522,23 +6522,11 @@ export default function MarketplacePage() {
     return (
       <MarketplaceShell isCompact={isCompact}>
         {notice ? (
-          <div
-            role="status"
-            aria-live="polite"
-            style={noticeCard(notice.tone, isCompact)}
-          >
-            <span style={{ minWidth: 0, overflowWrap: "break-word" }}>
-              {notice.text}
-            </span>
-            <button
-              type="button"
-              aria-label="Close status message"
-              onClick={() => setNotice(null)}
-              style={noticeCloseButtonStyle(notice.tone)}
-            >
-              x
-            </button>
-          </div>
+          <MarketplaceNoticeToast
+            isCompact={isCompact}
+            notice={notice}
+            onClose={() => setNotice(null)}
+          />
         ) : null}
 
         <DomainIntroToggle
@@ -6610,23 +6598,11 @@ export default function MarketplacePage() {
   return (
     <MarketplaceShell isCompact={isCompact}>
       {notice ? (
-        <div
-          role="status"
-          aria-live="polite"
-          style={noticeCard(notice.tone, isCompact)}
-        >
-          <span style={{ minWidth: 0, overflowWrap: "break-word" }}>
-            {notice.text}
-          </span>
-          <button
-            type="button"
-            aria-label="Close status message"
-            onClick={() => setNotice(null)}
-            style={noticeCloseButtonStyle(notice.tone)}
-          >
-            x
-          </button>
-        </div>
+        <MarketplaceNoticeToast
+          isCompact={isCompact}
+          notice={notice}
+          onClose={() => setNotice(null)}
+        />
       ) : null}
 
       <section style={marketplaceOsSectionStyle(isCompact)}>
@@ -11513,6 +11489,38 @@ export default function MarketplacePage() {
       </section>
       ) : null}
     </MarketplaceShell>
+  );
+}
+
+function MarketplaceNoticeToast({
+  isCompact,
+  notice,
+  onClose,
+}: {
+  isCompact: boolean;
+  notice: { tone: NoticeTone; text: string };
+  onClose: () => void;
+}) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={noticeCard(notice.tone, isCompact)}
+    >
+      <span style={{ minWidth: 0, overflowWrap: "break-word" }}>
+        {notice.text}
+      </span>
+      <StableButton
+        type="button"
+        debugId="marketplace.notice.close"
+        aria-label="Close status message"
+        onClick={onClose}
+        stableHeight={34}
+        style={noticeCloseButtonStyle(notice.tone)}
+      >
+        x
+      </StableButton>
+    </div>
   );
 }
 

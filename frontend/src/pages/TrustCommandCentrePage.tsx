@@ -1231,7 +1231,7 @@ export default function TrustCommandCentrePage() {
 
     if (selectedClanId > 0 && executiveReading.exposureError) {
       return {
-        title: "Check community-admin exposure access",
+        title: "Confirm community-admin exposure access",
         detail: "Exposure summary could not be loaded for the current community. Verify the active community context and admin access before relying on exposure pressure.",
         to: routes.exposure,
         cta: "Open Exposure",
