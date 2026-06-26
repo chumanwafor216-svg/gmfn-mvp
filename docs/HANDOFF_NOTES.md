@@ -1,3 +1,34 @@
+## 2026-06-26 - Support Requests identity context tightened
+
+Owner request:
+- Continue closing the finance/support gaps and make sure guided withdrawal
+  follow-on screens clearly show the selected marketplace and identity context.
+
+Local frontend cleanup:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - Support Requests selected-marketplace block now shows the user's GSN ID
+    beside the marketplace name and marketplace ID.
+  - Support request form now shows a compact support-window note explaining
+    that unanswered support requests can expire and locked support can be
+    released after the grace window.
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - Money In reference form now shows the community name, community ID, and
+    user's GSN ID before reference generation.
+- `frontend/tools/audit-marketplace-support-lane.mjs`
+  - audit now protects the visible marketplace ID plus GSN ID context in the
+    Support Requests lane.
+  - audit now protects the support-window note tied to stale support expiry.
+- `frontend/tools/audit-finance-money-movement-lanes.mjs`
+  - audit now protects the Money In identity context before reference
+    generation.
+
+Truth / remaining risk:
+- Local frontend visibility change only; it does not add backend money
+  movement, automatic payout release, support approval PINs, fraud handling, or
+  a new support workflow.
+- Not pushed or deployed yet because current Git publishing is batch-frozen by
+  `docs/FREEZE_POLICY.md`.
+
 ## 2026-06-26 - Configurable GSN support contact bridge
 
 Owner request:

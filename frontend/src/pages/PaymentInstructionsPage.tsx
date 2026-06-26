@@ -650,6 +650,20 @@ function moneyInFactTile(compact = false): React.CSSProperties {
   };
 }
 
+function moneyInIdentityChip(ready = true): React.CSSProperties {
+  return {
+    borderRadius: 999,
+    border: ready ? "1px solid rgba(11,107,59,0.16)" : "1px solid rgba(214,170,69,0.28)",
+    background: ready ? "#F3FBF5" : "#FFF8E7",
+    color: ready ? "#0B6B3B" : "#7A5200",
+    padding: "7px 10px",
+    fontSize: 12,
+    fontWeight: 950,
+    lineHeight: 1.2,
+    overflowWrap: "anywhere",
+  };
+}
+
 function moneyInInputShell(): React.CSSProperties {
   return {
     display: "grid",
@@ -1605,6 +1619,21 @@ export default function PaymentInstructionsPage() {
       </section>
 
       <section style={moneyInWhitePanel(12)}>
+        <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
+          <div style={{ ...sectionLabel(), color: "#486079" }}>Paying into</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={moneyInIdentityChip(Boolean(communityLabel))}>
+              Community: {communityLabel}
+            </span>
+            <span style={moneyInIdentityChip(Boolean(publicCommunityCode))}>
+              Community ID: {publicCommunityCode}
+            </span>
+            <span style={moneyInIdentityChip(Boolean(currentGmfnId))}>
+              GSN ID: {currentGmfnId || "Awaiting issue"}
+            </span>
+          </div>
+        </div>
+
         <div style={moneyInInputShell()}>
           <input
             value={amountInput}

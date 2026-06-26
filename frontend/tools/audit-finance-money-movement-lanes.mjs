@@ -80,6 +80,12 @@ assertContains(
 
 assertContains(
   "moneyInPage",
+  /Paying into[\s\S]*?Community: \{communityLabel\}[\s\S]*?Community ID: \{publicCommunityCode\}[\s\S]*?GSN ID: \{currentGmfnId \|\| "Awaiting issue"\}/,
+  "Money In route page must visibly show community name, community ID, and GSN ID before generating a reference."
+);
+
+assertContains(
+  "moneyInPage",
   /Reference ready\. Pay this account with the exact reference\.[\s\S]*?Pay-in account is not ready for this marketplace\. Add the receiving account first\.[\s\S]*?add your payment screenshot after transfer\./,
   "Money In route page must keep the pay-account panel direct, marketplace-scoped, and screenshot-aware."
 );

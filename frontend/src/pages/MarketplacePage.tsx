@@ -10728,6 +10728,9 @@ export default function MarketplacePage() {
               <span style={badge(Boolean(activeCommunityId))}>
                 ID: {activeCommunityId || "not ready"}
               </span>
+              <span style={badge(Boolean(currentGmfnId))}>
+                GSN ID: {currentGmfnId || "not ready"}
+              </span>
               {hasMoneyOutSupportTask ? (
                 <span style={badge(true)}>From Money Out</span>
               ) : null}
@@ -10965,6 +10968,15 @@ export default function MarketplacePage() {
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   Plan: {agreementRepaymentCadence}. Fee rule shown here follows the current
                   GSN support rule and is confirmed when the draft is created.
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12, ...softCard("#FFFBEF") }}>
+                <div style={sectionLabel()}>Support window</div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  Supporters have a response window. If enough support does not
+                  come in, GSN can expire unanswered requests and release locked
+                  support after the grace window.
                 </div>
               </div>
 
