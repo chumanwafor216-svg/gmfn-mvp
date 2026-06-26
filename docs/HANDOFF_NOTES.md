@@ -1,3 +1,36 @@
+## 2026-06-26 - Money Out purpose-free audit and support email config slot
+
+Owner request:
+- Continue tightening Money In / Money Out / Support & Loans so pilot users see
+  simple user-facing truth and not half-automated promises.
+
+Local corrections:
+- `frontend/tools/audit-finance-money-movement-lanes.mjs`
+  - added a regression guard that normal Money Out stays purpose-free:
+    the user enters an amount, and if it fits their withdrawable balance, GSN
+    creates a withdrawal request reference rather than asking why they want
+    their own money.
+- `frontend/.env.production.example`
+  - added `VITE_GSN_SUPPORT_EMAIL=` as the deployment slot for the real monitored
+    help/dispute mailbox;
+  - no fake email was added, and the support contact card still hides until a
+    valid email is configured.
+- `frontend/tools/audit-capability-mirror.mjs`
+  - now verifies that the production env example exposes the support-email
+    configuration slot.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:capability-mirror`
+- `npm --prefix frontend run audit:button-stability`
+
+Truth / remaining risk:
+- This is a cage/configuration slice, not a new money-movement engine.
+- Real support contact remains invisible in production until
+  `VITE_GSN_SUPPORT_EMAIL` is set to a real monitored mailbox.
+- No live bank API, automatic payout trigger, or mature fraud/dispute case UI was
+  added in this slice.
+
 ## 2026-06-26 - Pending withdrawals now reduce withdrawable Money Out balance
 
 Owner request:

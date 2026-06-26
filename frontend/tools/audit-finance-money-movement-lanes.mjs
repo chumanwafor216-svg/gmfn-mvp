@@ -147,6 +147,12 @@ assertContains(
 
 assertContains(
   "moneyOutPage",
+  /Withdrawal amount[\s\S]*?This is your money\. No purpose is needed for a normal withdrawal\.[\s\S]*?Reference can be created/,
+  "Money Out normal withdrawal must stay purpose-free and create a request reference when the amount fits."
+);
+
+assertContains(
+  "moneyOutPage",
   /Connections monitor[\s\S]*?debugId="money-out\.route\.finance"[\s\S]*?debugId="money-out\.route\.payout-details"[\s\S]*?debugId="money-out\.route\.marketplace"/,
   "Money Out post-result connections must stay limited to normal-withdrawal follow-ups."
 );

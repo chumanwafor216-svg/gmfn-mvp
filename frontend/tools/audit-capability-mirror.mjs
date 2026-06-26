@@ -111,6 +111,12 @@ assertContains(
   "The support contact bridge must hide until a real support email is configured."
 );
 
+assertContains(
+  "frontend/.env.production.example",
+  /VITE_GSN_SUPPORT_EMAIL=/,
+  "The production env example must expose the real-support-email configuration slot."
+);
+
 for (const [pattern, label] of [
   [/path="trust"\s+element=\{<TrustScorePage \/>/, "Trust Passport"],
   [/path="trust-slip"\s+element=\{<TrustSlipPage \/>/, "TrustSlip"],
