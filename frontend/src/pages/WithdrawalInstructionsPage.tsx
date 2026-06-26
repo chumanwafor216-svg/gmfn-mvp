@@ -1164,7 +1164,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Withdrawal code generated. Use it with your transfer proof; admin or finance still reviews before money moves."
+        "Withdrawal code generated. Use it with your transfer proof; GSN finance reviews before money moves."
       );
     } finally {
       setSubmittingWithdrawal(false);
@@ -1193,7 +1193,7 @@ export default function WithdrawalInstructionsPage() {
       persistSupportHandoff();
       showNotice(
         "success",
-        "Your available balance is not enough. Opening Support Requests."
+        "Your available balance is not enough. Opening Support Requests for this marketplace."
       );
       navigateWithOrigin(navigate, routes.supportStart, location);
       return;
@@ -2100,7 +2100,7 @@ export default function WithdrawalInstructionsPage() {
                       : requiresSupport
                       ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your effective available pool is ${effectiveAvailableText} ${poolCurrency}.`
                       : latestWithdrawalResult
-                      ? "Use the code with your transfer proof. Admin or finance still reviews before money moves."
+                      ? "Use the code with your transfer proof. GSN finance reviews before money moves."
                       : "This amount fits your available balance."}
                   </div>
                 </div>
@@ -2732,7 +2732,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Code & Result</div>
+            <div style={sectionLabel()}>Withdrawal code</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {latestResultText}
             </div>

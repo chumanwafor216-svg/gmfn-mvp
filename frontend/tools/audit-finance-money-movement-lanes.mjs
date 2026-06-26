@@ -110,7 +110,7 @@ assertContains(
 
 assertContains(
   "moneyOutPage",
-  /Add your payout account first so GSN knows where this withdrawal should go\.[\s\S]*?Withdrawal code generated\. Use it with your transfer proof; admin or finance still reviews before money moves\./,
+  /Add your payout account first so GSN knows where this withdrawal should go\.[\s\S]*?Withdrawal code generated\. Use it with your transfer proof; GSN finance reviews before money moves\./,
   "Money Out normal withdrawal must require a payout account and keep code generation separate from money movement."
 );
 

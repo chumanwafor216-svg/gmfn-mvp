@@ -990,7 +990,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
-  /Withdrawal code generated\. Use it with your transfer proof; admin or finance still reviews before money moves\./,
+  /Withdrawal code generated\. Use it with your transfer proof; GSN finance reviews before money moves\./,
   "Withdrawal Instructions must separate code generation and transfer proof from payout execution."
 );
 

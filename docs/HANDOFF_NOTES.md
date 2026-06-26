@@ -82,6 +82,36 @@ Truth / remaining risk:
   protected trade release, automatic payout, fraud workflow, or the full
   support-backed withdrawal journey.
 
+## 2026-06-26 - Money Out pilot wording tightened
+
+Owner request:
+- Continue checking the Money Out / withdrawal page for words that confuse the
+  user or imply automation that is not live.
+
+Local frontend cleanup:
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - direct withdrawal success now says `GSN finance reviews before money moves`
+    instead of `admin or finance`;
+  - over-balance handoff now says it is opening Support Requests for this
+    marketplace;
+  - the result panel label now says `Withdrawal code` instead of `Code &
+    Result`.
+- `frontend/tools/audit-finance-money-movement-lanes.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - audits now protect the cleaner Money Out pilot wording.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:finance-actions`
+- `npm --prefix frontend run audit:trust-actions`
+- `node frontend/tools/audit-gsn-visible-language.mjs`
+
+Truth / remaining risk:
+- Local commit only in `44172bf3`; not pushed or deployed yet because current
+  Git publishing is batch-frozen by `docs/FREEZE_POLICY.md`.
+- No automatic payout release, bank API payout trigger, support approval PIN,
+  or backend money movement was added. This is a wording and audit-cage slice.
+
 ## 2026-06-26 - Shared support wording and visible-language sweep
 
 Owner request:
