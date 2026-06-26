@@ -2152,8 +2152,8 @@ export default function PaymentInstructionsPage() {
                   lineHeight: 1.35,
                 }}
               >
-                A bank match or finance review confirms this payment. Upload
-                proof here if automatic matching is not live yet.
+                A bank match or later finance reconciliation can confirm this
+                payment. Upload proof here if automatic matching is not live yet.
               </div>
 
               <div

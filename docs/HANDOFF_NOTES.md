@@ -1,3 +1,57 @@
+## 2026-06-26 - Money Out support handoff key and copy truth fixed
+
+Owner request:
+- Continue the Money In / Money Out / Support & Loans cleanup and remove hidden
+  gaps that can confuse pilot users.
+
+Auditor finding:
+- `WithdrawalInstructionsPage` writes Money Out support handoff data under
+  `gmfn.withdrawal.task.v5`, but `MarketplacePage` still read only
+  `gmfn.withdrawal.task.v4`.
+- Result: an over-balance Money Out request could open Support Requests while
+  losing the amount/purpose that the user had just entered.
+
+Local corrections:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - now reads withdrawal handoff data from `v5` first and falls back to `v4`;
+  - Support Requests still prefills amount and a default purpose from the stored
+    Money Out handoff;
+  - approved support copy now says finance/admin still prepares the withdrawal
+    instruction before money moves;
+  - Marketplace Money Out status now says `Payout saved` / `Payout needed`
+    instead of implying the whole withdrawal route is ready.
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - normal withdrawal success and result copy no longer mention transfer proof or
+    bank slip, because the backend does not expose a withdrawal-proof upload
+    route;
+  - payout account copy now says it is needed before creating a request
+    reference, not a code.
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - Money In copy now says a bank match or later finance reconciliation can
+    confirm payment, rather than implying proof upload itself confirms payment.
+- `frontend/tools/audit-finance-money-movement-lanes.mjs`
+  - updated to guard the corrected Money In and Money Out wording.
+- `frontend/tools/audit-marketplace-support-lane.mjs`
+  - now requires `v5` Money Out handoff reading with `v4` fallback;
+  - now guards the approved-support finance/admin handoff copy.
+- `frontend/tools/audit-trust-actions.mjs`
+  - updated to guard request-reference wording without claiming transfer proof.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- This does not add withdrawal-proof upload, live bank payout, or automatic
+  approval-to-payment execution.
+- Support-backed withdrawal still depends on finance/admin preparing and
+  reconciling the withdrawal instruction during pilot.
+
 ## 2026-06-26 - Money Out purpose-free audit and support email config slot
 
 Owner request:

@@ -1167,7 +1167,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Withdrawal request reference created. Use it with your transfer proof; GSN finance reviews before money moves."
+        "Withdrawal request reference created. Keep it visible; GSN finance reviews and reconciles before money moves."
       );
     } catch (err: any) {
       const message = safeStr(err?.message || err?.detail || err);
@@ -2119,7 +2119,7 @@ export default function WithdrawalInstructionsPage() {
                       : requiresSupport
                       ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your withdrawable balance is ${withdrawableNowText} ${poolCurrency}.`
                       : latestWithdrawalResult
-                      ? "Use the reference with your transfer proof. GSN finance reviews before money moves."
+                      ? "Keep the request reference visible. GSN finance reviews and reconciles before money moves."
                       : "This amount fits your available balance."}
                   </div>
                 </div>
@@ -2246,7 +2246,7 @@ export default function WithdrawalInstructionsPage() {
           <div>
             {iconLabel("bank", "Payout account")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Where this withdrawal should go. Add it before generating a code.
+              Where this withdrawal should go. Add it before creating a request reference.
             </div>
           </div>
 
@@ -2820,7 +2820,7 @@ export default function WithdrawalInstructionsPage() {
                     {!effectiveAvailableKnown
                       ? "Wait for the pool reading before this route decides."
                       : !requiresSupport
-                      ? "Use the request reference with your bank slip. Admin reconciles it during the pilot."
+                      ? "Keep the request reference visible. Finance/admin reconciles it during the pilot."
                       : "Your available balance is not enough. Continue through Support Requests."}
                   </div>
                 </div>

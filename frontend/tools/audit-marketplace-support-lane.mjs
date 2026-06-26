@@ -64,13 +64,18 @@ assertContains(
 );
 
 assertContains(
-  /const storedWithdrawalTask = readLocalJSON<PersistedWithdrawalTask \| null>\([\s\S]*?withdrawalTaskStorageKey\(activeCommunityId, currentGmfnId\)[\s\S]*?const storedAmount = safeStr\(storedWithdrawalTask\?\.amountInput\)[\s\S]*?const defaultPurpose = storedAmount \? "Withdrawal support" : ""[\s\S]*?setLoanAmount\([\s\S]*?storedAmount[\s\S]*?setLoanPurpose\([\s\S]*?storedNote \|\| defaultPurpose/,
-  "Money Out support handoff must prefill the Support Requests amount and purpose when stored handoff data exists."
+  /const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = \[[\s\S]*?"gmfn\.withdrawal\.task\.v5"[\s\S]*?"gmfn\.withdrawal\.task\.v4"[\s\S]*?\][\s\S]*?function readWithdrawalTask[\s\S]*?for \(const prefix of WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES\)[\s\S]*?const storedWithdrawalTask = readWithdrawalTask\([\s\S]*?activeCommunityId,[\s\S]*?currentGmfnId[\s\S]*?\)[\s\S]*?const storedAmount = safeStr\(storedWithdrawalTask\?\.amountInput\)[\s\S]*?const defaultPurpose = storedAmount \? "Withdrawal support" : ""[\s\S]*?setLoanAmount\([\s\S]*?storedAmount[\s\S]*?setLoanPurpose\([\s\S]*?storedNote \|\| defaultPurpose/,
+  "Money Out support handoff must read the current v5 task first, fall back to v4, and prefill Support Requests amount and purpose."
 );
 
 assertContains(
   /function handleStartLoanDraft\(\)[\s\S]*?if \(!safeStr\(loanRepaymentCadence\)\)[\s\S]*?Choose how you plan to repay[\s\S]*?if \(!safeStr\(loanPurpose\)\)[\s\S]*?State what the support is for\./,
   "Support Requests must require a purpose before creating a backend support draft."
+);
+
+assertContains(
+  /Support is approved\. Finance\/admin still prepares the withdrawal instruction before money moves\./,
+  "Approved support copy must explain the finance/admin withdrawal-instruction step before money moves."
 );
 
 const supportSection = sectionBetween(

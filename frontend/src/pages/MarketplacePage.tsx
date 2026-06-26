@@ -595,7 +595,10 @@ const FINAL_LOAN_STATUSES = new Set([
   "defaulted",
 ]);
 
-const WITHDRAWAL_TASK_STORAGE_KEY_PREFIX = "gmfn.withdrawal.task.v4";
+const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = [
+  "gmfn.withdrawal.task.v5",
+  "gmfn.withdrawal.task.v4",
+];
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -3556,8 +3559,16 @@ function joinInviteDraftStorageKey(communityId: number): string {
   return `gmfn.marketplace.joinInviteDraft.v1.${communityId || "unknown"}`;
 }
 
-function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
-  return `${WITHDRAWAL_TASK_STORAGE_KEY_PREFIX}.${gmfnId || "me"}.${clanId || 0}`;
+function readWithdrawalTask(clanId: number, gmfnId: string): PersistedWithdrawalTask | null {
+  if (!clanId || !gmfnId) return null;
+
+  for (const prefix of WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES) {
+    const key = `${prefix}.${gmfnId || "me"}.${clanId || 0}`;
+    const value = readLocalJSON<PersistedWithdrawalTask | null>(key, null);
+    if (value) return value;
+  }
+
+  return null;
 }
 
 function settlementSummary(settlement: CommunityMoneySettlement | null): string {
@@ -5070,9 +5081,9 @@ export default function MarketplacePage() {
     if (activeCommunityId && currentGmfnId) {
       const token = `${activeCommunityId}:${currentGmfnId}:${landingTarget}`;
       if (withdrawalHandoffAppliedRef.current !== token) {
-        const storedWithdrawalTask = readLocalJSON<PersistedWithdrawalTask | null>(
-          withdrawalTaskStorageKey(activeCommunityId, currentGmfnId),
-          null
+        const storedWithdrawalTask = readWithdrawalTask(
+          activeCommunityId,
+          currentGmfnId
         );
 
         const storedAmount = safeStr(storedWithdrawalTask?.amountInput);
@@ -5236,10 +5247,7 @@ export default function MarketplacePage() {
 
   const moneyOutSupportTask = useMemo(() => {
     if (!activeCommunityId || !currentGmfnId) return null;
-    const stored = readLocalJSON<PersistedWithdrawalTask | null>(
-      withdrawalTaskStorageKey(activeCommunityId, currentGmfnId),
-      null
-    );
+    const stored = readWithdrawalTask(activeCommunityId, currentGmfnId);
     const hasMoneyOutRoute =
       routeSupportFlow === "money-out" && routeFocus === "support";
     const isMoneyOutHandoff =
@@ -6460,7 +6468,7 @@ export default function MarketplacePage() {
       : loanStatusLower === "incomplete"
       ? "Support is not complete yet. Choose another fit supporter, send the next request, or cancel the draft if it should stop."
       : loanStatusLower === "approved"
-      ? "Support is approved. Move to the support summary or repayment path instead of sending more requests."
+      ? "Support is approved. Finance/admin still prepares the withdrawal instruction before money moves."
       : loanDraftId
       ? "Support is open. Keep the draft, suggestions, selected supporters, and next response together here."
       : "Start one support request first. After it starts, GSN will show the next required response in this same lane.";
@@ -7582,7 +7590,7 @@ export default function MarketplacePage() {
               </div>
               <div style={marketplaceMoneyStatusAreaStyle()}>
                 <span style={marketplaceMoneyStatusPillStyle(payoutReady)}>
-                  {payoutReady ? "Ready" : "Not ready"}
+                  {payoutReady ? "Payout saved" : "Payout needed"}
                 </span>
               </div>
             </div>

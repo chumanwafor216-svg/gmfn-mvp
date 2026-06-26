@@ -87,7 +87,7 @@ assertContains(
 
 assertContains(
   "moneyInPage",
-  /Reference ready\. Pay this account with the exact reference\.[\s\S]*?Pay-in account is not ready for this marketplace\. Add the receiving account first\.[\s\S]*?A bank match or finance review confirms this payment\.[\s\S]*?Upload[\s\S]*?proof here if automatic matching is not live yet\./,
+  /Reference ready\. Pay this account with the exact reference\.[\s\S]*?Pay-in account is not ready for this marketplace\. Add the receiving account first\.[\s\S]*?A bank match or later finance reconciliation can confirm this[\s\S]*?payment\.[\s\S]*?Upload proof here if automatic matching is not live yet\./,
   "Money In route page must keep the pay-account panel direct, marketplace-scoped, and honest about finance-review proof upload."
 );
 
@@ -141,7 +141,7 @@ assertContains(
 
 assertContains(
   "moneyOutPage",
-  /Add your payout account first so GSN knows where this withdrawal should go\.[\s\S]*?Withdrawal request reference created\. Use it with your transfer proof; GSN finance reviews before money moves\./,
+  /Add your payout account first so GSN knows where this withdrawal should go\.[\s\S]*?Withdrawal request reference created\. Keep it visible; GSN finance reviews and reconciles before money moves\./,
   "Money Out normal withdrawal must require a payout account and keep request-reference creation separate from money movement."
 );
 
