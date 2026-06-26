@@ -758,10 +758,10 @@ export default function WithdrawalInstructionsPage() {
         "money-out.route.workbench"
       ),
       supportStart: routeTarget(
-        "marketplace",
+        "loans",
         selectedClanId,
         "money-out.route.support-start",
-        "marketplace-loans-support"
+        "loans-support-overview"
       ),
       loans: routeTarget("loans", selectedClanId, "money-out.route.loans"),
       notifications: routeTarget(
@@ -1861,6 +1861,18 @@ export default function WithdrawalInstructionsPage() {
               {isCompact
                 ? "This community money position."
                 : "Details opens your full finance record for this community."}
+            </div>
+            <div
+              style={{
+                marginTop: 10,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              <span style={badge(false)}>Marketplace: {communityLabel}</span>
+              <span style={badge(false)}>ID: {selectedClanId || "Not set"}</span>
+              <span style={badge(false)}>Public ID: {publicCommunityId}</span>
             </div>
           </div>
 

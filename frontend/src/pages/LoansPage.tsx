@@ -870,7 +870,7 @@ export default function LoansPage() {
             </div>
 
             <StableCtaLink
-              to={routes.startSupport}
+              to={hasWithdrawalSupportHandoff ? routes.readiness : routes.startSupport}
               debugId="loans.hero.start-support"
               stableHeight={isCompact ? 58 : 68}
               fullWidth={isCompact}
@@ -892,7 +892,7 @@ export default function LoansPage() {
                 </div>
                 <div style={routeHelperStyle(isCompact)}>
                   {hasWithdrawalSupportHandoff
-                    ? "Use the saved Money Out amount in Marketplace."
+                    ? "Use the saved Money Out amount in Loans & Support."
                     : "Begin or continue the borrower-side flow."}
                 </div>
               </div>
@@ -1171,7 +1171,7 @@ export default function LoansPage() {
           }}
         >
           <StableCtaLink
-            to={routes.startSupport}
+            to={hasWithdrawalSupportHandoff ? routes.readiness : routes.startSupport}
             debugId="loans.route.start-support"
             stableHeight={isCompact ? 66 : 88}
             fullWidth
@@ -1183,7 +1183,9 @@ export default function LoansPage() {
                 {hasWithdrawalSupportHandoff ? "Continue Support Request" : "Start Support Request"}
               </div>
               <div style={routeHelperStyle(isCompact)}>
-                Work inside the selected marketplace.
+                {hasWithdrawalSupportHandoff
+                  ? "Continue the support check here."
+                  : "Work inside the selected marketplace."}
               </div>
             </div>
           </StableCtaLink>

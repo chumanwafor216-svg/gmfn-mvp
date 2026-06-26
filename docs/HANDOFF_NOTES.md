@@ -69203,6 +69203,41 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Guided Withdrawal lands directly on Loans & Support
+
+- Trigger:
+  - owner phone-tested Guided Withdrawal and found two issues:
+    - the surface did not visibly show the selected marketplace/community name
+      and ID;
+    - support-needed `Continue` was sending the user back to Marketplace,
+      making them choose again instead of landing directly on Loans & Support
+      for the selected marketplace.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - the `Your money here` block now shows:
+      - `Marketplace: <name>`;
+      - numeric selected community/marketplace `ID`;
+      - public community ID when available;
+    - the Money Out support handoff now resolves to `/app/loans` with the
+      selected community query and `#loans-support-overview`;
+    - support-needed `Continue` and the support result button both use that
+      Loans & Support target.
+  - `frontend/src/pages/LoansPage.tsx`
+    - when a Money Out handoff exists, the primary Loans page action no longer
+      sends the user back to Marketplace;
+    - it continues within the loan/support checks using the saved Money Out
+      amount and selected marketplace context.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+- Unabated truth:
+  - this corrects the route behaviour from the previous local slice;
+  - no backend payout execution was added;
+  - no existing deeper support tools were deleted.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Money Out support handoff harmonised with Marketplace Support
 
 - Trigger:
