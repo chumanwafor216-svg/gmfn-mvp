@@ -122,7 +122,7 @@ assertContains(
 
 assertContains(
   "src/pages/LoansPage.tsx",
-  /routeIconCircle\(primary = false[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name="financeInstitution" size=\{64\}[\s\S]*?iconLabel\("repaymentSchedule", "Active loans"\)[\s\S]*?iconLabel\("financeInstitution", "Pool"\)[\s\S]*?routeIcon\("evidence"\)/,
+  /routeIconCircle\(primary = false[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name="financeInstitution" size=\{64\}[\s\S]*?iconLabel\("repaymentSchedule", "Active support"\)[\s\S]*?iconLabel\("financeInstitution", "Pool"\)[\s\S]*?routeIcon\("evidence"\)/,
   "Loans & Support must use light icon tiles plus repayment, certificate/evidence, and finance-institution 3D meanings for the visible support summary."
 );
 
@@ -145,13 +145,13 @@ assertAsciiOnly(
 assertContains(
   "src/pages/GuarantorEarningsPage.tsx",
   /const GUARANTOR_EARNINGS_PAYOUT_TRUTH =[\s\S]*?not an automatic payout[\s\S]*?guided Money Out process[\s\S]*?Closed-support records: \$\{totals\.settledCount\}[\s\S]*?copySummary\(\)[\s\S]*?GUARANTOR_EARNINGS_PAYOUT_TRUTH[\s\S]*?const amountLabel = settled \? "RECORDED EARNED VALUE" : "POTENTIAL SHARE"[\s\S]*?debugId="guarantor-earnings\.route\.money-out"[\s\S]*?does not pay it out by itself/,
-  "Guarantor Earnings must tell users that earned guarantor value is a visible record, not an automatic payout, and must keep closed-support records from sounding like settlement or payout completion."
+  "Supporter Value must tell users that earned supporter value is a visible record, not an automatic payout, and must keep closed-support records from sounding like settlement or payout completion."
 );
 
 assertNotContains(
   "src/pages/GuarantorEarningsPage.tsx",
-  /Review visible guarantor value, settled items|Settled support creates clearer earnings|`Settled items: \$\{totals\.settledCount\}`|<span style=\{badge\(false\)\}>Settled:|const amountLabel = settled \? "EARNED" : "POTENTIAL SHARE"/,
-  "Guarantor Earnings must not restore broad settlement or earned-value labels."
+  /Review visible guarantor value|Review visible supporter value, settled items|Settled support creates clearer earnings|`Settled items: \$\{totals\.settledCount\}`|<span style=\{badge\(false\)\}>Settled:|const amountLabel = settled \? "EARNED" : "POTENTIAL SHARE"/,
+  "Supporter Value must not restore broad settlement or earned-value labels."
 );
 
 assertContains(
@@ -162,7 +162,7 @@ assertContains(
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /expected_total_amount\?: string \| number \| null;[\s\S]*?expected_remaining_amount\?: string \| number \| null;[\s\S]*?const repaymentChoiceLabel[\s\S]*?const selectedRepaymentAmountText[\s\S]*?Choice: \{repaymentChoiceLabel\}[\s\S]*?Selected: \{selectedRepaymentAmountText\}[\s\S]*?Outstanding: \{fmtMoney\(outstandingAmount, currency\)\}[\s\S]*?Selected payment amount[\s\S]*?Full balance tracking[\s\S]*?Expected total:[\s\S]*?Expected still left:[\s\S]*?For part payments, this keeps the full loan balance visible until reconciliation closes it/,
+  /expected_total_amount\?: string \| number \| null;[\s\S]*?expected_remaining_amount\?: string \| number \| null;[\s\S]*?const repaymentChoiceLabel[\s\S]*?const selectedRepaymentAmountText[\s\S]*?Choice: \{repaymentChoiceLabel\}[\s\S]*?Selected: \{selectedRepaymentAmountText\}[\s\S]*?Outstanding: \{fmtMoney\(outstandingAmount, currency\)\}[\s\S]*?Selected payment amount[\s\S]*?Full balance tracking[\s\S]*?Expected total:[\s\S]*?Expected still left:[\s\S]*?For part payments, this keeps the full support balance visible until reconciliation closes it/,
   "Repayment page must make the selected payment amount, outstanding balance, expected total, and expected remaining balance visible for pilot evidence screenshots."
 );
 

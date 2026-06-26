@@ -1410,7 +1410,7 @@ export default function FinancePage() {
 
     if (parseMoneyNumber(guarantorEarningsTotal) > 0) {
       rows.push(
-        `Earned guarantor value: ${fmtMoney(
+        `Earned supporter value: ${fmtMoney(
           guarantorEarningsTotal
         )} ${crossCurrency}.`
       );

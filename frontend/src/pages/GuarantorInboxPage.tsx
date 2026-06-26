@@ -680,7 +680,7 @@ export default function GuarantorInboxPage() {
       return {
         title: "Choose the community first.",
         detail:
-          "Incoming guarantor requests make more sense when they stay tied to your current community.",
+          "Incoming support requests make more sense when they stay tied to your current community.",
         ctaLabel: "Open Community Home",
         ctaTo: routes.community,
       };
@@ -690,18 +690,18 @@ export default function GuarantorInboxPage() {
       return {
         title:
           counts.pending === 1
-            ? "One guarantor request is waiting on you."
-            : `${counts.pending} guarantor requests are waiting on you.`,
+            ? "One support request is waiting on you."
+            : `${counts.pending} support requests are waiting on you.`,
         detail:
           "This queue is only the intake page. Once you choose to continue, the deeper workbench should take over instead of leaving you halfway between routes.",
-        ctaLabel: "Open Loan Workbench",
+        ctaLabel: "Open Support Workbench",
         ctaTo: routes.workbench,
       };
     }
 
     if (counts.approved > 0) {
       return {
-        title: "Approved guarantor responses are visible.",
+        title: "Recorded support responses are visible.",
         detail:
           "The next move is usually to continue the broader support flow rather than staying only in the queue.",
         ctaLabel: "Return to Loans & Support",
@@ -710,9 +710,9 @@ export default function GuarantorInboxPage() {
     }
 
     return {
-      title: "No pending guarantor request is currently shown.",
+      title: "No pending support request is currently shown.",
       detail:
-        "That means nothing is directly waiting on your guarantor response inside this current queue view.",
+        "That means nothing is directly waiting on your support response inside this current queue view.",
       ctaLabel: "Open Loans & Support",
       ctaTo: routes.loans,
     };
@@ -728,15 +728,15 @@ export default function GuarantorInboxPage() {
   const queuePaper = useMemo(
     () =>
       buildGsnSupportEvidencePackage({
-        title: "GSN Guarantor Queue Snapshot",
-        purpose: "Review the current guarantor decision queue for this member and community.",
+        title: "GSN Support Queue Snapshot",
+        purpose: "Review the current support decision queue for this member and community.",
         reference: `guarantor-queue-${communityPublicId || selectedClanId || "current"}`,
         memberName,
         gsnId: gmfnId,
         memberRole,
         communityName: selectedCommunityLabel,
         communityId: communityPublicId,
-        routeName: "Guarantor Inbox",
+        routeName: "Incoming Requests",
         status: filter,
         detailLines: [
           `Pending: ${counts.pending}`,
@@ -744,7 +744,7 @@ export default function GuarantorInboxPage() {
           `Declined: ${counts.declined}`,
           `Visible: ${counts.all}`,
           `Filter: ${filter}`,
-          "This snapshot records the visible queue counts only. It does not expose private borrower files.",
+          "This snapshot records the visible queue counts only. It does not expose private requester files.",
         ],
       }),
     [
@@ -773,7 +773,7 @@ export default function GuarantorInboxPage() {
     if (!loanId || !guarantorId) {
       setNotice({
         tone: "error",
-        text: "This guarantor request is missing the loan or request number, so it cannot be decided here.",
+        text: "This support request is missing the support or request number, so it cannot be decided here.",
       });
       return;
     }
@@ -791,14 +791,14 @@ export default function GuarantorInboxPage() {
         tone: "success",
         text:
           status === "approved"
-            ? "Pledge response approved. GSN has recorded your guarantor response; this is not loan approval or money-release authority."
-            : "Support declined. GSN has recorded your response so the borrower can continue clearly.",
+            ? "Support response recorded. GSN has recorded your response; this is not support approval or money-release authority."
+            : "Support declined. GSN has recorded your response so the requester can continue clearly.",
       });
       await loadInbox();
     } catch (error: any) {
       setNotice({
         tone: "error",
-        text: String(error?.message || error || "Unable to record this guarantor response."),
+        text: String(error?.message || error || "Unable to record this support response."),
       });
     } finally {
       setBusyDecisionKey("");
@@ -808,9 +808,9 @@ export default function GuarantorInboxPage() {
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: isCompact ? 40 : 60 }}>
       <PageTopNav
-        sectionLabel="Incoming Guarantor Requests"
-        title="Incoming Guarantor Requests"
-        subtitle="Review requests that need your guarantor response in your current community."
+        sectionLabel="Incoming Requests"
+        title="Incoming Requests"
+        subtitle="Review support requests that need your response in your current community."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loans}
@@ -819,9 +819,9 @@ export default function GuarantorInboxPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page is the incoming queue for guarantor requests that need your response."
-        why="Finance keeps the money record. Guarantor Inbox keeps the live response queue so you can act clearly without mixing it with borrower work."
-        next="Approving here records your guarantor pledge response only; it does not approve the loan or authorize release of goods, credit, or money."
+        what="This page is the incoming queue for support requests that need your response."
+        why="Finance keeps the money record. Incoming Requests keeps the live response queue so you can act clearly without mixing it with requester work."
+        next="Recording support here saves your response only; it does not approve support or authorize release of goods, credit, or money."
         tone="blue"
         style={{ marginTop: 18 }}
       />
@@ -862,7 +862,7 @@ export default function GuarantorInboxPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-              This incoming queue gathers guarantor requests. Once
+              This incoming queue gathers support requests. Once
               a request is chosen, the deeper support workbench should take over
               instead of leaving the person inside a loose queue.
             </div>
@@ -971,7 +971,7 @@ export default function GuarantorInboxPage() {
                     lineHeight: 1.3,
                   }}
                 >
-                  Incoming guarantor requests
+                  Incoming support requests
                 </div>
               </div>
             </div>
@@ -1071,7 +1071,7 @@ export default function GuarantorInboxPage() {
           <div>
             <div style={sectionLabel()}>Queue overview</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              A quick reading of the visible guarantor queue.
+              A quick reading of the visible support queue.
             </div>
           </div>
 
@@ -1254,7 +1254,7 @@ export default function GuarantorInboxPage() {
                             {firstTruthy(
                               row.borrowerDisplay,
                               row.borrowerEmail,
-                              row.borrowerUserId ? `Borrower ${row.borrowerUserId}` : "",
+                              row.borrowerUserId ? `Requester ${row.borrowerUserId}` : "",
                               "Member request"
                             )}
                           </div>
@@ -1267,7 +1267,7 @@ export default function GuarantorInboxPage() {
                             }}
                           >
                             {[
-                              row.loanId ? `Loan #${row.loanId}` : "",
+                              row.loanId ? `Support #${row.loanId}` : "",
                               row.createdAt ? safeDateTime(row.createdAt) : "",
                             ]
                               .filter(Boolean)
@@ -1285,7 +1285,7 @@ export default function GuarantorInboxPage() {
                         >
                           <span style={statusPill(status)}>{status}</span>
                           {pledgeText ? (
-                            <span style={badge(true)}>Pledge: {pledgeText}</span>
+                            <span style={badge(true)}>Support amount: {pledgeText}</span>
                           ) : null}
                           {amountText ? (
                             <span style={badge(false)}>Amount: {amountText}</span>
@@ -1326,7 +1326,7 @@ export default function GuarantorInboxPage() {
                             >
                               {busyDecisionKey === `${row.loanId}-${row.id}-approved`
                                 ? guarantorInboxActionText("refresh", "Recording", 20)
-                                : guarantorInboxActionText("check", "Record pledge", 20)}
+                                : guarantorInboxActionText("check", "Record support", 20)}
                             </PrimaryButton>
                             <SecondaryButton
                               onClick={() => void handleDecision(row, "declined")}
@@ -1356,7 +1356,7 @@ export default function GuarantorInboxPage() {
                           stableHeight={48}
                           style={guarantorInboxSecondaryButtonStyle(false)}
                         >
-                          {guarantorInboxActionText("community", "Loans", 20)}
+                          {guarantorInboxActionText("community", "Support", 20)}
                         </StableCtaLink>
                       </div>
                     </div>
@@ -1420,9 +1420,9 @@ export default function GuarantorInboxPage() {
                 What this queue is for
               </div>
               <div style={{ marginTop: 10, ...helperText() }}>
-                This queue is where incoming guarantor decisions first become visible.
-                Approving a request records your pledge response only; it is not
-                whole-loan approval or permission to release goods, credit, or money.
+                This queue is where incoming support decisions first become visible.
+                Recording a request saves your support response only; it is not
+                whole-request approval or permission to release goods, credit, or money.
                 Once you choose a request, the deeper workbench should take over.
               </div>
             </div>
@@ -1525,7 +1525,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                {guarantorInboxRouteHeading("briefcase", "Loan Workbench")}
+                {guarantorInboxRouteHeading("briefcase", "Support Workbench")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when you are continuing the deeper support decision.
@@ -1547,7 +1547,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                {guarantorInboxRouteHeading("search", "Loan Suggestions")}
+                {guarantorInboxRouteHeading("search", "Find Supporters")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the next question is candidate fit rather than queue state.

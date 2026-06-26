@@ -79,7 +79,7 @@ type CollapseState = {
 
 const GUARANTOR_EARNINGS_UI_STORAGE_KEY = "gmfn.guarantorEarnings.sections.v1";
 const GUARANTOR_EARNINGS_PAYOUT_TRUTH =
-  "Earned guarantor value is recorded here for visibility. It is not an automatic payout, and withdrawal still needs the guided Money Out process when that route is approved.";
+  "Earned supporter value is recorded here for visibility. It is not an automatic payout, and withdrawal still needs the guided Money Out process when that route is approved.";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -567,7 +567,7 @@ export default function GuarantorEarningsPage() {
         setMe(meRes || null);
         setItems(sorted);
       } catch (e: any) {
-        setErr(String(e?.message || e || "Unable to load guarantor earnings."));
+        setErr(String(e?.message || e || "Unable to load supporter value."));
       } finally {
         setLoading(false);
       }
@@ -678,7 +678,7 @@ export default function GuarantorEarningsPage() {
       return {
         title: "Choose the community first",
         detail:
-          "Guarantor earnings make more sense when they stay tied to your current community.",
+          "Supporter value makes more sense when it stays tied to your current community.",
         today: "Open Community Home and confirm the community you are working in.",
         tomorrow:
           "Your current community keeps support history and earnings easier to interpret.",
@@ -691,8 +691,8 @@ export default function GuarantorEarningsPage() {
       return {
         title:
           totals.pendingCount === 1
-            ? "One guarantor earning is still pending"
-            : `${totals.pendingCount} guarantor earnings are still pending`,
+            ? "One supporter value item is still pending"
+            : `${totals.pendingCount} supporter value items are still pending`,
         detail:
           "Your next move is to watch the active support flow, not to ignore it. Earnings become meaningful when the support cycle closes properly.",
         today: "Review the active support items and keep the pending work moving.",
@@ -705,19 +705,19 @@ export default function GuarantorEarningsPage() {
 
     if (totals.total > 0) {
       return {
-        title: "Your guarantor contribution is now visible value",
+        title: "Your support contribution is now visible value",
         detail:
-          "Supporting responsible borrowers should not remain invisible. This keeps that contribution readable and measurable in your current community.",
+          "Supporting responsible members should not remain invisible. This keeps that contribution readable and measurable in your current community.",
         today: "Review your recent earnings and keep your support behaviour steady.",
         tomorrow:
-          "Consistent guarantor support can strengthen both visible value and visible reputation over time.",
+          "Consistent support can strengthen both visible value and visible reputation over time.",
         ctaLabel: "Open Community Home",
         ctaTo: routes.community,
       };
     }
 
     return {
-      title: "No guarantor earnings are shown yet",
+      title: "No supporter value is shown yet",
       detail:
         "That does not mean the path is useless. It means the earnings side of the support cycle has not materialized yet in your visible records.",
       today: "Continue using the guided support flow rather than forcing the earnings question too early.",
@@ -738,15 +738,15 @@ export default function GuarantorEarningsPage() {
   const earningsPaper = useMemo(
     () =>
       buildGsnSupportEvidencePackage({
-        title: "GSN Guarantor Earnings Snapshot",
-        purpose: "Review visible guarantor value, closed-support records, and pending items for this member.",
+        title: "GSN Supporter Value Snapshot",
+        purpose: "Review visible supporter value, closed-support records, and pending items for this member.",
         reference: `guarantor-earnings-${communityPublicId || selectedClanId || "current"}`,
         memberName,
         gsnId: gmfnId,
         memberRole,
         communityName: selectedCommunityLabel,
         communityId: communityPublicId,
-        routeName: "Guarantor Earnings",
+        routeName: "Supporter Value",
         amount: `${fmtMoney(totals.total)} ${currency}`,
         status: totals.pendingCount > 0 ? "Pending items visible" : "Current visible total",
         detailLines: [
@@ -783,9 +783,9 @@ export default function GuarantorEarningsPage() {
   return (
     <div style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: isCompact ? 40 : 60 }}>
       <PageTopNav
-        sectionLabel="Guarantor Earnings"
-        title="Guarantor Earnings"
-        subtitle="See pending and earned value from supporting successful community loans."
+        sectionLabel="Supporter Value"
+        title="Supporter Value"
+        subtitle="See pending and earned value from supporting successful community requests."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loans}
@@ -794,8 +794,8 @@ export default function GuarantorEarningsPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen separates potential support reward from value that is actually earned after the loan is fully repaid."
-        why="It keeps guarantor contribution honest: support can be visible early, but GSN should only call it earned when the support cycle closes properly. Finance records the money history; this page explains the earnings meaning."
+        what="This screen separates potential support reward from value that is actually earned after the support cycle closes."
+        why="It keeps supporter contribution honest: support can be visible early, but GSN should only call it earned when the support cycle closes properly. Finance records the money history; this page explains the value meaning."
         next="Read the fixed context first, then open the earnings overview and recent earnings sections to see the current picture."
         tone="light"
         style={{ marginTop: 18 }}
@@ -845,7 +845,7 @@ export default function GuarantorEarningsPage() {
                 lineHeight: 1.8,
               }}
             >
-              This earnings record keeps guarantor participation
+              This value record keeps supporter participation
               readable in your current community
               instead of leaving it buried under the wider support flow.
             </div>
@@ -1073,7 +1073,7 @@ export default function GuarantorEarningsPage() {
 
       {loading ? (
         <div style={{ ...pageCard(), marginTop: 18, color: "rgba(230,238,248,0.76)" }}>
-          Loading guarantor earnings...
+          Loading supporter value...
         </div>
       ) : (
         <>
@@ -1111,7 +1111,7 @@ export default function GuarantorEarningsPage() {
 
             <ExplainToggle
               label="What this does"
-              what="This overview gathers the headline earnings totals for your current community so you can see the size and weight of your guarantor contribution."
+              what="This overview gathers the headline value totals for your current community so you can see the size and weight of your support contribution."
               why="It gives you one stable summary before you move into the detailed earnings record."
               next="Open this summary first, then use the recent earnings section to trace where the numbers are coming from."
               tone="light"
@@ -1199,7 +1199,7 @@ export default function GuarantorEarningsPage() {
               <div>
                 <div style={sectionLabel()}>Why this matters</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  Keep the meaning of guarantor contribution visible.
+                  Keep the meaning of support contribution visible.
                 </div>
               </div>
 
@@ -1245,8 +1245,8 @@ export default function GuarantorEarningsPage() {
                       lineHeight: 1.8,
                     }}
                   >
-                    Supporting responsible borrowers can create real value over time.
-                    The system should help you see that responsible guarantor support
+                    Supporting responsible members can create real value over time.
+                    The system should help you see that responsible support
                     is not invisible.
                   </div>
                 </div>
@@ -1269,7 +1269,7 @@ export default function GuarantorEarningsPage() {
                       lineHeight: 1.8,
                     }}
                   >
-                    As your guarantor earnings grow, GSN should remind you that
+                    As your supporter value grows, GSN should remind you that
                     standing behind responsible people can also create visible value
                     and visible reputation for you.
                   </div>
@@ -1291,7 +1291,7 @@ export default function GuarantorEarningsPage() {
               <div>
                 <div style={sectionLabel()}>Recent earnings</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  Recent guarantor earnings inside the current working context.
+                  Recent supporter value inside the current working context.
                 </div>
               </div>
 
@@ -1323,7 +1323,7 @@ export default function GuarantorEarningsPage() {
                 {visibleItems.length === 0 ? (
                   <div style={{ color: "#7A8D9F", lineHeight: 1.8 }}>
                     {selectedClanId
-                      ? "No guarantor earnings found yet in this working context."
+                      ? "No supporter value found yet in this working context."
                       : "Select a community first to keep earnings inside the correct support context."}
                   </div>
                 ) : (
@@ -1355,7 +1355,7 @@ export default function GuarantorEarningsPage() {
                                 fontSize: 17,
                               }}
                             >
-                              Loan #{safeStr(earning?.loan_id || "Not available yet")}
+                              Support #{safeStr(earning?.loan_id || "Not available yet")}
                             </div>
 
                             <div
@@ -1380,7 +1380,7 @@ export default function GuarantorEarningsPage() {
                               </div>
                               {earning?.loan_status ? (
                                 <div>
-                                  Loan status:{" "}
+                                  Support status:{" "}
                                   <strong style={{ color: "#F8FBFF" }}>
                                     {safeStr(earning.loan_status)}
                                   </strong>
@@ -1518,7 +1518,7 @@ export default function GuarantorEarningsPage() {
                       lineHeight: 1.3,
                   }}
                 >
-                    {guarantorEarningsRouteHeading("briefcase", "Loan Workbench")}
+                    {guarantorEarningsRouteHeading("briefcase", "Support Workbench")}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when you need the deeper support work item behind the earnings result.
@@ -1540,7 +1540,7 @@ export default function GuarantorEarningsPage() {
                       lineHeight: 1.3,
                   }}
                 >
-                    {guarantorEarningsRouteHeading("search", "Loan Suggestions")}
+                    {guarantorEarningsRouteHeading("search", "Find Supporters")}
                   </div>
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when the next question is candidate fit rather than earnings history.

@@ -477,7 +477,7 @@ function resolveNoticeTarget(raw: any): string {
       "locked by guarantees",
       "released guarantees",
       "guarantor exposure",
-      "borrower-side total",
+      "requester-side total",
       "remaining to repay",
       "recent finance event",
       "pool position",
@@ -1451,18 +1451,18 @@ function buildRecoveryPath(params: {
             ]
           : voice === "direct"
           ? [
-              "Finish your current loan path.",
+              "Finish your current support path.",
               "Your current support path is still active.",
             ]
           : [
-              "Finish your current loan path.",
+              "Finish your current support path.",
               "Your current support path is still active.",
             ],
         "recovery-loan-title",
         voice,
         status
       ),
-      detail: `Your current borrower-side support path is still active with status '${status}'.`,
+      detail: `Your current support path is still active with status '${status}'.`,
       ctaLabel: "Open Loans & Support",
       ctaTo: GUIDANCE_TARGETS.LOANS,
       severity: "important",
@@ -1489,15 +1489,15 @@ function buildRecoveryPath(params: {
         voice === "warm"
           ? [
               "A clean support path protects future confidence.",
-              "Steady loan follow-up today helps tomorrow’s readiness.",
+              "Steady support follow-up today helps tomorrow’s readiness.",
             ]
           : voice === "direct"
           ? [
-              "A disciplined loan path protects future readiness.",
+              "A disciplined support path protects future readiness.",
               "Do not let the support path drift into tomorrow.",
             ]
           : [
-              "A clean, visible loan path strengthens future trust and readiness.",
+              "A clean, visible support path strengthens future trust and readiness.",
               "Steady support-path follow-up today protects tomorrow’s options.",
             ],
         "recovery-loan-tomorrow",
@@ -1682,17 +1682,17 @@ function buildNextBestStep(params: {
           : voice === "direct"
           ? [
               "Continue your current support path.",
-              "Your borrower-side loan path is still active.",
+              "Your support path is still active.",
             ]
           : [
               "Continue your current support path.",
-              "Your borrower-side loan path is still active.",
+              "Your support path is still active.",
             ],
         "next-loan-title",
         voice
       ),
       detail:
-        "Your borrower-side loan path is still active. Review the next valid step and keep it moving cleanly.",
+        "Your support path is still active. Review the next valid step and keep it moving cleanly.",
       ctaLabel: "Open Loans & Support",
       ctaTo: GUIDANCE_TARGETS.LOANS,
       severity: "important",

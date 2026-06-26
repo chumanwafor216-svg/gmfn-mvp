@@ -297,7 +297,7 @@ export default function LockManagementPage() {
         <div style={sectionLabel()}>Use These Pages Now</div>
 
         <div style={{ marginTop: 14, ...helperText(), maxWidth: 860 }}>
-          These pages show the live loan, exposure, and operations records that
+          These pages show the live support, exposure, and operations records that
           can still guide the next decision.
         </div>
 
@@ -315,7 +315,7 @@ export default function LockManagementPage() {
             stableHeight={52}
             debugId="lock-management.open-workbench"
           >
-            {labelWithIcon("briefcase", "Open Loan Workbench")}
+            {labelWithIcon("briefcase", "Open Support Workbench")}
           </StableCtaLink>
 
           <StableCtaLink

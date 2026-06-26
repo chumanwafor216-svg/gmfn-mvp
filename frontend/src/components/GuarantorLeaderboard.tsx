@@ -20,7 +20,7 @@ export function GuarantorLeaderboard(props: { clanId: number }) {
 
     // If user is not logged in, show a friendly message instead of crashing
     if (!token) {
-      setError("Please log in to view the guarantor leaderboard.");
+      setError("Please log in to view supporter records.");
       setItems([]);
       return;
     }
@@ -34,10 +34,10 @@ export function GuarantorLeaderboard(props: { clanId: number }) {
 
   return (
     <div>
-      <h3>Guarantor Leaderboard</h3>
+      <h3>Supporter Record</h3>
 
       {items.length === 0 ? (
-        <div>No leaderboard data yet.</div>
+        <div>No supporter records yet.</div>
       ) : (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>

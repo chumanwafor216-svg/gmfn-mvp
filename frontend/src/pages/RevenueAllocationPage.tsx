@@ -504,13 +504,13 @@ function detailPairs(allocation: RevenueAllocationView | null): Array<[string, s
   if (!allocation) return [];
 
   return [
-    ["Loan ID", safeStr(allocation.loanId || "-")],
+    ["Support ID", safeStr(allocation.loanId || "-")],
     ["Community ID", safeStr(allocation.clanId || "-")],
     ["Status", safeStr(allocation.status || "pending")],
     ["Amount", `${allocation.amount} ${allocation.currency}`],
     ["Service fee", `${allocation.serviceFee} ${allocation.currency}`],
     ["Platform revenue", `${allocation.platformRevenue} ${allocation.currency}`],
-    ["Guarantor pool", `${allocation.guarantorPool} ${allocation.currency}`],
+    ["Supporter pool", `${allocation.guarantorPool} ${allocation.currency}`],
     ["Net disbursed preview", `${allocation.netDisbursedAmount} ${allocation.currency}`],
     [
       "Allocation boundary",
@@ -518,7 +518,7 @@ function detailPairs(allocation: RevenueAllocationView | null): Array<[string, s
     ],
     ["Personal pool at request", `${allocation.personalPoolAtRequest} ${allocation.currency}`],
     ["Pool used", `${allocation.poolUsed} ${allocation.currency}`],
-    ["Guarantee gap", `${allocation.guaranteeGap} ${allocation.currency}`],
+    ["Support gap", `${allocation.guaranteeGap} ${allocation.currency}`],
     ["Paid total", `${allocation.paidTotal} ${allocation.currency}`],
     ["Remaining amount", `${allocation.remainingAmount} ${allocation.currency}`],
     ["Created", safeDateTime(allocation.createdAt)],
@@ -676,7 +676,7 @@ export default function RevenueAllocationPage() {
 
     try {
       if (!currentLoanId) {
-        throw new Error("Enter a valid loan ID.");
+        throw new Error("Enter a valid support ID.");
       }
 
       const res = await getRevenueAllocation(currentLoanId);
@@ -753,7 +753,7 @@ export default function RevenueAllocationPage() {
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.workbench}
-        backLabel="Loan Workbench"
+        backLabel="Support Workbench"
       />
 
       <ExplainToggle
@@ -921,7 +921,7 @@ export default function RevenueAllocationPage() {
               <span style={badge(true)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>
-                Current loan ID: {currentLoanId || "Pending"}
+                Current support ID: {currentLoanId || "Pending"}
               </span>
             </div>
           </div>
@@ -939,12 +939,12 @@ export default function RevenueAllocationPage() {
                     fontSize: 14,
                   }}
                 >
-                  Loan ID
+                  Support ID
                 </div>
                 <input
                   value={loanId}
                   onChange={(e) => setLoanId(e.target.value)}
-                  placeholder="Enter loan ID"
+                  placeholder="Enter support ID"
                   style={inputStyle()}
                 />
               </div>
@@ -1078,7 +1078,7 @@ export default function RevenueAllocationPage() {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Guarantor pool</div>
+                <div style={sectionLabel()}>Supporter pool</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1128,7 +1128,7 @@ export default function RevenueAllocationPage() {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Guarantee gap</div>
+                <div style={sectionLabel()}>Support gap</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1212,7 +1212,7 @@ export default function RevenueAllocationPage() {
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                See what was kept as fee, what supports guarantors, and what
+                See what was kept as fee, what is reserved for supporters, and what
                 may reach the member in the allocation reading.
               </div>
             </div>
@@ -1336,7 +1336,7 @@ export default function RevenueAllocationPage() {
               debugId="revenue-allocation.route.loan-summary"
               style={routeTile(true)}
             >
-              {routeHeading("document", "Loan Summary")}
+              {routeHeading("document", "Support Summary")}
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the support item summary.
               </div>
@@ -1348,7 +1348,7 @@ export default function RevenueAllocationPage() {
               debugId="revenue-allocation.route.workbench"
               style={routeTile(false)}
             >
-              {routeHeading("briefcase", "Loan Workbench")}
+              {routeHeading("briefcase", "Support Workbench")}
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Continue the deeper support review.
               </div>

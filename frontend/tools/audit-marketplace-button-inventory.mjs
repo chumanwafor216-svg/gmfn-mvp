@@ -612,17 +612,19 @@ if (!supportSection) {
   }
 
   [
-    /Support Requests[\s\S]*?Start one guided support request inside this selected/,
-    /What this support area does[\s\S]*?one guided community request/,
+    /Support Requests[\s\S]*?Ask this marketplace for support when your withdrawal needs[\s\S]*?backing/,
+    /What this support area does[\s\S]*?ask the selected marketplace for support/,
+    /Selected marketplace[\s\S]*?ID: \{activeCommunityId \|\| "not ready"\}/,
+    /From Money Out/,
     /Step \{step\}/,
-    /Start request[\s\S]*?Enter amount, days, and reason here/,
-    /Check fit[\s\S]*?Review guarantor need and suggested supporters/,
-    /Continue flow[\s\S]*?Open readiness or workbench only when needed/,
-    /Start one request, then let GSN show the next fit or guarantor[\s\S]*?Deeper loan pages stay behind details/,
+    /Start request[\s\S]*?Amount, duration, repayment, purpose/,
+    /Check supporters[\s\S]*?GSN shows who can back the request/,
+    /Send requests[\s\S]*?Send only after the draft is ready/,
+    /Enter the amount, duration, repayment plan, and purpose[\s\S]*?creates one support draft/,
     /No draft yet/,
-    /Guarantors: \{requiredGuarantorCount \|\| "not checked"\}/,
+    /Supporters: \{requiredGuarantorCount \|\| "not checked"\}/,
     /Fit: \{suggestedSupporters\.length\}/,
-    /debugId="marketplace\.support\.deeper-pages\.summary"[\s\S]*?Deeper support pages/,
+    /\{loanDraftId \? \([\s\S]*?debugId="marketplace\.support\.deeper-pages\.summary"[\s\S]*?More support tools/,
   ].forEach((pattern) => {
     if (!pattern.test(supportSection)) {
       findings.push({

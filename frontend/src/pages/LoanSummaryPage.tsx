@@ -799,11 +799,11 @@ function nextStepText(status: string) {
   const s = lc(status);
 
   if (s === "pending") {
-    return "Next: review guarantor movement, keep the pending decisions moving, and stay inside the support flow until the approval picture is clear.";
+    return "Next: review supporter responses, keep pending decisions moving, and stay inside the support flow until the support picture is clear.";
   }
 
   if (s === "approved") {
-    return "Next: the loan is approved. Repayment and finance evidence become the main actions.";
+    return "Next: support is approved. Repayment and finance evidence become the main actions.";
   }
 
   if (s === "disbursed") {
@@ -811,14 +811,14 @@ function nextStepText(status: string) {
   }
 
   if (s === "repaid") {
-    return "Completed: this loan has been fully repaid.";
+    return "Completed: this support item has been fully repaid.";
   }
 
   if (s === "rejected" || s === "declined" || s === "cancelled") {
-    return "Stopped: this loan was rejected or cancelled. Return to preparation before starting a new request.";
+    return "Stopped: this support item was rejected or cancelled. Return to preparation before starting a new request.";
   }
 
-  return "Next: review guarantors, evidence, and repayment state for this loan.";
+  return "Next: review supporters, evidence, and repayment state for this support item.";
 }
 
 function routeTarget(
@@ -933,9 +933,9 @@ export default function LoanSummaryPage() {
     loanStatus === "active";
   const supportProcessMessage =
     loanStatus === "incomplete"
-      ? "Support is not complete yet. Add another guarantor, wait for pending replies, or cancel this request if it should not continue."
+      ? "Support is not complete yet. Add another supporter, wait for pending replies, or cancel this request if it should not continue."
       : loanStatus === "pending"
-      ? "Support is open. Keep each guarantor decision explicit until the backend can approve or mark what is still missing."
+      ? "Support is open. Keep each supporter decision explicit until GSN can show what is ready or what is still missing."
       : canRepay
       ? "Support has moved into the money stage. Repayment is now the next deterministic action."
       : "No support action is currently open. Review the record before choosing the next route.";
@@ -1112,7 +1112,7 @@ export default function LoanSummaryPage() {
     } catch (e: any) {
       setFeedback({
         tone: "error",
-        text: e?.message || "Failed to load loan summary.",
+        text: e?.message || "Failed to load support summary.",
       });
     } finally {
       setLoading(false);
@@ -1133,7 +1133,7 @@ export default function LoanSummaryPage() {
       setFeedback({
         tone: "error",
         text:
-          "Guarantor decisions are only available while support is pending or incomplete.",
+          "Supporter decisions are only available while support is pending or incomplete.",
       });
       return;
     }
@@ -1151,15 +1151,15 @@ export default function LoanSummaryPage() {
         tone: "success",
         text:
           status === "approved"
-            ? "Guarantor pledge decision recorded. This is not whole-loan approval or release authority."
-            : "Guarantor declined successfully.",
+            ? "Support decision recorded. This is not whole-request approval or release authority."
+            : "Support declined successfully.",
       });
 
       await refreshAll();
     } catch (e: any) {
       setFeedback({
         tone: "error",
-        text: e?.message || "Guarantor decision failed.",
+        text: e?.message || "Support decision failed.",
       });
     } finally {
       setBusyDecisionKey("");
@@ -1180,23 +1180,23 @@ export default function LoanSummaryPage() {
     const auditLink = `${origin}/app/trust-analytics?${p.toString()}`;
     safeCopy(
       buildGsnSupportEvidencePackage({
-        title: "GSN Loan Audit Link",
+        title: "GSN Support Audit Link",
         purpose: "Review the trust analytics attached to this support item.",
-        reference: `loan-${summary.id}`,
+        reference: `support-${summary.id}`,
         memberName,
         gsnId: gmfnId,
         memberRole,
         communityName: communityLabel,
         communityId: communityPublicId,
-        routeName: "Loan Summary",
+        routeName: "Support Summary",
         loanId: summary.id,
         amount: fmtMoney(n(summary.amount), currency),
         status: safeStr(summary.status),
         actionLink: auditLink,
         detailLines: [
-          `Required guarantors: ${requiredCount}`,
-          `Approved pledges: ${approvedCount}`,
-          `Pending guarantors: ${pendingGuarantors.length}`,
+          `Supporters needed: ${requiredCount}`,
+          `Recorded support: ${approvedCount}`,
+          `Pending supporters: ${pendingGuarantors.length}`,
           "This package points to the current trust analytics review route for the support item.",
         ],
       })
@@ -1204,7 +1204,7 @@ export default function LoanSummaryPage() {
 
     setFeedback({
       tone: "success",
-      text: "Loan audit package copied.",
+      text: "Support audit package copied.",
     });
   }
 
@@ -1214,7 +1214,7 @@ export default function LoanSummaryPage() {
     safeCopy(loanSummaryPaper);
     setFeedback({
       tone: "success",
-      text: "Loan summary snapshot copied.",
+      text: "Support summary snapshot copied.",
     });
   }
 
@@ -1233,22 +1233,22 @@ export default function LoanSummaryPage() {
     if (!summary) return "";
 
     return buildGsnSupportEvidencePackage({
-      title: "GSN Loan Summary Snapshot",
-      purpose: "Review current support status, guarantor state, and repayment evidence.",
-      reference: `loan-${summary.id}`,
+      title: "GSN Support Summary Snapshot",
+      purpose: "Review current support status, supporter state, and repayment evidence.",
+      reference: `support-${summary.id}`,
       memberName,
       gsnId: gmfnId,
       memberRole,
       communityName: communityLabel,
       communityId: communityPublicId,
-      routeName: "Loan Summary",
+      routeName: "Support Summary",
       loanId: summary.id,
       amount: fmtMoney(n(summary.amount), currency),
       status: safeStr(summary.status),
       detailLines: [
-        `Required guarantors: ${requiredCount}`,
-        `Approved pledges: ${approvedCount}`,
-        `Pending guarantors: ${pendingGuarantors.length}`,
+        `Supporters needed: ${requiredCount}`,
+        `Recorded support: ${approvedCount}`,
+        `Pending supporters: ${pendingGuarantors.length}`,
         summary.remaining_amount != null
           ? `Remaining amount: ${fmtMoney(summary.remaining_amount, currency)}`
           : "",
@@ -1285,7 +1285,7 @@ export default function LoanSummaryPage() {
       >
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#991B1B", fontWeight: 800 }}>
-            Invalid loan ID.
+            Invalid support ID.
           </div>
         </section>
       </div>
@@ -1304,9 +1304,9 @@ export default function LoanSummaryPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Loan Summary"
-          title="Loan Summary"
-          subtitle="Loading the loan detail page..."
+          sectionLabel="Support Summary"
+          title="Support Summary"
+          subtitle="Loading the support detail page..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.loans}
@@ -1315,7 +1315,7 @@ export default function LoanSummaryPage() {
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.45 }}>
-            Loading loan summary...
+            Loading support summary...
           </div>
         </section>
       </div>
@@ -1334,8 +1334,8 @@ export default function LoanSummaryPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Loan Summary"
-          title="Loan Summary"
+          sectionLabel="Support Summary"
+          title="Support Summary"
           subtitle="Review one support item here."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
@@ -1347,7 +1347,7 @@ export default function LoanSummaryPage() {
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "#64748B", lineHeight: 1.45 }}>
-            Loan summary could not be loaded.
+            Support summary could not be loaded.
           </div>
         </section>
       </div>
@@ -1365,8 +1365,8 @@ export default function LoanSummaryPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Loan Summary"
-        title={`Loan #${summary.id}`}
+        sectionLabel="Support Summary"
+        title={`Support #${summary.id}`}
         subtitle="Review one support item and choose the next action."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
@@ -1376,7 +1376,7 @@ export default function LoanSummaryPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This shows the amount, guarantors, repayment state, evidence, and finance split for one support item."
+        what="This shows the amount, supporters, repayment state, evidence, and finance split for one support item."
         why="It keeps the support story clear before you move money or make decisions."
         next="Check the facts, then open only the section that needs action."
         tone="blue"
@@ -1469,7 +1469,7 @@ export default function LoanSummaryPage() {
               <span style={badge(false)}>GSN ID: {gmfnId}</span>
               <span style={badge(false)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current step: Loan summary</span>
+              <span style={badge(false)}>Current step: Support summary</span>
             </div>
 
             <div
@@ -1592,8 +1592,8 @@ export default function LoanSummaryPage() {
 
         <ExplainToggle
           label="What these facts show"
-          what="This shows the amount, balance, and guarantor counts."
-          why="It gives the loan position before deeper action."
+          what="This shows the amount, balance, and supporter counts."
+          why="It gives the support position before deeper action."
           next="Check these facts, then open only the section you need."
           tone="light"
           style={{ marginTop: 12 }}
@@ -1623,7 +1623,7 @@ export default function LoanSummaryPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Required guarantors</div>
+              <div style={sectionLabel()}>Supporters needed</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1637,7 +1637,7 @@ export default function LoanSummaryPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Approved pledges</div>
+              <div style={sectionLabel()}>Recorded support</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1651,7 +1651,7 @@ export default function LoanSummaryPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Pending guarantors</div>
+              <div style={sectionLabel()}>Pending supporters</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1739,7 +1739,7 @@ export default function LoanSummaryPage() {
                 </div>
 
                 <div style={statTile("#F8FBFF")}>
-                  <div style={sectionLabel()}>Guarantor pool</div>
+                  <div style={sectionLabel()}>Supporter pool</div>
                   <div
                     style={{
                       marginTop: 8,
@@ -1812,9 +1812,9 @@ export default function LoanSummaryPage() {
             }}
           >
             <div>
-              <div style={sectionLabel()}>Guarantor decisions</div>
+              <div style={sectionLabel()}>Supporter decisions</div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Review each guarantor separately. Bulk action stays off here.
+                Review each supporter separately. Bulk action stays off here.
               </div>
             </div>
 
@@ -1835,9 +1835,9 @@ export default function LoanSummaryPage() {
 
           <ExplainToggle
             label="How to use these decisions"
-            what="Review pending guarantors one by one."
+            what="Review pending supporters one by one."
             why="Each decision stays visible and deliberate."
-            next="Approve pledge or decline only the rows that are ready; this records a guarantor pledge decision, not whole-loan approval or release authority."
+            next="Record support or decline only the rows that are ready; this records a support decision, not whole-request approval or release authority."
             tone="light"
             style={{ marginTop: 12 }}
           />
@@ -1864,7 +1864,7 @@ export default function LoanSummaryPage() {
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
               {guarantors.length === 0 ? (
                 <div style={{ color: "#64748B", lineHeight: 1.45 }}>
-                  No guarantor has been attached yet.
+                  No supporter has been attached yet.
                 </div>
               ) : (
                 guarantors.map((g, idx) => {
@@ -1914,7 +1914,7 @@ export default function LoanSummaryPage() {
                           >
                             {guarantorBadge(g.status)}
                             <span style={badge(true)}>
-                              Pledge: {fmtMoney(g.pledge_amount, currency)}
+                              Support: {fmtMoney(g.pledge_amount, currency)}
                             </span>
                             {g.is_locked ? (
                               <span style={badge(false)}>
@@ -1959,7 +1959,7 @@ export default function LoanSummaryPage() {
                             stableHeight={52}
                             debugId={`loan-summary.guarantor.${g.id || idx}.approve`}
                           >
-                            {actionText("check", busyApprove ? "Recording" : "Record pledge")}
+                            {actionText("check", busyApprove ? "Recording" : "Record support")}
                           </PrimaryButton>
 
                           <SecondaryButton
@@ -1996,7 +1996,7 @@ export default function LoanSummaryPage() {
             >
               {isAdmin
                 ? "Bulk approve and bulk decline remain disabled here. Keep review deliberate and line-by-line."
-                : "Bulk guarantor actions are not enabled here. Keep the path deliberate and line-by-line."}
+                : "Bulk supporter actions are not enabled here. Keep the path deliberate and line-by-line."}
             </div>
 
             <div
@@ -2037,7 +2037,7 @@ export default function LoanSummaryPage() {
                 ...helperText(),
               }}
             >
-              Suggested guarantor candidates for this loan, when available.
+              Suggested supporter candidates for this support item, when available.
             </div>
 
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -2080,7 +2080,7 @@ export default function LoanSummaryPage() {
 
                       {Number.isFinite(Number(s.recommended_pledge)) ? (
                         <span style={badge(true)}>
-                          Suggested pledge: {fmtMoney(s.recommended_pledge, currency)}
+                          Suggested support: {fmtMoney(s.recommended_pledge, currency)}
                         </span>
                       ) : null}
                     </div>
@@ -2375,7 +2375,7 @@ export default function LoanSummaryPage() {
 
                 <div style={innerCard("#FCFEFF")}>
                   <div style={{ color: "#64748B", fontSize: 12, fontWeight: 900 }}>
-                    Guarantor pool
+                    Supporter pool
                   </div>
                   <div
                     style={{
@@ -2466,7 +2466,7 @@ export default function LoanSummaryPage() {
             <div style={{ marginTop: 8, ...helperText() }}>
               {supportItemActive
                 ? "Open the next page for this support item."
-                : "Move from loan summary into the next page you need."}
+                : "Move from support summary into the next page you need."}
             </div>
           </div>
 
@@ -2501,7 +2501,7 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(true)}
             >
-              {routeHeading("briefcase", "Loan Workbench")}
+              {routeHeading("briefcase", "Support Workbench")}
               <div style={routeTileDetailStyle()}>
                 Continue support handling here.
               </div>
@@ -2514,9 +2514,9 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              {routeHeading("search", "Loan Suggestions")}
+              {routeHeading("search", "Find Supporters")}
               <div style={routeTileDetailStyle()}>
-                Check guarantor fit.
+                Check supporter fit.
               </div>
             </StableCtaLink>
 
@@ -2527,7 +2527,7 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              {routeHeading("check", "Loan Readiness")}
+              {routeHeading("check", "Support Readiness")}
               <div style={routeTileDetailStyle()}>
                 Check whether the path is clean.
               </div>
@@ -2561,7 +2561,7 @@ export default function LoanSummaryPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              {routeHeading("bank", canRepay ? "Payment Instructions" : "Finance")}
+              {routeHeading("bank", canRepay ? "Repayment Instructions" : "Finance")}
               <div style={routeTileDetailStyle()}>
                 {canRepay
                   ? "Continue repayment."

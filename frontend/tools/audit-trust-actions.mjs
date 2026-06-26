@@ -798,14 +798,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoanReadinessPage.tsx",
-  /Support Readiness is decision support only; it does not approve a loan, approve a guarantor, or authorize release of goods, credit, or money\./,
-  "Loan Readiness must separate support-readiness guidance from loan, guarantor, or money-release approval."
+  /Support Readiness is decision support only; it does not approve support, choose a supporter, or authorize release of goods, credit, or money\./,
+  "Support Readiness must separate readiness guidance from support choice or money-release approval."
 );
 
 assertContains(
   "src/pages/LoanSuggestionsPage.tsx",
-  /Fit suggestions are decision support only; they do not approve a guarantor, approve a loan, or authorize release of goods, credit, or money\./,
-  "Loan Suggestions must separate fit guidance from guarantor, loan, or money-release approval."
+  /Fit suggestions are decision support only; they do not choose a supporter, approve support, or authorize release of goods, credit, or money\./,
+  "Supporter suggestions must separate fit guidance from support choice or money-release approval."
 );
 
 assertNotContains(
@@ -816,14 +816,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/GuarantorInboxPage.tsx",
-  /Approving here records your guarantor pledge response only; it does not approve the loan or authorize release of goods, credit, or money\./,
-  "Guarantor Inbox must separate pledge response approval from whole-loan or money-release approval."
+  /Recording support here saves your response only; it does not approve support or authorize release of goods, credit, or money\./,
+  "Incoming Requests must separate support response recording from support or money-release approval."
 );
 
 assertContains(
   "src/pages/GuarantorInboxPage.tsx",
-  /Approving a request records your pledge response only; it is not[\s\S]*?whole-loan approval or permission to release goods, credit, or money\./,
-  "Guarantor Inbox guidance must explain that a guarantor approval is only a pledge response."
+  /Recording a request saves your support response only; it is not[\s\S]*?whole-request approval or permission to release goods, credit, or money\./,
+  "Incoming Requests guidance must explain that a recorded support response is only a response."
 );
 
 assertNotContains(
@@ -834,14 +834,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoanSummaryPage.tsx",
-  /this records a guarantor pledge decision, not whole-loan approval or release authority\./,
-  "Loan Summary guarantor decisions must be scoped as pledge decisions, not whole-loan approval or release authority."
+  /this records a support decision, not whole-request approval or release authority\./,
+  "Loan Summary supporter decisions must be scoped as support decisions, not whole-request approval or release authority."
 );
 
 assertContains(
   "src/pages/LoanSummaryPage.tsx",
-  /Guarantor pledge decision recorded\. This is not whole-loan approval or release authority\./,
-  "Loan Summary success feedback must not imply a guarantor row approval approves the whole loan."
+  /Support decision recorded\. This is not whole-request approval or release authority\./,
+  "Loan Summary success feedback must not imply a supporter row decision approves the whole request."
 );
 
 assertNotContains(
@@ -888,14 +888,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoanWorkbenchPage.tsx",
-  /Workbench readings and suggested pledges are decision support only; they do not approve a loan, approve a guarantor, or authorize release of goods, credit, or money\./,
-  "Loan Workbench must separate readings and suggested pledges from loan, guarantor, or money-release approval."
+  /Workbench readings and suggested support amounts are decision support only; they do not approve support, choose a supporter, or authorize release of goods, credit, or money\./,
+  "Loan Workbench must separate readings and suggested support amounts from support choice or money-release approval."
 );
 
 assertContains(
   "src/pages/LoanWorkbenchPage.tsx",
-  /Candidate quality and guarantor request state stay together here;[\s\S]*?fit rows do not approve a guarantor or authorize release\./,
-  "Loan Workbench guarantor-fit lane must not let fit rows read as approval or release authority."
+  /Candidate quality and support request state stay together here;[\s\S]*?fit rows do not choose a supporter or authorize release\./,
+  "Loan Workbench supporter-fit lane must not let fit rows read as supporter choice or release authority."
 );
 
 assertNotContains(
@@ -906,14 +906,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /this route does not confirm money received, close a loan, or release guarantor exposure\./,
-  "Repayment route must separate payment declaration from money receipt, loan closure, and guarantor-exposure release."
+  /this route does not confirm money received, close support, or release supporter exposure\./,
+  "Repayment route must separate payment declaration from money receipt, support closure, and supporter-exposure release."
 );
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /Only admin or finance reconciliation can confirm closure and release guarantor exposure\./,
-  "Repayment full-balance guidance must keep closure and guarantor-release authority with reconciliation."
+  /Only admin or finance reconciliation can confirm closure and release supporter exposure\./,
+  "Repayment full-balance guidance must keep closure and supporter-release authority with reconciliation."
 );
 
 assertNotContains(
@@ -924,20 +924,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /declare it here so the route can move into reconciliation; this does not confirm money received\./,
-  "Money In payment instruction must separate member declaration from confirmed money receipt."
+  /Use the exact reference\. If automatic matching is not live yet, add a screenshot after transfer\./,
+  "Money In payment instruction must keep user-facing payment guidance while avoiding confirmed-receipt wording."
 );
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /Payment declaration recorded\. Waiting for reconciliation to confirm the money trail\./,
-  "Money In success notice must frame the action as a declaration awaiting reconciliation."
+  /Payment note saved\. GSN will match it with the bank record or screenshot\./,
+  "Money In success notice must frame the action as a member note awaiting bank or screenshot matching."
 );
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /moneyInActionText\("check", paymentConfirmed \? "Declared" : "Declare paid"\)/,
-  "Money In action label must say Declare paid, not Confirm paid."
+  /moneyInActionText\("check", paymentConfirmed \? "Noted" : "I paid"\)/,
+  "Money In action label must stay user-facing without saying Confirm paid."
 );
 
 assertNotContains(
@@ -990,8 +990,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
-  /Direct withdrawal request recorded\. Community confirmation is still review evidence; payout execution and money movement are not complete here\./,
-  "Withdrawal Instructions must separate request recording and community confirmation from payout execution."
+  /Withdrawal code generated\. Use it with your transfer proof; admin or finance still reviews before money moves\./,
+  "Withdrawal Instructions must separate code generation and transfer proof from payout execution."
 );
 
 assertContains(
@@ -1068,14 +1068,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/GuarantorEarningsPage.tsx",
-  /Earned guarantor value is recorded here for visibility\. It is not an automatic payout,[\s\S]*?Closed-support records: \$\{totals\.settledCount\}[\s\S]*?Closed-support records: \{totals\.settledCount\}[\s\S]*?const amountLabel = settled \? "RECORDED EARNED VALUE" : "POTENTIAL SHARE"/,
-  "Guarantor Earnings must frame closed support as recorded earned value, not settlement or automatic payout."
+  /Earned supporter value is recorded here for visibility\. It is not an automatic payout,[\s\S]*?Closed-support records: \$\{totals\.settledCount\}[\s\S]*?Closed-support records: \{totals\.settledCount\}[\s\S]*?const amountLabel = settled \? "RECORDED EARNED VALUE" : "POTENTIAL SHARE"/,
+  "Supporter Value must frame closed support as recorded earned value, not settlement or automatic payout."
 );
 
 assertNotContains(
   "src/pages/GuarantorEarningsPage.tsx",
-  /Review visible guarantor value, settled items|Settled support creates clearer earnings|`Settled items: \$\{totals\.settledCount\}`|<span style=\{badge\(false\)\}>Settled:|const amountLabel = settled \? "EARNED" : "POTENTIAL SHARE"/,
-  "Guarantor Earnings must not make earnings records sound like settlement or payout completion."
+  /Review visible guarantor value|Review visible supporter value, settled items|Settled support creates clearer earnings|`Settled items: \$\{totals\.settledCount\}`|<span style=\{badge\(false\)\}>Settled:|const amountLabel = settled \? "EARNED" : "POTENTIAL SHARE"/,
+  "Supporter Value must not make value records sound like settlement or payout completion."
 );
 
 assertContains(

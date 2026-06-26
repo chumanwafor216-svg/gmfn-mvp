@@ -119,7 +119,7 @@ function getPoolAmountText(payload: any): string {
     if (text) return text;
   }
 
-  return "—";
+  return "--";
 }
 
 function getPoolCurrency(payload: any): string {
@@ -198,8 +198,8 @@ function normalizeLoanRow(raw: any): LoanRow | null {
       src?.role,
       src?.my_role,
       src?.participant_role,
-      src?.is_guarantor ? "Guarantor" : "",
-      src?.is_borrower ? "Borrower" : ""
+      src?.is_guarantor ? "Supporter" : "",
+      src?.is_borrower ? "Requester" : ""
     ),
     borrowerName: firstTruthy(
       src?.borrower_name,
@@ -857,9 +857,9 @@ export default function LoanReadinessPage() {
       return {
         level: "blocked" as const,
         title:
-          "Readiness is blocked by an active support request and waiting guarantor decisions.",
+          "Readiness is blocked by an active support request and waiting support decisions.",
         detail:
-          "You already have an active support request, and guarantor decisions are still waiting. Clear one pressure area before starting another.",
+          "You already have an active support request, and support decisions are still waiting. Clear one pressure area before starting another.",
       };
     }
 
@@ -877,7 +877,7 @@ export default function LoanReadinessPage() {
       return {
         level: "watch" as const,
         title:
-          "Readiness is reduced because guarantor requests are waiting on you.",
+          "Readiness is reduced because support requests are waiting on you.",
         detail:
           "Someone is waiting directly on your support decision. Respond there first before carrying new support pressure.",
       };
@@ -887,9 +887,9 @@ export default function LoanReadinessPage() {
       return {
         level: "watch" as const,
         title:
-          "Readiness is moderate because you still carry guarantor responsibility.",
+          "Readiness is moderate because you still carry support responsibility.",
         detail:
-          "You may still be able to continue, but existing guarantor responsibility should be watched before expanding further.",
+          "You may still be able to continue, but existing support responsibility should be watched before expanding further.",
       };
     }
 
@@ -897,7 +897,7 @@ export default function LoanReadinessPage() {
       level: "ready" as const,
       title: "Readiness looks clean enough to continue the next support step.",
       detail:
-        "No active support request or waiting guarantor request is visibly blocking the next support step right now.",
+        "No active support request or waiting support request is visibly blocking the next support step right now.",
     };
   }, [
     selectedClanId,
@@ -927,7 +927,7 @@ export default function LoanReadinessPage() {
 
     if (guarantorInbox.length > 0) {
       rows.push(
-        `${guarantorInbox.length} guarantor request${
+        `${guarantorInbox.length} support request${
           guarantorInbox.length === 1 ? " is" : "s are"
         } waiting on your decision.`
       );
@@ -935,7 +935,7 @@ export default function LoanReadinessPage() {
 
     if (guarantorLoans.length > 0) {
       rows.push(
-        `You still carry ${guarantorLoans.length} active guarantor responsibility item${
+        `You still carry ${guarantorLoans.length} active support responsibility item${
           guarantorLoans.length === 1 ? "" : "s"
         }.`
       );
@@ -967,11 +967,11 @@ export default function LoanReadinessPage() {
     }
 
     if (guarantorInbox.length === 0) {
-      rows.push("No pending guarantor request is visibly waiting on you.");
+      rows.push("No pending support request is visibly waiting on you.");
     }
 
     if (guarantorLoans.length === 0) {
-      rows.push("No active guarantor responsibility is currently shown.");
+      rows.push("No active support responsibility is currently shown.");
     }
 
     if (poolNumber > 0) {
@@ -1010,17 +1010,17 @@ export default function LoanReadinessPage() {
         detail:
           "Money Out has already shown a support need. Open the support start page and carry that need forward.",
         ctaTo: routes.startSupport,
-        ctaLabel: "Open Support Start Page",
+        ctaLabel: "Start Support Request",
       };
     }
 
     if (guarantorInbox.length > 0) {
       return {
-        title: "Respond to waiting guarantor requests first.",
+        title: "Respond to waiting support requests first.",
         detail:
           "Someone is waiting directly on your support decision. Clear that queue before creating new support pressure.",
         ctaTo: routes.guarantorInbox,
-        ctaLabel: "Open Incoming Guarantor Requests",
+        ctaLabel: "Open Incoming Requests",
       };
     }
 
@@ -1030,15 +1030,15 @@ export default function LoanReadinessPage() {
         detail:
           "The support request is already visible, so the next clean step is usually fit reading.",
         ctaTo: routes.suggestions,
-        ctaLabel: "Open Loan Suggestions",
+        ctaLabel: "Find Supporters",
       };
     }
 
     if (guarantorLoans.length > 0) {
       return {
-        title: "Review your guarantor commitments before expanding further.",
+        title: "Review your support commitments before expanding further.",
         detail:
-          "Existing guarantor responsibility should remain visible before another support load is added.",
+          "Existing support responsibility should remain visible before another support load is added.",
         ctaTo: routes.loans,
         ctaLabel: "Open Loans & Support",
       };
@@ -1049,7 +1049,7 @@ export default function LoanReadinessPage() {
       detail:
         "No visible pressure is blocking the next step right now.",
       ctaTo: routes.startSupport,
-      ctaLabel: "Open Support Start Page",
+      ctaLabel: "Start Support Request",
     };
   }, [
     selectedClanId,
@@ -1101,7 +1101,7 @@ export default function LoanReadinessPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Loan Readiness"
+          sectionLabel="Support Readiness"
           title="Support Readiness"
           subtitle="Loading the support-readiness page..."
           homeTo={routes.dashboard}
@@ -1130,7 +1130,7 @@ export default function LoanReadinessPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Loan Readiness"
+          sectionLabel="Support Readiness"
         title="Support Readiness"
         subtitle="Use this stage to see whether the next support move is clean enough to continue, especially after Money Out has already determined that support is needed."
         homeTo={routes.dashboard}
@@ -1143,7 +1143,7 @@ export default function LoanReadinessPage() {
         label="What this screen does"
         what="This page is one step inside Loans & Support. It tests whether the current community support item is calm enough to move forward right now."
         why="Finance records the wider money story. Readiness helps you decide whether this one support path should continue, pause, or clear another pressure first."
-        next="Support Readiness is decision support only; it does not approve a loan, approve a guarantor, or authorize release of goods, credit, or money."
+        next="Support Readiness is decision support only; it does not approve support, choose a supporter, or authorize release of goods, credit, or money."
         tone="blue"
       />
 
@@ -1353,7 +1353,7 @@ export default function LoanReadinessPage() {
 
         <ExplainToggle
           label="What this summary shows"
-          what="This gathers support pressure, guarantor load, waiting decisions, pool position, and linked Money Out context."
+          what="This gathers support pressure, supporter load, waiting decisions, pool position, and linked Money Out context."
           why="It gives you one place to judge whether the support path feels calm enough to continue."
           next="Scan the strongest pressure first, then open the readiness reading below if you need the deeper explanation."
           tone="light"
@@ -1372,7 +1372,7 @@ export default function LoanReadinessPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Borrower load</div>
+              <div style={sectionLabel()}>My requests</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1386,7 +1386,7 @@ export default function LoanReadinessPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Guarantor load</div>
+              <div style={sectionLabel()}>Supporter load</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1414,7 +1414,7 @@ export default function LoanReadinessPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Active loans</div>
+              <div style={sectionLabel()}>Active support</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1443,7 +1443,7 @@ export default function LoanReadinessPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Current borrower draft</div>
+              <div style={sectionLabel()}>Current support draft</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1718,13 +1718,13 @@ export default function LoanReadinessPage() {
                   fontSize: 15,
                 }}
               >
-                Waiting guarantor decisions
+                Waiting support decisions
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {guarantorInbox.length === 0 ? (
                   <div style={helperText()}>
-                    No guarantor decision is visibly waiting on you right now.
+                    No support decision is visibly waiting on you right now.
                   </div>
                 ) : (
                   guarantorInbox.map((row, index) => (
@@ -1737,18 +1737,18 @@ export default function LoanReadinessPage() {
                         }}
                       >
                         {row.loanId
-                          ? `Guarantor request on loan #${row.loanId}`
-                          : "Guarantor request"}
+                          ? `Support request #${row.loanId}`
+                          : "Support request"}
                       </div>
 
                       <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                         {[
-                          row.borrowerName ? `Borrower: ${row.borrowerName}` : "",
+                          row.borrowerName ? `Requester: ${row.borrowerName}` : "",
                           row.pledgeAmount ? `Pledge: ${row.pledgeAmount}` : "",
                           row.createdAt ? `Created: ${safeDateTime(row.createdAt)}` : "",
                         ]
                           .filter(Boolean)
-                          .join(" • ") || "A borrower is waiting on your decision."}
+                          .join(" | ") || "Someone is waiting on your decision."}
                       </div>
                     </div>
                   ))
@@ -1792,7 +1792,7 @@ export default function LoanReadinessPage() {
                           row.createdAt ? `Started: ${safeDateTime(row.createdAt)}` : "",
                         ]
                           .filter(Boolean)
-                          .join(" • ")}
+                          .join(" | ")}
                       </div>
                     </div>
                   ))
@@ -1885,7 +1885,7 @@ export default function LoanReadinessPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                {loanReadinessRouteHeading("search", "Loan Suggestions")}
+                {loanReadinessRouteHeading("search", "Find Supporters")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open this when the next question is candidate fit after readiness is clear.
@@ -1900,7 +1900,7 @@ export default function LoanReadinessPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                {loanReadinessRouteHeading("briefcase", "Loan Workbench")}
+                {loanReadinessRouteHeading("briefcase", "Support Workbench")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open this for deeper support handling once readiness is clear.
@@ -1932,7 +1932,7 @@ export default function LoanReadinessPage() {
                 style={routeTileStyle(false)}
               >
                 <div style={routeTileTitleStyle()}>
-                  {loanReadinessRouteHeading("wallet", "Support Start Page")}
+                  {loanReadinessRouteHeading("wallet", "Support Request")}
                 </div>
                 <div style={routeTileDetailStyle()}>
                   Return here when the draft itself must be started or resumed.
@@ -1948,7 +1948,7 @@ export default function LoanReadinessPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                {loanReadinessRouteHeading("alert", "Incoming Guarantor Requests")}
+                {loanReadinessRouteHeading("alert", "Incoming Requests")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open the queue if someone is waiting directly on your decision.

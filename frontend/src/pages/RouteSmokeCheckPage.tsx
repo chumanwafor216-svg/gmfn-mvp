@@ -41,11 +41,11 @@ const memberRoutes: SmokeRoute[] = [
   { to: "/app/withdrawal-instructions", label: "Money Out" },
   { to: "/app/payment-rails", label: "Payment Rails" },
   { to: "/app/payout-details", label: "Payout Details" },
-  { to: "/app/guarantor-earnings", label: "Guarantor Earnings" },
+  { to: "/app/guarantor-earnings", label: "Supporter Value" },
   { to: "/app/loan-readiness", label: "Readiness Review" },
   {
     to: "/app/borrower-preflight",
-    label: "Borrower Preflight",
+    label: "Support Check",
     note: "Should hand members into readiness and Commitment Builder without breaking the guided support chain.",
   },
   { to: "/app/loan-suggestions", label: "Guided Suggestions" },
@@ -149,8 +149,8 @@ export default function RouteSmokeCheckPage() {
           or missing import failure.
         </div>
         <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.8 }}>
-          This checklist should also cover guided handoff routes such as Commitment Builder and borrower
-          preflight, not only top-level pages.
+          This checklist should also cover guided handoff routes such as Commitment Builder and Support
+          Check, not only top-level pages.
         </div>
         <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.8 }}>
           Spotlight checks matter here too: verify dashboard, community, shop control, and shop aliases

@@ -1,3 +1,254 @@
+## 2026-06-26 - Shared support wording and visible-language sweep
+
+Owner request:
+- Continue checking minor gaps and words that do not speak directly to the
+  user.
+- Clean the support/withdrawal/finance lane without deleting existing engines.
+
+Local frontend cleanup:
+- `frontend/src/lib/guidance.ts`
+  - shared guidance now says `support path` instead of borrower-side loan path;
+  - finance trigger keyword now uses requester-side language instead of
+    borrower-side wording.
+- `frontend/src/pages/FinancePage.tsx`
+  - finance positive signals now say `Earned supporter value`.
+- `frontend/src/pages/LockManagementPage.tsx`
+  - visible route button now says `Open Support Workbench`;
+  - helper copy now says live support records instead of live loan records.
+- `frontend/src/pages/GuarantorLeaderboardPage.tsx`
+  - empty state now says `No supporter records yet`.
+- `frontend/src/components/GuarantorLeaderboard.tsx`
+  - legacy component visible text now says `Supporter Record` and supporter
+    records instead of guarantor leaderboard.
+- `frontend/tools/audit-button-stability.mjs`
+  - Lock Management audit now protects the `Open Support Workbench` label.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:trust-actions`
+- `node frontend/tools/audit-gsn-visible-language.mjs`
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:finance-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+- targeted `rg` scan found no remaining old phrases for `Open Loan
+  Workbench`, live loan helper text, earned guarantor value, borrower-side loan
+  path, borrower-side support path, borrower-side total, guarantor leaderboard,
+  or old leaderboard empty-state copy in the scanned frontend files.
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- Existing API/type/function names may still contain loan/borrower/guarantor
+  terms because they are backend contracts or route/debug identifiers.
+- No backend banking automation, automatic payout release, support approval PIN,
+  guarantor timeout/cancel engine, fraud handling, or dispute workflow was added
+  in this slice.
+
+## 2026-06-26 - Support Check and Supporter Record wording tightened
+
+Owner request:
+- Continue checking unpolished pages, buttons, and user-facing words across
+  the money/support lane.
+- Keep existing engines and backend contracts; clean the presentation first.
+
+Local frontend cleanup:
+- `frontend/src/pages/BorrowerPreflightPage.tsx`
+  - visible wording now says `Support Check` / `Support Readiness`;
+  - removed visible `Loan Readiness` wording from the member-facing preflight
+    surface;
+  - keeps the existing route/component name because it is an internal app
+    contract.
+- `frontend/src/pages/GuarantorLeaderboardPage.tsx`
+  - visible wording now says `Supporter Record`, `Supporters`, `Supporter`,
+    `Requests`, and `Value`;
+  - loading/error/empty-state copy now says supporter records instead of
+    guarantor leaderboard;
+  - keeps the existing `getGuarantorLeaderboard` API call and route debug IDs
+    because the backend contract still uses those names.
+- `frontend/src/pages/RouteSmokeCheckPage.tsx`
+  - member route labels now say `Supporter Value` and `Support Check`;
+  - helper copy now avoids `borrower preflight`.
+- `frontend/tools/audit-button-stability.mjs`
+  - audit now protects the new Supporter Record button labels and blocks the
+    old unpolished loading copy.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+- targeted `rg` scan found no remaining `Borrower Preflight`, `Loan
+  Readiness`, `Guarantor Leaderboard`, `Guarantor Inbox`, `Guarantor
+  Earnings`, or old guarantor-record strings in the patched files.
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- Internal route names, file names, API calls, and debug IDs still include
+  borrower/loan/guarantor terminology where the existing backend and route
+  inventory depend on them.
+- This slice did not add backend timeout handling, automatic payout, fraud or
+  dispute handling, or support approval PIN generation.
+
+## 2026-06-26 - Support Repayment and Finance Allocation wording tightened
+
+Owner request:
+- Continue checking buttons, unpolished support/withdrawal pages, and any
+  words that do not talk directly to the user.
+- Keep the existing backend support/loan contracts intact while making the
+  visible screen language simple and truthful.
+
+Local frontend cleanup:
+- `frontend/src/pages/RepaymentPage.tsx`
+  - user-facing surface now says `Support Repayment` instead of `Loan
+    Repayment`;
+  - visible labels now use `Support ID`, `Support status`, `support balance`,
+    and `supporter exposure`;
+  - copied payment package now says `GSN Support Repayment Instruction`;
+  - route card now says `Support Summary`;
+  - full-payment guidance still makes the important truth clear: only admin or
+    finance reconciliation can confirm closure and release supporter exposure.
+- `frontend/src/pages/RevenueAllocationPage.tsx`
+  - user-facing surface now says `Support ID`, `Supporter pool`, and `Support
+    gap`;
+  - route cards now say `Support Summary` and `Support Workbench`;
+  - allocation helper text now says fee, supporter reserve, and member amount
+    plainly.
+- `frontend/tools/audit-button-stability.mjs`
+- `frontend/tools/audit-loans-actions.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - audits now protect the new visible labels and the no-release-authority
+    truth.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:finance-actions`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- No backend automatic payout, bank API trigger, support approval PIN,
+  guarantor timeout/cancel engine, fraud/dispute workflow, or database schema
+  change was added in this slice.
+- Internal code and API contracts still use `loan`, `guarantor`, and related
+  names where existing backend routes depend on them. This slice cleaned
+  visible user language only.
+
+## 2026-06-26 - Support Workbench and Support Summary user-facing wording tightened
+
+Owner request:
+- Continue checking buttons, unpolished pages, minor gaps, and words that are
+  not talking directly to the user.
+- Do not delete the existing loan/support engines; keep the backend truth and
+  clean the user-facing presentation.
+
+Local frontend cleanup:
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - user-facing surface now says `Support Workbench`, `Support Summary`,
+    `Support Readiness`, `Find Supporters`, and `Repayment Instructions`;
+  - visible labels now use `support gap`, `supporters needed`, `supporter
+    pool`, `supporter fit`, and `support request queue`;
+  - copy/notice text now says `Support ID` instead of `Loan ID`;
+  - keeps backend loan/guarantor field names, API calls, route contracts, and
+    debug IDs intact.
+- `frontend/src/pages/LoanSummaryPage.tsx`
+  - user-facing surface now says `Support Summary`;
+  - visible decision language now says `supporter decisions`,
+    `record support`, `recorded support`, and `pending supporters`;
+  - copied evidence packages now say `GSN Support Summary Snapshot` /
+    `GSN Support Audit Link`;
+  - decision feedback now says a support decision is not whole-request approval
+    or release authority.
+- `frontend/tools/audit-button-stability.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - audits now protect the new visible labels and no-release-authority truth.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:finance-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- No backend automatic payout, bank API trigger, support approval PIN,
+  guarantor timeout/cancel engine, or database schema change was added in this
+  slice.
+- The first TypeScript attempt using `npm --prefix frontend exec -- tsc -b`
+  looked for a root `tsconfig.json`; rerunning from `frontend/` passed.
+- Internal contracts still use loan/guarantor names because existing backend
+  APIs and audits depend on them. This slice only fixed visible user language.
+
+## 2026-06-26 - Support readiness, suggestions, incoming requests, and supporter value wording tightened
+
+Owner request:
+- Continue the finance/support cleanup by checking button wording, unpolished
+  support pages, confusing labels, and system-level truth.
+- Keep the backend engines; do not delete or merge the support/loan engines just
+  because the presentation is noisy.
+
+Local frontend cleanup:
+- `frontend/src/pages/LoanReadinessPage.tsx`
+  - user-facing title/labels now say `Support Readiness`;
+  - replaced visible borrower/guarantor wording with requester/supporter
+    language where the user is reading the screen;
+  - keeps the backend loan/guarantor field names and route contracts intact.
+- `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - user-facing title/labels now say `Find Supporters`;
+  - fit guidance now says it does not choose supporters, approve support, or
+    authorize money release;
+  - next-route labels now point to `Support Readiness`, `Support Workbench`,
+    and `Incoming Requests`.
+- `frontend/src/pages/GuarantorInboxPage.tsx`
+  - user-facing title/labels now say `Incoming Requests`;
+  - row actions now say `Record support` instead of `Record pledge`;
+  - guidance now says recording a response is not whole-request approval or
+    money-release authority.
+- `frontend/src/pages/GuarantorEarningsPage.tsx`
+  - user-facing title/labels now say `Supporter Value`;
+  - payout truth now says earned supporter value is visible record only, not
+    automatic payout;
+  - route cards now point to `Support Workbench` and `Find Supporters`.
+- `frontend/tools/audit-button-stability.mjs`
+- `frontend/tools/audit-loans-actions.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - audits now protect the new user-facing labels and the same no-money-release
+    truth.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:finance-actions`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend exec -- tsc -b --pretty false`
+- `npm --prefix frontend run build`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- No backend automatic payout, bank API trigger, support approval PIN, or
+  guarantor timeout/cancel engine was added in this slice.
+- The underlying engine names still use loan/guarantor contracts because the
+  backend API and existing audit routes depend on them.
+- `LoanWorkbenchPage.tsx` and `LoanSummaryPage.tsx` still need a careful
+  later wording pass; do not rename their contracts blindly.
+
 ## 2026-06-26 - Button, shell, and language audit baselines refreshed
 
 Owner request:
@@ -69478,6 +69729,251 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Money Out normal withdrawal made one-tap and narrower
+
+- Trigger:
+  - owner clarified that Money Out is not always a loan/support request;
+  - normal withdrawal should handle a member's own available money, while
+    support/loan tooling should only appear when the requested amount is above
+    the available balance.
+- Unabated truth:
+  - before this slice, an in-balance withdrawal needed two taps: `Continue`,
+    then `Generate code`;
+  - after a normal withdrawal result, the page still exposed deeper loan/support
+    links that did not belong on a plain own-money withdrawal path.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - `Continue` now performs the decision:
+      - if the amount is above effective available balance, it persists the
+        support handoff and opens Marketplace `Support Requests`;
+      - if the amount fits, it immediately calls the backend withdrawal request
+        and generates the withdrawal code;
+    - code generation now requires a saved payout account first and opens the
+      payout-account section with clear copy if missing;
+    - success copy now says: `Withdrawal code generated. Use it with your
+      transfer proof; admin or finance still reviews before money moves.`;
+    - duplicate code generation is blocked once a code is visible;
+    - payout block is now named `Payout account`, not `Payout Preview`;
+    - post-result connections are limited to normal-withdrawal follow-ups:
+      Finance, Payout details, and Marketplace;
+    - Loan Readiness, Loan Workbench, Loans & Support, Payment Rails, and
+      Action Inbox are no longer exposed after a normal withdrawal result.
+  - `frontend/tools/audit-finance-money-movement-lanes.mjs`
+    - added guards for the one-tap direct/support decision, payout-account
+      requirement, money-movement boundary, and trimmed post-result links.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated the Money Out trust-boundary guard to match the new withdrawal
+      code language.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated Money Out inventory expectations after removing the deeper
+      normal-withdrawal route links.
+- Verification:
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Still not changed:
+  - actual bank payout automation is still not enabled;
+  - the generated withdrawal code still produces a backend
+    `withdrawal.requested` event for pilot/admin-finance review;
+  - support-backed loan completion details still need their own completion
+    slice.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Money In pay-account wording made user-facing
+
+- Trigger:
+  - owner asked to keep Money In simple, direct, and user-facing;
+  - the page still used internal finance words like `declare` and
+    `reconciliation` on the active user path.
+- Unabated truth:
+  - the old wording was technically safer, but it sounded like a back-office
+    finance console;
+  - it could confuse a normal member about whether they were paying, declaring,
+    uploading proof, or waiting for a bank match.
+- Changed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - active payment state now says `Pay this account`;
+    - guidance now says to use the exact reference and add a screenshot when
+      automatic matching is not live;
+    - pay-account panel now says `Reference ready. Pay this account with the
+      exact reference.`;
+    - missing rail copy now says the marketplace pay-in account is not ready;
+    - status tile now says `Status` with simple states: `Ready to pay`,
+      `Payment noted`, or `Matched by bank`;
+    - action buttons now use `I paid` / `Noted`, not `Declare paid` /
+      `Declared`;
+    - hidden detail labels were simplified from route/settlement/instruction
+      language to payment/account/status language.
+  - `frontend/tools/audit-finance-money-movement-lanes.mjs`
+    - added guards for the direct pay-account copy, marketplace-scoped missing
+      account copy, screenshot fallback, and simple status states.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated Money In trust-boundary guards so the page remains honest without
+      exposing internal finance wording.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated Money In stable-button expectations for the new compact labels.
+- Verification:
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:payment-instruction-phone-rows` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check` with CRLF warnings only.
+- Still not changed:
+  - no bank API matching was enabled;
+  - no real customer support email was added because the owner has not supplied
+    the monitored address;
+  - no payout automation was added.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
+### Same day - Institutional document mirror gap review
+
+- Trigger:
+  - owner provided three institutional GSN documents and asked whether they are
+    an exact mirror of the current GSM/GSN app and infrastructure.
+- Review artifacts:
+  - copied the provided review files into `docs/external_review/` for local
+    comparison;
+  - extracted text from the two DOCX files and the PDF for route/backend
+    comparison;
+  - wrote the durable comparison in
+    `docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md`.
+- Unabated truth:
+  - the documents are a strong north-star mirror, but not an exact replica of
+    the current system;
+  - the repo has many implemented bones: Trust Events, Trust Passport,
+    TrustSlip, community verification, Money In, expected payments,
+    reconciliation, loans, guarantors, repayments, marketplace, shop,
+    spotlight, vault, Demand Box;
+  - the documents are ahead of the app on release-before-payment, protected
+    trade, fraud/dispute maturity, diaspora workflow, hiring/service economy,
+    automatic payout, and aggregate community economic power;
+  - the app is ahead of the documents on practical finance plumbing and
+    `Commitment Builder`, which appears as capability 22 in
+    `frontend/src/lib/gmfnCapabilities.ts` while the uploaded institutional PDF
+    stops at 21 capabilities.
+- Next implementation truth:
+  - Money In should remain a simple pay-in lane with generated reference and
+    account details;
+  - Money Out should become a normal-withdrawal lane for available funds, with
+    pilot/manual payout code now and automatic payout later;
+  - Support & Loans should own support-backed withdrawals above available
+    balance, using the existing backend loan, guarantor, duration, cadence, fee,
+    repayment schedule, commitment, and expiry engines through one guided
+    borrower flow.
+- Deployment state:
+  - documentation/audit only in this entry; not pushed or deployed yet.
+
+### Same day - 99 percent document mirror completion plan
+
+- Trigger:
+  - owner clarified the goal is to bring the app as close as possible to the
+    institutional GSN document for pilot, while accepting that automatic bank
+    payout and full protected trade automation may remain suspended until the
+    provider/integration stage.
+- Added:
+  - `docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md`
+    - separates gaps into:
+      - complete with existing engines;
+      - pilot-suspended but frame truthfully;
+      - larger builds that cannot honestly be called 100 percent complete yet.
+- Unabated truth:
+  - 99 percent pilot mirror is realistic if Money In, Money Out, Support &
+    Loans, Trust Identity, contribution tracking, ROSCA, and Commitment Builder
+    are presented cleanly using existing engines;
+  - true 100 percent requires automatic payout, protected
+    release-before-payment, mature fraud/dispute workflows, dedicated diaspora
+    and hiring flows, and official community economic analytics endpoints.
+- Recommended next order:
+  1. lock Money In wording/reference/account details;
+  2. finish Money Out as normal withdrawal with code/manual payout pilot path;
+  3. finish Support & Loans guided borrower lane;
+  4. connect support-backed withdrawal into that lane with preserved context;
+  5. hide readiness/suggestions/workbench/inbox/earnings behind deeper tools;
+  6. add Commitment Builder to the institutional mirror;
+  7. add a capability mirror audit for the 22 capabilities.
+- Deployment state:
+  - documentation/planning only in this entry; not pushed or deployed yet.
+
+### Same day - Support-backed withdrawal language tightened for 99 percent mirror
+
+- Trigger:
+  - owner approved moving from the mirror map into implementation and asked to
+    continue from the previous Money Out / Support & Loans stopping point.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Support Requests now describes deeper items as support tools, not loan
+      pages;
+    - visible deeper-tool labels now read `Check readiness`, `Find supporters`,
+      `Support workbench`, and `Full support view` while preserving the existing
+      route/debug contracts;
+    - draft-status helper copy now points to the next support step, not a
+      borrowing page.
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - Money Out support-needed copy now says GSN opens the
+      `support-backed path`, not a guarantor-or-loan path.
+  - `frontend/tools/audit-marketplace-support-lane.mjs`
+    - audit now protects the new support-tool language so future passes do not
+      restore the old loan-page wording.
+- Verification:
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Not changed:
+  - no backend route contracts changed;
+  - no support email was added because the real monitored GSN support mailbox
+    has not been provided yet;
+  - no automatic payout/provider integration was claimed or added.
+- Next slice:
+  - add the real GSN support/help email once supplied;
+  - continue Money In wording/reference/account-details audit;
+  - then continue Money Out normal-withdrawal code/result polish.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Mirror plan corrected for existing trust/dispute engines
+
+- Trigger:
+  - owner clarified that diaspora and hiring do not need new engines for pilot:
+    Trust Passport, TrustSlip, public verification, translation/portable
+    evidence, and community verification already cover distance trust and
+    hiring confidence;
+  - owner also clarified that community economic analytics can use the current
+    community, trust, finance, pool, contribution, support, and marketplace
+    readings for pilot, then deepen later as the network grows;
+  - owner proposed a simple GSN support email for disputes/customer help now,
+    with chat bot/live chat later.
+- Corrected:
+  - `docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md`
+    - no longer overstates diaspora, hiring, service economy, or community
+      economic power as missing engines;
+    - marks them as pilot-ready presentation layers over existing trust and
+      community readings;
+    - records that dispute foundations already exist through append-only
+      dispute/admin review services, while the pilot needs a simple
+      user-facing support contact.
+  - `docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md`
+    - adds diaspora/hiring/distance-verification presentation under existing
+      engines;
+    - adds community economic reading under existing engines;
+    - adds dispute/customer help contact as an immediate pilot requirement.
+- Unabated truth:
+  - do not invent or expose a fake support email;
+  - the actual monitored GSN support mailbox must be provided/configured before
+    adding it to user-facing screens.
+- Deployment state:
+  - documentation/planning only in this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Finance/trust wording and button audit sweep
 
 - Trigger:
@@ -70256,5 +70752,114 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
   - Passed `npm run build` from `frontend`.
   - Passed `git diff --check`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Marketplace Support Requests continuation simplified
+
+- Trigger:
+  - owner continued testing the Money Out over-limit path and clarified that
+    the continuation surface must be the inner Marketplace `Support Requests`
+    lane, not the old full Loans page or a raw toolbox;
+  - owner also required the selected marketplace name/ID to be visible so the
+    user knows which community account/support lane they are operating inside.
+- Unabated truth:
+  - the navigation bridge was in place, but the Support Requests lane still
+    exposed too much internal support/loan language at the front door;
+  - the user should see a guided request surface first, with readiness,
+    suggestions, workbench, and full support pages kept behind the draft.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - reads the existing Money Out withdrawal-support handoff fields
+      (`handoffMode`, `supportGap`, amount, note) instead of creating a new
+      store;
+    - pre-fills support amount from Money Out and uses `Withdrawal support` as
+      a default purpose if Money Out sent no note;
+    - adds a compact `Selected marketplace` strip with marketplace name,
+      marketplace ID, and `From Money Out` when applicable;
+    - shows a compact Money Out handoff sentence with requested amount and
+      support needed;
+    - changes the visible lane language from guarantor/loan/toolbox wording to
+      user-facing support wording: `Supporters`, `Check supporters`,
+      `Send requests`, `Purpose`;
+    - hides `More support tools` until a draft exists, while preserving the
+      existing readiness, suggestions, workbench, finance, and full support
+      links behind that draft state.
+  - `frontend/tools/audit-marketplace-support-lane.mjs`
+    - updated to cage the corrected support lane: selected marketplace context,
+      Money Out handoff copy, simple three-step structure, supporter wording,
+      and draft-gated deeper tools.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - updated to match the corrected Support Requests action wording and
+      draft-gated deeper support tools.
+- Verification:
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:marketplace-button-inventory` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Browser check:
+  - attempted to use the in-app Browser for a local visual smoke check;
+  - Browser was not available in this session (`iab` unavailable), so no
+    honest screenshot/visual confirmation was taken for this slice.
+- Still not changed:
+  - no backend payout automation was added;
+  - no approval-to-PIN payout trigger was added;
+  - no readiness/suggestion/workbench engine was deleted;
+  - old full Loans surfaces still exist and may need a later UX harmonisation
+    pass, but Money Out continuation now targets the guided Marketplace
+    Support Requests lane.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Full Loans & Support page wording harmonised
+
+- Trigger:
+  - after the Money Out continuation was corrected back to the inner
+    Marketplace `Support Requests` lane, the owner continued with `continue`;
+  - the known remaining UX risk was that the older full `/app/loans` route
+    still sounded like a raw loan/guarantor toolbox if a user reached it.
+- Unabated truth:
+  - `/app/loans` is still a real operational route and still contains deeper
+    support engines;
+  - it should not be the Money Out over-limit landing surface, but it should
+    also not confuse users if they arrive there.
+- Changed:
+  - `frontend/src/pages/LoansPage.tsx`
+    - softened the visible full-page language from borrower/guarantor jargon
+      toward user-facing support wording;
+    - changed visible status labels such as `Pending guarantor requests`,
+      `Active loans`, `Borrower side`, and `Guarantor side` to clearer support
+      wording;
+    - changed route tile labels on the full Loans page to actions:
+      `Check readiness`, `Find supporters`, `Incoming requests`, and
+      `Supporter value`;
+    - preserved all underlying route targets/debug IDs, including readiness,
+      suggestions, inbox, earnings, Money In, Money Out, and Marketplace;
+    - kept deeper tools collapsed behind `More support tools` by default.
+  - `frontend/tools/audit-loans-actions.mjs`
+    - updated the visible-summary cage to expect `Active support` instead of
+      the old `Active loans` label.
+- Verification:
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Still not changed:
+  - no backend loan/support engine was deleted or renamed;
+  - dedicated Loan Readiness, Loan Suggestions, Loan Workbench, Guarantor
+    Inbox, and Guarantor Earnings routes still exist and still need their own
+    later user-facing wording pass;
+  - no backend payout automation or approval-to-PIN trigger was added.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.

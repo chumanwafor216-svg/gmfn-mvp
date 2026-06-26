@@ -204,7 +204,7 @@ function guarantorLeaderboardStatusIcon(
 export default function GuarantorLeaderboardPage() {
   const selectedClanId = Number(getSelectedClanId() || 1);
   const [items, setItems] = useState<GuarantorLeaderboardRow[]>([]);
-  const [message, setMessage] = useState("Loading guarantor leaderboard...");
+  const [message, setMessage] = useState("Loading supporter records...");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -232,7 +232,7 @@ export default function GuarantorLeaderboardPage() {
 
     if (!token) {
       setItems([]);
-      setError("Sign in to view guarantor standing for this community.");
+      setError("Sign in to view supporter standing for this community.");
       setMessage("No signed-in session found.");
       setLoading(false);
       return;
@@ -240,7 +240,7 @@ export default function GuarantorLeaderboardPage() {
 
     setLoading(true);
     setError(null);
-    setMessage("Loading guarantor leaderboard...");
+    setMessage("Loading supporter records...");
 
     getGuarantorLeaderboard(selectedClanId, token)
       .then((res) => {
@@ -249,15 +249,15 @@ export default function GuarantorLeaderboardPage() {
         setItems(nextItems);
         setMessage(
           nextItems.length
-            ? `Showing ${nextItems.length} guarantor record${nextItems.length === 1 ? "" : "s"}.`
-            : "No guarantor records are visible yet."
+            ? `Showing ${nextItems.length} supporter record${nextItems.length === 1 ? "" : "s"}.`
+            : "No supporter records are visible yet."
         );
       })
       .catch((e: unknown) => {
         if (!active) return;
         setItems([]);
-        setError(safeText((e as Error)?.message, "Could not load guarantor leaderboard."));
-        setMessage("Leaderboard could not load.");
+        setError(safeText((e as Error)?.message, "Could not load supporter records."));
+        setMessage("Supporter records could not load.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -291,12 +291,12 @@ export default function GuarantorLeaderboardPage() {
     <div style={pageShell()}>
       <PageTopNav
         sectionLabel="Loans & Support"
-        title="Guarantor Leaderboard"
+        title="Supporter Record"
         subtitle="A compact view of who has stood for people, how often support was approved, and where the next action lives."
         homeTo={routes.loans}
         homeLabel="Loans & Support"
         backTo={routes.inbox}
-        backLabel="Guarantor Inbox"
+        backLabel="Incoming Requests"
       />
 
       <section style={pageCard("#FFFFFF")}>
@@ -306,7 +306,7 @@ export default function GuarantorLeaderboardPage() {
         <div style={{ position: "relative", display: "grid", gap: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
-              <div style={sectionLabel()}>Community guarantor standing</div>
+              <div style={sectionLabel()}>Community supporter standing</div>
               <h1
                 style={{
                   margin: "8px 0 0",
@@ -336,14 +336,14 @@ export default function GuarantorLeaderboardPage() {
               debugId="guarantor-leaderboard.route.inbox"
               stableHeight={52}
             >
-              {guarantorLeaderboardActionText("alert", "Inbox", 20)}
+              {guarantorLeaderboardActionText("alert", "Requests", 20)}
             </StableCtaLink>
             <StableCtaLink
               to={routes.earnings}
               debugId="guarantor-leaderboard.route.earnings"
               stableHeight={52}
             >
-              {guarantorLeaderboardActionText("wallet", "Earnings", 20)}
+              {guarantorLeaderboardActionText("wallet", "Value", 20)}
             </StableCtaLink>
             <StableCtaLink
               to={routes.trust}
@@ -356,9 +356,9 @@ export default function GuarantorLeaderboardPage() {
         </div>
       </section>
 
-      <section style={statGrid()} aria-label="Guarantor leaderboard summary">
+      <section style={statGrid()} aria-label="Supporter record summary">
         {[
-          ["shield", "Guarantors", String(summary.guarantors)],
+          ["shield", "Supporters", String(summary.guarantors)],
           ["document", "Requests", String(summary.totalRequests)],
           ["check", "Approved", String(summary.approved)],
           ["alert", "Declined", String(summary.declined)],
@@ -392,11 +392,11 @@ export default function GuarantorLeaderboardPage() {
             <GsnLegacyIcon name={loading ? "refresh" : "document"} size={42} />
             <div>
               <div style={{ ...cellValue(), fontSize: 16 }}>
-                {loading ? "Loading records" : "No leaderboard data yet"}
+                {loading ? "Loading records" : "No supporter records yet"}
               </div>
               <div style={helperText()}>
                 Approved support activity will appear here when the backend returns
-                community guarantor rows.
+                community supporter rows.
               </div>
             </div>
           </div>
@@ -405,7 +405,7 @@ export default function GuarantorLeaderboardPage() {
             {items.map((row) => (
               <div key={row.guarantor_user_id} style={rowCard()}>
                 <div>
-                  <div style={cellLabel()}>Guarantor</div>
+                  <div style={cellLabel()}>Supporter</div>
                   <div style={cellValue()}>
                     {safeText(row.guarantor_email, `User ${row.guarantor_user_id}`)}
                   </div>

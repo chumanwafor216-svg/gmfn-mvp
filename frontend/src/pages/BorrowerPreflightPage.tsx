@@ -187,7 +187,7 @@ export default function BorrowerPreflightPage() {
       ok: false,
       icon: "chart" as const,
       title: "Readiness still needs strengthening",
-      note: "Check your Loan Readiness page before making a request if you want a cleaner path.",
+      note: "Check Support Readiness before making a request if you want a cleaner path.",
     },
   ];
 
@@ -210,7 +210,7 @@ export default function BorrowerPreflightPage() {
         label="What this screen does"
         what="This page helps you check your visible support signals before you ask for help."
         why="It does not approve or reject you. It helps you avoid walking into a weak request too early. Finance later records what really happened with money, but this screen helps you judge your position before the request begins."
-        next="Read the ready signals first, strengthen the weak ones, then move into Loan Readiness or Loans and Support."
+        next="Read the ready signals first, strengthen the weak ones, then move into Support Readiness or Loans & Support."
         tone="blue"
       />
 
@@ -247,7 +247,7 @@ export default function BorrowerPreflightPage() {
           <div style={statTile()}>
             <div style={sectionLabel()}>{labelWithIcon("navigation", "Best Next Step")}</div>
             <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>
-              Loan Readiness
+              Support Readiness
             </div>
           </div>
         </div>
@@ -297,7 +297,7 @@ export default function BorrowerPreflightPage() {
           </div>
           <div style={innerCard("#F8FBFF")}>
             <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-              {labelWithIcon("chart", "Check Loan Readiness")}
+              {labelWithIcon("chart", "Check Support Readiness")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Read deeper signals, blockers, and what can improve confidence.
@@ -330,7 +330,7 @@ export default function BorrowerPreflightPage() {
             debugId="borrower-preflight.open-readiness"
             style={actionLink(true)}
           >
-            {labelWithIcon("chart", "Check Loan Readiness")}
+            {labelWithIcon("chart", "Check Support Readiness")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.commitments}

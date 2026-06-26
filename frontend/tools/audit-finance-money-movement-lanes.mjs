@@ -79,10 +79,55 @@ assertContains(
 );
 
 assertContains(
+  "moneyInPage",
+  /Reference ready\. Pay this account with the exact reference\.[\s\S]*?Pay-in account is not ready for this marketplace\. Add the receiving account first\.[\s\S]*?add your payment screenshot after transfer\./,
+  "Money In route page must keep the pay-account panel direct, marketplace-scoped, and screenshot-aware."
+);
+
+assertContains(
+  "moneyInPage",
+  /Use the exact reference\. If automatic matching is not live yet, add a screenshot after transfer\.[\s\S]*?Payment note saved\. GSN will match it with the bank record or screenshot\./,
+  "Money In route page must describe the manual note/screenshot fallback in user-facing language."
+);
+
+assertContains(
+  "moneyInPage",
+  /label: "Status"[\s\S]*?Matched by bank[\s\S]*?Payment noted[\s\S]*?Ready to pay/,
+  "Money In result summary must show a simple user-facing status."
+);
+
+assertContains(
   "moneyOutPage",
   /sectionLabel="Money Out"[\s\S]*?title="Normal Withdrawal"[\s\S]*?debugId="money-out\.continue-direct"[\s\S]*?debugId="money-out\.route\.finance"/,
   "Money Out route page must remain a normal withdrawal page with a traceable route back to Finance."
 );
+
+assertContains(
+  "moneyOutPage",
+  /if \(requiresSupport\) \{[\s\S]*?navigateWithOrigin\(navigate, routes\.supportStart, location\);[\s\S]*?return;[\s\S]*?\}[\s\S]*?await handleDirectWithdrawal\(\);/,
+  "Money Out Continue must route over-limit requests to Support Requests and generate the normal withdrawal code directly when the amount fits."
+);
+
+assertContains(
+  "moneyOutPage",
+  /Add your payout account first so GSN knows where this withdrawal should go\.[\s\S]*?Withdrawal code generated\. Use it with your transfer proof; admin or finance still reviews before money moves\./,
+  "Money Out normal withdrawal must require a payout account and keep code generation separate from money movement."
+);
+
+assertContains(
+  "moneyOutPage",
+  /Connections monitor[\s\S]*?debugId="money-out\.route\.finance"[\s\S]*?debugId="money-out\.route\.payout-details"[\s\S]*?debugId="money-out\.route\.marketplace"/,
+  "Money Out post-result connections must stay limited to normal-withdrawal follow-ups."
+);
+
+if (/debugId="money-out\.route\.(readiness|workbench|loans|payment-rails|notifications)"/.test(sourceByFile.moneyOutPage)) {
+  addFinding(
+    files.moneyOutPage,
+    sourceByFile.moneyOutPage,
+    sourceByFile.moneyOutPage.search(/debugId="money-out\.route\.(readiness|workbench|loans|payment-rails|notifications)"/),
+    "Money Out normal withdrawal must not expose deeper support/loan/admin routes after a direct withdrawal result."
+  );
+}
 
 assertContains(
   "package",

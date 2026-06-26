@@ -537,7 +537,7 @@ function normalizeLoanRow(raw: any): LoanRow | null {
       src?.name,
       src?.loan_title,
       src?.description,
-      "Loan support item"
+      "Support item"
     ),
     amount: firstTruthy(src?.amount, src?.loan_amount, src?.requested_amount),
     currency: firstTruthy(src?.currency, src?.currency_code, "NGN"),
@@ -547,8 +547,8 @@ function normalizeLoanRow(raw: any): LoanRow | null {
       src?.role,
       src?.my_role,
       src?.participant_role,
-      src?.is_borrower ? "Borrower" : "",
-      src?.is_guarantor ? "Guarantor" : ""
+      src?.is_borrower ? "Requester" : "",
+      src?.is_guarantor ? "Supporter" : ""
     ),
   };
 }
@@ -568,7 +568,7 @@ function normalizeLoanWorkbenchDetail(raw: any): LoanWorkbenchDetail | null {
       src?.name,
       src?.loan_title,
       src?.description,
-      "Loan workbench item"
+      "Support workbench item"
     ),
     amount: firstTruthy(
       src?.amount,
@@ -1042,7 +1042,7 @@ export default function LoanWorkbenchPage() {
     await loadLoanWorkbench(loanId);
     setNotice({
       tone: "success",
-      text: "Loan workbench moved to the selected support item.",
+      text: "Support workbench moved to the selected item.",
     });
   }
 
@@ -1060,12 +1060,12 @@ export default function LoanWorkbenchPage() {
 
       setNotice({
         tone: "success",
-        text: "Loan workbench refreshed.",
+        text: "Support workbench refreshed.",
       });
     } catch {
       setNotice({
         tone: "error",
-        text: "Loan workbench could not be refreshed right now.",
+        text: "Support workbench could not be refreshed right now.",
       });
     } finally {
       setRefreshing(false);
@@ -1101,7 +1101,7 @@ export default function LoanWorkbenchPage() {
   const workbenchTitle = firstTruthy(
     loanDetail?.title,
     selectedLoanRow?.title,
-    "Loan workbench"
+    "Support workbench"
   );
 
   const currentStatus = firstTruthy(
@@ -1154,7 +1154,7 @@ export default function LoanWorkbenchPage() {
         ctaTo: routeTarget("loanSummary", selectedClanId, "loan-workbench.route.next-summary", {
           loanId: selectedLoanId,
         }),
-        ctaLabel: "Loan Summary",
+        ctaLabel: "Support Summary",
       };
     }
 
@@ -1194,18 +1194,18 @@ export default function LoanWorkbenchPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Loan Workbench"
+          sectionLabel="Support Workbench"
           title="Support Workbench"
-          subtitle="Loading the loan workbench..."
+          subtitle="Loading the support workbench..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.suggestions}
-          backLabel="Loan Suggestions"
+          backLabel="Find Supporters"
         />
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.45 }}>
-            Loading loan workbench...
+            Loading support workbench...
           </div>
         </section>
       </div>
@@ -1223,20 +1223,20 @@ export default function LoanWorkbenchPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Loan Workbench"
+        sectionLabel="Support Workbench"
         title="Support Workbench"
         subtitle="Handle the selected support item in one focused place."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.suggestions}
-        backLabel="Loan Suggestions"
+        backLabel="Find Supporters"
       />
 
       <ExplainToggle
         label="What this screen does"
         what="This is the detailed workspace for one support item."
-        why="It keeps the loan, gap, and supporter work together."
-        next="Workbench readings and suggested pledges are decision support only; they do not approve a loan, approve a guarantor, or authorize release of goods, credit, or money."
+        why="It keeps the request, gap, and supporter work together."
+        next="Workbench readings and suggested support amounts are decision support only; they do not approve support, choose a supporter, or authorize release of goods, credit, or money."
         tone="blue"
       />
 
@@ -1366,8 +1366,8 @@ export default function LoanWorkbenchPage() {
                 onClick={() =>
                   handleCopy(
                     selectedLoanId ? String(selectedLoanId) : "",
-                    "Loan ID copied.",
-                    "Loan ID is not ready yet."
+                    "Support ID copied.",
+                    "Support ID is not ready yet."
                   )
                 }
                 disabled={!selectedLoanId}
@@ -1405,11 +1405,11 @@ export default function LoanWorkbenchPage() {
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Status: {currentStatus}  |  Guarantee gap: {guaranteeGap} {currency}
+              Status: {currentStatus}  |  Support gap: {guaranteeGap} {currency}
             </div>
 
             <div style={{ marginTop: 8, ...helperText() }}>
-              Required guarantors: {guarantorsRequired}  |  Remaining amount: {remainingAmount} {currency}
+              Supporters needed: {guarantorsRequired}  |  Remaining amount: {remainingAmount} {currency}
             </div>
 
             <div
@@ -1445,8 +1445,8 @@ export default function LoanWorkbenchPage() {
                 onClick={() =>
                   handleCopy(
                     selectedLoanId ? String(selectedLoanId) : "",
-                    "Loan ID copied.",
-                    "Loan ID is not ready yet."
+                    "Support ID copied.",
+                    "Support ID is not ready yet."
                   )
                 }
                 disabled={!selectedLoanId}
@@ -1481,7 +1481,7 @@ export default function LoanWorkbenchPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Loan selection</div>
+            <div style={sectionLabel()}>Support selection</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Choose which support item the workbench should focus on.
             </div>
@@ -1513,7 +1513,7 @@ export default function LoanWorkbenchPage() {
 
         <ExplainToggle
           label="How selection works"
-          what="Choose the loan this workbench should focus on."
+          what="Choose the support item this workbench should focus on."
           why="It keeps actions tied to the right support item."
           next="Select the item, then continue below."
           tone="light"
@@ -1554,7 +1554,7 @@ export default function LoanWorkbenchPage() {
                             lineHeight: 1.35,
                           }}
                         >
-                          {safeStr(item.title || "Loan item")}
+                          {safeStr(item.title || "Support item")}
                         </div>
 
                         <div
@@ -1569,7 +1569,7 @@ export default function LoanWorkbenchPage() {
                             {safeStr(item.amount || "0.00")} {safeStr(item.currency || "NGN")}
                           </span>
                           <span style={badge(false)}>Status: {safeStr(item.status || "open")}</span>
-                          <span style={badge(false)}>Role: {safeStr(item.role || "borrower")}</span>
+                          <span style={badge(false)}>Role: {safeStr(item.role || "requester")}</span>
                         </div>
                       </div>
 
@@ -1668,7 +1668,7 @@ export default function LoanWorkbenchPage() {
 
         <ExplainToggle
           label="What this summary shows"
-          what="This shows amount, guarantee gap, guarantors, and status."
+          what="This shows amount, support gap, supporters, and status."
           why="It keeps the core numbers visible before deeper action."
           next="Use these figures, then continue to supporter work."
           tone="light"
@@ -1702,7 +1702,7 @@ export default function LoanWorkbenchPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Guarantee gap</div>
+              <div style={sectionLabel()}>Support gap</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1717,7 +1717,7 @@ export default function LoanWorkbenchPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Guarantors required</div>
+              <div style={sectionLabel()}>Supporters needed</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1830,7 +1830,7 @@ export default function LoanWorkbenchPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Guarantor pool</div>
+              <div style={sectionLabel()}>Supporter pool</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1963,10 +1963,10 @@ export default function LoanWorkbenchPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Guarantor fit and request queue</div>
+            <div style={sectionLabel()}>Supporter fit and request queue</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Candidate quality and guarantor request state stay together here;
-              fit rows do not approve a guarantor or authorize release.
+              Candidate quality and support request state stay together here;
+              fit rows do not choose a supporter or authorize release.
             </div>
           </div>
 
@@ -2011,13 +2011,13 @@ export default function LoanWorkbenchPage() {
                   fontSize: 15,
                 }}
               >
-                Suggested guarantors
+                Suggested supporters
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {suggestedGuarantors.length === 0 ? (
                   <div style={helperText()}>
-                    No guarantor-fit rows are currently shown for this support item.
+                    No supporter-fit rows are currently shown for this support item.
                   </div>
                 ) : (
                   suggestedGuarantors.map((item) => (
@@ -2061,7 +2061,7 @@ export default function LoanWorkbenchPage() {
 
                         {safeStr(item.recommendedPledge) ? (
                           <span style={badge(false)}>
-                            Suggested pledge: {safeStr(item.recommendedPledge)}
+                            Suggested support: {safeStr(item.recommendedPledge)}
                           </span>
                         ) : null}
                       </div>
@@ -2072,7 +2072,7 @@ export default function LoanWorkbenchPage() {
                             ? `Total requests: ${String(item.totalRequests)}`
                             : "",
                           item.approved != null
-                            ? `Past pledge approvals: ${String(item.approved)}`
+                            ? `Past support responses: ${String(item.approved)}`
                             : "",
                           item.declined != null
                             ? `Declined: ${String(item.declined)}`
@@ -2104,13 +2104,13 @@ export default function LoanWorkbenchPage() {
                   fontSize: 15,
                 }}
               >
-                Guarantor request queue
+                Support request queue
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 {guarantorRequests.length === 0 ? (
                   <div style={helperText()}>
-                    No guarantor request row is currently shown for this support item.
+                    No support request row is currently shown for this support item.
                   </div>
                 ) : (
                   guarantorRequests.map((item, index) => (
@@ -2134,13 +2134,13 @@ export default function LoanWorkbenchPage() {
                           {firstTruthy(
                             item.guarantorName,
                             item.guarantorEmail,
-                            item.guarantorUserId ? `Guarantor user: ${item.guarantorUserId}` : "",
-                            "Guarantor"
+                            item.guarantorUserId ? `Supporter user: ${item.guarantorUserId}` : "",
+                            "Supporter"
                           )}
                         </div>
 
                         <span style={badge(true)}>
-                          Pledge: {safeStr(item.pledgeAmount || "0.00")} {currency}
+                          Support: {safeStr(item.pledgeAmount || "0.00")} {currency}
                         </span>
                       </div>
 
@@ -2272,7 +2272,7 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              {routeHeading("check", "Loan Readiness")}
+              {routeHeading("check", "Support Readiness")}
               <div style={routeTileDetailStyle()}>
                 Check whether the path is clean.
               </div>
@@ -2285,9 +2285,9 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              {routeHeading("search", "Loan Suggestions")}
+              {routeHeading("search", "Find Supporters")}
               <div style={routeTileDetailStyle()}>
-                Check candidate fit.
+                Check supporter fit.
               </div>
             </StableCtaLink>
 
@@ -2304,7 +2304,7 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              {routeHeading("document", "Loan Summary")}
+              {routeHeading("document", "Support Summary")}
               <div style={routeTileDetailStyle()}>
                 Return to the current support item summary.
               </div>
@@ -2341,7 +2341,7 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              {routeHeading("bank", "Payment Instructions")}
+              {routeHeading("bank", "Repayment Instructions")}
               <div style={routeTileDetailStyle()}>
                 Continue repayment.
               </div>

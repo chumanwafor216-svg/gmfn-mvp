@@ -518,7 +518,7 @@ export default function RepaymentPage() {
 
   const repaymentModeText =
     repaymentMode === "full"
-      ? "Pay the full remaining balance. Only admin or finance reconciliation can confirm closure and release guarantor exposure."
+      ? "Pay the full remaining balance. Only admin or finance reconciliation can confirm closure and release supporter exposure."
       : "Pay one part now. GSN records the part payment and keeps the remaining balance visible for the next repayment.";
 
   const currentExpectedPayment = useMemo(() => {
@@ -590,8 +590,8 @@ export default function RepaymentPage() {
         toneBorder: "1px solid rgba(239,68,68,0.16)",
         toneText: "#991B1B",
         step: "Context",
-        title: "Loan repayment context is not ready.",
-        detail: "Open a visible support item first so repayment can stay tied to the correct loan.",
+        title: "Support repayment context is not ready.",
+        detail: "Open a visible support item first so repayment can stay tied to the correct request.",
       };
     }
 
@@ -613,7 +613,7 @@ export default function RepaymentPage() {
         toneText: "#0B63D1",
         step: "Instruction",
         title: "Generate the repayment instruction.",
-        detail: "Use the exact loan repayment reference so the money trail can be reconciled to the correct support item.",
+        detail: "Use the exact repayment reference so the money trail can be reconciled to the correct support item.",
       };
     }
 
@@ -650,7 +650,7 @@ export default function RepaymentPage() {
 
   async function handleGenerateInstruction() {
     if (!numericLoanId || !summary) {
-      setNotice({ tone: "error", text: "Loan repayment context is not ready." });
+      setNotice({ tone: "error", text: "Support repayment context is not ready." });
       return;
     }
 
@@ -798,7 +798,7 @@ export default function RepaymentPage() {
       `GSN ID: ${gmfnId}`,
       `Member: ${memberName}`,
       memberRole ? `Role: ${memberRole}` : "",
-      `Loan ID: ${numericLoanId}`,
+      `Support ID: ${numericLoanId}`,
       `Current step: ${routeState.step}`,
       `Repayment choice: ${repaymentChoiceLabel}`,
       `Outstanding amount: ${fmtMoney(outstandingAmount, currency)}`,
@@ -819,14 +819,14 @@ export default function RepaymentPage() {
       .filter(Boolean);
 
     const text = buildGsnPaymentInstructionPackage({
-      title: "GSN Loan Repayment Instruction",
+      title: "GSN Support Repayment Instruction",
       purpose: "Repay the selected support item with the exact generated repayment reference.",
       reference,
       memberName,
       gsnId: gmfnId,
       communityName: communityLabel,
       communityId: communityCode,
-      routeName: `Loan Repayment #${numericLoanId}`,
+      routeName: `Support Repayment #${numericLoanId}`,
       amount: repaymentAmount,
       status: routeState.step,
       dueAt: instruction?.due_at ? safeDateTime(instruction.due_at) : "",
@@ -842,7 +842,7 @@ export default function RepaymentPage() {
       <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40, display: "grid", gap: 18 }}>
         <PageTopNav
           sectionLabel="Repayment"
-          title="Loan Repayment"
+          title="Support Repayment"
           subtitle="Loading the repayment route..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
@@ -861,7 +861,7 @@ export default function RepaymentPage() {
       <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 40, display: "grid", gap: 18 }}>
         <PageTopNav
           sectionLabel="Repayment"
-          title="Loan Repayment"
+          title="Support Repayment"
           subtitle="Repayment needs one visible support item."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
@@ -869,7 +869,7 @@ export default function RepaymentPage() {
           backLabel="Loans & Support"
         />
         <section style={pageCard("#FEF2F2")}>
-          <div style={{ color: "#991B1B", fontWeight: 900 }}>Loan repayment could not be opened.</div>
+          <div style={{ color: "#991B1B", fontWeight: 900 }}>Support repayment could not be opened.</div>
           <div style={{ marginTop: 8, color: "#991B1B", lineHeight: 1.45 }}>
             Open the support item first, then start repayment from its summary.
           </div>
@@ -882,19 +882,19 @@ export default function RepaymentPage() {
     <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: isCompact ? 40 : 60, display: "grid", gap: 18 }}>
       <PageTopNav
         sectionLabel="Repayment"
-        title={`Loan Repayment #${numericLoanId}`}
+        title={`Support Repayment #${numericLoanId}`}
         subtitle="Pay one support item with the exact amount and reference."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loanSummary}
-        backLabel="Loan Summary"
+        backLabel="Support Summary"
       />
 
       <ExplainToggle
         label="What this screen does"
         what="This gives the exact repayment amount, reference, and result state."
         why="It keeps payment tied to the right support item."
-        next="Generate the instruction and declare payment only after paying; this route does not confirm money received, close a loan, or release guarantor exposure."
+        next="Generate the instruction and declare payment only after paying; this route does not confirm money received, close support, or release supporter exposure."
         tone="blue"
       />
 
@@ -1012,7 +1012,7 @@ export default function RepaymentPage() {
           <div>
             <div style={sectionLabel()}>Fixed repayment context</div>
             <div style={{ marginTop: 10, color: "#F8FBFF", fontWeight: 900, fontSize: isCompact ? 28 : 34, lineHeight: 1.1 }}>
-              Repay loan #{numericLoanId}
+              Repay support #{numericLoanId}
             </div>
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
               Keep the amount, reference, and next step together until payment
@@ -1078,7 +1078,7 @@ export default function RepaymentPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Loan status</div>
+              <div style={sectionLabel()}>Support status</div>
               <div style={{ marginTop: 8, color: "#F8FBFF", fontSize: 18, fontWeight: 900 }}>
                 {safeStr(summary?.status || "Awaiting issue")}
               </div>
@@ -1238,7 +1238,7 @@ export default function RepaymentPage() {
                           </div>
                         ) : null}
                         <div style={{ ...helperText(), color: "#D7E3F1", fontSize: 13 }}>
-                          For part payments, this keeps the full loan balance visible until reconciliation closes it.
+                          For part payments, this keeps the full support balance visible until reconciliation closes it.
                         </div>
                       </div>
                     </div>
@@ -1523,7 +1523,7 @@ export default function RepaymentPage() {
                 fullWidth
                 debugId="repayment.route.loan-summary"
               >
-                {actionText("evidence", "Loan Summary")}
+                {actionText("evidence", "Support Summary")}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.finance}

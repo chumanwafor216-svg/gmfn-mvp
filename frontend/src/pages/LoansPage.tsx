@@ -697,23 +697,23 @@ export default function LoansPage() {
       const first = guarantorInbox[0];
       return {
         title: first.loanId
-          ? `A guarantor request is waiting on loan #${first.loanId}`
-          : "A guarantor request is waiting",
+          ? `A support request is waiting on item #${first.loanId}`
+          : "A support request is waiting",
         detail: first.pledgeAmount
-          ? `A borrower is waiting for your decision on a pledge of ${first.pledgeAmount}.`
-          : "A borrower is waiting for your decision.",
+          ? `Someone is waiting for your decision on ${first.pledgeAmount}.`
+          : "Someone is waiting for your decision.",
       };
     }
 
     if (borrowerLoans.length > 0) {
       const first = borrowerLoans[0];
       return {
-        title: "Your borrower-side support activity is still active",
+        title: "Your support request is still active",
         detail: safeStr(first.title)
           ? `${safeStr(first.title)} is still active with status '${safeStr(
               first.status || "open"
             )}'.`
-          : `Your borrower-side support activity is still active with status '${safeStr(
+          : `Your support request is still active with status '${safeStr(
               first.status || "open"
             )}'.`,
       };
@@ -722,10 +722,10 @@ export default function LoansPage() {
     if (guarantorLoans.length > 0) {
       const first = guarantorLoans[0];
         return {
-          title: "You have guarantor-side support responsibility",
+          title: "You have supporter-side responsibility",
           detail: safeStr(first.title)
             ? `${safeStr(first.title)} is still active and should be watched closely.`
-            : "A guarantor-side support item is still active and should be watched closely.",
+            : "A supporter-side item is still active and should be watched closely.",
         };
       }
 
@@ -742,7 +742,7 @@ export default function LoansPage() {
     return {
       title: "Your support activity is calm right now.",
       detail:
-        "No urgent borrower-side or guarantor-side support pressure is currently shown.",
+        "No urgent request-side or supporter-side pressure is currently shown.",
     };
   }, [
     hasWithdrawalSupportHandoff,
@@ -848,7 +848,7 @@ export default function LoansPage() {
             <div style={{ marginTop: 14, ...helperText(), color: "#D7E3F1", maxWidth: 640 }}>
               {hasWithdrawalSupportHandoff
                 ? "Money Out sent this here because the amount needs community support."
-                : "Borrow, support, respond, and repay inside this community."}
+                : "Ask for support, respond to requests, and keep repayment visible inside this community."}
             </div>
 
             <div
@@ -865,7 +865,7 @@ export default function LoansPage() {
               ) : null}
               <span style={badge(false)}>Active support items: {activeLoans.length}</span>
               <span style={badge(false)}>
-                Pending guarantor requests: {guarantorInbox.length}
+                Waiting support requests: {guarantorInbox.length}
               </span>
             </div>
 
@@ -893,7 +893,7 @@ export default function LoansPage() {
                 <div style={routeHelperStyle(isCompact)}>
                   {hasWithdrawalSupportHandoff
                     ? "Open the Marketplace support lane with the saved amount."
-                    : "Begin or continue the borrower-side flow."}
+                    : "Begin or continue your support request."}
                 </div>
               </div>
             </StableCtaLink>
@@ -1002,7 +1002,7 @@ export default function LoansPage() {
             }}
           >
             <div style={statTile("#F8FBFF")}>
-              {iconLabel("repaymentSchedule", "Active loans")}
+              {iconLabel("repaymentSchedule", "Active support")}
               <div
                 style={{
                   marginTop: 8,
@@ -1016,7 +1016,7 @@ export default function LoansPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              {iconLabel("user", "Borrower side")}
+              {iconLabel("user", "My requests")}
               <div
                 style={{
                   marginTop: 8,
@@ -1030,7 +1030,7 @@ export default function LoansPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              {iconLabel("shield", "Guarantor side")}
+              {iconLabel("shield", "Supporter side")}
               <div
                 style={{
                   marginTop: 8,
@@ -1112,13 +1112,13 @@ export default function LoansPage() {
             <div style={sectionLabel()}>How to read this page</div>
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
               <div style={helperText()}>
-                Borrower-side load = your own support request flow.
+                My requests = support you asked this marketplace for.
               </div>
               <div style={helperText()}>
-                Guarantor-side load = you are attached to someone else's support flow.
+                Supporter side = you are attached to someone else's support flow.
               </div>
               <div style={helperText()}>
-                Pending requests = someone is waiting for your decision.
+                Waiting requests = someone is waiting for your decision.
               </div>
             </div>
           </div>
@@ -1201,7 +1201,7 @@ export default function LoansPage() {
             <div>
               <div style={routeTitleStyle(isCompact)}>Money In</div>
               <div style={routeHelperStyle(isCompact)}>
-                Use when the next step is payment into the pool.
+                Add money to this marketplace pool.
               </div>
             </div>
           </StableCtaLink>
@@ -1217,7 +1217,7 @@ export default function LoansPage() {
             <div>
               <div style={routeTitleStyle(isCompact)}>Money Out</div>
               <div style={routeHelperStyle(isCompact)}>
-                Use when the next step is withdrawal handling.
+                Withdraw money you can already take out.
               </div>
             </div>
           </StableCtaLink>
@@ -1231,9 +1231,9 @@ export default function LoansPage() {
           >
             {routeIcon("shield", false, isCompact)}
             <div>
-              <div style={routeTitleStyle(isCompact)}>Loan Readiness</div>
+              <div style={routeTitleStyle(isCompact)}>Check readiness</div>
               <div style={routeHelperStyle(isCompact)}>
-                Check whether the support flow looks ready.
+                Check whether the support request can continue.
               </div>
             </div>
           </StableCtaLink>
@@ -1247,9 +1247,9 @@ export default function LoansPage() {
           >
             {routeIcon("spark", false, isCompact)}
             <div>
-              <div style={routeTitleStyle(isCompact)}>Loan Suggestions</div>
+              <div style={routeTitleStyle(isCompact)}>Find supporters</div>
               <div style={routeHelperStyle(isCompact)}>
-                Open when you need suggestions.
+                Open when you need people who may back the request.
               </div>
             </div>
           </StableCtaLink>
@@ -1263,9 +1263,9 @@ export default function LoansPage() {
           >
             {routeIcon("community", false, isCompact)}
             <div>
-              <div style={routeTitleStyle(isCompact)}>Incoming Guarantor Requests</div>
+              <div style={routeTitleStyle(isCompact)}>Incoming requests</div>
               <div style={routeHelperStyle(isCompact)}>
-                Open the guarantor decision queue.
+                Open decisions waiting on you.
               </div>
             </div>
           </StableCtaLink>
@@ -1295,9 +1295,9 @@ export default function LoansPage() {
           >
             {routeIcon("chart", false, isCompact)}
             <div>
-              <div style={routeTitleStyle(isCompact)}>Guarantor Earnings</div>
+              <div style={routeTitleStyle(isCompact)}>Supporter value</div>
               <div style={routeHelperStyle(isCompact)}>
-                Read the guarantor reward side separately.
+                Read the value recorded from helping others.
               </div>
             </div>
           </StableCtaLink>
@@ -1355,12 +1355,12 @@ export default function LoansPage() {
             </span>
             <div>
               <div style={{ ...routeTitleStyle(), color: "#0B4EB3" }}>
-                Borrower-side support flow
+                My support request
               </div>
               <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
                 {borrowerLoans.length > 0
-                  ? `${borrowerLoans.length} borrower-side support flow is active.`
-                  : "No borrower-side support flow is active right now."}
+                  ? `${borrowerLoans.length} support request is active.`
+                  : "No support request is active right now."}
               </div>
             </div>
           </div>
@@ -1379,17 +1379,17 @@ export default function LoansPage() {
             </span>
             <div>
               <div style={{ ...routeTitleStyle(), color: "#5B21B6" }}>
-                Guarantor-side queue
+                Supporter queue
               </div>
               <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
                 {guarantorInbox.length > 0
-                  ? `${guarantorInbox.length} pending guarantor request is currently shown.`
-                  : "No pending guarantor request is currently shown."}
+                  ? `${guarantorInbox.length} support request is waiting on you.`
+                  : "No support request is waiting on you."}
               </div>
               <div style={{ marginTop: 3, ...helperText(), fontSize: 13 }}>
                 {guarantorLoans.length > 0
-                  ? `${guarantorLoans.length} active guarantor-side support item is shown.`
-                  : "No active guarantor-side support item is currently shown."}
+                  ? `${guarantorLoans.length} supporter-side item is active.`
+                  : "No supporter-side item is currently shown."}
               </div>
             </div>
           </div>
@@ -1411,8 +1411,8 @@ export default function LoansPage() {
         {routeIcon("evidence")}
         <div>
           <div style={{ color: "#07172C", fontWeight: 950, lineHeight: 1.35 }}>
-            Loans & Support stays community-specific. Finance shows the money picture;
-            Loans & Support handles live steps and decisions.
+            Support stays community-specific. Finance shows the money picture;
+            this page handles live support steps and decisions.
           </div>
         </div>
       </section>

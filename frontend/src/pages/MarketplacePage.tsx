@@ -374,6 +374,9 @@ type PersistedWithdrawalTask = {
   amountInput: string;
   noteInput: string;
   latestWithdrawalResult: any | null;
+  handoffMode?: string;
+  supportGap?: string;
+  updatedAt?: string;
 };
 
 const DEFAULT_SECTION_STATE: SectionState = {
@@ -5072,13 +5075,16 @@ export default function MarketplacePage() {
 
         const storedAmount = safeStr(storedWithdrawalTask?.amountInput);
         const storedNote = safeStr(storedWithdrawalTask?.noteInput);
+        const defaultPurpose = storedAmount ? "Withdrawal support" : "";
 
         if (storedAmount) {
           setLoanAmount((prev) => (safeStr(prev) ? prev : storedAmount));
         }
 
-        if (storedNote) {
-          setLoanPurpose((prev) => (safeStr(prev) ? prev : storedNote));
+        if (storedNote || defaultPurpose) {
+          setLoanPurpose((prev) =>
+            safeStr(prev) ? prev : storedNote || defaultPurpose
+          );
         }
 
         withdrawalHandoffAppliedRef.current = token;
@@ -5225,6 +5231,24 @@ export default function MarketplacePage() {
   const activeCommunityName = useMemo(() => {
     return communityName(selectedCommunity);
   }, [selectedCommunity]);
+
+  const moneyOutSupportTask = useMemo(() => {
+    if (!activeCommunityId || !currentGmfnId) return null;
+    const stored = readLocalJSON<PersistedWithdrawalTask | null>(
+      withdrawalTaskStorageKey(activeCommunityId, currentGmfnId),
+      null
+    );
+    const hasMoneyOutRoute =
+      routeSupportFlow === "money-out" && routeFocus === "support";
+    const isMoneyOutHandoff =
+      safeStr(stored?.handoffMode) === "withdrawal-support";
+
+    return hasMoneyOutRoute || isMoneyOutHandoff ? stored : null;
+  }, [activeCommunityId, currentGmfnId, routeFocus, routeSupportFlow]);
+
+  const moneyOutSupportAmountText = safeStr(moneyOutSupportTask?.amountInput);
+  const moneyOutSupportGapText = safeStr(moneyOutSupportTask?.supportGap);
+  const hasMoneyOutSupportTask = Boolean(moneyOutSupportTask);
 
   const activeJoinCommunityName = useMemo(() => {
     return baseCommunityName(selectedCommunity);
@@ -6175,12 +6199,12 @@ export default function MarketplacePage() {
     const durationDays = positiveNumber(loanDurationDays);
 
     if (!amount || Number(amount) <= 0) {
-      showNotice("error", "Enter a valid loan amount.");
+      showNotice("error", "Enter a valid support amount.");
       return;
     }
 
     if (!durationDays) {
-      showNotice("error", "Enter how long you want the loan for.");
+      showNotice("error", "Enter how long you need the support for.");
       return;
     }
 
@@ -6227,7 +6251,7 @@ export default function MarketplacePage() {
 
       showNotice(
         "success",
-        "Support request created. Review fit suggestions and send guarantor requests if needed."
+        "Support request created. Review fit suggestions, choose supporters, then send requests."
       );
     } catch (err: any) {
       showNotice(
@@ -6255,7 +6279,7 @@ export default function MarketplacePage() {
       if ((loaded?.suggestions || []).length === 0) {
         showNotice(
           "error",
-          "No fit guarantor suggestion is available for this amount right now."
+          "No fit supporter suggestion is available for this amount right now."
         );
       } else {
         showNotice("success", "Fit suggestions refreshed.");
@@ -6298,14 +6322,14 @@ export default function MarketplacePage() {
     );
 
     if (requiredGuarantorCount <= 0) {
-      showNotice("error", "This support draft does not currently need guarantors.");
+      showNotice("error", "This support draft does not currently need supporters.");
       return;
     }
 
     if (selectedSupporters.length < requiredGuarantorCount) {
       showNotice(
         "error",
-        `Select ${requiredGuarantorCount} guarantor${
+        `Select ${requiredGuarantorCount} supporter${
           requiredGuarantorCount === 1 ? "" : "s"
         } before sending requests.`
       );
@@ -6331,7 +6355,7 @@ export default function MarketplacePage() {
 
         if (!guarantor.userId) {
           throw new Error(
-            `Selected guarantor '${guarantor.name}' does not have a usable user ID for request delivery.`
+            `Selected supporter '${guarantor.name}' does not have a usable user ID for request delivery.`
           );
         }
 
@@ -6349,12 +6373,12 @@ export default function MarketplacePage() {
 
       showNotice(
         "success",
-        "Guarantor requests sent successfully. Wait for responses."
+        "Support requests sent successfully. Wait for responses."
       );
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Guarantor requests could not be sent."
+        safeStr(err?.message) || "Support requests could not be sent."
       );
     } finally {
       setSendingGuarantorRequests(false);
@@ -6427,11 +6451,11 @@ export default function MarketplacePage() {
     supportProcessBusy
       ? "GSN is working on this support step now. Other support actions are held until this response finishes."
       : loanStatusLower === "incomplete"
-      ? "Support is not complete yet. Choose another fit guarantor, send the next request, or cancel the draft if it should stop."
+      ? "Support is not complete yet. Choose another fit supporter, send the next request, or cancel the draft if it should stop."
       : loanStatusLower === "approved"
-      ? "Support is approved. Move to the loan summary or repayment path instead of sending more guarantor requests."
+      ? "Support is approved. Move to the support summary or repayment path instead of sending more requests."
       : loanDraftId
-      ? "Support is open. Keep the draft, suggestions, selected guarantors, and next response together here."
+      ? "Support is open. Keep the draft, suggestions, selected supporters, and next response together here."
       : "Start one support request first. After it starts, GSN will show the next required response in this same lane.";
 
   const visibleSelectedSupporters = useMemo(
@@ -6455,14 +6479,14 @@ export default function MarketplacePage() {
 
   function showGuarantorRequestBlockedNotice() {
     if (sendingGuarantorRequests) {
-      showNotice("error", "GSN is already sending these guarantor requests.");
+      showNotice("error", "GSN is already sending these support requests.");
       return;
     }
 
     if (requiredGuarantorCount <= 0) {
       showNotice(
         "error",
-        "Start or refresh the support draft first so GSN can show how many guarantors are needed."
+        "Start or refresh the support draft first so GSN can show how many supporters are needed."
       );
       return;
     }
@@ -6470,7 +6494,7 @@ export default function MarketplacePage() {
     if (visibleSelectedSupporters.length < requiredGuarantorCount) {
       showNotice(
         "error",
-        `Choose ${requiredGuarantorCount} guarantor${
+        `Choose ${requiredGuarantorCount} supporter${
           requiredGuarantorCount === 1 ? "" : "s"
         } before sending requests.`
       );
@@ -6480,14 +6504,14 @@ export default function MarketplacePage() {
     if (!supportDraftStillOpen || loanStatusLower === "approved") {
       showNotice(
         "error",
-        "This support draft is no longer open for guarantor requests."
+        "This support draft is no longer open for support requests."
       );
       return;
     }
 
     showNotice(
       "error",
-      "This guarantor request step is not ready yet. Check the draft status first."
+      "This support request step is not ready yet. Check the draft status first."
     );
   }
 
@@ -10657,8 +10681,8 @@ export default function MarketplacePage() {
             <div style={{ minWidth: 0 }}>
               <div style={sectionLabel()}>Support Requests</div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Start one guided support request inside this selected
-                marketplace.
+                Ask this marketplace for support when your withdrawal needs
+                backing.
               </div>
             </div>
           </div>
@@ -10679,12 +10703,46 @@ export default function MarketplacePage() {
         {sectionsOpen.support ? (
           <ExplainToggle
             label="What this support area does"
-            what="This is where a member asks the current community for support, checks whether guarantors are needed, and follows the borrowing path only after the draft is clear."
-            why="Support should feel like one guided community request, not a pile of loan pages and member lists."
-            next="Start the request here, check the fit signals, then continue only to the next borrowing page the draft needs."
+            what="This is where you ask the selected marketplace for support when your own available balance is not enough."
+            why="GSN keeps the request, supporters, repayment plan, and later finance record together."
+            next="Start the request here. GSN will show the next support step after the draft is created."
             tone="light"
             style={{ marginTop: 12 }}
           />
+        ) : null}
+
+        {sectionsOpen.support ? (
+          <div style={{ marginTop: 12, ...softCard("#F8FBFF") }}>
+            <div style={sectionLabel()}>Selected marketplace</div>
+            <div
+              style={{
+                marginTop: 8,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={badge(Boolean(activeCommunityName))}>
+                {activeCommunityName || "Select marketplace"}
+              </span>
+              <span style={badge(Boolean(activeCommunityId))}>
+                ID: {activeCommunityId || "not ready"}
+              </span>
+              {hasMoneyOutSupportTask ? (
+                <span style={badge(true)}>From Money Out</span>
+              ) : null}
+            </div>
+
+            {hasMoneyOutSupportTask ? (
+              <div style={{ marginTop: 10, ...helperText() }}>
+                This withdrawal needs support here. Requested:{" "}
+                {moneyOutSupportAmountText || "not shown"} {poolCurrency}.
+                Support needed:{" "}
+                {moneyOutSupportGapText || moneyOutSupportAmountText || "not shown"}{" "}
+                {poolCurrency}.
+              </div>
+            ) : null}
+          </div>
         ) : null}
 
         {sectionsOpen.support ? (
@@ -10697,9 +10755,9 @@ export default function MarketplacePage() {
             }}
           >
             {[
-              ["1", "Start request", "Enter amount, days, and reason here."],
-              ["2", "Check fit", "Review guarantor need and suggested supporters."],
-              ["3", "Continue flow", "Open readiness or workbench only when needed."],
+              ["1", "Start request", "Amount, duration, repayment, purpose."],
+              ["2", "Check supporters", "GSN shows who can back the request."],
+              ["3", "Send requests", "Send only after the draft is ready."],
             ].map(([step, title, detail]) => (
               <div
                 key={step}
@@ -10768,9 +10826,9 @@ export default function MarketplacePage() {
               <div style={sectionLabel()}>Start a support request</div>
 
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-                Start one request, then let GSN show the next fit or guarantor
-                step. Deeper loan pages stay behind details until the draft
-                needs them.
+                Enter the amount, duration, repayment plan, and purpose. GSN
+                creates one support draft and then shows the people who may be
+                able to back it.
               </div>
 
               <div
@@ -10785,7 +10843,7 @@ export default function MarketplacePage() {
                   {loanDraftId ? `Draft #${loanDraftId}` : "No draft yet"}
                 </span>
                 <span style={badge(requiredGuarantorCount > 0)}>
-                  Guarantors: {requiredGuarantorCount || "not checked"}
+                  Supporters: {requiredGuarantorCount || "not checked"}
                 </span>
                 <span style={badge(suggestedSupporters.length > 0)}>
                   Fit: {suggestedSupporters.length}
@@ -10842,13 +10900,13 @@ export default function MarketplacePage() {
                 </div>
 
                 <div style={{ gridColumn: "1 / span 2" }}>
-                  <div style={sectionLabel()}>Purpose / note</div>
+                  <div style={sectionLabel()}>Purpose</div>
                   <textarea
                     {...marketplaceFieldTouchProps("marketplace.support.purpose")}
                     value={loanPurpose}
                     onChange={(e) => setLoanPurpose(e.target.value)}
                     disabled={supportProcessBusy}
-                    placeholder="State what the support is for..."
+                    placeholder="State what the support is for."
                     style={{
                       ...textAreaStyle(),
                       marginTop: 8,
@@ -10981,7 +11039,7 @@ export default function MarketplacePage() {
                 ) : null}
               </div>
 
-              {(loanDraftId || !isCompact) ? (
+              {loanDraftId ? (
                 <details style={{ marginTop: 12 }}>
                   <StableDisclosureSummary
                     debugId="marketplace.support.deeper-pages.summary"
@@ -10994,7 +11052,7 @@ export default function MarketplacePage() {
                       fontSize: isCompact ? 13 : 14,
                     }}
                   >
-                    Deeper support pages
+                    More support tools
                     <span aria-hidden="true">+</span>
                   </StableDisclosureSummary>
 
@@ -11014,7 +11072,7 @@ export default function MarketplacePage() {
                       stableHeight={58}
                       style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                     >
-                      Loan Readiness
+                      Check readiness
                     </StableButton>
                     <StableButton
                       debugId="marketplace.support.loan-suggestions"
@@ -11026,7 +11084,7 @@ export default function MarketplacePage() {
                       stableHeight={58}
                       style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                     >
-                      Loan Suggestions
+                      Find supporters
                     </StableButton>
                     <StableButton
                       debugId="marketplace.support.loan-workbench"
@@ -11038,7 +11096,7 @@ export default function MarketplacePage() {
                       stableHeight={58}
                       style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                     >
-                      Loan Workbench
+                      Support workbench
                     </StableButton>
                     <StableButton
                       debugId="marketplace.support.finance"
@@ -11058,7 +11116,7 @@ export default function MarketplacePage() {
                       stableHeight={58}
                       style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                     >
-                      Full Loans View
+                      Full support view
                     </StableButton>
                   </div>
                 </details>
@@ -11071,9 +11129,9 @@ export default function MarketplacePage() {
 
                     <ExplainToggle
                       label="What this draft status does"
-                      what="This status strip shows how far the current support draft has moved, including whether guarantors are required, how many fit suggestions exist, and how many people have responded."
-                      why="It turns the draft into something readable so users can tell whether they should stay here, send requests, or continue into the next borrowing step."
-                      next="Read the status first, then review the fit suggestions below or move into the deeper loan pages only when the draft shows you what is still missing."
+                      what="This status strip shows how far the current support draft has moved, including whether supporters are required, how many fit suggestions exist, and how many people have responded."
+                      why="It turns the draft into something readable so users can tell whether they should stay here, send support requests, or continue into the next support step."
+                      next="Read the status first, then review the fit suggestions below or move into the deeper support tools only when the draft shows you what is still missing."
                       tone="light"
                       style={{ marginTop: 12 }}
                     />
@@ -11090,7 +11148,7 @@ export default function MarketplacePage() {
                         Status: {safeStr(loanDraftSummary?.status || "Open")}
                       </span>
                       <span style={badge(false)}>
-                        Required guarantors: {requiredGuarantorCount}
+                        Required supporters: {requiredGuarantorCount}
                       </span>
                       <span style={badge(false)}>
                         Suggested fit: {suggestedSupporters.length}
@@ -11113,15 +11171,15 @@ export default function MarketplacePage() {
                       <ExplainToggle
                         label="What these fit suggestions do"
                         what="These suggestions show which visible community members may fit the current support request based on the draft amount and the support signals already available."
-                        why="They help the user choose who to ask next without treating guarantor selection like a blind guess or a random contact list."
-                        next="Read the reason and suggested pledge first, choose only the people that make sense for this request, then continue once the chosen guarantors reflect the draft."
+                        why="They help the user choose who to ask next without treating supporter selection like a blind guess or a random contact list."
+                        next="Read the reason and suggested pledge first, choose only the people that make sense for this request, then continue once the chosen supporters reflect the draft."
                         tone="light"
                         style={{ marginTop: 12 }}
                       />
 
                       {suggestedSupporters.length === 0 ? (
                         <div style={{ marginTop: 10, ...helperText() }}>
-                          No fit guarantor suggestion is shown yet for this amount.
+                          No supporter suggestion is shown yet for this amount.
                         </div>
                       ) : (
                         <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
@@ -11199,13 +11257,13 @@ export default function MarketplacePage() {
 
                       {visibleSelectedSupporters.length > 0 ? (
                         <div style={{ marginTop: 14 }}>
-                          <div style={sectionLabel()}>Chosen guarantors</div>
+                          <div style={sectionLabel()}>Chosen supporters</div>
 
                           <ExplainToggle
-                            label="What these chosen guarantors do"
-                            what="These are the people you have selected for this draft so far. They are still candidates until the guarantor requests are actually sent."
+                            label="What these chosen supporters do"
+                            what="These are the people you have selected for this draft so far. They are still candidates until the support requests are actually sent."
                             why="This keeps selection separate from approval so users do not mistake a chosen name for a completed support commitment."
-                            next="Review the selected names here, remove anyone who no longer fits, then send the guarantor requests only when the final set looks right."
+                            next="Review the selected names here, remove anyone who no longer fits, then send the support requests only when the final set looks right."
                             tone="light"
                             style={{ marginTop: 12 }}
                           />
@@ -11238,7 +11296,7 @@ export default function MarketplacePage() {
 
                       <ExplainToggle
                         label="What this request step does"
-                        what="This step sends the guarantor requests to the selected people so the draft can move from chosen candidates into real outreach."
+                        what="This step sends the support requests to the selected people so the draft can move from chosen candidates into real outreach."
                         why="It separates selection from action, which helps users understand that support is not approved just because names have been picked."
                         next="Check that the selected count is enough, send the requests when the final set is ready, then watch the draft status for replies and approvals."
                         tone="light"
@@ -11274,7 +11332,7 @@ export default function MarketplacePage() {
                             ? "Sending..."
                             : loanStatusLower === "approved"
                             ? "Already Approved"
-                            : "Send Guarantor Requests"}
+                            : "Send Support Requests"}
                         </StableButton>
 
                         <span style={badge(false)}>

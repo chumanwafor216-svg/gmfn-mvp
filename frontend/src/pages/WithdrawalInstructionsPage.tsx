@@ -664,26 +664,6 @@ export default function WithdrawalInstructionsPage() {
         selectedClanId,
         "money-out.route.payout-details"
       ),
-      paymentRails: routeTarget(
-        "paymentRails",
-        selectedClanId,
-        "money-out.route.payment-rails"
-      ),
-      loanReadiness: routeTarget(
-        "loanReadiness",
-        selectedClanId,
-        "money-out.route.readiness"
-      ),
-      loanSuggestions: routeTarget(
-        "loanSuggestions",
-        selectedClanId,
-        "money-out.route.suggestions"
-      ),
-      loanWorkbench: routeTarget(
-        "loanWorkbench",
-        selectedClanId,
-        "money-out.route.workbench"
-      ),
       supportStart: addRouteQuery(
         routeTarget(
           "marketplace",
@@ -695,12 +675,6 @@ export default function WithdrawalInstructionsPage() {
           support_flow: "money-out",
           focus: "support",
         }
-      ),
-      loans: routeTarget("loans", selectedClanId, "money-out.route.loans"),
-      notifications: routeTarget(
-        "notifications",
-        selectedClanId,
-        "money-out.route.notifications"
       ),
     }),
     [selectedClanId]
@@ -967,7 +941,7 @@ export default function WithdrawalInstructionsPage() {
         step: "Own money",
         title: "This can be withdrawn from your available balance.",
         detail:
-          "No guarantor is needed. Generate the withdrawal code, then use it for pilot reconciliation.",
+          "No guarantor is needed. Press Continue to generate the withdrawal code when your payout account is ready.",
       };
     }
 
@@ -976,7 +950,7 @@ export default function WithdrawalInstructionsPage() {
       step: "Needs support",
       title: "Your available balance is not enough for this amount.",
       detail:
-        "Open support so GSN can guide the guarantor or loan path.",
+        "Open support so GSN can guide the support-backed path.",
     };
   }, [
     selectedClanId,
@@ -1160,6 +1134,15 @@ export default function WithdrawalInstructionsPage() {
       return;
     }
 
+    if (!payoutReady) {
+      setCollapsed((prev) => ({ ...prev, destination: false }));
+      showNotice(
+        "error",
+        "Add your payout account first so GSN knows where this withdrawal should go."
+      );
+      return;
+    }
+
     setSubmittingWithdrawal(true);
 
     try {
@@ -1180,7 +1163,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Direct withdrawal request recorded. Community confirmation is still review evidence; payout execution and money movement are not complete here."
+        "Withdrawal code generated. Use it with your transfer proof; admin or finance still reviews before money moves."
       );
     } finally {
       setSubmittingWithdrawal(false);
@@ -1215,10 +1198,7 @@ export default function WithdrawalInstructionsPage() {
       return;
     }
 
-    showNotice(
-      "success",
-      "This amount fits your available balance. Generate the withdrawal code."
-    );
+    await handleDirectWithdrawal();
   }
 
   function handleContinueToSupportPath() {
@@ -1233,7 +1213,7 @@ export default function WithdrawalInstructionsPage() {
     }
 
     if (!requiresSupport) {
-      showNotice("error", "This amount fits your available balance. Generate the withdrawal code here.");
+      showNotice("error", "This amount fits your available balance. Press Continue to generate the withdrawal code here.");
       return;
     }
 
@@ -1403,7 +1383,7 @@ export default function WithdrawalInstructionsPage() {
       ? "Awaiting pool reading"
       : requiresSupport
       ? "Support-backed"
-      : "Direct withdrawal";
+      : "Normal withdrawal";
   const latestResultText = latestWithdrawalResult
     ? firstTruthy(
         latestWithdrawalResult?.reference
@@ -1564,7 +1544,8 @@ export default function WithdrawalInstructionsPage() {
             onClick={() => void handleDirectWithdrawal()}
             disabled={
               submittingWithdrawal ||
-              requestedAmount <= 0
+              requestedAmount <= 0 ||
+              Boolean(latestWithdrawalResult)
             }
             debugId="money-out.front-continue-direct"
             stableHeight={52}
@@ -1572,10 +1553,15 @@ export default function WithdrawalInstructionsPage() {
             style={moneyOutActionButtonStyle(
               "primary",
               submittingWithdrawal ||
-                requestedAmount <= 0
+                requestedAmount <= 0 ||
+                Boolean(latestWithdrawalResult)
             )}
           >
-            {submittingWithdrawal ? "Generating..." : "Generate code"}
+            {latestWithdrawalResult
+              ? "Code ready"
+              : submittingWithdrawal
+              ? "Generating..."
+              : "Generate code"}
           </PrimaryButton>
         ) : (
           <PrimaryButton
@@ -2101,6 +2087,8 @@ export default function WithdrawalInstructionsPage() {
                       ? "Ready to check"
                       : requiresSupport
                       ? "Support is needed"
+                      : latestWithdrawalResult
+                      ? "Code generated"
                       : "Code can be generated"}
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
@@ -2110,6 +2098,8 @@ export default function WithdrawalInstructionsPage() {
                       ? "Press Continue so GSN can read this amount against your available pool."
                       : requiresSupport
                       ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your effective available pool is ${effectiveAvailableText} ${poolCurrency}.`
+                      : latestWithdrawalResult
+                      ? "Use the code with your transfer proof. Admin or finance still reviews before money moves."
                       : "This amount fits your available balance."}
                   </div>
                 </div>
@@ -2119,7 +2109,7 @@ export default function WithdrawalInstructionsPage() {
                   <div style={sectionLabel()}>Support route</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     {requiresSupport
-                      ? "This amount is above your available balance. Support continues the guarantor or loan path."
+                      ? "This amount is above your available balance. Support continues the support-backed path."
                       : "Support stays closed because this amount fits your available balance."}
                   </div>
                 </div>
@@ -2159,7 +2149,8 @@ export default function WithdrawalInstructionsPage() {
                     onClick={() => void handleDirectWithdrawal()}
                     disabled={
                       submittingWithdrawal ||
-                      requestedAmount <= 0
+                      requestedAmount <= 0 ||
+                      Boolean(latestWithdrawalResult)
                     }
                     debugId="money-out.continue-direct"
                     minWidth={isCompact ? undefined : 144}
@@ -2167,10 +2158,13 @@ export default function WithdrawalInstructionsPage() {
                     style={moneyOutActionButtonStyle(
                       "primary",
                       submittingWithdrawal ||
-                        requestedAmount <= 0
+                        requestedAmount <= 0 ||
+                        Boolean(latestWithdrawalResult)
                     )}
                   >
-                    {submittingWithdrawal
+                    {latestWithdrawalResult
+                      ? "Code ready"
+                      : submittingWithdrawal
                       ? "Generating..."
                       : "Generate code"}
                   </PrimaryButton>
@@ -2230,9 +2224,9 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            {iconLabel("bank", "Payout Preview")}
+            {iconLabel("bank", "Payout account")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Complete payout details only when the preview is incomplete.
+              Where this withdrawal should go. Add it before generating a code.
             </div>
           </div>
 
@@ -2867,7 +2861,7 @@ export default function WithdrawalInstructionsPage() {
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Support path chosen</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Open support so GSN can guide the guarantor or loan path.
+                      Open support so GSN can guide the support-backed path.
                     </div>
                   </div>
                 ) : null}
@@ -2978,46 +2972,6 @@ export default function WithdrawalInstructionsPage() {
                   Payout details
                 </StableCtaLink>
 
-                <StableCtaLink
-                  to={routes.paymentRails}
-                  debugId="money-out.route.payment-rails"
-                  stableHeight={52}
-                  fullWidth
-                  style={moneyOutActionButtonStyle("secondary")}
-                >
-                  Payment rails
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.loanReadiness}
-                  debugId="money-out.route.readiness"
-                  stableHeight={52}
-                  fullWidth
-                  style={moneyOutActionButtonStyle("secondary")}
-                >
-                  Loan readiness
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.loanWorkbench}
-                  debugId="money-out.route.workbench"
-                  stableHeight={52}
-                  fullWidth
-                  style={moneyOutActionButtonStyle("secondary")}
-                >
-                  Loan workbench
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.loans}
-                  debugId="money-out.route.loans"
-                  stableHeight={52}
-                  fullWidth
-                  style={moneyOutActionButtonStyle("secondary")}
-                >
-                  Loans & support
-                </StableCtaLink>
-
               <StableCtaLink
                 to={routes.marketplace}
                 debugId="money-out.route.marketplace"
@@ -3028,15 +2982,6 @@ export default function WithdrawalInstructionsPage() {
                 Marketplace
               </StableCtaLink>
 
-              <StableCtaLink
-                to={routes.notifications}
-                debugId="money-out.route.notifications"
-                stableHeight={52}
-                fullWidth
-                style={moneyOutActionButtonStyle("secondary")}
-              >
-                Action Inbox
-              </StableCtaLink>
             </div>
           ) : (
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>

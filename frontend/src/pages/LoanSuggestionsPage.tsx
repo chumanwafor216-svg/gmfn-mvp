@@ -126,7 +126,7 @@ function rowsOf<T = any>(input: any): T[] {
 
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
-  if (!raw) return "—";
+  if (!raw) return "--";
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
@@ -193,8 +193,8 @@ function normalizeLoanRow(raw: any): LoanRow | null {
       src?.role,
       src?.my_role,
       src?.participant_role,
-      src?.is_guarantor ? "Guarantor" : "",
-      src?.is_borrower ? "Borrower" : ""
+      src?.is_guarantor ? "Supporter" : "",
+      src?.is_borrower ? "Requester" : ""
     ),
     borrowerName: firstTruthy(
       src?.borrower_name,
@@ -930,7 +930,7 @@ export default function LoanSuggestionsPage() {
       return {
         title: "Money Out has already handed off into support continuation.",
         detail:
-          "Start or resume the borrower-side support draft first, then return here for guarantor fit reading.",
+          "Start or resume the support request first, then return here for supporter fit reading.",
         tone: "watch" as const,
       };
     }
@@ -939,14 +939,14 @@ export default function LoanSuggestionsPage() {
       return {
         title: "Start a support draft first.",
         detail:
-          "Loan suggestions only become meaningful after a borrower-side support item exists.",
+          "Supporter suggestions only become meaningful after a support request exists.",
         tone: "neutral" as const,
       };
     }
 
     if (requiredGuarantors > 0 && suggestedSupporters.length === 0) {
       return {
-        title: "No fit guarantor suggestion is shown yet.",
+        title: "No supporter fit is shown yet.",
         detail:
           suggestionMessage ||
           "The current amount or structure may still need a better fit before suggestions become clearer.",
@@ -965,10 +965,10 @@ export default function LoanSuggestionsPage() {
     }
 
     return {
-      title: "This support item may not currently need guarantors.",
+      title: "This support item may not currently need supporters.",
       detail:
         suggestionMessage ||
-        "The current support structure does not show a strong guarantor requirement right now.",
+        "The current support structure does not show a strong supporter requirement right now.",
       tone: "neutral" as const,
     };
   }, [
@@ -1019,7 +1019,7 @@ export default function LoanSuggestionsPage() {
 
     if (cameFromWithdrawalSupport && !activeBorrowerLoan) {
       return {
-        title: "Start the borrower-side support draft from the Money Out handoff.",
+        title: "Start the support request from the Money Out handoff.",
         detail:
           "Money Out has already shown that support is needed. Resume the support draft, then return here for fit reading.",
         ctaTo: routes.startSupport,
@@ -1031,7 +1031,7 @@ export default function LoanSuggestionsPage() {
       return {
         title: "Start the support request first.",
         detail:
-          "This becomes useful only after the borrower-side support item exists.",
+          "This becomes useful only after the support request exists.",
         ctaTo: routes.startSupport,
         ctaLabel: "Open Support Start Page",
       };
@@ -1043,7 +1043,7 @@ export default function LoanSuggestionsPage() {
         detail:
           "The fit picture is visible enough. The next move is the deeper workbench.",
         ctaTo: routes.workbench,
-        ctaLabel: "Open Loan Workbench",
+        ctaLabel: "Open Support Workbench",
       };
     }
 
@@ -1052,7 +1052,7 @@ export default function LoanSuggestionsPage() {
       detail:
         "If the fit picture is still weak, review the active support item before moving again.",
       ctaTo: routes.workbench,
-      ctaLabel: "Open Loan Workbench",
+      ctaLabel: "Open Support Workbench",
     };
   }, [
     selectedClanId,
@@ -1084,18 +1084,18 @@ export default function LoanSuggestionsPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Loan Suggestions"
-          title="Loan Suggestions"
+          sectionLabel="Find Supporters"
+          title="Find Supporters"
           subtitle="Loading the fit-suggestion stage..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.readiness}
-          backLabel="Loan Readiness"
+          backLabel="Support Readiness"
         />
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
-            Loading loan suggestions...
+            Loading supporter suggestions...
           </div>
         </section>
       </div>
@@ -1113,20 +1113,20 @@ export default function LoanSuggestionsPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Loan Suggestions"
-        title="Loan Suggestions"
-        subtitle="Use this stage to read guarantor fit before you continue deeper into the support flow."
+        sectionLabel="Find Supporters"
+        title="Find Supporters"
+        subtitle="Use this stage to read supporter fit before you continue deeper into the support flow."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.readiness}
-        backLabel="Loan Readiness"
+        backLabel="Support Readiness"
       />
 
       <ExplainToggle
         label="What this screen does"
         what="This page reads the current support item and shows which people or signals look strongest for the next move."
         why="Finance keeps the money record. Suggestions keeps the fit reading, so you can judge this support path before deeper action."
-        next="Fit suggestions are decision support only; they do not approve a guarantor, approve a loan, or authorize release of goods, credit, or money."
+        next="Fit suggestions are decision support only; they do not choose a supporter, approve support, or authorize release of goods, credit, or money."
         tone="blue"
       />
 
@@ -1218,7 +1218,7 @@ export default function LoanSuggestionsPage() {
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
               <span style={badge(false)}>GSN ID: {gmfnId}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Fit suggestions</span>
+              <span style={badge(false)}>Supporter suggestions</span>
               {cameFromWithdrawalSupport ? (
                 <span style={badge(false)}>Money Out support handoff</span>
               ) : null}
@@ -1325,7 +1325,7 @@ export default function LoanSuggestionsPage() {
           <div>
             <div style={sectionLabel()}>Suggestion summary</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              A quick reading of the current borrower-side support item.
+              A quick reading of the current support request.
             </div>
           </div>
 
@@ -1395,7 +1395,7 @@ export default function LoanSuggestionsPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Required guarantors</div>
+              <div style={sectionLabel()}>Supporters needed</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1409,7 +1409,7 @@ export default function LoanSuggestionsPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Fit suggestions</div>
+              <div style={sectionLabel()}>Suggested supporters</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1564,7 +1564,7 @@ export default function LoanSuggestionsPage() {
           label="What this reading does"
           what="This section explains the current fit message and shows whether this is the right moment to move into the deeper workbench."
           why="It helps you interpret the suggestion instead of treating it like a vague status line."
-          next="Read the fit message first, then check the supporters list below if you are ready to move toward guarantor selection."
+          next="Read the fit message first, then check the supporters list below if you are ready to choose who to ask."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -1660,7 +1660,7 @@ export default function LoanSuggestionsPage() {
           <div>
             <div style={sectionLabel()}>Suggested supporters</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The strongest visible guarantor-fit suggestions for the current support item.
+              The strongest visible supporter-fit suggestions for the current support item.
             </div>
           </div>
 
@@ -1772,7 +1772,7 @@ export default function LoanSuggestionsPage() {
                         fontSize: 13,
                       }}
                     >
-                      If this fit looks strong enough, use Next routes below to continue into Loan Workbench.
+                      If this fit looks strong enough, use Next routes below to continue into Support Workbench.
                     </div>
                   </div>
                 </div>
@@ -1864,7 +1864,7 @@ export default function LoanSuggestionsPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                {loanSuggestionsRouteHeading("check", "Loan Readiness")}
+                {loanSuggestionsRouteHeading("check", "Support Readiness")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open this when the question is whether the next support move is clean enough to continue.
@@ -1879,7 +1879,7 @@ export default function LoanSuggestionsPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                {loanSuggestionsRouteHeading("briefcase", "Loan Workbench")}
+                {loanSuggestionsRouteHeading("briefcase", "Support Workbench")}
               </div>
               <div style={routeTileDetailStyle()}>
                 Open this for deeper support handling after the fit picture is clear enough.
@@ -1911,10 +1911,10 @@ export default function LoanSuggestionsPage() {
               style={routeTileStyle(false)}
             >
               <div style={routeTileTitleStyle()}>
-                {loanSuggestionsRouteHeading("alert", "Incoming Guarantor Requests")}
+                {loanSuggestionsRouteHeading("alert", "Incoming Requests")}
               </div>
               <div style={routeTileDetailStyle()}>
-                Open the dedicated guarantor decision queue when responses are waiting on you.
+                Open the dedicated support decision queue when responses are waiting on you.
               </div>
             </StableCtaLink>
 

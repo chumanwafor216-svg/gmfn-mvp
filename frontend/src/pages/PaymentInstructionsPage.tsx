@@ -990,9 +990,9 @@ export default function PaymentInstructionsPage() {
       return {
         tone: "blue" as const,
         step: "Payment",
-        title: "Pay with the reference.",
+        title: "Pay this account.",
         detail:
-          "Pay with the reference, then declare it here so the route can move into reconciliation; this does not confirm money received.",
+          "Use the exact reference. If automatic matching is not live yet, add a screenshot after transfer.",
       };
     }
 
@@ -1010,7 +1010,7 @@ export default function PaymentInstructionsPage() {
       return {
         tone: "gold" as const,
         step: "Proof recorded",
-        title: "Payment screenshot recorded.",
+        title: "Screenshot added.",
         detail:
           "Screenshot saved for checking while bank API match is not automatic.",
       };
@@ -1152,7 +1152,7 @@ export default function PaymentInstructionsPage() {
 
     setNotice({
       tone: "success",
-      text: "Payment declaration recorded. Waiting for reconciliation to confirm the money trail.",
+      text: "Payment note saved. GSN will match it with the bank record or screenshot.",
     });
   }
 
@@ -1597,7 +1597,7 @@ export default function PaymentInstructionsPage() {
                 ? "Generating"
                 : instruction
                   ? inferredResult.detail
-                  : "Enter amount and purpose."}
+                  : "Enter amount and purpose, then generate the reference."}
             </div>
           </div>
         </div>
@@ -1819,14 +1819,14 @@ export default function PaymentInstructionsPage() {
             },
             {
               iconName: "shield" as const,
-              label: "Declaration",
+              label: "Status",
               value: !instruction
                 ? "Generate first"
                 : matchedEvent
                   ? "Matched by bank"
                   : paymentConfirmed
-                    ? "Paid noted"
-                    : "Not marked paid yet",
+                    ? "Payment noted"
+                    : "Ready to pay",
               color: matchedEvent ? "#2E9B62" : "#92400E",
             },
           ].map((tile) => (
@@ -1905,7 +1905,7 @@ export default function PaymentInstructionsPage() {
               }}
             >
               {instructionReady
-                ? "Reference generated. Use these details."
+                ? "Reference ready. Pay this account with the exact reference."
                 : "Generate reference first."}
             </div>
           </div>
@@ -2031,7 +2031,7 @@ export default function PaymentInstructionsPage() {
               }}
             >
               <span>
-                Money In Rail is not ready. Add the marketplace receiving account first.
+                Pay-in account is not ready for this marketplace. Add the receiving account first.
               </span>
               <StableCtaLink
                 to={routes.marketplace}
@@ -2071,7 +2071,7 @@ export default function PaymentInstructionsPage() {
                 }}
               >
                 Bank API match confirms automatically when connected. For now,
-                add the payment screenshot after transfer.
+                add your payment screenshot after transfer.
               </div>
 
               <div
@@ -2113,7 +2113,7 @@ export default function PaymentInstructionsPage() {
                     boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
                   }}
                 >
-                  {moneyInActionText("check", paymentConfirmed ? "Declared" : "Declare paid")}
+                  {moneyInActionText("check", paymentConfirmed ? "Noted" : "I paid")}
                 </SecondaryButton>
 
                 <label
@@ -2235,7 +2235,7 @@ export default function PaymentInstructionsPage() {
               fontWeight: 800,
             }}
           >
-            After paying, declare it here.
+            After transfer, add your screenshot if needed.
           </span>
         </div>
       </section>
@@ -2277,7 +2277,7 @@ export default function PaymentInstructionsPage() {
           label="Help"
           what="Use the amount, account, and reference shown here."
           why="The reference links your transfer to this payment."
-          next="Pay from your bank, then declare it here."
+          next="Pay from your bank, then add your screenshot if needed."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -2298,7 +2298,7 @@ export default function PaymentInstructionsPage() {
               }}
             >
               <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>Instruction details</div>
+                <div style={sectionLabel()}>Payment details</div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   <div style={innerCard("#FFFFFF")}>
@@ -2332,7 +2332,7 @@ export default function PaymentInstructionsPage() {
 
                   {routeLines.length > 0 ? (
                     <div style={innerCard("#FFFFFF")}>
-                      <div style={sectionLabel()}>Route summary</div>
+                      <div style={sectionLabel()}>Payment route</div>
                       <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                         {routeLines.map((line, index) => (
                           <div key={`route-line-${index}`} style={helperText()}>
@@ -2345,7 +2345,7 @@ export default function PaymentInstructionsPage() {
 
                   {settlementDetailLines.length > 0 ? (
                     <div style={innerCard("#FFFFFF")}>
-                      <div style={sectionLabel()}>Settlement details</div>
+                      <div style={sectionLabel()}>Account details</div>
                       <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                         {settlementDetailLines.map((line, index) => (
                           <div key={`settlement-line-${index}`} style={helperText()}>
@@ -2359,7 +2359,7 @@ export default function PaymentInstructionsPage() {
               </div>
 
               <div style={softCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Instruction actions</div>
+                <div style={sectionLabel()}>Payment actions</div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   <PrimaryButton
@@ -2390,7 +2390,7 @@ export default function PaymentInstructionsPage() {
                     fullWidth
                     style={moneyInActionButtonStyle("secondary", paymentConfirmed)}
                   >
-                    {moneyInActionText("check", paymentConfirmed ? "Declared" : "Declare paid")}
+                    {moneyInActionText("check", paymentConfirmed ? "Noted" : "I paid")}
                   </SecondaryButton>
                 </div>
               </div>
@@ -2452,11 +2452,11 @@ export default function PaymentInstructionsPage() {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Current result state</div>
+              <div style={sectionLabel()}>Current status</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Route result</div>
+                  <div style={sectionLabel()}>Status</div>
                   <div
                     style={{
                       marginTop: 8,
@@ -2475,7 +2475,7 @@ export default function PaymentInstructionsPage() {
 
                 {paymentConfirmedAt ? (
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>Declared at</div>
+                    <div style={sectionLabel()}>Noted at</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -2672,7 +2672,7 @@ export default function PaymentInstructionsPage() {
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                  Generate, pay with the reference, then declare it here.
+                  Generate, pay with the exact reference, then add your screenshot if needed.
                 </div>
               </div>
             </div>
