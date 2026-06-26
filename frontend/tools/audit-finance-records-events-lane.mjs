@@ -79,12 +79,14 @@ assertOrderedSnippets(
   "finance",
   [
     "<FinanceMobileRecord",
+    "title={",
+    "\"Finance confirmed\"",
     "rows={[",
     "\"Amount\"",
     "\"Reference\"",
     "\"Note\"",
     "\"Created\"",
-    "\"Finance confirmed\"",
+    "\"Status\"",
   ],
   "Finance events mobile records must keep the core money-event fields."
 );

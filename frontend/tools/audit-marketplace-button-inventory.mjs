@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 70;
-const expectedNativeFieldCount = 34;
+const expectedStableActionCount = 68;
+const expectedNativeFieldCount = 27;
 const expectedSourceBreakdown = {
   front: 12,
-  body: 58,
+  body: 56,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -405,8 +405,8 @@ assertContains(
 );
 
 assertContains(
-  /id="marketplace-money-routes"[\s\S]*?Money In \/ Pool[\s\S]*?Pay into this marketplace pool and check the receiving rail\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Money In Rail[\s\S]*?Pay this account[\s\S]*?Money Out Rail[\s\S]*?My personal payout account/,
-  "Marketplace money route detail must keep the compact Money Pool reference-card structure."
+  /id="marketplace-money-routes"[\s\S]*?Money In \/ Pool[\s\S]*?Pay into this marketplace pool and check the receiving rail\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Money In Rail[\s\S]*?Pay this account[\s\S]*?Money Out[\s\S]*?Withdrawal and payout details[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?Open Withdrawal/,
+  "Marketplace money route detail must keep Money In editing local and send Money Out destination work to the Withdrawal route."
 );
 
 const moneySection = sectionBetween(
@@ -431,8 +431,6 @@ if (!moneySection) {
     "marketplace.money.money-out-destination",
     "marketplace.money.pay-in-account-save",
     "marketplace.money.pay-in-account-close",
-    "marketplace.money.money-out-destination-save",
-    "marketplace.money.money-out-destination-close",
     "marketplace.money.money-in",
     "marketplace.money.money-out",
   ];
@@ -658,13 +656,13 @@ assertContains(
 );
 
 assertContains(
-  /Money In Rail[\s\S]{0,1500}Pay this account[\s\S]{0,1500}debugId="marketplace\.money\.pay-in-account"[\s\S]{0,1500}setMoneyOutEditorOpen\(false\)[\s\S]{0,1500}setPayInEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
+  /Money In Rail[\s\S]{0,1500}Pay this account[\s\S]{0,1500}debugId="marketplace\.money\.pay-in-account"[\s\S]{0,1500}setPayInEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
   "Marketplace Money In Rail card button must open the pay-in editor in the money section."
 );
 
 assertContains(
-  /Money Out Rail[\s\S]{0,1500}My personal payout account[\s\S]{0,1500}debugId="marketplace\.money\.money-out-destination"[\s\S]{0,1500}setPayInEditorOpen\(false\)[\s\S]{0,1500}setMoneyOutEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
-  "Marketplace Money Out Rail card button must open the payout destination editor in the money section."
+  /Money Out[\s\S]{0,1500}Withdrawal and payout details[\s\S]{0,1500}to=\{marketplaceMoneyOutTo\}[\s\S]{0,1500}debugId="marketplace\.money\.money-out-destination"[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}Open Withdrawal/,
+  "Marketplace Money Out Rail card button must route to the Withdrawal page instead of reopening an editor inside Money Pool."
 );
 
 assertFileContains(
@@ -709,8 +707,6 @@ const expectedOrder = [
   exactDebugId("marketplace.money.money-out-destination"),
   exactDebugId("marketplace.money.pay-in-account-save"),
   exactDebugId("marketplace.money.pay-in-account-close"),
-  exactDebugId("marketplace.money.money-out-destination-save"),
-  exactDebugId("marketplace.money.money-out-destination-close"),
   exactDebugId("marketplace.money.money-in"),
   exactDebugId("marketplace.money.money-out"),
   exactDebugId("marketplace.rosca.toggle"),

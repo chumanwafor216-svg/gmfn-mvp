@@ -1,3 +1,65 @@
+## 2026-06-26 - Button, shell, and language audit baselines refreshed
+
+Owner request:
+- Check buttons, unpolished pages, user-facing words, minor gaps, shells, and
+  anything else that should be checked before the next pilot pass.
+
+Local audit fix:
+- `frontend/tools/audit-marketplace-button-inventory.mjs`
+  - updated the Marketplace baseline to the current separated money design:
+    68 stable Marketplace actions and 27 native fields;
+  - keeps Money In rail editing inside Money Pool;
+  - protects Money Out as a route to Withdrawal instead of restoring the old
+    payout editor inside Money Pool.
+- `frontend/tools/audit-marketplace-button-lines.mjs`
+  - updated the same button/native-field baseline while keeping the checks for
+    debug IDs, phone-safe geometry, non-blank routes, and mobile field tap
+    guards.
+- `frontend/tools/audit-loans-actions.mjs`
+  - stops expecting the old false repayment copy about no dated schedule;
+  - now protects repayment expected-payment metadata, planned repayment steps,
+    paid/left values, and repayment-claim submission.
+- `frontend/tools/audit-finance-records-events-lane.mjs`
+  - accepts `Finance confirmed` as the phone card title while still requiring
+    Amount, Reference, Note, Created, and Status rows.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:global-action-debugids`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:tap-stability`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run audit:route-fallthrough`
+- `npm --prefix frontend run audit:link-contracts`
+- `npm --prefix frontend run audit:inner-navigation-origin`
+- `npm --prefix frontend run audit:global-raw-action-elements`
+- `npm --prefix frontend run audit:finance-actions`
+- `npm --prefix frontend run audit:finance-button-inventory`
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm --prefix frontend run audit:payout-details-protocol`
+- `npm --prefix frontend run audit:marketplace-button-inventory`
+- `npm --prefix frontend run audit:marketplace-actions`
+- `npm --prefix frontend run audit:marketplace-money-pool-lane`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm --prefix frontend run audit:marketplace-front-package`
+- `npm --prefix frontend run audit:marketplace-button-lines`
+- `npm --prefix frontend run audit:marketplace-touch-blockers`
+- `npm --prefix frontend run audit:finance-lane-map`
+- `npm --prefix frontend run audit:finance-front-package`
+- `npm --prefix frontend run audit:finance-money-summary-lane`
+- `npm --prefix frontend run audit:finance-records-events-lane`
+- `npm --prefix frontend run audit:finance-banking-rails-lane`
+- `npm --prefix frontend run audit:finance-secondary-route-tools`
+- `npm --prefix frontend run audit:finance-signals-readiness-lane`
+- `npm --prefix frontend run audit:payment-instruction-phone-rows`
+- `npm --prefix frontend run audit:protocol-readiness`
+- `npm --prefix frontend run audit:mobile-visual-sweep`
+- `git diff --check`
+
+Status:
+- Local only until committed/pushed/deployed.
+- No user-facing page component was changed in this audit pass; only audit
+  contracts and this handoff note changed.
+
 ## 2026-06-26 - Repayment schedule metadata exposed to repayment UI
 
 Owner correction:
