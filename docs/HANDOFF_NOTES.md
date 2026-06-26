@@ -1,3 +1,55 @@
+## 2026-06-26 - Pending withdrawals now reduce withdrawable Money Out balance
+
+Owner request:
+- Continue the fintech-line audit and fix money movement truth before pilot
+  users test more withdrawal flows.
+
+Auditor finding:
+- Backend pool balance already calculated `pending_withdrawals`, but normal
+  withdrawal requests were checked against `effective_available`, which did not
+  subtract pending withdrawal requests.
+- Result: the same available money could be requested more than once before
+  finance/admin confirmation.
+
+Local backend correction:
+- `gmfn_backend/app/services/pool_service.py`
+  - now computes `withdrawable_now = effective_available - pending_withdrawals`;
+  - `request_withdrawal()` now rejects requests above `withdrawable_now`.
+- `gmfn_backend/app/api/routes/pool.py`
+  - `/pool/me` and `/pool/me/summary` now expose `withdrawable_now`.
+- `gmfn_backend/app/schemas/pool.py`
+  - `PoolMeOut` now includes `withdrawable_now`.
+- `gmfn_backend/tests/test_pool_withdrawal_integrity.py`
+  - new test proves one pending withdrawal reduces the next withdrawable amount
+    and blocks a duplicate pending withdrawal against the same money.
+
+Local frontend correction:
+- `frontend/src/lib/communityMoney.ts`
+  - normalizes `withdrawable_now` and carries it on `CommunityMoneySurface`;
+  - `requestPoolWithdrawal()` now preserves backend rejection details instead
+    of swallowing them into `null`.
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - Money Out checks requested amount against `withdrawableNow`, falling back
+    to `effectiveAvailable` only for older API responses;
+  - stale backend insufficient-balance rejections now store the same Money Out
+    handoff and open Marketplace Support Requests.
+- `frontend/tools/audit-finance-money-movement-lanes.mjs`
+  - audit now protects `withdrawable_now` usage and backend-rejection handoff.
+
+Verification passed locally:
+- `python -m pytest -q gmfn_backend\tests\test_pool_withdrawal_integrity.py gmfn_backend\tests\test_marketplace_requests.py::test_pool_summary_combines_member_communities`
+- `npm --prefix frontend run audit:finance-money-movement-lanes`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- This does not move money or automate payout; it only prevents duplicate
+  pending withdrawal claims and guides stale over-balance attempts to Support
+  Requests.
+- Pytest passes with an existing `datetime.utcnow()` deprecation warning in
+  `pool_service.py`; not changed in this slice.
+
 ## 2026-06-26 - Money Out support handoff regression cage added
 
 Owner request:

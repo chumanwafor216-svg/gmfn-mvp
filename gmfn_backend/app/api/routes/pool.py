@@ -76,6 +76,7 @@ def pool_me_summary(
         "pending_withdrawals": Decimal("0"),
         "reserved_pool": Decimal("0"),
         "effective_available": Decimal("0"),
+        "withdrawable_now": Decimal("0"),
         "membership_pool_balance": Decimal("0"),
     }
     items: list[dict[str, Any]] = []
@@ -95,6 +96,7 @@ def pool_me_summary(
             "pending_withdrawals",
             "reserved_pool",
             "effective_available",
+            "withdrawable_now",
         ):
             source_key = "available" if key == "available_balance" else key
             totals[key] += _money(balances.get(source_key))
@@ -112,6 +114,7 @@ def pool_me_summary(
                 "pending_withdrawals": _money_str(balances.get("pending_withdrawals")),
                 "reserved_pool": _money_str(balances.get("reserved_pool")),
                 "effective_available": _money_str(balances.get("effective_available")),
+                "withdrawable_now": _money_str(balances.get("withdrawable_now")),
                 "membership_pool_balance": _money_str(membership_pool),
                 "reference": build_reference(clan_id=int(clan.id), user_id=int(current_user.id)),
             }
@@ -143,6 +146,7 @@ def pool_me_summary(
             "pending_withdrawals": _money_str(totals["pending_withdrawals"]),
             "reserved_pool": _money_str(totals["reserved_pool"]),
             "effective_available": _money_str(totals["effective_available"]),
+            "withdrawable_now": _money_str(totals["withdrawable_now"]),
             "membership_pool_balance": _money_str(totals["membership_pool_balance"]),
             "guarantee_locked_as_guarantor": _money_str(locked_guarantees),
         },
@@ -196,6 +200,8 @@ def pool_me(
         out["reserved_pool"] = str(bal.get("reserved_pool", "0"))
     if "effective_available" in getattr(PoolMeOut, "model_fields", {}):
         out["effective_available"] = str(bal.get("effective_available", bal.get("available", "0")))
+    if "withdrawable_now" in getattr(PoolMeOut, "model_fields", {}):
+        out["withdrawable_now"] = str(bal.get("withdrawable_now", bal.get("effective_available", bal.get("available", "0"))))
 
     return out
 

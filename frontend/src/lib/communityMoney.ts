@@ -108,6 +108,7 @@ export type PoolStateSummary = {
   currency: string;
   reservedPool: string;
   effectiveAvailable: string;
+  withdrawableNow: string;
   availableBalance: string;
   pendingDeposits: string;
   pendingWithdrawals: string;
@@ -140,6 +141,7 @@ export type CommunityMoneySurface = {
   poolAmount: string;
   poolCurrency: string;
   effectiveAvailable: string;
+  withdrawableNow: string;
   reservedPool: string;
   pendingDeposits: string;
   pendingWithdrawals: string;
@@ -464,6 +466,12 @@ function normalizePoolState(raw: any): PoolStateSummary {
     currency: firstTruthy(src?.currency, "NGN"),
     reservedPool: firstTruthy(src?.reserved_pool, "0.00"),
     effectiveAvailable: firstTruthy(
+      src?.effective_available,
+      src?.available_balance,
+      "0.00"
+    ),
+    withdrawableNow: firstTruthy(
+      src?.withdrawable_now,
       src?.effective_available,
       src?.available_balance,
       "0.00"
@@ -1005,7 +1013,7 @@ export async function requestPoolWithdrawal(
       note: safeStr(payload.note || ""),
     },
     payload.clanId
-  ).catch(() => null);
+  );
 }
 
 export async function getLoanWithdrawalInstruction(
@@ -1249,6 +1257,7 @@ export async function getCommunityMoneySurface(
     poolAmount: firstTruthy(poolState.availableBalance, "0.00"),
     poolCurrency: firstTruthy(poolState.currency, currency),
     effectiveAvailable: firstTruthy(poolState.effectiveAvailable, "0.00"),
+    withdrawableNow: firstTruthy(poolState.withdrawableNow, poolState.effectiveAvailable, "0.00"),
     reservedPool: firstTruthy(poolState.reservedPool, "0.00"),
     pendingDeposits: firstTruthy(poolState.pendingDeposits, "0.00"),
     pendingWithdrawals: firstTruthy(poolState.pendingWithdrawals, "0.00"),

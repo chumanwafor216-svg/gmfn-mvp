@@ -871,11 +871,14 @@ export default function WithdrawalInstructionsPage() {
   const poolCurrency = safeStr(moneySurface?.poolCurrency || "NGN");
   const communityPoolDisplay = `${safeStr(moneySurface?.poolAmount || "0.00")} ${poolCurrency}`;
   const effectiveAvailableText = safeStr(moneySurface?.effectiveAvailable || "");
-  const effectiveAvailableKnown = Boolean(effectiveAvailableText);
+  const withdrawableNowText = safeStr(
+    moneySurface?.withdrawableNow || effectiveAvailableText
+  );
+  const effectiveAvailableKnown = Boolean(withdrawableNowText);
   const reservedPoolDisplay = `${safeStr(moneySurface?.reservedPool || "0.00")} ${poolCurrency}`;
   const requestedAmount = parseMoneyNumber(amountInput);
   const effectiveAvailableNumber = effectiveAvailableKnown
-    ? parseMoneyNumber(effectiveAvailableText)
+    ? parseMoneyNumber(withdrawableNowText)
     : 0;
   const requiresSupport =
     effectiveAvailableKnown && requestedAmount > effectiveAvailableNumber;
@@ -1166,6 +1169,22 @@ export default function WithdrawalInstructionsPage() {
         "success",
         "Withdrawal request reference created. Use it with your transfer proof; GSN finance reviews before money moves."
       );
+    } catch (err: any) {
+      const message = safeStr(err?.message || err?.detail || err);
+      if (/insufficient (withdrawable|effective) pool balance/i.test(message)) {
+        persistSupportHandoff();
+        showNotice(
+          "error",
+          "Your withdrawable balance is not enough now. Opening Support Requests for this marketplace."
+        );
+        navigateWithOrigin(navigate, routes.supportStart, location);
+        return;
+      }
+
+      showNotice(
+        "error",
+        message || "Withdrawal request reference could not be created."
+      );
     } finally {
       setSubmittingWithdrawal(false);
     }
@@ -1362,7 +1381,7 @@ export default function WithdrawalInstructionsPage() {
   const requestedAmountDisplay =
     requestedAmount > 0 ? `${fmtMoney(requestedAmount)} ${poolCurrency}` : "Awaiting amount";
   const effectiveAvailableDisplay = effectiveAvailableKnown
-    ? `${effectiveAvailableText} ${poolCurrency}`
+    ? `${withdrawableNowText} ${poolCurrency}`
     : "Awaiting pool reading";
   const identityReady = Boolean(selectedClanId && currentGmfnId);
   const supportGapDisplay =
@@ -2098,7 +2117,7 @@ export default function WithdrawalInstructionsPage() {
                       : !decisionChecked
                       ? "Press Continue so GSN can read this amount against your available pool."
                       : requiresSupport
-                      ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your effective available pool is ${effectiveAvailableText} ${poolCurrency}.`
+                      ? `You are asking for ${fmtMoney(requestedAmount)} ${poolCurrency} but your withdrawable balance is ${withdrawableNowText} ${poolCurrency}.`
                       : latestWithdrawalResult
                       ? "Use the reference with your transfer proof. GSN finance reviews before money moves."
                       : "This amount fits your available balance."}

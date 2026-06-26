@@ -42,6 +42,7 @@ class PoolMeOut(BaseModel):
     currency: str
     reserved_pool: str = "0"
     effective_available: str = "0"
+    withdrawable_now: str = "0"
 
     available_balance: str
     pending_deposits: str

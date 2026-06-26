@@ -101,12 +101,17 @@ def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: 
     if effective_available < Decimal("0"):
         effective_available = Decimal("0")
 
+    withdrawable_now = effective_available - pending_withdrawals
+    if withdrawable_now < Decimal("0"):
+        withdrawable_now = Decimal("0")
+
     return {
         "available": available,
         "pending_deposits": pending_deposits,
         "pending_withdrawals": pending_withdrawals,
         "reserved_pool": reserved_pool,
         "effective_available": effective_available,
+        "withdrawable_now": withdrawable_now,
     }
 
 
@@ -156,10 +161,10 @@ def request_withdrawal(
 
     ccy = _ccy(currency)
     bal = compute_pool_balances(db, clan_id=int(clan_id), user_id=int(user_id), currency=ccy)
-    effective = _d(bal.get("effective_available"))
+    withdrawable_now = _d(bal.get("withdrawable_now"))
 
-    if amt > effective:
-        raise ValueError(f"insufficient effective pool balance. Max={str(effective)}")
+    if amt > withdrawable_now:
+        raise ValueError(f"insufficient withdrawable pool balance. Max={str(withdrawable_now)}")
 
     e = PoolEvent(
         clan_id=int(clan_id),

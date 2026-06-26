@@ -9,6 +9,7 @@ const files = {
   finance: "src/pages/FinancePage.tsx",
   appRoutes: "src/lib/appRoutes.ts",
   actionTargets: "src/lib/actionTargetRoutes.ts",
+  communityMoney: "src/lib/communityMoney.ts",
   moneyInPage: "src/pages/PaymentInstructionsPage.tsx",
   moneyOutPage: "src/pages/WithdrawalInstructionsPage.tsx",
   package: "package.json",
@@ -106,6 +107,24 @@ assertContains(
   "moneyOutPage",
   /sectionLabel="Money Out"[\s\S]*?title="Normal Withdrawal"[\s\S]*?debugId="money-out\.continue-direct"[\s\S]*?debugId="money-out\.route\.finance"/,
   "Money Out route page must remain a normal withdrawal page with a traceable route back to Finance."
+);
+
+assertContains(
+  "communityMoney",
+  /export async function requestPoolWithdrawal[\s\S]*?return postJson\([\s\S]*?"\/pool\/withdrawals\/request"[\s\S]*?payload\.clanId[\s\S]*?\);[\s\S]*?\n\}/,
+  "Money Out API helper must preserve backend withdrawal rejection details instead of swallowing them."
+);
+
+assertContains(
+  "moneyOutPage",
+  /const withdrawableNowText = safeStr\([\s\S]*?moneySurface\?\.withdrawableNow \|\| effectiveAvailableText[\s\S]*?parseMoneyNumber\(withdrawableNowText\)[\s\S]*?your withdrawable balance is \$\{withdrawableNowText\}/,
+  "Money Out must use backend withdrawable_now, not only effective_available, when deciding whether support is required."
+);
+
+assertContains(
+  "moneyOutPage",
+  /catch \(err: any\) \{[\s\S]*?insufficient \(withdrawable\|effective\) pool balance[\s\S]*?persistSupportHandoff\(\)[\s\S]*?navigateWithOrigin\(navigate, routes\.supportStart, location\)/,
+  "Money Out must route stale backend insufficient-balance rejections into Support Requests."
 );
 
 assertContains(
