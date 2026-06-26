@@ -69708,3 +69708,39 @@ GSN-branded invite composer and invite-entry continuity.
   - deeper loan/readiness/suggestion/workbench pages were not deleted.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Money Out direct Loans & Support continuation
+
+- Trigger:
+  - owner phone-tested again after restarting the phone and confirmed the
+    Marketplace support-lane landing still did not behave reliably;
+  - owner accepted the simpler fallback: after `Continue`, Money Out should
+    explain that the request needs support and show one direct continuation to
+    Loans & Support.
+- Unabated truth:
+  - Marketplace hash/query landing is too brittle for this critical handoff;
+  - the user should not be dumped into Marketplace and asked to infer the next
+    step after GSN has already decided support is required.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - `Continue` now checks the amount and, when support is required, stays on
+      Money Out, persists the support handoff, and shows:
+      `This request needs support. Continue to Loans & Support.`;
+    - the primary action then becomes `Loans & Support`;
+    - that action now routes directly to the Loans & Support page instead of
+      the Marketplace support hash;
+    - Money Out support copy now says `Loans & Support`, not Marketplace
+      support lane.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`.
+- Still not changed:
+  - no backend payout automation was added;
+  - no guarantor approval-to-PIN payout trigger was added;
+  - deeper loan/readiness/suggestion/workbench tools were not deleted.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

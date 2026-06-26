@@ -718,24 +718,6 @@ function routeTarget(
   return String(resolveCtaTarget(intent, { communityId, debugId, hash }).to);
 }
 
-function addRouteQuery(target: string, extras: Record<string, string>): string {
-  const raw = String(target || "").trim();
-  if (!raw) return raw;
-
-  const [baseWithQuery, hash = ""] = raw.split("#");
-  const [pathname, search = ""] = baseWithQuery.split("?");
-  const query = new URLSearchParams(search);
-
-  Object.entries(extras).forEach(([key, value]) => {
-    if (value) query.set(key, value);
-  });
-
-  const nextSearch = query.toString();
-  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
-    hash ? `#${hash}` : ""
-  }`;
-}
-
 export default function WithdrawalInstructionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -775,17 +757,10 @@ export default function WithdrawalInstructionsPage() {
         selectedClanId,
         "money-out.route.workbench"
       ),
-      supportStart: addRouteQuery(
-        routeTarget(
-          "marketplace",
-          selectedClanId,
-          "money-out.route.support-start",
-          "marketplace-loans-support"
-        ),
-        {
-          support_flow: "money-out",
-          focus: "support",
-        }
+      supportStart: routeTarget(
+        "loans",
+        selectedClanId,
+        "money-out.route.support-start"
       ),
       loans: routeTarget("loans", selectedClanId, "money-out.route.loans"),
       notifications: routeTarget(
@@ -1079,7 +1054,7 @@ export default function WithdrawalInstructionsPage() {
       step: "Support-backed continuation",
       title: "This withdrawal becomes support-backed.",
       detail:
-        "The requested amount is above your effective available pool. The support flow should now continue until the support decision is resolved.",
+        "The requested amount is above your effective available pool. Continue to Loans & Support to finish the support request.",
     };
   }, [
     selectedClanId,
@@ -1310,7 +1285,10 @@ export default function WithdrawalInstructionsPage() {
 
     if (requiresSupport) {
       persistSupportHandoff();
-      navigateWithOrigin(navigate, routes.supportStart, location);
+      showNotice(
+        "success",
+        "This request needs support. Continue to Loans & Support."
+      );
       return;
     }
 
@@ -1704,7 +1682,7 @@ export default function WithdrawalInstructionsPage() {
               requestedAmount <= 0
             )}
           >
-            Open support
+            Loans & Support
           </PrimaryButton>
         )}
 
@@ -2251,7 +2229,7 @@ export default function WithdrawalInstructionsPage() {
                         : "",
                     ]
                       .filter(Boolean)
-                      .join(" | ") || "Open support if the amount needs backing."}
+                      .join(" | ") || "Open Loans & Support if the amount needs backing."}
                   </div>
                 </div>
                 ) : null}
@@ -2317,7 +2295,7 @@ export default function WithdrawalInstructionsPage() {
                       requestedAmount <= 0
                     )}
                   >
-                    Open support
+                    Loans & Support
                   </PrimaryButton>
                 )}
 
@@ -2938,7 +2916,7 @@ export default function WithdrawalInstructionsPage() {
                       ? "Wait for the pool reading before this route decides."
                       : !requiresSupport
                       ? "This request is recorded with a reference. Admin payout/manual release is still separate for the pilot."
-                      : "This amount needs support. Continue in Marketplace Support Requests."}
+                      : "This request needs support. Continue to Loans & Support."}
                   </div>
                 </div>
 
@@ -2998,7 +2976,7 @@ export default function WithdrawalInstructionsPage() {
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Support path chosen</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Continue in the Marketplace support lane instead of repeating the same decision.
+                      Continue to Loans & Support instead of repeating the same decision.
                     </div>
                   </div>
                 ) : null}
@@ -3011,7 +2989,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={52}
                         style={moneyOutActionButtonStyle("primary")}
                       >
-                        Continue support
+                        Loans & Support
                       </StableCtaLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (
@@ -3061,7 +3039,7 @@ export default function WithdrawalInstructionsPage() {
               {withdrawalCanWidenRoutes
                 ? "Related routes reopen after a visible result."
                 : requiresSupport
-                ? "Support is required. Continue inside the support flow."
+                ? "Support is required. Continue to Loans & Support."
                 : "Keep this task focused on amount, rail, payout, and result."}
             </div>
           </div>
