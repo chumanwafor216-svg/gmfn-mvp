@@ -6,11 +6,27 @@ import {
   type GuidanceSnapshot,
 } from "../lib/guidance";
 
+const COMPANION_BLOCKED_PATH_PREFIXES = [
+  "/app/finance",
+  "/app/payment/pool",
+  "/app/payment/withdraw",
+  "/app/payment-rails",
+  "/app/payout-details",
+];
+
 export default function WorkspaceCompanionBridge() {
   const location = useLocation();
   const [snapshot, setSnapshot] = useState<GuidanceSnapshot | null>(null);
+  const companionBlocked = COMPANION_BLOCKED_PATH_PREFIXES.some((prefix) =>
+    location.pathname.startsWith(prefix)
+  );
 
   useEffect(() => {
+    if (companionBlocked) {
+      setSnapshot(null);
+      return;
+    }
+
     let alive = true;
 
     async function loadSnapshot() {
@@ -47,7 +63,9 @@ export default function WorkspaceCompanionBridge() {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [location.pathname, location.search]);
+  }, [companionBlocked, location.pathname, location.search]);
+
+  if (companionBlocked) return null;
 
   return <CompanionLayer snapshot={snapshot} />;
 }

@@ -221,7 +221,23 @@ function fmtFinanceAmount(value: any, currency = "NGN"): string {
 }
 
 function poolEventDirection(row: PoolEvent): "in" | "out" | "neutral" {
-  const haystack = `${safeStr(row.eventType)} ${safeStr(row.note)}`.toLowerCase();
+  const eventType = safeStr(row.eventType).toLowerCase();
+  const haystack = `${eventType} ${safeStr(row.note)}`.toLowerCase();
+
+  if (
+    eventType === "deposit.requested" ||
+    eventType === "withdrawal.requested" ||
+    haystack.includes("payment instruction generated")
+  ) {
+    return "neutral";
+  }
+
+  if (
+    eventType.includes("deposit.confirmed") ||
+    eventType.includes("pool.deposit.confirmed")
+  ) {
+    return "in";
+  }
 
   if (
     haystack.includes("withdraw") ||
@@ -245,6 +261,33 @@ function poolEventDirection(row: PoolEvent): "in" | "out" | "neutral" {
   }
 
   return "neutral";
+}
+
+function poolEventTitle(row: PoolEvent): string {
+  const eventType = safeStr(row.eventType).toLowerCase();
+  if (eventType === "deposit.requested") return "Payment code";
+  if (
+    eventType.includes("deposit.confirmed") ||
+    eventType.includes("pool.deposit.confirmed")
+  ) {
+    return "Money received";
+  }
+  if (eventType === "withdrawal.requested") return "Withdrawal requested";
+  return safeStr(row.eventType || "Money event");
+}
+
+function poolEventStatus(row: PoolEvent): string {
+  const eventType = safeStr(row.eventType).toLowerCase();
+  if (eventType === "deposit.requested") return "Not received yet";
+  if (eventType === "withdrawal.requested") return "Requested";
+  if (safeStr(row.confirmedAt)) return "Confirmed";
+  if (
+    eventType.includes("deposit.confirmed") ||
+    eventType.includes("pool.deposit.confirmed")
+  ) {
+    return "Received";
+  }
+  return "-";
 }
 
 function rowsOf<T = any>(input: any): T[] {
@@ -308,24 +351,24 @@ function safeDateTime(x: any): string {
 }
 
 function expectedPaymentState(item: ExpectedPaymentRecord): string {
-  if (safeStr(item.confirmed_at)) return "Finance confirmed";
-  if (item.matched_bank_event_id) return "Bank match started";
-  if (safeStr(item.reference_display)) return "Awaiting bank check";
-  return "Needs payment instruction";
+  if (safeStr(item.confirmed_at)) return "Received";
+  if (item.matched_bank_event_id) return "Bank match found";
+  if (safeStr(item.reference_display)) return "Code generated";
+  return "Needs code";
 }
 
 function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
   const state = expectedPaymentState(item);
-  if (state === "Finance confirmed") {
-    return "Finance shows this payment as confirmed; use the related service only where its route says it is available.";
+  if (state === "Received") {
+    return "No action needed here.";
   }
-  if (state === "Bank match started") {
-    return "The bank match has started. Wait for finance confirmation.";
+  if (state === "Bank match found") {
+    return "Waiting for final confirmation.";
   }
-  if (state === "Awaiting bank check") {
-    return "Pay with the exact reference so finance can reconcile it.";
+  if (state === "Code generated") {
+    return "Not paid yet unless the bank transfer was sent.";
   }
-  return "Generate a fresh payment instruction if you still need to pay.";
+  return "Generate a code first.";
 }
 
 function apiBase(): string {
@@ -1302,9 +1345,9 @@ export default function FinancePage() {
     return activeExpectedPayments.reduce(
       (acc, item) => {
         const state = expectedPaymentState(item);
-        if (state === "Finance confirmed") acc.confirmed += 1;
-        else if (state === "Bank match started") acc.matched += 1;
-        else if (state === "Awaiting bank check") acc.awaitingReconciliation += 1;
+        if (state === "Received") acc.confirmed += 1;
+        else if (state === "Bank match found") acc.matched += 1;
+        else if (state === "Code generated") acc.awaitingReconciliation += 1;
         else acc.awaitingIssue += 1;
         return acc;
       },
@@ -1410,9 +1453,9 @@ export default function FinancePage() {
 
     if (pendingReconciliationCount > 0) {
       rows.push(
-        `${pendingReconciliationCount} payment${
+        `${pendingReconciliationCount} payment code${
           pendingReconciliationCount === 1 ? "" : "s"
-        } waiting for bank confirmation.`
+        } waiting for a bank match.`
       );
     }
 
@@ -1884,7 +1927,7 @@ export default function FinancePage() {
               icon: "down" as FinanceGlyphName,
               label: "Money in this month",
               value: fmtFinanceAmount(visibleMonthInflow, crossCurrency),
-              note: "Paid in this month",
+              note: "Received this month",
             },
             {
               icon: "shield" as FinanceGlyphName,
@@ -2574,9 +2617,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Payments waiting for finance confirmation</div>
+            <div style={sectionLabel()}>Payment codes and bank matches</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              See which payments are waiting, which are finance-confirmed, and what to do next.
+              Codes are not paid until the bank match confirms them.
             </div>
           </div>
 
@@ -2587,7 +2630,7 @@ export default function FinancePage() {
             debugId="finance.toggle-reconciliation"
             style={financeCollapseButtonStyle()}
           >
-            {collapsed.reconciliation ? "Show payments" : "Hide payments"}
+            {collapsed.reconciliation ? "Show codes" : "Hide codes"}
           </SubtleButton>
         </div>
 
@@ -2600,31 +2643,31 @@ export default function FinancePage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Payments waiting: {activeExpectedPayments.length}</span>
-              <span style={badge(false)}>Waiting for finance check: {pendingReconciliationCount}</span>
-              <span style={badge(false)}>Finance confirmed: {expectedPaymentStateCounts.confirmed}</span>
-              <span style={badge(false)}>Bank match started: {expectedPaymentStateCounts.matched}</span>
+              <span style={badge(true)}>Codes open: {activeExpectedPayments.length}</span>
+              <span style={badge(false)}>Not received yet: {pendingReconciliationCount}</span>
+              <span style={badge(false)}>Received: {expectedPaymentStateCounts.confirmed}</span>
+              <span style={badge(false)}>Bank match found: {expectedPaymentStateCounts.matched}</span>
               <span style={badge(false)}>
-                Needs new instruction: {expectedPaymentStateCounts.awaitingIssue}
+                Needs new code: {expectedPaymentStateCounts.awaitingIssue}
               </span>
             </div>
 
             {activeExpectedPayments.length === 0 ? (
-              emptyRecord("No payment is waiting for finance confirmation right now.")
+              emptyRecord("No open payment code right now.")
             ) : isCompact ? (
               <div style={{ display: "grid", gap: 10 }}>
                 {activeExpectedPayments.slice(0, 10).map((item, index) => (
                   <FinanceMobileRecord
                     key={`${item.id || index}`}
-                    title={safeStr(item.expected_type || "Expected payment")}
-                    tone={expectedPaymentState(item) === "Finance confirmed" ? "good" : "watch"}
+                    title={safeStr(item.expected_type || "Payment code")}
+                    tone={expectedPaymentState(item) === "Received" ? "good" : "watch"}
                     rows={[
                       ["Reference", safeStr(item.reference_display || "-")],
                       [
                         "Amount",
                         `${safeStr(item.amount || "0.00")} ${safeStr(item.currency || poolCurrency)}`,
                       ],
-                      ["Payment check", expectedPaymentState(item)],
+                      ["Payment status", expectedPaymentState(item)],
                       [
                         "Status",
                         `${safeStr(item.status || "expected")}${
@@ -2634,11 +2677,11 @@ export default function FinancePage() {
                       [
                         "Date",
                         item.confirmed_at
-                          ? `Finance confirmed: ${safeDateTime(item.confirmed_at)}`
+                          ? `Received: ${safeDateTime(item.confirmed_at)}`
                           : item.due_at
                             ? `Due: ${safeDateTime(item.due_at)}`
                             : item.matched_bank_event_id
-                              ? "Bank match started"
+                              ? "Bank match found"
                               : "-",
                       ],
                       ["Next action", expectedPaymentNextAction(item)],
@@ -2654,7 +2697,7 @@ export default function FinancePage() {
                       <th style={tableHeadCell()}>Type</th>
                       <th style={tableHeadCell()}>Reference</th>
                       <th style={tableHeadCell()}>Amount</th>
-                      <th style={tableHeadCell()}>Payment check</th>
+                      <th style={tableHeadCell()}>Payment status</th>
                       <th style={tableHeadCell()}>Status</th>
                       <th style={tableHeadCell()}>Date</th>
                       <th style={tableHeadCell()}>Next action</th>
@@ -2664,7 +2707,7 @@ export default function FinancePage() {
                     {activeExpectedPayments.slice(0, 10).map((item, index) => (
                       <tr key={`${item.id || index}`}>
                         <td style={tableCell(true)}>
-                          {safeStr(item.expected_type || "Expected payment")}
+                          {safeStr(item.expected_type || "Payment code")}
                         </td>
                         <td style={tableCell()}>
                           {safeStr(item.reference_display || "-")}
@@ -2680,11 +2723,11 @@ export default function FinancePage() {
                         </td>
                         <td style={tableCell()}>
                           {item.confirmed_at
-                            ? `Finance confirmed: ${safeDateTime(item.confirmed_at)}`
+                            ? `Received: ${safeDateTime(item.confirmed_at)}`
                             : item.due_at
                               ? `Due: ${safeDateTime(item.due_at)}`
                               : item.matched_bank_event_id
-                                ? "Bank match started"
+                                ? "Bank match found"
                                 : "-"}
                         </td>
                         <td style={tableCell()}>{expectedPaymentNextAction(item)}</td>
@@ -3000,7 +3043,7 @@ export default function FinancePage() {
                 {poolEvents.slice(0, 12).map((row, index) => (
                   <FinanceMobileRecord
                     key={`${row.id || index}`}
-                    title={safeStr(row.eventType || "Money event")}
+                    title={poolEventTitle(row)}
                     tone={poolEventDirection(row) === "in" ? "good" : "neutral"}
                     rows={[
                       [
@@ -3010,7 +3053,7 @@ export default function FinancePage() {
                       ["Reference", safeStr(row.reference || "-")],
                       ["Note", safeStr(row.note || "-")],
                       ["Created", row.createdAt ? safeDateTime(row.createdAt) : "-"],
-                      ["Finance confirmed", row.confirmedAt ? safeDateTime(row.confirmedAt) : "-"],
+                      ["Status", poolEventStatus(row)],
                     ]}
                   />
                 ))}
@@ -3025,14 +3068,14 @@ export default function FinancePage() {
                       <th style={tableHeadCell()}>Reference</th>
                       <th style={tableHeadCell()}>Note</th>
                       <th style={tableHeadCell()}>Created</th>
-                      <th style={tableHeadCell()}>Finance confirmed</th>
+                      <th style={tableHeadCell()}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {poolEvents.slice(0, 12).map((row, index) => (
                       <tr key={`${row.id || index}`}>
                         <td style={tableCell(true)}>
-                          {safeStr(row.eventType || "Money event")}
+                          {poolEventTitle(row)}
                         </td>
                         <td style={tableCell(true)}>
                           {safeStr(row.amount || "-")} {safeStr(row.currency || poolCurrency)}
@@ -3042,9 +3085,7 @@ export default function FinancePage() {
                         <td style={tableCell()}>
                           {row.createdAt ? safeDateTime(row.createdAt) : "-"}
                         </td>
-                        <td style={tableCell()}>
-                          {row.confirmedAt ? safeDateTime(row.confirmedAt) : "-"}
-                        </td>
+                        <td style={tableCell()}>{poolEventStatus(row)}</td>
                       </tr>
                     ))}
                   </tbody>

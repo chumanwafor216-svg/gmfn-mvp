@@ -272,12 +272,14 @@ def create_pool_deposit_instruction(
     user_id: int,
     amount: Decimal,
     currency: str = "NGN",
+    contribution_reason: Optional[str] = None,
 ) -> Dict[str, Any]:
     amount = _d(amount)
     if amount <= Decimal("0.00"):
         raise ValueError("amount must be > 0")
 
     ccy = (currency or "NGN").strip().upper() or "NGN"
+    reason = (contribution_reason or "").strip()[:180]
 
     reference_display = (
         f"GMFN-POOL-CLAN-{int(clan_id)}-U{int(user_id)}-"
@@ -291,7 +293,7 @@ def create_pool_deposit_instruction(
         amount=amount,
         currency=ccy,
         reference=reference_display,
-        note="payment instruction generated",
+        note=reason or "payment instruction generated",
         created_at=_now_utc(),
         confirmed_at=None,
         confirmed_by_user_id=None,
@@ -311,6 +313,7 @@ def create_pool_deposit_instruction(
             "pool_event_id": int(pool_event.id),
             "source": "payment_instruction.pool",
             "reference": reference_display,
+            "contribution_reason": reason,
         },
         commit=True,
         refresh=True,
@@ -324,6 +327,7 @@ def create_pool_deposit_instruction(
         "reference_normalized": exp.reference_normalized,
         "amount": str(amount),
         "currency": ccy,
+        "contribution_reason": reason,
         "due_at": exp.due_at.isoformat() if exp.due_at else None,
     }
 

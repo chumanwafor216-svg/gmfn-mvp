@@ -18,10 +18,13 @@ export type CommunityMoneySettlement = {
   mobileMoneyProvider: string;
   mobileMoneyNumber: string;
   country: string;
+  currency?: string;
   regionCode: string;
   paymentNetworks: string[];
   missingFieldText: string;
   supportNote: string;
+  configured?: boolean;
+  source?: string;
 };
 
 export type PaymentRail = {
@@ -57,6 +60,7 @@ export type CommunityMoneyRoute = {
   railLabel: string;
   kind: string;
   availableRails: PaymentRail[];
+  contributionReason?: string;
 };
 
 export type CommunitySettlementDestination = {
@@ -118,6 +122,7 @@ export type GeneratedPoolDepositInstruction = {
   currency: string;
   settlement: CommunityMoneySettlement | null;
   instructionType: string;
+  contributionReason?: string;
 };
 
 export type PoolWithdrawalRequestPayload = {
@@ -259,10 +264,11 @@ async function fetchJson(path: string, clanId?: number): Promise<any | null> {
 async function postJson(
   path: string,
   body: any,
-  clanId?: number
+  clanId?: number,
+  method = "POST"
 ): Promise<any | null> {
   const res = await fetch(`${apiBase()}${path}`, {
-    method: "POST",
+    method,
     headers: {
       ...buildHeaders(clanId),
       "content-type": "application/json",
@@ -316,16 +322,60 @@ function normalizeCommunitySettlement(raw: any): CommunityMoneySettlement | null
     mobileMoneyProvider: firstTruthy(src?.mobile_money_provider, src?.mobileMoneyProvider),
     mobileMoneyNumber: firstTruthy(src?.mobile_money_number, src?.mobileMoneyNumber),
     country: firstTruthy(src?.country),
+    currency: firstTruthy(src?.currency),
     regionCode: firstTruthy(src?.region_code, src?.regionCode),
     paymentNetworks: Array.isArray(paymentNetworks)
       ? paymentNetworks.map((item: any) => safeStr(item)).filter(Boolean)
       : [],
     missingFieldText: firstTruthy(src?.missing_field_text, src?.missingFieldText),
     supportNote: firstTruthy(src?.support_note, src?.supportNote),
+    configured:
+      typeof src?.configured === "boolean" ? Boolean(src.configured) : undefined,
+    source: firstTruthy(src?.source),
   };
 
-  const visible = Object.values(settlement).some((value) => safeStr(value));
+  const visible = [
+    settlement.bankName,
+    settlement.accountName,
+    settlement.accountNumber,
+    settlement.sortCode,
+    settlement.routingNumber,
+    settlement.iban,
+    settlement.swiftBic,
+    settlement.mobileMoneyNumber,
+  ].some((value) => safeStr(value));
   return visible ? settlement : null;
+}
+
+export function communityPayInReady(
+  settlement: CommunityMoneySettlement | null
+): boolean {
+  if (!settlement) return false;
+  if (settlement.configured === false) return false;
+  if (
+    settlement.configured !== true &&
+    safeStr(settlement.source) !== "community_pay_in_account"
+  ) {
+    return false;
+  }
+
+  const bankName = safeStr(settlement.bankName).toLowerCase();
+  const accountName = safeStr(settlement.accountName).toLowerCase();
+  const accountNumber = safeStr(settlement.accountNumber).toLowerCase();
+
+  if (!accountNumber || accountNumber === "to be assigned") return false;
+  if (bankName.includes("settlement rail") && accountNumber === "to be assigned") {
+    return false;
+  }
+  if (accountName === "gsn settlement" && accountNumber === "to be assigned") {
+    return false;
+  }
+
+  return Boolean(
+    safeStr(settlement.bankName) &&
+      safeStr(settlement.accountName) &&
+      safeStr(settlement.accountNumber)
+  );
 }
 
 function settlementDetailLines(settlement: CommunityMoneySettlement | null): string[] {
@@ -482,6 +532,12 @@ function normalizePoolDepositInstruction(
     currency: firstTruthy(src?.currency, "NGN"),
     settlement: normalizeCommunitySettlement(src?.settlement),
     instructionType: firstTruthy(src?.instruction_type, "pool_deposit"),
+    contributionReason: firstTruthy(
+      src?.contribution_reason,
+      src?.contributionReason,
+      src?.reason,
+      src?.note
+    ),
   };
 }
 
@@ -492,7 +548,7 @@ function buildRouteFromContext(params: {
   instructionType: string;
 }): CommunityMoneyRoute | null {
   const defaultRail = params.context?.defaultRail || null;
-  const settlement = defaultRail?.settlement || params.fallbackSettlement || null;
+  const settlement = params.fallbackSettlement || defaultRail?.settlement || null;
 
   if (!defaultRail && !settlement) return null;
 
@@ -521,6 +577,10 @@ function buildRouteFromContext(params: {
 
 function destinationStorageKey(gmfnId: string, clanId: number): string {
   return `gmfn.money.destination.${gmfnId || "me"}.${clanId || 0}`;
+}
+
+function communityPayInStorageKey(clanId: number): string {
+  return `gmfn.money.communityPayIn.${clanId || 0}`;
 }
 
 function depositRouteStorageKey(
@@ -557,6 +617,65 @@ function writeLocalJSON(key: string, value: any) {
   } catch {
     // ignore
   }
+}
+
+export async function getCommunityPayInSettlement(
+  clanId: number
+): Promise<CommunityMoneySettlement | null> {
+  const raw = await fetchJson(
+    `/community-pay-in-accounts/${Number(clanId)}`,
+    clanId
+  ).catch(() => null);
+
+  const settlement = normalizeCommunitySettlement(raw);
+  if (settlement && communityPayInReady(settlement)) {
+    writeLocalJSON(communityPayInStorageKey(clanId), settlement);
+    return settlement;
+  }
+
+  const cached = readLocalJSON<CommunityMoneySettlement | null>(
+    communityPayInStorageKey(clanId),
+    null
+  );
+  return communityPayInReady(cached) ? cached : null;
+}
+
+export async function saveCommunityPayInSettlement(params: {
+  clanId: number;
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  sortCode?: string;
+  routingNumber?: string;
+  iban?: string;
+  swiftBic?: string;
+  country?: string;
+  currency?: string;
+  note?: string;
+}): Promise<CommunityMoneySettlement | null> {
+  const raw = await postJson(
+    `/community-pay-in-accounts/${Number(params.clanId)}`,
+    {
+      account_name: safeStr(params.accountName),
+      bank_name: safeStr(params.bankName),
+      account_number: safeStr(params.accountNumber),
+      sort_code: normalizeSortCode(params.sortCode),
+      routing_number: safeStr(params.routingNumber),
+      iban: safeStr(params.iban),
+      swift_bic: safeStr(params.swiftBic),
+      country: safeStr(params.country),
+      currency: safeStr(params.currency || "NGN") || "NGN",
+      note: safeStr(params.note),
+    },
+    params.clanId,
+    "PUT"
+  );
+
+  const settlement = normalizeCommunitySettlement(raw);
+  if (settlement) {
+    writeLocalJSON(communityPayInStorageKey(params.clanId), settlement);
+  }
+  return settlement;
 }
 
 export function defaultDestination(): CommunitySettlementDestination {
@@ -672,6 +791,9 @@ export async function loadCommunityDepositRoute(
   gmfnId: string,
   currency = "NGN"
 ): Promise<CommunityMoneyRoute | null> {
+  const communityPayIn = await getCommunityPayInSettlement(clanId).catch(
+    () => null
+  );
   const instructionCfg = await getPaymentInstructionConfig(clanId).catch(() => ({
     settlement: null,
     availableInstructionTypes: [],
@@ -698,7 +820,7 @@ export async function loadCommunityDepositRoute(
 
   const route = buildRouteFromContext({
     context: nextContext,
-    fallbackSettlement: instructionCfg.settlement,
+    fallbackSettlement: communityPayIn || instructionCfg.settlement,
     title: "Community Pay In Rail",
     instructionType: "pool_deposit",
   });
@@ -763,6 +885,7 @@ export async function createPoolDepositInstruction(params: {
   clanId: number;
   amount: string;
   currency?: string;
+  contributionReason?: string;
 }): Promise<CommunityMoneyRoute | null> {
   const currency = safeStr(params.currency || "NGN") || "NGN";
 
@@ -772,6 +895,7 @@ export async function createPoolDepositInstruction(params: {
       clan_id: Number(params.clanId),
       amount: safeStr(params.amount),
       currency,
+      contribution_reason: safeStr(params.contributionReason || ""),
     },
     params.clanId
   ).catch(() => null);
@@ -782,14 +906,18 @@ export async function createPoolDepositInstruction(params: {
   const rail = await getDefaultPaymentRail(currency, params.clanId).catch(
     () => null
   );
+  const communityPayIn = await getCommunityPayInSettlement(params.clanId).catch(
+    () => null
+  );
+  const settlement = communityPayIn || normalized.settlement || rail?.settlement || null;
 
   return {
     title: "Generated Pool Deposit Instruction",
     detail: [
-      normalized.settlement?.railName
-        ? `Rail: ${normalized.settlement.railName}`
+      settlement?.railName
+        ? `Rail: ${settlement.railName}`
         : "",
-      ...settlementDetailLines(normalized.settlement),
+      ...settlementDetailLines(settlement),
     ]
       .filter(Boolean)
       .join("\n"),
@@ -800,11 +928,12 @@ export async function createPoolDepositInstruction(params: {
     maxAmount: "",
     updatedAt: new Date().toISOString(),
     instructionType: normalized.instructionType,
-    settlement: normalized.settlement,
+    settlement,
     railCode: firstTruthy(rail?.railCode),
     railLabel: firstTruthy(rail?.label),
     kind: firstTruthy(rail?.kind),
     availableRails: rail ? [rail] : [],
+    contributionReason: normalized.contributionReason,
   };
 }
 
@@ -833,14 +962,18 @@ export async function createLoanRepaymentInstruction(params: {
   const rail = await getDefaultPaymentRail(currency, params.clanId).catch(
     () => null
   );
+  const communityPayIn = await getCommunityPayInSettlement(params.clanId).catch(
+    () => null
+  );
+  const settlement = communityPayIn || normalized.settlement;
 
   return {
     title: "Generated Loan Repayment Instruction",
     detail: [
-      normalized.settlement?.railName
-        ? `Rail: ${normalized.settlement.railName}`
+      settlement?.railName
+        ? `Rail: ${settlement.railName}`
         : "",
-      ...settlementDetailLines(normalized.settlement),
+      ...settlementDetailLines(settlement),
     ]
       .filter(Boolean)
       .join("\n"),
@@ -851,7 +984,7 @@ export async function createLoanRepaymentInstruction(params: {
     maxAmount: "",
     updatedAt: new Date().toISOString(),
     instructionType: normalized.instructionType,
-    settlement: normalized.settlement,
+    settlement,
     railCode: firstTruthy(rail?.railCode),
     railLabel: firstTruthy(rail?.label),
     kind: firstTruthy(rail?.kind),
@@ -1065,6 +1198,7 @@ export async function getCommunityMoneySurface(
   const [
     poolState,
     paymentInstructionConfig,
+    communityPayInSettlement,
     communitySettlement,
     payoutDestination,
     depositRailContext,
@@ -1078,6 +1212,7 @@ export async function getCommunityMoneySurface(
     getPaymentInstructionConfig(clanId).catch(() =>
       normalizePaymentInstructionConfig(null)
     ),
+    getCommunityPayInSettlement(clanId).catch(() => null),
     getSettlementConfig(clanId).catch(() => null),
     getCommunitySettlementDestination(clanId, gmfnId).catch(() =>
       defaultDestination()
@@ -1106,11 +1241,12 @@ export async function getCommunityMoneySurface(
       : [],
 
     communitySettlement:
+      communityPayInSettlement ||
+      depositRoute?.settlement ||
+      depositRailContext?.defaultRail?.settlement ||
       communitySettlement ||
       paymentInstructionConfig.settlement ||
-      depositRoute?.settlement ||
       withdrawalRoute?.settlement ||
-      depositRailContext?.defaultRail?.settlement ||
       withdrawalRailContext?.defaultRail?.settlement ||
       null,
 

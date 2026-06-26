@@ -19,17 +19,17 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 63;
-const expectedNativeFieldCount = 19;
+const expectedStableActionCount = 68;
+const expectedNativeFieldCount = 34;
 const expectedSourceBreakdown = {
   front: 11,
-  body: 52,
+  body: 57,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 30,
-  pageTools: 8,
+  pageTools: 7,
   bottom: 5,
 };
 const expectedMobileShellActionCount = Object.values(
@@ -350,7 +350,7 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Finance & Pool[\s\S]*?Pool, money in\/out, and banking[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Banking Rails/,
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Finance & Pool[\s\S]*?Pool, money in\/out, and banking[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Marketplace Rails/,
   "Marketplace Finance & Pool grouped card must open the money section only and show money route tags."
 );
 
@@ -400,7 +400,7 @@ assertContains(
 );
 
 assertContains(
-  /id="marketplace-money-routes"[\s\S]*?Money Pool[\s\S]*?This community's pool, money in, and money out\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Community Account[\s\S]*?Money In route[\s\S]*?Personal Payout[\s\S]*?Money Out route/,
+  /id="marketplace-money-routes"[\s\S]*?Money Pool[\s\S]*?This marketplace's pool, money in, and money out\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Money In Rail[\s\S]*?Pay this account[\s\S]*?Money Out Rail[\s\S]*?Where my approved withdrawal goes/,
   "Marketplace money route detail must keep the compact Money Pool reference-card structure."
 );
 
@@ -422,16 +422,21 @@ if (!moneySection) {
   ].map((item) => item[1]);
   const expectedMoneyActionIds = [
     "marketplace.money.toggle",
+    "marketplace.money.pay-in-account-save",
+    "marketplace.money.pay-in-account-close",
+    "marketplace.money.money-out-destination-save",
+    "marketplace.money.money-out-destination-close",
     "marketplace.money.money-in",
     "marketplace.money.money-out",
-    "marketplace.money.finance",
+    "marketplace.money.pay-in-account",
+    "marketplace.money.money-out-destination",
   ];
 
   if (moneyActionIds.join("|") !== expectedMoneyActionIds.join("|")) {
     findings.push({
       file: marketplaceFile,
       line: lineAt(source.indexOf(moneySection)),
-      message: "Marketplace money detail section must expose only the audited money actions in the audited order.",
+      message: "Marketplace money detail section must expose the audited money actions and rail editors in the audited order.",
       text: `found=${moneyActionIds.join(", ") || "none"}`,
     });
   }
@@ -648,13 +653,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.money\.finance"[\s\S]{0,260}onClick=\{\(event\) => openMarketplaceCta\(event, "finance"\)\}/,
-  "Marketplace Finance detail button must route through the shared finance CTA target."
+  /debugId="marketplace\.money\.pay-in-account"[\s\S]{0,1500}setMoneyOutEditorOpen\(false\)[\s\S]{0,1500}setPayInEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{58\}[\s\S]{0,1500}Money In Rail/,
+  "Marketplace Money In Rail button must open the pay-in editor in the money section."
 );
 
 assertContains(
-  /debugId="marketplace\.money\.finance"[\s\S]{0,220}stableHeight=\{58\}[\s\S]{0,220}marketplaceInlineActionStyle\("secondary", false, isCompact\)/,
-  "Marketplace Finance detail button must keep fixed 58px geometry and the audited inline action style."
+  /debugId="marketplace\.money\.money-out-destination"[\s\S]{0,1500}setPayInEditorOpen\(false\)[\s\S]{0,1500}setMoneyOutEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{58\}[\s\S]{0,1500}Money Out Rail/,
+  "Marketplace Money Out Rail button must open the payout destination editor in the money section."
 );
 
 assertFileContains(
@@ -694,9 +699,14 @@ const expectedOrder = [
     /debugId=\{`marketplace\.intent\.\$\{item\.id\}`\}/
   ),
   exactDebugId("marketplace.money.toggle"),
+  exactDebugId("marketplace.money.pay-in-account-save"),
+  exactDebugId("marketplace.money.pay-in-account-close"),
+  exactDebugId("marketplace.money.money-out-destination-save"),
+  exactDebugId("marketplace.money.money-out-destination-close"),
   exactDebugId("marketplace.money.money-in"),
   exactDebugId("marketplace.money.money-out"),
-  exactDebugId("marketplace.money.finance"),
+  exactDebugId("marketplace.money.pay-in-account"),
+  exactDebugId("marketplace.money.money-out-destination"),
   exactDebugId("marketplace.rosca.toggle"),
   exactDebugId("marketplace.rosca.activate-yearly"),
   exactDebugId("marketplace.rosca.start-cycle"),
@@ -829,8 +839,8 @@ assertNotContains(
 );
 
 assertLayoutContains(
-  /if \(pathname === "\/app\/marketplace"\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?Loans & Support[\s\S]*?makeShopControlItem\(\)[\s\S]*?Finance[\s\S]*?Notifications[\s\S]*?Trust Passport[\s\S]*?\]\);/,
-  "Marketplace page tools must keep the six route-local navigator actions: Public Shop, Loans & Support, Shop Control, Finance, Notifications, and Trust Passport."
+  /if \(pathname === "\/app\/marketplace"\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?Loans & Support[\s\S]*?makeShopControlItem\(\)[\s\S]*?Marketplace Rails[\s\S]*?marketplace-money-routes[\s\S]*?Notifications[\s\S]*?\]\);/,
+  "Marketplace page tools must keep the route-local navigator actions: Public Shop, Loans & Support, Shop Control, Marketplace Rails, and Notifications."
 );
 
 assertLayoutContains(

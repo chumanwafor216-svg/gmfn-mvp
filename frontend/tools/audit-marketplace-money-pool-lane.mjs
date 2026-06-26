@@ -44,7 +44,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Finance & Pool[\s\S]*?Pool, money in\/out, and banking[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Banking Rails/,
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Finance & Pool[\s\S]*?Pool, money in\/out, and banking[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Marketplace Rails/,
   "Finance & Pool grouped card must stay the guided money launcher and open only the money section."
 );
 
@@ -81,29 +81,37 @@ if (!moneySection.text) {
   ].map((match) => match[1]);
   const expectedActionIds = [
     "marketplace.money.toggle",
+    "marketplace.money.pay-in-account-save",
+    "marketplace.money.pay-in-account-close",
+    "marketplace.money.money-out-destination-save",
+    "marketplace.money.money-out-destination-close",
     "marketplace.money.money-in",
     "marketplace.money.money-out",
-    "marketplace.money.finance",
+    "marketplace.money.pay-in-account",
+    "marketplace.money.money-out-destination",
   ];
 
   if (actionIds.join("|") !== expectedActionIds.join("|")) {
     addFinding(
       moneySection.start,
-      "Money Pool detail section must expose only toggle, Money In, Money Out, and Finance in the audited order.",
+      "Money Pool detail section must expose pool actions and the two rail editors in the audited order.",
       actionIds.join(", ") || "none"
     );
   }
 
   [
     /Money Pool/,
-    /This community's pool, money in, and money out\./,
+    /This marketplace's pool, money in, and money out\./,
     /marketplaceMoneyRouteCardStyle\(isCompact, true\)/,
     /Visible Pool[\s\S]*?Current pool view/,
-    /Community Account[\s\S]*?Money In route/,
-    /Personal Payout[\s\S]*?Money Out route/,
+    /Money In Rail[\s\S]*?Pay this account/,
+    /Money Out Rail[\s\S]*?Where my approved withdrawal goes/,
+    /Money In Rail[\s\S]*?Receiving account for this marketplace[\s\S]*?debugId="marketplace\.money\.pay-in-account-save"/,
+    /Money Out Rail[\s\S]*?My payout destination[\s\S]*?debugId="marketplace\.money\.money-out-destination-save"/,
     /debugId="marketplace\.money\.money-in"[\s\S]*?openMarketplaceCta\(event, "moneyIn"\)[\s\S]*?<MarketplaceGlyph name="cash"/,
     /debugId="marketplace\.money\.money-out"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?<MarketplaceGlyph name="card"/,
-    /debugId="marketplace\.money\.finance"[\s\S]*?openMarketplaceCta\(event, "finance"\)[\s\S]*?<MarketplaceGlyph name="chart"/,
+    /debugId="marketplace\.money\.pay-in-account"[\s\S]*?Money In Rail/,
+    /debugId="marketplace\.money\.money-out-destination"[\s\S]*?Money Out Rail/,
     /style=\{\{[\s\S]*?\.\.\.marketplaceInlineActionsStyle\(isCompact\)[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
   ].forEach((pattern) => {
     if (!pattern.test(moneySection.text)) {
@@ -119,7 +127,7 @@ if (!moneySection.text) {
     addFinding(
       moneySection.start,
       "Money Pool detail section must not expose other major lane responsibilities.",
-      "Money Pool may link to Finance, but must not expose trust, shop, ROSCA, support, or trade lane content."
+      "Money Pool may link to Money In and Money Out routes, but must not expose trust, shop, ROSCA, support, or trade lane content."
     );
   }
 }

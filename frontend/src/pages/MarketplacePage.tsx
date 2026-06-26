@@ -70,7 +70,11 @@ import {
   type ClanInviteRelationshipEvidencePayload,
 } from "../lib/api";
 import {
+  communityPayInReady,
   getCommunityMoneySurface,
+  saveCommunityPayInSettlement,
+  saveCommunitySettlementDestination,
+  type CommunitySettlementDestination,
   type CommunityMoneySettlement,
   type CommunityMoneySurface,
 } from "../lib/communityMoney";
@@ -315,6 +319,18 @@ type LoanDraftSummary = {
   due_at?: string | null;
   decision_at?: string | null;
 };
+
+type PayInAccountDraft = {
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  sortCode: string;
+  country: string;
+  currency: string;
+  note: string;
+};
+
+type MoneyOutDestinationDraft = CommunitySettlementDestination;
 
 type SuggestedSupporter = {
   key: string;
@@ -3564,6 +3580,31 @@ export default function MarketplacePage() {
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
   );
+  const [payInEditorOpen, setPayInEditorOpen] = useState(false);
+  const [moneyOutEditorOpen, setMoneyOutEditorOpen] = useState(false);
+  const [savingPayInAccount, setSavingPayInAccount] = useState(false);
+  const [savingMoneyOutDestination, setSavingMoneyOutDestination] =
+    useState(false);
+  const [payInAccountDraft, setPayInAccountDraft] = useState<PayInAccountDraft>({
+    accountName: "",
+    bankName: "",
+    accountNumber: "",
+    sortCode: "",
+    country: "",
+    currency: "GBP",
+    note: "",
+  });
+  const [moneyOutDestinationDraft, setMoneyOutDestinationDraft] =
+    useState<MoneyOutDestinationDraft>({
+      destinationName: "",
+      bankName: "",
+      accountNumber: "",
+      sortCode: "",
+      phoneNumber: "",
+      country: "",
+      currency: "GBP",
+      note: "",
+    });
 
   const [loanAmount, setLoanAmount] = useState("");
   const [loanDurationDays, setLoanDurationDays] = useState("");
@@ -4842,6 +4883,37 @@ export default function MarketplacePage() {
   }, [activeCommunityId, currentGmfnId]);
 
   useEffect(() => {
+    const settlement = moneySurface?.communitySettlement || null;
+    if (!communityPayInReady(settlement)) return;
+
+    setPayInAccountDraft((prev) => ({
+      accountName: firstTruthy(settlement?.accountName, prev.accountName),
+      bankName: firstTruthy(settlement?.bankName, prev.bankName),
+      accountNumber: firstTruthy(settlement?.accountNumber, prev.accountNumber),
+      sortCode: firstTruthy(settlement?.sortCode, prev.sortCode),
+      country: firstTruthy(settlement?.country, prev.country),
+      currency: firstTruthy((settlement as any)?.currency, prev.currency, "GBP"),
+      note: prev.note,
+    }));
+  }, [moneySurface?.communitySettlement]);
+
+  useEffect(() => {
+    const destination = moneySurface?.payoutDestination || null;
+    if (!destination) return;
+
+    setMoneyOutDestinationDraft((prev) => ({
+      destinationName: firstTruthy(destination.destinationName, prev.destinationName),
+      bankName: firstTruthy(destination.bankName, prev.bankName),
+      accountNumber: firstTruthy(destination.accountNumber, prev.accountNumber),
+      sortCode: firstTruthy(destination.sortCode, prev.sortCode),
+      phoneNumber: firstTruthy(destination.phoneNumber, prev.phoneNumber),
+      country: firstTruthy(destination.country, prev.country),
+      currency: firstTruthy(destination.currency, prev.currency, "GBP"),
+      note: firstTruthy(destination.note, prev.note),
+    }));
+  }, [moneySurface?.payoutDestination]);
+
+  useEffect(() => {
     if (!activeCommunityId) {
       setSectionsOpen(DEFAULT_SECTION_STATE);
       return;
@@ -4865,6 +4937,28 @@ export default function MarketplacePage() {
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
     setSectionsOpen(focusedMarketplaceSectionState("support"));
   }, [loanDraftId]);
+
+  useEffect(() => {
+    const hash = safeStr(location.hash).replace(/^#/, "");
+    if (hash !== "marketplace-money-routes") return;
+    const landingToken = `${location.pathname}${location.search}#${hash}:${
+      activeCommunityId || ""
+    }`;
+    if (routeHashLandingAppliedRef.current === landingToken) return;
+    routeHashLandingAppliedRef.current = landingToken;
+
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "money"));
+    setSectionsOpen(focusedMarketplaceSectionState("money"));
+
+    scrollToMarketplaceSection("marketplace-money-routes");
+    clearMarketplaceHash();
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    activeCommunityId,
+    scrollToMarketplaceSection,
+  ]);
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
@@ -5237,10 +5331,8 @@ export default function MarketplacePage() {
     moneySurface?.poolCurrency || poolCurrency || "NGN"
   );
 
-  const communitySettlementReady = Boolean(
-    moneySurface?.communitySettlement?.bankName ||
-      moneySurface?.communitySettlement?.accountName ||
-      moneySurface?.communitySettlement?.accountNumber
+  const communitySettlementReady = communityPayInReady(
+    moneySurface?.communitySettlement || null
   );
 
   const payoutReady = Boolean(
@@ -5349,6 +5441,11 @@ export default function MarketplacePage() {
         safeStr(me?.gmfn_id) ||
         safeStr(me?.role).toLowerCase() === "admin")
   );
+  const canManagePayInAccount = Boolean(
+    activeCommunityId &&
+      (safeStr(me?.role).toLowerCase() === "admin" ||
+        currentMemberRole === "admin")
+  );
   const marketplaceJoinLinkMissingMessage = canManageMarketplaceLinks
     ? "GSN is preparing the reusable join link. Try again in a moment."
     : "Join links are available to active members after community selection.";
@@ -5360,6 +5457,137 @@ export default function MarketplacePage() {
     : "The invite message appears after the community is selected.";
   const marketplaceJoinRefreshBlockedMessage =
     "Select an active community before preparing a join link. Every request still goes through community review.";
+
+  function updatePayInAccountDraft<K extends keyof PayInAccountDraft>(
+    key: K,
+    value: PayInAccountDraft[K]
+  ) {
+    setPayInAccountDraft((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  function updateMoneyOutDestinationDraft<K extends keyof MoneyOutDestinationDraft>(
+    key: K,
+    value: MoneyOutDestinationDraft[K]
+  ) {
+    setMoneyOutDestinationDraft((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
+  async function savePayInAccount() {
+    if (!activeCommunityId || !canManagePayInAccount) {
+      setNotice({
+        tone: "error",
+        text: "Only a community admin can save the pay-in account.",
+      });
+      return;
+    }
+
+    setSavingPayInAccount(true);
+    try {
+      const saved = await saveCommunityPayInSettlement({
+        clanId: activeCommunityId,
+        accountName: payInAccountDraft.accountName,
+        bankName: payInAccountDraft.bankName,
+        accountNumber: payInAccountDraft.accountNumber,
+        sortCode: payInAccountDraft.sortCode,
+        country: payInAccountDraft.country,
+        currency: payInAccountDraft.currency,
+        note: payInAccountDraft.note,
+      });
+
+      const refreshed = await getCommunityMoneySurface(
+        activeCommunityId,
+        currentGmfnId,
+        firstTruthy(saved?.currency, moneySurface?.poolCurrency, "GBP")
+      ).catch(() => null);
+
+      if (refreshed) {
+        setMoneySurface(refreshed);
+      } else if (saved) {
+        setMoneySurface((prev) =>
+          prev
+            ? {
+                ...prev,
+                communitySettlement: saved,
+                depositRoute: prev.depositRoute
+                  ? { ...prev.depositRoute, settlement: saved }
+                  : prev.depositRoute,
+              }
+            : prev
+        );
+      }
+
+      setPayInEditorOpen(false);
+      setNotice({
+        tone: "success",
+        text: "Pay-in account saved for this marketplace.",
+      });
+    } catch {
+      setNotice({
+        tone: "error",
+        text: "Pay-in account could not be saved.",
+      });
+    } finally {
+      setSavingPayInAccount(false);
+    }
+  }
+
+  async function saveMoneyOutDestination() {
+    if (!activeCommunityId || !currentGmfnId) {
+      setNotice({
+        tone: "error",
+        text: "Select a marketplace before saving money out.",
+      });
+      return;
+    }
+
+    setSavingMoneyOutDestination(true);
+    try {
+      const saved = await saveCommunitySettlementDestination(
+        activeCommunityId,
+        currentGmfnId,
+        moneyOutDestinationDraft
+      );
+
+      const refreshed = await getCommunityMoneySurface(
+        activeCommunityId,
+        currentGmfnId,
+        firstTruthy(saved?.currency, moneySurface?.poolCurrency, "GBP")
+      ).catch(() => null);
+
+      if (refreshed) {
+        setMoneySurface(refreshed);
+      } else {
+        setMoneySurface((prev) =>
+          prev
+            ? {
+                ...prev,
+                payoutDestination: saved,
+                settlementDestination: saved,
+              }
+            : prev
+        );
+      }
+
+      setMoneyOutEditorOpen(false);
+      setNotice({
+        tone: "success",
+        text: "Money out destination saved.",
+      });
+    } catch {
+      setNotice({
+        tone: "error",
+        text: "Money out destination could not be saved.",
+      });
+    } finally {
+      setSavingMoneyOutDestination(false);
+    }
+  }
 
   const marketplaceTrustDisplay = marketplaceTrustLabel(
     selectedCommunity,
@@ -6568,7 +6796,7 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
-                    Banking Rails
+                    Marketplace Rails
                   </span>
                 </span>
               </span>
@@ -7082,7 +7310,7 @@ export default function MarketplacePage() {
                   lineHeight: 1.25,
                 }}
               >
-                This community's pool, money in, and money out.
+                This marketplace's pool, money in, and money out.
               </div>
             </div>
           </div>
@@ -7142,7 +7370,7 @@ export default function MarketplacePage() {
               </span>
               <div style={marketplaceMoneyTextStackStyle()}>
                 <div style={marketplaceMoneyTitleStyle(isCompact)}>
-                  Community Account
+                  Money In Rail
                 </div>
                 <div
                   style={marketplaceMoneyRouteValueStyle(
@@ -7155,7 +7383,7 @@ export default function MarketplacePage() {
                     : "Not ready"}
                 </div>
                 <div style={marketplaceMoneyHelperStyle(isCompact)}>
-                  Money In route
+                  Pay this account
                 </div>
               </div>
               <div style={marketplaceMoneyStatusAreaStyle()}>
@@ -7174,13 +7402,13 @@ export default function MarketplacePage() {
               </span>
               <div style={marketplaceMoneyTextStackStyle()}>
                 <div style={marketplaceMoneyTitleStyle(isCompact)}>
-                  Personal Payout
+                  Money Out Rail
                 </div>
                 <div style={marketplaceMoneyRouteValueStyle(isCompact, payoutReady)}>
                   {payoutReady ? payoutSummary(moneySurface) : "Not ready"}
                 </div>
                 <div style={marketplaceMoneyHelperStyle(isCompact)}>
-                  Money Out route
+                  Where my approved withdrawal goes
                 </div>
               </div>
               <div style={marketplaceMoneyStatusAreaStyle()}>
@@ -7189,6 +7417,378 @@ export default function MarketplacePage() {
                 </span>
               </div>
             </div>
+
+            {payInEditorOpen && canManagePayInAccount ? (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "grid",
+                  gap: 12,
+                  padding: isCompact ? 12 : 16,
+                  borderRadius: 18,
+                  border: "1px solid rgba(20,55,88,0.14)",
+                  background: "#F8FBFF",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <div style={sectionLabel()}>Money In Rail</div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        color: "#07172C",
+                        fontSize: isCompact ? 18 : 22,
+                        fontWeight: 1000,
+                      }}
+                    >
+                      Receiving account for this marketplace
+                    </div>
+                  </div>
+                  <span style={marketplaceMoneyStatusPillStyle(communitySettlementReady)}>
+                    {communitySettlementReady ? "Saved" : "Not saved"}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "repeat(3, minmax(0, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Account name
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.pay-in.account-name")}
+                      value={payInAccountDraft.accountName}
+                      onChange={(event) =>
+                        updatePayInAccountDraft("accountName", event.target.value)
+                      }
+                      style={inputStyle()}
+                      placeholder="Marketplace account"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Bank
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.pay-in.bank-name")}
+                      value={payInAccountDraft.bankName}
+                      onChange={(event) =>
+                        updatePayInAccountDraft("bankName", event.target.value)
+                      }
+                      style={inputStyle()}
+                      placeholder="Bank name"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Account number
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.pay-in.account-number")}
+                      value={payInAccountDraft.accountNumber}
+                      onChange={(event) =>
+                        updatePayInAccountDraft("accountNumber", event.target.value)
+                      }
+                      style={inputStyle()}
+                      inputMode="numeric"
+                      placeholder="Account number"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Sort code
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.pay-in.sort-code")}
+                      value={payInAccountDraft.sortCode}
+                      onChange={(event) =>
+                        updatePayInAccountDraft("sortCode", event.target.value)
+                      }
+                      style={inputStyle()}
+                      placeholder="40-12-65"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Country
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.pay-in.country")}
+                      value={payInAccountDraft.country}
+                      onChange={(event) =>
+                        updatePayInAccountDraft("country", event.target.value)
+                      }
+                      style={inputStyle()}
+                      placeholder="GB"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Currency
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.pay-in.currency")}
+                      value={payInAccountDraft.currency}
+                      onChange={(event) =>
+                        updatePayInAccountDraft("currency", event.target.value)
+                      }
+                      style={inputStyle()}
+                      maxLength={8}
+                      placeholder="GBP"
+                    />
+                  </label>
+                </div>
+
+                <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                  Note
+                  <input
+                    {...marketplaceFieldTouchProps("marketplace.money.pay-in.note")}
+                    value={payInAccountDraft.note}
+                    onChange={(event) =>
+                      updatePayInAccountDraft("note", event.target.value)
+                    }
+                    style={inputStyle()}
+                    placeholder="Dues, savings, support, and pool deposits"
+                  />
+                </label>
+
+                <div style={marketplaceInlineActionsStyle(isCompact)}>
+                  <StableButton
+                    debugId="marketplace.money.pay-in-account-save"
+                    type="button"
+                    disabled={savingPayInAccount}
+                    onClick={() => {
+                      void savePayInAccount();
+                    }}
+                    stableHeight={52}
+                    style={marketplaceInlineActionStyle(
+                      "primary",
+                      savingPayInAccount,
+                      isCompact
+                    )}
+                  >
+                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                      <MarketplaceGlyph name="verify" size={18} />
+                    </span>
+                    {savingPayInAccount ? "Saving" : "Save account"}
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.money.pay-in-account-close"
+                    type="button"
+                    onClick={() => setPayInEditorOpen(false)}
+                    stableHeight={52}
+                    style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+                  >
+                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                      <MarketplaceGlyph name="chevronUp" size={18} />
+                    </span>
+                    Close
+                  </StableButton>
+                </div>
+              </div>
+            ) : null}
+
+            {moneyOutEditorOpen ? (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "grid",
+                  gap: 12,
+                  padding: isCompact ? 12 : 16,
+                  borderRadius: 18,
+                  border: "1px solid rgba(20,55,88,0.14)",
+                  background: "#F8FBFF",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div>
+                    <div style={sectionLabel()}>Money Out Rail</div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        color: "#07172C",
+                        fontSize: isCompact ? 18 : 22,
+                        fontWeight: 1000,
+                      }}
+                    >
+                      My payout destination
+                    </div>
+                  </div>
+                  <span style={marketplaceMoneyStatusPillStyle(payoutReady)}>
+                    {payoutReady ? "Saved" : "Not saved"}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "repeat(3, minmax(0, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Destination name
+                    <input
+                      {...marketplaceFieldTouchProps(
+                        "marketplace.money.money-out.destination-name"
+                      )}
+                      value={moneyOutDestinationDraft.destinationName}
+                      onChange={(event) =>
+                        updateMoneyOutDestinationDraft(
+                          "destinationName",
+                          event.target.value
+                        )
+                      }
+                      style={inputStyle()}
+                      placeholder="Where money should go"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Bank
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.money-out.bank-name")}
+                      value={moneyOutDestinationDraft.bankName}
+                      onChange={(event) =>
+                        updateMoneyOutDestinationDraft("bankName", event.target.value)
+                      }
+                      style={inputStyle()}
+                      placeholder="Bank name"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Account number
+                    <input
+                      {...marketplaceFieldTouchProps(
+                        "marketplace.money.money-out.account-number"
+                      )}
+                      value={moneyOutDestinationDraft.accountNumber}
+                      onChange={(event) =>
+                        updateMoneyOutDestinationDraft(
+                          "accountNumber",
+                          event.target.value
+                        )
+                      }
+                      style={inputStyle()}
+                      inputMode="numeric"
+                      placeholder="Account number"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Sort code
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.money-out.sort-code")}
+                      value={moneyOutDestinationDraft.sortCode}
+                      onChange={(event) =>
+                        updateMoneyOutDestinationDraft("sortCode", event.target.value)
+                      }
+                      style={inputStyle()}
+                      placeholder="40-12-65"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Country
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.money-out.country")}
+                      value={moneyOutDestinationDraft.country}
+                      onChange={(event) =>
+                        updateMoneyOutDestinationDraft("country", event.target.value)
+                      }
+                      style={inputStyle()}
+                      placeholder="GB"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Currency
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.money-out.currency")}
+                      value={moneyOutDestinationDraft.currency}
+                      onChange={(event) =>
+                        updateMoneyOutDestinationDraft("currency", event.target.value)
+                      }
+                      style={inputStyle()}
+                      maxLength={8}
+                      placeholder="GBP"
+                    />
+                  </label>
+                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                    Phone
+                    <input
+                      {...marketplaceFieldTouchProps("marketplace.money.money-out.phone")}
+                      value={moneyOutDestinationDraft.phoneNumber}
+                      onChange={(event) =>
+                        updateMoneyOutDestinationDraft(
+                          "phoneNumber",
+                          event.target.value
+                        )
+                      }
+                      style={inputStyle()}
+                      inputMode="tel"
+                      placeholder="+44..."
+                    />
+                  </label>
+                </div>
+
+                <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
+                  Note
+                  <input
+                    {...marketplaceFieldTouchProps("marketplace.money.money-out.note")}
+                    value={moneyOutDestinationDraft.note}
+                    onChange={(event) =>
+                      updateMoneyOutDestinationDraft("note", event.target.value)
+                    }
+                    style={inputStyle()}
+                    placeholder="Personal withdrawal destination"
+                  />
+                </label>
+
+                <div style={marketplaceInlineActionsStyle(isCompact)}>
+                  <StableButton
+                    debugId="marketplace.money.money-out-destination-save"
+                    type="button"
+                    disabled={savingMoneyOutDestination}
+                    onClick={() => {
+                      void saveMoneyOutDestination();
+                    }}
+                    stableHeight={52}
+                    style={marketplaceInlineActionStyle(
+                      "primary",
+                      savingMoneyOutDestination,
+                      isCompact
+                    )}
+                  >
+                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                      <MarketplaceGlyph name="verify" size={18} />
+                    </span>
+                    {savingMoneyOutDestination ? "Saving" : "Save destination"}
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.money.money-out-destination-close"
+                    type="button"
+                    onClick={() => setMoneyOutEditorOpen(false)}
+                    stableHeight={52}
+                    style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+                  >
+                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                      <MarketplaceGlyph name="chevronUp" size={18} />
+                    </span>
+                    Close
+                  </StableButton>
+                </div>
+              </div>
+            ) : null}
 
             <div
               style={{
@@ -7220,17 +7820,41 @@ export default function MarketplacePage() {
                 </span>
                 Money Out
               </StableButton>
+              {canManagePayInAccount ? (
+                <StableButton
+                  debugId="marketplace.money.pay-in-account"
+                  type="button"
+                  onClick={() => {
+                    pendingMarketplaceSectionRef.current = "";
+                    cancelMarketplaceSectionScroll();
+                    setMoneyOutEditorOpen(false);
+                    setPayInEditorOpen((value) => !value);
+                  }}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+                >
+                  <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                    <MarketplaceGlyph name="bank" size={18} />
+                  </span>
+                  Money In Rail
+                </StableButton>
+              ) : null}
               <StableButton
-                debugId="marketplace.money.finance"
+                debugId="marketplace.money.money-out-destination"
                 type="button"
-                onClick={(event) => openMarketplaceCta(event, "finance")}
+                onClick={() => {
+                  pendingMarketplaceSectionRef.current = "";
+                  cancelMarketplaceSectionScroll();
+                  setPayInEditorOpen(false);
+                  setMoneyOutEditorOpen((value) => !value);
+                }}
                 stableHeight={58}
                 style={marketplaceInlineActionStyle("secondary", false, isCompact)}
               >
                 <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                  <MarketplaceGlyph name="chart" size={18} />
+                  <MarketplaceGlyph name="card" size={18} />
                 </span>
-                Finance
+                Money Out Rail
               </StableButton>
             </div>
           </div>

@@ -107,8 +107,8 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /debugId="money-in\.front-generate-instruction"[\s\S]*?debugId="money-in\.front-refresh-route"[\s\S]*?debugId="money-in\.generate-instruction"[\s\S]*?debugId="money-in\.refresh-route"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?debugId="money-in\.confirm-paid"/,
-  "Money In core instruction actions must remain traceable."
+  /debugId="money-in\.generate-instruction"[\s\S]*?debugId="money-in\.refresh-route"[\s\S]*?debugId="money-in\.reset-task"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?debugId="money-in\.confirm-paid"/,
+  "Money In core instruction actions must remain traceable without duplicating the generate panel."
 );
 
 assertContains(

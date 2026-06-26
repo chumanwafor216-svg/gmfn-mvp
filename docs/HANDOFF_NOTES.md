@@ -68304,3 +68304,647 @@ GSN-branded invite composer and invite-entry continuity.
     and looking for `Admin Tools`;
   - if Admin Tools appears but TrustSlip/CCI/profile remain wrong, the next
     work is a backend/user-record repair pass, not another menu/layout fix.
+
+## 2026-06-25 - Money In Generate Instruction Duplication Fix
+
+- Trigger:
+  - owner reported the Loans & Support / Money In screen showed two
+    `Generate payment instruction` areas;
+  - owner wanted the second copy removed, while the first copy should keep
+    `Reset`;
+  - owner also reported the Generate/Refresh/Reset buttons were jumpy on phone.
+- Changed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - removed the duplicate full `Generate payment instruction` panel;
+    - kept the first/front payment instruction panel as the single source of
+      amount, currency, Generate, Refresh, and Reset;
+    - added `Reset` to the first/front panel;
+    - removed the extra repeated Reset from the later detail/action section;
+    - tightened Money In action button geometry with fixed height, no-wrap
+      labels, hidden overflow, border-box sizing, and stable label width.
+  - `frontend/tools/audit-finance-actions.mjs`
+    - updated Money In traceability expectations so the canonical actions are
+      Generate, Refresh, Reset, Copy reference, Copy text, and Declare paid
+      without requiring a duplicated generate panel.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the Money In stability guardrail to protect the one-panel layout
+      and stable Generate/Refresh/Reset geometry.
+- Verification:
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:payment-instruction-phone-rows`.
+  - `npm --prefix frontend run build` hit the known Windows/esbuild sandbox
+    `spawn EPERM`.
+  - Passed `npm run build` from `frontend` outside the sandbox.
+- Unabated truth:
+  - this removes the visible duplicate and stabilizes the button shell in code;
+  - it still needs real-phone confirmation because the owner-reported jumpiness
+    is a browser/viewport behavior and the phone is the final evidence;
+  - this change has not been deployed in this session yet.
+
+## 2026-06-25 - GSN Shop Follow Protocol
+
+- Trigger:
+  - owner requested commercial shop-following, not personal/social following;
+  - public shop visitors should be able to follow/unfollow a shop, see follower
+    count, and receive in-app notifications when that shop publishes real
+    commercial updates.
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added `ShopFollower`, keyed by `shop_id` and `follower_user_id` with a
+      uniqueness guard so one member cannot follow the same shop twice.
+  - `gmfn_backend/alembic/versions/20260625_add_shop_followers.py`
+    - adds the `shop_followers` table and indexes.
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - added follow, unfollow, follow-status, and follower-count endpoints;
+    - added follower count to shop API output;
+    - added follower notification helper that excludes the shop owner, applies
+      active-community visibility boundaries, and avoids duplicate notices;
+    - wired notifications for new products, major product offer updates,
+      shop/product spotlight reposts, and shop broadcasts.
+  - `frontend/src/lib/api.ts`
+    - added marketplace shop follow client helpers.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - public shop signboard now shows follower count plus Follow Shop,
+      Following, and Unfollow states near the shop identity/header area;
+    - signed-out visitors can see the count but must sign in before following.
+  - `frontend/tools/audit-shop-gallery-button-inventory.mjs`
+    - updated the Public Shop button inventory baseline to include the four
+      deliberate shop-follow actions under the `shop-gallery.*` debug namespace.
+- Verification:
+  - Passed `python -m py_compile` for the changed backend route/model/test files.
+  - Passed `python -m alembic -c gmfn_backend\alembic.ini heads`.
+  - Passed targeted backend tests for follow/unfollow/status/count and visible
+    follower notification delivery.
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - `npm --prefix frontend run build` hit the known sandbox/esbuild `spawn EPERM`;
+    the same build passed outside the sandbox.
+  - Commit `c6b9b5b` was pushed to `main`; GitHub `Backend Tests` passed.
+  - Render workflow run `28200619182` accepted the frontend deploy hook
+    (`dep-d8uphi8g4nts7385m2g0`) but failed before backend deploy because the
+    required GitHub `RENDER_API_KEY` secret is still missing.
+- Unabated truth:
+  - this is a first-version commercial-follow system only;
+  - no shop visit analytics, owner visit alerts, external email alerts, or social
+    profile following were added;
+  - minor product description/spelling edits intentionally do not notify
+    followers;
+  - "major offer update" is currently interpreted conservatively as price,
+    currency, visibility/shop reassignment, or product restore;
+  - frontend may update before backend; the follow buttons need the backend
+    migration and API deploy before they will work on Render;
+  - the full public-shop backend test file still hits a local pytest temp-folder
+    permission error in this workspace, but the two new behavior tests passed.
+
+## 2026-06-26 - Public Shop Billboard Owner Mobile Cleanup
+
+- Trigger:
+  - owner confirmed the phone route opens and correctly shows follower count,
+    but owner should not see Follow/Unfollow for their own shop;
+  - owner rejected the temporary "Owner view" label and requested the whole
+    public-shop billboard block be rearranged instead.
+- Changed:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - removed the temporary owner-view pill from the public shop signboard;
+    - kept owner follow/unfollow hidden because backend `follow-status` returns
+      `is_owner: true` and `can_follow: false` for the owner;
+    - compacted the mobile billboard into a tighter two-column identity layout;
+    - reduced signboard padding, icon/title pressure, watermark weight, chip
+      heights, and fact-row spacing on compact viewports;
+    - changed follower count copy from "following this shop" to
+      "follower/followers" so the count reads as audience size.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - `npm --prefix frontend run build` hit the known sandbox/esbuild
+    `spawn EPERM`; the same build passed outside the sandbox.
+  - Captured owner-auth mobile screenshot:
+    `screenshots/shop-public-billboard-rearranged-owner-mobile-final.png`.
+- Unabated truth:
+  - the billboard itself is cleaner and shorter now;
+  - the owner shortcuts and install prompt above the billboard still consume a
+    lot of first-screen height, but those were not changed because this pass was
+    scoped to the billboard block;
+  - no backend, follow permission, product feed, or spotlight-feed logic changed.
+
+## 2026-06-26 - Public Shop Owner Shortcut Dropdown
+
+- Trigger:
+  - owner noted the Public Shop owner-only shortcut block at the top consumed too
+    much phone height and suggested a dropdown.
+- Changed:
+  - `frontend/src/components/OwnerOnlySurfaceNav.tsx`
+    - added an optional compact collapse mode with an `Open` / `Close` toggle;
+    - kept the original fixed compact grid pattern to satisfy mobile tap
+      stability guardrails;
+    - allowed shortcut labels to wrap inside fixed-height cells when expanded.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - enabled the collapsed owner shortcut mode only for the Public Shop page.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - `npm --prefix frontend run build` hit the known sandbox/esbuild
+    `spawn EPERM`; the same build passed outside the sandbox.
+  - Captured phone screenshots:
+    `screenshots/shop-owner-shortcuts-collapsed-mobile-final.png` and
+    `screenshots/shop-owner-shortcuts-expanded-mobile-final.png`.
+- Unabated truth:
+  - collapsed owner shortcut height is about 52px instead of about 140px;
+  - the signboard starts about 88px higher by default;
+  - `Keep GSN nearby` is still a separate prompt and was left unchanged because
+    its current behavior is governed by the PWA home-screen install spec.
+
+## 2026-06-26 - Money In Reason, Direct Pay Account, And Declaration Clarity
+
+- Trigger:
+  - owner reported that Money In was hard to use on phone, the page felt jumpy,
+    "Not declared" was unclear, contribution/reason was missing for monthly or
+    yearly community dues, and generated payment instructions showed generic
+    settlement wording instead of direct bank details.
+- Changed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - added a "Reason for this money" field with monthly/yearly/meeting/support
+      suggestions and persisted it with the local task;
+    - changed the status tile to "Declaration" and copy to "Not declared paid",
+      "Paid declared", or "Matched by bank";
+    - moved generated-state "Pay this account" details above the edit form on
+      phone, with reference, visible account rows, and a copy-details action;
+    - collapsed the long overview by default under a new local UI key;
+    - compacted the generated phone layout so the direct pay account starts in
+      the first viewport rather than below the fold.
+  - `frontend/src/lib/communityMoney.ts`
+    - sends `contribution_reason` when generating a pool deposit instruction;
+    - normalizes returned contribution reason;
+    - prefers the visible/default pay-in rail settlement over generic generated
+      settlement text when building Money In surfaces.
+  - `gmfn_backend/app/api/routes/payment_instructions.py`
+    - accepts optional `contribution_reason` on `/payment-instructions/pool`.
+  - `gmfn_backend/app/services/payment_instruction_service.py`
+    - records the contribution reason in the pool event note and expected-payment
+      metadata.
+- Verification:
+  - Passed `python -m pytest gmfn_backend\tests\test_reconciliation_integrity.py -q`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - `npm --prefix frontend run build` hit the known sandbox/esbuild
+    `spawn EPERM`; the same build passed outside the sandbox.
+  - Captured phone screenshot:
+    `screenshots/money-in-phone-arrangement.png`.
+- Unabated truth:
+  - "Not declared" was never a missing reason; it meant the member had not yet
+    tapped `Declare paid` after sending the external bank transfer;
+  - `Declare paid` is still a member-side declaration, not bank confirmation;
+    real confirmation requires a bank/payment event to be ingested and matched
+    by reference, amount, currency, and clan;
+  - the local screenshot still shows placeholder settlement rail data
+    (`GSN Settlement Rail`, `GSN Settlement`, `To be assigned`), so the backend
+    is not exposing a real configured receiving account in this local run;
+  - a global Companion popup appeared over Money In during screenshot testing
+    and may be one cause of the user's reported phone "jumping", but that global
+    overlay was not changed in this Money In pass.
+
+### Follow-up same day - Money In user-facing copy and placeholder account guard
+
+- Changed:
+  - simplified Money In copy again: `Reason` -> `Purpose`, `Declare paid` ->
+    `I paid`, `Not declared paid` -> `Not marked paid`;
+  - removed the success notice after generating so the page does not jump down
+    just to say the code was generated;
+  - shortened hidden/help copy and lower warnings to direct user-facing lines;
+  - stopped treating placeholder settlement values like `To be assigned` as a
+    usable pay-in account.
+- Verification:
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `python -m pytest gmfn_backend\tests\test_reconciliation_integrity.py -q`.
+  - `npm --prefix frontend run build` passed outside the sandbox.
+  - Captured `screenshots/money-in-phone-simplified.png`.
+- Unabated truth:
+  - the Monzo/HSBC details the owner mentioned appear to be personal payout or
+    Money Out details, not the community receiving account that Money In needs;
+  - in this repo, Money In pay-in details come from settlement/payment-rail
+    configuration, so a real community receiving-account save path still needs
+    to feed that route before those details will appear automatically.
+
+### Follow-up same day - Finance jumpiness and unpaid code wording
+
+- Trigger:
+  - owner reported the phone Finance/Money In surface was still too jumpy to
+    test and asked to terminate the global Companion popup;
+  - owner also reported a test 5 naira deposit that was not paid appeared like
+    money already paid in.
+- Changed:
+  - `frontend/src/components/WorkspaceCompanionBridge.tsx`
+    - blocks the Companion overlay completely on finance-critical routes:
+      `/app/finance`, `/app/payment/pool`, `/app/payment/withdraw`,
+      `/app/payment-rails`, and `/app/payout-details`.
+  - `frontend/src/pages/FinancePage.tsx`
+    - changed expected-payment wording from finance-confirmation language to
+      plain payment-code language: `Code generated`, `Not paid yet unless the
+      bank transfer was sent`, `Received`, and `Bank match found`;
+    - changed Finance signals from "payments waiting for bank confirmation" to
+      "payment codes waiting for a bank match";
+    - changed monthly money-in note from `Paid in this month` to
+      `Received this month`;
+    - stopped treating `deposit.requested` / generated instruction events as
+      positive money-in movement in the page's own direction and month counters;
+    - recent history now shows `Payment code` / `Not received yet` for a
+      generated code, and only confirmed deposit events read as received money.
+- Verification:
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `python -m pytest gmfn_backend\tests\test_reconciliation_integrity.py -q`.
+  - Passed `npm run build` from `frontend`.
+  - Captured phone screenshot:
+    `screenshots/finance-phone-no-companion.png`.
+  - Screenshot text confirmed: Companion absent, old `waiting for bank
+    confirmation` absent, old `Paid in this month` absent, new `waiting for a
+    bank match` present, and new `Received this month` present.
+- Unabated truth:
+  - backend pool accounting already appears to separate generated deposit
+    requests from confirmed deposits: `deposit.requested` contributes to pending,
+    while `deposit.confirmed` contributes to available balance;
+  - the frontend was still guilty of making generated codes read like paid money
+    in places, which is why the owner's complaint was valid;
+  - if the owner still sees the 5 naira as paid after this patch, the next thing
+    to inspect is the exact tile/route where it appears, because the likely
+    remaining cause would be another presentation surface, not the pool summary
+    accounting rule itself.
+
+### Follow-up same day - Money In task shell and proof path
+
+- Trigger:
+  - owner reported Money In was still jumping badly and sometimes fell into
+    other places such as Action Inbox;
+  - owner reported the generated reference was no longer visible where expected;
+  - owner clarified the intended pay-in path:
+    generate reference -> see account details -> bank transfer -> automatic API
+    reconciliation when connected, or upload/send a payment screenshot for
+    manual checking during pilot testing.
+- Changed:
+  - `frontend/src/layout/AppLayout.tsx`
+    - reclassified `/app/payment/pool` task mode from `Loans & Support` to
+      `Money In`;
+    - removed the bottom app rail from the Money In focused task so it no
+      longer covers payment buttons on phone;
+    - kept only focused task escape links in the top tools/menu surfaces.
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - reserved notice height so success/error messages do not insert/remove
+      layout height above the task;
+    - changed the main state and CTA language from payment-code wording to
+      `Generate the reference` / `Generate reference`;
+    - made `Generate reference` full-width on phone so the label is readable;
+    - stopped inserting the generated account block above the form on phone;
+      the account portal now stays after the generate form;
+    - added a local test-phase proof step: `I paid` plus `Add screenshot`;
+    - records screenshot filename/time against the current generated reference
+      in local task state and labels it as proof for checking, not bank-confirmed
+      money;
+    - hid the older duplicate payment-detail/result sections on phone;
+    - removed the Money In `Inbox` next-route shortcut so the payment flow does
+      not throw the user toward Action Inbox.
+- Verification:
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+  - Captured phone screenshot:
+    `screenshots/money-in-phone-stable-reference-proof.png`.
+  - Screenshot/DOM confirmed: focused task label is `Money In`, old
+    `Loans & Support` task label is absent, bottom rail is absent, `Inbox` is
+    absent, Companion is absent, and the button text is exactly
+    `Generate reference`.
+- Unabated truth:
+  - the primary jump was not only Companion; the app shell itself was
+    misclassifying Money In as Loans & Support and keeping a bottom rail over the
+    payment controls;
+  - automatic reconciliation already has backend paths through bank events/API,
+    but there is still no dedicated backend upload endpoint for Money In
+    receipt screenshots;
+  - the new screenshot proof is therefore local pilot evidence only. It helps
+    the tester record what was submitted for checking, but it must not be called
+    confirmed money until a real bank/API/manual backend reconciliation path
+    marks it confirmed;
+  - local test data still does not expose a real community receiving account,
+    so the screenshot truthfully shows `Pay-in account is not ready`.
+
+### Follow-up same day - Finance and Pool button verification
+
+- Trigger:
+  - owner reported an eighth failed phone attempt to open Finance and Pool.
+- Checked:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - `Finance & Pool` opens the marketplace money section.
+    - `Money In` inside that section routes to `/app/payment/pool`.
+  - `frontend/src/pages/FinancePage.tsx`
+    - `Money In` routes directly to `/app/payment/pool`.
+  - `frontend/src/lib/appRoutes.ts` and `frontend/src/lib/ctaTargets.ts`
+    - `moneyIn` resolves to the Money In pool route.
+- Verification:
+  - Ran a phone-sized headless Chrome click test against local frontend
+    `http://127.0.0.1:5180` and backend `http://127.0.0.1:8012`.
+  - Confirmed `/app/finance?community_id=1` opens.
+  - Confirmed Finance page `Money In` button opens
+    `/app/payment/pool?community=1`.
+  - Confirmed Marketplace `Finance & Pool` tile opens the money section.
+  - Confirmed Marketplace money-section `Money In` button opens
+    `/app/payment/pool?community=1`.
+  - After route render, screenshot confirmed correct `Money In` focused task,
+    no Companion popup, no bottom tab rail, and the generate form visible.
+  - Captured screenshot:
+    `screenshots/phone-finance-pool-after-wait.png`.
+- Unabated truth:
+  - locally, the buttons now work;
+  - immediately after tapping from Marketplace, the URL can change before the
+    new screen finishes painting, so stale marketplace content may show for a
+    fraction of a second;
+  - by roughly 250-750 ms in the local phone test, the real Money In screen is
+    visible and the Companion/bottom rail are gone;
+  - if the owner is still seeing the failure on phone, the most likely cause is
+    that the deployed phone site is still running the old build, because these
+    fixes have not yet been committed, pushed, and deployed under the batch-first
+    pilot protocol.
+
+### Follow-up same day - Direct Marketplace Money In and reference output order
+
+- Trigger:
+  - owner reported the Marketplace -> Finance/Pool entry was still too jumpy
+    and required too many attempts;
+  - owner reported `Generate reference` no longer showed the generated
+    reference;
+  - owner rejected the vague `Amount, account, reference, and status stay
+    together` copy and the meaningless overview `Open` button.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - changed the front `Finance & Pool` tile from a section-reveal action to a
+      direct Money In route action;
+    - this removes the extra Marketplace money-section step for the owner's
+      tested path.
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - removed the pay-in-account readiness gate from `Generate reference`;
+      reference generation now runs even if account details are not visible yet;
+    - reordered the mobile task surface to:
+      enter amount/purpose -> generated result tiles -> `Pay this account`;
+    - removed the old lower duplicate result block, the overview `Open/Hide`
+      button, and the vague status sentence;
+    - changed Declaration copy to show `Not marked paid yet` after a reference
+      exists;
+    - kept the pay-in account block after the generated reference output. If the
+      community receiving account is missing, it now shows the blocker after the
+      reference instead of preventing the reference from being created.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the Money In button-stability cage to protect the new direct
+      reference/result/pay-account contract, including `copy-pay-in-details`,
+      `copy-reference-portal`, `confirm-paid-portal`, and
+      `upload-payment-proof`.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm run build` from `frontend`.
+  - Phone-sized browser flow confirmed:
+    - Marketplace `Finance & Pool` opens `/app/payment/pool?community=1`
+      directly;
+    - Companion is absent;
+    - stale Marketplace `Money Pool` content is absent after route render;
+    - amount `20`, currency `NGN`, purpose `Yearly contribution`, then
+      `Generate reference` returns a real reference;
+    - generated reference is visible before `Pay this account`;
+    - vague copy is absent;
+    - Declaration reads `Not marked paid yet`.
+  - Captured screenshots:
+    `screenshots/phone-money-in-direct-reference-order.png` and
+    `screenshots/phone-money-in-pay-account-viewport.png`.
+- Unabated truth:
+  - this fixes the local flow the owner described;
+  - if the phone is testing Render/live, the owner will not see this until the
+    batch is committed, pushed, and deployed;
+  - local test data still does not expose a usable receiving account, so Money
+    In can now generate the reference but still truthfully says the pay-in
+    account must be added before a real bank transfer can be made.
+
+### Follow-up same day - Marketplace Pay-In Account bridge
+
+- Trigger:
+  - owner clarified that each Marketplace / Community must own its pay-in
+    receiving account, because Money In is the entry point for community dues,
+    ROSCA contributions, personal pool deposits, later commitment targets, and
+    loan/support pool movement;
+  - owner had already entered payout/pay-in rails elsewhere, but Money In still
+    did not surface a real account after reference generation;
+  - owner asked to complete just this missing bridge before broader commitment
+    work.
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added `CommunityPayInAccount`, one saved receiving account per community
+      / marketplace.
+  - `gmfn_backend/alembic/versions/20260626_add_community_pay_in_accounts.py`
+    - adds the `community_pay_in_accounts` table.
+  - `gmfn_backend/app/services/community_pay_in_account_service.py`
+    - added account read/upsert helpers and a settlement adapter so saved
+      community pay-in accounts can feed existing payment-instruction surfaces.
+  - `gmfn_backend/app/api/routes/community_pay_in_accounts.py`
+    - added `GET /community-pay-in-accounts/{clan_id}`;
+    - added `PUT /community-pay-in-accounts/{clan_id}`;
+    - added `GET /community-pay-in-accounts/{clan_id}/settlement`.
+  - `gmfn_backend/app/api/router.py`
+    - registered the new pay-in-account routes.
+  - `gmfn_backend/app/api/routes/payment_instructions.py`
+    - pool Money In and loan repayment instructions now prefer the saved
+      community pay-in account for their settlement details.
+  - `frontend/src/lib/communityMoney.ts`
+    - added fetch/save helpers for community pay-in settlement;
+    - added `communityPayInReady` so placeholder/global settlement rails cannot
+      be shown as if they are the marketplace receiving account;
+    - Money In and repayment instruction creation now prefer the saved community
+      pay-in account.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added a collapsed admin-only `Pay-In Account` editor inside Marketplace
+      money controls;
+    - saved account details are available to Money In after reference
+      generation.
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - `Pay this account` now only exposes account details when the saved
+      marketplace/community pay-in account is ready.
+- Verification:
+  - Passed `python -m pytest -q
+    gmfn_backend\tests\test_community_pay_in_accounts.py`.
+  - Passed `python -m py_compile
+    gmfn_backend\app\api\routes\community_pay_in_accounts.py
+    gmfn_backend\app\services\community_pay_in_account_service.py
+    gmfn_backend\app\api\routes\payment_instructions.py
+    gmfn_backend\app\db\models.py`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:tap-stability` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `python -m pytest -q
+    gmfn_backend\tests\test_reconciliation_integrity.py::test_pool_instruction_links_pool_event_for_auto_reconciliation`.
+  - Passed `python -m pytest -q
+    gmfn_backend\tests\test_rosca_engine.py::test_rosca_reconciliation_creates_contribution_and_round_ready_notifications`.
+  - After tightening the frontend readiness guard, passed combined targeted
+    backend tests:
+    `python -m pytest -q gmfn_backend\tests\test_community_pay_in_accounts.py
+    gmfn_backend\tests\test_reconciliation_integrity.py::test_pool_instruction_links_pool_event_for_auto_reconciliation
+    gmfn_backend\tests\test_rosca_engine.py::test_rosca_reconciliation_creates_contribution_and_round_ready_notifications`.
+  - Applied the local SQLite migration with `GMFN_DEV_MODE=1`:
+    `python -m alembic upgrade head` from `gmfn_backend`.
+  - Confirmed local Alembic head:
+    `20260626_add_community_pay_in_accounts`.
+- Unabated truth:
+  - this completes the missing receiving-account bridge for Marketplace Money
+    In locally;
+  - it does not build the full personal commitment target feature yet;
+  - the commitment feature should reuse this Money In bridge later so a personal
+    target can generate a reference and pay into the correct pool account;
+  - this adds a database migration, so live/Render will not work until the
+    backend deploy and migration are applied;
+  - the local laptop database has been upgraded, but Render/live has not;
+  - the Marketplace editor is currently admin/platform-admin gated. If a real
+    community owner is represented by a non-`admin` role in production data,
+    the frontend/backend permission rule must be widened deliberately instead
+    of guessed.
+
+### Follow-up same day - Corrected Marketplace money rail placement
+
+- Trigger:
+  - owner corrected the placement: pay-in / payout rail setup must not live on
+    Community Home;
+  - owner clarified that the rail setup belongs inside the selected Marketplace
+    money tools, because each marketplace/community can have its own receiving
+    bank details.
+- Changed:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - removed the four money-tool rows that had just been added there;
+    - Community Home stays a community-selection and broad navigation surface,
+      not the rail setup surface.
+  - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - restored the protected Community Home compact-tool count to 11.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - tightened Marketplace money wording:
+      `Money In Rail`, `Money Out Rail`, `Marketplace Rails`, and
+      `Receiving account for this marketplace`;
+    - changed the Marketplace money action from generic `Finance` to direct
+      `Rails`;
+    - kept the admin-only `Money In Rail` editor inside Marketplace money tools.
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - when `Pay this account` has no saved account, the blocker now says
+      `Money In Rail is not ready`;
+    - added `Open rail`, which routes to the selected Marketplace money block
+      (`#marketplace-money-routes`) so the receiving account can be added in the
+      correct place.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the Money In guardrail to protect the new `Open rail` action and
+      the Marketplace money-block hash.
+- Follow-up correction:
+  - owner reported `Open rail` still landed back on Marketplace without opening
+    the rail block;
+  - `frontend/src/pages/MarketplacePage.tsx` now handles
+    `#marketplace-money-routes` the same way it already handled support,
+    ROSCA, and tools hashes: it opens the money section, marks it touched,
+    scrolls to it, and clears the stale hash;
+  - `frontend/src/layout/AppLayout.tsx` changed the Marketplace page Tools
+    action from generic `Finance` / `Trust Passport` exposure to
+    `Marketplace Rails`, pointing to the same selected Marketplace money block.
+- Verification:
+  - Passed `npm run build` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:tap-stability` from `frontend`.
+- Unabated truth:
+  - Marketplace is now the visible home for the marketplace money rails;
+  - the backend `/payment-rails` endpoint is still global/static rail reading,
+    not a full per-marketplace rail registry;
+  - the saved `CommunityPayInAccount` is the real per-marketplace Money In
+    receiving account in this slice;
+  - personal payout details still represent the member's payout destination,
+    while a deeper future model may need marketplace-owned outbound rails too.
+  - Browser-click verification was not completed in this turn because the
+    in-app browser surface was unavailable; the change is verified by build and
+    route/action audits only.
+
+### Follow-up same day - Added Money Out Rail to Marketplace money section
+
+- Trigger:
+  - owner clarified that the selected Marketplace money rail page should show
+    both sides together:
+    - Money In Rail = shared receiving account for that marketplace/community;
+    - Money Out Rail = the signed-in member's payout destination for approved
+      withdrawals.
+  - owner also pointed out that `Finance & Pool` should not feel like a
+    confusing launcher that jumps to the wrong place.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - `Finance & Pool` front tile now opens the local Marketplace money section
+      instead of launching Money In directly;
+    - Marketplace money section now has editable `Money Out Rail` beside the
+      existing `Money In Rail`;
+    - Money Out editor saves through the existing payout destination helper
+      (`saveCommunitySettlementDestination`) and refreshes the same
+      `getCommunityMoneySurface` view;
+    - all newly exposed rail inputs use `marketplaceFieldTouchProps(...)` so
+      phone field taps are guarded from leaking into nearby route buttons;
+    - visible copy stays simple: `Pay this account`, `My payout destination`,
+      and `Where my approved withdrawal goes`.
+  - `frontend/tools/audit-marketplace-money-pool-lane.mjs`
+    - now cages Money In Rail and Money Out Rail as part of the Marketplace
+      money section.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - accepted the new Marketplace action/field baseline and protects the
+      rail-editor button order.
+- Verification:
+  - Passed `npm run audit:marketplace-money-pool-lane` from `frontend`.
+  - Passed `npm run audit:marketplace-button-inventory` from `frontend`.
+  - Passed `npm run audit:marketplace-actions` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:tap-stability` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this makes the visible Marketplace rail page match the product model better;
+  - Money In is genuinely marketplace-owned through `CommunityPayInAccount`;
+  - Money Out still uses the current backend `UserPayoutDestination`, which is
+    one payout destination per signed-in user, not a separate payout destination
+    per marketplace;
+  - if the product later requires different payout destinations per marketplace,
+    that needs an intentional backend schema/migration, not just another
+    frontend label;
+  - this is local only: not committed, pushed, deployed, or phone-verified on
+    the owner's device yet.
+
+### Follow-up same day - Stabilized Marketplace rail editor field typing
+
+- Trigger:
+  - owner confirmed the Marketplace rail placement is now the right structure;
+  - owner reported the Money In Rail fields still were not reliably typable on
+    phone and could bounce away toward another workspace/page.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - when `Money In Rail` or `Money Out Rail` editor opens, any pending
+      Marketplace section landing scroll is now cancelled first;
+    - this keeps a delayed `marketplace-money-routes` scroll correction from
+      firing while the phone keyboard is opening over a rail field.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - tightened the rail-editor audit patterns so they stay bounded and do not
+      exhaust Node heap while still protecting the new editor buttons.
+- Verification:
+  - Passed `npm run audit:marketplace-money-pool-lane` from `frontend`.
+  - Passed `npm run audit:marketplace-button-inventory` from `frontend`.
+  - Passed `npm run audit:marketplace-actions` from `frontend`.
+  - Passed `npm run audit:tap-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - source-level tap and scroll guards now pass;
+  - this should reduce the reported rail-field bounce;
+  - it is not proven fixed until the owner can tap and type into the Money In
+    Rail fields on the actual phone session;
+  - no commit, push, deploy, or phone verification has happened for this slice.

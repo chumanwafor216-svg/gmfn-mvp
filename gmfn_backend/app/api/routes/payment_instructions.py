@@ -27,6 +27,7 @@ from app.services.payment_instruction_service import (
     create_vault_subscription_instruction,
 )
 from app.services.expected_payments_service import list_expected_payments
+from app.services.community_pay_in_account_service import get_community_pay_in_settlement
 from app.services.feature_entitlements_service import (
     consume_feature_units,
     get_active_feature_quantity,
@@ -174,6 +175,7 @@ class PoolInstructionIn(BaseModel):
     clan_id: int
     amount: Decimal = Field(..., gt=Decimal("0"))
     currency: str = "NGN"
+    contribution_reason: Optional[str] = Field(default=None, max_length=180)
 
 
 class LoanInstructionIn(BaseModel):
@@ -236,8 +238,9 @@ def create_pool_instruction(
         user_id=int(current_user.id),
         amount=payload.amount,
         currency=payload.currency,
+        contribution_reason=payload.contribution_reason,
     )
-    out["settlement"] = get_settlement_config()
+    out["settlement"] = get_community_pay_in_settlement(db, clan_id=int(payload.clan_id))
     out["instruction_type"] = "pool_deposit"
     return out
 
@@ -256,7 +259,7 @@ def create_loan_instruction(
         amount=payload.amount,
         currency=payload.currency,
     )
-    out["settlement"] = get_settlement_config()
+    out["settlement"] = get_community_pay_in_settlement(db, clan_id=int(payload.clan_id))
     out["instruction_type"] = "loan_repayment"
     return out
 

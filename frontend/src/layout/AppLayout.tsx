@@ -444,17 +444,45 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     };
   }
 
+  if (pathname === "/app/payment/pool") {
+    return {
+      title: "Money In",
+      hint:
+        "Generate the reference, pay the account, then wait for bank match or add proof.",
+      actions: [
+        makeFinanceItem(),
+        makeMarketplaceItem(),
+        makeCommunityItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
+  if (
+    pathname === "/app/payment-rails" ||
+    pathname === "/app/payout-details" ||
+    pathname === "/app/withdrawal-instructions"
+  ) {
+    return {
+      title: "Finance task",
+      hint:
+        "Finish this money step first, or leave it intentionally before moving on.",
+      actions: [
+        makeFinanceItem(),
+        makeMarketplaceItem(),
+        makeCommunityItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
   if (
     pathname === "/app/loans" ||
     pathname === "/app/loan-readiness" ||
     pathname === "/app/loan-suggestions" ||
     pathname === "/app/loan-workbench" ||
     pathname === "/app/guarantor-earnings" ||
-    pathname === "/app/payment/pool" ||
-    pathname === "/app/payment-rails" ||
-    pathname === "/app/payout-details" ||
-    pathname.startsWith("/app/payment/loans/") ||
-    pathname === "/app/withdrawal-instructions"
+    pathname.startsWith("/app/payment/loans/")
   ) {
     return {
       title: "Loans & Support",
@@ -499,11 +527,7 @@ function shouldKeepBottomRailInTaskMode(pathname: string): boolean {
     pathname === "/app/revenue-allocation" ||
     pathname === "/app/borrower-preflight" ||
     pathname === "/app/loan-decision" ||
-    pathname === "/app/payment/pool" ||
-    pathname === "/app/payment-rails" ||
-    pathname === "/app/payout-details" ||
-    pathname.startsWith("/app/payment/loans/") ||
-    pathname === "/app/withdrawal-instructions"
+    pathname.startsWith("/app/payment/loans/")
   );
 }
 
@@ -756,9 +780,11 @@ function getPageActions(
       makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
       { label: "Loans & Support", to: "/app/loans" },
       makeShopControlItem(),
-      { label: "Finance", to: "/app/finance" },
+      {
+        label: "Marketplace Rails",
+        to: `/app/marketplace${search || ""}#marketplace-money-routes`,
+      },
       { label: "Notifications", to: "/app/notifications" },
-      { label: "Trust Passport", to: "/app/trust" },
     ]);
   }
 

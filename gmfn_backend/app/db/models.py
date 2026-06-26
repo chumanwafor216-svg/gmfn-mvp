@@ -1385,6 +1385,58 @@ class UserPayoutDestination(Base):
     )
 
 
+class CommunityPayInAccount(Base):
+    __tablename__ = "community_pay_in_accounts"
+
+    __table_args__ = (
+        UniqueConstraint("clan_id", name="uq_community_pay_in_accounts_clan_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    updated_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    account_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    bank_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    account_number: Mapped[str] = mapped_column(String(64), nullable=False)
+    sort_code: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    routing_number: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    iban: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    swift_bic: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    country: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    currency: Mapped[str] = mapped_column(
+        String(8),
+        nullable=False,
+        default="NGN",
+        server_default="NGN",
+    )
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="recorded",
+        server_default="recorded",
+    )
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class LoanGuarantor(Base):
     __tablename__ = "loan_guarantors"
 
