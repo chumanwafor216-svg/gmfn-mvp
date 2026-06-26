@@ -689,7 +689,7 @@ export default function LoansPage() {
         title: "This withdrawal needs support",
         detail: withdrawalSupportGapText
           ? `Requested: ${withdrawalAmountText}. Support needed: ${withdrawalSupportGapText}.`
-          : `Requested: ${withdrawalAmountText}. Continue the support check here.`,
+          : `Requested: ${withdrawalAmountText}. Continue from Marketplace Support Requests.`,
       };
     }
 
@@ -847,7 +847,7 @@ export default function LoansPage() {
 
             <div style={{ marginTop: 14, ...helperText(), color: "#D7E3F1", maxWidth: 640 }}>
               {hasWithdrawalSupportHandoff
-                ? "Money Out sent this here because the amount needs support."
+                ? "Money Out sent this here because the amount needs community support."
                 : "Borrow, support, respond, and repay inside this community."}
             </div>
 
@@ -870,7 +870,7 @@ export default function LoansPage() {
             </div>
 
             <StableCtaLink
-              to={hasWithdrawalSupportHandoff ? routes.readiness : routes.startSupport}
+              to={routes.startSupport}
               debugId="loans.hero.start-support"
               stableHeight={isCompact ? 58 : 68}
               fullWidth={isCompact}
@@ -888,11 +888,11 @@ export default function LoansPage() {
               {routeIcon("spark", true, isCompact)}
               <div>
                 <div style={routeTitleStyle(isCompact)}>
-                  {hasWithdrawalSupportHandoff ? "Check readiness" : "Start Support Request"}
+                  {hasWithdrawalSupportHandoff ? "Continue support request" : "Start Support Request"}
                 </div>
                 <div style={routeHelperStyle(isCompact)}>
                   {hasWithdrawalSupportHandoff
-                    ? "Use the saved Money Out amount."
+                    ? "Use the saved Money Out amount in Marketplace."
                     : "Begin or continue the borrower-side flow."}
                 </div>
               </div>
@@ -1141,7 +1141,7 @@ export default function LoansPage() {
             <div>
               <div style={sectionLabel()}>More support tools</div>
               <div style={{ marginTop: 4, ...helperText() }}>
-                Open only when you need a deeper step.
+                Open only when the support request needs a deeper step.
               </div>
             </div>
           </div>
@@ -1179,9 +1179,11 @@ export default function LoansPage() {
           >
             {routeIcon("spark", true, isCompact)}
             <div>
-              <div style={routeTitleStyle(isCompact)}>Start Support Request</div>
+              <div style={routeTitleStyle(isCompact)}>
+                {hasWithdrawalSupportHandoff ? "Continue Support Request" : "Start Support Request"}
+              </div>
               <div style={routeHelperStyle(isCompact)}>
-                Begin or continue the borrower-side flow.
+                Work inside the selected marketplace.
               </div>
             </div>
           </StableCtaLink>

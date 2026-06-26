@@ -6859,7 +6859,7 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
-                    Marketplace Rails
+                    Banking Rails
                   </span>
                 </span>
               </span>
@@ -11081,86 +11081,88 @@ export default function MarketplacePage() {
                 ) : null}
               </div>
 
-              <details style={{ marginTop: 12 }}>
-                <StableDisclosureSummary
-                  debugId="marketplace.support.deeper-pages.summary"
-                  stableHeight={isCompact ? 48 : 52}
-                  style={{
-                    ...marketplaceActionStyle("soft"),
-                    width: "100%",
-                    justifyContent: "space-between",
-                    padding: isCompact ? "0 12px" : "0 14px",
-                    fontSize: isCompact ? 13 : 14,
-                  }}
-                >
-                  Deeper support pages
-                  <span aria-hidden="true">+</span>
-                </StableDisclosureSummary>
+              {(loanDraftId || !isCompact) ? (
+                <details style={{ marginTop: 12 }}>
+                  <StableDisclosureSummary
+                    debugId="marketplace.support.deeper-pages.summary"
+                    stableHeight={isCompact ? 48 : 52}
+                    style={{
+                      ...marketplaceActionStyle("soft"),
+                      width: "100%",
+                      justifyContent: "space-between",
+                      padding: isCompact ? "0 12px" : "0 14px",
+                      fontSize: isCompact ? 13 : 14,
+                    }}
+                  >
+                    Deeper support pages
+                    <span aria-hidden="true">+</span>
+                  </StableDisclosureSummary>
 
-                <div
-                  style={{
-                    ...marketplaceInlineActionsStyle(isCompact),
-                    marginTop: 10,
-                  }}
-                >
-                  <StableButton
-                    debugId="marketplace.support.loan-readiness"
-                    type="button"
-                    onClick={(event) =>
-                      openMarketplaceCta(event, "loanReadiness")
-                    }
-                    disabled={supportProcessBusy}
-                    stableHeight={58}
-                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                  <div
+                    style={{
+                      ...marketplaceInlineActionsStyle(isCompact),
+                      marginTop: 10,
+                    }}
                   >
-                    Loan Readiness
-                  </StableButton>
-                  <StableButton
-                    debugId="marketplace.support.loan-suggestions"
-                    type="button"
-                    onClick={(event) =>
-                      openMarketplaceCta(event, "loanSuggestions")
-                    }
-                    disabled={supportProcessBusy}
-                    stableHeight={58}
-                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
-                  >
-                    Loan Suggestions
-                  </StableButton>
-                  <StableButton
-                    debugId="marketplace.support.loan-workbench"
-                    type="button"
-                    onClick={(event) =>
-                      openMarketplaceCta(event, "loanWorkbench")
-                    }
-                    disabled={supportProcessBusy}
-                    stableHeight={58}
-                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
-                  >
-                    Loan Workbench
-                  </StableButton>
-                  <StableButton
-                    debugId="marketplace.support.finance"
-                    type="button"
-                    onClick={(event) => openMarketplaceCta(event, "finance")}
-                    disabled={supportProcessBusy}
-                    stableHeight={58}
-                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
-                  >
-                    Finance
-                  </StableButton>
-                  <StableButton
-                    debugId="marketplace.support.full-loans"
-                    type="button"
-                    onClick={(event) => openMarketplaceCta(event, "loans")}
-                    disabled={supportProcessBusy}
-                    stableHeight={58}
-                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
-                  >
-                    Full Loans View
-                  </StableButton>
-                </div>
-              </details>
+                    <StableButton
+                      debugId="marketplace.support.loan-readiness"
+                      type="button"
+                      onClick={(event) =>
+                        openMarketplaceCta(event, "loanReadiness")
+                      }
+                      disabled={supportProcessBusy}
+                      stableHeight={58}
+                      style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                    >
+                      Loan Readiness
+                    </StableButton>
+                    <StableButton
+                      debugId="marketplace.support.loan-suggestions"
+                      type="button"
+                      onClick={(event) =>
+                        openMarketplaceCta(event, "loanSuggestions")
+                      }
+                      disabled={supportProcessBusy}
+                      stableHeight={58}
+                      style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                    >
+                      Loan Suggestions
+                    </StableButton>
+                    <StableButton
+                      debugId="marketplace.support.loan-workbench"
+                      type="button"
+                      onClick={(event) =>
+                        openMarketplaceCta(event, "loanWorkbench")
+                      }
+                      disabled={supportProcessBusy}
+                      stableHeight={58}
+                      style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                    >
+                      Loan Workbench
+                    </StableButton>
+                    <StableButton
+                      debugId="marketplace.support.finance"
+                      type="button"
+                      onClick={(event) => openMarketplaceCta(event, "finance")}
+                      disabled={supportProcessBusy}
+                      stableHeight={58}
+                      style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                    >
+                      Finance
+                    </StableButton>
+                    <StableButton
+                      debugId="marketplace.support.full-loans"
+                      type="button"
+                      onClick={(event) => openMarketplaceCta(event, "loans")}
+                      disabled={supportProcessBusy}
+                      stableHeight={58}
+                      style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                    >
+                      Full Loans View
+                    </StableButton>
+                  </div>
+                </details>
+              ) : null}
 
               {loanDraftId ? (
                 <div style={{ marginTop: 18, display: "grid", gap: 12 }}>

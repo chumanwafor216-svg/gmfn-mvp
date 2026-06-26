@@ -69203,6 +69203,70 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Money Out support handoff harmonised with Marketplace Support
+
+- Trigger:
+  - owner confirmed not to delete the existing loan/readiness/suggestion/inbox
+    tools yet;
+  - owner asked for Money Out to send support-needed withdrawals into the
+    clean Marketplace Support Requests lane, while deeper loan tools stay
+    behind the journey instead of acting like the main task.
+- Confirmed from code:
+  - direct Money Out still uses `/pool/withdrawals/request` through
+    `requestPoolWithdrawal`;
+  - backend records `withdrawal.requested` in pool events when the amount is
+    inside the effective available balance;
+  - no outbound bank payout API was found in this code path, so pilot payout
+    remains request/reference plus admin/manual execution;
+  - backend loan/support truth already exists in `loans.py`,
+    `loan_approval.py`, and `guarantor_expiry_service.py`;
+  - stale pending guarantor/support flows already have deterministic release
+    logic, so this pass did not recreate that engine.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - support-needed withdrawals now route to the Marketplace support anchor
+      instead of dropping the user into the general Loans page first;
+    - direct withdrawal success copy now says the request was recorded, a
+      reference should be used for admin payout, and money has not moved yet;
+    - result copy now prefers `Request recorded: <reference>` when the backend
+      returns a reference;
+    - the support-needed result action is one `Continue support` button.
+  - `frontend/src/pages/LoansPage.tsx`
+    - Money Out handoffs now point the primary action back into Marketplace
+      Support Requests;
+    - the page keeps Loan Readiness, Loan Suggestions, Incoming Guarantor
+      Requests, Action Inbox, and Guarantor Earnings as deeper tools instead
+      of presenting them as the first user choice;
+    - user-facing copy now describes the handoff as community support, not a
+      separate noisy loan dashboard.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - compact phone view no longer exposes the deeper support pages doorway
+      before a draft exists;
+    - the deeper routes are still present and available after the support
+      journey creates context;
+    - the front grouped money card tag is now `Banking Rails`, matching the
+      existing audit expectation and owner language.
+- Verification:
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:marketplace-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:finance-front-package` from `frontend`.
+  - Passed `npm run audit:marketplace-front-package` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - this is a frontend system-level routing/copy/presentation bridge;
+  - it does not delete or replace the existing deeper loan/support tools;
+  - it does not implement automatic outbound bank payout;
+  - automatic payout should remain marked future/suspended until the bank API
+    integration is actually present, funded, tested, and connected.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Latest follow-up - Money Out phone-test gap closed locally
 
 - Owner phone-tested Money Out and found the previous fix was incomplete on the

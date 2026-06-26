@@ -712,9 +712,10 @@ function communityRole(currentClan: any): string {
 function routeTarget(
   intent: CtaIntent,
   communityId: number,
-  debugId: string
+  debugId: string,
+  hash?: string
 ): string {
-  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+  return String(resolveCtaTarget(intent, { communityId, debugId, hash }).to);
 }
 
 export default function WithdrawalInstructionsPage() {
@@ -755,6 +756,12 @@ export default function WithdrawalInstructionsPage() {
         "loanWorkbench",
         selectedClanId,
         "money-out.route.workbench"
+      ),
+      supportStart: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "money-out.route.support-start",
+        "marketplace-loans-support"
       ),
       loans: routeTarget("loans", selectedClanId, "money-out.route.loans"),
       notifications: routeTarget(
@@ -1252,7 +1259,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Direct withdrawal request recorded. Community confirmation is still review evidence; payout execution and money movement are not complete here."
+        "Withdrawal request recorded. Use the reference for admin payout. Money has not moved yet."
       );
     } finally {
       setSubmittingWithdrawal(false);
@@ -1279,7 +1286,7 @@ export default function WithdrawalInstructionsPage() {
 
     if (requiresSupport) {
       persistSupportHandoff();
-      navigateWithOrigin(navigate, routes.loans, location);
+      navigateWithOrigin(navigate, routes.supportStart, location);
       return;
     }
 
@@ -1323,7 +1330,7 @@ export default function WithdrawalInstructionsPage() {
 
     persistSupportHandoff();
 
-    navigateWithOrigin(navigate, routes.loans, location);
+    navigateWithOrigin(navigate, routes.supportStart, location);
   }
 
   async function handleRefresh() {
@@ -1489,7 +1496,14 @@ export default function WithdrawalInstructionsPage() {
       ? "Support-backed"
       : "Direct withdrawal";
   const latestResultText = latestWithdrawalResult
-    ? firstTruthy(latestWithdrawalResult?.status, latestWithdrawalResult?.state, "Response received")
+    ? firstTruthy(
+        latestWithdrawalResult?.reference
+          ? `Request recorded: ${safeStr(latestWithdrawalResult.reference)}`
+          : "",
+        latestWithdrawalResult?.status,
+        latestWithdrawalResult?.state,
+        "Request recorded"
+      )
     : "Awaiting";
 
   if (loading) {
@@ -2887,8 +2901,8 @@ export default function WithdrawalInstructionsPage() {
                     {!effectiveAvailableKnown
                       ? "Wait for the pool reading before this route decides."
                       : !requiresSupport
-                      ? "This amount can proceed directly once rail and payout are ready."
-                      : "This amount needs support. Continue in Loans & Support."}
+                      ? "This request is recorded with a reference. Admin payout/manual release is still separate for the pilot."
+                      : "This amount needs support. Continue in Marketplace Support Requests."}
                   </div>
                 </div>
 
@@ -2941,14 +2955,14 @@ export default function WithdrawalInstructionsPage() {
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Use the decision lane above</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Review amount, rail, and payout account before submitting a request.
+                      Submit the request here. GSN records a reference for admin payout.
                     </div>
                   </div>
                 ) : requiresSupport && !withdrawalCanWidenRoutes ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Support path chosen</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Continue with support pages instead of repeating the same decision.
+                      Continue in the Marketplace support lane instead of repeating the same decision.
                     </div>
                   </div>
                 ) : null}
@@ -2956,12 +2970,12 @@ export default function WithdrawalInstructionsPage() {
                 {requiresSupport ? (
                   <>
                       <StableCtaLink
-                        to={routes.loans}
+                        to={routes.supportStart}
                         debugId="money-out.result.open-loans"
                         stableHeight={52}
                         style={moneyOutActionButtonStyle("primary")}
                       >
-                        Loans & Support
+                        Continue support
                       </StableCtaLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (
