@@ -1,3 +1,44 @@
+## 2026-06-26 - Configurable GSN support contact bridge
+
+Owner request:
+- Continue closing the remaining mirror gaps and add a simple way for people to
+  reach GSN support for money/support disputes without inventing a fake
+  customer service route.
+
+Confirmed deployment state before this slice:
+- Commit `02bcb6fb9633152d7d5149269cddc8c0f0e072a3` was pushed to `main`.
+- GitHub Actions `Trigger Render Deploy` run `28260477083` succeeded.
+- Render accepted the frontend deploy hook and returned deploy id
+  `dep-d8vd57o0697c73fgllk0`.
+- Backend deploy was not needed for that visible-language/support-lane cleanup.
+
+Local frontend bridge completed in commit `17044b0c`:
+- `frontend/src/components/GsnSupportContact.tsx`
+  - shared support contact card for Money In, Money Out, and Loans & Support;
+  - reads `VITE_GSN_SUPPORT_EMAIL`, with `VITE_SUPPORT_EMAIL` as fallback;
+  - hides itself when no real valid support email is configured, so pilot users
+    are not shown a fake or dead contact;
+  - uses the shared stable link primitive for the mail action.
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - Money In now uses the shared support contact bridge.
+- `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - Money Out now uses the shared support contact bridge.
+- `frontend/src/pages/LoansPage.tsx`
+  - Loans & Support now uses the shared support contact bridge.
+- `frontend/tools/audit-button-stability.mjs`
+  - audit now protects the support contact bridge and prevents page-local
+    contact links on the three money/support routes.
+
+Truth / remaining risk:
+- Local commit only; not pushed or deployed yet because `docs/FREEZE_POLICY.md`
+  currently freezes Git publishing into batch mode during the pipeline-shortage
+  period.
+- No real support email has been supplied in the repository; set
+  `VITE_GSN_SUPPORT_EMAIL` in the frontend environment before expecting the
+  card to appear publicly.
+- This does not add a backend dispute workflow, fraud handling, bank automation,
+  automatic payout release, or support approval PIN engine.
+
 ## 2026-06-26 - Shared support wording and visible-language sweep
 
 Owner request:

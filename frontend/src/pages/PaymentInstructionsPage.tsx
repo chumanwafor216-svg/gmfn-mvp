@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import GsnSupportContact from "../components/GsnSupportContact";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -2680,6 +2681,12 @@ export default function PaymentInstructionsPage() {
         ) : null}
       </section>
       ) : null}
+
+      <GsnSupportContact
+        context="Money In"
+        subject="GSN Money In help"
+        style={{ marginTop: 16 }}
+      />
     </div>
   );
 }

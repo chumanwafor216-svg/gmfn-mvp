@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import GsnSupportContact from "../components/GsnSupportContact";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
 import {
@@ -1417,6 +1418,12 @@ export default function LoansPage() {
         </div>
       </section>
       ) : null}
+
+      <GsnSupportContact
+        context="Loans and Support"
+        subject="GSN support request help"
+        style={{ marginTop: 16 }}
+      />
 
     </div>
   );

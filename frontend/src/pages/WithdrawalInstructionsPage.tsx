@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import GsnSupportContact from "../components/GsnSupportContact";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -2996,6 +2997,12 @@ export default function WithdrawalInstructionsPage() {
         ) : null}
       </section>
       ) : null}
+
+      <GsnSupportContact
+        context="Money Out"
+        subject="GSN Money Out help"
+        style={{ marginTop: 16 }}
+      />
     </div>
   );
 }

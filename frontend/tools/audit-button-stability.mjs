@@ -1808,6 +1808,24 @@ assertNotContains(
   "Trust Command Centre must not keep raw button/link, local tap guard, local route/action stacking primitives, or hard-coded app route CTAs."
 );
 
+assertContains(
+  "src/components/GsnSupportContact.tsx",
+  /VITE_GSN_SUPPORT_EMAIL[\s\S]*?VITE_SUPPORT_EMAIL[\s\S]*?isValidSupportEmail[\s\S]*?if \(!email\) return null;[\s\S]*?<StableCtaLink[\s\S]*?to=\{href\}[\s\S]*?Email support/,
+  "GSN support contact must be configured by real environment email, hide when unset, and use the shared stable link for mailto actions."
+);
+
+for (const file of [
+  "src/pages/PaymentInstructionsPage.tsx",
+  "src/pages/WithdrawalInstructionsPage.tsx",
+  "src/pages/LoansPage.tsx",
+]) {
+  assertContains(
+    file,
+    /import GsnSupportContact from "\.\.\/components\/GsnSupportContact";[\s\S]*?<GsnSupportContact/,
+    "Money and support routes must use the shared GSN support contact bridge instead of page-local contact links."
+  );
+}
+
 if (findings.length > 0) {
   console.error("Button stability audit failed:");
   for (const finding of findings) {
