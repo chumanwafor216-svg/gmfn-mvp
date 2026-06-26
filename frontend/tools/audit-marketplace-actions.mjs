@@ -386,8 +386,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /debugId="marketplace\.tile\.withdrawal"[\s\S]*?aria-label="Open normal Money Out withdrawal for this marketplace"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?Money Out \/ Withdrawal/,
-  "Marketplace normal withdrawal must be a direct Money Out route action, not a Support & Loans section opener."
+  /const marketplaceMoneyOutTo = useMemo\([\s\S]*?resolveCtaTarget\("moneyOut"[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.tile\.withdrawal"[\s\S]*?aria-label="Open normal Money Out withdrawal for this marketplace"[\s\S]*?Money Out \/ Withdrawal/,
+  "Marketplace normal withdrawal must be a direct Money Out route link, not a Support & Loans section opener."
 );
 
 assertContains(

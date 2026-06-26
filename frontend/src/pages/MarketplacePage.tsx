@@ -3750,6 +3750,17 @@ export default function MarketplacePage() {
     );
   }, [selectedCommunity, selectedClanId]);
 
+  const marketplaceMoneyOutTo = useMemo(
+    () => {
+      const target = resolveCtaTarget("moneyOut", {
+        communityId: activeCommunityId,
+        debugId: "marketplace.route.moneyOut",
+      }).to;
+      return typeof target === "string" ? target : APP_ROUTES.MONEY_OUT;
+    },
+    [activeCommunityId]
+  );
+
   const myShopTo = useMemo(() => {
     return currentGmfnId ? publicShopPath(currentGmfnId) : "";
   }, [currentGmfnId]);
@@ -6898,11 +6909,10 @@ export default function MarketplacePage() {
               </span>
             </StableButton>
 
-            <StableButton
-              type="button"
+            <StableCtaLink
+              to={marketplaceMoneyOutTo}
               debugId="marketplace.tile.withdrawal"
               aria-label="Open normal Money Out withdrawal for this marketplace"
-              onClick={(event) => openMarketplaceCta(event, "moneyOut")}
               style={marketplaceFrontLaneCardStyle(isCompact)}
             >
               <span
@@ -6942,7 +6952,7 @@ export default function MarketplacePage() {
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
                 <MarketplaceGlyph name="chevron" size={18} />
               </span>
-            </StableButton>
+            </StableCtaLink>
 
             <StableButton
               type="button"
@@ -7989,10 +7999,9 @@ export default function MarketplacePage() {
                 </span>
                 Money In
               </StableButton>
-              <StableButton
+              <StableCtaLink
+                to={marketplaceMoneyOutTo}
                 debugId="marketplace.money.money-out"
-                type="button"
-                onClick={(event) => openMarketplaceCta(event, "moneyOut")}
                 stableHeight={58}
                 style={marketplaceInlineActionStyle("secondary", false, isCompact)}
               >
@@ -8000,7 +8009,7 @@ export default function MarketplacePage() {
                   <MarketplaceGlyph name="card" size={18} />
                 </span>
                 Money Out
-              </StableButton>
+              </StableCtaLink>
             </div>
           </div>
         ) : null}

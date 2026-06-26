@@ -1,3 +1,41 @@
+## 2026-06-26 - Marketplace Money Out launcher made a real route link
+
+Owner report:
+- On phone, `Money Out / Withdrawal` would not open even after 17 attempts.
+- The surface kept falling back/down into Marketplace instead of landing on the
+  Money Out page.
+
+Local fix:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - changed the front-door `Money Out / Withdrawal` card from a button that
+    runs navigation in an `onClick` handler into a `StableCtaLink` with a real
+    `to={marketplaceMoneyOutTo}` route;
+  - changed the inner Money Pool `Money Out` action into the same real
+    community-aware route link;
+  - kept the shared `resolveCtaTarget("moneyOut", { communityId })` source of
+    truth so the target still points to `/app/withdrawal-instructions` with the
+    selected marketplace/community context.
+- Updated Marketplace audits to cage the route-link behavior instead of the old
+  button handler.
+
+Verification passed locally:
+- `npm run audit:marketplace-button-inventory`
+- `npm run audit:marketplace-actions`
+- `npm run audit:marketplace-money-pool-lane`
+- `npm run audit:marketplace-front-package`
+- `npm run audit:protected-button-freeze`
+- `npm run audit:button-stability`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Unabated truth:
+- This should remove the tap-handler ambiguity on phone because the control is
+  now a real route link, not only a JavaScript button.
+- I still cannot prove the signed-in phone tap from this environment because I
+  do not have the owner's authenticated browser session.
+- Local only until pushed/deployed.
+
 ## 2026-06-26 - Money Out normal withdrawal copy and decision cleanup
 
 Owner correction:

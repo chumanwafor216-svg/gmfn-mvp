@@ -355,7 +355,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.withdrawal"[\s\S]*?aria-label="Open normal Money Out withdrawal for this marketplace"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?<MarketplaceGlyph name="card"[\s\S]*?Money Out \/ Withdrawal[\s\S]*?Withdraw your own available money\.[\s\S]*?Own Money[\s\S]*?Payout Account[\s\S]*?Check First/,
+  /const marketplaceMoneyOutTo = useMemo\([\s\S]*?resolveCtaTarget\("moneyOut"[\s\S]*?debugId: "marketplace\.route\.moneyOut"[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.tile\.withdrawal"[\s\S]*?aria-label="Open normal Money Out withdrawal for this marketplace"[\s\S]*?<MarketplaceGlyph name="card"[\s\S]*?Money Out \/ Withdrawal[\s\S]*?Withdraw your own available money\.[\s\S]*?Own Money[\s\S]*?Payout Account[\s\S]*?Check First/,
   "Marketplace must expose normal Money Out / Withdrawal as a separate front-door route from Support & Loans."
 );
 
@@ -648,8 +648,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.money\.money-out"[\s\S]{0,260}openMarketplaceCta\(event, "moneyOut"\)/,
-  "Marketplace Money Out detail button must route through the shared moneyOut CTA target."
+  /to=\{marketplaceMoneyOutTo\}[\s\S]{0,260}debugId="marketplace\.money\.money-out"/,
+  "Marketplace Money Out detail button must route through the shared moneyOut CTA link target."
 );
 
 assertContains(

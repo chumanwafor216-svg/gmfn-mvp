@@ -49,7 +49,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.withdrawal"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?Money Out \/ Withdrawal[\s\S]*?Withdraw your own available money\./,
+  /const marketplaceMoneyOutTo = useMemo\([\s\S]*?resolveCtaTarget\("moneyOut"[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.tile\.withdrawal"[\s\S]*?Money Out \/ Withdrawal[\s\S]*?Withdraw your own available money\./,
   "Normal Money Out / Withdrawal must stay a separate Marketplace front-door action from Money In / Pool."
 );
 
@@ -114,7 +114,7 @@ if (!moneySection.text) {
     /Money In Rail[\s\S]*?Receiving account for this marketplace[\s\S]*?debugId="marketplace\.money\.pay-in-account-save"/,
     /Money Out Rail[\s\S]*?My personal payout account[\s\S]*?debugId="marketplace\.money\.money-out-destination-save"/,
     /debugId="marketplace\.money\.money-in"[\s\S]*?openMarketplaceCta\(event, "moneyIn"\)[\s\S]*?<MarketplaceGlyph name="cash"/,
-    /debugId="marketplace\.money\.money-out"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?<MarketplaceGlyph name="card"/,
+    /to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out"[\s\S]*?<MarketplaceGlyph name="card"/,
     /Money In Rail[\s\S]*?Pay this account[\s\S]*?debugId="marketplace\.money\.pay-in-account"[\s\S]*?(Set rail|Open rail|Close rail)/,
     /Money Out Rail[\s\S]*?My personal payout account[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?(Set rail|Open rail|Close rail)/,
     /style=\{\{[\s\S]*?\.\.\.marketplaceInlineActionsStyle\(isCompact\)[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
