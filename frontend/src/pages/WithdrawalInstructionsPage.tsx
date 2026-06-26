@@ -718,6 +718,24 @@ function routeTarget(
   return String(resolveCtaTarget(intent, { communityId, debugId, hash }).to);
 }
 
+function addRouteQuery(target: string, extras: Record<string, string>): string {
+  const raw = String(target || "").trim();
+  if (!raw) return raw;
+
+  const [baseWithQuery, hash = ""] = raw.split("#");
+  const [pathname, search = ""] = baseWithQuery.split("?");
+  const query = new URLSearchParams(search);
+
+  Object.entries(extras).forEach(([key, value]) => {
+    if (value) query.set(key, value);
+  });
+
+  const nextSearch = query.toString();
+  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
+    hash ? `#${hash}` : ""
+  }`;
+}
+
 export default function WithdrawalInstructionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -757,11 +775,17 @@ export default function WithdrawalInstructionsPage() {
         selectedClanId,
         "money-out.route.workbench"
       ),
-      supportStart: routeTarget(
-        "marketplace",
-        selectedClanId,
-        "money-out.route.support-start",
-        "marketplace-loans-support"
+      supportStart: addRouteQuery(
+        routeTarget(
+          "marketplace",
+          selectedClanId,
+          "money-out.route.support-start",
+          "marketplace-loans-support"
+        ),
+        {
+          support_flow: "money-out",
+          focus: "support",
+        }
       ),
       loans: routeTarget("loans", selectedClanId, "money-out.route.loans"),
       notifications: routeTarget(

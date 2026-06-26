@@ -69202,7 +69202,6 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
-
 ### Follow-up same day - Force Marketplace Support Requests landing after Money Out
 
 - Trigger:
@@ -69670,5 +69669,42 @@ GSN-branded invite composer and invite-entry continuity.
     or a new backend loan lifecycle;
   - the existing deeper loan/readiness/workbench pages still carry the backend
     support details after the user enters Loans & Support.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Money Out support handoff hardened
+
+- Trigger:
+  - owner phone-tested Money Out again and confirmed `Continue` still felt like
+    it dumped the user on the general Marketplace page instead of landing
+    directly on the Support Requests flow.
+- Unabated truth:
+  - the earlier hash-only/scroll-only fix was too weak for phone testing;
+  - opening the Support section is not enough if the delayed scroll cycle loses
+    the forced landing and leaves the user at the wrong Marketplace area.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - Money Out support-needed navigation now sends Marketplace an explicit
+      URL marker: `support_flow=money-out&focus=support`;
+    - the URL still carries `#marketplace-loans-support` so old hash handling
+      and direct anchor behavior remain compatible.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - Marketplace now treats either the support hash or the explicit Money Out
+      support query marker as an instruction to open the Support Requests lane;
+    - it reads the existing Money Out handoff and pre-fills the support amount
+      and purpose when available;
+    - the forced Support Requests landing is now preserved through the delayed
+      scroll pass so field-tap guards do not cancel the final phone landing.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`.
+- Still not changed:
+  - no backend payout automation was added;
+  - guarantor approval-to-PIN/payout execution remains a later integration;
+  - deeper loan/readiness/suggestion/workbench pages were not deleted.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.

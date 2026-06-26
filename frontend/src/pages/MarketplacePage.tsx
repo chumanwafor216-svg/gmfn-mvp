@@ -3688,6 +3688,7 @@ export default function MarketplacePage() {
   const scrollFrameRef = useRef<number | null>(null);
   const scrollTimeoutRefs = useRef<number[]>([]);
   const pendingMarketplaceSectionRef = useRef("");
+  const pendingMarketplaceSectionForceRef = useRef(false);
   const routeHashLandingAppliedRef = useRef("");
   const withdrawalHandoffAppliedRef = useRef("");
   const publicShopPrepareInFlightRef = useRef(false);
@@ -3715,6 +3716,16 @@ export default function MarketplacePage() {
   const routeRepostSource = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return safeStr(query.get("source")).toLowerCase();
+  }, [location.search]);
+  const routeSupportFlow = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return safeStr(
+      query.get("support_flow") || query.get("supportFlow")
+    ).toLowerCase();
+  }, [location.search]);
+  const routeFocus = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return safeStr(query.get("focus")).toLowerCase();
   }, [location.search]);
   const routeRepostHandoffProduct = useMemo(
     () =>
@@ -4317,6 +4328,7 @@ export default function MarketplacePage() {
           marketplaceRecentlyInteractedWithField())
       ) {
         pendingMarketplaceSectionRef.current = "";
+        pendingMarketplaceSectionForceRef.current = false;
         traceMarketplaceLanding({
           surface: "marketplace",
           targetId: sectionId,
@@ -4328,6 +4340,7 @@ export default function MarketplacePage() {
         return;
       }
       pendingMarketplaceSectionRef.current = sectionId;
+      pendingMarketplaceSectionForceRef.current = force;
 
       scrollFrameRef.current = window.requestAnimationFrame(() => {
         scrollFrameRef.current = window.requestAnimationFrame(() => {
@@ -4335,6 +4348,7 @@ export default function MarketplacePage() {
           scrollToMarketplaceSection(sectionId, 0, force);
           if (pendingMarketplaceSectionRef.current === sectionId) {
             pendingMarketplaceSectionRef.current = "";
+            pendingMarketplaceSectionForceRef.current = false;
           }
         });
       });
@@ -4345,7 +4359,9 @@ export default function MarketplacePage() {
   useEffect(() => {
     const sectionId = pendingMarketplaceSectionRef.current;
     if (!sectionId) return;
-    scheduleMarketplaceSectionScroll(sectionId);
+    scheduleMarketplaceSectionScroll(sectionId, {
+      force: pendingMarketplaceSectionForceRef.current,
+    });
   }, [sectionsOpen, scheduleMarketplaceSectionScroll]);
 
   useEffect(() => {
@@ -5020,8 +5036,11 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
-    if (hash !== "marketplace-loans-support") return;
-    const landingToken = `${location.pathname}${location.search}#${hash}:${
+    const isMoneyOutSupportFlow =
+      routeSupportFlow === "money-out" && routeFocus === "support";
+    if (hash !== "marketplace-loans-support" && !isMoneyOutSupportFlow) return;
+    const landingTarget = "marketplace-loans-support";
+    const landingToken = `${location.pathname}${location.search}#${landingTarget}:${
       activeCommunityId || ""
     }`;
     if (routeHashLandingAppliedRef.current === landingToken) return;
@@ -5031,7 +5050,7 @@ export default function MarketplacePage() {
     setSectionsOpen(focusedMarketplaceSectionState("support"));
 
     if (activeCommunityId && currentGmfnId) {
-      const token = `${activeCommunityId}:${currentGmfnId}:${hash}`;
+      const token = `${activeCommunityId}:${currentGmfnId}:${landingTarget}`;
       if (withdrawalHandoffAppliedRef.current !== token) {
         const storedWithdrawalTask = readLocalJSON<PersistedWithdrawalTask | null>(
           withdrawalTaskStorageKey(activeCommunityId, currentGmfnId),
@@ -5063,6 +5082,8 @@ export default function MarketplacePage() {
     location.search,
     activeCommunityId,
     currentGmfnId,
+    routeFocus,
+    routeSupportFlow,
     scheduleMarketplaceSectionScroll,
   ]);
 
