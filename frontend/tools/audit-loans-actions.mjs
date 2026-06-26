@@ -97,6 +97,12 @@ assertContains(
 );
 
 assertContains(
+  "src/layout/AppLayout.tsx",
+  /function buildLoansItems\(\): NavLinkItem\[\] \{[\s\S]*?return \[makeLoansItem\(\)\];[\s\S]*?\}[\s\S]*?Open the guided support workspace first\. Deeper tools stay inside the support flow\./,
+  "Global Tools menu must keep Loans & Support as one guided entry instead of exposing readiness, suggestions, workbench, or earnings as first-level choices."
+);
+
+assertContains(
   "src/pages/LoansPage.tsx",
   /gridTemplateColumns: responsiveGridColumns\(260\)[\s\S]*?debugId="loans\.route\.start-support"[\s\S]*?debugId="loans\.route\.money-in"[\s\S]*?debugId="loans\.route\.money-out"[\s\S]*?debugId="loans\.deeper-support-tools\.summary"[\s\S]*?Deeper support tools[\s\S]*?gridTemplateColumns: responsiveGridColumns\(260\)[\s\S]*?debugId="loans\.route\.readiness"[\s\S]*?debugId="loans\.route\.suggestions"[\s\S]*?debugId="loans\.route\.guarantor-inbox"[\s\S]*?debugId="loans\.route\.notifications"[\s\S]*?debugId="loans\.route\.guarantor-earnings"[\s\S]*?debugId="loans\.route\.marketplace"/,
   "Loans live support modules must keep primary actions visible, deeper tools behind a disclosure, and every route action traceable."

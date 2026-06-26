@@ -357,13 +357,7 @@ function buildFinanceToolsItems(): NavLinkItem[] {
 }
 
 function buildLoansItems(): NavLinkItem[] {
-  return [
-    makeLoansItem(),
-    { label: "Readiness", to: "/app/loan-readiness" },
-    { label: "Suggestions", to: "/app/loan-suggestions" },
-    { label: "Workbench", to: "/app/loan-workbench" },
-    { label: "Guarantor Earnings", to: "/app/guarantor-earnings" },
-  ];
+  return [makeLoansItem()];
 }
 
 function uniqueNavItems(items: NavLinkItem[]): NavLinkItem[] {
@@ -1765,7 +1759,7 @@ export default function AppLayout() {
         key: "support",
         label: "Loans & Support",
         hint:
-          "Money, readiness, suggestions, workbench, and support tools stay together here.",
+          "Open the guided support workspace first. Deeper tools stay inside the support flow.",
         items: loansItems,
       },
     ];

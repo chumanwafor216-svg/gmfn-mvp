@@ -1,3 +1,33 @@
+## 2026-06-26 - Global Loans tools menu simplified
+
+Owner request:
+- Make support/loan tooling system-level and guided, not a scattered set of
+  separate buttons that users must interpret.
+
+Local frontend cleanup:
+- `frontend/src/layout/AppLayout.tsx`
+  - The global Loans & Support tool group now exposes one guided
+    "Loans & Support" entry.
+  - Readiness, suggestions, workbench, inbox, and earnings routes still exist
+    and still highlight as part of Loans & Support when opened, but they are no
+    longer first-level Tools menu choices.
+  - The group hint now tells users to start from the guided support workspace.
+- `frontend/tools/audit-loans-actions.mjs`
+  - audit now protects the one-entry global Loans & Support tools group.
+
+Verification:
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `npm exec -- tsc -b --pretty false` from `frontend`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local frontend shell/menu correction only.
+- No backend loan, expiry, guarantor approval, payout, or dispute automation was
+  changed.
+- Not pushed or deployed yet because current Git publishing is batch-frozen by
+  `docs/FREEZE_POLICY.md`.
+
 ## 2026-06-26 - Loans page deep tools demoted
 
 Owner request:
