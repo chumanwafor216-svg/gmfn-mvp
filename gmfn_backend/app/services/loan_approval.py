@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Loan, LoanGuarantor
 from app.services.fees import calc_loan_financials
+from app.services.loan_repayment_schedule_service import ensure_approved_loan_repayment_schedule
 
 
 def approve_loan(db: Session, *, loan: Loan, decided_by_user_id: int) -> Loan:
@@ -100,6 +101,14 @@ def approve_loan(db: Session, *, loan: Loan, decided_by_user_id: int) -> Loan:
     loan.remaining_amount = amount - Decimal(str(loan.paid_total or 0))
     if loan.remaining_amount < 0:
         loan.remaining_amount = Decimal("0")
+
+    ensure_approved_loan_repayment_schedule(
+        db,
+        loan=loan,
+        actor_user_id=int(decided_by_user_id),
+        commit=False,
+        refresh=False,
+    )
 
     db.commit()
     db.refresh(loan)

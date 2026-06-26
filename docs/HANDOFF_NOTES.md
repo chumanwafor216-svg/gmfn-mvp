@@ -1,3 +1,51 @@
+## 2026-06-26 - Approved support requests now create repayment expectations
+
+Owner correction:
+- Support/loan requests must not stop at a visible repayment-plan dropdown.
+- The chosen duration and repayment cadence must feed backend truth: commitment,
+  TrustEvent evidence, and repayment/reconciliation tracking.
+- The system must not mark repayment expectations too early while guarantor
+  support is still pending.
+
+Local backend fix:
+- `gmfn_backend/app/services/loan_repayment_schedule_service.py`
+  - adds a small approval-time bridge that creates the canonical loan repayment
+    expected-payment row only after a loan is approved;
+  - reads the agreement data already recorded in `loan.created` /
+    `commitment.created` TrustEvents;
+  - stores `repayment_cadence`, `duration_days`, `due_at`, and
+    `planned_installments` in the expected-payment metadata;
+  - logs a deduped `repayment.schedule.created` TrustEvent.
+- `gmfn_backend/app/services/loan_approval.py`
+  - calls the schedule bridge during guarantor-backed approval.
+- `gmfn_backend/app/api/routes/loans.py`
+  - calls the same bridge for own-pool loans that are auto-approved at request
+    creation.
+- `gmfn_backend/app/services/expected_payments_service.py`
+  - lets the canonical loan repayment expected-payment row refresh due date and
+    schedule metadata without creating a second repayment reference.
+
+Important truth:
+- This deliberately keeps one canonical repayment reference per loan:
+  `GMFN-REPAY-LOAN-{loan_id}-U{borrower_id}`.
+- The planned installments are stored as metadata on that repayment expectation
+  so existing part-payment reconciliation still works and does not double-count.
+- Pending guarantor-backed requests do not create repayment expectations yet.
+- This still does not trigger automatic bank payout or automatic bank debit.
+  It prepares the approved-loan repayment expectation for bank/manual
+  reconciliation.
+
+Verification passed locally:
+- `python -m py_compile gmfn_backend\app\services\expected_payments_service.py gmfn_backend\app\services\loan_repayment_schedule_service.py gmfn_backend\app\services\loan_approval.py gmfn_backend\app\api\routes\loans.py gmfn_backend\tests\test_loan_pool_event_truth.py`
+- `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py gmfn_backend\tests\test_reconciliation_integrity.py -q`
+- `python -m pytest -q gmfn_backend\tests -k "loan or guarantor or repayment"`
+- `git diff --check`
+
+Status:
+- Local only until committed/pushed/deployed.
+- Frontend visible schedule display can still be improved, but the backend
+  repayment expectation truth is now connected.
+
 ## 2026-06-26 - Marketplace Money Out launcher made a real route link
 
 Owner report:

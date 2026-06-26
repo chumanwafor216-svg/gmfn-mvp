@@ -30,6 +30,7 @@ from app.services.guarantor_suggestions_service import suggest_guarantors_for_lo
 from app.services.guarantor_expiry_service import expire_stale_support_loans
 from app.services.loan_overdue_service import run_overdue_default_scan
 from app.services.loan_tier_rules import compute_loan_snapshot
+from app.services.loan_repayment_schedule_service import ensure_approved_loan_repayment_schedule
 from app.services.loans_service import (
     add_loan_guarantor,
     cancel_loan,
@@ -275,6 +276,14 @@ def create_loan(
                 ),
             },
         )
+        ensure_approved_loan_repayment_schedule(
+            db,
+            loan=loan,
+            actor_user_id=_uid(current_user),
+            commit=True,
+            refresh=False,
+        )
+        db.refresh(loan)
 
     return loan
 

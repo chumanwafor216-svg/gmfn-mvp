@@ -289,6 +289,25 @@ def ensure_loan_repayment_expected_payment(
         refresh=refresh,
     )
 
+    changed = False
+    existing_meta: Dict[str, Any] = {}
+    if row.meta_json:
+        try:
+            parsed = json.loads(row.meta_json)
+            if isinstance(parsed, dict):
+                existing_meta = parsed
+        except Exception:
+            existing_meta = {}
+
+    if due_at is not None and getattr(row, "due_at", None) != due_at:
+        row.due_at = due_at
+        changed = True
+
+    if meta:
+        existing_meta.update(payload)
+        row.meta_json = json.dumps(existing_meta, ensure_ascii=False)
+        changed = True
+
     target_amount = _d(amount)
     current_amount = _d(getattr(row, "amount", None))
     if target_amount > current_amount:
@@ -304,18 +323,12 @@ def ensure_loan_repayment_expected_payment(
             row.status = "expected"
             row.status_reason = None
 
-        existing_meta: Dict[str, Any] = {}
-        if row.meta_json:
-            try:
-                parsed = json.loads(row.meta_json)
-                if isinstance(parsed, dict):
-                    existing_meta = parsed
-            except Exception:
-                existing_meta = {}
         existing_meta.update(payload)
         existing_meta["expected_total_refreshed_to"] = str(target_amount)
         row.meta_json = json.dumps(existing_meta, ensure_ascii=False)
+        changed = True
 
+    if changed:
         db.add(row)
         if commit:
             db.commit()
