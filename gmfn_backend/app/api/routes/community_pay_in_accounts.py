@@ -17,6 +17,7 @@ from app.services.community_pay_in_account_service import (
 )
 
 router = APIRouter(prefix="/community-pay-in-accounts", tags=["community-pay-in-accounts"])
+COMMUNITY_PAY_IN_MANAGER_ROLES = {"admin", "owner", "founder", "creator"}
 
 
 class CommunityPayInAccountIn(BaseModel):
@@ -92,9 +93,16 @@ def _require_clan_admin(
     )
     if _platform_admin(current_user):
         return membership
-    if membership and str(getattr(membership, "role", "") or "").lower() == "admin":
+    if (
+        membership
+        and str(getattr(membership, "role", "") or "").lower()
+        in COMMUNITY_PAY_IN_MANAGER_ROLES
+    ):
         return membership
-    raise HTTPException(status_code=403, detail="Only a community admin can save this pay-in account")
+    raise HTTPException(
+        status_code=403,
+        detail="Only a community manager can save this pay-in account",
+    )
 
 
 @router.get("/{clan_id}")

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from sqlalchemy import text
+
+from app.db.database import engine
+
 
 def _payload() -> dict:
     return {
@@ -41,6 +45,27 @@ def test_normal_member_cannot_save_community_pay_in_account(
 ):
     res = client.put("/community-pay-in-accounts/1", json=_payload())
     assert res.status_code == 403
+
+
+def test_owner_member_can_save_community_pay_in_account(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE clan_memberships
+                SET role = 'owner'
+                WHERE clan_id = 1 AND user_id = 1
+                """
+            )
+        )
+
+    res = client.put("/community-pay-in-accounts/1", json=_payload())
+    assert res.status_code == 200
+    assert res.json()["settlement"]["source"] == "community_pay_in_account"
 
 
 def test_pool_instruction_uses_saved_community_pay_in_account(

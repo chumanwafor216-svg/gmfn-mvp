@@ -422,14 +422,14 @@ if (!moneySection) {
   ].map((item) => item[1]);
   const expectedMoneyActionIds = [
     "marketplace.money.toggle",
+    "marketplace.money.pay-in-account",
+    "marketplace.money.money-out-destination",
     "marketplace.money.pay-in-account-save",
     "marketplace.money.pay-in-account-close",
     "marketplace.money.money-out-destination-save",
     "marketplace.money.money-out-destination-close",
     "marketplace.money.money-in",
     "marketplace.money.money-out",
-    "marketplace.money.pay-in-account",
-    "marketplace.money.money-out-destination",
   ];
 
   if (moneyActionIds.join("|") !== expectedMoneyActionIds.join("|")) {
@@ -653,13 +653,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.money\.pay-in-account"[\s\S]{0,1500}setMoneyOutEditorOpen\(false\)[\s\S]{0,1500}setPayInEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{58\}[\s\S]{0,1500}Money In Rail/,
-  "Marketplace Money In Rail button must open the pay-in editor in the money section."
+  /Money In Rail[\s\S]{0,1500}Pay this account[\s\S]{0,1500}debugId="marketplace\.money\.pay-in-account"[\s\S]{0,1500}setMoneyOutEditorOpen\(false\)[\s\S]{0,1500}setPayInEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
+  "Marketplace Money In Rail card button must open the pay-in editor in the money section."
 );
 
 assertContains(
-  /debugId="marketplace\.money\.money-out-destination"[\s\S]{0,1500}setPayInEditorOpen\(false\)[\s\S]{0,1500}setMoneyOutEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{58\}[\s\S]{0,1500}Money Out Rail/,
-  "Marketplace Money Out Rail button must open the payout destination editor in the money section."
+  /Money Out Rail[\s\S]{0,1500}Where my approved withdrawal goes[\s\S]{0,1500}debugId="marketplace\.money\.money-out-destination"[\s\S]{0,1500}setPayInEditorOpen\(false\)[\s\S]{0,1500}setMoneyOutEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
+  "Marketplace Money Out Rail card button must open the payout destination editor in the money section."
 );
 
 assertFileContains(
@@ -699,14 +699,14 @@ const expectedOrder = [
     /debugId=\{`marketplace\.intent\.\$\{item\.id\}`\}/
   ),
   exactDebugId("marketplace.money.toggle"),
+  exactDebugId("marketplace.money.pay-in-account"),
+  exactDebugId("marketplace.money.money-out-destination"),
   exactDebugId("marketplace.money.pay-in-account-save"),
   exactDebugId("marketplace.money.pay-in-account-close"),
   exactDebugId("marketplace.money.money-out-destination-save"),
   exactDebugId("marketplace.money.money-out-destination-close"),
   exactDebugId("marketplace.money.money-in"),
   exactDebugId("marketplace.money.money-out"),
-  exactDebugId("marketplace.money.pay-in-account"),
-  exactDebugId("marketplace.money.money-out-destination"),
   exactDebugId("marketplace.rosca.toggle"),
   exactDebugId("marketplace.rosca.activate-yearly"),
   exactDebugId("marketplace.rosca.start-cycle"),

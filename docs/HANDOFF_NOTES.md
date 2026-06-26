@@ -68948,3 +68948,47 @@ GSN-branded invite composer and invite-entry continuity.
   - it is not proven fixed until the owner can tap and type into the Money In
     Rail fields on the actual phone session;
   - no commit, push, deploy, or phone verification has happened for this slice.
+
+### Follow-up same day - Corrected Marketplace rail card actions after Render check
+
+- Trigger:
+  - owner tested the rendered Marketplace money section and showed that the
+    rail layout still felt wrong on phone:
+    - Money In Rail card was present but its editor action could disappear
+      behind admin-role timing;
+    - Money Out Rail appeared as a stray bottom button, making the two rails
+      look mixed instead of paired.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - moved the Money In Rail setup/open action into the Money In Rail card;
+    - moved the Money Out Rail setup/open action into the Money Out Rail card;
+    - removed the loose rail buttons from the bottom action row, leaving only
+      the real movement actions: `Money In` and `Money Out`;
+    - widened the frontend role check for Money In Rail management to treat
+      `admin`, `owner`, `founder`, and `creator` as manager-style roles;
+    - the editor can open even if frontend role data is late; saving is still
+      protected by backend permission.
+  - `gmfn_backend/app/api/routes/community_pay_in_accounts.py`
+    - Money In Rail saving now accepts manager-style marketplace/community
+      roles: `admin`, `owner`, `founder`, and `creator`.
+  - `gmfn_backend/tests/test_community_pay_in_accounts.py`
+    - added proof that an `owner` membership can save the marketplace Money In
+      Rail while a normal member still cannot.
+  - `frontend/tools/audit-marketplace-money-pool-lane.mjs`
+    - now protects rail-card actions instead of old bottom rail buttons.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs`
+    - updated the audited Marketplace money action order to match the corrected
+      rail-card structure.
+- Verification:
+  - Passed `npm run audit:marketplace-button-inventory` from `frontend`.
+  - Passed `npm run audit:marketplace-money-pool-lane` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed focused backend community pay-in tests after the route permission
+    alignment.
+- Unabated truth:
+  - the screenshot was not only a deployment problem; the visible frontend
+    structure still needed this correction;
+  - backend Render deploy is still blocked until GitHub has `RENDER_API_KEY`
+    and preferably `RENDER_API_SERVICE_ID`, so saved Money In Rail data may not
+    be live even after the frontend deploy hook succeeds.

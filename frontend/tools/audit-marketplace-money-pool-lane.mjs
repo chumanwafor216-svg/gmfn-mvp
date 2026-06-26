@@ -81,14 +81,14 @@ if (!moneySection.text) {
   ].map((match) => match[1]);
   const expectedActionIds = [
     "marketplace.money.toggle",
+    "marketplace.money.pay-in-account",
+    "marketplace.money.money-out-destination",
     "marketplace.money.pay-in-account-save",
     "marketplace.money.pay-in-account-close",
     "marketplace.money.money-out-destination-save",
     "marketplace.money.money-out-destination-close",
     "marketplace.money.money-in",
     "marketplace.money.money-out",
-    "marketplace.money.pay-in-account",
-    "marketplace.money.money-out-destination",
   ];
 
   if (actionIds.join("|") !== expectedActionIds.join("|")) {
@@ -110,8 +110,8 @@ if (!moneySection.text) {
     /Money Out Rail[\s\S]*?My payout destination[\s\S]*?debugId="marketplace\.money\.money-out-destination-save"/,
     /debugId="marketplace\.money\.money-in"[\s\S]*?openMarketplaceCta\(event, "moneyIn"\)[\s\S]*?<MarketplaceGlyph name="cash"/,
     /debugId="marketplace\.money\.money-out"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?<MarketplaceGlyph name="card"/,
-    /debugId="marketplace\.money\.pay-in-account"[\s\S]*?Money In Rail/,
-    /debugId="marketplace\.money\.money-out-destination"[\s\S]*?Money Out Rail/,
+    /Money In Rail[\s\S]*?Pay this account[\s\S]*?debugId="marketplace\.money\.pay-in-account"[\s\S]*?(Set rail|Open rail|Close rail)/,
+    /Money Out Rail[\s\S]*?Where my approved withdrawal goes[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?(Set rail|Open rail|Close rail)/,
     /style=\{\{[\s\S]*?\.\.\.marketplaceInlineActionsStyle\(isCompact\)[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
   ].forEach((pattern) => {
     if (!pattern.test(moneySection.text)) {

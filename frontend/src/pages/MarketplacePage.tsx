@@ -2662,6 +2662,29 @@ function marketplaceMoneyStatusPillStyle(ready = false): React.CSSProperties {
   };
 }
 
+function marketplaceMoneyCardActionStyle(
+  kind: "primary" | "secondary",
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    ...marketplaceActionStyle(kind),
+    width: "100%",
+    minWidth: 0,
+    maxWidth: isCompact ? "100%" : 180,
+    height: isCompact ? 38 : 42,
+    minHeight: isCompact ? 38 : 42,
+    maxHeight: isCompact ? 38 : 42,
+    padding: isCompact ? "0 8px" : "0 12px",
+    justifySelf: "start",
+    fontSize: isCompact ? 11.5 : 13,
+    lineHeight: 1.05,
+    whiteSpace: "normal",
+    overflow: "hidden",
+    textOverflow: "clip",
+    transition: "none",
+  };
+}
+
 function marketplaceMoneyChartBubbleStyle(isCompact: boolean): React.CSSProperties {
   return {
     width: isCompact ? 38 : 68,
@@ -5441,10 +5464,11 @@ export default function MarketplacePage() {
         safeStr(me?.gmfn_id) ||
         safeStr(me?.role).toLowerCase() === "admin")
   );
+  const moneyRailManagerRoles = ["admin", "owner", "founder", "creator"];
   const canManagePayInAccount = Boolean(
     activeCommunityId &&
-      (safeStr(me?.role).toLowerCase() === "admin" ||
-        currentMemberRole === "admin")
+      (moneyRailManagerRoles.includes(safeStr(me?.role).toLowerCase()) ||
+        moneyRailManagerRoles.includes(currentMemberRole))
   );
   const marketplaceJoinLinkMissingMessage = canManageMarketplaceLinks
     ? "GSN is preparing the reusable join link. Try again in a moment."
@@ -7385,6 +7409,27 @@ export default function MarketplacePage() {
                 <div style={marketplaceMoneyHelperStyle(isCompact)}>
                   Pay this account
                 </div>
+                <StableButton
+                  debugId="marketplace.money.pay-in-account"
+                  type="button"
+                  onClick={() => {
+                    pendingMarketplaceSectionRef.current = "";
+                    cancelMarketplaceSectionScroll();
+                    setMoneyOutEditorOpen(false);
+                    setPayInEditorOpen((value) => !value);
+                  }}
+                  stableHeight={isCompact ? 38 : 42}
+                  style={marketplaceMoneyCardActionStyle(
+                    communitySettlementReady ? "secondary" : "primary",
+                    isCompact
+                  )}
+                >
+                  {payInEditorOpen
+                    ? "Close rail"
+                    : communitySettlementReady
+                      ? "Open rail"
+                      : "Set rail"}
+                </StableButton>
               </div>
               <div style={marketplaceMoneyStatusAreaStyle()}>
                 <span style={marketplaceMoneyStatusPillStyle(communitySettlementReady)}>
@@ -7410,6 +7455,27 @@ export default function MarketplacePage() {
                 <div style={marketplaceMoneyHelperStyle(isCompact)}>
                   Where my approved withdrawal goes
                 </div>
+                <StableButton
+                  debugId="marketplace.money.money-out-destination"
+                  type="button"
+                  onClick={() => {
+                    pendingMarketplaceSectionRef.current = "";
+                    cancelMarketplaceSectionScroll();
+                    setPayInEditorOpen(false);
+                    setMoneyOutEditorOpen((value) => !value);
+                  }}
+                  stableHeight={isCompact ? 38 : 42}
+                  style={marketplaceMoneyCardActionStyle(
+                    payoutReady ? "secondary" : "primary",
+                    isCompact
+                  )}
+                >
+                  {moneyOutEditorOpen
+                    ? "Close rail"
+                    : payoutReady
+                      ? "Open rail"
+                      : "Set rail"}
+                </StableButton>
               </div>
               <div style={marketplaceMoneyStatusAreaStyle()}>
                 <span style={marketplaceMoneyStatusPillStyle(payoutReady)}>
@@ -7418,7 +7484,7 @@ export default function MarketplacePage() {
               </div>
             </div>
 
-            {payInEditorOpen && canManagePayInAccount ? (
+            {payInEditorOpen ? (
               <div
                 style={{
                   gridColumn: "1 / -1",
@@ -7819,42 +7885,6 @@ export default function MarketplacePage() {
                   <MarketplaceGlyph name="card" size={18} />
                 </span>
                 Money Out
-              </StableButton>
-              {canManagePayInAccount ? (
-                <StableButton
-                  debugId="marketplace.money.pay-in-account"
-                  type="button"
-                  onClick={() => {
-                    pendingMarketplaceSectionRef.current = "";
-                    cancelMarketplaceSectionScroll();
-                    setMoneyOutEditorOpen(false);
-                    setPayInEditorOpen((value) => !value);
-                  }}
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                >
-                  <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                    <MarketplaceGlyph name="bank" size={18} />
-                  </span>
-                  Money In Rail
-                </StableButton>
-              ) : null}
-              <StableButton
-                debugId="marketplace.money.money-out-destination"
-                type="button"
-                onClick={() => {
-                  pendingMarketplaceSectionRef.current = "";
-                  cancelMarketplaceSectionScroll();
-                  setPayInEditorOpen(false);
-                  setMoneyOutEditorOpen((value) => !value);
-                }}
-                stableHeight={58}
-                style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-              >
-                <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                  <MarketplaceGlyph name="card" size={18} />
-                </span>
-                Money Out Rail
               </StableButton>
             </div>
           </div>
