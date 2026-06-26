@@ -1,3 +1,32 @@
+## 2026-06-26 - Visible support items now show purpose first
+
+Owner request:
+- Continue removing generic/noisy support wording so the Support Requests lane
+  talks directly to the user.
+
+Local frontend correction:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - `LoanSupportItem` now carries optional `purpose`;
+  - support item normalization keeps purpose explicitly;
+  - visible support cards now use purpose as the first title when available;
+  - empty state now says `No visible support item is active...` instead of
+    `No visible loan or support item...`.
+- `frontend/tools/audit-marketplace-support-lane.mjs`
+  - audit now protects purpose-first support card titles and blocks the old
+    empty-state wording.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- This is a presentation/typing fix. It relies on the backend purpose-response
+  enrichment from the previous slice.
+- No support approval PIN, payout automation, fraud/dispute workflow, or new
+  support lifecycle engine was added.
+
 ## 2026-06-26 - Support request purpose exposed back to support pages
 
 Owner request:

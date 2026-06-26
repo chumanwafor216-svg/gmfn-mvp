@@ -125,7 +125,7 @@ if (!supportSection.text) {
     /debugId="marketplace\.support\.finance"[\s\S]*?openMarketplaceCta\(event, "finance"\)/,
     /debugId="marketplace\.support\.full-loans"[\s\S]*?openMarketplaceCta\(event, "loans"\)/,
     /debugId="marketplace\.support\.send-guarantor-requests"[\s\S]*?showGuarantorRequestBlockedNotice/,
-    /firstTruthy\(item\?\.title, "Support item"\)/,
+    /firstTruthy\(item\?\.purpose, item\?\.title, "Support item"\)/,
     /Requested by: \$\{item\.borrower_name\}/,
     /Supporter: \$\{item\.guarantor_name\}/,
   ].forEach((pattern) => {
@@ -146,7 +146,7 @@ if (!supportSection.text) {
     );
   }
 
-  if (/(Loan and support item|Borrower:|Guarantor:)/.test(supportSection.text)) {
+  if (/(Loan and support item|No visible loan or support item|Borrower:|Guarantor:)/.test(supportSection.text)) {
     addFinding(
       supportSection.start,
       "Support Requests visible item cards must use simple support wording, not borrower/guarantor labels.",

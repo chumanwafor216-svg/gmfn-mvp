@@ -297,6 +297,7 @@ type LoanSupportItem = {
   id?: number;
   clan_id?: number;
   title?: string | null;
+  purpose?: string | null;
   status?: string | null;
   amount?: string | number | null;
   currency?: string | null;
@@ -1378,6 +1379,7 @@ function normalizeLoan(raw: any): LoanSupportItem | null {
       src?.loan_title,
       src?.description
     ),
+    purpose: firstTruthy(src?.purpose, src?.title, src?.loan_title),
     status: firstTruthy(src?.status, src?.loan_status, src?.state, "Open"),
     amount: firstDefined(
       src?.amount,
@@ -11399,7 +11401,7 @@ export default function MarketplacePage() {
               >
                 {loans.length === 0 ? (
                   <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                    No visible loan or support item is active in this community right now.
+                    No visible support item is active in this community right now.
                   </div>
                 ) : (
                   loans.slice(0, 6).map((item, index) => (
@@ -11412,7 +11414,7 @@ export default function MarketplacePage() {
                           lineHeight: 1.35,
                         }}
                       >
-                        {firstTruthy(item?.title, "Support item")}
+                        {firstTruthy(item?.purpose, item?.title, "Support item")}
                       </div>
 
                       <div
