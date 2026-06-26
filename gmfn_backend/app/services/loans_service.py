@@ -383,7 +383,16 @@ def list_guarantor_inbox(
 # CANCEL + UNLOCK
 # =========================
 
-def cancel_loan(db: Session, *, loan_id: int, clan_id: int, actor_user_id: int) -> Loan:
+def cancel_loan(
+    db: Session,
+    *,
+    loan_id: int,
+    clan_id: int,
+    actor_user_id: int,
+    reason: Optional[str] = None,
+    note: Optional[str] = None,
+    release_reason: Optional[str] = None,
+) -> Loan:
     loan = db.get(Loan, int(loan_id))
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
@@ -413,8 +422,8 @@ def cancel_loan(db: Session, *, loan_id: int, clan_id: int, actor_user_id: int) 
                 loan_id=int(loan.id),
                 guarantor_id=int(g.id),
                 released_amount=locked_amount,
-                release_reason="loan_cancelled",
-                note="Guarantor exposure released after cancellation",
+                release_reason=release_reason or "loan_cancelled",
+                note=note or "Guarantor exposure released after cancellation",
                 commit=False,
                 refresh=False,
             )
@@ -430,7 +439,11 @@ def cancel_loan(db: Session, *, loan_id: int, clan_id: int, actor_user_id: int) 
         guarantor_id=None,
         actor_user_id=actor_user_id,
         subject_user_id=int(getattr(loan, "borrower_user_id", 0) or 0),
-        meta={"reason": "cancelled"},
+        meta={
+            "reason": reason or "cancelled",
+            "note": note,
+            "release_reason": release_reason or "loan_cancelled",
+        },
         commit=False,
         refresh=False,
     )

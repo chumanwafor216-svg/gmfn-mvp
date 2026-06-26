@@ -27,6 +27,7 @@ from app.schemas.loans import (
 )
 from app.schemas.repayments import RepaymentCreate, RepaymentOut, RepaymentsListResponse
 from app.services.guarantor_suggestions_service import suggest_guarantors_for_loan
+from app.services.guarantor_expiry_service import expire_stale_support_loans
 from app.services.loan_overdue_service import run_overdue_default_scan
 from app.services.loan_tier_rules import compute_loan_snapshot
 from app.services.loans_service import (
@@ -215,6 +216,26 @@ def create_loan(
     return loan
 
 
+@router.post("/support-expiry/run")
+def run_support_expiry_sweep(
+    response_hours: int = Query(24, ge=1, le=720),
+    cancel_grace_hours: int = Query(1, ge=0, le=168),
+    limit: int = Query(500, ge=1, le=2000),
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, membership, _current_user = clan_ctx
+    _require_clan_admin(membership)
+
+    return expire_stale_support_loans(
+        db,
+        clan_id=int(clan.id),
+        response_hours=int(response_hours),
+        cancel_grace_hours=int(cancel_grace_hours),
+        max_batch=int(limit),
+    )
+
+
 @router.get("/{loan_id}", response_model=LoanOut)
 def get_loan(
     loan_id: int,
@@ -241,6 +262,12 @@ def get_loan(
 
     if not (is_owner or is_clan_admin):
         raise HTTPException(status_code=403, detail="Not allowed")
+
+    if (loan.status or "").lower() in {"pending", "incomplete"}:
+        expire_stale_support_loans(db, clan_id=int(loan.clan_id), max_batch=50)
+        loan = db.get(Loan, loan_id)
+        if not loan:
+            raise HTTPException(status_code=404, detail="Loan not found")
 
     return loan
 
@@ -389,6 +416,12 @@ def get_loan_guarantors(
         raise HTTPException(status_code=404, detail="Loan not found")
     _require_same_clan(loan, clan.id)
 
+    if (loan.status or "").lower() in {"pending", "incomplete"}:
+        expire_stale_support_loans(db, clan_id=int(clan.id), max_batch=50)
+        loan = db.get(Loan, loan_id)
+        if not loan:
+            raise HTTPException(status_code=404, detail="Loan not found")
+
     items = list_loan_guarantors(db, loan_id=loan_id, clan_id=clan.id)
     return {"items": items, "total": len(items)}
 
@@ -534,6 +567,12 @@ def get_loan_summary(
 
     if not (is_owner or is_clan_admin):
         raise HTTPException(status_code=403, detail="Not allowed")
+
+    if (loan.status or "").lower() in {"pending", "incomplete"}:
+        expire_stale_support_loans(db, clan_id=int(loan.clan_id), max_batch=50)
+        loan = db.get(Loan, loan_id)
+        if not loan:
+            raise HTTPException(status_code=404, detail="Loan not found")
 
     approved_guarantors = (
         db.query(LoanGuarantor)

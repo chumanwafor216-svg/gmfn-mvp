@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE_DIR))
 
 from decimal import Decimal
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import create_engine
@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.db.models import Base, User, Clan, ClanMembership, Loan, LoanGuarantor
 from app.services.guarantor_service import update_loan_guarantor_status
+from app.services.guarantor_expiry_service import expire_stale_support_loans
 from app.services.repayments_service import create_repayment
 
 TEST_DB_URL = "sqlite:///./test_guarantor_flow.db"
@@ -196,3 +197,86 @@ def test_release_returns_funds(db):
     assert lg1.released_amount == Decimal("25000")
     assert lg2.released_amount == Decimal("75000")
     assert loan.status == "repaid"
+
+
+def test_stale_incomplete_support_window_cancels_and_releases_locks(db):
+    clan, borrower, g1, g2, admin, loan, lg1, lg2 = seed_basic(db)
+
+    update_loan_guarantor_status(
+        db,
+        loan_id=loan.id,
+        clan_id=clan.id,
+        loan_guarantor_id=lg1.id,
+        new_status="approved",
+        decided_by_user_id=admin.id,
+    )
+
+    old = datetime.now(timezone.utc) - timedelta(hours=27)
+    db.refresh(loan)
+    db.refresh(lg1)
+    db.refresh(lg2)
+    loan.created_at = old
+    lg1.created_at = old
+    lg1.responded_at = old
+    lg2.created_at = old
+    db.commit()
+
+    result = expire_stale_support_loans(
+        db,
+        clan_id=int(clan.id),
+        response_hours=24,
+        cancel_grace_hours=1,
+    )
+
+    db.refresh(loan)
+    db.refresh(lg1)
+    db.refresh(lg2)
+
+    assert result["expired_guarantors"] == 1
+    assert result["cancelled_loans"] == 1
+    assert loan.status == "cancelled"
+    assert lg1.is_locked is False
+    assert lg1.locked_amount == Decimal("0")
+    assert lg1.released_amount == Decimal("25000")
+    assert lg2.status == "expired"
+
+
+def test_recent_incomplete_support_window_expires_pending_without_releasing_early(db):
+    clan, borrower, g1, g2, admin, loan, lg1, lg2 = seed_basic(db)
+
+    update_loan_guarantor_status(
+        db,
+        loan_id=loan.id,
+        clan_id=clan.id,
+        loan_guarantor_id=lg1.id,
+        new_status="approved",
+        decided_by_user_id=admin.id,
+    )
+
+    old = datetime.now(timezone.utc) - timedelta(hours=24, minutes=30)
+    db.refresh(loan)
+    db.refresh(lg1)
+    db.refresh(lg2)
+    loan.created_at = old
+    lg1.created_at = old
+    lg1.responded_at = old
+    lg2.created_at = old
+    db.commit()
+
+    result = expire_stale_support_loans(
+        db,
+        clan_id=int(clan.id),
+        response_hours=24,
+        cancel_grace_hours=1,
+    )
+
+    db.refresh(loan)
+    db.refresh(lg1)
+    db.refresh(lg2)
+
+    assert result["expired_guarantors"] == 1
+    assert result["cancelled_loans"] == 0
+    assert loan.status == "incomplete"
+    assert lg1.is_locked is True
+    assert lg1.locked_amount == Decimal("25000")
+    assert lg2.status == "expired"

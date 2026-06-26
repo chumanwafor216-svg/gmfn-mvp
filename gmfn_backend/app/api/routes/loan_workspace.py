@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import Loan, User
+from app.services.guarantor_expiry_service import expire_stale_support_loans
 from app.services.loan_workspace_service import build_loan_workspace
 
 router = APIRouter(prefix="/loans", tags=["loan-workspace"])
@@ -32,6 +33,9 @@ def get_loan_workspace(
 
     if not _is_admin(current_user) and borrower_user_id != current_user_id:
         raise HTTPException(status_code=403, detail="Not allowed to inspect this loan workspace")
+
+    if (loan.status or "").lower() in {"pending", "incomplete"}:
+        expire_stale_support_loans(db, clan_id=int(loan.clan_id), max_batch=50)
 
     try:
         result = build_loan_workspace(db, int(loan_id))

@@ -69203,6 +69203,65 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Deterministic support expiry and locked-money release
+
+- Trigger:
+  - owner clarified that Money Out/support-backed withdrawal must not keep
+    guarantor money locked silently if not all required supporters accept in
+    time.
+  - Desired behavior: money only leaves after required support is complete;
+    if support is incomplete after the window, the system must either allow more
+    support to be requested or cancel/release locked support deterministically.
+- Confirmed from code before changes:
+  - guarantor approval already locks `LoanGuarantor.locked_amount`;
+  - loan approval already requires both approved-guarantor count and locked
+    coverage;
+  - manual `cancel_loan` already releases locked guarantor exposure;
+  - `guarantor_expiry_service.expire_pending_guarantors` existed, but only
+    expired unanswered pending guarantors and did not cancel stale incomplete
+    support packages or release partial locks.
+- Changed:
+  - `gmfn_backend/app/services/guarantor_expiry_service.py`
+    - added `expire_stale_support_loans`;
+    - default support response window is 24 hours, with a 1 hour cancel grace;
+    - unanswered pending guarantors expire after the response window;
+    - if no pending request remains and quorum/coverage is still incomplete
+      after the grace window, the loan is cancelled and any locked guarantor
+      exposure is released;
+    - timeout is based on support request creation time, not the expiry scan
+      timestamp, so scans do not accidentally keep stale locks alive.
+  - `gmfn_backend/app/services/loans_service.py`
+    - `cancel_loan` now accepts optional `reason`, `note`, and
+      `release_reason` while preserving existing caller behavior.
+  - `gmfn_backend/app/api/routes/loans.py`
+    - added community-admin sweep route:
+      `POST /loans/support-expiry/run`;
+    - loan detail, guarantor list, and loan summary refresh stale support state
+      for pending/incomplete loans before returning authorized views.
+  - `gmfn_backend/app/api/routes/loan_workspace.py`
+    - workspace refreshes stale support state before building suggestions and
+      decision intelligence.
+  - `gmfn_backend/tests/test/guarantor_flow.py`
+    - added coverage for stale incomplete support cancelling and releasing
+      locks;
+    - added coverage that a still-inside-grace support package does not release
+      approved locks early.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test\guarantor_flow.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_guarantor_decision.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_loan_hardening_service.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py`.
+  - App import check passed in dev mode:
+    `GMFN_DEV_MODE=1 python -c "from app.main import app; print('routes', len(app.routes))"`.
+- Unabated truth:
+  - this makes the support/guarantor lock side deterministic;
+  - it does not yet implement automatic bank payout after approval;
+  - it does not yet add a borrower-facing "ask for more time" button. The
+    current safe default after the window plus grace is cancel/release, and the
+    borrower can start/request support again.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Money Out amount-first guided withdrawal refinement
 
 - Trigger:
