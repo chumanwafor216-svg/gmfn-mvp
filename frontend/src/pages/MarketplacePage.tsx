@@ -74,8 +74,6 @@ import {
   communityPayInReady,
   getCommunityMoneySurface,
   saveCommunityPayInSettlement,
-  saveCommunitySettlementDestination,
-  type CommunitySettlementDestination,
   type CommunityMoneySettlement,
   type CommunityMoneySurface,
 } from "../lib/communityMoney";
@@ -330,8 +328,6 @@ type PayInAccountDraft = {
   currency: string;
   note: string;
 };
-
-type MoneyOutDestinationDraft = CommunitySettlementDestination;
 
 type SuggestedSupporter = {
   key: string;
@@ -3630,10 +3626,7 @@ export default function MarketplacePage() {
     null
   );
   const [payInEditorOpen, setPayInEditorOpen] = useState(false);
-  const [moneyOutEditorOpen, setMoneyOutEditorOpen] = useState(false);
   const [savingPayInAccount, setSavingPayInAccount] = useState(false);
-  const [savingMoneyOutDestination, setSavingMoneyOutDestination] =
-    useState(false);
   const [payInAccountDraft, setPayInAccountDraft] = useState<PayInAccountDraft>({
     accountName: "",
     bankName: "",
@@ -3643,17 +3636,6 @@ export default function MarketplacePage() {
     currency: "GBP",
     note: "",
   });
-  const [moneyOutDestinationDraft, setMoneyOutDestinationDraft] =
-    useState<MoneyOutDestinationDraft>({
-      destinationName: "",
-      bankName: "",
-      accountNumber: "",
-      sortCode: "",
-      phoneNumber: "",
-      country: "",
-      currency: "GBP",
-      note: "",
-    });
 
   const [loanAmount, setLoanAmount] = useState("");
   const [loanDurationDays, setLoanDurationDays] = useState("");
@@ -4983,22 +4965,6 @@ export default function MarketplacePage() {
   }, [moneySurface?.communitySettlement]);
 
   useEffect(() => {
-    const destination = moneySurface?.payoutDestination || null;
-    if (!destination) return;
-
-    setMoneyOutDestinationDraft((prev) => ({
-      destinationName: firstTruthy(destination.destinationName, prev.destinationName),
-      bankName: firstTruthy(destination.bankName, prev.bankName),
-      accountNumber: firstTruthy(destination.accountNumber, prev.accountNumber),
-      sortCode: firstTruthy(destination.sortCode, prev.sortCode),
-      phoneNumber: firstTruthy(destination.phoneNumber, prev.phoneNumber),
-      country: firstTruthy(destination.country, prev.country),
-      currency: firstTruthy(destination.currency, prev.currency, "GBP"),
-      note: firstTruthy(destination.note, prev.note),
-    }));
-  }, [moneySurface?.payoutDestination]);
-
-  useEffect(() => {
     if (!activeCommunityId) {
       setSectionsOpen(DEFAULT_SECTION_STATE);
       return;
@@ -5561,16 +5527,6 @@ export default function MarketplacePage() {
     }));
   }
 
-  function updateMoneyOutDestinationDraft<K extends keyof MoneyOutDestinationDraft>(
-    key: K,
-    value: MoneyOutDestinationDraft[K]
-  ) {
-    setMoneyOutDestinationDraft((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
-
   async function savePayInAccount() {
     if (!activeCommunityId || !canManagePayInAccount) {
       setNotice({
@@ -5627,57 +5583,6 @@ export default function MarketplacePage() {
       });
     } finally {
       setSavingPayInAccount(false);
-    }
-  }
-
-  async function saveMoneyOutDestination() {
-    const destinationCommunityId = activeCommunityId || selectedClanId || 0;
-    const destinationGmfnId = currentGmfnId || "";
-
-    setSavingMoneyOutDestination(true);
-    try {
-      const saved = await saveCommunitySettlementDestination(
-        destinationCommunityId,
-        destinationGmfnId,
-        moneyOutDestinationDraft
-      );
-
-      const refreshed = destinationCommunityId && destinationGmfnId
-        ? await getCommunityMoneySurface(
-            destinationCommunityId,
-            destinationGmfnId,
-            firstTruthy(saved?.currency, moneySurface?.poolCurrency, "GBP")
-          ).catch(() => null)
-        : null;
-
-      if (refreshed) {
-        setMoneySurface(refreshed);
-      } else {
-        setMoneySurface((prev) =>
-          prev
-            ? {
-                ...prev,
-                payoutDestination: saved,
-                settlementDestination: saved,
-              }
-            : prev
-        );
-      }
-
-      setMoneyOutEditorOpen(false);
-      setNotice({
-        tone: "success",
-        text: "Money out destination saved.",
-      });
-    } catch (error: any) {
-      setNotice({
-        tone: "error",
-        text:
-          safeStr(error?.message) ||
-          "Money out destination could not be saved.",
-      });
-    } finally {
-      setSavingMoneyOutDestination(false);
     }
   }
 
@@ -7540,7 +7445,6 @@ export default function MarketplacePage() {
                   onClick={() => {
                     pendingMarketplaceSectionRef.current = "";
                     cancelMarketplaceSectionScroll();
-                    setMoneyOutEditorOpen(false);
                     setPayInEditorOpen((value) => !value);
                   }}
                   stableHeight={isCompact ? 38 : 42}
@@ -7572,35 +7476,25 @@ export default function MarketplacePage() {
               </span>
               <div style={marketplaceMoneyTextStackStyle()}>
                 <div style={marketplaceMoneyTitleStyle(isCompact)}>
-                  Money Out Rail
+                  Money Out
                 </div>
                 <div style={marketplaceMoneyRouteValueStyle(isCompact, payoutReady)}>
                   {payoutReady ? payoutSummary(moneySurface) : "Not ready"}
                 </div>
                 <div style={marketplaceMoneyHelperStyle(isCompact)}>
-                  My personal payout account
+                  Withdrawal and payout details
                 </div>
-                <StableButton
+                <StableCtaLink
+                  to={marketplaceMoneyOutTo}
                   debugId="marketplace.money.money-out-destination"
-                  type="button"
-                  onClick={() => {
-                    pendingMarketplaceSectionRef.current = "";
-                    cancelMarketplaceSectionScroll();
-                    setPayInEditorOpen(false);
-                    setMoneyOutEditorOpen((value) => !value);
-                  }}
                   stableHeight={isCompact ? 38 : 42}
                   style={marketplaceMoneyCardActionStyle(
                     payoutReady ? "secondary" : "primary",
                     isCompact
                   )}
                 >
-                  {moneyOutEditorOpen
-                    ? "Close rail"
-                    : payoutReady
-                      ? "Open rail"
-                      : "Set rail"}
-                </StableButton>
+                  Open Withdrawal
+                </StableCtaLink>
               </div>
               <div style={marketplaceMoneyStatusAreaStyle()}>
                 <span style={marketplaceMoneyStatusPillStyle(payoutReady)}>
@@ -7770,205 +7664,6 @@ export default function MarketplacePage() {
                     debugId="marketplace.money.pay-in-account-close"
                     type="button"
                     onClick={() => setPayInEditorOpen(false)}
-                    stableHeight={52}
-                    style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                  >
-                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                      <MarketplaceGlyph name="chevronUp" size={18} />
-                    </span>
-                    Close
-                  </StableButton>
-                </div>
-              </div>
-            ) : null}
-
-            {moneyOutEditorOpen ? (
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  display: "grid",
-                  gap: 12,
-                  padding: isCompact ? 12 : 16,
-                  borderRadius: 18,
-                  border: "1px solid rgba(20,55,88,0.14)",
-                  background: "#F8FBFF",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 12,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div>
-                    <div style={sectionLabel()}>Money Out Rail</div>
-                    <div
-                      style={{
-                        marginTop: 4,
-                        color: "#07172C",
-                        fontSize: isCompact ? 18 : 22,
-                        fontWeight: 1000,
-                      }}
-                    >
-                      My personal payout account
-                    </div>
-                  </div>
-                  <span style={marketplaceMoneyStatusPillStyle(payoutReady)}>
-                    {payoutReady ? "Saved" : "Not saved"}
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "repeat(3, minmax(0, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
-                    Destination name
-                    <input
-                      {...marketplaceFieldTouchProps(
-                        "marketplace.money.money-out.destination-name"
-                      )}
-                      value={moneyOutDestinationDraft.destinationName}
-                      onChange={(event) =>
-                        updateMoneyOutDestinationDraft(
-                          "destinationName",
-                          event.target.value
-                        )
-                      }
-                      style={inputStyle()}
-                      placeholder="Where money should go"
-                    />
-                  </label>
-                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
-                    Bank
-                    <input
-                      {...marketplaceFieldTouchProps("marketplace.money.money-out.bank-name")}
-                      value={moneyOutDestinationDraft.bankName}
-                      onChange={(event) =>
-                        updateMoneyOutDestinationDraft("bankName", event.target.value)
-                      }
-                      style={inputStyle()}
-                      placeholder="Bank name"
-                    />
-                  </label>
-                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
-                    Account number
-                    <input
-                      {...marketplaceFieldTouchProps(
-                        "marketplace.money.money-out.account-number"
-                      )}
-                      value={moneyOutDestinationDraft.accountNumber}
-                      onChange={(event) =>
-                        updateMoneyOutDestinationDraft(
-                          "accountNumber",
-                          event.target.value
-                        )
-                      }
-                      style={inputStyle()}
-                      inputMode="numeric"
-                      placeholder="Account number"
-                    />
-                  </label>
-                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
-                    Sort code
-                    <input
-                      {...marketplaceFieldTouchProps("marketplace.money.money-out.sort-code")}
-                      value={moneyOutDestinationDraft.sortCode}
-                      onChange={(event) =>
-                        updateMoneyOutDestinationDraft("sortCode", event.target.value)
-                      }
-                      style={inputStyle()}
-                      placeholder="40-12-65"
-                    />
-                  </label>
-                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
-                    Country
-                    <input
-                      {...marketplaceFieldTouchProps("marketplace.money.money-out.country")}
-                      value={moneyOutDestinationDraft.country}
-                      onChange={(event) =>
-                        updateMoneyOutDestinationDraft("country", event.target.value)
-                      }
-                      style={inputStyle()}
-                      placeholder="GB"
-                    />
-                  </label>
-                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
-                    Currency
-                    <input
-                      {...marketplaceFieldTouchProps("marketplace.money.money-out.currency")}
-                      value={moneyOutDestinationDraft.currency}
-                      onChange={(event) =>
-                        updateMoneyOutDestinationDraft("currency", event.target.value)
-                      }
-                      style={inputStyle()}
-                      maxLength={8}
-                      placeholder="GBP"
-                    />
-                  </label>
-                  <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
-                    Phone
-                    <input
-                      {...marketplaceFieldTouchProps("marketplace.money.money-out.phone")}
-                      value={moneyOutDestinationDraft.phoneNumber}
-                      onChange={(event) =>
-                        updateMoneyOutDestinationDraft(
-                          "phoneNumber",
-                          event.target.value
-                        )
-                      }
-                      style={inputStyle()}
-                      inputMode="tel"
-                      placeholder="+44..."
-                    />
-                  </label>
-                </div>
-
-                <label style={{ display: "grid", gap: 6, fontWeight: 850 }}>
-                  Note
-                  <input
-                    {...marketplaceFieldTouchProps("marketplace.money.money-out.note")}
-                    value={moneyOutDestinationDraft.note}
-                    onChange={(event) =>
-                      updateMoneyOutDestinationDraft("note", event.target.value)
-                    }
-                    style={inputStyle()}
-                    placeholder="Personal withdrawal destination"
-                  />
-                </label>
-
-                <div style={marketplaceInlineActionsStyle(isCompact)}>
-                  <StableButton
-                    debugId="marketplace.money.money-out-destination-save"
-                    type="button"
-                    disabled={savingMoneyOutDestination}
-                    onClick={() => {
-                      void saveMoneyOutDestination();
-                    }}
-                    stableHeight={52}
-                    style={marketplaceInlineActionStyle(
-                      "primary",
-                      savingMoneyOutDestination,
-                      isCompact
-                    )}
-                  >
-                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                      <MarketplaceGlyph name="verify" size={18} />
-                    </span>
-                    {savingMoneyOutDestination ? "Saving" : "Save destination"}
-                  </StableButton>
-                  <StableButton
-                    debugId="marketplace.money.money-out-destination-close"
-                    type="button"
-                    onClick={() => setMoneyOutEditorOpen(false)}
                     stableHeight={52}
                     style={marketplaceInlineActionStyle("secondary", false, isCompact)}
                   >

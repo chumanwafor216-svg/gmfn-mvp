@@ -69331,6 +69331,69 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Fintech line audit and payout rail ownership correction
+
+- Trigger:
+  - owner asked for a fintech line auditor because Money In / Pool, Money Out /
+    Withdrawal, and Support & Loans were still being mixed together;
+  - owner specifically called out that Support & Loans is not complete if
+    amount, duration, service charge, guarantors, repayment plan, commitment
+    feed, and TrustEvent feed are not connected as one deterministic line.
+- Auditor/code findings:
+  - Money In / Pool route is `/app/payment/pool`.
+  - Money Out / Withdrawal route is `/app/withdrawal-instructions`.
+  - Support & Loans route is `/app/loans`, with separate readiness,
+    suggestions, workbench, guarantor inbox, summary, and decision surfaces.
+  - Backend normal withdrawal truth is `POST /pool/withdrawals/request`; it
+    records a withdrawal request/code for pilot reconciliation and does not
+    move money.
+  - Backend loan creation currently accepts `clan_id`, `amount`, `currency`,
+    and optional `purpose`; it computes pool coverage, guarantee gap, required
+    guarantors, and TrustEvents.
+  - Backend service fee fields exist and are calculated at loan approval, but
+    `LoanCreate` does not yet accept duration or repayment frequency, and the
+    loan request line does not yet create a repayment-plan commitment.
+- Unabated truth:
+  - the owner is correct that the loan/support line is not complete end-to-end;
+  - the existing engines are real, but the agreement layer for duration,
+    repayment cadence, fee preview, commitment feed, and final TrustEvent story
+    still needs a dedicated bridge.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - removed the active Money Out / payout destination editor from the Money
+      In / Pool expanded surface;
+    - Money In / Pool now keeps the Money In rail editor only;
+    - the Money Out readiness card now links to the Withdrawal route instead
+      of saving payout details inside the pool lane.
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - the `Payout account` control now opens the in-page payout section instead
+      of sending the user away from the withdrawal task;
+    - the personal payout account and community money-out rail sections are no
+      longer hidden on compact phone layout when they are needed or opened.
+  - `frontend/tools/audit-marketplace-money-pool-lane.mjs`
+    - updated the cage so Money Pool must not contain the payout destination
+      editor;
+    - the audit now expects one pay-in editor plus a Money Out route link.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:marketplace-money-pool-lane` from `frontend`.
+  - Passed `npm run audit:marketplace-support-lane` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`.
+- Remaining bridge:
+  - define and implement the Support & Loans agreement line: amount, duration,
+    repayment cadence, fee preview, guarantor selection, guarantor message,
+    timeout/cancel/unlock behavior, commitment feed, and TrustEvent feed;
+  - do this from the existing loan/readiness/suggestion/workbench services
+    rather than creating a duplicate loan page.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
 ### Follow-up same day - Force Marketplace Support Requests landing after Money Out
 
 - Trigger:

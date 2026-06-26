@@ -1994,10 +1994,15 @@ export default function WithdrawalInstructionsPage() {
               justifyContent: isCompact ? "flex-start" : "flex-end",
             }}
           >
-            <StableCtaLink
-              to={routes.payoutDetails}
+            <SubtleButton
+              onClick={() => {
+                if (collapsed.destination) {
+                  toggleSection("destination");
+                }
+              }}
               debugId="money-out.request.open-payout-details"
               stableHeight={44}
+              minWidth={136}
               style={{
                 ...moneyOutActionButtonStyle("secondary"),
                 minHeight: 44,
@@ -2007,7 +2012,7 @@ export default function WithdrawalInstructionsPage() {
               }}
             >
               Payout account
-            </StableCtaLink>
+            </SubtleButton>
 
             {!isCompact ? (
               <SubtleButton
@@ -2213,7 +2218,7 @@ export default function WithdrawalInstructionsPage() {
         ) : null}
       </section>
 
-      {(!isCompact && (!payoutReady || destinationNotice || !collapsed.destination)) ? (
+      {(!payoutReady || destinationNotice || !collapsed.destination) ? (
       <section id="personal-payout-account" style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -2516,7 +2521,7 @@ export default function WithdrawalInstructionsPage() {
       </section>
       ) : null}
 
-      {(!isCompact && (!communityRailReady || !collapsed.rail)) ? (
+      {(!communityRailReady || !collapsed.rail) ? (
       <section
         id="community-money-out-rail"
         style={{

@@ -90,8 +90,6 @@ if (!moneySection.text) {
     "marketplace.money.money-out-destination",
     "marketplace.money.pay-in-account-save",
     "marketplace.money.pay-in-account-close",
-    "marketplace.money.money-out-destination-save",
-    "marketplace.money.money-out-destination-close",
     "marketplace.money.money-in",
     "marketplace.money.money-out",
   ];
@@ -99,7 +97,7 @@ if (!moneySection.text) {
   if (actionIds.join("|") !== expectedActionIds.join("|")) {
     addFinding(
       moneySection.start,
-      "Money Pool detail section must expose pool actions and the two rail editors in the audited order.",
+      "Money Pool detail section must expose pool actions, one pay-in editor, and one Money Out route link in the audited order.",
       actionIds.join(", ") || "none"
     );
   }
@@ -110,19 +108,32 @@ if (!moneySection.text) {
     /marketplaceMoneyRouteCardStyle\(isCompact, true\)/,
     /Visible Pool[\s\S]*?Current pool view/,
     /Money In Rail[\s\S]*?Pay this account/,
-    /Money Out Rail[\s\S]*?My personal payout account/,
+    /Money Out[\s\S]*?Withdrawal and payout details/,
     /Money In Rail[\s\S]*?Receiving account for this marketplace[\s\S]*?debugId="marketplace\.money\.pay-in-account-save"/,
-    /Money Out Rail[\s\S]*?My personal payout account[\s\S]*?debugId="marketplace\.money\.money-out-destination-save"/,
+    /to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?Open Withdrawal/,
     /debugId="marketplace\.money\.money-in"[\s\S]*?openMarketplaceCta\(event, "moneyIn"\)[\s\S]*?<MarketplaceGlyph name="cash"/,
     /to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out"[\s\S]*?<MarketplaceGlyph name="card"/,
     /Money In Rail[\s\S]*?Pay this account[\s\S]*?debugId="marketplace\.money\.pay-in-account"[\s\S]*?(Set rail|Open rail|Close rail)/,
-    /Money Out Rail[\s\S]*?My personal payout account[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?(Set rail|Open rail|Close rail)/,
     /style=\{\{[\s\S]*?\.\.\.marketplaceInlineActionsStyle\(isCompact\)[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
   ].forEach((pattern) => {
     if (!pattern.test(moneySection.text)) {
       addFinding(
         moneySection.start,
         "Money Pool detail section is missing an expected local money element.",
+        pattern.toString()
+      );
+    }
+  });
+
+  [
+    /debugId="marketplace\.money\.money-out-destination-save"/,
+    /debugId="marketplace\.money\.money-out-destination-close"/,
+    /My personal payout account/,
+  ].forEach((pattern) => {
+    if (pattern.test(moneySection.text)) {
+      addFinding(
+        moneySection.start,
+        "Money Pool detail section must not contain the payout destination editor.",
         pattern.toString()
       );
     }
