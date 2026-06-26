@@ -56,10 +56,12 @@ def _iso(dt: Optional[datetime]) -> Optional[str]:
 
 
 def _expected_payment_out(row: Any) -> Dict[str, Any]:
+    meta = _safe_meta_json(getattr(row, "meta_json", None))
     return {
         "id": int(row.id),
         "clan_id": int(row.clan_id),
         "user_id": int(row.user_id),
+        "loan_id": meta.get("loan_id"),
         "expected_type": row.expected_type,
         "amount": str(row.amount),
         "currency": row.currency,
@@ -73,6 +75,8 @@ def _expected_payment_out(row: Any) -> Dict[str, Any]:
         "bank_event_id": row.bank_event_id,
         "trust_event_id": row.trust_event_id,
         "created_at": _iso(row.created_at),
+        "meta": meta,
+        "meta_json": meta,
     }
 
 

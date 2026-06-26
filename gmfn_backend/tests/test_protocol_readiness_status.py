@@ -75,6 +75,15 @@ def test_readiness_partial_text_reflects_latest_completed_work_without_overclaim
     assert any("guided withdrawal workflow" in item for item in guarantor_flow["remaining"])
     assert not any("only visibility for pilot" in item for item in guarantor_flow["remaining"])
 
+    loan_repayment = checks_by_key["loan_repayment_e2e"]
+    assert any("planned repayment schedule" in item for item in loan_repayment["complete"])
+    assert any("expected-payment metadata" in item for item in loan_repayment["remaining"])
+    assert "separate product decision" not in loan_repayment["next_step"]
+    assert not any(
+        "Decide whether planned instalment schedules" in item
+        for item in loan_repayment["remaining"]
+    )
+
     trustslip = checks_by_key["trustslip"]
     assert any("Older Trust Timeline" in item for item in trustslip["complete"])
     assert any("Render and review" in item for item in trustslip["remaining"])

@@ -7,6 +7,8 @@ from sqlalchemy import text
 from app.db.bank_models import ExpectedPayment
 from app.db.database import SessionLocal, engine
 from app.db.models import Clan, ClanMembership, Loan, LoanGuarantor, TrustEvent, User
+from app.api.routes.bank import _expected_out
+from app.api.routes.payment_instructions import _expected_payment_out
 from app.services.loan_approval import approve_loan
 
 
@@ -251,5 +253,39 @@ def test_guarantor_approved_loan_creates_repayment_expectation_after_approval():
         meta = json.loads(expected.meta_json or "{}")
         assert expected.amount == Decimal("120.00")
         assert expected.reference_display == f"GMFN-REPAY-LOAN-{int(loan.id)}-U1"
-        assert meta["repayment_cadence"] == "biweekly"
-        assert len(meta["planned_installments"]) == 1
+    assert meta["repayment_cadence"] == "biweekly"
+    assert len(meta["planned_installments"]) == 1
+
+
+def test_repayment_expected_payment_serializers_expose_schedule_metadata():
+    row = ExpectedPayment(
+        id=99,
+        clan_id=1,
+        user_id=1,
+        expected_type="repayment",
+        amount=Decimal("120.00"),
+        currency="NGN",
+        paid_amount=Decimal("0.00"),
+        remaining_amount=Decimal("120.00"),
+        reference_display="GMFN-REPAY-LOAN-5-U1",
+        reference_normalized="GMFNREPAYLOAN5U1",
+        status="expected",
+        meta_json=json.dumps(
+            {
+                "loan_id": 5,
+                "repayment_cadence": "weekly",
+                "planned_installments": [
+                    {"sequence": 1, "amount": "60.00", "due_at": "2026-07-03T00:00:00+00:00"},
+                    {"sequence": 2, "amount": "60.00", "due_at": "2026-07-10T00:00:00+00:00"},
+                ],
+            }
+        ),
+        created_at=datetime.now(timezone.utc),
+    )
+
+    for serializer in (_expected_out, _expected_payment_out):
+        out = serializer(row)
+        assert out["loan_id"] == 5
+        assert out["meta"]["repayment_cadence"] == "weekly"
+        assert len(out["meta"]["planned_installments"]) == 2
+        assert out["meta_json"]["loan_id"] == 5

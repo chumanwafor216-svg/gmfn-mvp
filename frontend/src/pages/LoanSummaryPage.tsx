@@ -193,6 +193,19 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function safeMeta(value: unknown): Record<string, any> {
+  if (!value) return {};
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return typeof value === "object" && !Array.isArray(value) ? (value as Record<string, any>) : {};
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalPageCard(bg),
@@ -958,6 +971,20 @@ export default function LoanSummaryPage() {
     });
     return rows[0] || null;
   }, [expectedPayments]);
+  const latestRepaymentMeta = useMemo(
+    () =>
+      safeMeta(
+        latestRepaymentExpectedPayment?.meta ??
+          latestRepaymentExpectedPayment?.meta_json
+      ),
+    [latestRepaymentExpectedPayment]
+  );
+  const latestRepaymentPlan = useMemo(() => {
+    const items = latestRepaymentMeta?.planned_installments;
+    return Array.isArray(items) ? items : [];
+  }, [latestRepaymentMeta]);
+  const nextRepaymentPlanItem =
+    latestRepaymentPlan.find((item) => n(item?.amount) > 0) || null;
 
   const memberName = useMemo(() => {
     return (
@@ -2144,6 +2171,18 @@ export default function LoanSummaryPage() {
                         Amount: {safeStr(latestRepaymentExpectedPayment.amount || "0.00")}{" "}
                         {safeStr(latestRepaymentExpectedPayment.currency || currency)}
                       </div>
+                      {latestRepaymentPlan.length > 0 ? (
+                        <div style={helperText()}>
+                          Plan: {latestRepaymentPlan.length} step
+                          {latestRepaymentPlan.length === 1 ? "" : "s"}
+                          {nextRepaymentPlanItem
+                            ? `, next ${fmtMoney(
+                                nextRepaymentPlanItem.amount,
+                                safeStr(latestRepaymentExpectedPayment.currency || currency)
+                              )} due ${safeDateTime(nextRepaymentPlanItem.due_at)}`
+                            : ""}
+                        </div>
+                      ) : null}
                       <div style={helperText()}>
                         {latestRepaymentExpectedPayment.matched_bank_event_id
                           ? `Matched bank event visible: ${safeStr(latestRepaymentExpectedPayment.matched_bank_event_id)}`

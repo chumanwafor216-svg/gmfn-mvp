@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, Optional
@@ -50,11 +51,23 @@ def _iso(dt: Optional[datetime]) -> Optional[str]:
     return dt.isoformat() if dt else None
 
 
+def _safe_meta_json(raw: Optional[str]) -> Dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
 def _expected_out(row: ExpectedPayment) -> Dict[str, Any]:
+    meta = _safe_meta_json(getattr(row, "meta_json", None))
     return {
         "id": int(row.id),
         "clan_id": int(row.clan_id),
         "user_id": int(row.user_id),
+        "loan_id": meta.get("loan_id"),
         "expected_type": row.expected_type,
         "amount": str(row.amount),
         "currency": row.currency,
@@ -68,6 +81,8 @@ def _expected_out(row: ExpectedPayment) -> Dict[str, Any]:
         "bank_event_id": row.bank_event_id,
         "trust_event_id": row.trust_event_id,
         "created_at": _iso(row.created_at),
+        "meta": meta,
+        "meta_json": meta,
     }
 
 

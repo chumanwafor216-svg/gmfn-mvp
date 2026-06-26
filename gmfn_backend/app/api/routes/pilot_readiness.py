@@ -244,18 +244,19 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
         _partial_check(
             "loan_repayment_e2e",
             "Loan repayment end-to-end evidence",
-            why_it_matters="The backend path is now protected by a local reconciliation validation test, but pilot trust still needs visible phone/manual evidence and a decision on planned instalment schedules.",
+            why_it_matters="The backend path is now protected by local reconciliation validation and approved support requests now create a planned repayment schedule, but pilot trust still needs visible phone/manual evidence.",
             complete=[
                 "Full-balance and part-payment instruction choices are visible on the repayment screen.",
                 "Backend repayment logic supports partial repayment without falsely closing the loan.",
                 "Automated backend validation covers one expected repayment receiving a part payment, then a final payment, through bank reconciliation, loan balance update, guarantee release, and trust events.",
+                "Approved support requests now create one canonical expected repayment with a planned repayment schedule, due date, cadence, and duration attached.",
             ],
             remaining=[
                 "Run the same full and part-payment route from the phone/local UI and capture screenshots.",
-                "Capture the before/after loan balance, expected payment, bank match, and Trust event evidence as the pilot evidence pack.",
-                "Decide whether planned instalment schedules with due dates are required now or after pilot.",
+                "Capture the before/after loan balance, expected payment schedule, bank match, and Trust event evidence as the pilot evidence pack.",
+                "Confirm the phone repayment and loan summary screens show the planned schedule clearly from the backend expected-payment metadata.",
             ],
-            next_step="Run the phone/local UI evidence pass and capture the repayment evidence pack; keep planned instalment scheduling as a separate product decision.",
+            next_step="Run the phone/local UI evidence pass and capture the repayment evidence pack, including the planned repayment schedule shown from expected-payment metadata.",
             next_route="/app/loans",
         ),
         _ready_check(

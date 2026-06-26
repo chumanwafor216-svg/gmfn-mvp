@@ -107,6 +107,19 @@ function lc(value: unknown): string {
   return safeStr(value).toLowerCase();
 }
 
+function safeMeta(value: unknown): Record<string, any> {
+  if (!value) return {};
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return typeof value === "object" && !Array.isArray(value) ? (value as Record<string, any>) : {};
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalPageCard(bg),
@@ -508,9 +521,6 @@ export default function RepaymentPage() {
       ? "Pay the full remaining balance. Only admin or finance reconciliation can confirm closure and release guarantor exposure."
       : "Pay one part now. GSN records the part payment and keeps the remaining balance visible for the next repayment.";
 
-  const repaymentPlanTruth =
-    "Part payment is supported here. A separate dated installment calendar is not opened on this screen yet.";
-
   const currentExpectedPayment = useMemo(() => {
     const instructionExpectedId = Number(instruction?.expected_payment_id || 0);
     const instructionReference = firstTruthy(
@@ -536,6 +546,22 @@ export default function RepaymentPage() {
       }) || null
     );
   }, [expectedPayments, instruction, numericLoanId]);
+
+  const currentExpectedPaymentMeta = useMemo(
+    () => safeMeta(currentExpectedPayment?.meta ?? currentExpectedPayment?.meta_json),
+    [currentExpectedPayment]
+  );
+  const plannedInstallments = useMemo(() => {
+    const items = currentExpectedPaymentMeta?.planned_installments;
+    return Array.isArray(items) ? items : [];
+  }, [currentExpectedPaymentMeta]);
+  const nextPlannedInstallment = plannedInstallments.find((item) => n(item?.amount) > 0) || null;
+  const repaymentPlanTruth =
+    plannedInstallments.length > 0
+      ? `GSN has recorded ${plannedInstallments.length} planned repayment step${
+          plannedInstallments.length === 1 ? "" : "s"
+        } for this support item. Use the exact repayment reference so every payment can be matched.`
+      : "Part payment is supported here. GSN keeps the remaining balance visible until reconciliation closes it.";
 
   const currentExpectedPaymentBankEventId = firstTruthy(
     currentExpectedPayment?.matched_bank_event_id,
@@ -1368,6 +1394,18 @@ export default function RepaymentPage() {
                       <div style={helperText()}>
                         Still left: {fmtMoney(currentExpectedPayment.remaining_amount, safeStr(currentExpectedPayment.currency || currency))}
                       </div>
+                      {plannedInstallments.length > 0 ? (
+                        <div style={helperText()}>
+                          Plan: {plannedInstallments.length} step
+                          {plannedInstallments.length === 1 ? "" : "s"}
+                          {nextPlannedInstallment
+                            ? `, next ${fmtMoney(
+                                nextPlannedInstallment.amount,
+                                safeStr(currentExpectedPayment.currency || currency)
+                              )} due ${safeDateTime(nextPlannedInstallment.due_at)}`
+                            : ""}
+                        </div>
+                      ) : null}
                       <div style={helperText()}>
                         {currentExpectedPaymentBankEventId
                           ? `Matched bank event visible: ${currentExpectedPaymentBankEventId}`

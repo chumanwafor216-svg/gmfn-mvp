@@ -1,3 +1,39 @@
+## 2026-06-26 - Repayment schedule metadata exposed to repayment UI
+
+Owner correction:
+- The loan/support line must not pretend the plan is only a future decision.
+- Approved support requests now create repayment schedule truth, and the user
+  screens need to see that truth through expected-payment metadata.
+
+Local bridge:
+- `gmfn_backend/app/api/routes/bank.py`
+  - expected-payment responses now include parsed `meta`, parsed `meta_json`,
+    and top-level `loan_id`.
+- `gmfn_backend/app/api/routes/payment_instructions.py`
+  - the member expected-payment response now exposes the same metadata shape.
+- `frontend/src/pages/RepaymentPage.tsx`
+  - stops saying a dated installment calendar is not open yet when schedule
+    metadata exists;
+  - shows the planned repayment step count and next planned repayment inside
+    expected-payment visibility.
+- `frontend/src/pages/LoanSummaryPage.tsx`
+  - shows the same planned repayment step count and next planned repayment
+    inside repayment evidence.
+- `gmfn_backend/app/api/routes/pilot_readiness.py`
+  - now records planned repayment schedule creation as complete backend truth,
+    while keeping phone/manual evidence as remaining work.
+
+Verification passed locally:
+- `python -m py_compile gmfn_backend\app\api\routes\bank.py gmfn_backend\app\api\routes\payment_instructions.py gmfn_backend\app\api\routes\pilot_readiness.py gmfn_backend\tests\test_loan_pool_event_truth.py gmfn_backend\tests\test_protocol_readiness_status.py`
+- `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py gmfn_backend\tests\test_protocol_readiness_status.py`
+- `git diff --check`
+- `npm --prefix frontend run build`
+
+Status:
+- Local only until committed/pushed/deployed.
+- This does not create automatic payout/debit. It only exposes the repayment
+  schedule metadata already produced after loan approval.
+
 ## 2026-06-26 - Approved support requests now create repayment expectations
 
 Owner correction:
@@ -42,9 +78,9 @@ Verification passed locally:
 - `git diff --check`
 
 Status:
-- Local only until committed/pushed/deployed.
-- Frontend visible schedule display can still be improved, but the backend
-  repayment expectation truth is now connected.
+- Committed locally as `b7ac7a5 Create repayment schedule on loan approval`.
+- Frontend visible schedule display is handled by the later metadata bridge
+  above, still local until committed/pushed/deployed.
 
 ## 2026-06-26 - Marketplace Money Out launcher made a real route link
 
