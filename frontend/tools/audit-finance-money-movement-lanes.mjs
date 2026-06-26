@@ -87,7 +87,7 @@ assertContains(
 
 assertContains(
   "moneyInPage",
-  /Reference ready\. Pay this account with the exact reference\.[\s\S]*?Pay-in account is not ready for this marketplace\. Add the receiving account first\.[\s\S]*?upload proof here so finance can review it\./,
+  /Reference ready\. Pay this account with the exact reference\.[\s\S]*?Pay-in account is not ready for this marketplace\. Add the receiving account first\.[\s\S]*?A bank match or finance review confirms this payment\.[\s\S]*?Upload[\s\S]*?proof here if automatic matching is not live yet\./,
   "Money In route page must keep the pay-account panel direct, marketplace-scoped, and honest about finance-review proof upload."
 );
 
@@ -95,6 +95,12 @@ assertContains(
   "moneyInPage",
   /Use the exact reference\. Upload proof here if automatic matching is not live yet\.[\s\S]*?Payment noted\. GSN finance still needs a bank match or proof review before this is confirmed\./,
   "Money In route page must describe the finance-match and proof-review fallback in user-facing language."
+);
+
+assertContains(
+  "moneyInPage",
+  /const moneyInCanWidenRoutes = Boolean\(matchedEvent\);[\s\S]*?const moneyInTaskStillActive = !moneyInCanWidenRoutes;/,
+  "Money In next routes must reopen only after a visible matching payment event, not after the local I-paid note."
 );
 
 assertContains(

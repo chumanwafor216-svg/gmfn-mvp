@@ -1074,7 +1074,7 @@ export default function PaymentInstructionsPage() {
     };
   }, [inferredResult]);
 
-  const moneyInCanWidenRoutes = paymentConfirmed || Boolean(matchedEvent);
+  const moneyInCanWidenRoutes = Boolean(matchedEvent);
   const moneyInTaskStillActive = !moneyInCanWidenRoutes;
   const instructionReady = Boolean(instruction);
   const compactGeneratedLayout = isCompact && instructionReady;
@@ -2152,8 +2152,8 @@ export default function PaymentInstructionsPage() {
                   lineHeight: 1.35,
                 }}
               >
-                Bank API match confirms automatically when connected. For now,
-                upload proof here so finance can review it.
+                A bank match or finance review confirms this payment. Upload
+                proof here if automatic matching is not live yet.
               </div>
 
               <div

@@ -70197,6 +70197,41 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Money In local note no longer unlocks routes
+
+- Trigger:
+  - fintech audit found that the Money In route still treated the local
+    `I paid` tap as enough to widen follow-up routes, even though that tap is
+    not a bank match and not finance approval.
+- Unabated truth:
+  - `I paid` is only a phone/local note;
+  - proof upload is only submitted for review;
+  - confirmed pool truth still requires a visible matched payment event or a
+    backend finance review path, not a local button tap.
+- Changed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - changed `moneyInCanWidenRoutes` so follow-up routes reopen only when a
+      matching payment event is visible;
+    - replaced the overclaiming `Bank API match confirms automatically when
+      connected` copy with safer user-facing language:
+      `A bank match or finance review confirms this payment. Upload proof here
+      if automatic matching is not live yet.`
+  - `frontend/tools/audit-finance-money-movement-lanes.mjs`
+    - updated the wording guard;
+    - added a regression guard proving the local `I paid` note cannot unlock
+      Money In next routes.
+- Verification:
+  - Passed `npm --prefix frontend run audit:finance-money-movement-lanes`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend` after sandbox escalation; the
+    first sandboxed attempt failed with Vite/esbuild `spawn EPERM`.
+- Still not changed:
+  - no bank API matching was implemented in this slice;
+  - no payment proof approval endpoint was added in this slice;
+  - proof upload remains a review signal, not automatic confirmation.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Support request purpose made backend truth
 
 - Trigger:
