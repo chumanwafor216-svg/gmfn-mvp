@@ -39,7 +39,7 @@ type PersistedWithdrawalTask = {
   updatedAt?: string | null;
 };
 
-const WITHDRAWAL_UI_STORAGE_KEY = "gmfn.withdrawal.sections.v6";
+const WITHDRAWAL_UI_STORAGE_KEY = "gmfn.withdrawal.sections.v7";
 const WITHDRAWAL_TASK_STORAGE_KEY_PREFIX = "gmfn.withdrawal.task.v5";
 
 function safeStr(x: any): string {
@@ -1033,33 +1033,13 @@ export default function WithdrawalInstructionsPage() {
       };
     }
 
-    if (!communityRailReady) {
-      return {
-        tone: "red" as const,
-        step: "Rail",
-        title: "Community money-out rail is not ready.",
-        detail:
-          "The community withdrawal rail must be visible and ready before the flow proceeds.",
-      };
-    }
-
-    if (!payoutReady) {
-      return {
-        tone: "gold" as const,
-        step: "Destination",
-        title: "Complete your personal payout account first.",
-        detail:
-          "Withdrawal needs your personal payout destination. That is different from the fixed community account.",
-      };
-    }
-
     if (!requiresSupport) {
       return {
         tone: "green" as const,
-        step: "Direct withdrawal",
-        title: "This withdrawal fits inside your effective available pool.",
+        step: "Direct request",
+        title: "This amount can be requested here.",
         detail:
-          "No guarantor is required. You can proceed with direct withdrawal through your current community rail.",
+          "No guarantor is required. GSN records the withdrawal request; payout execution remains a separate confirmation step.",
       };
     }
 
@@ -1075,8 +1055,6 @@ export default function WithdrawalInstructionsPage() {
     currentGmfnId,
     requestedAmount,
     effectiveAvailableKnown,
-    communityRailReady,
-    payoutReady,
     requiresSupport,
   ]);
 
@@ -1246,16 +1224,6 @@ export default function WithdrawalInstructionsPage() {
       return;
     }
 
-    if (!communityRailReady) {
-      showNotice("error", "Community withdrawal rail is not ready.");
-      return;
-    }
-
-    if (!payoutReady) {
-      showNotice("error", "Complete your personal payout account first.");
-      return;
-    }
-
     if (requiresSupport) {
       showNotice(
         "error",
@@ -1345,16 +1313,6 @@ export default function WithdrawalInstructionsPage() {
 
     if (!effectiveAvailableKnown) {
       showNotice("error", "Wait for the effective-available pool reading first.");
-      return;
-    }
-
-    if (!communityRailReady) {
-      showNotice("error", "Community withdrawal rail is not ready.");
-      return;
-    }
-
-    if (!payoutReady) {
-      showNotice("error", "Complete your personal payout account first.");
       return;
     }
 
@@ -1683,9 +1641,7 @@ export default function WithdrawalInstructionsPage() {
             onClick={() => void handleDirectWithdrawal()}
             disabled={
               submittingWithdrawal ||
-              requestedAmount <= 0 ||
-              !communityRailReady ||
-              !payoutReady
+              requestedAmount <= 0
             }
             debugId="money-out.front-continue-direct"
             stableHeight={52}
@@ -1693,9 +1649,7 @@ export default function WithdrawalInstructionsPage() {
             style={moneyOutActionButtonStyle(
               "primary",
               submittingWithdrawal ||
-                requestedAmount <= 0 ||
-                !communityRailReady ||
-                !payoutReady
+                requestedAmount <= 0
             )}
           >
             {submittingWithdrawal ? "Submitting..." : "Request withdrawal"}
@@ -1703,13 +1657,13 @@ export default function WithdrawalInstructionsPage() {
         ) : (
           <PrimaryButton
             onClick={handleContinueToSupportPath}
-            disabled={requestedAmount <= 0 || !communityRailReady || !payoutReady}
+            disabled={requestedAmount <= 0}
             debugId="money-out.front-open-support"
             stableHeight={52}
             fullWidth
             style={moneyOutActionButtonStyle(
               "primary",
-              requestedAmount <= 0 || !communityRailReady || !payoutReady
+              requestedAmount <= 0
             )}
           >
             Open support
@@ -2092,21 +2046,46 @@ export default function WithdrawalInstructionsPage() {
           <div>
             {iconLabel("wallet", "Withdrawal request")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Enter amount, then Continue. GSN checks whether it is direct or needs support.
+              Enter amount, then Continue.
             </div>
           </div>
 
-          {!isCompact ? (
-            <SubtleButton
-              onClick={() => toggleSection("request")}
-              minWidth={128}
-              stableHeight={52}
-              debugId="money-out.toggle-request"
-              style={moneyOutCollapseButtonStyle()}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: isCompact ? "flex-start" : "flex-end",
+            }}
+          >
+            <StableCtaLink
+              to={routes.payoutDetails}
+              debugId="money-out.request.open-payout-details"
+              stableHeight={44}
+              style={{
+                ...moneyOutActionButtonStyle("secondary"),
+                minHeight: 44,
+                height: 44,
+                maxHeight: 44,
+                padding: "0 14px",
+              }}
             >
-              {collapsed.request ? "Open" : "Hide"}
-            </SubtleButton>
-          ) : null}
+              Payout account
+            </StableCtaLink>
+
+            {!isCompact ? (
+              <SubtleButton
+                onClick={() => toggleSection("request")}
+                minWidth={128}
+                stableHeight={52}
+                debugId="money-out.toggle-request"
+                style={moneyOutCollapseButtonStyle()}
+              >
+                {collapsed.request ? "Open" : "Hide"}
+              </SubtleButton>
+            ) : null}
+          </div>
         </div>
 
         {!collapsed.request ? (
@@ -2167,6 +2146,7 @@ export default function WithdrawalInstructionsPage() {
                 Purpose is optional. It helps the community understand the request.
               </div>
 
+              {(!isCompact || decisionChecked) ? (
               <div
                 style={{
                   marginTop: 14,
@@ -2226,6 +2206,7 @@ export default function WithdrawalInstructionsPage() {
                 </div>
                 ) : null}
               </div>
+              ) : null}
 
             </div>
 
@@ -2259,9 +2240,7 @@ export default function WithdrawalInstructionsPage() {
                     onClick={() => void handleDirectWithdrawal()}
                     disabled={
                       submittingWithdrawal ||
-                      requestedAmount <= 0 ||
-                      !communityRailReady ||
-                      !payoutReady
+                      requestedAmount <= 0
                     }
                     debugId="money-out.continue-direct"
                     minWidth={isCompact ? undefined : 144}
@@ -2269,9 +2248,7 @@ export default function WithdrawalInstructionsPage() {
                     style={moneyOutActionButtonStyle(
                       "primary",
                       submittingWithdrawal ||
-                        requestedAmount <= 0 ||
-                        !communityRailReady ||
-                        !payoutReady
+                        requestedAmount <= 0
                     )}
                   >
                     {submittingWithdrawal
@@ -2281,44 +2258,48 @@ export default function WithdrawalInstructionsPage() {
                 ) : (
                   <PrimaryButton
                     onClick={handleContinueToSupportPath}
-                    disabled={requestedAmount <= 0 || !communityRailReady || !payoutReady}
+                    disabled={requestedAmount <= 0}
                     debugId="money-out.open-support"
                     minWidth={isCompact ? undefined : 144}
                     stableHeight={52}
                     style={moneyOutActionButtonStyle(
                       "primary",
-                      requestedAmount <= 0 || !communityRailReady || !payoutReady
+                      requestedAmount <= 0
                     )}
                   >
                     Open support
                   </PrimaryButton>
                 )}
 
-                <SecondaryButton
-                  onClick={handleCopyWithdrawalSummary}
-                  debugId="money-out.copy-summary"
-                  minWidth={isCompact ? undefined : 150}
-                  stableHeight={52}
-                  style={moneyOutActionButtonStyle("secondary")}
-                >
-                  Copy summary
-                </SecondaryButton>
+                {!isCompact ? (
+                  <SecondaryButton
+                    onClick={handleCopyWithdrawalSummary}
+                    debugId="money-out.copy-summary"
+                    minWidth={isCompact ? undefined : 150}
+                    stableHeight={52}
+                    style={moneyOutActionButtonStyle("secondary")}
+                  >
+                    Copy summary
+                  </SecondaryButton>
+                ) : null}
 
-                <SubtleButton
-                  onClick={handleResetTask}
-                  stableHeight={52}
-                  debugId="money-out.reset-task"
-                  style={moneyOutActionButtonStyle("soft")}
-                >
-                  Reset
-                </SubtleButton>
+                {!isCompact ? (
+                  <SubtleButton
+                    onClick={handleResetTask}
+                    stableHeight={52}
+                    debugId="money-out.reset-task"
+                    style={moneyOutActionButtonStyle("soft")}
+                  >
+                    Reset
+                  </SubtleButton>
+                ) : null}
               </div>
             </div>
           </div>
         ) : null}
       </section>
 
-      {(!payoutReady || destinationNotice || !collapsed.destination) ? (
+      {(!isCompact && (!payoutReady || destinationNotice || !collapsed.destination)) ? (
       <section id="personal-payout-account" style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -2621,7 +2602,7 @@ export default function WithdrawalInstructionsPage() {
       </section>
       ) : null}
 
-      {(!communityRailReady || !collapsed.rail) ? (
+      {(!isCompact && (!communityRailReady || !collapsed.rail)) ? (
       <section
         id="community-money-out-rail"
         style={{

@@ -69227,6 +69227,51 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only; not pushed or deployed yet.
 
+### Latest follow-up - Money Out request surface and direct-withdrawal truth
+
+- Trigger:
+  - owner reported the Guided Withdrawal page was still interrupted by large
+    payout/bank rail blocks and by extra actions such as copy/reset/status text
+    between amount entry and the real decision.
+  - Owner also asked what actually happens for a direct withdrawal that does
+    not need guarantors.
+- Confirmed backend truth:
+  - direct Money Out calls `POST /pool/withdrawals/request`;
+  - backend `request_withdrawal` checks `amount <= effective_available`;
+  - if valid, it records a `PoolEvent` with event type
+    `withdrawal.requested`;
+  - it does not automatically send bank money yet.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - bumped the local UI collapse storage key to v7 so old expanded sections
+      do not keep showing on the phone;
+    - compact Money Out now keeps payout/bank editing behind one small
+      `Payout account` link near the `Withdrawal request` header;
+    - compact Money Out no longer renders the large payout preview or community
+      money-out rail editor in the middle of the amount flow;
+    - rails/payout readiness no longer blocks the direct request record,
+      matching current backend behavior;
+    - support handoff still occurs immediately when requested amount is above
+      effective available;
+    - copy summary/reset remain available on desktop/source but do not compete
+      with the phone first action;
+    - extra route-status detail is hidden on compact until after a decision.
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:finance-front-package` from `frontend`.
+  - Passed `npm run audit:finance-button-inventory` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Unabated truth:
+  - within-balance Money Out is a request-recording flow today, not automatic
+    payout execution;
+  - automatic bank payout/PIN execution remains future payment integration.
+- Deployment state:
+  - local only; not pushed or deployed yet.
+
 ### Follow-up same day - Money Out immediate support handoff correction
 
 - Trigger:
