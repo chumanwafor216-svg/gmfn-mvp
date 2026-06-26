@@ -2659,7 +2659,7 @@ export default function FinancePage() {
                 {activeExpectedPayments.slice(0, 10).map((item, index) => (
                   <FinanceMobileRecord
                     key={`${item.id || index}`}
-                    title={safeStr(item.expected_type || "Payment code")}
+                    title={firstTruthy(item.expected_type, "Payment check")}
                     tone={expectedPaymentState(item) === "Received" ? "good" : "watch"}
                     rows={[
                       ["Reference", safeStr(item.reference_display || "-")],
@@ -3043,7 +3043,11 @@ export default function FinancePage() {
                 {poolEvents.slice(0, 12).map((row, index) => (
                   <FinanceMobileRecord
                     key={`${row.id || index}`}
-                    title={poolEventTitle(row)}
+                    title={
+                      poolEventDirection(row) === "in"
+                        ? "Finance confirmed"
+                        : poolEventTitle(row)
+                    }
                     tone={poolEventDirection(row) === "in" ? "good" : "neutral"}
                     rows={[
                       [

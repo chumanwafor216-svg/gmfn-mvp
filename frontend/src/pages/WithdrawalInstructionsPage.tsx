@@ -523,11 +523,11 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
+    overview: true,
     request: false,
     destination: true,
     rail: true,
-    result: false,
+    result: true,
     routes: true,
   };
 }
@@ -1526,7 +1526,7 @@ export default function WithdrawalInstructionsPage() {
       <PageTopNav
         sectionLabel="Money Out"
         title="Guided Withdrawal"
-        subtitle="Set amount, payout account, rail, and result."
+        subtitle="Enter amount. GSN checks whether it is direct or needs support."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.marketplace}
@@ -1535,6 +1535,7 @@ export default function WithdrawalInstructionsPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      {(!isCompact || !identityReady || submittingWithdrawal) ? (
       <div
         style={{
           ...softCard(
@@ -1585,14 +1586,14 @@ export default function WithdrawalInstructionsPage() {
               ? "Submitting now. Other Money Out actions stay held until the response returns."
               : identityReady
               ? guidedState.detail
-              : "Activate the right community to continue."}
+              : "Choose the right community before withdrawing."}
           </div>
         </div>
-        <div aria-hidden="true" style={{ color: "#D5E7FA", fontSize: 28, fontWeight: 900 }}>
-          {">"}
-        </div>
+        <div aria-hidden="true" />
       </div>
+      ) : null}
 
+      {!isCompact ? (
       <div
         style={{
           display: "grid",
@@ -1668,6 +1669,7 @@ export default function WithdrawalInstructionsPage() {
           Reset
         </SubtleButton>
       </div>
+      ) : null}
 
       <section
         style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
@@ -1712,11 +1714,11 @@ export default function WithdrawalInstructionsPage() {
                 lineHeight: isCompact ? 1.02 : 1.06,
               }}
             >
-              Simple guided payout
+              Withdraw from this community
             </div>
 
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 720, lineHeight: 1.45 }}>
-              {communityLabel}
+              Enter the amount, keep your payout account ready, then submit or continue to support.
             </div>
 
             <div
@@ -1729,24 +1731,25 @@ export default function WithdrawalInstructionsPage() {
               }}
             >
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
-              <span style={badge(false)}>GSN ID: {currentGmfnId || "Awaiting issue"}</span>
-              <span style={badge(false)}>Member: {memberName}</span>
-              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current page: Money Out</span>
-              <span style={badge(false)}>Current step: {guidedState.step}</span>
+              <span style={badge(false)}>Amount: {requestedAmountDisplay}</span>
+              <span style={badge(false)}>Available: {effectiveAvailableDisplay}</span>
+              <span style={badge(false)}>Path: {pathDisplay}</span>
+              <span style={badge(false)}>Payout: {payoutReady ? "Ready" : "Needed"}</span>
+              <span style={badge(false)}>Rail: {communityRailReady ? "Ready" : "Needed"}</span>
             </div>
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 18,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(56px, 1fr))",
-            gap: isCompact ? 7 : 10,
-            alignItems: "start",
-          }}
-        >
+        {!isCompact ? (
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(56px, 1fr))",
+              gap: 10,
+              alignItems: "start",
+            }}
+          >
           {[
             ["globe", "Context", identityReady],
             ["wallet", "Amount", requestedAmount > 0],
@@ -1800,10 +1803,12 @@ export default function WithdrawalInstructionsPage() {
               </span>
             </div>
           ))}
-        </div>
+          </div>
+        ) : null}
 
       </section>
 
+      {!isCompact ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -1936,6 +1941,7 @@ export default function WithdrawalInstructionsPage() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
       <section style={pageCard("#FFFFFF")}>
         <div
@@ -1948,9 +1954,9 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            {iconLabel("wallet", "Amount Decision")}
+            {iconLabel("wallet", "Withdraw")}
             <div style={{ marginTop: 8, ...helperText() }}>
-              Enter how much you want to withdraw.
+              Amount first. If it is above your available pool, GSN sends you to support.
             </div>
           </div>
 
@@ -2017,7 +2023,7 @@ export default function WithdrawalInstructionsPage() {
                   ...helperText(),
                 }}
               >
-                Amount, payout, rail, and result stay together.
+                Purpose is optional, but it helps the community read the request.
               </div>
 
               <div
@@ -2054,6 +2060,7 @@ export default function WithdrawalInstructionsPage() {
                   </div>
                 </div>
 
+                {!isCompact ? (
                 <div style={innerCard("#FFFFFF")}>
                   <div style={sectionLabel()}>Safe route check</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
@@ -2072,10 +2079,12 @@ export default function WithdrawalInstructionsPage() {
                       .join(" | ") || "Open support if the amount needs backing."}
                   </div>
                 </div>
+                ) : null}
               </div>
 
             </div>
 
+            {!isCompact ? (
             <div style={softCard("#FFFFFF")}>
               <div style={sectionLabel()}>Actions</div>
 
@@ -2150,10 +2159,12 @@ export default function WithdrawalInstructionsPage() {
                 </SubtleButton>
               </div>
             </div>
+            ) : null}
           </div>
         ) : null}
       </section>
 
+      {(!payoutReady || destinationNotice || !collapsed.destination) ? (
       <section id="personal-payout-account" style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -2454,7 +2465,9 @@ export default function WithdrawalInstructionsPage() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
+      {(!communityRailReady || !collapsed.rail) ? (
       <section
         id="community-money-out-rail"
         style={{
@@ -2656,7 +2669,9 @@ export default function WithdrawalInstructionsPage() {
           </SubtleButton>
         </div>
       </section>
+      ) : null}
 
+      {(latestWithdrawalResult || requiresSupport || !collapsed.result) ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -2858,7 +2873,9 @@ export default function WithdrawalInstructionsPage() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
+      {(withdrawalCanWidenRoutes || !collapsed.routes) ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -2997,6 +3014,7 @@ export default function WithdrawalInstructionsPage() {
           )
         ) : null}
       </section>
+      ) : null}
     </div>
   );
 }

@@ -69127,3 +69127,78 @@ GSN-branded invite composer and invite-entry continuity.
     route inventory now protect the corrected behavior;
   - it does not solve the earlier backend Render deployment gap for Money In
     Rail persistence, which still needs backend Render secrets/deploy evidence.
+
+### Follow-up same day - Simplified Money Out guided withdrawal surface
+
+- Trigger:
+  - owner said the Money Out guided withdrawal page was too noisy and should
+    behave more like Money In: enter amount, show the direct/support path, and
+    keep the heavy workbench logic behind the visible screen.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - default collapsed state now hides overview/result/routes instead of
+      exposing them on first load;
+    - compact phones no longer show the extra identity banner when identity is
+      already ready;
+    - compact phones no longer show the premature top action row before the
+      amount field;
+    - first Money Out card now says `Withdraw from this community` and shows
+      compact facts: amount, available pool, path, payout readiness, and rail
+      readiness;
+    - desktop keeps the fuller progress strip and overview, but phone hides
+      those secondary details;
+    - the amount section now uses user-facing withdrawal language and treats
+      the note as optional purpose/context;
+    - payout account, community rail, execution/result, and route monitor blocks
+      only render when they need attention or have a result, instead of always
+      filling the page;
+    - backend decision logic, payout destination saving, rail refresh/copy,
+      direct withdrawal submission, and support handoff logic were not changed.
+- Screenshot attempt:
+  - started local Vite on `http://127.0.0.1:5399`;
+  - attempted phone-size screenshot of `/app/withdrawal-instructions`;
+  - automation redirected to `/login?session=expired`, so the saved
+    `screenshots/money-out-before.png` is a login redirect proof, not a useful
+    withdrawal screenshot;
+  - a second attempt with local test storage was also redirected to login, so
+    a real signed-in browser session is needed for visual screenshot proof.
+- Verification:
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:global-raw-action-elements` from `frontend`.
+  - Passed `npm run audit:global-action-debugids` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Remaining issue:
+  - resolved in the continuation below.
+- Deployment state:
+  - local only at this entry; not committed, pushed, or deployed yet.
+
+### Follow-up continuation - Closed Finance phone-card audit gap
+
+- Trigger:
+  - after the Money Out simplification, the remaining failing frontend audit was
+    `npm run audit:finance-button-inventory`.
+- Changed:
+  - `frontend/src/pages/FinancePage.tsx`
+    - kept the existing mobile-card branches for reconciliation and recent money
+      history;
+    - made the required phone-card labels explicit:
+      - payment reconciliation fallback title now says `Payment check`;
+      - confirmed incoming finance events now say `Finance confirmed`.
+    - desktop tables were not removed or restructured.
+- Verification:
+  - Passed `npm run audit:finance-button-inventory` from `frontend`.
+  - Passed `npm run audit:finance-actions` from `frontend`.
+  - Passed `npm run audit:finance-money-movement-lanes` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:global-raw-action-elements` from `frontend`.
+  - Passed `npm run audit:global-action-debugids` from `frontend`.
+  - Passed `npm run audit:finance-front-package` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
