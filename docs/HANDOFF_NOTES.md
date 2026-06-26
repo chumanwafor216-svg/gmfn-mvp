@@ -12,7 +12,7 @@ Confirmed deployment state before this slice:
   `dep-d8vd57o0697c73fgllk0`.
 - Backend deploy was not needed for that visible-language/support-lane cleanup.
 
-Local frontend bridge completed in commit `17044b0c`:
+Local frontend bridge completed in commit `5e82dbbe`:
 - `frontend/src/components/GsnSupportContact.tsx`
   - shared support contact card for Money In, Money Out, and Loans & Support;
   - reads `VITE_GSN_SUPPORT_EMAIL`, with `VITE_SUPPORT_EMAIL` as fallback;
@@ -73,7 +73,7 @@ Verification passed locally:
 - `npm --prefix frontend run audit:capability-mirror`
 
 Truth / remaining risk:
-- Local commit only in `9a223080`; not pushed or deployed yet because current
+- Local commit only in `b5923a43`; not pushed or deployed yet because current
   Git publishing is batch-frozen by `docs/FREEZE_POLICY.md`.
 - The uploaded PDF/DOCX files and screenshot artifacts remain untracked local
   review material; the committed value should be the gap review, plan, and
@@ -107,7 +107,7 @@ Verification passed locally:
 - `node frontend/tools/audit-gsn-visible-language.mjs`
 
 Truth / remaining risk:
-- Local commit only in `44172bf3`; not pushed or deployed yet because current
+- Local commit only in `c900a14b`; not pushed or deployed yet because current
   Git publishing is batch-frozen by `docs/FREEZE_POLICY.md`.
 - No automatic payout release, bank API payout trigger, support approval PIN,
   or backend money movement was added. This is a wording and audit-cage slice.
@@ -134,7 +134,7 @@ Verification passed locally:
 - `npm --prefix frontend run audit:loans-actions`
 
 Truth / remaining risk:
-- Local commit only in `ef23c25e`; not pushed or deployed yet because current
+- Local commit only in `7072bb54`; not pushed or deployed yet because current
   Git publishing is batch-frozen by `docs/FREEZE_POLICY.md`.
 - Internal backend/API/debug identifiers still use borrower/guarantor where the
   existing contracts require them.
