@@ -1,3 +1,37 @@
+## 2026-06-26 - Loans page deep tools demoted
+
+Owner request:
+- Keep the Support & Loans flow simple on the surface and stop presenting
+  readiness, suggestions, inbox, and earnings as if they are all separate
+  first-choice tasks.
+
+Local frontend cleanup:
+- `frontend/src/pages/LoansPage.tsx`
+  - The visible route grid now keeps the primary user choices first:
+    Start/Continue Support Request, Money In, and Money Out.
+  - Readiness, supporter suggestions, incoming requests, Action Inbox,
+    supporter value, and Marketplace return now sit behind a "Deeper support
+    tools" disclosure.
+  - No route was deleted; the deeper routes remain available when the support
+    request actually needs them.
+- `frontend/tools/audit-loans-actions.mjs`
+  - audit now protects the primary-vs-deeper support tool hierarchy while
+    keeping every existing route action traceable.
+
+Verification:
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `node frontend/tools/audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local frontend hierarchy change only.
+- No loan engine, guarantor approval PIN, automatic payout trigger, or backend
+  support-expiry job was added in this slice.
+- Not pushed or deployed yet because current Git publishing is batch-frozen by
+  `docs/FREEZE_POLICY.md`.
+
 ## 2026-06-26 - Money proof and withdrawal reference wording tightened
 
 Owner request:

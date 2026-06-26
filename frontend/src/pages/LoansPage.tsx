@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import GsnSupportContact from "../components/GsnSupportContact";
 import PageTopNav from "../components/PageTopNav";
-import { StableCtaLink, SubtleButton } from "../components/StableButton";
+import {
+  StableCtaLink,
+  StableDisclosureSummary,
+  SubtleButton,
+} from "../components/StableButton";
 import {
   GsnLegacyIcon,
   type GsnIconName,
@@ -1163,6 +1167,7 @@ export default function LoansPage() {
         </div>
 
         {!collapsed.routes ? (
+        <>
         <div
           style={{
             marginTop: 16,
@@ -1222,8 +1227,38 @@ export default function LoansPage() {
               </div>
             </div>
           </StableCtaLink>
+        </div>
 
-          <StableCtaLink
+        <details style={{ marginTop: 12 }}>
+          <StableDisclosureSummary
+            debugId="loans.deeper-support-tools.summary"
+            stableHeight={isCompact ? 52 : 56}
+            style={{
+              borderRadius: 999,
+              width: "100%",
+              justifyContent: "space-between",
+              padding: isCompact ? "0 12px" : "0 16px",
+              fontSize: isCompact ? 14 : 15,
+              fontWeight: 950,
+              color: "#0B2C4D",
+              background: "linear-gradient(180deg, #F8FBFF 0%, #EAF5FF 100%)",
+              border: "1px solid rgba(11,99,209,0.12)",
+            }}
+          >
+            Deeper support tools
+            <span aria-hidden="true">+</span>
+          </StableDisclosureSummary>
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: responsiveGridColumns(260),
+              gap: 12,
+            }}
+          >
+
+            <StableCtaLink
             to={routes.readiness}
             debugId="loans.route.readiness"
             stableHeight={isCompact ? 66 : 88}
@@ -1317,8 +1352,10 @@ export default function LoansPage() {
                 Return to your community page.
               </div>
             </div>
-          </StableCtaLink>
-        </div>
+            </StableCtaLink>
+          </div>
+        </details>
+        </>
         ) : null}
       </section>
 
