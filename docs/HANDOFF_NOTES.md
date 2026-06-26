@@ -1,3 +1,32 @@
+## 2026-06-26 - Money Out support handoff regression cage added
+
+Owner request:
+- Stop Money Out over-balance flow from leaving the user on the general
+  Marketplace surface. The app must lead the user into Support Requests.
+
+Local audit hardening:
+- `frontend/tools/audit-marketplace-support-lane.mjs`
+  - now protects the route query/hash handoff:
+    `support_flow=money-out`, `focus=support`, and
+    `#marketplace-loans-support`;
+  - now verifies Marketplace opens only the Support Requests lane and forces
+    the section scroll for that handoff;
+  - now verifies stored Money Out handoff data can prefill Support Requests
+    amount and fallback purpose.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- This is a regression cage around behavior already present in
+  `MarketplacePage.tsx`; it does not change runtime behavior by itself.
+- If the live phone still lands on the general Marketplace after this deployed
+  build, the next likely cause is scroll/tap timing or deployment drift, not
+  absence of the support handoff code.
+
 ## 2026-06-26 - Visible support items now show purpose first
 
 Owner request:

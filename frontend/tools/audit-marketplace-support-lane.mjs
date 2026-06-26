@@ -58,6 +58,16 @@ assertContains(
   "Opening Support Requests must focus only the support lane, not visually open Members too."
 );
 
+assertContains(
+  /const isMoneyOutSupportFlow =[\s\S]*?routeSupportFlow === "money-out" && routeFocus === "support"[\s\S]*?if \(hash !== "marketplace-loans-support" && !isMoneyOutSupportFlow\) return[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\("support"\)\)[\s\S]*?scheduleMarketplaceSectionScroll\("marketplace-loans-support", \{[\s\S]*?force: true[\s\S]*?\}\)/,
+  "Money Out over-balance handoff must land inside the Support Requests lane, not leave the user on the general marketplace surface."
+);
+
+assertContains(
+  /const storedWithdrawalTask = readLocalJSON<PersistedWithdrawalTask \| null>\([\s\S]*?withdrawalTaskStorageKey\(activeCommunityId, currentGmfnId\)[\s\S]*?const storedAmount = safeStr\(storedWithdrawalTask\?\.amountInput\)[\s\S]*?const defaultPurpose = storedAmount \? "Withdrawal support" : ""[\s\S]*?setLoanAmount\([\s\S]*?storedAmount[\s\S]*?setLoanPurpose\([\s\S]*?storedNote \|\| defaultPurpose/,
+  "Money Out support handoff must prefill the Support Requests amount and purpose when stored handoff data exists."
+);
+
 const supportSection = sectionBetween(
   /id="marketplace-loans-support"/,
   /<\/MarketplaceShell>/
