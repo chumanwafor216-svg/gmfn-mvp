@@ -39,6 +39,49 @@ Truth / remaining risk:
 - This does not add a backend dispute workflow, fraud handling, bank automation,
   automatic payout release, or support approval PIN engine.
 
+## 2026-06-26 - Capability mirror audit added
+
+Owner request:
+- Compare the uploaded institutional documents with the current GSN system and
+  keep closing the gaps toward a 99 percent pilot mirror without claiming
+  automation that is not live.
+
+Local documentation and audit work:
+- `docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md`
+  - records that the uploaded documents are a strong institutional mirror, not
+    an exact replica of the current app;
+  - records where GSN is deeper than the documents, especially practical
+    finance plumbing and Commitment Builder;
+  - records where the documents are ahead of the app, especially protected
+    trade release and mature automated payout/dispute handling.
+- `docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md`
+  - maps the safe completion order for Money In, Money Out, Support & Loans,
+    Trust Identity, ROSCA, Commitment Builder, distance trust, community
+    economic readings, and support contact;
+  - keeps the pilot truth that automatic payout and protected trade release are
+    not live until tested end to end.
+- `frontend/tools/audit-capability-mirror.mjs`
+  - checks that the 22 capability titles are present in the registry and the
+    gap review;
+  - checks the gap review preserves the hard truth about current gaps;
+  - checks the core routes for Trust Passport, TrustSlip, Finance, Money In,
+    Money Out, Loans, Marketplace, Demand Box, and Shop remain present.
+- `frontend/package.json`
+  - adds `npm run audit:capability-mirror`.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:capability-mirror`
+
+Truth / remaining risk:
+- Local commit only in `9a223080`; not pushed or deployed yet because current
+  Git publishing is batch-frozen by `docs/FREEZE_POLICY.md`.
+- The uploaded PDF/DOCX files and screenshot artifacts remain untracked local
+  review material; the committed value should be the gap review, plan, and
+  audit, not bulky source uploads.
+- This audit protects representation and route presence. It does not complete
+  protected trade release, automatic payout, fraud workflow, or the full
+  support-backed withdrawal journey.
+
 ## 2026-06-26 - Shared support wording and visible-language sweep
 
 Owner request:
