@@ -1,3 +1,43 @@
+## 2026-06-26 - Support request purpose now reaches trust and commitment truth
+
+Owner request:
+- Continue closing the Money Out / Support & Loans gaps from the backend truth,
+  especially the amount, duration, service charge, guarantor/support,
+  repayment plan, commitment, and trust-event line.
+
+Confirmed gap:
+- `LoanCreate` already accepted `purpose`, and the Marketplace Support Requests
+  form already sent it.
+- The `loans` database row has no purpose column, and the create route was not
+  preserving the purpose in trust-event metadata.
+- Because database schema is frozen/high-risk during pilot, this slice did not
+  add a migration.
+
+Local backend correction:
+- `gmfn_backend/app/api/routes/loans.py`
+  - loan creation now carries `purpose` into `loan.created` trust-event meta;
+  - repayment commitment creation now carries `purpose` and appends it to the
+    commitment title;
+  - auto-approved personal-pool requests now also carry `purpose` in the
+    `loan.auto_approved_by_pool` event meta.
+- `gmfn_backend/tests/test_loan_pool_event_truth.py`
+  - test now proves the purpose survives into `loan.created`,
+    `commitment.created`, and `loan.auto_approved_by_pool` metadata.
+
+Verification passed locally:
+- `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm --prefix frontend run audit:capability-mirror`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- This preserves purpose in the auditable trust/commitment trail, not as a
+  first-class `loans.purpose` column.
+- No automatic payout, bank API trigger, support approval PIN, fraud/dispute
+  workflow, or new database schema was added in this slice.
+
 ## 2026-06-26 - Global Loans tools menu simplified
 
 Owner request:

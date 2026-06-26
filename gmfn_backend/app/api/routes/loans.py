@@ -133,6 +133,8 @@ def create_loan(
         else None
     )
     repayment_cadence = (getattr(payload, "repayment_cadence", None) or "").strip().lower()
+    purpose = (getattr(payload, "purpose", None) or "").strip()
+    purpose_note = f"Purpose={purpose}. " if purpose else ""
 
     if trust_enforcement_enabled():
         band = getattr(current_user, "trust_band", None) or "C"
@@ -193,6 +195,7 @@ def create_loan(
             "reason": "loan_created",
             "note": (
                 f"Loan request created for {loan.currency} {str(requested)}. "
+                f"{purpose_note}"
                 f"Personal pool at request={str(personal_pool)}. "
                 f"Pool used={str(pool_used)}. "
                 f"Guarantee gap={str(guarantee_gap)}. "
@@ -203,6 +206,7 @@ def create_loan(
             "amount": str(requested),
             "currency": loan.currency,
             "status": loan.status,
+            "purpose": purpose or None,
             "duration_days": int(duration_days),
             "repayment_cadence": repayment_cadence or None,
             "due_at": due_at.isoformat() if due_at else None,
@@ -233,8 +237,12 @@ def create_loan(
                 "source": "loan_support_request",
                 "local_commitment_id": local_commitment_id,
                 "local_event_id": f"{local_commitment_id}-created",
-                "title": f"Repay support request #{int(loan.id)}",
+                "title": (
+                    f"Repay support request #{int(loan.id)}"
+                    + (f": {purpose[:80]}" if purpose else "")
+                ),
                 "category": "repayment",
+                "purpose": purpose or None,
                 "target_value": str(requested),
                 "current_value": "0",
                 "progress_value": "0",
@@ -270,6 +278,7 @@ def create_loan(
                 ),
                 "amount": str(requested),
                 "currency": loan.currency,
+                "purpose": purpose or None,
                 "personal_pool_before": str(personal_pool),
                 "personal_pool_after": str(
                     Decimal(str(personal_pool)) - Decimal(str(requested))

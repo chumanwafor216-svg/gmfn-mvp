@@ -96,6 +96,7 @@ def test_auto_approved_loan_creates_repayment_expectation_with_plan(
             "clan_id": 1,
             "amount": "400",
             "currency": "NGN",
+            "purpose": "School fees",
             "duration_days": 30,
             "repayment_cadence": "weekly",
         },
@@ -128,6 +129,39 @@ def test_auto_approved_loan_creates_repayment_expectation_with_plan(
             ),
             {"loan_id": int(data["id"])},
         ).mappings().one()
+        created_event = conn.execute(
+            text(
+                """
+                SELECT *
+                FROM trust_events
+                WHERE loan_id = :loan_id
+                  AND event_type = 'loan.created'
+                """
+            ),
+            {"loan_id": int(data["id"])},
+        ).mappings().one()
+        commitment_event = conn.execute(
+            text(
+                """
+                SELECT *
+                FROM trust_events
+                WHERE loan_id = :loan_id
+                  AND event_type = 'commitment.created'
+                """
+            ),
+            {"loan_id": int(data["id"])},
+        ).mappings().one()
+        auto_event = conn.execute(
+            text(
+                """
+                SELECT *
+                FROM trust_events
+                WHERE loan_id = :loan_id
+                  AND event_type = 'loan.auto_approved_by_pool'
+                """
+            ),
+            {"loan_id": int(data["id"])},
+        ).mappings().one()
 
     assert str(expected["amount"]) in {"400.00", "400"}
     assert expected["reference_display"] == f"GMFN-REPAY-LOAN-{int(data['id'])}-U1"
@@ -142,6 +176,17 @@ def test_auto_approved_loan_creates_repayment_expectation_with_plan(
     event_meta = json.loads(schedule_event["meta_json"] or "{}")
     assert event_meta["expected_payment_id"] == expected["id"]
     assert event_meta["repayment_cadence"] == "weekly"
+
+    created_meta = json.loads(created_event["meta_json"] or "{}")
+    assert created_meta["purpose"] == "School fees"
+    assert "Purpose=School fees." in created_meta["note"]
+
+    commitment_meta = json.loads(commitment_event["meta_json"] or "{}")
+    assert commitment_meta["purpose"] == "School fees"
+    assert commitment_meta["title"].endswith(": School fees")
+
+    auto_meta = json.loads(auto_event["meta_json"] or "{}")
+    assert auto_meta["purpose"] == "School fees"
 
 
 def test_pending_support_loan_does_not_create_repayment_expectation_too_early(
