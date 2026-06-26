@@ -69478,6 +69478,58 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Finance/trust wording and button audit sweep
+
+- Trigger:
+  - owner asked to continue checking buttons, unpolished pages, user-facing
+    words, small gaps, and shells after the Money In / Money Out / Support
+    Requests work.
+- Unabated truth:
+  - the full audit sweep found real wording drift around money movement:
+    member declarations were still too close to receipt confirmation, and
+    withdrawal wording could still imply money movement was complete;
+  - two remaining failures were stale audit cages after newer anti-jump and
+    toast implementations, not broken user behavior.
+- Changed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - Money In now says `Declare paid` / `Declared`;
+    - success notice now says the payment declaration is recorded and waits for
+      reconciliation;
+    - helper text now separates member declaration from confirmed money receipt.
+  - `frontend/src/pages/FinancePage.tsx`
+    - expected-payment rows now label confirmed rows as `Finance confirmed`;
+    - waiting guidance now points to finance reconciliation and exact
+      references, not broad system confirmation.
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - direct withdrawal result now says request recorded and explicitly states
+      payout execution / money movement are not complete on that page;
+    - direct withdrawal guidance now says to review amount, rail, and payout
+      account before submitting.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+    - admin exposure wording changed from `Confirm...` to `Check...`.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Finance Discipline card label now uses `Trust limit`;
+    - public community record CTA keeps a responsive fixed height.
+  - updated route-local audit guards:
+    - `frontend/tools/audit-action-response-protocol.mjs`
+    - `frontend/tools/audit-button-stability.mjs`
+    - `frontend/tools/audit-gsn-visible-language.mjs`
+    - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+- Verification:
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend` with elevated permission after
+    sandbox `spawn EPERM`.
+  - Passed all 75 non-visual frontend audits.
+  - Passed `npm run audit:mobile-visual-sweep` with elevated browser
+    permission.
+  - Passed `git diff --check`.
+- Still not changed:
+  - no backend payout automation, bank API payment trigger, or guarantor PIN
+    execution was added in this slice;
+  - no loan/readiness/suggestion/workbench pages were deleted.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Support request agreement line bridged
 
 - Trigger:

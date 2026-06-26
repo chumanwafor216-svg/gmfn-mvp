@@ -2666,7 +2666,7 @@ export default function TrustScorePage() {
 
   const financeDisciplineCards: Array<[string, string, string, GsnIconName]> = [
     [
-      "Trust limit signal",
+      "Trust limit",
       `${trustLimit} ${trustCurrency}`,
       "The current amount signal GSN can show from this trust record; it is not an approval limit.",
       "financeInstitution",
@@ -3238,10 +3238,10 @@ export default function TrustScorePage() {
                   text: "The public community record is not ready because this Trust Passport has no community code yet.",
                 });
               }}
-              stableHeight={52}
+              stableHeight={isCompact ? 50 : 58}
               fullWidth
               style={{
-                ...trustScoreFixedActionStyle(52),
+                ...trustScoreFixedActionStyle(isCompact ? 50 : 58),
                 borderRadius: isCompact ? 12 : 14,
                 background: "linear-gradient(180deg, #052B58 0%, #031E42 100%)",
                 border: "1px solid rgba(3,30,66,0.18)",

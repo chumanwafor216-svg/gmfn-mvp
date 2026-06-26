@@ -175,7 +175,7 @@ const required = [
   ["frontend/src/pages/BuildFirstCirclePage.tsx", "Hi! I am inviting you to join me on GSN."],
   ["frontend/src/pages/ExposurePage.tsx", "Community ID"],
   ["frontend/src/pages/ExposureAdminPage.tsx", "community-admin exposure summary"],
-  ["frontend/src/pages/TrustCommandCentrePage.tsx", "Confirm community-admin exposure access"],
+  ["frontend/src/pages/TrustCommandCentrePage.tsx", "Check community-admin exposure access"],
   ["frontend/src/pages/TrustCommandCentrePage.tsx", "Community admin page"],
   ["frontend/src/pages/TrustCommandCentrePage.tsx", "ordinary member, community admin, platform admin"],
   ["frontend/src/pages/TrustCommandCentrePage.tsx", "community-specific exposure totals"],

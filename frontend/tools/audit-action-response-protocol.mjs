@@ -173,7 +173,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function openMarketplaceExternalLink[\s\S]*?Opening WhatsApp now\.[\s\S]*?window\.location\.href = url[\s\S]*?const opened = window\.open[\s\S]*?browser blocked that window[\s\S]*?Opening link now\.[\s\S]*?noticeCard\(notice\.tone\)/,
+  /function openMarketplaceExternalLink[\s\S]*?Opening WhatsApp now\.[\s\S]*?window\.location\.href = url[\s\S]*?const opened = window\.open[\s\S]*?browser blocked that window[\s\S]*?Opening link now\.[\s\S]*?function MarketplaceNoticeToast[\s\S]*?noticeCard\(notice\.tone, isCompact\)/,
   "Marketplace external links must use same-tab WhatsApp handoff before falling back to ordinary blocked-window feedback for other external links."
 );
 

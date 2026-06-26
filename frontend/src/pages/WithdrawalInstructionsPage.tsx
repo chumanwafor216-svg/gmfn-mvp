@@ -1180,7 +1180,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Withdrawal code generated. Money has not moved yet. Send the code and bank slip to admin for pilot reconciliation."
+        "Direct withdrawal request recorded. Community confirmation is still review evidence; payout execution and money movement are not complete here."
       );
     } finally {
       setSubmittingWithdrawal(false);
@@ -2860,7 +2860,7 @@ export default function WithdrawalInstructionsPage() {
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Use the decision lane above</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                      Generate the withdrawal code here. Money does not move on this page.
+                      Review amount, rail, and payout account before submitting a request.
                     </div>
                   </div>
                 ) : requiresSupport && !withdrawalCanWidenRoutes ? (

@@ -351,7 +351,7 @@ function safeDateTime(x: any): string {
 }
 
 function expectedPaymentState(item: ExpectedPaymentRecord): string {
-  if (safeStr(item.confirmed_at)) return "Received";
+  if (safeStr(item.confirmed_at)) return "Finance confirmed";
   if (item.matched_bank_event_id) return "Bank match found";
   if (safeStr(item.reference_display)) return "Code generated";
   return "Needs code";
@@ -359,14 +359,14 @@ function expectedPaymentState(item: ExpectedPaymentRecord): string {
 
 function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
   const state = expectedPaymentState(item);
-  if (state === "Received") {
-    return "No action needed here.";
+  if (state === "Finance confirmed") {
+    return "Finance shows this payment as confirmed; use the related service only where its route says it is available.";
   }
   if (state === "Bank match found") {
-    return "Waiting for final confirmation.";
+    return "Waiting for finance reconciliation.";
   }
   if (state === "Code generated") {
-    return "Not paid yet unless the bank transfer was sent.";
+    return "Pay with the exact reference so finance can reconcile it.";
   }
   return "Generate a code first.";
 }
@@ -1345,7 +1345,7 @@ export default function FinancePage() {
     return activeExpectedPayments.reduce(
       (acc, item) => {
         const state = expectedPaymentState(item);
-        if (state === "Received") acc.confirmed += 1;
+        if (state === "Finance confirmed") acc.confirmed += 1;
         else if (state === "Bank match found") acc.matched += 1;
         else if (state === "Code generated") acc.awaitingReconciliation += 1;
         else acc.awaitingIssue += 1;
@@ -2617,9 +2617,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Payment codes and bank matches</div>
+            <div style={sectionLabel()}>Payments waiting for finance confirmation</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Codes are not paid until the bank match confirms them.
+              Codes are not paid until finance reconciles the bank match.
             </div>
           </div>
 
@@ -2645,7 +2645,7 @@ export default function FinancePage() {
             >
               <span style={badge(true)}>Codes open: {activeExpectedPayments.length}</span>
               <span style={badge(false)}>Not received yet: {pendingReconciliationCount}</span>
-              <span style={badge(false)}>Received: {expectedPaymentStateCounts.confirmed}</span>
+              <span style={badge(false)}>Finance confirmed: {expectedPaymentStateCounts.confirmed}</span>
               <span style={badge(false)}>Bank match found: {expectedPaymentStateCounts.matched}</span>
               <span style={badge(false)}>
                 Needs new code: {expectedPaymentStateCounts.awaitingIssue}
@@ -2660,7 +2660,7 @@ export default function FinancePage() {
                   <FinanceMobileRecord
                     key={`${item.id || index}`}
                     title={firstTruthy(item.expected_type, "Payment check")}
-                    tone={expectedPaymentState(item) === "Received" ? "good" : "watch"}
+                    tone={expectedPaymentState(item) === "Finance confirmed" ? "good" : "watch"}
                     rows={[
                       ["Reference", safeStr(item.reference_display || "-")],
                       [
@@ -2677,7 +2677,7 @@ export default function FinancePage() {
                       [
                         "Date",
                         item.confirmed_at
-                          ? `Received: ${safeDateTime(item.confirmed_at)}`
+                          ? `Finance confirmed: ${safeDateTime(item.confirmed_at)}`
                           : item.due_at
                             ? `Due: ${safeDateTime(item.due_at)}`
                             : item.matched_bank_event_id
@@ -2723,7 +2723,7 @@ export default function FinancePage() {
                         </td>
                         <td style={tableCell()}>
                           {item.confirmed_at
-                            ? `Received: ${safeDateTime(item.confirmed_at)}`
+                            ? `Finance confirmed: ${safeDateTime(item.confirmed_at)}`
                             : item.due_at
                               ? `Due: ${safeDateTime(item.due_at)}`
                               : item.matched_bank_event_id

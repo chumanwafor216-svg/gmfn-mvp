@@ -992,7 +992,7 @@ export default function PaymentInstructionsPage() {
         step: "Payment",
         title: "Pay with the reference.",
         detail:
-          "Pay with the reference. Then tap I paid.",
+          "Pay with the reference, then declare it here so the route can move into reconciliation; this does not confirm money received.",
       };
     }
 
@@ -1152,7 +1152,7 @@ export default function PaymentInstructionsPage() {
 
     setNotice({
       tone: "success",
-      text: "Marked paid. Add payment screenshot if the bank match is not automatic yet.",
+      text: "Payment declaration recorded. Waiting for reconciliation to confirm the money trail.",
     });
   }
 
@@ -2113,7 +2113,7 @@ export default function PaymentInstructionsPage() {
                     boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
                   }}
                 >
-                  {moneyInActionText("check", paymentConfirmed ? "Paid noted" : "I paid")}
+                  {moneyInActionText("check", paymentConfirmed ? "Declared" : "Declare paid")}
                 </SecondaryButton>
 
                 <label
@@ -2235,7 +2235,7 @@ export default function PaymentInstructionsPage() {
               fontWeight: 800,
             }}
           >
-            After paying, tap I paid.
+            After paying, declare it here.
           </span>
         </div>
       </section>
@@ -2277,7 +2277,7 @@ export default function PaymentInstructionsPage() {
           label="Help"
           what="Use the amount, account, and reference shown here."
           why="The reference links your transfer to this payment."
-          next="Pay from your bank, then tap I paid."
+          next="Pay from your bank, then declare it here."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -2390,7 +2390,7 @@ export default function PaymentInstructionsPage() {
                     fullWidth
                     style={moneyInActionButtonStyle("secondary", paymentConfirmed)}
                   >
-                    {moneyInActionText("check", paymentConfirmed ? "Marked paid" : "I paid")}
+                    {moneyInActionText("check", paymentConfirmed ? "Declared" : "Declare paid")}
                   </SecondaryButton>
                 </div>
               </div>
@@ -2475,7 +2475,7 @@ export default function PaymentInstructionsPage() {
 
                 {paymentConfirmedAt ? (
                   <div style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>Marked paid at</div>
+                    <div style={sectionLabel()}>Declared at</div>
                     <div
                       style={{
                         marginTop: 8,
@@ -2672,7 +2672,7 @@ export default function PaymentInstructionsPage() {
               <div style={innerCard("#F8FBFF")}>
                 <div style={sectionLabel()}>One-task mode</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                  Generate, pay with the reference, then tap I paid.
+                  Generate, pay with the reference, then declare it here.
                 </div>
               </div>
             </div>

@@ -151,7 +151,7 @@ assertContains(
 );
 
 assertContains(
-  /function scrollToPressureNotes\(\)[\s\S]*?pressureSectionRef\.current\?\.scrollIntoView\(\{[\s\S]*?block: "start"[\s\S]*?scrollMarginTop: isCompact \? 96 : 24/,
+  /function scrollToPressureNotes\(\)[\s\S]*?pressureSectionRef\.current[\s\S]*?revealElementWithoutJump\(pressureSectionRef\.current[\s\S]*?targetId: "pressure-notes"[\s\S]*?scrollMarginTop: isCompact \? 96 : 24/,
   "Trust Passport pressure-note action must keep mobile scroll clearance so sticky app chrome does not hide the target section."
 );
 
