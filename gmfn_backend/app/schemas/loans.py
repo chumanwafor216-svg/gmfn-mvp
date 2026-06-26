@@ -31,6 +31,7 @@ class LoanOut(BaseModel):
 
     amount: Decimal
     currency: str
+    purpose: Optional[str] = None
 
     status: LoanStatus
 

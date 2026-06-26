@@ -1,3 +1,44 @@
+## 2026-06-26 - Support request purpose exposed back to support pages
+
+Owner request:
+- Continue making the Support & Loans line complete from backend truth through
+  user-visible pages, not just at form-entry time.
+
+Confirmed gap:
+- The frontend Support Requests form already sent `purpose`.
+- Multiple support pages already try to read `loan.purpose`.
+- The backend response schema did not expose `purpose`, so refreshed support
+  lists could still lose the user's reason even after purpose was preserved in
+  trust-event metadata.
+
+Local backend correction:
+- `gmfn_backend/app/schemas/loans.py`
+  - `LoanOut` now allows optional `purpose`.
+- `gmfn_backend/app/api/routes/loans.py`
+  - `/loans` list and loan creation responses now enrich each loan from the
+    existing `loan.created` trust-event `purpose` metadata;
+  - `/loans/{loan_id}` uses the same enrichment path when an authenticated
+    caller opens a single support item.
+- `gmfn_backend/tests/test_loan_pool_event_truth.py`
+  - test now proves the create response and list response both return purpose.
+
+Verification passed locally:
+- `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm --prefix frontend run audit:capability-mirror`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- Local only until committed/pushed/deployed.
+- Purpose is still stored in trust-event metadata, not in a new `loans.purpose`
+  database column.
+- The existing test client cannot hit `/loans/{loan_id}` without normal auth,
+  so this slice tests create/list response purpose and leaves authenticated
+  detail coverage for a future route-auth test.
+- No payout automation, bank API trigger, support approval PIN, fraud/dispute
+  workflow, or schema migration was added.
+
 ## 2026-06-26 - Support request purpose now reaches trust and commitment truth
 
 Owner request:

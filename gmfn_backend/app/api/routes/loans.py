@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.core.clan_auth import get_current_clan_membership
 from app.db.database import get_db
-from app.db.models import ClanMembership, Loan, LoanGuarantor, User
+from app.db.models import ClanMembership, Loan, LoanGuarantor, TrustEvent, User
 from app.schemas.guarantor_suggestions import GuarantorSuggestionsResponse
 from app.schemas.loans import (
     LoanCreate,
@@ -67,6 +67,43 @@ def _require_same_clan(loan: Loan, clan_id: int) -> None:
         )
 
 
+def _safe_event_meta(event: TrustEvent | None) -> dict[str, Any]:
+    if not event:
+        return {}
+
+    meta = getattr(event, "meta", None)
+    if isinstance(meta, dict):
+        return meta
+
+    raw = getattr(event, "meta_json", None)
+    if raw:
+        try:
+            loaded = json.loads(raw)
+            return loaded if isinstance(loaded, dict) else {}
+        except Exception:
+            return {}
+
+    return {}
+
+
+def _loan_purpose_from_events(db: Session, loan_id: int) -> str | None:
+    event = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.loan_id == int(loan_id))
+        .filter(TrustEvent.event_type == "loan.created")
+        .order_by(TrustEvent.id.asc())
+        .first()
+    )
+    purpose = str(_safe_event_meta(event).get("purpose") or "").strip()
+    return purpose or None
+
+
+def _loan_out(db: Session, loan: Loan, *, purpose: str | None = None) -> dict[str, Any]:
+    payload = LoanOut.model_validate(loan).model_dump()
+    payload["purpose"] = (purpose or _loan_purpose_from_events(db, int(loan.id)) or None)
+    return payload
+
+
 @router.get("", response_model=LoansListResponse)
 def list_my_loans(
     limit: int = Query(50, ge=1, le=200),
@@ -84,7 +121,7 @@ def list_my_loans(
         .all()
     )
 
-    return {"items": items, "total": len(items)}
+    return {"items": [_loan_out(db, loan) for loan in items], "total": len(items)}
 
 
 @router.post("", response_model=LoanOut, status_code=201)
@@ -294,7 +331,7 @@ def create_loan(
         )
         db.refresh(loan)
 
-    return loan
+    return _loan_out(db, loan, purpose=purpose)
 
 
 @router.post("/support-expiry/run")
@@ -350,7 +387,7 @@ def get_loan(
         if not loan:
             raise HTTPException(status_code=404, detail="Loan not found")
 
-    return loan
+    return _loan_out(db, loan)
 
 
 @router.patch("/{loan_id}", response_model=LoanOut)

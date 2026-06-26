@@ -105,6 +105,13 @@ def test_auto_approved_loan_creates_repayment_expectation_with_plan(
     assert response.status_code == 201, response.text
     data = response.json()
     assert data["status"] == "approved"
+    assert data["purpose"] == "School fees"
+
+    listed_response = client.get("/loans")
+    assert listed_response.status_code == 200, listed_response.text
+    listed = listed_response.json()
+    assert listed["items"][0]["id"] == data["id"]
+    assert listed["items"][0]["purpose"] == "School fees"
 
     with engine.begin() as conn:
         expected = conn.execute(
