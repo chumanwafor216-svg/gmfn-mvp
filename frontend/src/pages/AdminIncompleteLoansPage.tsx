@@ -185,8 +185,8 @@ function formatRemaining(seconds: any): string {
 
 function buildLoanSnapshot(loan: any): string {
   return [
-    `Loan: ${safeStr(loan?.loan_id || loan?.id || "-")}`,
-    `Borrower: ${safeStr(loan?.borrower_user_id || "-")}`,
+    `Support item: ${safeStr(loan?.loan_id || loan?.id || "-")}`,
+    `Requester: ${safeStr(loan?.borrower_user_id || "-")}`,
     `Amount: ${fmtMoney(loan?.amount ?? "0")} ${safeStr(loan?.currency || "NGN")}`,
     `Support decisions: ${toNum(loan?.approved_guarantors)} / ${toNum(loan?.guarantors_required)}`,
     `Pending support responses: ${toNum(loan?.pending_guarantors)}`,
@@ -298,7 +298,7 @@ export default function AdminIncompleteLoansPage() {
   function copyQueueSnapshot() {
     const snapshot = [
       `Community: ${communityLabel}`,
-      `Incomplete loans: ${rows.length}`,
+      `Incomplete support items: ${rows.length}`,
       `Ending soon: ${queueSummary.urgentCount}`,
       `Missing support decisions: ${queueSummary.missingPledgeDecisionCount}`,
       `Total coverage gap: ${fmtMoney(queueSummary.totalGap)}`,
@@ -307,25 +307,25 @@ export default function AdminIncompleteLoansPage() {
       ...rows.map((loan) => buildLoanSnapshot(loan)),
     ].join("`n`n");
 
-    void copyText(snapshot, "Incomplete-loan queue snapshot copied.", "Clipboard is not available here.");
+    void copyText(snapshot, "Incomplete support queue snapshot copied.", "Clipboard is not available here.");
   }
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav sectionLabel="Incomplete Loans" title="Incomplete Loans" subtitle="Find the support items that need action now." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
+      <PageTopNav sectionLabel="Incomplete Support" title="Incomplete Support" subtitle="Find the support items that need action now." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
 
       <ExplainToggle
         label="What this screen does"
         what="See unresolved support items, support decisions, coverage gaps, and time pressure for this community."
-        why="This is an admin review queue; it does not approve the whole loan, authorize release, or show that money moved."
-        next="Open the loan that needs follow-up now."
+        why="This is an admin review queue; it does not approve the whole support request, authorize release, or show that money moved."
+        next="Open the support item that needs follow-up now."
         tone="light"
         style={{ marginTop: 18 }}
       />
 
       <div style={{ backgroundImage: `url("${pattern}")`, backgroundRepeat: "no-repeat", backgroundSize: "cover", backgroundPosition: "center top", borderRadius: 28, border: "1px solid rgba(11,31,51,0.06)", overflow: "hidden", backgroundColor: "#F8FBFE" }}>
         <div style={{ padding: 24 }}>
-          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Incomplete Loans Queue</div>
+          <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Incomplete Support Queue</div>
           <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.45 }}>
             Check {communityLabel} for items short on support decisions, coverage, or time.
           </div>
@@ -354,7 +354,7 @@ export default function AdminIncompleteLoansPage() {
             <div style={statTile()}>
               <div style={sectionLabel()}>What to do next</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Open the loan first. Use Bank Console only when the finance trail needs review.
+                Open the support item first. Use Bank Console only when the finance trail needs review.
               </div>
             </div>
           </div>
@@ -407,7 +407,7 @@ export default function AdminIncompleteLoansPage() {
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
             {!selectedClanId ? <div style={{ ...card(), color: "#7A8D9F" }}>Choose the community first. This review queue belongs to one active community at a time.</div> : null}
-            {selectedClanId && rows.length === 0 && !err ? <div style={{ ...card(), color: "#7A8D9F" }}>No incomplete loans are currently shown.</div> : null}
+            {selectedClanId && rows.length === 0 && !err ? <div style={{ ...card(), color: "#7A8D9F" }}>No incomplete support items are currently shown.</div> : null}
             {rows.map((loan, i) => {
               const loanId = safeStr(loan?.loan_id || loan?.id || i);
               const borrowerId = safeStr(loan?.borrower_user_id || "-");
@@ -415,8 +415,8 @@ export default function AdminIncompleteLoansPage() {
                 <div key={loanId} style={card()}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                     <div>
-                      <div style={{ fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>Loan #{loanId}</div>
-                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Borrower #{borrowerId}</div>
+                      <div style={{ fontWeight: 1000, color: "#0B1F33", fontSize: 18 }}>Support #{loanId}</div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Requester #{borrowerId}</div>
                     </div>
                     <div style={{ color: "#0B1F33", fontWeight: 1000 }}>{fmtMoney(loan?.amount ?? "0")} {safeStr(loan?.currency || "NGN")}</div>
                   </div>
@@ -451,7 +451,7 @@ export default function AdminIncompleteLoansPage() {
                   >
                     <SecondaryButton
                       onClick={() => {
-                        void copyText(buildLoanSnapshot(loan), `Loan #${loanId} snapshot copied.`, "Clipboard is not available here.");
+                        void copyText(buildLoanSnapshot(loan), `Support #${loanId} snapshot copied.`, "Clipboard is not available here.");
                       }}
                       fullWidth
                       stableHeight={52}
