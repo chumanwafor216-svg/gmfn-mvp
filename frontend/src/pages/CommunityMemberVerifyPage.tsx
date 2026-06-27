@@ -487,7 +487,6 @@ export default function CommunityMemberVerifyPage() {
           <TrustPaperAuthorityStrip
             title="GSN Community Member Credential"
             reference={`${memberAnchor} / ${communityAnchor}`}
-            generatedAt="Current when viewed"
             classification="Scoped public credential"
             compact
           />

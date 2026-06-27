@@ -75126,3 +75126,43 @@ GSN-branded invite composer and invite-entry continuity.
   - separator fix `f333139c` was committed and pushed to `origin/main`;
   - this generated-timestamp slice is pending until the commit containing this
     note is pushed to `origin/main`.
+
+### Follow-up same day - Public paper placeholder inputs removed
+
+- Trigger:
+  - after normalizing shared authority-strip generated timestamps, a page-level
+    search still found public paper routes passing `Current when viewed` into
+    the shared GSN authority strip.
+- Unabated truth:
+  - the shared strip already corrected those placeholders at render time, but
+    leaving placeholder strings in public route code was an institutional drift
+    risk;
+  - this is still presentation and screenshot integrity work only;
+  - no live verification, paid/API verification, payout, escrow, or protected
+    trade-release capability was added.
+- Changed:
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - removed the placeholder generated label from the public community
+      verification paper.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - removed the placeholder generated label from the public member credential.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - keeps the real outcome creation time when present and otherwise lets the
+      shared authority strip render a UTC generated mark.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - keeps the real issued time when present and otherwise lets the shared
+      authority strip render a UTC generated mark.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added negative guards so these public papers cannot pass
+      current-view/current-copy placeholders back into authority marks.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - generated timestamp normalization commit `772a54f8` was pushed to
+    `origin/main`;
+  - this page-level placeholder cleanup is pending until the commit containing
+    this note is pushed to `origin/main`.

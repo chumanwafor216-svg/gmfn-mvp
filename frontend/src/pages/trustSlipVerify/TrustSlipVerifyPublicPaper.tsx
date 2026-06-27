@@ -1032,7 +1032,7 @@ export default function TrustSlipVerifyPublicPaper({
         <TrustPaperAuthorityStrip
           title="GSN TrustSlip Verification Paper"
           reference={resolvedCode || verifyPath || "TrustSlip verify record"}
-          generatedAt={issuedAtLabel || "Current when viewed"}
+          generatedAt={issuedAtLabel || undefined}
           classification={validNow ? "Current public evidence" : "Caution public evidence"}
           compact={compact}
         />

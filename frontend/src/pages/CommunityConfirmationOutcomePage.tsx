@@ -1018,7 +1018,7 @@ export default function CommunityConfirmationOutcomePage() {
             <TrustPaperAuthorityStrip
               title="GSN Community Confirmation Outcome"
               reference={firstTruthy(outcome?.public_token, outcome?.request_id, tokenText)}
-              generatedAt={outcome?.created_at ? safeDateTime(outcome.created_at) : "Current when viewed"}
+              generatedAt={outcome?.created_at ? safeDateTime(outcome.created_at) : undefined}
               classification="Privacy-safe public outcome"
               compact={isCompactPaper}
             />

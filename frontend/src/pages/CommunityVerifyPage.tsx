@@ -718,7 +718,6 @@ export default function CommunityVerifyPage() {
             <TrustPaperAuthorityStrip
               title="GSN Community Verification Paper"
               reference={communityAnchor}
-              generatedAt="Current when viewed"
               classification="Public community record"
               compact
             />

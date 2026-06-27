@@ -667,6 +667,11 @@ assertContains(
   /TrustPaperAuthorityStrip[\s\S]*?GSN TrustSlip Verification Paper[\s\S]*?TrustPaperSecurityNote/,
   "Public TrustSlip paper must carry shared GSN authority and screenshot security marks."
 );
+assertNotContains(
+  "publicPaper",
+  /Current when viewed|Current when copied/g,
+  "Public TrustSlip paper must not pass placeholder generated labels into institutional authority marks."
+);
 assertContains(
   "publicPaper",
   /Code: \{resolvedCode \|\| "Not available"\}[\s\S]*?Public link: \{verifyPath \|\| "Not available"\}/,
@@ -905,15 +910,30 @@ assertContains(
   /TrustPaperAuthorityStrip[\s\S]*?GSN Community Verification Paper[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
   "Public Community Verification paper must carry shared GSN authority, screenshot security, and footer marks."
 );
+assertNotContains(
+  "communityVerify",
+  /Current when viewed|Current when copied/g,
+  "Public Community Verification paper must not pass placeholder generated labels into institutional authority marks."
+);
 assertContains(
   "communityMemberVerify",
   /TrustPaperAuthorityStrip[\s\S]*?GSN Community Member Credential[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
   "Public Community Member Credential paper must carry shared GSN authority, screenshot security, and footer marks."
 );
+assertNotContains(
+  "communityMemberVerify",
+  /Current when viewed|Current when copied/g,
+  "Public Community Member Credential paper must not pass placeholder generated labels into institutional authority marks."
+);
 assertContains(
   "communityConfirmationOutcome",
   /TrustPaperAuthorityStrip[\s\S]*?GSN Community Confirmation Outcome[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
   "Public Community Confirmation Outcome paper must carry shared GSN authority, screenshot security, and footer marks."
+);
+assertNotContains(
+  "communityConfirmationOutcome",
+  /Current when viewed|Current when copied/g,
+  "Public Community Confirmation Outcome paper must not pass placeholder generated labels into institutional authority marks."
 );
 assertContains(
   "firstCircle",
