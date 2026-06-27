@@ -4465,10 +4465,10 @@ export default function TrustSlipPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  Available guarantee capacity: {firstTruthy(capacityContext?.available_guarantee_capacity, "Not provided")}
+                  Available support capacity: {firstTruthy(capacityContext?.available_guarantee_capacity, "Not provided")}
                 </div>
                 <div style={helperText()}>
-                  Current locked guarantees: {firstTruthy(capacityContext?.current_locked_guarantees, "Not provided")}
+                  Current support commitments: {firstTruthy(capacityContext?.current_locked_guarantees, "Not provided")}
                 </div>
                 <div style={helperText()}>
                   Overexposure ratio: {firstTruthy(capacityContext?.overexposure_ratio, "Not provided")}

@@ -70,7 +70,7 @@ export default function TrustGraphSummaryCard(props: {
         {statLabel("Inbound edges", summary.inbound_trust_edges)}
         {statLabel("Outbound edges", summary.outbound_trust_edges)}
         {statLabel("Repayment edges", summary.repayment_edge_count)}
-        {statLabel("Guarantee edges", summary.guarantee_edge_count)}
+        {statLabel("Support edges", summary.guarantee_edge_count)}
         {statLabel("Invite edges", summary.invite_edge_count)}
       </div>
 

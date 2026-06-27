@@ -2651,11 +2651,11 @@ export default function TrustScorePage() {
     ["Event count", eventCount],
     ["Counterparties", counterpartiesCount],
     [
-      "Available guarantee capacity",
+      "Available support capacity",
       safeStr(capacityContext?.available_guarantee_capacity || "0.00"),
     ],
     [
-      "Current locked guarantees",
+      "Current support commitments",
       safeStr(capacityContext?.current_locked_guarantees || "0.00"),
     ],
     ["Overexposure ratio", safeStr(capacityContext?.overexposure_ratio || "0.00")],
@@ -2678,7 +2678,7 @@ export default function TrustScorePage() {
       "check",
     ],
     [
-      "Locked guarantees",
+      "Locked support",
       `${safeStr(capacityContext?.current_locked_guarantees || "0.00")} ${trustCurrency}`,
       "Support already standing behind active commitments.",
       "shield",
@@ -2686,7 +2686,7 @@ export default function TrustScorePage() {
     [
       "Overexposure",
       safeStr(capacityContext?.overexposure_ratio || "0.00"),
-      "How stretched the guarantee position looks right now.",
+      "How stretched the support position looks right now.",
       "financeInstitution",
     ],
     [
@@ -2725,7 +2725,7 @@ export default function TrustScorePage() {
       key: "finance",
       icon: "financeInstitution",
       label: "Finance Discipline",
-      detail: "Limit signal, capacity, locked guarantees, and risk context.",
+      detail: "Limit signal, capacity, locked support, and risk context.",
     },
     {
       key: "documents",

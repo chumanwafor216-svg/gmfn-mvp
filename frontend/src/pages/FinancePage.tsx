@@ -1447,7 +1447,7 @@ export default function FinancePage() {
       rows.push(
         `You have ${fmtMoney(
           crossLockedGuarantees
-        )} ${crossCurrency} still held for guarantee support.`
+        )} ${crossCurrency} still held for active support.`
       );
     }
 
@@ -1563,7 +1563,7 @@ export default function FinancePage() {
         tone: "pressure" as const,
         title: "Attention required.",
         detail:
-          "A repayment or guarantee support item needs your attention.",
+          "A repayment or support commitment needs your attention.",
       };
     }
 

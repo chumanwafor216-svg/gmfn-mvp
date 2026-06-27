@@ -623,7 +623,7 @@ export default function ExposureAdminPage() {
         level: "high" as const,
         title: "Exposure pressure is high.",
         detail:
-          "Locked guarantee concentration, stale demand, and unresolved admin queues are stacking together in the current community.",
+          "Locked support concentration, stale demand, and unresolved admin queues are stacking together in the current community.",
       };
     }
 

@@ -1,3 +1,45 @@
+## 2026-06-27 - Support wording labels continued on finance/trust surfaces
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Local corrections:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - finance discipline and institutional rows now say support capacity,
+    support commitments, locked support, and support position instead of
+    guarantee-era wording.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - capacity context now displays support capacity and current support
+    commitments.
+- `frontend/src/pages/ExposureAdminPage.tsx`
+  - high-pressure exposure explanation now says locked support concentration.
+- `frontend/src/pages/FinancePage.tsx`
+  - finance notices now say active support / support commitment.
+- `frontend/src/pages/LockManagementPage.tsx`
+  - page title, subtitle, status, and release guidance now say support locks
+    and support records.
+- `frontend/src/components/TrustGraphSummaryCard.tsx`
+  - graph summary now labels `guarantee_edge_count` as Support edges.
+
+Verification passed locally:
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Local only until committed, pushed, and the frontend Render deploy hook
+  accepts a deploy for the pushed commit.
+- This is frontend/docs only and should use `deploy_api=false`.
+- The remaining user-visible `guarantee` strings found in the frontend are
+  legal disclaimers such as `not a bank guarantee`, or ordinary English such as
+  `cannot guarantee delivery`; those were intentionally left alone.
+- Backend Render remains blocked for the earlier backend-impacting copy batch
+  until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured
+  or gmfn-api is manually deployed and verified.
+
 ## 2026-06-27 - Trust admin displays continue supporter wording
 
 Owner request:

@@ -133,8 +133,8 @@ export default function LockManagementPage() {
     >
       <PageTopNav
         sectionLabel="Lock Management"
-        title="Guarantee Lock Management"
-        subtitle="Guarantee release is paused until GSN can verify the release safely."
+        title="Support Lock Management"
+        subtitle="Support release is paused until GSN can verify the release safely."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -155,7 +155,7 @@ export default function LockManagementPage() {
             maxWidth: 860,
           }}
         >
-          Guarantee release is not available yet.
+          Support release is not available yet.
         </div>
 
         <div style={{ marginTop: 12, ...helperText(), maxWidth: 900 }}>
@@ -200,7 +200,7 @@ export default function LockManagementPage() {
               {cardHeading("wallet", "Real money is involved")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Releasing guarantee locks is not a cosmetic action. It affects
+              Releasing support locks is not a cosmetic action. It affects
               exposure, auditability, and user trust.
             </div>
           </div>
@@ -217,7 +217,7 @@ export default function LockManagementPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               GSN must confirm the release rule before the page lets anyone
-              change a guarantee record.
+              change a support record.
             </div>
           </div>
 
@@ -254,7 +254,7 @@ export default function LockManagementPage() {
               {cardHeading("lock", "1. A verified release action")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              GSN must be able to release a guarantee only after repayment,
+              GSN must be able to release support only after repayment,
               cancellation, or an approved admin decision is confirmed.
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function LockManagementPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Every release action should record who triggered it, why it was
-              allowed, and which loan or guarantee relationships were affected.
+              allowed, and which loan or support relationships were affected.
             </div>
           </div>
 
