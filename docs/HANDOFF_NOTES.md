@@ -1,3 +1,57 @@
+## 2026-06-27 - Incomplete support admin wording
+
+Owner request:
+- Continue the support/requester wording cleanup and keep Render updated
+  truthfully after each verified slice.
+
+Published correction:
+- `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+  - changed the fallback load error from `incomplete loans` to
+    `incomplete support items`.
+- `frontend/src/pages/SystemOperationsPage.tsx`
+  - changed visible admin alert, queue, badge, and route-tile wording from
+    incomplete-loan language to incomplete-support/support-decision language.
+  - preserved internal route/debug IDs such as `incompleteLoans`,
+    `loan.incomplete`, and `/app/command-center/incomplete-loans`.
+- `frontend/src/pages/TrustCommandCentrePage.tsx`
+  - changed route cards, next actions, executive reading, liquidity detail,
+    and unresolved queue copy from `Incomplete Loans` / `Active loans` /
+    unresolved loan wording to `Incomplete Support` / `Active support` /
+    unresolved support wording.
+- `frontend/tools/audit-trust-actions.mjs`
+  - updated the Trust Command Centre guard to require `Active support` and
+    reject the old `Active loans:` visible detail.
+
+Verification state:
+- targeted scan found no remaining routed admin matches for:
+  `Incomplete loans`, `incomplete loans`, `loan queue`, `loan deadlines`,
+  `loan items`, `loan oversight`, `Active loans`, `Open Incomplete Loans`,
+  or `approval progress` in the touched admin surfaces.
+- `node frontend\tools\audit-admin-ops-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-link-contracts.mjs`
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-finance-actions.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `773ef0261fe2e73234d9da0615903a50e4eaf269`
+  (`Clarify incomplete support admin wording`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28287063318` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vqn2m8bjmc738jjpm0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: this is a visible wording correction only. The backend API,
+  route slugs, liquidity fields, and admin data model still use loan/borrower/
+  guarantor names where those names are compatibility contracts.
+
 ## 2026-06-27 - Finance requested-support record wording
 
 Owner request:
