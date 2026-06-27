@@ -1,3 +1,52 @@
+## 2026-06-27 - Exposure admin support queue wording
+
+Owner request:
+- Continue the support/requester wording cleanup and keep Render updated
+  truthfully after each verified slice.
+
+Published correction:
+- `frontend/src/pages/ExposureAdminPage.tsx`
+  - changed the visible recent queue title from `Incomplete loan ...` to
+    `Incomplete support ...`.
+  - changed the route CTA from `Open Incomplete Loans` to
+    `Open Incomplete Support`.
+  - changed the summary stat label from `Incomplete loans` to
+    `Incomplete support`.
+  - changed the queue pressure explainer from `loan queues stack up` to
+    `support queues stack up`.
+- `frontend/tools/audit-admin-ops-actions.mjs`
+  - added Exposure Admin regression coverage rejecting the old incomplete-loan
+    labels and route CTA on the routed `/app/exposure` admin surface.
+
+Verification state:
+- targeted page-only scan found no remaining `Incomplete loan`,
+  `Incomplete loans`, `Open Incomplete Loans`, or `loan queues stack up`
+  matches in `frontend/src/pages/ExposureAdminPage.tsx`.
+- `node frontend\tools\audit-admin-ops-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-link-contracts.mjs`
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-finance-actions.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `78f3eaabc586367bba08a37c8511350544d94b4a`
+  (`Clarify Exposure support queue wording`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28287178193` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vqpjmgvqtc738r5j60`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: this only corrects visible Exposure Admin wording. It does
+  not rename the API route, route slug, or underlying incomplete-loan payload
+  fields, because those remain live contracts.
+
 ## 2026-06-27 - Incomplete support admin wording
 
 Owner request:
