@@ -522,7 +522,7 @@ export default function TrustTimelinePage() {
 
             <div style={{ marginTop: 10, fontSize: 12, ...helperText() }}>
               The share copy follows your TrustSlip visibility level and leaves
-              out private contact details and complete internal records.
+              out private contact details and complete private records.
             </div>
           </div>
         </section>

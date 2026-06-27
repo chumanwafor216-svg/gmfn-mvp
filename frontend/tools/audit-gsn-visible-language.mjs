@@ -149,6 +149,11 @@ const forbiddenByFile = [
 ];
 
 forbiddenByFile.push(["frontend/src/components/TrustGraphEdgeList.tsx", "User #"]);
+forbiddenByFile.push(["frontend/src/pages/TrustSlipPage.tsx", "internal label"]);
+forbiddenByFile.push(["frontend/src/pages/TrustSlipPage.tsx", "Overexposure ratio"]);
+forbiddenByFile.push(["frontend/src/pages/TrustScorePage.tsx", "Overexposure ratio"]);
+forbiddenByFile.push(["frontend/src/pages/TrustScorePage.tsx", '"Overexposure",']);
+forbiddenByFile.push(["frontend/src/pages/TrustTimelinePage.tsx", "complete internal records"]);
 
 const required = [
   ["gmfn_backend/app/api/routes/clans.py", "Community admin only"],
@@ -208,6 +213,14 @@ const required = [
   ["frontend/src/lib/guidance.ts", "Support request waiting on support #"],
   ["frontend/src/lib/guidance.ts", "A requester is waiting for your support decision on"],
   ["frontend/src/lib/guidance.ts", "A requester is waiting for your support decision."],
+  [
+    "frontend/src/pages/TrustSlipPage.tsx",
+    "This wider reading checks whether the member's trust evidence stays consistent across communities.",
+  ],
+  ["frontend/src/pages/TrustSlipPage.tsx", "Support pressure reading"],
+  ["frontend/src/pages/TrustScorePage.tsx", "Support pressure reading"],
+  ["frontend/src/pages/TrustScorePage.tsx", "Support pressure"],
+  ["frontend/src/pages/TrustTimelinePage.tsx", "complete private records"],
 ];
 
 const findings = [];

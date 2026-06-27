@@ -3948,7 +3948,7 @@ export default function TrustSlipPage() {
                   {cciScore} / {cciBand}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-                  CCI is the internal label for this wider consistency reading.
+                  This wider reading checks whether the member's trust evidence stays consistent across communities.
                 </div>
               </div>
             </div>
@@ -4471,7 +4471,7 @@ export default function TrustSlipPage() {
                   Current support commitments: {firstTruthy(capacityContext?.current_locked_guarantees, "Not provided")}
                 </div>
                 <div style={helperText()}>
-                  Overexposure ratio: {firstTruthy(capacityContext?.overexposure_ratio, "Not provided")}
+                  Support pressure reading: {firstTruthy(capacityContext?.overexposure_ratio, "Not provided")}
                 </div>
                 <div style={helperText()}>
                   Risk level: {safeStr(capacityContext?.risk_level || "unknown")}

@@ -2658,7 +2658,7 @@ export default function TrustScorePage() {
       "Current support commitments",
       safeStr(capacityContext?.current_locked_guarantees || "0.00"),
     ],
-    ["Overexposure ratio", safeStr(capacityContext?.overexposure_ratio || "0.00")],
+    ["Support pressure reading", safeStr(capacityContext?.overexposure_ratio || "0.00")],
     ["Risk level", riskLevel],
     ["Not a bank guarantee", "Yes"],
     ["No auto-debit", "Yes"],
@@ -2684,7 +2684,7 @@ export default function TrustScorePage() {
       "shield",
     ],
     [
-      "Overexposure",
+      "Support pressure",
       safeStr(capacityContext?.overexposure_ratio || "0.00"),
       "How stretched the support position looks right now.",
       "financeInstitution",

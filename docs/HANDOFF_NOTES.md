@@ -1,3 +1,37 @@
+## 2026-06-27 - Trust evidence pressure language cleaned
+
+Owner request:
+- Continue institutional deep cleaning and alignment.
+
+Correction completed locally:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - removed visible `internal label` wording from the cross-community
+    consistency explanation.
+  - replaced the customer-facing `Overexposure ratio` label with
+    `Support pressure reading`.
+- `frontend/src/pages/TrustScorePage.tsx`
+  - replaced `Overexposure ratio` and `Overexposure` labels with
+    support-pressure wording while preserving the backend
+    `overexposure_ratio` data contract.
+- `frontend/src/pages/TrustTimelinePage.tsx`
+  - changed share-copy guidance from `complete internal records` to
+    `complete private records`.
+- `frontend/tools/audit-gsn-visible-language.mjs`
+  - added guards so these screenshotable surfaces do not drift back to
+    internal/scoring terminology.
+
+Verification:
+- `npm run audit:gsn-visible-language` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warnings on edited
+  frontend files.
+
+Truth / remaining risk:
+- This is a copy/institutional-presentation cleanup only. It does not rename
+  backend fields or API contracts.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - TrustGraph edge list stopped showing internal user numbers
 
 Owner request:
