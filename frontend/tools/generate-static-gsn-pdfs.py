@@ -19,6 +19,10 @@ from app.services.institutional_pdf import (  # noqa: E402
 )
 
 
+STATIC_SUMMARY_GENERATED_AT = "2026-06-27 00:00 UTC"
+STATIC_SUMMARY_REFERENCE = "GSN-EXECUTIVE-SUMMARY-2026-06-27"
+
+
 CAPABILITIES = [
     "Release Before Payment",
     "Trusted Buying and Selling",
@@ -237,8 +241,8 @@ def build_executive_summary_pdf() -> bytes:
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    generated_at = "Current institutional summary"
-    reference = "GSN-EXECUTIVE-SUMMARY"
+    generated_at = STATIC_SUMMARY_GENERATED_AT
+    reference = STATIC_SUMMARY_REFERENCE
     title = "GSN Executive Summary"
     subtitle = "Trust made visible, portable, and usable for stronger communities."
 

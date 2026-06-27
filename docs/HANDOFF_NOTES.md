@@ -75024,3 +75024,35 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Static public PDF UTC mark corrected
+
+- Trigger:
+  - continuing the PDF institutional pass found that the shared PDF header says
+    security marks include UTC time, but the static public summary generator
+    was passing `Generated: Current institutional summary`.
+- Unabated truth:
+  - this is a document security-mark/presentation correction only;
+  - the static PDF now carries a stable dated UTC generated mark and dated GSN
+    reference;
+  - no live verification, payment, payout, escrow, or backend capability was
+    added.
+- Changed:
+  - `frontend/tools/generate-static-gsn-pdfs.py`
+    - added `STATIC_SUMMARY_GENERATED_AT = "2026-06-27 00:00 UTC"`;
+    - added `STATIC_SUMMARY_REFERENCE = "GSN-EXECUTIVE-SUMMARY-2026-06-27"`;
+    - regenerated the three public static executive-summary PDF assets.
+  - `frontend/tools/audit-static-pdf-assets.mjs`
+    - added guards for the stable UTC generated mark, dated reference, and
+      against returning to the vague `Current institutional summary` label.
+- Verification:
+  - Passed `npm run generate:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:capability-mirror` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

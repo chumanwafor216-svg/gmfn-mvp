@@ -92,6 +92,15 @@ if (!/def validate_capability_explanations\(\)/.test(generatorSource)) {
 if (!/Missing public PDF capability explanation/.test(generatorSource)) {
   addFinding("Static PDF generator must name missing capability explanations instead of silently generating an incomplete public paper.");
 }
+if (!/STATIC_SUMMARY_GENERATED_AT = "2026-06-27 00:00 UTC"/.test(generatorSource)) {
+  addFinding("Static PDF generator must use a stable UTC generated mark for the current public summary asset.");
+}
+if (!/STATIC_SUMMARY_REFERENCE = "GSN-EXECUTIVE-SUMMARY-2026-06-27"/.test(generatorSource)) {
+  addFinding("Static PDF generator must use a dated GSN executive-summary reference.");
+}
+if (/generated_at = "Current institutional summary"/.test(generatorSource)) {
+  addFinding("Static PDF generator must not label the generated mark as a vague current summary.");
+}
 if (/21 core capabilities/.test(generatorSource)) {
   addFinding("Static PDF generator must not keep the old 21-capability heading.");
 }
