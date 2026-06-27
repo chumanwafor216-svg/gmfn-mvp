@@ -232,14 +232,14 @@ def _money_text(product: Optional[MarketplaceProduct]) -> str:
         return "Price on request"
 
     unit = currency.upper()
-    if unit in {"GBP", "GDP", "POUND", "POUNDS", "£"}:
-        return f"£{amount}"
+    if unit in {"GBP", "GDP", "POUND", "POUNDS"}:
+        return f"GBP {amount}"
     if unit in {"USD", "$"}:
-        return f"${amount}"
-    if unit in {"EUR", "€"}:
-        return f"€{amount}"
-    if unit in {"NGN", "₦"}:
-        return f"₦{amount}"
+        return f"USD {amount}"
+    if unit in {"EUR"}:
+        return f"EUR {amount}"
+    if unit in {"NGN"}:
+        return f"NGN {amount}"
     return f"{amount} {unit}".strip()
 
 
@@ -258,7 +258,7 @@ def _preview_payload(
     owner_name = _safe_str(getattr(owner, "display_name", None), "GSN member")
     shop_description = _safe_str(
         getattr(shop, "description", None),
-        "Open this trusted public shop on GSN.",
+        "Open this public shop on GSN.",
     )
     product_title = _safe_str(getattr(product, "name", None))
     product_description = _safe_str(getattr(product, "description", None))
@@ -270,9 +270,9 @@ def _preview_payload(
         else f"{shop_name} | GSN public shop"
     )
     description = (
-        "Trusted GSN shop item. Tap to open product."
+        "GSN public shop item. Tap to open product."
         if product is not None
-        else "Trusted GSN shop. Tap to open shop."
+        else "GSN public shop. Tap to open shop."
     )
 
     return {
@@ -280,7 +280,7 @@ def _preview_payload(
         "owner_name": owner_name,
         "shop_name": shop_name,
         "product_line": product_line,
-        "trust_line": "Trusted product - Tap to open shop",
+        "trust_line": "Public shop record - Tap to open",
         "title": title,
         "description": description,
         "price": _money_text(product),
@@ -420,7 +420,7 @@ def _draw_share_card_png(
     *,
     target_url: str,
     block: Optional[int],
-    eyebrow: str = "TRUSTED SHOP",
+    eyebrow: str = "PUBLIC SHOP",
     block_label_override: str = "",
 ) -> bytes:
     image = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), "#F7FAFF")
@@ -492,7 +492,7 @@ def _draw_share_card_png(
     after_market = _draw_lines(draw, market_lines, x=100, y=after_title + 10, font=font_market, fill="#D8E7F5", gap=5)
 
     trust_lines = _png_text_lines(
-        payload.get("trust_line", "Trusted product - Tap to open shop"),
+        payload.get("trust_line", "Public shop record - Tap to open"),
         draw=draw,
         font=font_trust,
         max_width=680,

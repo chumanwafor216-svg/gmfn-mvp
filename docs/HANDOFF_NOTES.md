@@ -1,3 +1,41 @@
+## 2026-06-27 - Share-preview cards stopped overclaiming public shops as trusted
+
+Owner request:
+- Continue institutional cleanup for customer-facing and outsider-facing
+  surfaces, including link previews and screenshotable cards.
+
+Correction completed locally:
+- `gmfn_backend/app/api/routes/share_preview.py`
+  - changed OpenGraph / social-preview copy from `Trusted GSN shop item` and
+    `Trusted GSN shop` to `GSN public shop item` and `GSN public shop`.
+  - changed the poster trust line from `Trusted product - Tap to open shop` to
+    `Public shop record - Tap to open`.
+  - changed the default poster eyebrow from `TRUSTED SHOP` to `PUBLIC SHOP`.
+  - changed fallback public-shop helper copy from `Open this trusted public
+    shop on GSN.` to `Open this public shop on GSN.`
+  - changed public share-card price labels to ASCII currency names such as
+    `NGN 45000`, `USD 10`, `GBP 10`, and `EUR 10` so public cards do not render
+    corrupted currency symbols.
+- `gmfn_backend/tests/test_share_preview.py`
+  - now proves shop preview metadata uses public-record language and does not
+    restore the old `Trusted GSN shop...` wording.
+  - now proves the SVG fallback contains `NGN 45000` and does not restore
+    `Trusted product`.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\api\routes\share_preview.py gmfn_backend\tests\test_share_preview.py`
+- `python -m pytest -q gmfn_backend\tests\test_share_preview.py`
+  - result: `5 passed`
+- `npm --prefix frontend run audit:gsn-visible-language`
+
+Truth / remaining risk:
+- This is wording and presentation truth only. It does not change shop
+  visibility rules, shop verification, TrustSlip logic, or public-shop routing.
+- A public shop preview now means "public shop record," not "GSN has verified
+  this shop as trusted."
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - TrustSlip release helper made institutional and bounded
 
 Owner request:
