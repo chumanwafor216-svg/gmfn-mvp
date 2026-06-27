@@ -71847,8 +71847,18 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
   - Passed `git diff --check`; only Git line-ending warnings were reported.
 - Deployment state:
-  - verified locally at this entry;
-  - not yet committed, pushed, or Render-confirmed.
+  - committed as `044df496` (`Redact Evidence Pack ZIP events`) and pushed
+    to `origin/main`;
+  - manual GitHub Actions Render workflow run `28290189944` checked out
+    `044df496513ba30d774f05e97480ae8c9e0ed069`;
+  - frontend Render deploy hook accepted the request and returned
+    `dep-d8vsnkjsq97s738onrjg`;
+  - backend/API deploy did **not** run: the workflow failed at the same
+    required API credential gate because `RENDER_API_KEY` is still missing;
+  - truth for pilot testing: the frontend can update from Render deploy
+    `dep-d8vsnkjsq97s738onrjg`, but this backend ZIP redaction is not
+    Render-confirmed until gmfn-api is deployed with exact Render API
+    credentials or manually from the Render dashboard.
 
 ### Follow-up same day - Governance ZIP complete-record boundary
 
