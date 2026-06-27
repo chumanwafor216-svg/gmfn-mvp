@@ -507,7 +507,7 @@ export default function TrustSlipVerifyPrivateEvidence({
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Trust limit signal</div>
+                <div style={sectionLabel()}>Trust-limit signal</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                   {trustLimit || "Not shown"} {currency}
                 </div>

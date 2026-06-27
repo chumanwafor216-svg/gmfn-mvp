@@ -16,6 +16,7 @@ const files = {
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
   trustSlipPdf: "gmfn_backend/app/services/trust_slip_evidence_pdf_service.py",
   trustTimelinePdf: "gmfn_backend/app/services/trust_timeline_pdf_service.py",
+  trustSlipRoute: "gmfn_backend/app/api/routes/trust_slips.py",
   reports: "gmfn_backend/app/services/reports_service.py",
   reportsRoute: "gmfn_backend/app/api/routes/reports.py",
   analyticsRoute: "gmfn_backend/app/api/routes/analytics.py",
@@ -48,6 +49,7 @@ const files = {
   trustPassport: "frontend/src/pages/TrustScorePage.tsx",
   evidencePanel: "frontend/src/components/EvidencePackPanel.tsx",
   pilotChecklist: "docs/PILOT_EVIDENCE_PACK_CHECKLIST.md",
+  phoneProofChecklist: "docs/GSN_RGU_PHONE_PROOF_PATH_CHECKLIST.md",
   uxChecklist: "docs/UX_ACCEPTANCE_CHECKLIST.md",
 };
 
@@ -342,6 +344,16 @@ assertContains(
   /decision left with the reader/,
   "Public TrustSlip paper footer must keep the reader-decision limitation."
 );
+assertContains(
+  "publicPaper",
+  /Trust-limit signal/,
+  "Public TrustSlip paper must use the institution-grade trust-limit label."
+);
+assertNotContains(
+  "publicPaper",
+  /Trust limit signal|Trust Limit Signal/,
+  "Public TrustSlip paper must not regress to the older trust limit label."
+);
 
 assertContains(
   "privateEvidence",
@@ -362,6 +374,36 @@ assertContains(
   "privateEvidence",
   /Public verify path:/,
   "Private evidence area must show the public verify path."
+);
+assertContains(
+  "privateEvidence",
+  /Trust-limit signal/,
+  "Private TrustSlip evidence must use the institution-grade trust-limit label."
+);
+assertNotContains(
+  "privateEvidence",
+  /Trust limit signal|Trust Limit Signal/,
+  "Private TrustSlip evidence must not regress to the older trust limit label."
+);
+assertContains(
+  "trustSlipRoute",
+  /Trust-limit signal/,
+  "Backend TrustSlip public/share surfaces must use the institution-grade trust-limit label."
+);
+assertNotContains(
+  "trustSlipRoute",
+  /Trust limit signal|Trust Limit Signal|Limit signal:/,
+  "Backend TrustSlip public/share surfaces must not regress to older trust limit labels."
+);
+assertContains(
+  "phoneProofChecklist",
+  /Trust-limit signal/,
+  "Phone proof checklist must use the institution-grade TrustSlip label."
+);
+assertNotContains(
+  "phoneProofChecklist",
+  /Trust limit|Trust Limit/,
+  "Phone proof checklist must not describe the public TrustSlip label as a plain trust limit."
 );
 
 assertContains(

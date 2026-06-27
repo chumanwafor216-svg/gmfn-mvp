@@ -149,14 +149,14 @@ Route: `/app/trust-slip`
 Check:
 
 - Does it show the portable public trust summary?
-- Does it show TrustSlip code, trust limit, CCI, issue window, and verification route?
+- Does it show TrustSlip code, trust-limit signal, CCI, issue window, and verification route?
 - Does it clearly say whether Merchant Verify is active?
 
 Laptop audit expectation:
 
 - Current TrustSlip code is `GSNAMARA2026`.
 - TrustSlip status should be active.
-- Trust limit should be `25000.00 NGN`.
+- Trust-limit signal should be `25000.00 NGN`.
 - Merchant verification should be active.
 
 ### 9. TrustSlip Verify
@@ -175,7 +175,7 @@ Laptop audit expectation:
 - The public page currently says:
   - `VALID - CURRENT TRUSTSLIP FOUND`
   - Plain reading explains the current trust state in non-technical language
-  - Trust Limit: `25000.00 NGN`
+  - Trust-limit signal: `25000.00 NGN`
   - Status: `active`
   - Holder: `Amara Okafor`
   - Community: `Lagos Trusted Circle Market`

@@ -1247,7 +1247,7 @@ def trust_slip_verify_lite_page(
         <div class="badge">{_html(msg)}</div>
         <div class="note">{_html(action_text)}</div>
         <div class="row"><b>Status</b><span>{_html(status_label)}</span></div>
-        <div class="row"><b>Trust Limit Signal</b><span>{_html(trust_limit)} {_html(currency)}</span></div>
+        <div class="row"><b>Trust-limit signal</b><span>{_html(trust_limit)} {_html(currency)}</span></div>
         <div class="row"><b>Code</b><span><code>{_html(code)}</code></span></div>
         <div class="row"><b>GSN ID</b><span><code>{_html(holder_gmfn_id)}</code></span></div>
         <div class="row"><b>Visibility</b><span>{_html(visibility_level)}</span></div>
@@ -1773,7 +1773,7 @@ def trust_slip_verify_page(
         <div class="card"><div class="label">GSN ID</div><div class="value">{_html(holder_gmfn_id)}</div></div>
         <div class="card"><div class="label">TrustSlip code</div><div class="value">{_html(code)}</div></div>
         <div class="card"><div class="label">Status</div><div class="value">{_html(status_label)}</div></div>
-        <div class="card"><div class="label">Trust limit signal</div><div class="value">{_html(trust_limit)} {_html(currency)}</div></div>
+        <div class="card"><div class="label">Trust-limit signal</div><div class="value">{_html(trust_limit)} {_html(currency)}</div></div>
         <div class="card"><div class="label">Trust band</div><div class="value">{_html(band)}</div></div>
       </div>
 
@@ -1913,7 +1913,7 @@ def trust_slip_share_bundle(
         f"Code: {code}",
         f"GSN ID: {holder_gmfn_id or 'N/A'}",
         f"Visibility: {visibility_level}",
-        f"Trust limit signal: {trust_limit} {currency}",
+        f"Trust-limit signal: {trust_limit} {currency}",
         f"Expires: {expires_text}",
         f"Status: {msg}",
         "Evidence only - not approval to release goods, credit, or money.",
@@ -1924,7 +1924,7 @@ def trust_slip_share_bundle(
 
     sms_text = (
         f"Verify TrustSlip: {verify_page} | Code: {code} | GSN ID: {holder_gmfn_id or 'N/A'} | "
-        f"Visibility: {visibility_level} | Limit signal: {trust_limit} {currency} | Expires: {expires_text} | "
+        f"Visibility: {visibility_level} | Trust-limit signal: {trust_limit} {currency} | Expires: {expires_text} | "
         "Evidence only, not release approval"
     )
     if member_credential_page:

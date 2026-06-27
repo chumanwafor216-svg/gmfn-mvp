@@ -837,7 +837,7 @@ export default function TrustSlipVerifyPublicPaper({
       rows: [
         ["Visible band", visibleBand],
         ["Visible score", publicVisibleScore],
-        ["Trust limit signal", compactTrustLimit],
+        ["Trust-limit signal", compactTrustLimit],
         ["Validity", publicValidityLabel],
       ],
     },
@@ -1254,7 +1254,7 @@ export default function TrustSlipVerifyPublicPaper({
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
-                  <div style={sectionLabel()}>Trust limit signal</div>
+                  <div style={sectionLabel()}>Trust-limit signal</div>
                   <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: compact ? 17 : 18, fontWeight: 1000 }}>
                     {compactTrustLimit}
                   </div>

@@ -71762,6 +71762,45 @@ GSN-branded invite composer and invite-entry continuity.
   - because this is a backend PDF service change, live Render behavior requires
     a backend deploy before customers will see it in generated PDFs.
 
+### Follow-up same day - TrustSlip verify label alignment
+
+- Trigger:
+  - continued the institutional GSN presentation cleanup after the Trust
+    Timeline PDF wording pass;
+  - public TrustSlip verify/share surfaces still used mixed labels:
+    `Trust Limit Signal`, `Trust limit signal`, and short `Limit signal`.
+- Unabated truth:
+  - this was a presentation-consistency issue, not a broken endpoint;
+  - it matters because the public TrustSlip page, React verify paper, copied
+    share text, SMS text, and phone proof checklist can be screenshotted or
+    forwarded independently from the PDF.
+- Changed:
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - aligned the backend public lite page, full public verify page, WhatsApp
+      share text, and SMS share text to `Trust-limit signal`.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - aligned the public verification paper stat/list labels to
+      `Trust-limit signal`.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - aligned the private evidence label to `Trust-limit signal`.
+  - `docs/GSN_RGU_PHONE_PROOF_PATH_CHECKLIST.md`
+    - aligned the phone proof-path checklist wording to the same label.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added guards for the backend TrustSlip route, React public/private
+      TrustSlip verify papers, and phone proof checklist so older trust-limit
+      labels cannot return silently.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - local checkpoint only at this point; not pushed or deployed in this slice.
+  - live backend public verify/share text requires backend deployment; live
+    React TrustSlip verify papers require frontend deployment.
+
 ### Follow-up same day - Spotlight tester blocker and `GSN-U-66E6A380`
 
 - Trigger:
