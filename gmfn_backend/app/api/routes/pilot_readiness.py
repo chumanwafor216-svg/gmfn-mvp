@@ -45,7 +45,7 @@ EVIDENCE_PACK_CHECKLIST_ITEMS: list[dict[str, str]] = [
     {
         "key": "loan_request",
         "area": "Loan request",
-        "required_evidence": "Borrower draft, readiness, guarantor fit, decision path",
+        "required_evidence": "Borrower draft, readiness, supporter fit, decision path",
         "status": "not_captured",
         "acceptance_rule": "Borrowing state, needed support, and next action are visible without decoding backend terms.",
     },
@@ -58,10 +58,10 @@ EVIDENCE_PACK_CHECKLIST_ITEMS: list[dict[str, str]] = [
     },
     {
         "key": "guarantor_flow",
-        "area": "Guarantor flow",
-        "required_evidence": "Invite, decision, exposure release, earnings",
+        "area": "Supporter flow",
+        "required_evidence": "Support invite, decision, exposure release, supporter value",
         "status": "not_captured",
-        "acceptance_rule": "Evidence shows who can invite, what a guarantor accepts, when exposure releases, and that earnings are not automatic payout.",
+        "acceptance_rule": "Evidence shows who can invite supporters, what a supporter accepts, when exposure releases, and that supporter value is not automatic payout.",
     },
     {
         "key": "trust_passport",
@@ -224,21 +224,21 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
         ),
         _partial_check(
             "guarantor_flow",
-            "Guarantor flow",
-            why_it_matters="Guarantors carry real trust pressure in GSN. The system must prove who can ask for support, who can stand for a borrower, when exposure locks, when it releases, and when earnings become payable.",
+            "Supporter flow",
+            why_it_matters="Supporters carry real trust pressure in GSN. The system must prove who can ask for support, who can stand for a borrower, when exposure locks, when it releases, and when supporter value can move beyond a visible record.",
             complete=[
-                "Backend tests cover guarantor list/invite contracts, duplicate blocking, non-member rejection, and decision updates.",
-                "Service tests cover guarantor approval, auto-approval when enough pledged support is present, and release of locked exposure.",
-                "Repayment validation now covers guarantor exposure release after full repayment, and earnings tests show rewards stay pending until the loan is repaid.",
-                "Frontend support surfaces show fit suggestions, selected guarantors, line-by-line decisions, and guarantor earnings routes.",
-                "Guarantor invite permission is locked to the borrower who owns the loan or a community admin; ordinary non-borrower members are forbidden.",
-                "Guarantor Earnings now tells users that earned value is a visible record, not an automatic payout.",
+                "Backend tests cover supporter list/invite contracts, duplicate blocking, non-member rejection, and decision updates.",
+                "Service tests cover supporter approval, auto-approval when enough pledged support is present, and release of locked exposure.",
+                "Repayment validation now covers supporter exposure release after full repayment, and value tests show rewards stay pending until the loan is repaid.",
+                "Frontend support surfaces show fit suggestions, selected supporters, line-by-line decisions, and supporter value routes.",
+                "Support invite permission is locked to the borrower who owns the loan or a community admin; ordinary non-borrower members are forbidden.",
+                "Supporter Value now tells users that earned value is a visible record, not an automatic payout.",
             ],
             remaining=[
-                "Run the borrower, guarantor, and admin views on a phone and capture evidence that invite, decision, exposure, release, and earnings language is clear.",
-                "Decide whether a real guided withdrawal workflow must be pilot-ready before guarantor rewards move beyond visibility.",
+                "Run the borrower, supporter, and admin views on a phone and capture evidence that invite, decision, exposure, release, and supporter-value language is clear.",
+                "Decide whether a real guided withdrawal workflow must be pilot-ready before supporter rewards move beyond visibility.",
             ],
-            next_step="Run a phone evidence pass across support draft, guarantor decision, loan summary, repayment closure, and guarantor earnings; then decide the reward payout route.",
+            next_step="Run a phone evidence pass across support draft, supporter decision, loan summary, repayment closure, and supporter value; then decide the reward payout route.",
             next_route="/app/loans",
         ),
         _partial_check(
@@ -327,8 +327,8 @@ def pilot_readiness_checks() -> list[dict[str, object]]:
             why_it_matters="Users should not be asked to decode route names, wrong icons, jumping buttons, or dead-end actions.",
             complete=[
                 "Major button routes and mobile tap stability are protected by audits.",
-                "Community Home, Marketplace, Finance, Shop Control, Trust Passport, TrustSlip, repayment, and guarantor earnings screens have received targeted polish passes.",
-                "Repayment and guarantor earnings now use plainer user-facing money truth where payout or instalment behavior could be misunderstood.",
+                "Community Home, Marketplace, Finance, Shop Control, Trust Passport, TrustSlip, repayment, and supporter value screens have received targeted polish passes.",
+                "Repayment and supporter value now use plainer user-facing money truth where payout or instalment behavior could be misunderstood.",
             ],
             remaining=[
                 "Physical phone screenshot pass for remaining oversized blocks, wrapping, icon size, and action density.",

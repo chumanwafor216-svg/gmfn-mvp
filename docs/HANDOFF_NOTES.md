@@ -1,3 +1,58 @@
+## 2026-06-27 - Render updated, readiness copy continues locally
+
+Owner request:
+- Update Render, then continue.
+
+Publish / deployment state:
+- Pushed `main` from `533fb617` to `56144ec1`.
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28282278064`.
+- Workflow succeeded and checked out commit
+  `56144ec1d7efe09e15d451fc71e2eb7685572313`.
+- Render frontend deploy hook accepted the request and returned deploy id
+  `dep-d8vnhv6rnols73dtoh50`.
+- Backend deploy was intentionally skipped by the workflow:
+  `Backend deploy needed: false`, because the pushed commit was frontend/docs
+  audit-handoff only and `deploy_api=false`.
+
+Continuation after deploy:
+- Audits still passed after the deploy request:
+  - `npm --prefix frontend run audit:finance-front-package`
+  - `npm --prefix frontend run audit:finance-lane-map`
+  - `npm --prefix frontend run audit:finance-money-movement-lanes`
+  - `npm --prefix frontend run audit:marketplace-support-lane`
+  - all Finance lane audits, including `audit:finance-signals-readiness-lane`
+  - `npm --prefix frontend run audit:loans-actions`
+  - `npm --prefix frontend run audit:protocol-readiness`
+  - `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`
+
+Local follow-up correction after deploy:
+- `gmfn_backend/app/api/routes/pilot_readiness.py`
+  - kept internal key `guarantor_flow` for API compatibility;
+  - changed human-readable readiness/evidence text from guarantor-era wording
+    to supporter/support language:
+    `Supporter flow`, supporter fit, support invite, supporter value, and
+    supporter decision.
+- `gmfn_backend/app/api/routes/protocol_status.py`
+  - changed the visible next-priority string from `guarantor...` to
+    `supporter...`.
+- `gmfn_backend/tests/test_protocol_readiness_status.py`
+  - now pins the `Supporter flow` label and rejects visible `guarantor` wording
+    inside that readiness copy.
+
+Verification for local follow-up:
+- `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`
+- `npm --prefix frontend run audit:protocol-readiness`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `git diff --check`
+
+Truth / remaining risk:
+- Render frontend was updated to `56144ec1`, not to this later local copy
+  follow-up.
+- The supporter-language cleanup is local only until committed/pushed/deployed.
+- This is a copy/readiness-status correction only; it does not change backend
+  support approval, payout execution, auth, schema, or money movement.
+
 ## 2026-06-27 - Finance Signals / Readiness audit realigned
 
 Owner request:
