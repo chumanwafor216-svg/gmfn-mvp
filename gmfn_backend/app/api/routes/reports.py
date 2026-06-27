@@ -211,6 +211,7 @@ def _build_clan_members_csv(db: Session, *, clan_id: int) -> bytes:
             ClanMembership.role,
             ClanMembership.personal_pool_balance,
             ClanMembership.created_at,
+            ClanMembership.left_at,
         )
         .join(User, User.id == ClanMembership.user_id)
         .filter(ClanMembership.clan_id == int(clan_id))
@@ -218,9 +219,10 @@ def _build_clan_members_csv(db: Session, *, clan_id: int) -> bytes:
     )
 
     rows: List[List[Any]] = []
-    rows.append(["user_id", "email", "role", "personal_pool_balance", "joined_at"])
-    for user_id, email, role, pool, created_at in q.all():
-        rows.append([int(user_id), email, role, str(pool or 0), created_at])
+    rows.append(["user_id", "email", "role", "membership_status", "personal_pool_balance", "joined_at", "left_at"])
+    for user_id, email, role, pool, created_at, left_at in q.all():
+        membership_status = "left" if left_at else "active"
+        rows.append([int(user_id), email, role, membership_status, str(pool or 0), created_at, left_at])
 
     return _csv_bytes(rows)
 
@@ -378,19 +380,41 @@ def download_clan_governance_pack(
     )
 
     ts = _utc_file_stamp()
+    files = [
+        f"community-{clan_id}-exposure.csv",
+        f"community-{clan_id}-members.csv",
+        f"community-{clan_id}-loans.csv",
+        f"community-{clan_id}-exposure.pdf",
+        "README.txt",
+        "manifest.json",
+    ]
+    manifest = {
+        "artifact": "gsn_community_governance_pack",
+        "community_id": int(clan_id),
+        "generated_at": _utc_iso_z(),
+        "audience": "community_admin_or_platform_admin",
+        "privacy": "complete_admin_record",
+        "files": files,
+    }
+    readme = (
+        "GSN Community Governance Pack\n"
+        f"Community ID: {clan_id}\n"
+        f"Community Name: {clan_name or '-'}\n"
+        f"Generated: {ts} UTC\n"
+        "Audience: community admin or platform admin only\n"
+        "Privacy: complete private admin record\n"
+        "Boundary: contains member emails, user IDs, pool balances, exposure readings, and loan records. "
+        "Do not share outside authorized GSN/community governance review.\n"
+        "Limitation: not a bank guarantee, credit approval, payment instruction, automatic debit authority, or public verification paper.\n"
+    )
     zip_buf = BytesIO()
     with zipfile.ZipFile(zip_buf, "w", compression=zipfile.ZIP_DEFLATED) as z:
         z.writestr(f"community-{clan_id}-exposure.csv", exposure_csv)
         z.writestr(f"community-{clan_id}-members.csv", members_csv)
         z.writestr(f"community-{clan_id}-loans.csv", loans_csv)
         z.writestr(f"community-{clan_id}-exposure.pdf", exposure_pdf)
-        z.writestr(
-            "README.txt",
-            f"GSN Community Governance Pack\n"
-            f"Community ID: {clan_id}\n"
-            f"Community Name: {clan_name or '-'}\n"
-            f"Generated: {ts} UTC\n",
-        )
+        z.writestr("README.txt", readme)
+        z.writestr("manifest.json", json.dumps(manifest, indent=2, default=str))
 
     filename = f"gsn-community-{clan_id}-governance-pack-{ts}.zip"
     return StreamingResponse(
@@ -609,6 +633,11 @@ def download_loan_evidence_pack_zip(
         "GSN Loan Evidence Pack\n"
         f"Loan ID: {loan.id}\n"
         f"Community ID: {loan.clan_id}\n"
+        "Audience: community admin or platform admin only\n"
+        "Privacy: complete private admin record\n"
+        "Boundary: contains unredacted loan, supporter, repayment, TrustSlip, and trust timeline evidence. "
+        "Use the redacted loan trust report PDF for borrower-facing or outside review.\n"
+        "Limitation: not a bank guarantee, credit approval, payment instruction, automatic debit authority, or public verification paper.\n"
         "Contents:\n"
         "- manifest.json\n"
         "- trustslip_snapshot.json\n"

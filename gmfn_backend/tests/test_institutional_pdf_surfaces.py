@@ -113,10 +113,17 @@ def test_governance_pack_uses_gsn_community_language():
     assert "Community Name:" in text
     assert "GSN Loan Evidence Pack" in text
     assert "gsn-community-{clan_id}-governance-pack" in text
+    assert "gsn_community_governance_pack" in text
+    assert "complete_admin_record" in text
+    assert "Audience: community admin or platform admin only" in text
+    assert "Privacy: complete private admin record" in text
+    assert "membership_status" in text
+    assert "left_at" in text
     assert "gsn-loan-{loan.id}-trust-report.csv" in text
     assert "gsn-loan-{loan.id}-trust-report.pdf" in text
     assert "gsn-loan-{loan.id}-evidence-pack-{ts}.zip" in text
     assert '"artifact": "gsn_loan_evidence_pack"' in text
+    assert "Use the redacted loan trust report PDF for borrower-facing or outside review." in text
     assert "GMFN Clan Governance Pack" not in text
     assert "GMFN Loan Evidence Pack" not in text
     assert "gmfn-loan-{loan.id}-trust-report.csv" not in text

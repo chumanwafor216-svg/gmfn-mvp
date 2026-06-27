@@ -71636,6 +71636,47 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Governance ZIP complete-record boundary
+
+- Trigger:
+  - continued from the report/evidence privacy hardening;
+  - remaining risk was that admin-only ZIPs were gated, but the package
+    contents did not clearly mark themselves as complete private records.
+- Unabated truth:
+  - permission checks are not enough once a ZIP leaves the app;
+  - the downloaded package itself must say who may read it and what it is not.
+- Changed:
+  - `gmfn_backend/app/api/routes/reports.py`
+    - community governance ZIP now includes `manifest.json`;
+    - manifest marks the artifact as `gsn_community_governance_pack` with
+      `privacy: complete_admin_record`;
+    - README now states audience, privacy, private-data boundary, and
+      limitation language;
+    - members CSV now includes `membership_status` and `left_at` so inactive
+      memberships are not silently blended with active ones;
+    - loan evidence ZIP README now states audience, privacy, complete-record
+      boundary, and points outside review to the redacted loan trust PDF.
+  - `gmfn_backend/tests/test_evidence_surface_permissions.py`
+    - added endpoint ZIP inspection for README, manifest, and members CSV
+      private-record markers.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added source guards for governance ZIP manifest/privacy and membership
+      status fields.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added audit guards for governance ZIP manifest, README boundary,
+      members CSV status fields, and loan evidence ZIP privacy copy.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_evidence_surface_permissions.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m compileall -q` on edited report route/test files.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+- Still not changed:
+  - complete admin CSVs still contain private data by design;
+  - no Render backend deploy can complete until GitHub has `RENDER_API_KEY`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Loan report complete-record exports separated from borrower PDFs
 
 - Trigger:

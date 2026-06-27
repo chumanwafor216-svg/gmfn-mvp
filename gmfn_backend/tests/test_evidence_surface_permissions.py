@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from io import BytesIO
+import zipfile
 from datetime import datetime, timezone
 
 from sqlalchemy import text
@@ -88,3 +90,28 @@ def test_borrower_gets_redacted_pdf_but_not_complete_loan_exports(
 
     assert response.status_code == 200
     assert response.headers["content-disposition"] == 'attachment; filename="gsn-loan-1-trust-report.pdf"'
+
+
+def test_governance_pack_marks_complete_private_admin_record(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    response = client.get("/reports/clans/1/governance-pack.zip")
+
+    assert response.status_code == 200
+
+    with zipfile.ZipFile(BytesIO(response.content)) as archive:
+        names = set(archive.namelist())
+        assert "README.txt" in names
+        assert "manifest.json" in names
+
+        readme = archive.read("README.txt").decode("utf-8")
+        members_csv = archive.read("community-1-members.csv").decode("utf-8")
+        manifest = archive.read("manifest.json").decode("utf-8")
+
+    assert "Privacy: complete private admin record" in readme
+    assert "Do not share outside authorized GSN/community governance review." in readme
+    assert "membership_status" in members_csv
+    assert "left_at" in members_csv
+    assert '"privacy": "complete_admin_record"' in manifest

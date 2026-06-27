@@ -305,8 +305,23 @@ for (const key of ["evidencePack", "loanEvidencePack", "userEvidencePack"]) {
 }
 assertContains(
   "reportsRoute",
-  /GSN Community Governance Pack[\s\S]*?Community ID:[\s\S]*?Community Name:[\s\S]*?gsn-community-\{clan_id\}-governance-pack/,
-  "Governance ZIP README and filename must use GSN community-facing wording."
+  /membership_status[\s\S]*?left_at/,
+  "Governance members CSV must distinguish active and left memberships."
+);
+assertContains(
+  "reportsRoute",
+  /"artifact": "gsn_community_governance_pack"[\s\S]*?"privacy": "complete_admin_record"[\s\S]*?manifest\.json/,
+  "Governance ZIP manifest must mark the package as a private complete admin record."
+);
+assertContains(
+  "reportsRoute",
+  /GSN Community Governance Pack[\s\S]*?Community ID:[\s\S]*?Community Name:[\s\S]*?Audience: community admin or platform admin only[\s\S]*?Privacy: complete private admin record[\s\S]*?Do not share outside authorized GSN\/community governance review\./,
+  "Governance ZIP README must mark the package as a private complete admin record."
+);
+assertContains(
+  "reportsRoute",
+  /gsn-community-\{clan_id\}-governance-pack-\{ts\}\.zip/,
+  "Governance ZIP README, manifest, members CSV, and filename must mark the package as a private complete admin record."
 );
 assertContains(
   "reportsRoute",
@@ -335,8 +350,8 @@ assertNotContains(
 );
 assertContains(
   "reportsRoute",
-  /GSN Loan Evidence Pack[\s\S]*?Community ID: \{loan\.clan_id\}/,
-  "Loan evidence ZIP README must use GSN community-facing wording."
+  /GSN Loan Evidence Pack[\s\S]*?Community ID: \{loan\.clan_id\}[\s\S]*?Audience: community admin or platform admin only[\s\S]*?Privacy: complete private admin record[\s\S]*?Use the redacted loan trust report PDF for borrower-facing or outside review\./,
+  "Loan evidence ZIP README must mark the ZIP as a private complete admin record and point outside review to the redacted PDF."
 );
 assertNotContains(
   "reportsRoute",
