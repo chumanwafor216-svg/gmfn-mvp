@@ -61,6 +61,22 @@ if (/const GMFN_EXEC_SUMMARY_URL = "\/gmfn-executive-summary\.pdf";/.test(trustS
   addFinding("TrustSlipPage must not keep the old GMFN executive summary constant as the visible default.");
 }
 
+const generatorSource = readFileSync(join(root, "tools/generate-static-gsn-pdfs.py"), "utf8");
+for (const requiredText of [
+  "22 things GSN does",
+  "Commitment Builder",
+  "community capital",
+  "ten-year view",
+  "API-paid verification",
+]) {
+  if (!generatorSource.includes(requiredText)) {
+    addFinding(`Static PDF generator must include institutional positioning text: ${requiredText}.`);
+  }
+}
+if (/21 core capabilities/.test(generatorSource)) {
+  addFinding("Static PDF generator must not keep the old 21-capability heading.");
+}
+
 if (findings.length) {
   console.error("Static PDF asset audit failed:");
   for (const finding of findings) {

@@ -9,6 +9,7 @@ Purpose: map the institutional GSN documents to the current repo and identify th
 We can get the product very close to the institutional document at pilot level.
 
 We should not claim 100 percent live parity until these are real, tested, and operational:
+- paid/API verification integrations;
 - automatic bank payout;
 - protected trade release-before-payment;
 - mature fraud/dispute case handling beyond the current append-only/admin-review foundations;
@@ -76,7 +77,7 @@ These should be treated as immediate implementation work, not new product invent
    - Keep ROSCA as marketplace/community-local, not global-only.
 
 7. Commitment Builder
-   - Add Commitment Builder to the institutional mirror because the repo already treats it as capability 22.
+   - Keep Commitment Builder in the institutional mirror because the repo and regenerated public executive-summary paper now treat it as capability 22.
    - Link repayment plans and personal money commitments into commitment evidence without pretending every personal goal is verified payment evidence.
 
 8. Diaspora, Hiring, And Distance Verification Presentation
@@ -99,6 +100,14 @@ These should be treated as immediate implementation work, not new product invent
 ### Bucket B - Pilot-Suspended But Must Be Framed Correctly
 
 These can be made product-complete for pilot if the UI tells the truth.
+
+0. Paid/API verification
+   - Treat as planned integration work, not live product capability.
+   - Pilot behavior:
+     - use existing TrustSlip, public verification, community verification, and evidence-pack checks;
+     - do not imply a paid external verification provider has confirmed the record unless a real provider response exists.
+   - Later behavior:
+     - connect paid provider checks only behind explicit consent, pricing, provider status, and auditable result storage.
 
 1. Automatic payout
    - Treat as engine/future automation.
@@ -192,8 +201,8 @@ These are deeper versions of current capabilities. They do not block a 99 percen
 4. Connect support-backed withdrawal directly into that lane with preserved context.
 5. Hide deeper loan tools behind "More support tools" or details.
 6. Add a real configured GSN support email to help/dispute surfaces.
-7. Add Commitment Builder to the institutional mirror and capability docs.
-8. Add a capability mirror audit that checks the 22 capabilities are represented in routes/docs/copy.
+7. Deepen Commitment Builder into the relevant guided flows while keeping the institutional mirror at 22 capabilities.
+8. Keep the capability mirror audit checking that the 22 capabilities are represented in routes/docs/copy/public papers.
 9. Then start larger protected trade / release-before-payment work.
 
 ## Truth To Use In Partner Or Tester Language

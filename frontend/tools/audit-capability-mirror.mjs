@@ -75,6 +75,18 @@ for (const title of capabilityTitles) {
   );
 }
 
+for (const value of [
+  "22 things GSN does",
+  "Commitment Builder",
+  "Boundary: API-paid verification",
+]) {
+  assertTextIncludes(
+    "frontend/tools/generate-static-gsn-pdfs.py",
+    value,
+    "The public executive summary PDF generator must mirror all 22 GSN capabilities and keep the paid-verification boundary."
+  );
+}
+
 assertContains(
   "frontend/src/lib/gmfnCapabilities.ts",
   /export const GMFN_CAPABILITY_COUNT = GMFN_CAPABILITIES\.length;/,
@@ -83,8 +95,8 @@ assertContains(
 
 assertContains(
   "docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md",
-  /Automatic bank payout and protected trade release are planned integrations, not something we should claim as fully live until tested end to end\./,
-  "The 99 percent mirror plan must keep the pilot truth about automatic payout and protected trade release."
+  /paid\/API verification integrations[\s\S]*?automatic bank payout[\s\S]*?protected trade release-before-payment/,
+  "The 99 percent mirror plan must keep the pilot truth about paid/API verification, automatic payout, and protected trade release."
 );
 
 assertContains(

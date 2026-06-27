@@ -74758,3 +74758,70 @@ GSN-branded invite composer and invite-entry continuity.
   - no backend payout automation or approval-to-PIN trigger was added.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - 22 things GSN institutional mirror
+
+- Trigger:
+  - owner asked to include `22 things GSN does` in the institutional cleanup
+    because it is outsider-facing;
+  - owner also asked that remaining GSN book gaps be covered as fully as
+    possible except paid/API verification, while strengthening the long-term
+    institutional pitch around SaaS, e-commerce, community trust portability,
+    community capital, and digital life over the next decade.
+- Unabated truth:
+  - the repo already had 22 capabilities in `frontend/src/lib/gmfnCapabilities.ts`;
+  - the static outsider-facing executive-summary PDF generator still presented
+    the old `21 core capabilities` framing, so this was a real public-paper
+    branding and parity gap;
+  - paid/API verification, automatic bank payout, and protected trade-release
+    rails are still not live integrations and must not be claimed as live GSN
+    infrastructure.
+- Changed:
+  - `frontend/tools/generate-static-gsn-pdfs.py`
+    - changed the public institutional heading to `22 things GSN does`;
+    - added `Commitment Builder` as capability 22;
+    - added a plain-language explanation of commitment discipline around
+      savings, repayment, retirement readiness, business targets, and
+      dependable follow-through;
+    - added a strategic institutional gap section for modern SaaS,
+      e-commerce, community platforms, finance, trust portability, and
+      community capital;
+    - added a ten-year view about more digital life, commerce, work, support,
+      and verification;
+    - added an explicit boundary saying API-paid verification, regulated payout
+      automation, and protected trade-release rails remain integration work.
+  - `frontend/public/GSN_FINAL_WHITE.pdf`,
+    `frontend/public/gmfn-executive-summary.pdf`, and
+    `frontend/public/GMFN_FINAL_WHITE.pdf`
+    - regenerated from the updated static PDF generator.
+  - `frontend/tools/audit-static-pdf-assets.mjs`
+    - added source checks for `22 things GSN does`, `Commitment Builder`,
+      `community capital`, `ten-year view`, and `API-paid verification`;
+    - added a regression check against the old `21 core capabilities` wording.
+  - `frontend/tools/audit-capability-mirror.mjs`
+    - added checks that the public PDF generator includes the 22-capability
+      frame, Commitment Builder, and the paid/API verification boundary.
+  - `docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md`
+    - added a current institutional mirror state section;
+    - marked the old 21-vs-22 capability paper gap as closed in repo output;
+    - preserved the explicit remaining boundary for paid/API verification and
+      regulated automation.
+  - `docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md`
+    - added paid/API verification as a planned integration boundary;
+    - changed Commitment Builder from a missing institutional item to a
+      capability that now needs deeper lived workflow support.
+- Verification:
+  - Passed `npm run generate:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:capability-mirror` from `frontend`.
+  - Passed `npm run audit:static-pdf-assets` from `frontend`.
+  - Direct byte check confirmed all three public PDFs start with `%PDF-`, are
+    `11801` bytes, end with `%%EOF`, and all three aliases are byte-identical.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Verification boundary:
+  - structural/source/build verification was completed;
+  - no manual raster visual review of the PDF pages was done in this slice;
+  - the SaaS/e-commerce/community-capital gap was framed as GSN institutional
+    positioning, not as a citation-backed peer-reviewed research claim.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

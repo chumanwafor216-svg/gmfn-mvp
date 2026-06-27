@@ -41,7 +41,20 @@ CAPABILITIES = [
     "Trust-based hiring",
     "Demand Box",
     "Community economic power",
+    "Commitment Builder",
 ]
+
+
+CAPABILITY_EXPLANATIONS = {
+    "Commitment Builder": (
+        "What it is: structured execution discipline for savings, repayment, "
+        "retirement readiness, business targets, and dependable follow-through. "
+        "How it works: GSN can turn intentions into clearer plans, reminders, "
+        "progress guidance, and visible commitment support. Why it matters: "
+        "trust becomes stronger when people can show not only who knows them, "
+        "but also how they keep commitments over time."
+    )
+}
 
 
 def wrap_text(text: str, *, max_chars: int = 92) -> list[str]:
@@ -130,7 +143,26 @@ def build_executive_summary_pdf() -> bytes:
         gap=13,
     )
     line("")
-    line("21 core capabilities", size=12, gap=16, bold=True)
+    line("Strategic gap GSN is built for", size=12, gap=16, bold=True)
+    paragraph(
+        "Modern SaaS, e-commerce, and community platforms often move activity online without carrying the "
+        "real trust history that makes people reliable in their communities. GSN addresses that gap by "
+        "connecting community evidence, portable trust identity, decision support, trusted commerce, "
+        "community capital, and commitment discipline in one institutional layer.",
+        size=9,
+        gap=12,
+        max_chars=100,
+    )
+    paragraph(
+        "The ten-year view is simple: as life, commerce, work, support, and verification become more digital, "
+        "people will need credible trust records that can travel without exposing private life. GSN is built "
+        "to make that record visible, limited, explainable, and useful.",
+        size=9,
+        gap=12,
+        max_chars=100,
+    )
+    line("")
+    line("22 things GSN does", size=12, gap=16, bold=True)
     for index, capability in enumerate(CAPABILITIES, start=1):
         line(f"{index}. {capability}", size=9, gap=11)
 
@@ -139,9 +171,12 @@ def build_executive_summary_pdf() -> bytes:
     for index, capability in enumerate(CAPABILITIES, start=1):
         line(f"{index}. {capability}", size=10, gap=13, bold=True)
         paragraph(
-            "What it is: real community trust made visible in GSN. "
-            "How it works: identity, community context, evidence, and reader-safe verification. "
-            "Why it matters: improves access, reduces confusion, and helps people make proportionate decisions.",
+            CAPABILITY_EXPLANATIONS.get(
+                capability,
+                "What it is: real community trust made visible in GSN. "
+                "How it works: identity, community context, evidence, and reader-safe verification. "
+                "Why it matters: improves access, reduces confusion, and helps people make proportionate decisions.",
+            ),
             size=8,
             gap=10,
             max_chars=105,
@@ -153,6 +188,13 @@ def build_executive_summary_pdf() -> bytes:
         "This paper explains the GSN product and its institutional purpose. It is not a promise that every "
         "member, shop, community, TrustSlip, or support record is verified. Always reopen the current GSN "
         "record, TrustSlip, credential, or public verification link before relying on a screenshot or old copy.",
+        size=9,
+        gap=12,
+    )
+    paragraph(
+        "Boundary: API-paid verification, regulated payout automation, and full protected trade-release rails "
+        "are integration work. Do not read this summary as claiming those paid verification integrations are "
+        "live until the current GSN environment proves them end to end.",
         size=9,
         gap=12,
     )
