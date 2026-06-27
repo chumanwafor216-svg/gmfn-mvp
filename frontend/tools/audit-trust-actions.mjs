@@ -1523,8 +1523,14 @@ assertContains(
 
 assertContains(
   "src/pages/MerchantReleasePage.tsx",
-  /verifyMerchantPublic[\s\S]*?recordMerchantRelease[\s\S]*?not payment confirmation or automatic release authority[\s\S]*?No escrow[\s\S]*?No payout approval[\s\S]*?Trade shape[\s\S]*?GSN \+ outside GSN[\s\S]*?Invoice \/ agreement evidence[\s\S]*?Courier[\s\S]*?Payment schedule[\s\S]*?Record release evidence/,
+  /verifyMerchantPublic[\s\S]*?recordMerchantRelease[\s\S]*?not payment confirmation or automatic release authority[\s\S]*?No escrow[\s\S]*?No payout approval[\s\S]*?Trade shape[\s\S]*?GSN \+ outside GSN[\s\S]*?Invoice \/ agreement evidence[\s\S]*?Courier[\s\S]*?Payment schedule[\s\S]*?Record release evidence[\s\S]*?Copy GSN packet paper/,
   "Merchant Release page must verify the signed rail and record bounded minimum trade packet evidence."
+);
+
+assertContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /function buildMerchantTradePacketPaper[\s\S]*?Official GSN headed paper[\s\S]*?Title: GSN Merchant Trade Packet Evidence[\s\S]*?WhatsApp or the parties keep the conversation[\s\S]*?Privacy: Keep only the final evidence needed for reference[\s\S]*?Security marks: GSN headed paper/,
+  "Merchant Release copied packet must use institutional GSN headed-paper language and privacy/security marks."
 );
 
 assertContains(

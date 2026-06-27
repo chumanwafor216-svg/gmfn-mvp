@@ -143,6 +143,62 @@ function noticeStyle(tone: NoticeTone): React.CSSProperties {
   };
 }
 
+function tradeContextLabel(value: unknown): string {
+  const key = safeStr(value).toLowerCase();
+  if (key === "gsn_gsn") return "GSN + GSN";
+  if (key === "external_gsn") return "Outside GSN + GSN";
+  return "GSN + outside GSN";
+}
+
+function buildMerchantTradePacketPaper(result: MerchantReleaseResponse): string {
+  const packet = result.trade_packet || {};
+  const generatedAt = new Date().toISOString();
+  const evidenceSlots = packet.evidence_slots || {};
+  const slotLine = (label: string, key: string) =>
+    `${label}: ${evidenceSlots[key] ? "Referenced" : "Not recorded"}`;
+
+  return [
+    "GLOBAL SUPPORT NETWORK (GSN)",
+    "Official GSN headed paper",
+    "Title: GSN Merchant Trade Packet Evidence",
+    "Purpose: Timestamped minimum evidence for a merchant release conversation. WhatsApp or the parties keep the conversation; GSN records the final evidence reference packet.",
+    `Generated (UTC): ${generatedAt}`,
+    `Link ID: ${result.verification_link_id || "Not shown"}`,
+    `Pack ID: ${result.pack_id || "Not shown"}`,
+    `Trade Packet ID: ${result.trade_packet_id || packet.trade_packet_id || "Not shown"}`,
+    "Packet context",
+    `Trade shape: ${tradeContextLabel(packet.trade_context)}`,
+    `Goods value: ${result.currency || "NGN"} ${result.goods_value || "Not recorded"}`,
+    `Item / product: ${packet.item_title || "Not recorded"}`,
+    `Other party: ${packet.counterparty_label || "Not recorded"}`,
+    `WhatsApp label: ${packet.counterparty_whatsapp_label || "Not recorded"}`,
+    "Evidence references",
+    slotLine("Product evidence", "product"),
+    slotLine("Invoice evidence", "invoice"),
+    `Invoice reference: ${packet.invoice_reference || "Not recorded"}`,
+    slotLine("Final agreement evidence", "agreement"),
+    slotLine("Courier evidence", "courier"),
+    `Courier: ${packet.courier_name || "Not recorded"}`,
+    `Courier contact label: ${packet.courier_contact_label || "Not recorded"}`,
+    `Tracking / waybill: ${packet.tracking_number || "Not recorded"}`,
+    `Released to courier: ${packet.released_to_courier_at || "Not recorded"}`,
+    `Expected delivery: ${packet.expected_delivery_date || "Not recorded"}`,
+    slotLine("Payment schedule evidence", "payment_schedule"),
+    `Payment schedule: ${packet.payment_schedule_note || "Not recorded"}`,
+    `Receipt state: ${packet.receipt_status || "awaiting_delivery"}`,
+    "Evidence notes",
+    `Product note: ${packet.product_evidence_note || "Not recorded"}`,
+    `Invoice note: ${packet.invoice_evidence_note || "Not recorded"}`,
+    `Agreement note: ${packet.agreement_evidence_note || "Not recorded"}`,
+    "Boundary",
+    result.evidence_boundary,
+    "GSN does not store the full WhatsApp conversation in this packet, does not control the courier, does not hold money, and does not approve payout.",
+    "Privacy: Keep only the final evidence needed for reference. Avoid unnecessary private chat, addresses, bank details, third-party names, and unrelated personal information.",
+    "Security marks: GSN headed paper, watermark, Link ID, Pack ID, Trade Packet ID, issue time, evidence slots, privacy boundary, limitation note, and official footer.",
+    "Footer: Global Support Network (GSN). Community commerce evidence for organized trust, portable records, and safer marketplace decisions.",
+  ].join("\n");
+}
+
 export default function MerchantReleasePage() {
   const params = useParams();
   const token = safeStr(params.token);
@@ -260,24 +316,7 @@ export default function MerchantReleasePage() {
   }
 
   async function copyReceipt() {
-    const text = releaseResult
-      ? [
-          "GSN Merchant Release Evidence",
-          `Link ID: ${releaseResult.verification_link_id || "Not shown"}`,
-          `Pack ID: ${releaseResult.pack_id || "Not shown"}`,
-          `Trade Packet ID: ${releaseResult.trade_packet_id || "Not shown"}`,
-          `Goods value: ${releaseResult.goods_value} ${releaseResult.currency}`,
-          `Item: ${releaseResult.trade_packet?.item_title || "Not recorded"}`,
-          `Counterparty: ${releaseResult.trade_packet?.counterparty_label || "Not recorded"}`,
-          `Invoice: ${releaseResult.trade_packet?.invoice_reference || "Not recorded"}`,
-          `Courier: ${releaseResult.trade_packet?.courier_name || "Not recorded"}`,
-          `Tracking: ${releaseResult.trade_packet?.tracking_number || "Not recorded"}`,
-          `Expected delivery: ${releaseResult.trade_packet?.expected_delivery_date || "Not recorded"}`,
-          `Payment schedule: ${releaseResult.trade_packet?.payment_schedule_note || "Not recorded"}`,
-          "WhatsApp remains the conversation channel; GSN stores the minimum final evidence reference only.",
-          releaseResult.evidence_boundary,
-        ].join("\n")
-      : "";
+    const text = releaseResult ? buildMerchantTradePacketPaper(releaseResult) : "";
 
     if (!text) {
       setNotice({ tone: "error", text: "Record release evidence first, then copy the receipt." });
@@ -287,7 +326,7 @@ export default function MerchantReleasePage() {
     const copied = await safeCopy(text);
     setNotice({
       tone: copied ? "success" : "error",
-      text: copied ? "Release receipt copied." : "Copy did not complete. Select the receipt text and copy it manually.",
+      text: copied ? "GSN trade packet paper copied." : "Copy did not complete. Select the packet text and copy it manually.",
     });
   }
 
@@ -625,7 +664,7 @@ export default function MerchantReleasePage() {
               fullWidth
               debugId="merchant-release.copy-receipt"
             >
-              Copy release receipt
+              Copy GSN packet paper
             </SecondaryButton>
           </section>
         )}
