@@ -169,15 +169,15 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
 
     confirmation_source = None
     confirmed_at = None
-    loan_id = None
+    support_record = None
 
     if event:
         confirmed_at = event.created_at.isoformat() if event.created_at else None
         confirmation_source = "GSN recorded trust event"
-        loan_id = event.loan_id
+        support_record = "Private support record"
 
     elements.append(Spacer(1, 0.15 * inch))
-    elements.append(_paragraph("Support record ID", loan_id, styles))
+    elements.append(_paragraph("Support record", support_record, styles))
     elements.append(_paragraph("Reconciliation reference", "private operational detail redacted", styles))
     elements.append(_paragraph("Confirmed at", confirmed_at, styles))
     elements.append(_paragraph("Confirmation source", confirmation_source, styles))

@@ -71793,6 +71793,40 @@ GSN-branded invite composer and invite-entry continuity.
     but should not be claimed live on Render API until gmfn-api is deployed by
     Render API credentials or manually from Render dashboard.
 
+### Follow-up same day - Evidence PDFs hide private support record IDs
+
+- Trigger:
+  - continuing the customer-facing PDF/screenshotable evidence cleanup after
+    the signed-in Trust Why fix;
+  - scan found two PDF services still capable of printing raw support/loan
+    identifiers into member-facing evidence papers.
+- Unabated truth:
+  - this does not remove private operational IDs from internal ledgers or admin
+    complete-record exports;
+  - it only stops two evidence PDFs from printing raw support record numbers
+    where a reader only needs to know that a private GSN support record exists.
+- Changed:
+  - `gmfn_backend/app/services/user_evidence_pack_pdf_service.py`
+    - event lines now show `support record=private operational detail redacted`
+      instead of `loan=<id>`;
+    - source context now reads `source=GSN member record` instead of printing
+      raw source metadata.
+  - `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+    - TrustSlip evidence snapshot now prints `Support record: Private support
+      record` instead of `Support record ID: <loan_id>`.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - pins the redacted support-record wording and forbids the old raw ID
+      strings.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - adds audit guards against raw support IDs returning to these PDFs.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\services\user_evidence_pack_pdf_service.py gmfn_backend\app\services\trust_slip_evidence_pdf_service.py`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Trust Timeline user references redacted
 
 - Trigger:

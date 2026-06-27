@@ -54,8 +54,12 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "Confirmed by record" not in text
     assert "confirmation_source = \"GSN recorded trust event\"" in text
     assert "Confirmation source" in text
+    assert "Support record" in text
+    assert "Private support record" in text
     assert "Reconciliation reference" in text
     assert "private operational detail redacted" in text
+    assert "Support record ID" not in text
+    assert "loan_id = event.loan_id" not in text
     assert "Payment reference" not in text
     assert "payment_reference" not in text
     assert "GMFN TrustSlip Evidence Snapshot" not in text
@@ -200,6 +204,10 @@ def test_simple_evidence_pdfs_keep_reader_boundaries_and_redaction_guards():
 
     assert "Reader boundary" in user_text
     assert "private member evidence" in user_text
+    assert "support record=private operational detail redacted" in user_text
+    assert "source=GSN member record" in user_text
+    assert "loan={loan_id}" not in user_text
+    assert "src={src}" not in user_text
 
     for text in [clan_text, loan_text, user_text]:
         assert "visa / partner framing" not in text

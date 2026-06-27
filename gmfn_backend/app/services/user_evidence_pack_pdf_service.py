@@ -165,9 +165,9 @@ def build_user_evidence_pack_pdf(
             src = meta.get("source")
             extra = []
             if loan_id:
-                extra.append(f"loan={loan_id}")
+                extra.append("support record=private operational detail redacted")
             if src:
-                extra.append(f"src={src}")
+                extra.append("source=GSN member record")
             tail = f" ({', '.join(extra)})" if extra else ""
             line(f"- {when} | {et}{tail}", size=8, gap=12)
 

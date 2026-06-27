@@ -366,6 +366,26 @@ assertContains(
   /Reader boundary[\s\S]*?private member evidence/,
   "User evidence pack PDFs must explain the reader boundary before private member evidence is shared."
 );
+assertContains(
+  "userEvidencePack",
+  /support record=private operational detail redacted[\s\S]*?source=GSN member record/,
+  "User evidence pack PDFs must describe private support/source context without raw support IDs."
+);
+assertNotContains(
+  "userEvidencePack",
+  /loan=\{loan_id\}|src=\{src\}|extra\.append\(f"loan=/,
+  "User evidence pack PDFs must not print raw support IDs or raw source metadata in event lines."
+);
+assertContains(
+  "trustSlipPdf",
+  /support_record = "Private support record"[\s\S]*?_paragraph\("Support record", support_record, styles\)[\s\S]*?Reconciliation reference[\s\S]*?private operational detail redacted/,
+  "TrustSlip evidence PDFs must describe private support records without exposing support IDs."
+);
+assertNotContains(
+  "trustSlipPdf",
+  /Support record ID|loan_id = event\.loan_id/,
+  "TrustSlip evidence PDFs must not expose raw support IDs."
+);
 assertNotContains(
   "loanEvidencePack",
   /kv\("Clan"/,
