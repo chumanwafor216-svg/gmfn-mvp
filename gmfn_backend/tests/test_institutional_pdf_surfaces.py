@@ -174,9 +174,12 @@ def test_analytics_evidence_downloads_use_gsn_filenames():
 
     assert "def _ensure_clan_admin_or_platform_admin" in text
     assert "def _ensure_can_view_loan_evidence" in text
+    assert "def _ensure_can_view_complete_loan_evidence" in text
     assert "Community admin or platform admin only" in text
     assert "Loan not found" in text
     assert "redact: bool = True" in text
+    assert "if not redact:" in text
+    assert "_ensure_can_view_complete_loan_evidence(db, current_user=user, loan=loan)" in text
     assert text.count("_ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))") == 6
     assert "gsn-community-{clan_id}-recent-invite-joins.csv" in text
     assert "gsn-community-{clan_id}-trust-events.csv" in text

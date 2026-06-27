@@ -92,6 +92,22 @@ def test_borrower_gets_redacted_pdf_but_not_complete_loan_exports(
     assert response.headers["content-disposition"] == 'attachment; filename="gsn-loan-1-trust-report.pdf"'
 
 
+def test_borrower_gets_redacted_analytics_loan_pdf_but_not_complete_copy(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+    seed_loan,
+):
+    response = client.get("/analytics/loans/1/evidence-pack.pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == 'attachment; filename="gsn-loan-1-evidence-pack.pdf"'
+
+    response = client.get("/analytics/loans/1/evidence-pack.pdf?redact=false")
+
+    assert response.status_code == 403
+
+
 def test_governance_pack_marks_complete_private_admin_record(
     client,
     override_current_user,

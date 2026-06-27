@@ -475,8 +475,13 @@ assertContains(
 );
 assertContains(
   "analyticsRoute",
-  /def evidence_pack_pdf\([\s\S]*?redact: bool = True[\s\S]*?def loan_evidence_pack_pdf\([\s\S]*?redact: bool = True/,
+  /def evidence_pack_pdf\([\s\S]*?redact: bool = True[\s\S]*?def loan_evidence_pack_pdf\([\s\S]*?redact: bool = True[\s\S]*?if not redact:[\s\S]*?_ensure_can_view_complete_loan_evidence\(db, current_user=user, loan=loan\)/,
   "Analytics evidence PDF routes must default to redacted share copies."
+);
+assertContains(
+  "analyticsRoute",
+  /def _ensure_can_view_complete_loan_evidence\(db: Session, \*, current_user: User, loan: Loan\) -> None:[\s\S]*?_ensure_clan_admin_or_platform_admin\(db, current_user=current_user, clan_id=int\(loan\.clan_id\)\)/,
+  "Analytics complete loan evidence downloads must require community-admin or platform-admin access."
 );
 assertNotContains(
   "analyticsRoute",

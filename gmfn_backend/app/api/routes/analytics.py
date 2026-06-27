@@ -65,6 +65,10 @@ def _ensure_can_view_loan_evidence(db: Session, *, current_user: User, loan: Loa
         raise HTTPException(status_code=403, detail="Not allowed")
 
 
+def _ensure_can_view_complete_loan_evidence(db: Session, *, current_user: User, loan: Loan) -> None:
+    _ensure_clan_admin_or_platform_admin(db, current_user=current_user, clan_id=int(loan.clan_id))
+
+
 @router.get("/clans/{clan_id}/invites", response_model=InviteAnalyticsOut)
 def clan_invite_analytics(
     clan_id: int,
@@ -168,6 +172,8 @@ def loan_evidence_pack_pdf(
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
     _ensure_can_view_loan_evidence(db, current_user=user, loan=loan)
+    if not redact:
+        _ensure_can_view_complete_loan_evidence(db, current_user=user, loan=loan)
     pdf_bytes = build_loan_evidence_pack_pdf(db, loan_id=loan_id, redact=redact)
     return Response(
         content=pdf_bytes,

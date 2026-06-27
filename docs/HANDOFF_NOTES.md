@@ -71836,6 +71836,41 @@ GSN-branded invite composer and invite-entry continuity.
     should not be claimed live on Render API until gmfn-api is deployed by
     Render API credentials or manually from Render dashboard.
 
+### Follow-up same day - Analytics loan evidence complete copy gated
+
+- Trigger:
+  - continued customer-facing evidence cleanup after the PDF support-ID
+    redaction;
+  - route inspection found `/analytics/loans/{loan_id}/evidence-pack.pdf`
+    accepted `redact=false` after only the general loan-evidence viewer check.
+- Unabated truth:
+  - a borrower/allowed viewer still needs access to a redacted loan evidence
+    PDF;
+  - the unredacted/complete copy is a private operational record and must be
+    limited to community admin or platform admin, matching the report route
+    discipline.
+- Changed:
+  - `gmfn_backend/app/api/routes/analytics.py`
+    - added `_ensure_can_view_complete_loan_evidence`;
+    - `redact=false` now requires community-admin/platform-admin access before
+      building the loan evidence PDF.
+  - `gmfn_backend/tests/test_evidence_surface_permissions.py`
+    - verifies a borrower can download the redacted analytics loan evidence
+      PDF but gets `403` for `?redact=false`.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - pins the source-level complete-record gate.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - updates the institutional proof-surface audit to require the
+      complete-record gate.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_evidence_surface_permissions.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\api\routes\analytics.py`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Trust Timeline user references redacted
 
 - Trigger:
