@@ -123,6 +123,8 @@ const forbidden = [
 ];
 
 const forbiddenByFile = [
+  ["frontend/src/lib/guidance.ts", "A borrower is waiting for your decision."],
+  ["frontend/src/pages/LoansPage.tsx", "Someone is waiting for your decision"],
   ["frontend/src/pages/ShopGalleryPage.tsx", 'label: "GMFN ID"'],
   ["frontend/src/pages/ExposurePage.tsx", "—"],
   ["frontend/src/pages/ExposurePage.tsx", "·"],
@@ -194,6 +196,7 @@ const required = [
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
   ["frontend/src/pages/ShopGalleryPage.tsx", "GSN ID"],
   ["frontend/src/lib/guidance.ts", "A borrower is waiting for your support decision on"],
+  ["frontend/src/lib/guidance.ts", "A borrower is waiting for your support decision."],
 ];
 
 const findings = [];

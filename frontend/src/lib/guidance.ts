@@ -851,7 +851,7 @@ function buildGuarantorInboxNotices(raw: any): GuidanceNotice[] {
         : "Support request waiting",
       detail: pledge
         ? `A borrower is waiting for your support decision on ${pledge}.`
-        : "A borrower is waiting for your decision.",
+        : "A borrower is waiting for your support decision.",
       ctaLabel: "Open Action Inbox",
       ctaTo: GUIDANCE_TARGETS.NOTIFICATIONS,
       bucket: "actNow",

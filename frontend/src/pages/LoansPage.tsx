@@ -705,8 +705,8 @@ export default function LoansPage() {
           ? `A support request is waiting on item #${first.loanId}`
           : "A support request is waiting",
         detail: first.pledgeAmount
-          ? `Someone is waiting for your decision on ${first.pledgeAmount}.`
-          : "Someone is waiting for your decision.",
+          ? `Someone is waiting for your support decision on ${first.pledgeAmount}.`
+          : "Someone is waiting for your support decision.",
       };
     }
 
@@ -1123,7 +1123,7 @@ export default function LoansPage() {
                 Supporter side = you are attached to someone else's support flow.
               </div>
               <div style={helperText()}>
-                Waiting requests = someone is waiting for your decision.
+                Waiting requests = someone is waiting for your support decision.
               </div>
             </div>
           </div>

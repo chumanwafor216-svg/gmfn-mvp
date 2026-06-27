@@ -269,6 +269,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoansPage.tsx",
+  /Someone is waiting for your support decision on \$\{first\.pledgeAmount\}\.[\s\S]*?Someone is waiting for your support decision\.[\s\S]*?Waiting requests = someone is waiting for your support decision\./,
+  "Loans overview must describe waiting requests as support decisions, not generic decisions."
+);
+
+assertNotContains(
+  "src/pages/LoansPage.tsx",
+  /waiting for your decision/,
+  "Loans overview must not use generic waiting-for-your-decision wording for support requests."
+);
+
+assertContains(
   "src/pages/LoanSuggestionsPage.tsx",
   /suggested support amount for each supporter[\s\S]*?Suggested support: \{safeStr\(item\.recommendedPledge\)\}/,
   "Loan Suggestions must use support wording for suggested supporter amounts."
