@@ -72369,17 +72369,22 @@ GSN-branded invite composer and invite-entry continuity.
       Credential, public Community Confirmation Outcome, and backend PDF
       headers.
   - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
-    - added a guard that the shared PDF helper keeps the security-mark strip.
+    - added a guard that the shared PDF helper keeps the security-mark strip;
+    - added a geometry smoke guard that exercises `draw_institutional_header`
+      and proves the security strip is drawn inside the page frame and above
+      the first content line.
 - Verification:
   - Passed `npm run audit:proof-surfaces` from `frontend`.
-  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+    with 19 checks, including the shared PDF header geometry smoke guard.
   - Passed `python -m compileall -q gmfn_backend\app\services\institutional_pdf.py`.
   - Passed `npm run build` from `frontend`.
   - Passed `git diff --check`; only Git line-ending warnings were reported.
 - Remaining honest risk:
-  - this slice is source/build/audit verified;
-  - generated PDFs still need visual opening with sample data before saying
-    their actual rendered layout is perfect on paper;
+  - this slice is source/build/audit verified and the shared PDF header now has
+    a deterministic geometry guard;
+  - full DB-backed generated PDFs still need visual opening with sample data
+    before saying their actual rendered layout is perfect on paper;
   - no Render deploy was performed in this slice.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from reportlab.lib.pagesizes import A4
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -16,6 +18,90 @@ def test_shared_institutional_pdf_helper_exists():
     assert "def draw_institutional_footer" in text
     assert "GLOBAL SUPPORT NETWORK" in text
     assert "Security marks: GSN watermark | UTC time | reference | limitation" in text
+
+
+class _RecordingPdfCanvas:
+    def __init__(self):
+        self.draw_strings = []
+        self.round_rects = []
+
+    def saveState(self):
+        pass
+
+    def restoreState(self):
+        pass
+
+    def setFillAlpha(self, value):
+        pass
+
+    def setStrokeAlpha(self, value):
+        pass
+
+    def translate(self, x, y):
+        pass
+
+    def rotate(self, degrees):
+        pass
+
+    def setFillColor(self, color):
+        pass
+
+    def setStrokeColor(self, color):
+        pass
+
+    def setLineWidth(self, value):
+        pass
+
+    def setFont(self, name, size):
+        pass
+
+    def drawCentredString(self, x, y, text):
+        self.draw_strings.append(("center", x, y, text))
+
+    def drawString(self, x, y, text):
+        self.draw_strings.append(("left", x, y, text))
+
+    def roundRect(self, x, y, width, height, radius, stroke=1, fill=0):
+        self.round_rects.append((x, y, width, height, radius, stroke, fill))
+
+    def line(self, x1, y1, x2, y2):
+        pass
+
+
+def test_shared_institutional_pdf_header_security_strip_has_safe_geometry():
+    from app.services.institutional_pdf import draw_institutional_header
+
+    width, height = A4
+    canvas = _RecordingPdfCanvas()
+    content_start_y = draw_institutional_header(
+        canvas,
+        width,
+        height,
+        title="GSN Rendered Evidence Smoke",
+        subtitle="Generated paper layout smoke check.",
+        generated_at="2026-06-27 12:00 UTC",
+        reference="GSN-SMOKE-001",
+    )
+
+    security_rows = [
+        row for row in canvas.draw_strings if "Security marks: GSN watermark" in row[3]
+    ]
+    assert len(security_rows) == 1
+    _, security_x, security_y, security_text = security_rows[0]
+
+    assert security_x > 0
+    assert security_y > content_start_y
+    assert security_y - content_start_y > 25
+    assert len(security_text) <= 110
+    assert all(ord(char) < 128 for char in security_text)
+
+    filled_strips = [rect for rect in canvas.round_rects if rect[6] == 1]
+    assert filled_strips, "Security strip background should be drawn as a filled rounded rectangle."
+    strip_x, strip_y, strip_width, strip_height, *_ = filled_strips[-1]
+    assert strip_x > 0
+    assert strip_y > content_start_y
+    assert strip_width < width
+    assert strip_height > 0
 
 
 def test_simple_evidence_pdfs_use_gsn_institutional_shell():
