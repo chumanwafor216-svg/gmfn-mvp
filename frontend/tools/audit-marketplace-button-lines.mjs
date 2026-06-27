@@ -9,8 +9,8 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const findings = [];
 
-const expectedStableActionCount = 68;
-const expectedNativeFieldCount = 27;
+const expectedStableActionCount = 72;
+const expectedNativeFieldCount = 37;
 const allowedBusyDisabledExpressions = new Set([
   "creatingRepostPaymentInstruction",
   "loadingRepostCredits",

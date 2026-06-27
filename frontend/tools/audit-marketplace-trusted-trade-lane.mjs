@@ -84,6 +84,16 @@ assertContains(
 );
 
 assertContains(
+  /Minimum trade packet[\s\S]*?Invoice \/ product \/ agreement \/ courier \/ payment references[\s\S]*?Conversation boundary: GSN stores the agreed evidence reference/,
+  "Trade Evidence paper must expose the minimum packet reference without pretending to store the whole conversation."
+);
+
+assertContains(
+  /minimum_trade_packet:[\s\S]*?trade_context: "gsn_gsn"[\s\S]*?evidence_packet_note[\s\S]*?conversation_system_of_record: "gsn_marketplace_or_parties"[\s\S]*?not_escrow[\s\S]*?not_money_custody[\s\S]*?not_payout[\s\S]*?not_bank_confirmation[\s\S]*?not_delivery_guarantee[\s\S]*?not_release_authority/,
+  "Protected Trade creation must store the GSN+GSN minimum packet metadata with non-custodial boundaries."
+);
+
+assertContains(
   /getProtectedTrade[\s\S]*?selectedProtectedTradeDetail[\s\S]*?loadingProtectedTradeDetail/,
   "Marketplace must load selected protected-trade detail so event trails can back the evidence paper."
 );
@@ -110,6 +120,7 @@ if (!trustedTradeSection.text) {
     /creates evidence, not escrow/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.role"\)/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.counterpart"\)/,
+    /Minimum evidence packet[\s\S]*?marketplaceFieldTouchProps\("marketplace\.protected-trade\.packet"\)[\s\S]*?invoice reference[\s\S]*?courier handoff[\s\S]*?payment schedule/,
     /debugId="marketplace\.protected-trade\.create"[\s\S]*?Start record/,
     /debugId="marketplace\.protected-trade\.refresh"[\s\S]*?Refresh records/,
     /Record update/,

@@ -20,7 +20,7 @@ const actionTargetRoutesSource = readFileSync(
 );
 const findings = [];
 const expectedStableActionCount = 72;
-const expectedNativeFieldCount = 36;
+const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 12,
   body: 60,

@@ -231,6 +231,7 @@ type ProtectedTradeDraft = {
   amount: string;
   currency: string;
   termsSummary: string;
+  evidencePacketNote: string;
 };
 
 const PROTECTED_TRADE_EVENT_OPTIONS = [
@@ -1427,6 +1428,13 @@ function buildProtectedTradeEvidencePaperText({
   const itemTitle = safeStr(trade.item_title) || "Item or service not named";
   const termsSummary =
     safeStr(trade.terms_summary) || "No terms summary recorded yet.";
+  const minimumPacket =
+    trade.meta && typeof trade.meta === "object"
+      ? (trade.meta.minimum_trade_packet || null)
+      : null;
+  const minimumPacketNote = safeStr(minimumPacket?.evidence_packet_note);
+  const minimumPacketContext =
+    safeStr(minimumPacket?.trade_context) || "gsn_gsn";
   const createdAt = safeStr(trade.created_at) || "Not recorded";
   const updatedAt = safeStr(trade.updated_at) || "Not recorded";
   const boundaryNote =
@@ -1454,6 +1462,12 @@ function buildProtectedTradeEvidencePaperText({
     "Record details",
     `Item or service: ${itemTitle}`,
     `Basic terms: ${termsSummary}`,
+    "Minimum trade packet",
+    `Trade shape: ${minimumPacketContext === "gsn_gsn" ? "GSN + GSN" : minimumPacketContext}`,
+    `Invoice / product / agreement / courier / payment references: ${
+      minimumPacketNote || "No minimum packet note recorded yet."
+    }`,
+    "Conversation boundary: GSN stores the agreed evidence reference. WhatsApp, phone calls, or in-person discussion remain outside GSN unless the parties add final evidence notes.",
     `Created in GSN: ${createdAt}`,
     `Last updated in GSN: ${updatedAt}`,
     ...timelineLines,
@@ -3861,6 +3875,7 @@ export default function MarketplacePage() {
       amount: "",
       currency: "NGN",
       termsSummary: "",
+      evidencePacketNote: "",
     });
   const [selectedProtectedTradeId, setSelectedProtectedTradeId] = useState("");
   const [protectedTradeEventType, setProtectedTradeEventType] =
@@ -5966,8 +5981,28 @@ export default function MarketplacePage() {
         meta: {
           source: "marketplace_trusted_trade_lane",
           community_name: communityName(selectedCommunity),
+          minimum_trade_packet: {
+            trade_context: "gsn_gsn",
+            evidence_packet_note: safeStr(protectedTradeDraft.evidencePacketNote) || null,
+            conversation_system_of_record: "gsn_marketplace_or_parties",
+            gsn_record_scope: "minimum_structured_evidence_packet",
+            evidence_slots: {
+              invoice_product_agreement_courier_payment: Boolean(
+                safeStr(protectedTradeDraft.evidencePacketNote)
+              ),
+            },
+            privacy_boundary:
+              "Record only the final evidence references needed for judgement. Keep unnecessary private chat, addresses, bank details, and third-party details outside this record.",
+          },
           boundary:
             "Non-custodial record only. Not escrow, not automatic payout, not a delivery guarantee.",
+          minimum_trade_packet_enabled: true,
+          not_escrow: true,
+          not_money_custody: true,
+          not_payout: true,
+          not_bank_confirmation: true,
+          not_delivery_guarantee: true,
+          not_release_authority: true,
         },
       });
 
@@ -5980,6 +6015,7 @@ export default function MarketplacePage() {
         itemTitle: "",
         amount: "",
         termsSummary: "",
+        evidencePacketNote: "",
       }));
       showNotice("success", "Protected trade record started.");
     } catch (err: any) {
@@ -11063,6 +11099,25 @@ export default function MarketplacePage() {
                 style={{ ...textAreaStyle(), marginTop: 6, minHeight: 78 }}
                 placeholder="Example: buyer pays first; seller releases after payment claim is reviewed."
                 maxLength={4000}
+              />
+            </label>
+
+            <label style={{ display: "block" }}>
+              <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                Minimum evidence packet
+              </div>
+              <textarea
+                {...marketplaceFieldTouchProps("marketplace.protected-trade.packet")}
+                value={protectedTradeDraft.evidencePacketNote}
+                onChange={(event) =>
+                  setProtectedTradeDraft((prev) => ({
+                    ...prev,
+                    evidencePacketNote: event.target.value,
+                  }))
+                }
+                style={{ ...textAreaStyle(), marginTop: 6, minHeight: 78 }}
+                placeholder="Optional: invoice reference, final agreement evidence, courier handoff, expected delivery, and payment schedule. Keep WhatsApp conversation outside GSN unless a final evidence note is needed."
+                maxLength={1200}
               />
             </label>
 
