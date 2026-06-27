@@ -74937,3 +74937,51 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - 22-capability public PDF explanations deepened
+
+- Trigger:
+  - owner asked to continue the institutional cleanup and specifically wanted
+    outsider-facing papers, PDFs, TrustSlip-adjacent documents, and
+    screenshotable pages to feel complete, branded, and book-aligned.
+- Unabated truth:
+  - the static executive-summary PDFs already used the shared institutional
+    GSN header, watermark, reference, security-mark line, and footer;
+  - the content still had a real weakness: the PDF listed all 22 capabilities,
+    but 21 of them used the same generic fallback explanation;
+  - this slice deepens customer-facing institutional explanation only. It does
+    not add paid/API verification, automatic payout, escrow, protected
+    trade-release execution, or new backend capability.
+- Changed:
+  - `frontend/tools/generate-static-gsn-pdfs.py`
+    - added tailored `What it is / How it works / Why it matters` explanations
+      for every item in the `22 things GSN does` section;
+    - kept the explanations bounded so Release Before Payment does not pretend
+      to be full escrow or an automated release rail;
+    - made the missing-explanation fallback obvious instead of reusing a
+      polished generic paragraph;
+    - added a fail-closed check so any future listed capability without a
+      tailored explanation stops PDF generation instead of publishing an
+      incomplete public paper;
+    - regenerated `frontend/public/GSN_FINAL_WHITE.pdf`,
+      `frontend/public/gmfn-executive-summary.pdf`, and
+      `frontend/public/GMFN_FINAL_WHITE.pdf` from the updated generator.
+  - `frontend/tools/audit-static-pdf-assets.mjs`
+    - added regression guards for deeper institutional PDF language:
+      full-escrow boundary, community-capital framing, private-life boundary,
+      demonstrated-value framing, and Commitment Builder readiness language;
+    - added guards against restoring the old generic capability fallback or
+      silently generating a paper with missing capability explanations.
+- Verification:
+  - Passed `npm run generate:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:capability-mirror` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:trust-passport-front-package` from `frontend`.
+  - Passed `npm run audit:trust-passport-lane-map` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

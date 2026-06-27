@@ -68,10 +68,29 @@ for (const requiredText of [
   "community capital",
   "ten-year view",
   "API-paid verification",
+  "full escrow or automated release rail",
+  "community capital grows",
+  "private life into the open",
+  "demonstrated value into practical access",
 ]) {
   if (!generatorSource.includes(requiredText)) {
     addFinding(`Static PDF generator must include institutional positioning text: ${requiredText}.`);
   }
+}
+if (!/savings, repayment,\s*"\s*\n\s*"retirement readiness/.test(generatorSource)) {
+  addFinding("Static PDF generator must include Commitment Builder readiness text for savings, repayment, and retirement readiness.");
+}
+if (/real community trust made visible in GSN/.test(generatorSource)) {
+  addFinding("Static PDF generator must not fall back to the old generic capability explanation.");
+}
+if (!/explanation pending/.test(generatorSource)) {
+  addFinding("Static PDF generator must keep an obvious missing-explanation fallback for future capability additions.");
+}
+if (!/def validate_capability_explanations\(\)/.test(generatorSource)) {
+  addFinding("Static PDF generator must fail closed when a listed capability has no tailored public explanation.");
+}
+if (!/Missing public PDF capability explanation/.test(generatorSource)) {
+  addFinding("Static PDF generator must name missing capability explanations instead of silently generating an incomplete public paper.");
 }
 if (/21 core capabilities/.test(generatorSource)) {
   addFinding("Static PDF generator must not keep the old 21-capability heading.");
