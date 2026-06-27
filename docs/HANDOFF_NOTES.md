@@ -75478,3 +75478,40 @@ GSN-branded invite composer and invite-entry continuity.
   - this protected-trade evidence-paper slice is local only until committed and
     pushed;
   - no Render deploy has been requested or confirmed for this slice.
+
+### Follow-up same day - Protected Trade event trail added to evidence paper
+
+- Trigger:
+  - after the protected-trade paper was surfaced, the paper still depended on
+    summary list data and could not show the detailed lifecycle events that the
+    backend already exposes through `GET /protected-trades/{trade_id}`.
+- Unabated truth:
+  - this improves the authenticated Marketplace protected-trade evidence paper
+    with loaded event detail;
+  - it still does not create a public protected-trade verification route, QR
+    code, PDF export, escrow, money custody, automatic payout, bank
+    confirmation, bank guarantee, delivery guarantee, or paid/API verification;
+  - event notes can contain sensitive trade context, so keeping this inside the
+    signed-in Marketplace is intentional until public disclosure rules exist.
+- Changed:
+  - `frontend/src/lib/api.ts`
+    - added `getProtectedTrade(tradeId)` for the authenticated detail endpoint.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - added selected protected-trade detail state and loading state;
+    - fetches detail when the selected record changes;
+    - refreshes detail after manual record refresh and after recording a
+      lifecycle event;
+    - prefers the detailed record when building the evidence paper;
+    - adds recent event-trail lines into the paper text;
+    - shows a compact `Event trail` block under the paper preview.
+  - `frontend/tools/audit-marketplace-trusted-trade-lane.mjs`
+    - added guards requiring the detail load, event trail state, and event
+      trail block in the Trusted Trade lane.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-trusted-trade-lane`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local-only continuation work until committed/pushed;
+  - no Render deploy has been requested or confirmed for this slice.

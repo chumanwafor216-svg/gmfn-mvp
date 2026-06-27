@@ -3582,6 +3582,15 @@ export async function listProtectedTrades(params?: {
   return Array.isArray(out) ? out : rowsFromApi(out);
 }
 
+export async function getProtectedTrade(
+  tradeId: number | string
+): Promise<ProtectedTradeRecord> {
+  return httpJson(
+    `/protected-trades/${encodeURIComponent(String(Number(tradeId || 0)))}`,
+    "GET"
+  );
+}
+
 export async function addProtectedTradeEvent(
   tradeId: number,
   payload: ProtectedTradeEventPayload

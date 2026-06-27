@@ -56,6 +56,7 @@ import {
   getLoanGuarantorSuggestions,
   getLoanSummary,
   getMarketplaceProducts,
+  getProtectedTrade,
   getMarketplaceShopByGmfnId,
   getMyMarketplaceShop,
   getMarketplaceShops,
@@ -1374,6 +1375,39 @@ function protectedTradeAmountLabel(
   return `${currency} ${amount}`;
 }
 
+function protectedTradeEventLabel(eventType: any): string {
+  const key = safeStr(eventType)
+    .toLowerCase()
+    .replace(/^protected_trade\./, "");
+  const option = PROTECTED_TRADE_EVENT_OPTIONS.find(
+    (item) => item.value === key
+  );
+  return option?.label || protectedTradeStatusLabel(key, "Trade event");
+}
+
+function protectedTradeEventLine(event: any): string {
+  const label = protectedTradeEventLabel(event?.event_type);
+  const note = safeStr(event?.note);
+  const createdAt = safeStr(event?.created_at);
+  const suffix = note ? ` - ${note}` : "";
+  return `${createdAt || "Time not recorded"}: ${label}${suffix}`;
+}
+
+function protectedTradeTimelineLines(
+  trade: ProtectedTradeRecord | null | undefined,
+  maxCount = 5
+): string[] {
+  const events = Array.isArray(trade?.events) ? trade?.events || [] : [];
+  if (!events.length) {
+    return ["Event trail: no detailed events loaded yet."];
+  }
+
+  return events
+    .slice(-maxCount)
+    .reverse()
+    .map((event) => `Event trail: ${protectedTradeEventLine(event)}`);
+}
+
 function buildProtectedTradeEvidencePaperText({
   trade,
   community,
@@ -1398,6 +1432,7 @@ function buildProtectedTradeEvidencePaperText({
   const boundaryNote =
     safeStr(trade.boundary_note) ||
     "Non-custodial evidence record only. GSN does not hold money, guarantee delivery, or release funds automatically.";
+  const timelineLines = protectedTradeTimelineLines(trade, 5);
 
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
@@ -1421,6 +1456,7 @@ function buildProtectedTradeEvidencePaperText({
     `Basic terms: ${termsSummary}`,
     `Created in GSN: ${createdAt}`,
     `Last updated in GSN: ${updatedAt}`,
+    ...timelineLines,
     `Boundary: ${boundaryNote}`,
     "Signed-in evidence paper: screenshot-ready inside Marketplace for the people who can already see this trade record.",
     `Verification / action link: ${actionPath} (signed-in Marketplace record only)`,
@@ -3834,6 +3870,10 @@ export default function MarketplacePage() {
   const [recordingProtectedTradeEvent, setRecordingProtectedTradeEvent] =
     useState(false);
   const [loadingProtectedTrades, setLoadingProtectedTrades] = useState(false);
+  const [selectedProtectedTradeDetail, setSelectedProtectedTradeDetail] =
+    useState<ProtectedTradeRecord | null>(null);
+  const [loadingProtectedTradeDetail, setLoadingProtectedTradeDetail] =
+    useState(false);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
   );
@@ -5697,14 +5737,82 @@ export default function MarketplacePage() {
     return protectedTrades.slice(0, isCompact ? 3 : 5);
   }, [isCompact, protectedTrades]);
 
-  const selectedProtectedTrade = useMemo(() => {
-    const selectedId = positiveNumber(selectedProtectedTradeId);
+  const selectedProtectedTradeNumericId = useMemo(() => {
     return (
+      positiveNumber(selectedProtectedTradeId) ||
+      positiveNumber(recentProtectedTrades[0]?.id)
+    );
+  }, [recentProtectedTrades, selectedProtectedTradeId]);
+
+  const selectedProtectedTrade = useMemo(() => {
+    const selectedId = selectedProtectedTradeNumericId;
+    const summaryTrade =
       protectedTrades.find((trade) => positiveNumber(trade.id) === selectedId) ||
       recentProtectedTrades[0] ||
-      null
-    );
-  }, [protectedTrades, recentProtectedTrades, selectedProtectedTradeId]);
+      null;
+    const detailMatches =
+      selectedProtectedTradeDetail &&
+      positiveNumber(selectedProtectedTradeDetail.id) ===
+        positiveNumber(summaryTrade?.id || selectedId);
+
+    return detailMatches
+      ? selectedProtectedTradeDetail
+      : summaryTrade;
+  }, [
+    protectedTrades,
+    recentProtectedTrades,
+    selectedProtectedTradeDetail,
+    selectedProtectedTradeNumericId,
+  ]);
+
+  const selectedProtectedTradeEvents = useMemo(() => {
+    return Array.isArray(selectedProtectedTrade?.events)
+      ? selectedProtectedTrade.events || []
+      : [];
+  }, [selectedProtectedTrade]);
+
+  const recentProtectedTradeEvents = useMemo(() => {
+    return selectedProtectedTradeEvents.slice(-4).reverse();
+  }, [selectedProtectedTradeEvents]);
+
+  const selectedProtectedTradeHasDetail =
+    Boolean(selectedProtectedTrade?.id) &&
+    positiveNumber(selectedProtectedTradeDetail?.id) ===
+      positiveNumber(selectedProtectedTrade?.id);
+
+  useEffect(() => {
+    const tradeId = selectedProtectedTradeNumericId;
+    if (!tradeId) {
+      setSelectedProtectedTradeDetail(null);
+      setLoadingProtectedTradeDetail(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingProtectedTradeDetail(true);
+    getProtectedTrade(tradeId)
+      .then((detail) => {
+        if (cancelled) return;
+        setSelectedProtectedTradeDetail(detail);
+        setProtectedTrades((prev) =>
+          prev.map((trade) =>
+            positiveNumber(trade.id) === tradeId ? { ...trade, ...detail } : trade
+          )
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSelectedProtectedTradeDetail(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingProtectedTradeDetail(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProtectedTradeNumericId]);
 
   const selectedProtectedTradeEventOption =
     PROTECTED_TRADE_EVENT_OPTIONS.find(
@@ -5772,13 +5880,32 @@ export default function MarketplacePage() {
     setLoadingProtectedTrades(true);
     try {
       const rows = await listProtectedTrades({ limit: 30 });
+      const visibleRows = rows
+        .filter((item) => {
+          const tradeClanId = Number(item?.clan_id || 0);
+          return tradeClanId <= 0 || tradeClanId === activeCommunityId;
+        })
+        .slice(0, 8);
+      const detailTradeId =
+        positiveNumber(selectedProtectedTradeId) ||
+        positiveNumber(visibleRows[0]?.id);
+      let selectedDetail: ProtectedTradeRecord | null = null;
+      if (detailTradeId) {
+        try {
+          selectedDetail = await getProtectedTrade(detailTradeId);
+          setSelectedProtectedTradeDetail(selectedDetail);
+        } catch {
+          setSelectedProtectedTradeDetail(null);
+        }
+      } else {
+        setSelectedProtectedTradeDetail(null);
+      }
       setProtectedTrades(
-        rows
-          .filter((item) => {
-            const tradeClanId = Number(item?.clan_id || 0);
-            return tradeClanId <= 0 || tradeClanId === activeCommunityId;
-          })
-          .slice(0, 8)
+        visibleRows.map((item) =>
+          selectedDetail && positiveNumber(item.id) === detailTradeId
+            ? { ...item, ...selectedDetail }
+            : item
+        )
       );
       showNotice("success", "Protected trade records refreshed.");
     } catch (err: any) {
@@ -5899,12 +6026,17 @@ export default function MarketplacePage() {
       });
 
       const rows = await listProtectedTrades({ limit: 30 });
+      const detail = await getProtectedTrade(tradeId);
+      setSelectedProtectedTradeDetail(detail);
       setProtectedTrades(
         rows
           .filter((item) => {
             const tradeClanId = Number(item?.clan_id || 0);
             return tradeClanId <= 0 || tradeClanId === activeCommunityId;
           })
+          .map((item) =>
+            positiveNumber(item.id) === tradeId ? { ...item, ...detail } : item
+          )
           .slice(0, 8)
       );
       setProtectedTradeEventNote("");
@@ -11213,6 +11345,71 @@ export default function MarketplacePage() {
                           icon="document"
                           maxBodyLines={isCompact ? 4 : 6}
                         />
+                        <div
+                          style={{
+                            borderRadius: 14,
+                            border: "1px solid rgba(16,37,59,0.08)",
+                            background: "#FFFFFF",
+                            padding: isCompact ? 10 : 12,
+                            display: "grid",
+                            gap: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div style={sectionLabel()}>Event trail</div>
+                            <span
+                              style={stableStatusPillStyle(
+                                selectedProtectedTradeHasDetail &&
+                                  recentProtectedTradeEvents.length > 0
+                              )}
+                            >
+                              {loadingProtectedTradeDetail
+                                ? "Loading trail"
+                                : recentProtectedTradeEvents.length
+                                  ? `${recentProtectedTradeEvents.length} recent`
+                                  : "No trail loaded"}
+                            </span>
+                          </div>
+
+                          {recentProtectedTradeEvents.length ? (
+                            <div style={{ display: "grid", gap: 6 }}>
+                              {recentProtectedTradeEvents.map((event) => (
+                                <div
+                                  key={event.id || `${event.event_type}-${event.created_at}`}
+                                  style={{
+                                    color: "#173750",
+                                    fontSize: isCompact ? 12 : 13,
+                                    fontWeight: 850,
+                                    lineHeight: 1.35,
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {protectedTradeEventLine(event)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                color: "#41556B",
+                                fontSize: isCompact ? 12 : 13,
+                                fontWeight: 800,
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              Open or refresh the record to load the detailed
+                              protected-trade event trail.
+                            </div>
+                          )}
+                        </div>
                         <StableButton
                           debugId="marketplace.protected-trade.copy-paper"
                           type="button"

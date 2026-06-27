@@ -83,6 +83,11 @@ assertContains(
   "Protected Trade evidence paper must carry private-record privacy and non-custodial limitation language."
 );
 
+assertContains(
+  /getProtectedTrade[\s\S]*?selectedProtectedTradeDetail[\s\S]*?loadingProtectedTradeDetail/,
+  "Marketplace must load selected protected-trade detail so event trails can back the evidence paper."
+);
+
 const trustedTradeSection = sectionBetween(
   /id="marketplace-members-shops"/,
   /id="marketplace-loans-support"/
@@ -114,6 +119,9 @@ if (!trustedTradeSection.text) {
     /debugId="marketplace\.protected-trade\.record-update"[\s\S]*?Record update/,
     /Evidence paper/,
     /Signed-in evidence paper/,
+    /selectedProtectedTradeHasDetail/,
+    /recentProtectedTradeEvents/,
+    /Event trail/,
     /<GsnSnapshotPaperCard[\s\S]*?paperText=\{protectedTradeEvidencePaperText\}/,
     /debugId="marketplace\.protected-trade\.copy-paper"[\s\S]*?Copy paper text/,
     /Visible members/,
