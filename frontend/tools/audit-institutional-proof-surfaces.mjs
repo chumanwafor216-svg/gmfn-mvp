@@ -1067,6 +1067,11 @@ assertContains(
   "Money In copied full instructions must use the branded GSN payment instruction package."
 );
 assertContains(
+  "paymentInstructions",
+  /function handleCopyPayInDetails\(\)[\s\S]*?buildGsnPaymentInstructionPackage\([\s\S]*?GSN Money In Pay-In Details[\s\S]*?not a receipt[\s\S]*?GSN finance sees a bank match or completes proof review[\s\S]*?GSN pay-in instruction copied\./,
+  "Money In pay-in details copy must use the branded GSN payment instruction package instead of raw account text."
+);
+assertContains(
   "repayment",
   /buildGsnPaymentInstructionPackage[\s\S]*?GSN Support Repayment Instruction[\s\S]*?safeCopy\(text\)/,
   "Repayment copied full instructions must use the branded GSN payment instruction package."

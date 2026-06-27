@@ -1310,11 +1310,32 @@ export default function PaymentInstructionsPage() {
       return;
     }
 
-    copyText(payInCopyText);
+    const text = buildGsnPaymentInstructionPackage({
+      title: "GSN Money In Pay-In Details",
+      purpose:
+        "Keep the payable account details and generated reference together before transfer.",
+      reference: paymentReference,
+      memberName,
+      gsnId: currentGmfnId,
+      communityName: communityLabel,
+      communityId: publicCommunityCode,
+      routeName: "Money In",
+      amount: formattedInputAmount
+        ? `${formattedInputAmount} ${poolCurrency}`
+        : "",
+      status: inferredResult.step,
+      detailLines: [
+        payInCopyText,
+        "Use the exact generated reference when paying.",
+        "A screenshot or copied instruction is not a receipt until GSN finance sees a bank match or completes proof review.",
+      ],
+    });
+
+    copyText(text);
 
     setNotice({
       tone: "success",
-      text: "Pay-in account details copied.",
+      text: "GSN pay-in instruction copied.",
     });
   }
 

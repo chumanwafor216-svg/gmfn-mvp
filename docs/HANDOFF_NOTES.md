@@ -1,3 +1,37 @@
+## 2026-06-27 - Money In pay-in details copy now uses GSN payment paper
+
+Owner request:
+- Continue institutional finishing for customer-facing papers, documents, and
+  screenshotable/shareable pages, especially where copy can look like proof or a
+  receipt.
+
+Correction completed locally:
+- `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - changed `Copy details` / `handleCopyPayInDetails()` from copying raw
+    pay-in amount/account/reference lines to copying a branded
+    `GSN Money In Pay-In Details` package through
+    `buildGsnPaymentInstructionPackage()`.
+  - added explicit wording inside the copied package that a screenshot or copied
+    instruction is not a receipt until GSN finance sees a bank match or completes
+    proof review.
+  - changed success feedback to `GSN pay-in instruction copied.`
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - now requires the Pay-In Details copy path to use the branded GSN payment
+    instruction package instead of raw account text.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:finance-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+
+Truth / remaining risk:
+- This improves copied payment instruction presentation and reduces receipt-like
+  overclaiming. It does not confirm money movement, reconcile bank transfers,
+  automate payment matching, or create a bank guarantee.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Public Shop Copy now sends GSN shop invitation paper
 
 Owner request:
