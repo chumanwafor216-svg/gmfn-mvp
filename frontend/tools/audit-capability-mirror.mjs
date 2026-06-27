@@ -36,6 +36,13 @@ function assertTextIncludes(file, value, message) {
   }
 }
 
+function assertTextExcludes(file, value, message) {
+  const text = readRepo(file);
+  if (text.includes(value)) {
+    findings.push({ file, message, text: value });
+  }
+}
+
 const capabilityTitles = [
   "Release Before Payment",
   "Trusted Buying and Selling",
@@ -92,6 +99,18 @@ for (const value of [
     "The public executive summary PDF generator must mirror all 22 GSN capabilities and keep the paid-verification boundary."
   );
 }
+
+assertTextIncludes(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  "22 things GSN does",
+  "The public My GSN and I guide must use the institutional 22-capability heading."
+);
+
+assertTextExcludes(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  "22 things GSN can do for you",
+  "The public My GSN and I guide must not drift back to casual 22-capability wording."
+);
 
 assertContains(
   "frontend/src/lib/gmfnCapabilities.ts",

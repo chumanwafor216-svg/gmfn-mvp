@@ -75166,3 +75166,36 @@ GSN-branded invite composer and invite-entry continuity.
     `origin/main`;
   - this page-level placeholder cleanup is pending until the commit containing
     this note is pushed to `origin/main`.
+
+### Follow-up same day - Public 22-capability guide title aligned
+
+- Trigger:
+  - continuing the institutional branding sweep found that the public
+    `/guide` / in-app `my-gmfn-and-i` page still used the softer title
+    `22 things GSN can do for you`, while the public executive-summary PDF and
+    system gap review now use `22 things GSN does`.
+- Unabated truth:
+  - this is branding and institutional presentation alignment only;
+  - the page already reads from the shared 22-capability registry, including
+    Commitment Builder;
+  - no new capability, live verification, paid/API verification, payout,
+    escrow, or protected trade-release capability was added.
+- Changed:
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`
+    - changed the public guide heading to `22 things GSN does`;
+    - aligned the in-app helper line to `See the 22 things GSN does and where
+      each tool lives.`
+  - `frontend/tools/audit-capability-mirror.mjs`
+    - added positive and negative guards so the guide keeps the institutional
+      heading and does not drift back to casual wording.
+- Verification:
+  - Passed `npm run audit:capability-mirror` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - public paper placeholder cleanup commit `203735f6` was pushed to
+    `origin/main`;
+  - this guide-title alignment is pending until the commit containing this note
+    is pushed to `origin/main`.

@@ -628,7 +628,7 @@ function PublicCapabilitiesGuidePage({
               letterSpacing: 0,
             }}
           >
-            22 things GSN can do for you
+            22 things GSN does
           </h1>
 
           <div
@@ -1260,7 +1260,7 @@ export default function MyGMFNAndIPage() {
                 fontWeight: 700,
               }}
             >
-              See what GSN can do for you and where each tool lives.
+              See the 22 things GSN does and where each tool lives.
             </div>
 
             <StableCtaLink
