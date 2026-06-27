@@ -47,7 +47,7 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   {
     id: 1,
     title: "Release Before Payment",
-    proverb: "Release Before Payment reduces risk before money moves.",
+    proverb: "Release Before Payment reduces blind risk before money moves.",
     gmfn:
       "GSN makes trust visible before payment so identity, trust, and community can improve access and reduce risk.",
     category: "trade",
@@ -87,7 +87,7 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   {
     id: 5,
     title: "Spotlight Visibility",
-    proverb: "Spotlight Visibility helps the right value get seen first.",
+    proverb: "Spotlight Visibility helps recorded value get seen first.",
     gmfn:
       "GSN uses visible trust to improve presence and confidence around spotlighted goods, services, and people.",
     category: "visibility",
@@ -213,7 +213,7 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   {
     id: 17,
     title: "One Global Shop",
-    proverb: "One Global Shop gives one identity a wider trusted market presence.",
+    proverb: "One Global Shop gives one identity a wider market presence.",
     gmfn:
       "GSN helps one merchant identity stay visible across communities instead of rebuilding from zero in each market.",
     category: "visibility",
@@ -225,7 +225,7 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     title: "Service Economy Participation",
     proverb: "Service Economy Participation brings trust into work that often stays informal.",
     gmfn:
-      "GSN helps service work become more visible and trusted so access improves for workers and buyers alike.",
+      "GSN helps service work become more visible and reviewable so access improves for workers and buyers alike.",
     category: "work",
     tone: "focus",
     priority: 6,

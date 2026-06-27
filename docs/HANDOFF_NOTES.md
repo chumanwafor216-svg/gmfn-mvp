@@ -1,3 +1,46 @@
+## 2026-06-27 - 22-capability visible cards tightened against overclaiming
+
+Owner request:
+- Continue including `22 things GSN does` in the institutional cleanup,
+  branding, and public-facing alignment while keeping future-looking capability
+  claims bounded.
+
+Correction completed locally:
+- `frontend/src/pages/MyGMFNAndIPage.tsx`
+  - changed the visible 22-capability card summaries so they no longer imply
+    that visibility, lending, shop presence, or service work is already
+    verified trust:
+    - `trusted value` -> `recorded value`
+    - `people-backed lending confidence` -> `people-backed support confidence`
+    - `one trusted identity` -> `one identity`
+    - `visible and trusted` -> `visible and reviewable`
+- `frontend/src/lib/gmfnCapabilities.ts`
+  - tightened shared capability phrasing for `Release Before Payment`,
+    `Spotlight Visibility`, `One Global Shop`, and `Service Economy
+    Participation` so the registry reads as institutional evidence/visibility
+    support, not a blanket trust stamp.
+- `frontend/tools/audit-capability-mirror.mjs`
+  - added guards requiring the bounded visible card lines and blocking the old
+    overclaiming short summaries.
+
+Verification:
+- `npm --prefix frontend run audit:capability-mirror`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This is visible institutional copy alignment only. It does not add new
+  capability engines, paid/API verification, regulated payout automation,
+  escrow, or protected trade-release rails.
+- The static executive-summary PDF generator was already using bounded
+  explanations for these capabilities, so no PDF regeneration was needed for
+  this slice.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Legacy merchant verification UI bounded before any future re-enable
 
 Owner request:

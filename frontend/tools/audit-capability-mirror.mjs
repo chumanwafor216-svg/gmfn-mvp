@@ -131,6 +131,25 @@ assertContains(
 );
 
 assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /5: "Helps recorded value get seen first\."[\s\S]*?8: "Turns visible trust into people-backed support confidence\."[\s\S]*?17: "Gives one identity one wider shop presence\."[\s\S]*?18: "Makes informal service work more visible and reviewable\."/,
+  "The 22-capability visible card lines must avoid implying that public visibility, lending, shop presence, or service work is already verified trust."
+);
+
+for (const oldLine of [
+  "Helps trusted value get seen first.",
+  "Turns visible trust into people-backed lending confidence.",
+  "Gives one trusted identity one wider shop presence.",
+  "Makes informal service work more visible and trusted.",
+]) {
+  assertTextExcludes(
+    "frontend/src/pages/MyGMFNAndIPage.tsx",
+    oldLine,
+    "The visible 22-capability card lines must not overclaim trust, lending, or service verification."
+  );
+}
+
+assertContains(
   "docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md",
   /paid\/API verification integrations[\s\S]*?automatic bank payout[\s\S]*?protected trade release-before-payment/,
   "The 99 percent mirror plan must keep the pilot truth about paid/API verification, automatic payout, and protected trade release."
