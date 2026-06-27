@@ -502,10 +502,10 @@ def _verification_strength_label(active_count: int) -> str:
 def _verification_strength_text(active_count: int) -> str:
     return {
         "community_established": "Community Established",
-        "strongly_verified": "Strongly Verified",
-        "community_verified": "Community Verified",
-        "lightly_verified": "Lightly Verified",
-        "joined": "Joined / Unverified",
+        "strongly_verified": "Strong member evidence",
+        "community_verified": "Community evidence",
+        "lightly_verified": "Light member evidence",
+        "joined": "Joined / witness not started",
     }[_verification_strength_label(active_count)]
 
 
@@ -646,9 +646,9 @@ def _member_verification_summary(
         "strength": _verification_strength_label(active_count),
         "strength_label": _verification_strength_text(active_count),
         "public_label": (
-            "Verified Community Member"
+            "Community member evidence found"
             if active_count >= 3
-            else "Community Membership Not Fully Verified"
+            else "Active community member; witness evidence limited"
         ),
         "renewal_status": renewal_status,
         "renewal_status_label": _membership_renewal_status_text(renewal_status),

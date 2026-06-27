@@ -533,11 +533,15 @@ function normalizeWitnessSummary(raw: any): MemberWitnessSummary {
     subjectUserId: Number(source?.subject_user_id || raw?.membership?.user_id || 0) || null,
     activeCount: Number(source?.active_verification_count || source?.activeCount || 0) || 0,
     totalCount: Number(source?.total_verification_count || source?.totalCount || 0) || 0,
-    strengthLabel: firstTruthy(source?.strength_label, source?.strengthLabel, "Joined / Unverified"),
+    strengthLabel: firstTruthy(
+      source?.strength_label,
+      source?.strengthLabel,
+      "Joined / witness not started"
+    ),
     publicLabel: firstTruthy(
       source?.public_label,
       source?.publicLabel,
-      "Community Membership Not Fully Verified"
+      "Active community member; witness evidence limited"
     ),
     renewalStatus: firstTruthy(source?.renewal_status, source?.renewalStatus),
     renewalStatusLabel: firstTruthy(source?.renewal_status_label, source?.renewalStatusLabel),

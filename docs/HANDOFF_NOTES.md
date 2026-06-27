@@ -1,3 +1,59 @@
+## 2026-06-27 - Community member public labels changed from verification to evidence language
+
+Owner request:
+- Continue institutional deep-cleaning for outsider-facing verification papers,
+  public TrustSlip/Community Member pages, and screenshotable evidence surfaces.
+
+Correction completed locally:
+- `gmfn_backend/app/services/community_confirmation_service.py`
+  - changed member witness display labels from `Strongly Verified`,
+    `Community Verified`, `Lightly Verified`, and `Joined / Unverified` to
+    `Strong member evidence`, `Community evidence`, `Light member evidence`,
+    and `Joined / witness not started`.
+  - changed the public label from `Verified Community Member` to `Community
+    member evidence found`.
+  - changed the weaker public label to `Active community member; witness
+    evidence limited`.
+  - changed public activity category `Trusted trade` to `Trade activity`.
+- `gmfn_backend/app/services/trust_slips_services.py`
+  - aligned TrustSlip community-context witness labels and public activity
+    category with the same evidence wording.
+- `gmfn_backend/app/api/routes/clans.py`
+  - aligned member-verification summary labels returned by the route.
+- `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+  - updated stale fallback wording so partial responses do not show the old
+    verification labels.
+- `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+  - updated the witness-strength fallback to `Joined / witness not started`.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added guards requiring the evidence-language labels and blocking the old
+    blanket verification / trusted-trade labels in active public surfaces.
+- `gmfn_backend/tests/test_community_member_verifications.py`
+  - updated the public-label assertions while keeping the underlying strength
+    key checks unchanged.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\services\trust_slips_services.py gmfn_backend\app\api\routes\clans.py gmfn_backend\tests\test_community_member_verifications.py`
+- `python -m pytest -q gmfn_backend\tests\test_community_member_verifications.py::test_members_can_record_and_withdraw_member_witness_verification gmfn_backend\tests\test_community_member_verifications.py::test_public_member_credential_shows_aggregate_membership_without_private_witnesses`
+  - result: `2 passed`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This changes public-facing wording only. It does not change witness counts,
+  membership eligibility, TrustSlip scoring, community confirmation rules, or
+  merchant verification behavior.
+- The machine-readable strength keys such as `community_verified` remain
+  unchanged for compatibility; only the human labels are softened.
+- Historical docs still contain older phrases such as `Community Verified` and
+  `Trusted Buying and Selling`. Those docs need a separate document-cleanup
+  pass if they are still customer-facing.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - TrustSlip decision question now frames evidence, not personal verdict
 
 Owner request:

@@ -626,7 +626,13 @@ export default function CommunityMemberVerifyPage() {
                 {fact("Status", firstTruthy(credential.membership_status, "active"))}
                 {fact("Community record", communityRecordCurrentnessLabel)}
                 {fact("Affiliate status", firstTruthy(credential.official_affiliate_label, "No parent-domain claim"))}
-                {fact("Witness strength", firstTruthy(credential.membership_strength_label, "Joined / Unverified"))}
+                {fact(
+                  "Witness strength",
+                  firstTruthy(
+                    credential.membership_strength_label,
+                    "Joined / witness not started"
+                  )
+                )}
                 {fact("Member witnesses", witnessCount)}
                 {fact("Activity events", activityCount)}
                 {fact("Latest activity", dateLabel(credential.community_activity_latest_at))}

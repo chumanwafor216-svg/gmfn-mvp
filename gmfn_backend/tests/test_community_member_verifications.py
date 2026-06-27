@@ -425,8 +425,8 @@ def test_members_can_record_and_withdraw_member_witness_verification(
         summary = data["verification_summary"]
         assert summary["active_verification_count"] == 3
         assert summary["strength"] == "community_verified"
-        assert summary["strength_label"] == "Community Verified"
-        assert summary["public_label"] == "Verified Community Member"
+        assert summary["strength_label"] == "Community evidence"
+        assert summary["public_label"] == "Community member evidence found"
         assert summary["renewal_status"] == "active"
         assert summary["renewal_status_label"] == "Active"
 
@@ -1137,7 +1137,7 @@ def test_public_member_credential_shows_aggregate_membership_without_private_wit
         assert body["membership_status"] == "active"
         assert body["member_witness_count"] == 3
         assert body["membership_strength"] == "community_verified"
-        assert body["public_label"] == "Verified Community Member"
+        assert body["public_label"] == "Community member evidence found"
         assert body["membership_renewal_status"] == "active"
         assert body["next_witness_renewal_status"] == "renewal_due"
         assert body["next_witness_renewal_status_label"] == "Renewal Due"
@@ -1148,7 +1148,7 @@ def test_public_member_credential_shows_aggregate_membership_without_private_wit
         assert body["community_activity_latest_at"]
         assert body["community_trust_reading_label"] == "Community member evidence"
         assert "active membership" in body["community_trust_reading_scope"]
-        assert "Community Verified" in body["community_trust_reading_scope"]
+        assert "Community evidence" in body["community_trust_reading_scope"]
         assert "3 broad community activity event(s)" in body["community_trust_reading_scope"]
         assert "not a universal trust score" in body["community_trust_reading_scope"]
         assert body["membership_currentness_label"] == "Current witness window"

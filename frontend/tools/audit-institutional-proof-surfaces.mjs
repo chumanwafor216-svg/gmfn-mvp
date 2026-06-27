@@ -33,6 +33,10 @@ const files = {
   reportsRoute: "gmfn_backend/app/api/routes/reports.py",
   analyticsRoute: "gmfn_backend/app/api/routes/analytics.py",
   shareRoute: "gmfn_backend/app/api/routes/share.py",
+  clansRoute: "gmfn_backend/app/api/routes/clans.py",
+  communityConfirmationService:
+    "gmfn_backend/app/services/community_confirmation_service.py",
+  trustSlipService: "gmfn_backend/app/services/trust_slips_services.py",
   publicPaper: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   trustPaperMarks: "frontend/src/components/TrustPaperMarks.tsx",
   privateEvidence: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
@@ -65,6 +69,9 @@ const files = {
   trustSlip: "frontend/src/pages/TrustSlipPage.tsx",
   trustPassport: "frontend/src/pages/TrustScorePage.tsx",
   trustSlipReader: "frontend/src/components/TrustSlipReaderBlock.tsx",
+  communityMemberVerify: "frontend/src/pages/CommunityMemberVerifyPage.tsx",
+  communityConfirmationPolicy:
+    "frontend/src/pages/CommunityConfirmationPolicyPage.tsx",
   evidencePanel: "frontend/src/components/EvidencePackPanel.tsx",
   pilotChecklist: "docs/PILOT_EVIDENCE_PACK_CHECKLIST.md",
   phoneProofChecklist: "docs/GSN_RGU_PHONE_PROOF_PATH_CHECKLIST.md",
@@ -1178,6 +1185,25 @@ assertNotContains(
   /Trust limit signal|Trust Limit Signal/,
   "Copied TrustSlip snapshots must not regress to the older trust limit label."
 );
+
+[
+  "clansRoute",
+  "communityConfirmationService",
+  "trustSlipService",
+  "communityMemberVerify",
+  "communityConfirmationPolicy",
+].forEach((key) => {
+  assertContains(
+    key,
+    /Community evidence|Light member evidence|Strong member evidence|Joined \/ witness not started|Community member evidence found|Active community member; witness evidence limited|Trade activity/,
+    "Community-member and TrustSlip public labels must use evidence wording."
+  );
+  assertNotContains(
+    key,
+    /Strongly Verified|Community Verified|Lightly Verified|Verified Community Member|Trusted trade|Joined \/ Unverified|Community Membership Not Fully Verified/g,
+    "Community-member and TrustSlip public labels must not sound like blanket verification or trusted-trade certification."
+  );
+});
 
 assertContains(
   "evidencePanel",

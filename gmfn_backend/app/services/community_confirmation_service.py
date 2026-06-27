@@ -3944,10 +3944,10 @@ def _verification_strength_label(active_count: int) -> str:
 def _verification_strength_text(active_count: int) -> str:
     return {
         "community_established": "Community Established",
-        "strongly_verified": "Strongly Verified",
-        "community_verified": "Community Verified",
-        "lightly_verified": "Lightly Verified",
-        "joined": "Joined / Unverified",
+        "strongly_verified": "Strong member evidence",
+        "community_verified": "Community evidence",
+        "lightly_verified": "Light member evidence",
+        "joined": "Joined / witness not started",
     }[_verification_strength_label(active_count)]
 
 
@@ -3985,7 +3985,7 @@ def _public_activity_category(event_type: Any) -> str:
     if "repay" in text or "settle" in text:
         return "Repayment discipline"
     if "market" in text or "shop" in text or "spotlight" in text or "demand" in text:
-        return "Trusted trade"
+        return "Trade activity"
     if "rosca" in text or "contribution" in text or "pool" in text or "payment" in text:
         return "Contribution records"
     return "Community activity"
@@ -4182,9 +4182,9 @@ def public_community_member_verification(
         "membership_status": "active",
         "membership_role": getattr(membership, "role", None) or "member",
         "public_label": (
-            "Verified Community Member"
+            "Community member evidence found"
             if active_count >= 3
-            else "Active Community Member; Witness Strength Limited"
+            else "Active community member; witness evidence limited"
         ),
         "member_witness_count": active_count,
         "membership_strength": strength,

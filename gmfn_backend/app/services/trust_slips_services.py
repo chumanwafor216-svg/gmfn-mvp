@@ -572,7 +572,7 @@ def _public_activity_category(event_type: Any) -> str:
     }:
         return "Community verification"
     if "market" in text or "shop" in text or "spotlight" in text or "demand" in text:
-        return "Trusted trade"
+        return "Trade activity"
     if "rosca" in text or "contribution" in text or "pool" in text or "payment" in text:
         return "Contribution records"
     if "loan" in text or "guarantor" in text or "support" in text:
@@ -731,16 +731,16 @@ def _community_context(
         witness_strength_label = "Community Established"
     elif witness_count >= 6:
         witness_strength = "strongly_verified"
-        witness_strength_label = "Strongly Verified"
+        witness_strength_label = "Strong member evidence"
     elif witness_count >= 3:
         witness_strength = "community_verified"
-        witness_strength_label = "Community Verified"
+        witness_strength_label = "Community evidence"
     elif witness_count >= 1:
         witness_strength = "lightly_verified"
-        witness_strength_label = "Lightly Verified"
+        witness_strength_label = "Light member evidence"
     else:
         witness_strength = "joined"
-        witness_strength_label = "Joined / Unverified"
+        witness_strength_label = "Joined / witness not started"
 
     role = _safe_str(getattr(membership, "role", None), "member")
     community_code = (
