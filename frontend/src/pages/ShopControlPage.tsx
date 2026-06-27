@@ -3566,13 +3566,14 @@ export default function ShopControlPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
               Let visitors review this shop through your TrustSlip page before they rely on it.
-              A merchant can later record release evidence against the same signed rail, but it is still
-              evidence for judgement only, not release approval for goods, credit, or money.
+              A merchant can later record a minimum trade packet against the same signed rail: item,
+              invoice, final WhatsApp evidence note, courier handoff, expected delivery, and payment
+              schedule. It is still evidence for judgement only, not release approval for goods, credit, or money.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>1. Create link</span>
-              <span style={badge(false)}>2. Merchant verifies</span>
-              <span style={badge(false)}>3. Release evidence recorded</span>
+              <span style={badge(false)}>2. Verify rail</span>
+              <span style={badge(false)}>3. Packet recorded</span>
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>

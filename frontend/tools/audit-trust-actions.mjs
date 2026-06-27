@@ -1486,6 +1486,12 @@ assertNotContains(
 );
 
 assertContains(
+  "../gmfn_backend/app/schemas/merchant_release.py",
+  /trade_context[\s\S]*?item_title[\s\S]*?counterparty_whatsapp_label[\s\S]*?invoice_reference[\s\S]*?courier_name[\s\S]*?expected_delivery_date[\s\S]*?payment_schedule_note[\s\S]*?receipt_status/,
+  "Merchant release schema must keep the minimal GSN trade packet fields for WhatsApp/courier commerce evidence."
+);
+
+assertContains(
   "../gmfn_backend/app/services/merchant_verify_service.py",
   /import hashlib[\s\S]*?import hmac[\s\S]*?hmac\.new\(secret, body, hashlib\.sha256\)\.digest\(\)[\s\S]*?expected_sig = hmac\.new\(_get_secret\(\)\.encode\("utf-8"\), body, hashlib\.sha256\)\.digest\(\)[\s\S]*?hmac\.compare_digest\(sig, expected_sig\)/,
   "Merchant verification tokens must be protected by HMAC signing and checked on public verification."
@@ -1499,13 +1505,13 @@ assertContains(
 
 assertContains(
   "../gmfn_backend/app/api/routes/merchant_release.py",
-  /verify_merchant_token\(db, token=payload\.token\)[\s\S]*?merchant\.release_recorded[\s\S]*?release_evidence_only[\s\S]*?not_escrow[\s\S]*?not_money_custody[\s\S]*?not_payout[\s\S]*?not_bank_confirmation[\s\S]*?not_delivery_guarantee[\s\S]*?not_release_authority/,
-  "Merchant Release must use the signed Merchant Verify token and remain bounded as evidence, not release authority."
+  /verify_merchant_token\(db, token=payload\.token\)[\s\S]*?trade_packet_id[\s\S]*?trade_packet[\s\S]*?conversation_system_of_record[\s\S]*?whatsapp_or_parties[\s\S]*?merchant\.release_recorded[\s\S]*?release_evidence_only[\s\S]*?minimum_trade_packet[\s\S]*?whatsapp_conversation_not_stored[\s\S]*?courier_not_controlled_by_gsn[\s\S]*?not_escrow[\s\S]*?not_money_custody[\s\S]*?not_payout[\s\S]*?not_bank_confirmation[\s\S]*?not_delivery_guarantee[\s\S]*?not_release_authority/,
+  "Merchant Release must use the signed Merchant Verify token, record the minimal trade packet, and remain bounded as evidence, not release authority."
 );
 
 assertContains(
   "src/lib/merchantChannel.ts",
-  /export function merchantReleaseDeskPath[\s\S]*?\/merchant-release\/\$\{encodeURIComponent\(token\)\}[\s\S]*?export async function recordMerchantRelease[\s\S]*?fetch\("\/api\/merchant\/releases"[\s\S]*?goods_value[\s\S]*?merchant_note/,
+  /export function merchantReleaseDeskPath[\s\S]*?\/merchant-release\/\$\{encodeURIComponent\(token\)\}[\s\S]*?export async function recordMerchantRelease[\s\S]*?fetch\("\/api\/merchant\/releases"[\s\S]*?goods_value[\s\S]*?merchant_note[\s\S]*?invoice_reference[\s\S]*?courier_name[\s\S]*?payment_schedule_note/,
   "Frontend merchant channel must expose the Merchant Release record endpoint through one helper."
 );
 
@@ -1517,13 +1523,13 @@ assertContains(
 
 assertContains(
   "src/pages/MerchantReleasePage.tsx",
-  /verifyMerchantPublic[\s\S]*?recordMerchantRelease[\s\S]*?Record release evidence[\s\S]*?not payment confirmation or automatic release authority[\s\S]*?No escrow[\s\S]*?No payout approval/,
-  "Merchant Release page must verify the signed rail and record bounded release evidence."
+  /verifyMerchantPublic[\s\S]*?recordMerchantRelease[\s\S]*?not payment confirmation or automatic release authority[\s\S]*?No escrow[\s\S]*?No payout approval[\s\S]*?Trade shape[\s\S]*?GSN \+ outside GSN[\s\S]*?Invoice \/ agreement evidence[\s\S]*?Courier[\s\S]*?Payment schedule[\s\S]*?Record release evidence/,
+  "Merchant Release page must verify the signed rail and record bounded minimum trade packet evidence."
 );
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /getMerchantLink[\s\S]*?merchantReleaseDeskPath[\s\S]*?Signed merchant release desk[\s\S]*?debugId="trust-slip\.merchant-release\.create"[\s\S]*?debugId="trust-slip\.merchant-release\.copy"/,
+  /getMerchantLink[\s\S]*?merchantReleaseDeskPath[\s\S]*?Signed merchant release desk[\s\S]*?minimum trade packet[\s\S]*?debugId="trust-slip\.merchant-release\.create"[\s\S]*?debugId="trust-slip\.merchant-release\.copy"/,
   "TrustSlip merchant verification must let the holder create and copy the signed merchant release desk."
 );
 
@@ -1547,7 +1553,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /1\. Create link[\s\S]*?2\. Merchant verifies[\s\S]*?3\. Release evidence recorded/,
+  /minimum trade packet[\s\S]*?final WhatsApp evidence note[\s\S]*?courier handoff[\s\S]*?payment[\s\S]*?1\. Create link[\s\S]*?2\. Verify rail[\s\S]*?3\. Packet recorded/,
   "Shop Control must show Merchant Release as a clear 1-2-3 rail."
 );
 

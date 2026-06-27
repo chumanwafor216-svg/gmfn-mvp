@@ -81,7 +81,7 @@ export const OWNER_SHOP_HANDLES: OwnerShopHandle[] = [
   {
     id: "merchant-release",
     label: "Merchant Release Rail",
-    detail: "Verification and recorded release evidence for your one shop",
+    detail: "Minimum trade evidence for GSN and outside-GSN commerce",
     route: "shop",
     hash: OWNER_SHOP_HASHES.merchantRelease,
   },

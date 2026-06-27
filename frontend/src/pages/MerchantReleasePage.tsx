@@ -154,6 +154,21 @@ export default function MerchantReleasePage() {
   const [goodsValue, setGoodsValue] = useState("");
   const [currency, setCurrency] = useState("NGN");
   const [merchantNote, setMerchantNote] = useState("");
+  const [tradeContext, setTradeContext] = useState("gsn_external");
+  const [itemTitle, setItemTitle] = useState("");
+  const [counterpartyLabel, setCounterpartyLabel] = useState("");
+  const [counterpartyWhatsappLabel, setCounterpartyWhatsappLabel] = useState("");
+  const [productEvidenceNote, setProductEvidenceNote] = useState("");
+  const [invoiceReference, setInvoiceReference] = useState("");
+  const [invoiceEvidenceNote, setInvoiceEvidenceNote] = useState("");
+  const [agreementEvidenceNote, setAgreementEvidenceNote] = useState("");
+  const [courierName, setCourierName] = useState("");
+  const [courierContactLabel, setCourierContactLabel] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [releasedToCourierAt, setReleasedToCourierAt] = useState("");
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
+  const [paymentScheduleNote, setPaymentScheduleNote] = useState("");
+  const [receiptStatus, setReceiptStatus] = useState("awaiting_delivery");
 
   useEffect(() => {
     let cancelled = false;
@@ -213,6 +228,21 @@ export default function MerchantReleasePage() {
         goods_value: goodsValue,
         currency,
         merchant_note: merchantNote || "Merchant release evidence recorded from public GSN release desk.",
+        trade_context: tradeContext,
+        item_title: itemTitle,
+        counterparty_label: counterpartyLabel,
+        counterparty_whatsapp_label: counterpartyWhatsappLabel,
+        product_evidence_note: productEvidenceNote,
+        invoice_reference: invoiceReference,
+        invoice_evidence_note: invoiceEvidenceNote,
+        agreement_evidence_note: agreementEvidenceNote,
+        courier_name: courierName,
+        courier_contact_label: courierContactLabel,
+        tracking_number: trackingNumber,
+        released_to_courier_at: releasedToCourierAt,
+        expected_delivery_date: expectedDeliveryDate,
+        payment_schedule_note: paymentScheduleNote,
+        receipt_status: receiptStatus,
       });
       setReleaseResult(result);
       setNotice({
@@ -235,7 +265,16 @@ export default function MerchantReleasePage() {
           "GSN Merchant Release Evidence",
           `Link ID: ${releaseResult.verification_link_id || "Not shown"}`,
           `Pack ID: ${releaseResult.pack_id || "Not shown"}`,
+          `Trade Packet ID: ${releaseResult.trade_packet_id || "Not shown"}`,
           `Goods value: ${releaseResult.goods_value} ${releaseResult.currency}`,
+          `Item: ${releaseResult.trade_packet?.item_title || "Not recorded"}`,
+          `Counterparty: ${releaseResult.trade_packet?.counterparty_label || "Not recorded"}`,
+          `Invoice: ${releaseResult.trade_packet?.invoice_reference || "Not recorded"}`,
+          `Courier: ${releaseResult.trade_packet?.courier_name || "Not recorded"}`,
+          `Tracking: ${releaseResult.trade_packet?.tracking_number || "Not recorded"}`,
+          `Expected delivery: ${releaseResult.trade_packet?.expected_delivery_date || "Not recorded"}`,
+          `Payment schedule: ${releaseResult.trade_packet?.payment_schedule_note || "Not recorded"}`,
+          "WhatsApp remains the conversation channel; GSN stores the minimum final evidence reference only.",
           releaseResult.evidence_boundary,
         ].join("\n")
       : "";
@@ -323,9 +362,54 @@ export default function MerchantReleasePage() {
             <div>
               <div style={sectionLabel()}>Release note</div>
               <p style={{ margin: "6px 0 0", ...helperText() }}>
-                Enter only the goods value and a short factual note. Do not include private information
-                that is not needed for the evidence record.
+                Enter the minimum final evidence. WhatsApp can hold the conversation; GSN keeps the
+                timestamped reference packet for judgement later.
               </p>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Trade shape</span>
+                <select
+                  value={tradeContext}
+                  onChange={(event) => setTradeContext(event.target.value)}
+                  style={field()}
+                >
+                  <option value="gsn_external">GSN + outside GSN</option>
+                  <option value="external_gsn">Outside GSN + GSN</option>
+                  <option value="gsn_gsn">GSN + GSN</option>
+                </select>
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Item / product</span>
+                <input
+                  value={itemTitle}
+                  onChange={(event) => setItemTitle(event.target.value)}
+                  placeholder="Solar charger"
+                  style={field()}
+                />
+              </label>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Other party</span>
+                <input
+                  value={counterpartyLabel}
+                  onChange={(event) => setCounterpartyLabel(event.target.value)}
+                  placeholder="Seller or buyer name/label"
+                  style={field()}
+                />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>WhatsApp label</span>
+                <input
+                  value={counterpartyWhatsappLabel}
+                  onChange={(event) => setCounterpartyWhatsappLabel(event.target.value)}
+                  placeholder="Saved contact or masked number"
+                  style={field()}
+                />
+              </label>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 110px", gap: 10 }}>
@@ -351,13 +435,133 @@ export default function MerchantReleasePage() {
             </div>
 
             <label style={{ display: "grid", gap: 6 }}>
+              <span style={sectionLabel()}>Product evidence</span>
+              <textarea
+                value={productEvidenceNote}
+                onChange={(event) => setProductEvidenceNote(event.target.value)}
+                placeholder="Example: product photo or video screenshot kept from WhatsApp."
+                rows={3}
+                style={{ ...field(), minHeight: 86, resize: "none", lineHeight: 1.45 }}
+              />
+            </label>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Invoice reference</span>
+                <input
+                  value={invoiceReference}
+                  onChange={(event) => setInvoiceReference(event.target.value)}
+                  placeholder="Invoice number or label"
+                  style={field()}
+                />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Receipt state</span>
+                <select
+                  value={receiptStatus}
+                  onChange={(event) => setReceiptStatus(event.target.value)}
+                  style={field()}
+                >
+                  <option value="awaiting_delivery">Awaiting delivery</option>
+                  <option value="received">Received</option>
+                  <option value="not_received">Not received</option>
+                  <option value="disputed">Disputed</option>
+                </select>
+              </label>
+            </div>
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={sectionLabel()}>Invoice / agreement evidence</span>
+              <textarea
+                value={invoiceEvidenceNote}
+                onChange={(event) => setInvoiceEvidenceNote(event.target.value)}
+                placeholder="Example: invoice screenshot captured from WhatsApp."
+                rows={3}
+                style={{ ...field(), minHeight: 86, resize: "none", lineHeight: 1.45 }}
+              />
+            </label>
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={sectionLabel()}>Final agreement</span>
+              <textarea
+                value={agreementEvidenceNote}
+                onChange={(event) => setAgreementEvidenceNote(event.target.value)}
+                placeholder="Example: final WhatsApp screenshot says item is released to courier before scheduled payment."
+                rows={3}
+                style={{ ...field(), minHeight: 86, resize: "none", lineHeight: 1.45 }}
+              />
+            </label>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Courier</span>
+                <input
+                  value={courierName}
+                  onChange={(event) => setCourierName(event.target.value)}
+                  placeholder="Courier or transport company"
+                  style={field()}
+                />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Courier contact</span>
+                <input
+                  value={courierContactLabel}
+                  onChange={(event) => setCourierContactLabel(event.target.value)}
+                  placeholder="Saved contact or masked number"
+                  style={field()}
+                />
+              </label>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Tracking</span>
+                <input
+                  value={trackingNumber}
+                  onChange={(event) => setTrackingNumber(event.target.value)}
+                  placeholder="Tracking or waybill"
+                  style={field()}
+                />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Courier handoff</span>
+                <input
+                  value={releasedToCourierAt}
+                  onChange={(event) => setReleasedToCourierAt(event.target.value)}
+                  placeholder="Date/time released"
+                  style={field()}
+                />
+              </label>
+              <label style={{ display: "grid", gap: 6 }}>
+                <span style={sectionLabel()}>Expected delivery</span>
+                <input
+                  value={expectedDeliveryDate}
+                  onChange={(event) => setExpectedDeliveryDate(event.target.value)}
+                  placeholder="Expected date"
+                  style={field()}
+                />
+              </label>
+            </div>
+
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={sectionLabel()}>Payment schedule</span>
+              <textarea
+                value={paymentScheduleNote}
+                onChange={(event) => setPaymentScheduleNote(event.target.value)}
+                placeholder="Example: payment to seller is scheduled after courier handoff evidence."
+                rows={3}
+                style={{ ...field(), minHeight: 86, resize: "none", lineHeight: 1.45 }}
+              />
+            </label>
+
+            <label style={{ display: "grid", gap: 6 }}>
               <span style={sectionLabel()}>Merchant note</span>
               <textarea
                 value={merchantNote}
                 onChange={(event) => setMerchantNote(event.target.value)}
-                placeholder="Goods released after checking the signed GSN evidence page."
-                rows={4}
-                style={{ ...field(), minHeight: 112, resize: "none", lineHeight: 1.45 }}
+                placeholder="Short factual note. Do not include private chat that is not needed."
+                rows={3}
+                style={{ ...field(), minHeight: 86, resize: "none", lineHeight: 1.45 }}
               />
             </label>
 
@@ -375,8 +579,45 @@ export default function MerchantReleasePage() {
         ) : (
           <section style={{ position: "relative", zIndex: 1, marginTop: 18, display: "grid", gap: 12 }}>
             <div style={noticeStyle("success")}>
-              Release evidence is recorded under Link ID {releaseResult.verification_link_id || "not shown"}.
+              Release evidence is recorded under Link ID {releaseResult.verification_link_id || "not shown"} and
+              Trade Packet ID {releaseResult.trade_packet_id || "not shown"}.
               This record is not bank confirmation, delivery guarantee, escrow, payout approval, or automatic release authority.
+            </div>
+            <div
+              style={{
+                borderRadius: 18,
+                border: "1px solid rgba(214,226,239,0.9)",
+                background: "#FFFFFF",
+                padding: 14,
+                display: "grid",
+                gap: 8,
+              }}
+            >
+              <div style={sectionLabel()}>Minimum packet</div>
+              {[
+                ["Item", releaseResult.trade_packet?.item_title || "Not recorded"],
+                ["Other party", releaseResult.trade_packet?.counterparty_label || "Not recorded"],
+                ["Invoice", releaseResult.trade_packet?.invoice_reference || "Not recorded"],
+                ["Courier", releaseResult.trade_packet?.courier_name || "Not recorded"],
+                ["Tracking", releaseResult.trade_packet?.tracking_number || "Not recorded"],
+                ["Expected delivery", releaseResult.trade_packet?.expected_delivery_date || "Not recorded"],
+                ["Receipt state", releaseResult.trade_packet?.receipt_status || "Awaiting delivery"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "120px minmax(0, 1fr)",
+                    gap: 8,
+                    color: "#173750",
+                    fontSize: 13,
+                    fontWeight: 850,
+                  }}
+                >
+                  <span style={{ color: "#52677C", textTransform: "uppercase", fontSize: 11 }}>{label}</span>
+                  <span style={{ overflowWrap: "anywhere" }}>{value}</span>
+                </div>
+              ))}
             </div>
             <SecondaryButton
               onClick={() => void copyReceipt()}

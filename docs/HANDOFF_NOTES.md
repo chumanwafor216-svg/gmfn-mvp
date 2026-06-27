@@ -1,3 +1,79 @@
+## 2026-06-27 - Merchant Release now records a minimal WhatsApp/courier trade packet
+
+Owner request:
+- Complete the merchant release rail as minimally as possible without
+  reinventing WhatsApp, becoming a courier, holding money, or claiming release
+  authority.
+
+Correction completed locally:
+- `gmfn_backend/app/schemas/merchant_release.py`
+  - extended the public merchant release payload with minimal trade-packet
+    fields: trade context (`GSN + outside GSN`, `outside GSN + GSN`,
+    `GSN + GSN`), item title, counterparty label/WhatsApp label, product
+    evidence note, invoice reference/evidence note, final agreement note,
+    courier name/contact/tracking, courier handoff time, expected delivery,
+    payment schedule note, and receipt status.
+- `gmfn_backend/app/api/routes/merchant_release.py`
+  - still verifies the signed Merchant Verify token and records one
+    `merchant.release_recorded` TrustEvent per token.
+  - now stores a `trade_packet_id` and structured `trade_packet` in the event
+    meta.
+  - records explicit guardrails:
+    `minimum_trade_packet`, `whatsapp_conversation_not_stored`,
+    `courier_not_controlled_by_gsn`, plus the existing no-escrow/no-money
+    custody/no-payout/no-bank-confirmation/no-delivery-guarantee/no-release
+    authority flags.
+  - keeps WhatsApp/the parties as the conversation system of record; GSN records
+    only the timestamped final evidence reference packet.
+- `frontend/src/lib/merchantChannel.ts`
+  - added the new packet fields to `recordMerchantRelease()` and response
+    typing.
+- `frontend/src/pages/MerchantReleasePage.tsx`
+  - public desk now collects the minimal packet fields without file upload or
+    chat storage.
+  - receipt copy and the on-screen success card include Link ID, Pack ID, Trade
+    Packet ID, item, counterparty, invoice, courier, tracking, expected
+    delivery, payment schedule, and evidence-only boundary.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - explains that the signed merchant release desk records the minimum trade
+    packet.
+- `frontend/src/pages/ShopControlPage.tsx`
+  - owner rail copy now names the packet: item, invoice, final WhatsApp
+    evidence note, courier handoff, expected delivery, and payment schedule.
+  - the 1-2-3 rail now reads: create link, verify rail, packet recorded.
+- `frontend/src/lib/ownerShopHandles.ts`
+  - Community Home/Shop Control handle now describes the rail as minimum trade
+    evidence for GSN and outside-GSN commerce.
+- `frontend/tools/audit-trust-actions.mjs`
+  - guards the packet fields, backend evidence-only flags, frontend public desk
+    fields, and owner wording.
+- `gmfn_backend/tests/test_merchant_verify.py`
+  - now covers the WhatsApp/courier trade packet metadata and confirms it is
+    written to TrustEvent meta.
+
+Verification:
+- `python -m pytest -q gmfn_backend\tests\test_merchant_verify.py`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run audit:community-shop-actions`
+- `npm --prefix frontend run audit:shop-control-button-inventory`
+- `npm --prefix frontend run audit:community-home-button-inventory`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/` passed after an approved out-of-sandbox
+  rerun because sandboxed Vite/esbuild failed with `spawn EPERM`.
+- `git diff --check`
+
+Unabated truth:
+- This is a minimal metadata/evidence-reference packet, not file storage.
+- It does not upload screenshots or videos yet; it records notes/references for
+  final WhatsApp/product/invoice/courier/payment evidence. Real upload slots
+  should wait for a privacy, redaction, retention, and storage policy pass.
+- It does not create escrow, payment automation, courier tracking integration,
+  delivery guarantee, bank confirmation, regulated payout, or legal release
+  authority.
+- This slice is local-only. It has not been pushed or deployed.
+
 ## 2026-06-27 - Loan Workbench copy now uses GSN support workbench paper
 
 Owner request:

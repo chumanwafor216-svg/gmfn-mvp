@@ -25,6 +25,21 @@ export type MerchantReleaseInput = {
   goods_value: string;
   currency?: string;
   merchant_note?: string;
+  trade_context?: string;
+  item_title?: string;
+  counterparty_label?: string;
+  counterparty_whatsapp_label?: string;
+  product_evidence_note?: string;
+  invoice_reference?: string;
+  invoice_evidence_note?: string;
+  agreement_evidence_note?: string;
+  courier_name?: string;
+  courier_contact_label?: string;
+  tracking_number?: string;
+  released_to_courier_at?: string;
+  expected_delivery_date?: string;
+  payment_schedule_note?: string;
+  receipt_status?: string;
 };
 
 export type MerchantReleaseResponse = {
@@ -33,6 +48,30 @@ export type MerchantReleaseResponse = {
   release_event_id?: number;
   verification_link_id?: string | null;
   pack_id?: string | null;
+  trade_packet_id?: string | null;
+  trade_packet?: {
+    trade_packet_id?: string | null;
+    trade_context?: string;
+    item_title?: string | null;
+    counterparty_label?: string | null;
+    counterparty_whatsapp_label?: string | null;
+    product_evidence_note?: string | null;
+    invoice_reference?: string | null;
+    invoice_evidence_note?: string | null;
+    agreement_evidence_note?: string | null;
+    courier_name?: string | null;
+    courier_contact_label?: string | null;
+    tracking_number?: string | null;
+    released_to_courier_at?: string | null;
+    expected_delivery_date?: string | null;
+    payment_schedule_note?: string | null;
+    receipt_status?: string;
+    evidence_slots?: Record<string, boolean>;
+    conversation_system_of_record?: string;
+    gsn_record_scope?: string;
+    external_counterparty_supported?: boolean;
+    redaction_reminder?: string;
+  };
   goods_value: string;
   currency: string;
   token_used: boolean;
@@ -115,6 +154,21 @@ export async function recordMerchantRelease(input: MerchantReleaseInput): Promis
       goods_value: input.goods_value,
       currency: input.currency || "NGN",
       merchant_note: input.merchant_note || null,
+      trade_context: input.trade_context || "gsn_external",
+      item_title: input.item_title || null,
+      counterparty_label: input.counterparty_label || null,
+      counterparty_whatsapp_label: input.counterparty_whatsapp_label || null,
+      product_evidence_note: input.product_evidence_note || null,
+      invoice_reference: input.invoice_reference || null,
+      invoice_evidence_note: input.invoice_evidence_note || null,
+      agreement_evidence_note: input.agreement_evidence_note || null,
+      courier_name: input.courier_name || null,
+      courier_contact_label: input.courier_contact_label || null,
+      tracking_number: input.tracking_number || null,
+      released_to_courier_at: input.released_to_courier_at || null,
+      expected_delivery_date: input.expected_delivery_date || null,
+      payment_schedule_note: input.payment_schedule_note || null,
+      receipt_status: input.receipt_status || "awaiting_delivery",
     }),
   });
   if (!res.ok) throw new Error(await parseError(res));

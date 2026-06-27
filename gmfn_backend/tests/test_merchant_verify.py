@@ -163,6 +163,21 @@ def test_merchant_release_records_evidence_after_public_verify(client, monkeypat
             "goods_value": "140.00",
             "currency": "NGN",
             "merchant_note": "Goods released after reviewing the GSN evidence page.",
+            "trade_context": "gsn_external",
+            "item_title": "Solar phone charger",
+            "counterparty_label": "Outside WhatsApp seller",
+            "counterparty_whatsapp_label": "Seller WhatsApp label saved by buyer",
+            "product_evidence_note": "Product photo/video remains in WhatsApp; final screenshot referenced by buyer.",
+            "invoice_reference": "INV-140",
+            "invoice_evidence_note": "Invoice screenshot captured from WhatsApp.",
+            "agreement_evidence_note": "Final agreement screenshot says release to courier before scheduled payment.",
+            "courier_name": "Pilot Courier",
+            "courier_contact_label": "Courier WhatsApp label saved by buyer",
+            "tracking_number": "TRK-001",
+            "released_to_courier_at": "2026-06-27 10:00",
+            "expected_delivery_date": "2026-06-30",
+            "payment_schedule_note": "Buyer to pay in two parts after courier handoff evidence.",
+            "receipt_status": "awaiting_delivery",
         },
     )
     assert release.status_code == 200, release.text
@@ -171,6 +186,14 @@ def test_merchant_release_records_evidence_after_public_verify(client, monkeypat
     assert release_payload["release_recorded"] is True
     assert release_payload["verification_link_id"] == issued.json()["verification_link_id"]
     assert release_payload["pack_id"] == issued.json()["pack_id"]
+    assert release_payload["trade_packet_id"].startswith("MTP-")
+    assert release_payload["trade_packet"]["trade_context"] == "gsn_external"
+    assert release_payload["trade_packet"]["invoice_reference"] == "INV-140"
+    assert release_payload["trade_packet"]["courier_name"] == "Pilot Courier"
+    assert release_payload["trade_packet"]["receipt_status"] == "awaiting_delivery"
+    assert release_payload["trade_packet"]["evidence_slots"]["invoice"] is True
+    assert release_payload["trade_packet"]["evidence_slots"]["courier"] is True
+    assert release_payload["trade_packet"]["conversation_system_of_record"] == "whatsapp_or_parties"
     assert release_payload["token_used"] is True
     assert release_payload["token_was_already_used"] is True
     assert "user_id" not in release_payload
@@ -208,9 +231,20 @@ def test_merchant_release_records_evidence_after_public_verify(client, monkeypat
     assert release_meta["pack_id"] == issued.json()["pack_id"]
     assert release_meta["goods_value"] == "140.00"
     assert release_meta["currency"] == "NGN"
+    assert release_meta["trade_packet_id"].startswith("MTP-")
+    assert release_meta["trade_packet"]["item_title"] == "Solar phone charger"
+    assert release_meta["trade_packet"]["counterparty_label"] == "Outside WhatsApp seller"
+    assert release_meta["trade_packet"]["invoice_reference"] == "INV-140"
+    assert release_meta["trade_packet"]["tracking_number"] == "TRK-001"
+    assert release_meta["trade_packet"]["payment_schedule_note"] == "Buyer to pay in two parts after courier handoff evidence."
+    assert release_meta["trade_packet"]["external_counterparty_supported"] is True
+    assert release_meta["trade_packet"]["evidence_slots"]["agreement"] is True
     assert release_meta["trust_delta"] == "0.00"
     assert release_meta["actor_context"] == "external_merchant_public_release_rail"
     assert release_meta["release_evidence_only"] is True
+    assert release_meta["minimum_trade_packet"] is True
+    assert release_meta["whatsapp_conversation_not_stored"] is True
+    assert release_meta["courier_not_controlled_by_gsn"] is True
     assert release_meta["not_escrow"] is True
     assert release_meta["not_money_custody"] is True
     assert release_meta["not_payout"] is True

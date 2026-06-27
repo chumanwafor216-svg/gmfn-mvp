@@ -4396,7 +4396,9 @@ export default function TrustSlipPage() {
                 <div style={sectionLabel()}>Signed merchant release desk</div>
                 <div style={{ marginTop: 7, ...helperText() }}>
                   Create this link when a merchant needs to check the signed rail and record release evidence.
-                  The record is still not escrow, payout approval, bank confirmation, or delivery guarantee.
+                  The public desk now records only the minimum trade packet: item, invoice, final WhatsApp
+                  evidence note, courier handoff, expected delivery, and payment schedule. The record is
+                  still not escrow, payout approval, bank confirmation, or delivery guarantee.
                 </div>
                 {merchantRailLink ? (
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
