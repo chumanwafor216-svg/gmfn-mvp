@@ -46,9 +46,18 @@ Verification:
   frontend audit files.
 
 Truth / remaining risk:
-- Local correction is verified. Backend deploy is still expected to fail in the
-  GitHub Render workflow until `RENDER_API_KEY` is configured; frontend deploy
-  can still be accepted by the deploy hook.
+- Committed and pushed backend evidence fix at
+  `e628dbd17bcbe2d252179ca40bf415d06ea05873`
+  (`Redact Trust Timeline PDF metadata`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28289673974` with `deploy_api=true`.
+- Workflow checked out exact commit `e628dbd17bcbe2d252179ca40bf415d06ea05873`.
+- Frontend Render deploy hook accepted deploy id
+  `dep-d8vsdebtqb8s73f6b74g`.
+- Backend deploy did not run. The workflow failed at the exact API credential
+  gate because `RENDER_API_KEY` and `RENDER_API_SERVICE_ID` are still empty in
+  GitHub Actions. The older gmfn-api deploy hook remains intentionally
+  distrusted for backend-impacting deploys.
 - This hardens the Trust Timeline PDF, but the JSON Trust Timeline endpoint and
   complete admin evidence ZIPs may still intentionally carry fuller records for
   authenticated/admin contexts and should be reviewed separately if the owner
