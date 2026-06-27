@@ -1,3 +1,46 @@
+## 2026-06-27 - Loans support-decision wording cleanup
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published corrections:
+- `frontend/src/pages/LoansPage.tsx`
+  - `/app/loans` support-focus helper now says someone is waiting for your
+    support decision, including the amount-specific version.
+  - The "How to read this page" legend now explains waiting requests as support
+    decisions instead of generic decisions.
+- `frontend/src/lib/guidance.ts`
+  - shared support-request fallback guidance now says a borrower is waiting for
+    your support decision even when no amount is present.
+- `frontend/tools/audit-loans-actions.mjs`
+- `frontend/tools/audit-gsn-visible-language.mjs`
+  - added narrow guards against restoring generic waiting-for-your-decision
+    wording in the support-request surfaces.
+
+Verification state:
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `23c4ca78c8a6636b167859cfd85d859a5b54ce35`
+  (`Clarify loans support decision wording`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28285500990` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vplqbsq97s738la75g`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- This is frontend display/audit-only. It does not rename legacy route names,
+  debug ids, backend fields, or API payload fields that still use `guarantor`
+  / `pledge` for compatibility.
+
 ## 2026-06-27 - Trust Passport finance support-label audit alignment
 
 Owner request:
