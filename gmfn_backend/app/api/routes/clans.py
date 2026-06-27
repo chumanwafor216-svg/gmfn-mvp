@@ -33,6 +33,7 @@ from app.db.models import (
     ClanJoinRequest,
     ClanJoinVote,
     ClanMembership,
+    CommunityFollower,
     CommunityDomainAffiliation,
     CommunityMemberVerification,
     CommunityMemberVerificationRequest,
@@ -73,6 +74,30 @@ def _active_clan_member_count(db: Session, *, clan_id: int) -> int:
             ClanMembership.left_at.is_(None),
         )
         .count()
+    )
+
+
+def _community_follower_count(db: Session, *, clan_id: int) -> int:
+    return (
+        db.query(CommunityFollower)
+        .filter(CommunityFollower.clan_id == int(clan_id))
+        .count()
+    )
+
+
+def _community_follower_row(
+    db: Session,
+    *,
+    clan_id: int,
+    follower_user_id: int,
+) -> Optional[CommunityFollower]:
+    return (
+        db.query(CommunityFollower)
+        .filter(
+            CommunityFollower.clan_id == int(clan_id),
+            CommunityFollower.follower_user_id == int(follower_user_id),
+        )
+        .first()
     )
 
 
@@ -2375,6 +2400,184 @@ def list_my_clans(
     clans = list_visible_user_clans(db=db, user=current_user)
     items = [_clan_out(clan) for clan in clans]
     return {"items": items, "total": len(items)}
+
+
+def _followable_clan_or_404(db: Session, clan_id: int) -> Clan:
+    clan = db.get(Clan, int(clan_id))
+    if (
+        not clan
+        or _is_default_clan_name(getattr(clan, "name", None))
+        or _safe_str(getattr(clan, "status", "active"), "active").lower() != "active"
+    ):
+        raise HTTPException(status_code=404, detail="Community not found")
+    return clan
+
+
+@router.post("/{clan_id}/follow", response_model=dict[str, Any])
+def follow_community(
+    clan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    clan = _followable_clan_or_404(db, clan_id)
+    existing = _community_follower_row(
+        db,
+        clan_id=int(clan.id),
+        follower_user_id=int(current_user.id),
+    )
+    if existing:
+        follower_count = _community_follower_count(db, clan_id=int(clan.id))
+        return {
+            "ok": True,
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id, clan=clan),
+            "is_following": True,
+            "already_following": True,
+            "follower_count": follower_count,
+            "followers_count": follower_count,
+        }
+
+    follower = CommunityFollower(
+        clan_id=int(clan.id),
+        follower_user_id=int(current_user.id),
+        created_at=datetime.now(timezone.utc),
+    )
+    db.add(follower)
+    db.flush()
+    log_trust_event(
+        db,
+        event_type="community.followed",
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        loan_id=None,
+        guarantor_id=None,
+        meta={
+            "reason": "community_followed",
+            "trust_delta": "0.00",
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id, clan=clan),
+            "community_name": getattr(clan, "name", None),
+            "marketplace_name": getattr(clan, "marketplace_name", None),
+            "follower_user_id": int(current_user.id),
+            "signal_strength": "weak_group_interest",
+            "group_context": True,
+            "not_membership": True,
+            "not_endorsement": True,
+            "not_verification": True,
+            "not_payment_evidence": True,
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+
+    follower_count = _community_follower_count(db, clan_id=int(clan.id))
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "is_following": True,
+        "already_following": False,
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+    }
+
+
+@router.delete("/{clan_id}/follow", response_model=dict[str, Any])
+def unfollow_community(
+    clan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    clan = _followable_clan_or_404(db, clan_id)
+    existing = _community_follower_row(
+        db,
+        clan_id=int(clan.id),
+        follower_user_id=int(current_user.id),
+    )
+    if existing:
+        db.delete(existing)
+        log_trust_event(
+            db,
+            event_type="community.unfollowed",
+            clan_id=int(clan.id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            loan_id=None,
+            guarantor_id=None,
+            meta={
+                "reason": "community_unfollowed",
+                "trust_delta": "0.00",
+                "community_id": int(clan.id),
+                "community_code": _community_code(clan.id, clan=clan),
+                "community_name": getattr(clan, "name", None),
+                "marketplace_name": getattr(clan, "marketplace_name", None),
+                "follower_user_id": int(current_user.id),
+                "signal_strength": "weak_group_interest",
+                "group_context": True,
+                "not_membership": True,
+                "not_endorsement": True,
+                "not_verification": True,
+                "not_payment_evidence": True,
+            },
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+
+    follower_count = _community_follower_count(db, clan_id=int(clan.id))
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "is_following": False,
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+    }
+
+
+@router.get("/{clan_id}/followers/count", response_model=dict[str, Any])
+def get_community_follower_count(
+    clan_id: int,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    clan = _followable_clan_or_404(db, clan_id)
+    follower_count = _community_follower_count(db, clan_id=int(clan.id))
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+    }
+
+
+@router.get("/{clan_id}/follow-status", response_model=dict[str, Any])
+def get_community_follow_status(
+    clan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    clan = _followable_clan_or_404(db, clan_id)
+    is_following = (
+        _community_follower_row(
+            db,
+            clan_id=int(clan.id),
+            follower_user_id=int(current_user.id),
+        )
+        is not None
+    )
+    follower_count = _community_follower_count(db, clan_id=int(clan.id))
+    return {
+        "ok": True,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "is_following": is_following,
+        "can_follow": True,
+        "follower_count": follower_count,
+        "followers_count": follower_count,
+    }
 
 
 @router.post("/{clan_id}/join", status_code=201, response_model=dict[str, Any])

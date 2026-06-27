@@ -75556,3 +75556,46 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local-only continuation work until committed/pushed;
   - no Render deploy has been requested or confirmed for this slice.
+
+### Follow-up same day - Community following backend engine materialized
+
+- Trigger:
+  - after shop following became neutral TrustEvents, owner had also asked
+    whether community following could exist as part of the trust-event feed.
+  - code inspection showed no first-class community-follow table or route.
+- Unabated truth:
+  - this adds a backend community-follow engine only;
+  - no frontend community-follow control has been surfaced yet;
+  - community follow events are intentionally weak group-interest signals with
+    `trust_delta: "0.00"`;
+  - actor and subject are both the follower, while `clan_id` carries the group
+    context, because a community is not a personal TrustSlip owner;
+  - these events are not membership, not endorsement, not verification, not
+    payment evidence, and must not inflate personal trust scoring.
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added `CommunityFollower` with unique `(clan_id, follower_user_id)`.
+  - `gmfn_backend/alembic/versions/20260627_add_community_followers.py`
+    - added the `community_followers` migration with Postgres-safe indexes.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - added authenticated:
+      - `POST /clans/{clan_id}/follow`
+      - `DELETE /clans/{clan_id}/follow`
+      - `GET /clans/{clan_id}/follow-status`
+    - added public:
+      - `GET /clans/{clan_id}/followers/count`
+    - logs `community.followed` and `community.unfollowed` TrustEvents only
+      when the durable follow row is created or removed;
+    - duplicate follows do not create duplicate TrustEvents.
+  - `gmfn_backend/tests/test_community_followers.py`
+    - added route and TrustEvent coverage for follow/status/count/unfollow.
+  - `gmfn_backend/tests/test_database_metadata.py`
+    - added the table and migration to metadata/identifier checks.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_followers.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_database_metadata.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_community_followers.py gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_follow_status_count_and_unfollow gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_product_create_notifies_visible_followers_only gmfn_backend\tests\test_database_metadata.py`.
+  - `git diff --check` returned clean.
+- Deployment state:
+  - local-only continuation work until committed/pushed;
+  - no Render deploy has been requested or confirmed for this slice.

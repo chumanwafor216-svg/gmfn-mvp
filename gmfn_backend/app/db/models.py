@@ -191,6 +191,41 @@ class ClanMembership(Base):
     )
 
 
+class CommunityFollower(Base):
+    __tablename__ = "community_followers"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "clan_id",
+            "follower_user_id",
+            name="uq_community_followers_clan_user",
+        ),
+        Index("ix_community_followers_clan_user", "clan_id", "follower_user_id"),
+        Index("ix_community_followers_user_created", "follower_user_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    follower_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
+
 class CommunityDomainAffiliation(Base):
     __tablename__ = "community_domain_affiliations"
 
