@@ -75326,5 +75326,6 @@ GSN-branded invite composer and invite-entry continuity.
   - `git diff --check` returned clean.
 - Deployment state:
   - prior evidence inventory alignment was pushed as `ca26283a`;
-  - this protected-trade backend spine is local only until committed and pushed;
+  - protected-trade backend spine was pushed to `origin/main` as `8b0ef954`;
+  - GitHub `Backend Tests` passed for push run `28296256439`;
   - no Render deploy has been requested or confirmed for this slice.
