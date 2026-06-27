@@ -71941,8 +71941,17 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
   - Passed `git diff --check`; only Git line-ending warnings were reported.
 - Deployment state:
-  - verified locally at this entry;
-  - not yet committed, pushed, or Render-confirmed.
+  - committed as `42971bac` (`Make trust level labels institutional`) and
+    pushed to `origin/main`;
+  - manual GitHub Actions Render workflow run `28290451228` checked out
+    `42971bac3647515d256b5b70df06ce1377abbe18`;
+  - frontend Render deploy hook accepted the request and returned
+    `dep-d8vssrp9rddc73an3rf0`;
+  - backend/API deploy did **not** run: the workflow failed at the same
+    required API credential gate because `RENDER_API_KEY` is still missing;
+  - truth for pilot testing: these backend trust label changes are in GitHub
+    and locally verified, but not Render-confirmed until gmfn-api is deployed
+    with exact Render API credentials or manually from the Render dashboard.
 
 ### Follow-up same day - Governance ZIP complete-record boundary
 
