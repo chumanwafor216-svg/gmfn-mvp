@@ -1407,7 +1407,7 @@ function normalizeLoan(raw: any): LoanSupportItem | null {
       src?.role,
       src?.my_role,
       src?.participant_role,
-      src?.is_guarantor ? "Guarantor" : "",
+      src?.is_guarantor ? "Supporter" : "",
       src?.is_borrower ? "Borrower" : ""
     ),
   };
@@ -7054,7 +7054,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.support"
-              aria-label="Open Support Requests, guarantors and loans"
+              aria-label="Open Support Requests, supporters and loans"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,

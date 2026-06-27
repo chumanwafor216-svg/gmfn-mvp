@@ -2089,7 +2089,7 @@ export default function TrustScorePage() {
   ]);
   const readingBreakdownSource: Array<[string, string]> = [
     ["Borrower repayment delta", safeStr(ruleset?.borrower_repayment_delta || "-")],
-    ["Guarantor repayment delta", safeStr(ruleset?.guarantor_repayment_delta || "-")],
+    ["Support repayment delta", safeStr(ruleset?.guarantor_repayment_delta || "-")],
     ["Precision", safeStr(ruleset?.precision || "-")],
     ["Ordering", safeStr(ruleset?.ordering || "-")],
     [

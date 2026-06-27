@@ -1,3 +1,53 @@
+## 2026-06-27 - Visible supporter wording cleanup continued locally
+
+Owner request:
+- Continue after the Render update and local supporter-wording cleanup.
+
+Local corrections:
+- `frontend/src/components/EvidencePackPanel.tsx`
+  - evidence package includes text now says `Supporter summary and decisions`
+    instead of `Guarantor summary`.
+- `frontend/src/components/PilotRiskDisclosureGate.tsx`
+  - pilot risk disclosure now says supporters are not automatically charged.
+- `frontend/src/components/TrustBadge.tsx`
+  - trust tooltip now describes `support actions`.
+- `frontend/src/pages/FinancePage.tsx`
+  - backend `is_guarantor` role data now displays as `Supporter`.
+  - support exposure labels now use support wording instead of guarantee-era
+    labels.
+- `frontend/src/pages/LoanDecisionPage.tsx`
+  - decision fact card now labels the supporter as `Supporter`.
+- `frontend/src/pages/MarketplacePage.tsx`
+  - backend `is_guarantor` role data now displays as `Supporter`.
+  - Support & Loans launcher aria label now says `supporters and loans`.
+- `frontend/src/pages/TrustPage.tsx`
+  - event-type placeholder now says `repayment / support / ...`.
+- `frontend/src/pages/TrustScorePage.tsx`
+  - ruleset display now says `Support repayment delta`.
+- `frontend/tools/audit-marketplace-button-inventory.mjs`
+  and `frontend/tools/audit-marketplace-support-lane.mjs`
+  - audit guards updated for the Support & Loans aria-label copy.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm --prefix frontend run audit:marketplace-button-inventory`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:protocol-readiness`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:finance-front-package`
+- `npm --prefix frontend run audit:finance-lane-map`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- This latest pass is committed locally but is not pushed or deployed.
+- Render currently does not include this latest visible-copy pass.
+- Internal filenames, routes, debug IDs, API fields, and compatibility terms
+  still use `guarantor` where changing them would be a contract migration.
+
 ## 2026-06-27 - Supporter wording extended into Loans overview and status details
 
 Owner request:

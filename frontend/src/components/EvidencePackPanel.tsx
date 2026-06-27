@@ -56,7 +56,7 @@ export default function EvidencePackPanel({
         <div><b>Includes</b></div>
         <ul style={{ margin: 0, paddingLeft: 18, color: "#374151" }}>
           <li>Trust snapshot and timeline</li>
-          <li>Guarantor summary and decisions where provided</li>
+          <li>Supporter summary and decisions where provided</li>
           <li>Repayments history</li>
           <li>Community and loan context</li>
         </ul>

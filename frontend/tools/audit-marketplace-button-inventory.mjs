@@ -375,7 +375,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, guarantors and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & Loans[\s\S]*?Get help and manage loans[\s\S]*?Support Requests[\s\S]*?Loan Process/,
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, supporters and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & Loans[\s\S]*?Get help and manage loans[\s\S]*?Support Requests[\s\S]*?Loan Process/,
   "Marketplace Support & Loans grouped card must open the support section only."
 );
 

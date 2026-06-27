@@ -414,7 +414,7 @@ export default function LoanDecisionPage() {
                       </div>
                     </div>
                     <div style={innerCard()}>
-                      {loanDecisionFactHeading("shield", "Guarantor")}
+                      {loanDecisionFactHeading("shield", "Supporter")}
                       <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B1F33" }}>
                         {safeStr(loan?.guarantor_name) || "Not linked yet"}
                       </div>

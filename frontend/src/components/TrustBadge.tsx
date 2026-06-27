@@ -23,7 +23,7 @@ export default function TrustBadge({
     `Band: ${b}\n` +
     `Score: ${score}/100\n\n` +
     `Bands: A=80-100, B=60-79, C=30-59, D=0-29\n` +
-    `Computed from logged actions (TrustEvents): invites, guarantor actions, repayments, participation.\n` +
+    `Computed from logged actions (TrustEvents): invites, support actions, repayments, participation.\n` +
     `Not a black box; see breakdown on the Trust page.`;
 
   return (

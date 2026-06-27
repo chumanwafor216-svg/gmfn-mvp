@@ -470,7 +470,7 @@ function normalizeLoanRow(raw: any): LoanRow | null {
       src?.role,
       src?.my_role,
       src?.participant_role,
-      src?.is_guarantor ? "Guarantor" : "",
+      src?.is_guarantor ? "Supporter" : "",
       src?.is_borrower ? "Borrower" : ""
     ),
     borrowerName: firstTruthy(
@@ -1600,22 +1600,22 @@ export default function FinancePage() {
     ["Money out waiting", `${pendingWithdrawals} ${poolCurrency}`, "Outgoing money not completed yet."],
     ["Borrowed support total", `${fmtMoney(borrowerRequestedTotal)} ${poolCurrency}`, "Support you requested that is still active."],
     ["Still to repay", `${fmtMoney(borrowerRemainingTotal)} ${poolCurrency}`, "Repayment amount still showing."],
-    ["Guarantees held", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support still held for people you backed."],
+    ["Support held", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support still held for people you backed."],
     [
-      "Guarantee release records",
+      "Support release records",
       `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`,
       "Support exposure recorded as released from past backing. This page reports the record; it does not release exposure by itself.",
     ],
-    ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0), "People you are still backing now."],
-    ["Past guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0), "People you backed before."],
+    ["Active support", safeStr(guarantorExposure?.activeGuarantees ?? 0), "People you are still backing now."],
+    ["Past support", safeStr(guarantorExposure?.historicalGuarantees ?? 0), "People you backed before."],
     ["Money history rows", String(poolEvents.length), "Recent money movements we can show you."],
   ];
 
   const supportBackedRows: Array<[string, string]> = [
     ["Total locked", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`],
     ["Recorded releases", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`],
-    ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0)],
-    ["Historical guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0)],
+    ["Active support", safeStr(guarantorExposure?.activeGuarantees ?? 0)],
+    ["Historical support", safeStr(guarantorExposure?.historicalGuarantees ?? 0)],
     [
       "Note",
       safeStr(

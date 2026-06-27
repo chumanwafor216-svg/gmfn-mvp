@@ -725,7 +725,7 @@ export default function TrustPage() {
           <input style={fieldInput()} value={subjectId} onChange={(e) => setSubjectId(e.target.value)} placeholder="e.g. 1" />
 
           <div style={{ color: "#526579" }}>Event type</div>
-          <input style={fieldInput()} value={eventType} onChange={(e) => setEventType(e.target.value)} placeholder="repayment / guarantor / ..." />
+          <input style={fieldInput()} value={eventType} onChange={(e) => setEventType(e.target.value)} placeholder="repayment / support / ..." />
         </div>
 
         <CardActionRow style={{ marginTop: 12 }}>
