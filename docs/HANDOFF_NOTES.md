@@ -74824,4 +74824,13 @@ GSN-branded invite composer and invite-entry continuity.
   - the SaaS/e-commerce/community-capital gap was framed as GSN institutional
     positioning, not as a citation-backed peer-reviewed research claim.
 - Deployment state:
-  - local only at this entry; not pushed or deployed yet.
+  - committed and pushed to `main` as `6fb34f5e`
+    (`Add 22 things GSN institutional mirror`);
+  - GitHub Backend Tests run `28293955252` completed successfully for
+    `6fb34f5e`;
+  - manual GitHub Actions Render workflow run `28293971433` completed
+    successfully with `deploy_api=false`;
+  - frontend Render deploy hook accepted the request and returned deploy id
+    `dep-d8vv0v6gvqtc73906eog`;
+  - backend/API deploy was intentionally skipped because this slice changed
+    frontend static PDF assets, documentation, and audit guards only.
