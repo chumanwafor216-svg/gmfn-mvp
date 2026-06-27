@@ -4,7 +4,7 @@ Owner request:
 - Continue the supporter/support wording cleanup and keep Render updated
   truthfully.
 
-Local corrections:
+Published corrections:
 - `frontend/src/pages/TrustScorePage.tsx`
   - finance discipline and institutional rows now say support capacity,
     support commitments, locked support, and support position instead of
@@ -30,9 +30,15 @@ Verification passed locally:
   frontend files.
 
 Truth / remaining risk:
-- Local only until committed, pushed, and the frontend Render deploy hook
-  accepts a deploy for the pushed commit.
-- This is frontend/docs only and should use `deploy_api=false`.
+- Committed and pushed `main` at
+  `c42be4dbed6521e8e654411cd837a7d154301c82`
+  (`Update support wording on finance trust surfaces`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28284007017` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8volvrsq97s738k6dq0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- This is frontend/docs only and does not require backend Render credentials.
 - The remaining user-visible `guarantee` strings found in the frontend are
   legal disclaimers such as `not a bank guarantee`, or ordinary English such as
   `cannot guarantee delivery`; those were intentionally left alone.
