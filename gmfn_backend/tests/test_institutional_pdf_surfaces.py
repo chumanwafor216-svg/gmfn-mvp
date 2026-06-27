@@ -211,11 +211,19 @@ def test_report_pdfs_use_gsn_institutional_shells():
     assert "Official exposure summary" in text
     assert text.count("Reader Boundary") == 2
     assert "Redacted support evidence for allowed GSN reviewers" in text
-    assert "Use redact=false only for admin complete-record review." in text
+    assert "Use complete-record exports only for authorized admin review." in text
+    assert "Use redact=false only for admin complete-record review." not in text
     assert "meta redacted for share copy" in text
+    assert "private member reference redacted" in text
+    assert "Support Gap" in text
+    assert "Requester Trust Snapshot" in text
     assert "Private community exposure evidence for allowed GSN reviewers" in text
     assert 'p("Community", f"{getattr(clan, \'name\', None) or \'-\'} (ID: {getattr(loan, \'clan_id\', \'-\')})")' in text
     assert 'p("Clan"' not in text
+    assert "def _mask_email" not in text
+    assert "Guarantee Gap" not in text
+    assert 'p("Borrower"' not in text
+    assert "Borrower Trust Snapshot" not in text
     assert text.count("GSN loan trust report - controlled community trust record.") == 2
     assert text.count("GSN community exposure report - controlled community trust record.") == 2
     assert "GMFN Loan Trust Report" not in text

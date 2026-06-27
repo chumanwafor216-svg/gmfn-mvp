@@ -420,13 +420,18 @@ assertContains(
 );
 assertContains(
   "reports",
-  /meta redacted for share copy[\s\S]*?Reader Boundary[\s\S]*?Redacted support evidence for allowed GSN reviewers[\s\S]*?Use redact=false only for admin complete-record review\.[\s\S]*?Reader Boundary[\s\S]*?Private community exposure evidence for allowed GSN reviewers/,
-  "Report PDFs must include redacted reader boundaries and hide trust-event metadata in share copies."
+  /meta redacted for share copy[\s\S]*?Reader Boundary[\s\S]*?Redacted support evidence for allowed GSN reviewers[\s\S]*?Use complete-record exports only for authorized admin review\.[\s\S]*?Reader Boundary[\s\S]*?Private community exposure evidence for allowed GSN reviewers/,
+  "Report PDFs must include redacted reader boundaries, plain complete-record guidance, and hidden trust-event metadata in share copies."
 );
 assertNotContains(
   "reports",
-  /GSN Clan Exposure Report|Clan Exposure Table|Clan Exposure Summary|Clan Exposure Ratio|Total Available Capacity|Available = current remaining support capacity|p\("Clan"|clan exposure report/,
-  "Community exposure reports must not expose older clan wording."
+  /GSN Clan Exposure Report|Clan Exposure Table|Clan Exposure Summary|Clan Exposure Ratio|Total Available Capacity|Available = current remaining support capacity|p\("Clan"|clan exposure report|Use redact=false only for admin complete-record review\.|def _mask_email|Guarantee Gap|p\("Borrower"|Borrower Trust Snapshot/,
+  "Community and loan report PDFs must not expose older clan wording, maker query-param guidance, masked-email helpers, guarantee labels, or borrower labels."
+);
+assertContains(
+  "reports",
+  /private member reference redacted[\s\S]*?p\("Requester"[\s\S]*?p\("Support Gap"[\s\S]*?Requester Trust Snapshot/,
+  "Loan trust report redacted PDFs must use private member references, requester language, and support-gap wording."
 );
 assertContains(
   "loanEvidencePack",

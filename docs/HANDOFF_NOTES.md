@@ -1,3 +1,42 @@
+## 2026-06-27 - Redacted report PDFs stopped showing masked member contacts
+
+Owner request:
+- Continue meticulous institutional deep cleaning across customer-facing papers,
+  screenshotable pages, and TrustSlip/Trust Passport evidence.
+
+Correction completed locally:
+- `gmfn_backend/app/services/reports_service.py`
+  - removed masked email rendering from redacted loan trust report and community
+    exposure report PDFs.
+  - redacted report rows now use `private member reference redacted`, except
+    where a public member reference is available.
+  - changed the loan summary identity label from `Borrower` to `Requester`.
+  - changed the report label from `Guarantee Gap` to `Support Gap`.
+  - replaced maker-facing `Use redact=false...` guidance with
+    `Use complete-record exports only for authorized admin review.`
+  - preserved `redact=False` complete-record output behind the existing
+    complete-record permission gate.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added source guards against masked email helper restoration, old borrower
+    labels, old guarantee-gap wording, and query-param guidance.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added matching proof-surface guards for report PDFs.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\services\reports_service.py`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+  - result: `18 passed`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warning on
+  `frontend/tools/audit-institutional-proof-surfaces.mjs`.
+
+Truth / remaining risk:
+- This slice tightens redacted PDFs only. Complete CSV/ZIP exports still contain
+  private identifiers by design and remain behind admin/complete-record gates.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - TrustSlip evidence PDF pressure wording aligned
 
 Owner request:

@@ -36,18 +36,22 @@ def _fmt_dt(x: Any) -> str:
     return str(x)
 
 
-def _mask_email(email: Any) -> str:
-    raw = str(email or "").strip()
-    if not raw:
-        return "-"
-    if "@" not in raw:
-        return "record hidden"
-    name, domain = raw.split("@", 1)
-    if len(name) <= 1:
-        masked = "*"
-    else:
-        masked = f"{name[0]}***"
-    return f"{masked}@{domain}"
+def _private_member_reference() -> str:
+    return "private member reference redacted"
+
+
+def _member_reference(
+    uid: int | None,
+    fallback: Any = None,
+    *,
+    public_reference: Any = None,
+    redact: bool = True,
+) -> str:
+    if redact:
+        public_value = str(public_reference or "").strip()
+        return public_value or _private_member_reference()
+    value = str(fallback or "").strip()
+    return value or (f"user:{uid}" if uid is not None else "-")
 
 
 def _safe_meta(te: TrustEvent) -> Dict[str, Any]:
@@ -218,11 +222,9 @@ def build_loan_trust_report_pdf(
         c.line(left, y, right, y)
         y -= 6 * mm
 
-    def visible_email(uid: int | None, fallback: Any = None) -> str:
+    def visible_member(uid: int | None, fallback: Any = None, *, public_reference: Any = None) -> str:
         value = fallback or (user_email_by_id.get(int(uid)) if uid is not None else None)
-        if redact:
-            return _mask_email(value)
-        return str(value or (f"user:{uid}" if uid is not None else "-"))
+        return _member_reference(uid, value, public_reference=public_reference, redact=redact)
 
     h1("Official evidence summary")
     line()
@@ -232,13 +234,14 @@ def build_loan_trust_report_pdf(
         "Boundary",
         "Redacted support evidence for allowed GSN reviewers; not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
     )
-    p("Use", "Use redact=false only for admin complete-record review.")
+    p("Use", "Use complete-record exports only for authorized admin review.")
     line()
 
     h2("Loan Summary")
-    borrower_email = visible_email(
+    borrower_reference = visible_member(
         int(getattr(loan, "borrower_user_id", 0)),
         getattr(borrower, "email", "-"),
+        public_reference=getattr(borrower, "gmfn_id", None) if borrower else None,
     )
 
     amount = _d(getattr(loan, "amount", 0))
@@ -248,11 +251,11 @@ def build_loan_trust_report_pdf(
 
     p("Loan ID", str(getattr(loan, "id", "-")))
     p("Community", f"{getattr(clan, 'name', None) or '-'} (ID: {getattr(loan, 'clan_id', '-')})")
-    p("Borrower", borrower_email)
+    p("Requester", borrower_reference)
     p("Status", str(getattr(loan, "status", "-")))
     p("Amount", f"{_fmt_money(amount)} {getattr(loan, 'currency', '')}")
     p("Pool Used", _fmt_money(pool_used))
-    p("Guarantee Gap", _fmt_money(guarantee_gap))
+    p("Support Gap", _fmt_money(guarantee_gap))
     p("Supporters Required", str(guarantors_required))
     p("Created At", _fmt_dt(getattr(loan, "created_at", None)))
     p("Decision At", _fmt_dt(getattr(loan, "decision_at", None)))
@@ -290,7 +293,7 @@ def build_loan_trust_report_pdf(
         gains = borrower_trust_score.get("gains", {}) or {}
         penalties = borrower_trust_score.get("penalties", {}) or {}
 
-        p("Borrower Trust Snapshot", _trust_score_label(borrower_trust_score))
+        p("Requester Trust Snapshot", _trust_score_label(borrower_trust_score))
         p("Lifetime Trust", str(borrower_trust_score.get("lifetime_trust", "0")))
         p("Standing Score", str(borrower_trust_score.get("standing_score", "0")))
         p("Recency Factor", str(borrower_trust_score.get("recency_factor", "0")))
@@ -302,7 +305,7 @@ def build_loan_trust_report_pdf(
         p("Total Gains", str(gains.get("total", "0")))
         p("Total Penalties", str(penalties.get("total", "0")))
     else:
-        p("Borrower Trust Snapshot", "Not available")
+        p("Requester Trust Snapshot", "Not available")
     line()
 
     ensure_space()
@@ -321,12 +324,12 @@ def build_loan_trust_report_pdf(
         for g in guarantors:
             ensure_space()
             uid = int(getattr(g, "guarantor_user_id", 0) or 0)
-            email = visible_email(uid)
+            member = visible_member(uid)
             s = guarantor_trust_scores.get(uid, {}) or {}
             band = s.get("band", "-")
             standing = s.get("standing_score", "0")
 
-            c.drawString(left, y, email[:45])
+            c.drawString(left, y, member[:45])
             c.drawRightString(right - 55 * mm, y, str(band))
             c.drawRightString(right, y, str(standing))
             y -= 5 * mm
@@ -380,12 +383,12 @@ def build_loan_trust_report_pdf(
             if bal < 0:
                 bal = Decimal("0")
 
-            payer_email = visible_email(
+            payer = visible_member(
                 int(getattr(r, "payer_user_id", 0)),
                 f"user:{getattr(r, 'payer_user_id', 0)}",
             )
             c.drawString(left, y, _fmt_dt(getattr(r, "created_at", None)))
-            c.drawString(left + 40 * mm, y, payer_email[:40])
+            c.drawString(left + 40 * mm, y, payer[:40])
             c.drawRightString(right - 35 * mm, y, _fmt_money(amt))
             c.drawRightString(right, y, _fmt_money(bal))
             y -= 5 * mm
@@ -418,12 +421,17 @@ def build_loan_trust_report_pdf(
     else:
         for row in clan_exposure_rows:
             ensure_space()
-            email = _mask_email(row.get("email")) if redact else str(row.get("email", "-"))[:45]
+            member = _member_reference(
+                row.get("user_id"),
+                row.get("email"),
+                public_reference=row.get("gmfn_id"),
+                redact=redact,
+            )[:45]
             pool_v = row.get("pool_balance", 0)
             exposure_v = row.get("exposure", 0)
             available_v = row.get("available", 0)
 
-            c.drawString(left, y, email)
+            c.drawString(left, y, member)
             c.drawRightString(right - 60 * mm, y, _fmt_money(pool_v))
             c.drawRightString(right - 30 * mm, y, _fmt_money(exposure_v))
             c.drawRightString(right, y, _fmt_money(available_v))
@@ -449,11 +457,11 @@ def build_loan_trust_report_pdf(
         for te in trust_events:
             ensure_space()
 
-            actor_email = visible_email(
+            actor = visible_member(
                 int(getattr(te, "actor_user_id", 0)),
                 f"user:{getattr(te, 'actor_user_id', 0)}",
             )
-            subject_email = visible_email(
+            subject = visible_member(
                 int(getattr(te, "subject_user_id", 0)),
                 f"user:{getattr(te, 'subject_user_id', 0)}",
             )
@@ -461,8 +469,8 @@ def build_loan_trust_report_pdf(
 
             c.drawString(left, y, _fmt_dt(getattr(te, "created_at", None))[:16])
             c.drawString(left + 30 * mm, y, str(getattr(te, "event_type", ""))[:22])
-            c.drawString(left + 75 * mm, y, actor_email[:25])
-            c.drawString(left + 120 * mm, y, subject_email[:25])
+            c.drawString(left + 75 * mm, y, actor[:25])
+            c.drawString(left + 120 * mm, y, subject[:25])
             y -= 4.2 * mm
 
             if note:
@@ -584,7 +592,12 @@ def build_clan_exposure_report_pdf(
     else:
         for row in clan_exposure_rows:
             ensure_space()
-            email = _mask_email(row.get("email")) if redact else str(row.get("email", "-"))[:45]
+            member = _member_reference(
+                row.get("user_id"),
+                row.get("email"),
+                public_reference=row.get("gmfn_id"),
+                redact=redact,
+            )[:45]
             pool_v = _d(row.get("pool_balance", 0))
             exposure_v = _d(row.get("exposure", 0))
             available_v = _d(row.get("available", 0))
@@ -593,7 +606,7 @@ def build_clan_exposure_report_pdf(
             total_exposure += exposure_v
             total_available += available_v
 
-            c.drawString(left, y, email)
+            c.drawString(left, y, member)
             c.drawRightString(right - 60 * mm, y, _fmt_money(pool_v))
             c.drawRightString(right - 30 * mm, y, _fmt_money(exposure_v))
             c.drawRightString(right, y, _fmt_money(available_v))
