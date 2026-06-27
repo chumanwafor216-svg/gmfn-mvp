@@ -75429,5 +75429,8 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
   - `git diff --check` returned clean, aside from line-ending warnings.
 - Deployment state:
-  - local only until committed and pushed;
+  - protected-trade lifecycle UI slice was pushed to `origin/main` as
+    `f7ac757e`;
+  - no backend CI run triggered for this frontend-only slice under the current
+    path-filtered pilot workflow;
   - no Render deploy has been requested or confirmed for this slice.
