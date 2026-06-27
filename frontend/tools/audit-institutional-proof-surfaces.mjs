@@ -435,23 +435,33 @@ assertContains(
 );
 assertContains(
   "evidencePack",
-  /def _mask_code[\s\S]*?invite_code = _mask_code/,
-  "Community evidence pack share PDFs must mask invite codes by default."
+  /def _member_contact_boundary[\s\S]*?private member contact redacted[\s\S]*?def _mask_code[\s\S]*?redact: bool = True[\s\S]*?invite_code = _mask_code/,
+  "Community evidence pack share PDFs must mask invite codes and redact member contacts by default."
 );
 assertContains(
   "evidencePack",
   /Reader boundary[\s\S]*?controlled community review[\s\S]*?redacted share copy for outside review/,
   "Community evidence pack PDFs must explain the reader boundary and share-copy privacy limit."
 );
+assertNotContains(
+  "evidencePack",
+  /def _mask_email|r\['invited_by_user_id'\]|r\.get\('joined_user_id'\)|r\.get\('invited_by_user_id'\)/,
+  "Community evidence pack PDFs must not print internal member ids or masked private emails in share papers."
+);
 assertContains(
   "loanEvidencePack",
-  /meta: redacted for share copy[\s\S]*?Reader boundary[\s\S]*?private loan, supporter, and repayment details/,
-  "Loan evidence pack PDFs must redact trust-event metadata in share copies and explain the reader boundary."
+  /def _private_member_boundary[\s\S]*?private member reference redacted[\s\S]*?redact: bool = True[\s\S]*?def member_reference[\s\S]*?meta: redacted for share copy[\s\S]*?Reader boundary[\s\S]*?private loan, supporter, and repayment details/,
+  "Loan evidence pack PDFs must redact participant references and trust-event metadata in share copies and explain the reader boundary."
+);
+assertNotContains(
+  "loanEvidencePack",
+  /def _mask_email|show_email|r\['email'\] or r\['user_id'\]|payer=\{payer_email or payer_id\}|actor=\{actor_email or actor_id\}|subject=\{subject_email or subject_id\}/,
+  "Loan evidence pack PDFs must not fall back to raw participant emails or internal user ids in share papers."
 );
 assertContains(
   "userEvidencePack",
-  /Reader boundary[\s\S]*?private member evidence/,
-  "User evidence pack PDFs must explain the reader boundary before private member evidence is shared."
+  /redacted for member evidence paper[\s\S]*?redact: bool = True[\s\S]*?Private member reference[\s\S]*?Private contact[\s\S]*?Reader boundary[\s\S]*?private member evidence/,
+  "User evidence pack PDFs must default to share-safe redaction and explain the reader boundary before private member evidence is shared."
 );
 assertContains(
   "userEvidencePack",
@@ -460,8 +470,8 @@ assertContains(
 );
 assertNotContains(
   "userEvidencePack",
-  /loan=\{loan_id\}|src=\{src\}|extra\.append\(f"loan=/,
-  "User evidence pack PDFs must not print raw support IDs or raw source metadata in event lines."
+  /loan=\{loan_id\}|src=\{src\}|extra\.append\(f"loan=|User ID: \{user_id\}|Email: \{email or '-'\}|reference=f"User \{user_id\}"|def _mask_email/,
+  "User evidence pack PDFs must not print raw support IDs, raw source metadata, internal user ids, or private email rows."
 );
 assertContains(
   "trustSlipPdf",
@@ -562,8 +572,8 @@ assertContains(
 );
 assertContains(
   "analyticsRoute",
-  /def evidence_pack_pdf\([\s\S]*?redact: bool = True[\s\S]*?def loan_evidence_pack_pdf\([\s\S]*?redact: bool = True[\s\S]*?if not redact:[\s\S]*?_ensure_can_view_complete_loan_evidence\(db, current_user=user, loan=loan\)/,
-  "Analytics evidence PDF routes must default to redacted share copies."
+  /def evidence_pack_pdf\([\s\S]*?redact: bool = True[\s\S]*?build_clan_evidence_pack_pdf\(db, clan_id=clan_id, redact=True\)[\s\S]*?def loan_evidence_pack_pdf\([\s\S]*?redact: bool = True[\s\S]*?if not redact:[\s\S]*?_ensure_can_view_complete_loan_evidence\(db, current_user=user, loan=loan\)[\s\S]*?build_loan_evidence_pack_pdf\(db, loan_id=loan_id, redact=True\)/,
+  "Analytics evidence PDF routes must build redacted share-copy PDFs even when complete-record routes exist elsewhere."
 );
 assertContains(
   "analyticsRoute",

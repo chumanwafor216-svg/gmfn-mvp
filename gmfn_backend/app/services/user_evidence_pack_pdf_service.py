@@ -32,33 +32,22 @@ def _loads_meta(meta_json: Optional[str]) -> dict[str, Any]:
         return {}
 
 
-def _mask_email(email: Optional[str]) -> Optional[str]:
-    if not email:
-        return email
-    if "@" not in email:
-        return email
-    name, domain = email.split("@", 1)
-    if len(name) <= 2:
-        masked = "*" * len(name)
-    else:
-        masked = name[:2] + "***"
-    return f"{masked}@{domain}"
+def _member_contact_boundary() -> str:
+    return "redacted for member evidence paper"
 
 
 def build_user_evidence_pack_pdf(
     db: Session,
     *,
     user_id: int,
-    redact: bool = False,
+    redact: bool = True,
     days: int = 30,
 ) -> bytes:
     user = db.get(User, user_id)
     if not user:
         raise ValueError("User not found")
 
-    email = getattr(user, "email", None)
-    if redact:
-        email = _mask_email(email)
+    gsn_id = getattr(user, "gmfn_id", None) or "GSN member reference unavailable"
 
     # trust snapshot (stored + fallback compute)
     score = getattr(user, "trust_score", None)
@@ -112,7 +101,7 @@ def build_user_evidence_pack_pdf(
         title="GSN Member Evidence Pack",
         subtitle="Trust snapshot and recent evidence from the member record.",
         generated_at=ts,
-        reference=f"User {user_id}",
+        reference="GSN member evidence",
     )
 
     def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
@@ -127,7 +116,7 @@ def build_user_evidence_pack_pdf(
                 title="GSN Member Evidence Pack",
                 subtitle="Trust snapshot and recent evidence from the member record.",
                 generated_at=ts,
-                reference=f"User {user_id}",
+                reference="GSN member evidence",
             )
         c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
         c.drawString(56, y, safe_pdf_text(text))
@@ -135,9 +124,10 @@ def build_user_evidence_pack_pdf(
 
     line("Official evidence summary", size=14, gap=20, bold=True)
     line(f"Generated: {ts}", size=10, gap=14)
-    line(f"User ID: {user_id}", size=10, gap=14)
-    line(f"Email: {email or '-'}", size=10, gap=14)
-    line(f"Redaction: {'ON' if redact else 'OFF'}", size=10, gap=14)
+    line(f"GSN ID: {gsn_id}", size=10, gap=14)
+    line(f"Private member reference: {_member_contact_boundary()}", size=10, gap=14)
+    line(f"Private contact: {_member_contact_boundary()}", size=10, gap=14)
+    line("Redaction: ON (member share paper)", size=10, gap=14)
     line("")
 
     line("Trust Snapshot (Explainable)", bold=True)

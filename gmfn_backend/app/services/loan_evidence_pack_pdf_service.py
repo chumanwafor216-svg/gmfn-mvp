@@ -32,17 +32,8 @@ def _loads_meta(meta_json: Optional[str]) -> dict[str, Any]:
         return {}
 
 
-def _mask_email(email: Optional[str]) -> Optional[str]:
-    if not email:
-        return email
-    if "@" not in email:
-        return email
-    name, domain = email.split("@", 1)
-    if len(name) <= 2:
-        masked = "*" * len(name)
-    else:
-        masked = name[:2] + "***"
-    return f"{masked}@{domain}"
+def _private_member_boundary() -> str:
+    return "private member reference redacted"
 
 
 def _get_user_trust_snapshot(db: Session, user: Optional[User]) -> dict[str, Any]:
@@ -87,7 +78,7 @@ def build_loan_evidence_pack_pdf(
     db: Session,
     *,
     loan_id: int,
-    redact: bool = False,
+    redact: bool = True,
     trust_limit: int = 200,
     repayments_limit: int = 200,
 ) -> bytes:
@@ -152,15 +143,20 @@ def build_loan_evidence_pack_pdf(
             user_ids.add(s)
 
     email_map: dict[int, str] = {}
+    gsn_id_map: dict[int, str] = {}
     if user_ids:
-        rows = db.query(User.id, User.email).filter(User.id.in_(list(user_ids))).all()
-        email_map = {int(uid): str(email) for uid, email in rows if uid is not None and email is not None}
+        rows = db.query(User.id, User.email, User.gmfn_id).filter(User.id.in_(list(user_ids))).all()
+        email_map = {int(uid): str(email) for uid, email, _ in rows if uid is not None and email is not None}
+        gsn_id_map = {int(uid): str(gsn_id) for uid, _, gsn_id in rows if uid is not None and gsn_id is not None}
 
-    def show_email(uid: Optional[int], fallback: Optional[str] = None) -> Optional[str]:
+    def member_reference(uid: Optional[int], fallback: Optional[str] = None) -> str:
         email = fallback or (email_map.get(uid) if isinstance(uid, int) else None)
-        return _mask_email(email) if redact else email
+        gsn_id = gsn_id_map.get(uid) if isinstance(uid, int) else None
+        if redact:
+            return gsn_id or _private_member_boundary()
+        return email or gsn_id or _private_member_boundary()
 
-    borrower_email = show_email(borrower_user_id, borrower_email)
+    borrower_reference = member_reference(borrower_user_id, borrower_email)
 
     # -------------------------
     # C1: Trust Snapshot section (borrower + guarantors)
@@ -181,7 +177,7 @@ def build_loan_evidence_pack_pdf(
         guarantor_trust_rows.append(
             {
                 "user_id": gid,
-                "email": show_email(gid),
+                "member_reference": member_reference(gid),
                 "score": snap["score"],
                 "band": snap["band"],
                 "updated_at": snap["updated_at"],
@@ -230,8 +226,8 @@ def build_loan_evidence_pack_pdf(
     kv("Generated", ts)
     kv("Loan ID", str(loan_id))
     kv("Community", clan_name or "-")
-    kv("Borrower", borrower_email or (str(borrower_user_id) if borrower_user_id is not None else "-"))
-    kv("Redaction", "ON (masked emails)" if redact else "OFF (full emails)")
+    kv("Borrower", borrower_reference)
+    kv("Redaction", "ON (member references redacted)" if redact else "OFF (authorized complete-record contact)")
     line("")
 
     # Trust Snapshot
@@ -247,7 +243,7 @@ def build_loan_evidence_pack_pdf(
         line("Supporter trust (stored + fallback compute)", size=10, gap=14, bold=True)
         for r in guarantor_trust_rows[:12]:
             line(
-                f"- {r['email'] or r['user_id']} | score={r['score'] if r['score'] is not None else '-'} | band={r['band'] or '-'}",
+                f"- {r['member_reference']} | score={r['score'] if r['score'] is not None else '-'} | band={r['band'] or '-'}",
                 size=9,
                 gap=13,
             )
@@ -271,12 +267,12 @@ def build_loan_evidence_pack_pdf(
     else:
         for g in guarantors:
             gid = getattr(g, "guarantor_user_id", None)
-            gemail = show_email(gid)
+            gmember = member_reference(gid)
             status = getattr(g, "status", "-")
             responded_at = getattr(g, "responded_at", None)
             expires_at = getattr(g, "expires_at", None)
 
-            txt = f"- {gemail or gid} | status={status}"
+            txt = f"- {gmember} | status={status}"
             if responded_at:
                 txt += f" | responded={responded_at}"
             if expires_at:
@@ -292,10 +288,10 @@ def build_loan_evidence_pack_pdf(
     else:
         for r in repayments[:60]:
             payer_id = getattr(r, "payer_user_id", None)
-            payer_email = show_email(payer_id)
+            payer_member = member_reference(payer_id)
             amount = getattr(r, "amount", "-")
             created_at = getattr(r, "created_at", "-")
-            line(f"- {created_at} | payer={payer_email or payer_id} | amount={amount}", size=9, gap=13)
+            line(f"- {created_at} | payer={payer_member} | amount={amount}", size=9, gap=13)
         if len(repayments) > 60:
             line(f"... ({len(repayments)-60} more not shown)", size=9, gap=13)
 
@@ -311,8 +307,8 @@ def build_loan_evidence_pack_pdf(
             etype = getattr(ev, "event_type", "-")
             actor_id = getattr(ev, "actor_user_id", None)
             subject_id = getattr(ev, "subject_user_id", None)
-            actor_email = show_email(actor_id)
-            subject_email = show_email(subject_id)
+            actor_member = member_reference(actor_id)
+            subject_member = member_reference(subject_id)
             meta = _loads_meta(getattr(ev, "meta_json", None))
 
             meta_small = ""
@@ -323,7 +319,7 @@ def build_loan_evidence_pack_pdf(
                 meta_small = " | meta: " + ", ".join([f"{k}={meta.get(k)}" for k in keys])
 
             line(
-                f"- {created_at} | {etype} | actor={actor_email or actor_id} | subject={subject_email or subject_id}{meta_small}",
+                f"- {created_at} | {etype} | actor={actor_member} | subject={subject_member}{meta_small}",
                 size=8,
                 gap=12,
             )

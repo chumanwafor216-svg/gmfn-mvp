@@ -268,6 +268,8 @@ def test_analytics_evidence_downloads_use_gsn_filenames():
     assert "redact: bool = True" in text
     assert "if not redact:" in text
     assert "_ensure_can_view_complete_loan_evidence(db, current_user=user, loan=loan)" in text
+    assert "build_clan_evidence_pack_pdf(db, clan_id=clan_id, redact=True)" in text
+    assert "build_loan_evidence_pack_pdf(db, loan_id=loan_id, redact=True)" in text
     assert text.count("_ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))") == 6
     assert "gsn-community-{clan_id}-recent-invite-joins.csv" in text
     assert "gsn-community-{clan_id}-trust-events.csv" in text
@@ -303,18 +305,43 @@ def test_simple_evidence_pdfs_keep_reader_boundaries_and_redaction_guards():
     user_text = read_service("app/services/user_evidence_pack_pdf_service.py")
 
     assert "def _mask_code" in clan_text
+    assert "def _member_contact_boundary" in clan_text
+    assert "private member contact redacted" in clan_text
+    assert "redact: bool = True" in clan_text
     assert "invite_code = _mask_code" in clan_text
     assert "Reader boundary" in clan_text
     assert "redacted share copy for outside review" in clan_text
+    assert "r['invited_by_user_id']" not in clan_text
+    assert "r.get('joined_user_id')" not in clan_text
+    assert "r.get('invited_by_user_id')" not in clan_text
+    assert "def _mask_email" not in clan_text
 
+    assert "def _private_member_boundary" in loan_text
+    assert "def member_reference" in loan_text
+    assert "private member reference redacted" in loan_text
+    assert "redact: bool = True" in loan_text
     assert "Reader boundary" in loan_text
     assert "meta: redacted for share copy" in loan_text
     assert "private loan, supporter, and repayment details" in loan_text
+    assert "def _mask_email" not in loan_text
+    assert "show_email" not in loan_text
+    assert "r['email'] or r['user_id']" not in loan_text
+    assert "payer={payer_email or payer_id}" not in loan_text
+    assert "actor={actor_email or actor_id}" not in loan_text
+    assert "subject={subject_email or subject_id}" not in loan_text
 
+    assert "redact: bool = True" in user_text
+    assert "Private member reference" in user_text
+    assert "Private contact" in user_text
+    assert "redacted for member evidence paper" in user_text
     assert "Reader boundary" in user_text
     assert "private member evidence" in user_text
     assert "support record=private operational detail redacted" in user_text
     assert "source=GSN member record" in user_text
+    assert "User ID: {user_id}" not in user_text
+    assert "Email: {email or '-'}" not in user_text
+    assert "reference=f\"User {user_id}\"" not in user_text
+    assert "def _mask_email" not in user_text
     assert "loan={loan_id}" not in user_text
     assert "src={src}" not in user_text
 

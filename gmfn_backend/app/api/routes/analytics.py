@@ -154,7 +154,7 @@ def evidence_pack_pdf(
     user: User = Depends(get_current_user),
 ):
     _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
-    pdf_bytes = build_clan_evidence_pack_pdf(db, clan_id=clan_id, redact=redact)
+    pdf_bytes = build_clan_evidence_pack_pdf(db, clan_id=clan_id, redact=True)
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
@@ -174,7 +174,7 @@ def loan_evidence_pack_pdf(
     _ensure_can_view_loan_evidence(db, current_user=user, loan=loan)
     if not redact:
         _ensure_can_view_complete_loan_evidence(db, current_user=user, loan=loan)
-    pdf_bytes = build_loan_evidence_pack_pdf(db, loan_id=loan_id, redact=redact)
+    pdf_bytes = build_loan_evidence_pack_pdf(db, loan_id=loan_id, redact=True)
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",

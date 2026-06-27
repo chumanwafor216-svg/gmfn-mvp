@@ -1,3 +1,59 @@
+## 2026-06-27 - Legacy evidence PDF share copies made redacted by construction
+
+Owner request:
+- Continue deep institutional/customer-facing document cleanup, especially
+  PDFs that may be wrong, incomplete, or too exposing.
+
+Correction completed locally:
+- `gmfn_backend/app/services/evidence_pack_pdf_service.py`
+  - changed the community evidence PDF default to redacted.
+  - stopped rendering internal inviter/joiner user IDs in invite evidence rows.
+  - replaced masked/private email output with
+    `private member contact redacted` in share-copy rows.
+- `gmfn_backend/app/services/loan_evidence_pack_pdf_service.py`
+  - changed the loan evidence PDF default to redacted.
+  - replaced raw participant email/user-id fallback output with a
+    `member_reference(...)` helper.
+  - redacted share copies now use public GSN IDs when available or
+    `private member reference redacted`.
+  - borrower, supporter, repayment payer, TrustEvent actor, and TrustEvent
+    subject rows no longer fall back to internal numeric user IDs.
+- `gmfn_backend/app/services/user_evidence_pack_pdf_service.py`
+  - changed the member evidence PDF default to redacted.
+  - stopped rendering `User ID` and private email as official paper identity.
+  - now renders `GSN ID`, `Private member reference`, and `Private contact`
+    with `redacted for member evidence paper`.
+- `gmfn_backend/app/api/routes/analytics.py`
+  - analytics evidence-pack PDFs now build with `redact=True` even when
+    complete-record routes exist elsewhere.
+  - the loan endpoint still rejects `redact=false` for borrowers before
+    returning anything, preserving the complete-record access check.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added source guards for redacted defaults, no old ID/email fallbacks, and
+    route-level redacted PDF construction.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added matching proof-surface guards for the community, loan, and member
+    evidence PDF privacy boundary.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\api\routes\analytics.py gmfn_backend\app\services\evidence_pack_pdf_service.py gmfn_backend\app\services\loan_evidence_pack_pdf_service.py gmfn_backend\app\services\user_evidence_pack_pdf_service.py`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_evidence_surface_permissions.py`
+  - result: `25 passed`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warning on
+  `frontend/tools/audit-institutional-proof-surfaces.mjs`.
+
+Truth / remaining risk:
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+- The analytics CSV endpoints and governance/report ZIPs still exist as
+  complete/admin record surfaces. That is intentional, but they remain a
+  separate audit surface from share-copy PDFs and should not be described as
+  customer-facing papers.
+- The loan evidence PDF can still include public GSN IDs in redacted share
+  copies. That is deliberate evidence identity, not private contact exposure.
+
 ## 2026-06-27 - Trust Timeline PDF contact boundary tightened
 
 Owner request:

@@ -26,17 +26,11 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _mask_email(email: Optional[str]) -> Optional[str]:
-    if not email:
-        return email
-    if "@" not in email:
-        return email
-    name, domain = email.split("@", 1)
-    if len(name) <= 2:
-        masked = "*" * len(name)
-    else:
-        masked = name[:2] + "***"
-    return f"{masked}@{domain}"
+def _member_contact_boundary(email: Optional[str], *, redact: bool) -> str:
+    if redact:
+        return "private member contact redacted"
+    value = str(email or "").strip()
+    return value if value else "private member contact unavailable"
 
 
 def _mask_code(code: Optional[str]) -> str:
@@ -51,7 +45,7 @@ def build_clan_evidence_pack_pdf(
     db: Session,
     *,
     clan_id: int,
-    redact: bool = False,
+    redact: bool = True,
 ) -> bytes:
     clan = db.get(Clan, clan_id)
     clan_name = getattr(clan, "name", None) if clan else None
@@ -125,10 +119,8 @@ def build_clan_evidence_pack_pdf(
         line("- None yet")
     else:
         for r in top_inviters[:8]:
-            email = r.get("invited_by_email")
-            if redact:
-                email = _mask_email(email)
-            line(f"- {r['invited_by_user_id']}  |  {email or '-'}  |  joins: {r['joins']}", size=10, gap=14)
+            contact = _member_contact_boundary(r.get("invited_by_email"), redact=redact)
+            line(f"- inviter contact: {contact} | joins: {r['joins']}", size=10, gap=14)
     line("")
 
     line("Recent joins via invite", bold=True)
@@ -136,15 +128,12 @@ def build_clan_evidence_pack_pdf(
         line("- None yet")
     else:
         for r in recent[:10]:
-            inviter_email = r.get("invited_by_email")
-            joiner_email = r.get("joined_user_email")
-            if redact:
-                inviter_email = _mask_email(inviter_email)
-                joiner_email = _mask_email(joiner_email)
+            inviter_contact = _member_contact_boundary(r.get("invited_by_email"), redact=redact)
+            joiner_contact = _member_contact_boundary(r.get("joined_user_email"), redact=redact)
             when = r["joined_at"].strftime("%Y-%m-%d %H:%M") if hasattr(r["joined_at"], "strftime") else str(r["joined_at"])
             invite_code = _mask_code(r.get("invite_code")) if redact else str(r.get("invite_code") or "-")
             line(
-                f"- {when} | joiner: {joiner_email or r.get('joined_user_id')} | inviter: {inviter_email or r.get('invited_by_user_id')} | code: {invite_code}",
+                f"- {when} | joiner: {joiner_contact} | inviter: {inviter_contact} | code: {invite_code}",
                 size=9,
                 gap=13,
             )
