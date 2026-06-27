@@ -106,10 +106,22 @@ assertTextIncludes(
   "The public My GSN and I guide must use the institutional 22-capability heading."
 );
 
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /Institutional map of the \{capabilityCount\} core capabilities[\s\S]*?not proof[\s\S]*?member[\s\S]*?shop[\s\S]*?payout[\s\S]*?paid verification[\s\S]*?protected[\s\S]*?trade release/,
+  "The signed-in My GSN and I capability map must keep an institutional boundary against overclaiming live approvals, payout, paid verification, or protected trade release."
+);
+
 assertTextExcludes(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   "22 things GSN can do for you",
   "The public My GSN and I guide must not drift back to casual 22-capability wording."
+);
+
+assertTextExcludes(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  "Things GSN Can Do For You",
+  "The signed-in My GSN and I guide must not drift back to casual capability-map wording."
 );
 
 assertContains(

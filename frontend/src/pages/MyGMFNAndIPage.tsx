@@ -1415,7 +1415,7 @@ export default function MyGMFNAndIPage() {
                 lineHeight: 1.08,
               }}
             >
-              {capabilityCount} Things GSN Can Do For You
+              22 things GSN does
             </div>
 
             <div
@@ -1427,7 +1427,10 @@ export default function MyGMFNAndIPage() {
                 lineHeight: 1.45,
               }}
             >
-              Simple view of the {capabilityCount} core capabilities.
+              Institutional map of the {capabilityCount} core capabilities.
+              This guide explains what GSN is built to support; it is not proof
+              that any one member, shop, payout, paid verification, or protected
+              trade release is already approved.
             </div>
 
             <div

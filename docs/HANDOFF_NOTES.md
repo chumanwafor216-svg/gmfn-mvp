@@ -1,3 +1,41 @@
+## 2026-06-27 - My GSN capability map aligned with 22-things institutional paper
+
+Owner request:
+- Continue the institutional cleanup for outsider-facing GSN papers, guides,
+  screenshotable pages, and the "22 things GSN does" presentation without
+  overstating unfinished paid/API verification or protected trade-release work.
+
+Correction completed locally:
+- `frontend/src/pages/MyGMFNAndIPage.tsx`
+  - changed the signed-in capability-map heading from the casual
+    `{capabilityCount} Things GSN Can Do For You` wording to
+    `22 things GSN does`, matching the public guide and executive-summary
+    paper.
+  - strengthened the helper copy to call the section an institutional map of
+    the 22 core capabilities.
+  - added an explicit boundary that the guide is not proof that any individual
+    member, shop, payout, paid verification, or protected trade release is
+    already approved.
+- `frontend/tools/audit-capability-mirror.mjs`
+  - added a guard requiring the signed-in capability-map boundary.
+  - added a guard preventing the old casual `Things GSN Can Do For You`
+    wording from returning.
+
+Verification:
+- `npm --prefix frontend run audit:capability-mirror`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This is an institutional wording and audit-cage correction only. It does not
+  create a new backend capability, paid/API verification, regulated payout
+  automation, or protected trade-release workflow.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Trust Timeline explains neutral follow attention
 
 Owner request:
