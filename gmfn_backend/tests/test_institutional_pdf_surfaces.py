@@ -42,8 +42,15 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert 'title="GSN TrustSlip Evidence Snapshot"' in text
     assert "pagesize=A4" in text
     assert "GSN TrustSlip Evidence Snapshot" in text
-    assert "draw_gsn_watermark" in text
+    assert "draw_institutional_header" in text
     assert "draw_institutional_footer" in text
+    assert "Trust-limit signal" in text
+    assert "Available support capacity" in text
+    assert "Estimated support gap" in text
+    assert "TrustSlip Limit" not in text
+    assert "Available Guarantee Capacity" not in text
+    assert "Estimated Guarantee Gap" not in text
+    assert "Confirmed By (Actor ID)" not in text
     assert "GMFN TrustSlip Evidence Snapshot" not in text
 
 

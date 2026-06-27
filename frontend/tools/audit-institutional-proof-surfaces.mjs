@@ -199,8 +199,18 @@ assertContains(
 );
 assertContains(
   "trustSlipPdf",
-  /draw_gsn_watermark[\s\S]*?draw_institutional_footer/,
-  "TrustSlip PDF must draw the official watermark and footer on every page."
+  /draw_institutional_header[\s\S]*?draw_institutional_footer/,
+  "TrustSlip PDF must draw the shared official header, watermark, and footer on every page."
+);
+assertContains(
+  "trustSlipPdf",
+  /Trust-limit signal[\s\S]*?Available support capacity[\s\S]*?Estimated support gap/,
+  "TrustSlip PDF must use institution-grade trust-limit and support-capacity language."
+);
+assertNotContains(
+  "trustSlipPdf",
+  /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)/,
+  "TrustSlip PDF must not expose older limit/guarantee/internal actor wording."
 );
 
 assertContains(

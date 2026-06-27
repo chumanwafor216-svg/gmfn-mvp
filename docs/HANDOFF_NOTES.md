@@ -71636,6 +71636,47 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - TrustSlip evidence PDF institutional shell
+
+- Trigger:
+  - owner asked to continue the main cleanup and explicitly include the
+    institutional presentation of GSN across customer-facing papers,
+    documents, PDFs, TrustSlip, and screenshotable pages.
+- Unabated truth:
+  - many evidence PDFs already used the shared institutional shell, but the
+    backend TrustSlip evidence PDF still carried older hand-built paper
+    structure and older limit/guarantee/internal actor wording;
+  - this mattered because TrustSlip is a customer-facing proof surface, and a
+    PDF can be screenshotted or forwarded outside the app without surrounding
+    product context.
+- Changed:
+  - `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+    - moved the generated TrustSlip PDF onto the shared GSN institutional
+      header/footer shell;
+    - added the shared generated-at/reference header metadata;
+    - escaped/sanitised visible PDF values through the institutional PDF text
+      helper;
+    - changed exposed wording from guarantee/limit/internal actor phrasing to
+      institutional support wording, including `Trust-limit signal`,
+      `Available support capacity`, `Current locked support`, and
+      `Estimated support gap`.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - updated the proof-surface cage so TrustSlip PDF must use the shared
+      institutional shell and must not regress to the older guarantee/actor
+      wording.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - updated the source-level PDF guard for the TrustSlip evidence paper.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+  - backend Render deployment cannot honestly be confirmed by the frontend
+    deploy hook alone; this PDF service change requires the backend API to
+    deploy from the target commit.
+
 ### Follow-up same day - Spotlight tester blocker and `GSN-U-66E6A380`
 
 - Trigger:

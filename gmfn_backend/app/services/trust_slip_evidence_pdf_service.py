@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from io import BytesIO
 import os
 from typing import Optional, Dict, Any
+from xml.sax.saxutils import escape
 
 from reportlab.graphics.barcode import qr
 from reportlab.graphics.shapes import Drawing
@@ -14,7 +14,12 @@ from reportlab.platypus import ListFlowable, ListItem, Paragraph, SimpleDocTempl
 from sqlalchemy.orm import Session
 
 from app.db.models import TrustEvent
-from app.services.institutional_pdf import draw_gsn_watermark, draw_institutional_footer
+from app.services.institutional_pdf import (
+    draw_institutional_footer,
+    draw_institutional_header,
+    safe_pdf_text,
+    utc_generated_label,
+)
 
 
 CANONICAL_REPAYMENT_EVENTS = {"loan_repaid"}
@@ -60,9 +65,17 @@ def _find_latest_full_repayment_event(db: Session, user_id: int) -> Optional[Tru
     return canonical_match or legacy_match
 
 
-def _footer(canvas, doc, footer_text: str):
+def _page_shell(canvas, doc, footer_text: str, generated_at: str, pack_id: str):
     canvas.saveState()
-    draw_gsn_watermark(canvas, A4[0], A4[1])
+    draw_institutional_header(
+        canvas,
+        A4[0],
+        A4[1],
+        title="GSN TrustSlip Evidence Snapshot",
+        subtitle="Portable current trust evidence for careful reader judgement.",
+        generated_at=generated_at,
+        reference=pack_id,
+    )
     draw_institutional_footer(canvas, A4[0], footer_text)
     canvas.restoreState()
 
@@ -77,10 +90,19 @@ def _qr_block(url: str) -> Drawing:
     return d
 
 
+def _pdf_value(value: Any, fallback: str = "-") -> str:
+    return escape(safe_pdf_text(value, fallback=fallback))
+
+
+def _paragraph(label: str, value: Any, styles: Any):
+    return Paragraph(f"{escape(label)}: {_pdf_value(value)}", styles["Normal"])
+
+
 def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Optional[Dict[str, Any]] = None) -> bytes:
     pack_id = (pack_meta or {}).get("pack_id") or "TP-UNKNOWN"
     footer_text = (pack_meta or {}).get("footer") or "Confidential / Evidence Record"
     qr_url = (pack_meta or {}).get("merchant_verify_ui_url") or f"{_public_frontend_base_url()}/trust-slips/ping"
+    generated_at = utc_generated_label()
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -89,45 +111,58 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
         pagesize=A4,
         leftMargin=48,
         rightMargin=48,
-        topMargin=48,
+        topMargin=162,
         bottomMargin=48,
     )
     elements = []
 
     styles = getSampleStyleSheet()
 
-    elements.append(Paragraph("GSN TrustSlip Evidence Snapshot", styles["Heading1"]))
+    elements.append(Paragraph("Official evidence summary", styles["Heading1"]))
     elements.append(Paragraph("Global Support Network official evidence paper", styles["Normal"]))
-    elements.append(Paragraph(f"Evidence Pack ID: <b>{pack_id}</b>", styles["Normal"]))
+    elements.append(Paragraph(f"Evidence Pack ID: <b>{_pdf_value(pack_id)}</b>", styles["Normal"]))
+    elements.append(Paragraph(f"Generated at (UTC): {_pdf_value(generated_at)}", styles["Normal"]))
     elements.append(Spacer(1, 0.25 * inch))
 
-    elements.append(Paragraph(f"User ID: {summary.get('user_id')}", styles["Normal"]))
-    elements.append(Paragraph(f"GSN ID: {summary.get('gmfn_id')}", styles["Normal"]))
-    elements.append(Paragraph(f"Lifetime Trust: {summary.get('lifetime_trust')}", styles["Normal"]))
-    elements.append(Paragraph(f"Standing Score: {summary.get('standing_score')}", styles["Normal"]))
-    elements.append(Paragraph(f"TrustSlip Limit: {summary.get('trust_slip_limit') or summary.get('trust_limit')}", styles["Normal"]))
-    elements.append(Paragraph(f"CCI Score / Band: {summary.get('cci_score')} / {summary.get('cci_band')}", styles["Normal"]))
-    elements.append(Paragraph(f"Sponsor Count: {summary.get('sponsor_count')}", styles["Normal"]))
+    elements.append(_paragraph("User ID", summary.get("user_id"), styles))
+    elements.append(_paragraph("GSN ID", summary.get("gmfn_id"), styles))
+    elements.append(_paragraph("Lifetime Trust", summary.get("lifetime_trust"), styles))
+    elements.append(_paragraph("Standing Score", summary.get("standing_score"), styles))
+    elements.append(
+        _paragraph(
+            "Trust-limit signal",
+            summary.get("trust_slip_limit") or summary.get("trust_limit"),
+            styles,
+        )
+    )
+    elements.append(
+        _paragraph(
+            "CCI Score / Band",
+            f"{safe_pdf_text(summary.get('cci_score'))} / {safe_pdf_text(summary.get('cci_band'))}",
+            styles,
+        )
+    )
+    elements.append(_paragraph("Sponsor Count", summary.get("sponsor_count"), styles))
     elements.append(Spacer(1, 0.2 * inch))
 
     evidence_summary = summary.get("evidence_summary", {}) or {}
     capacity_context = evidence_summary.get("capacity_context", {}) or {}
     readiness_context = evidence_summary.get("readiness_context", {}) or {}
 
-    elements.append(Paragraph("Support & Capacity Context:", styles["Heading2"]))
-    elements.append(Paragraph(f"Available Guarantee Capacity: {capacity_context.get('available_guarantee_capacity')}", styles["Normal"]))
-    elements.append(Paragraph(f"Current Locked Guarantees: {capacity_context.get('current_locked_guarantees')}", styles["Normal"]))
-    elements.append(Paragraph(f"Overexposure Ratio: {capacity_context.get('overexposure_ratio')}", styles["Normal"]))
-    elements.append(Paragraph(f"Risk Level: {capacity_context.get('risk_level')}", styles["Normal"]))
-    elements.append(Paragraph(f"Readiness Recommendation: {readiness_context.get('recommendation')}", styles["Normal"]))
-    elements.append(Paragraph(f"Readiness Score: {readiness_context.get('readiness_score')}", styles["Normal"]))
-    elements.append(Paragraph(f"Estimated Guarantee Gap: {readiness_context.get('estimated_guarantee_gap')}", styles["Normal"]))
-    elements.append(Paragraph(f"Capacity Ratio: {readiness_context.get('capacity_ratio')}", styles["Normal"]))
+    elements.append(Paragraph("Support & capacity context", styles["Heading2"]))
+    elements.append(_paragraph("Available support capacity", capacity_context.get("available_guarantee_capacity"), styles))
+    elements.append(_paragraph("Current locked support", capacity_context.get("current_locked_guarantees"), styles))
+    elements.append(_paragraph("Overexposure ratio", capacity_context.get("overexposure_ratio"), styles))
+    elements.append(_paragraph("Risk level", capacity_context.get("risk_level"), styles))
+    elements.append(_paragraph("Readiness recommendation", readiness_context.get("recommendation"), styles))
+    elements.append(_paragraph("Readiness score", readiness_context.get("readiness_score"), styles))
+    elements.append(_paragraph("Estimated support gap", readiness_context.get("estimated_guarantee_gap"), styles))
+    elements.append(_paragraph("Capacity ratio", readiness_context.get("capacity_ratio"), styles))
     elements.append(Spacer(1, 0.2 * inch))
 
-    elements.append(Paragraph("Recent Repayment Activity:", styles["Heading2"]))
-    elements.append(Paragraph(f"Last Full Repayment: {summary.get('last_full_repayment_at')}", styles["Normal"]))
-    elements.append(Paragraph(f"Days Since Last Repayment: {summary.get('days_since_last_full_repayment')}", styles["Normal"]))
+    elements.append(Paragraph("Recent repayment activity", styles["Heading2"]))
+    elements.append(_paragraph("Last full repayment", summary.get("last_full_repayment_at"), styles))
+    elements.append(_paragraph("Days since last repayment", summary.get("days_since_last_full_repayment"), styles))
 
     user_id = int(summary.get("user_id") or 0)
     event = _find_latest_full_repayment_event(db, user_id)
@@ -150,19 +185,19 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
             payment_reference = None
 
     elements.append(Spacer(1, 0.15 * inch))
-    elements.append(Paragraph(f"Loan ID: {loan_id}", styles["Normal"]))
-    elements.append(Paragraph(f"Payment Reference: {payment_reference}", styles["Normal"]))
-    elements.append(Paragraph(f"Confirmed At: {confirmed_at}", styles["Normal"]))
-    elements.append(Paragraph(f"Confirmed By (Actor ID): {confirmed_by}", styles["Normal"]))
+    elements.append(_paragraph("Support record ID", loan_id, styles))
+    elements.append(_paragraph("Payment reference", payment_reference, styles))
+    elements.append(_paragraph("Confirmed at", confirmed_at, styles))
+    elements.append(_paragraph("Confirmed by record", confirmed_by, styles))
     elements.append(Spacer(1, 0.25 * inch))
 
-    elements.append(Paragraph("Merchant verification (QR):", styles["Heading2"]))
+    elements.append(Paragraph("Merchant verification QR", styles["Heading2"]))
     elements.append(Paragraph("Scan to open merchant verification view.", styles["Normal"]))
     elements.append(Spacer(1, 0.1 * inch))
     elements.append(_qr_block(str(qr_url)))
     elements.append(Spacer(1, 0.25 * inch))
 
-    elements.append(Paragraph("Trust Breakdown:", styles["Heading2"]))
+    elements.append(Paragraph("Trust breakdown", styles["Heading2"]))
 
     breakdown = summary.get("counts", {}) or summary.get("breakdown", {}) or {}
     breakdown_items = [
@@ -175,7 +210,7 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
 
     elements.append(
         ListFlowable(
-            [ListItem(Paragraph(item, styles["Normal"])) for item in breakdown_items],
+            [ListItem(Paragraph(_pdf_value(item), styles["Normal"])) for item in breakdown_items],
             bulletType="bullet",
         )
     )
@@ -186,7 +221,7 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
         elements.append(Paragraph("Current Risk Flags:", styles["Heading2"]))
         elements.append(
             ListFlowable(
-                [ListItem(Paragraph(str(item), styles["Normal"])) for item in risk_flags],
+                [ListItem(Paragraph(_pdf_value(item), styles["Normal"])) for item in risk_flags],
                 bulletType="bullet",
             )
         )
@@ -200,12 +235,11 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
         )
     )
     elements.append(Spacer(1, 0.15 * inch))
-    elements.append(Paragraph(f"Generated at (UTC): {datetime.now(timezone.utc).isoformat()}", styles["Normal"]))
 
     doc.build(
         elements,
-        onFirstPage=lambda c, d: _footer(c, d, footer_text),
-        onLaterPages=lambda c, d: _footer(c, d, footer_text),
+        onFirstPage=lambda c, d: _page_shell(c, d, footer_text, generated_at, pack_id),
+        onLaterPages=lambda c, d: _page_shell(c, d, footer_text, generated_at, pack_id),
     )
     pdf = buffer.getvalue()
     buffer.close()
