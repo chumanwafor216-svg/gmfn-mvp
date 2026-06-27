@@ -1,3 +1,46 @@
+## 2026-06-27 - Finance requested-support record wording
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/pages/FinancePage.tsx`
+  - the Finance watch note now says remaining money is on `support you
+    requested` instead of `borrower records`.
+  - requested-support fallback titles now say `Support ...` instead of
+    `Loan ...` on both mobile record cards and the desktop table.
+  - the default normalized title for missing support-request labels is now
+    `Support item`.
+- `frontend/tools/audit-finance-actions.mjs`
+  - added a guard requiring requested-support fallback titles and watch notices
+    to use support/requested wording.
+  - added a regression guard rejecting the old `Loan support item`,
+    `showing on borrower records`, and `Loan ...` fallback title wording.
+
+Verification state:
+- `node frontend\tools\audit-finance-actions.mjs`
+- `node frontend\tools\audit-finance-front-package.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `70309762378261eb43e7d379b804103653c6d07a`
+  (`Clarify Finance requested support records`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28286916289` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vqjqjeo5us73bi5hd0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: Finance still uses backend loan rows and borrower-role
+  flags internally to identify support the member requested. This slice changes
+  visible fallback/warning wording only.
+
 ## 2026-06-27 - Shared support request guidance wording
 
 Owner request:
