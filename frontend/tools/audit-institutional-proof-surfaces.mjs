@@ -949,8 +949,8 @@ assertNotContains(
 );
 assertContains(
   "communityVerify",
-  /copyLink[\s\S]*?safeCopy\(publicLink\)[\s\S]*?GSN community verification link copied\./,
-  "Public Community Verification Copy link must copy only the public verification URL, not a long headed-paper package for QR visitors."
+  /buildGsnCommunityVerifyLinkPackage[\s\S]*?communityVerifyLinkPackage[\s\S]*?communityName[\s\S]*?communityId: communityAnchor[\s\S]*?verifyLink: publicLink[\s\S]*?copyLink[\s\S]*?safeCopy\(communityVerifyLinkPackage\)[\s\S]*?GSN community verification paper copied\./,
+  "Public Community Verification Copy link must copy the branded GSN verification link paper, not a bare URL."
 );
 assertContains(
   "communityVerify",

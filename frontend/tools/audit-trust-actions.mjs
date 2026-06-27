@@ -510,8 +510,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /async function copyLink\(\) \{[\s\S]*?safeCopy\(publicLink\)[\s\S]*?GSN community verification link copied\./,
-  "CommunityVerifyPage Copy link must copy only the public verification URL, not a long headed-paper package for QR visitors."
+  /buildGsnCommunityVerifyLinkPackage[\s\S]*?communityVerifyLinkPackage[\s\S]*?communityName[\s\S]*?communityId: communityAnchor[\s\S]*?verifyLink: publicLink[\s\S]*?async function copyLink\(\) \{[\s\S]*?safeCopy\(communityVerifyLinkPackage\)[\s\S]*?GSN community verification paper copied\./,
+  "CommunityVerifyPage Copy link must copy the branded GSN verification link paper, not a bare URL."
 );
 
 assertContains(
@@ -564,7 +564,7 @@ assertContains(
 
 assertNotContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Verified in GSN|confirms the GSN community ID domain|This record confirms the community identity|proof anchor|What this proves|active_member_count|instant_pulse_available|public_policy|plain_language|hidden_by_design|Show publicly|Keep protected|Full member list|Raw member phone numbers|Member phone numbers|Sponsor details|Internal disputes|Private relay contacts|Internal trust history|Save PDF|buildGsnCommunityVerifyLinkPackage|CAC|company-registration|registration_reference|registered_name/,
+  /Verified in GSN|confirms the GSN community ID domain|This record confirms the community identity|proof anchor|What this proves|active_member_count|instant_pulse_available|public_policy|plain_language|hidden_by_design|Show publicly|Keep protected|Full member list|Raw member phone numbers|Member phone numbers|Sponsor details|Internal disputes|Private relay contacts|Internal trust history|Save PDF|CAC|company-registration|registration_reference|registered_name/,
   "CommunityVerifyPage must not render private-ish community confirmation internals, protected-category inventories, dossier-style public export actions, or long copy packages."
 );
 

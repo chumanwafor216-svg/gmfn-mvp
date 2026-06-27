@@ -23,6 +23,7 @@ import {
   safeCopy,
   unfollowCommunity,
 } from "../lib/api";
+import { buildGsnCommunityVerifyLinkPackage } from "../lib/gsnSnapshotPaper";
 import { publicFrontendUrl } from "../lib/publicLinks";
 
 type CommunityVerifyRecord = {
@@ -464,16 +465,6 @@ export default function CommunityVerifyPage() {
     void loadCommunityFollowState();
   }, [loadCommunityFollowState]);
 
-  async function copyLink() {
-    const copied = await safeCopy(publicLink);
-    setNotice({
-      tone: copied ? "success" : "error",
-      text: copied
-        ? "GSN community verification link copied."
-        : "Copy failed. Use the browser address bar.",
-    });
-  }
-
   const communityName = firstTruthy(record?.community_name, "GSN community");
   const communityAnchor = firstTruthy(record?.community_code, record?.community_id, "Not shown");
   const status = safeStr(record?.status).toLowerCase() || "unknown";
@@ -647,6 +638,36 @@ export default function CommunityVerifyPage() {
   const confirmationActionBody = requestConfirmationAvailable
     ? "Use Request confirmation when you need a current answer from the community without exposing private member contacts."
     : "This community cannot receive controlled confirmation from this public page yet. Ask for a scoped member credential, TrustSlip, acknowledged affiliate record, or fresh community evidence before acting.";
+
+  const communityVerifyLinkPackage = useMemo(
+    () =>
+      buildGsnCommunityVerifyLinkPackage({
+        communityName,
+        communityId: communityAnchor,
+        status: evidenceCurrentnessLabel,
+        publicRecord,
+        relayAvailability,
+        verifyLink: publicLink,
+      }),
+    [
+      communityName,
+      communityAnchor,
+      evidenceCurrentnessLabel,
+      publicRecord,
+      relayAvailability,
+      publicLink,
+    ]
+  );
+
+  async function copyLink() {
+    const copied = await safeCopy(communityVerifyLinkPackage);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "GSN community verification paper copied."
+        : "Copy failed. Use the browser address bar.",
+    });
+  }
 
   async function toggleCommunityFollow() {
     if (!communityFollowId) {
