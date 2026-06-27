@@ -157,6 +157,16 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function supportDisplayText(value: any, fallback = ""): string {
+  const text = safeStr(value);
+  if (!text) return fallback;
+  return text
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantors/g, "supporters")
+    .replace(/guarantor/g, "supporter");
+}
+
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -242,20 +252,24 @@ function normalizeLoanRow(raw: any): any | null {
     id: positiveNumber(src?.id || src?.loan_id) || undefined,
     clan_id: positiveNumber(src?.clan_id || src?.community_id) || undefined,
     status: firstTruthy(src?.status, src?.loan_status, src?.state, "open"),
-    title: firstTruthy(
-      src?.title,
-      src?.purpose,
-      src?.name,
-      src?.loan_title,
-      src?.description,
-      "Loan support item"
+    title: supportDisplayText(
+      firstTruthy(
+        src?.title,
+        src?.purpose,
+        src?.name,
+        src?.loan_title,
+        src?.description,
+        "Loan support item"
+      )
     ),
-    role: firstTruthy(
-      src?.role,
-      src?.my_role,
-      src?.participant_role,
-      src?.is_guarantor ? "Supporter" : "",
-      src?.is_borrower ? "Borrower" : ""
+    role: supportDisplayText(
+      firstTruthy(
+        src?.role,
+        src?.my_role,
+        src?.participant_role,
+        src?.is_guarantor ? "Supporter" : "",
+        src?.is_borrower ? "Borrower" : ""
+      )
     ),
     borrower_name: firstTruthy(
       src?.borrower_name,
@@ -671,7 +685,7 @@ function resolveNoticeTarget(raw: any): string {
 }
 
 function normalizeNoticeCtaLabel(ctaTo: string, rawLabel: any): string {
-  const direct = safeStr(rawLabel);
+  const direct = supportDisplayText(rawLabel);
   const normalizedTarget = normalizeActionTargetPath(ctaTo);
   const targetPath = splitPathSuffix(normalizedTarget).path;
   const genericLabel =
@@ -784,11 +798,13 @@ function bucketFromNotification(raw: any): GuidanceInboxBucketKey {
 }
 
 function normalizeNotificationNotice(raw: any): GuidanceNotice {
-  const title = firstTruthy(raw?.title, raw?.kind, "Update");
-  const detail = firstTruthy(
-    raw?.message,
-    raw?.detail,
-    "Review this update and continue from the right page."
+  const title = supportDisplayText(firstTruthy(raw?.title, raw?.kind, "Update"));
+  const detail = supportDisplayText(
+    firstTruthy(
+      raw?.message,
+      raw?.detail,
+      "Review this update and continue from the right page."
+    )
   );
   const kind = firstTruthy(raw?.kind, title);
   const bucket = bucketFromNotification(raw);
@@ -916,13 +932,15 @@ function sortNotices(rows: GuidanceNotice[]): GuidanceNotice[] {
 
 function classifyTrustEvent(raw: any): GuidanceTrustJourneyItem {
   const type = firstTruthy(raw?.event_type, raw?.kind, raw?.type);
-  const label = firstTruthy(
-    raw?.title,
-    raw?.message,
-    raw?.detail,
-    raw?.description,
-    type,
-    "Trust event"
+  const label = supportDisplayText(
+    firstTruthy(
+      raw?.title,
+      raw?.message,
+      raw?.detail,
+      raw?.description,
+      type,
+      "Trust event"
+    )
   );
 
   const text = [type, label].join(" ").toLowerCase();
@@ -1940,7 +1958,7 @@ function buildMarketWisdomCard(params: {
   if (externalText) {
     return {
       title: "Today’s Market Wisdom",
-      text: externalText,
+      text: supportDisplayText(externalText),
     };
   }
 

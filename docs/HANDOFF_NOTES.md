@@ -1,3 +1,36 @@
+## 2026-06-27 - Shared guidance hides legacy support wording
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Local corrections:
+- `frontend/src/lib/guidance.ts`
+  - added display-only supporter wording formatting for raw loan row titles
+    and roles;
+  - formatted raw notification titles, details, and CTA labels before they
+    become shared guidance cards;
+  - formatted trust-event journey labels and externally supplied Market Wisdom
+    text before display.
+
+Verification passed locally:
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on
+  `frontend/src/lib/guidance.ts`.
+
+Truth / remaining risk:
+- Local only until committed, pushed, and the frontend Render deploy hook
+  accepts a deploy for the pushed commit.
+- This is frontend-only and should use `deploy_api=false`.
+- Internal guidance kind matching, route ids, API calls, and backend contract
+  names still use `guarantor` where they are compatibility logic rather than
+  user-facing wording.
+- Backend Render remains blocked for the earlier backend-impacting copy batch
+  until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured
+  or gmfn-api is manually deployed and verified.
+
 ## 2026-06-27 - Support wording labels continued on finance/trust surfaces
 
 Owner request:
