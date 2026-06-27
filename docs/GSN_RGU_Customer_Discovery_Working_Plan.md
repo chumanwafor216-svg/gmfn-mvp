@@ -57,10 +57,10 @@ The question is:
 
 Every TrustSlip review should quickly answer four plain questions for the reader:
 
-1. **Can this person be trusted for support, contribution, finance discipline, or trade?**
+1. **What decision can this TrustSlip evidence support?**
 2. **Do they follow through after receiving support, credit, goods, opportunity, or community benefit?**
 3. **Are they stable inside a real community, and is their attitude consistent across community settings?**
-4. **Is there verified history behind what they claim?**
+4. **Which evidence is confirmed, and which evidence is only recorded or still missing?**
 
 The TrustSlip should not make the decision for the reader. It should help the reader decide what to do next:
 
@@ -77,11 +77,11 @@ The TrustSlip should be checked against these evidence areas:
 
 1. **Validity**: current, expired, revoked, frozen, or inactive.
 2. **Identity**: GSN/GMFN ID, holder name, phone verification, and community context.
-3. **Trust reading**: trust band, CCI, trust limit, and what the limit does and does not mean.
+3. **Trust reading**: trust band, CCI, TrustSlip limit signal, and what the limit does and does not mean.
 4. **Contribution discipline**: expected contributions, completed contributions, missed or late contributions, and completed cycles where available.
 5. **Support and repayment behavior**: support received, support repaid, last full repayment, active obligations, and last merchant release where available.
 6. **Personal commitment discipline**: goals set, check-ins made, milestones reached, commitments completed, and missed commitments where reported.
-7. **Community and sponsor evidence**: verified sponsor signals, community standing, active community count, and governance/admin verification.
+7. **Community and sponsor evidence**: member-witness signals, community standing, active community count, and governance/admin evidence.
 8. **Risk and limits**: overexposure, disputes, risk flags, correction path, expiry, and clear disclaimer.
 
 Important truth:

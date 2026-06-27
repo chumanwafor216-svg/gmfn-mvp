@@ -73,6 +73,13 @@ const files = {
   communityConfirmationPolicy:
     "frontend/src/pages/CommunityConfirmationPolicyPage.tsx",
   evidencePanel: "frontend/src/components/EvidencePackPanel.tsx",
+  rguCustomerDiscovery: "docs/GSN_RGU_Customer_Discovery_Working_Plan.md",
+  trustSlipShipReadiness:
+    "docs/GSN_TRUSTSLIP_SHIP_READINESS_MANIFEST_2026-05-15.md",
+  trustSlipScreenGap:
+    "docs/GSN_TRUSTSLIP_SCREEN_GAP_AUDIT_2026-05-15.md",
+  verifiedCommunityDomainSpec:
+    "docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md",
   pilotChecklist: "docs/PILOT_EVIDENCE_PACK_CHECKLIST.md",
   phoneProofChecklist: "docs/GSN_RGU_PHONE_PROOF_PATH_CHECKLIST.md",
   uxChecklist: "docs/UX_ACCEPTANCE_CHECKLIST.md",
@@ -1204,6 +1211,33 @@ assertNotContains(
     "Community-member and TrustSlip public labels must not sound like blanket verification or trusted-trade certification."
   );
 });
+
+[
+  "rguCustomerDiscovery",
+  "trustSlipShipReadiness",
+  "trustSlipScreenGap",
+].forEach((key) => {
+  assertContains(
+    key,
+    /What decision can this TrustSlip evidence support/,
+    "TrustSlip-facing docs must ask what the evidence can support, not whether the person can be trusted."
+  );
+  assertNotContains(
+    key,
+    /Can this person be trusted/g,
+    "TrustSlip-facing docs must not keep the old blanket personal-trust question."
+  );
+});
+assertContains(
+  "verifiedCommunityDomainSpec",
+  /Joined \/ witness not started[\s\S]*?Light member evidence[\s\S]*?Community evidence[\s\S]*?Strong member evidence/,
+  "Verified-community domain spec must use evidence-level labels."
+);
+assertNotContains(
+  "verifiedCommunityDomainSpec",
+  /Lightly Verified|Community Verified|Strongly Verified|Joined \/ Unverified|verified member of Community Domain/g,
+  "Verified-community domain spec must not keep old blanket verification labels."
+);
 
 assertContains(
   "evidencePanel",

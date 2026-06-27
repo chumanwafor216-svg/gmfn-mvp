@@ -472,8 +472,8 @@ Owned by the relationship between:
 
 Example meaning:
 
-`Person X is a verified member of Community Domain Y through Affiliate Group Z,
-with role R, valid until Date D.`
+`Person X has current member evidence in Community Domain Y through Affiliate
+Group Z, with role R, valid until Date D.`
 
 This is the most important credential object for trust mobility.
 
@@ -487,7 +487,7 @@ Result:
 
 - personal GSN account can be created;
 - public community space can be joined;
-- status is `Joined / Unverified`.
+- status is `Joined / witness not started`.
 
 Open join is adoption. It is not verification evidence.
 
@@ -571,9 +571,9 @@ If the conditions pass, GSN issues or updates the membership credential.
 
 Possible result:
 
-- `Lightly Verified`
-- `Community Verified`
-- `Strongly Verified`
+- `Light member evidence`
+- `Community evidence`
+- `Strong member evidence`
 - `Community Established`
 - `Needs Reconfirmation`
 - `Disputed`
@@ -618,10 +618,10 @@ confirmed.
 
 Suggested starting levels:
 
-- `Joined`: entered GSN or community space, not community verified.
-- `Lightly Verified`: 1-2 valid confirmations.
-- `Community Verified`: 3-5 valid confirmations.
-- `Strongly Verified`: 6-10 valid confirmations.
+- `Joined / witness not started`: entered GSN or community space, but current member-witness evidence is not yet recorded.
+- `Light member evidence`: 1-2 valid confirmations.
+- `Community evidence`: 3-5 valid confirmations.
+- `Strong member evidence`: 6-10 valid confirmations.
 - `Community Established`: 10+ valid confirmations, renewed, with no active
   dispute.
 

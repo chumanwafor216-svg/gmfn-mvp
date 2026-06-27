@@ -142,7 +142,7 @@ Before committing or deploying, run the local evidence path with Amara:
    - plain human reading
 5. Open the public TrustSlip page for `GSNAMARA2026`.
 6. Confirm the public reader can answer:
-   - Can this person be trusted for support, finance, contribution, or trade?
+   - What decision can this TrustSlip evidence support?
    - Do they follow through?
    - Are they stable inside a real community?
    - Is there verified history behind the claim?

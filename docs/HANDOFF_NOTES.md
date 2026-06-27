@@ -1,3 +1,51 @@
+## 2026-06-27 - TrustSlip and community-evidence docs aligned with evidence wording
+
+Owner request:
+- Continue the institutional cleanup beyond app screens into customer-facing
+  papers, TrustSlip docs, screenshotable pages, and reference material that can
+  shape future implementation.
+
+Correction completed locally:
+- `docs/GSN_RGU_Customer_Discovery_Working_Plan.md`
+  - changed the TrustSlip review question from `Can this person be trusted...`
+    to `What decision can this TrustSlip evidence support?`.
+  - changed the fourth review question to separate confirmed evidence from
+    recorded or missing evidence.
+  - changed `trust limit` to `TrustSlip limit signal`.
+  - changed `verified sponsor signals` to member-witness/community evidence
+    wording.
+- `docs/GSN_TRUSTSLIP_SHIP_READINESS_MANIFEST_2026-05-15.md`
+  - aligned the TrustSlip readiness question with evidence-support wording.
+- `docs/GSN_TRUSTSLIP_SCREEN_GAP_AUDIT_2026-05-15.md`
+  - aligned the TrustSlip audit questions with evidence-support and
+    recorded-vs-confirmed wording.
+- `docs/GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md`
+  - changed member-strength labels from `Lightly Verified`,
+    `Community Verified`, `Strongly Verified`, and `Joined / Unverified` to
+    `Light member evidence`, `Community evidence`, `Strong member evidence`,
+    and `Joined / witness not started`.
+  - changed an example credential from `verified member` to current member
+    evidence.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added guards for these docs so TrustSlip docs keep evidence-support
+    wording and the verified-community spec keeps evidence-level labels.
+
+Verification:
+- `rg -n "Can this person be trusted|Community Verified|Strongly Verified|Lightly Verified|Verified Community Member|Trusted trade|Community Membership Not Fully Verified|Joined / Unverified|verified member of Community Domain" docs\GSN_RGU_Customer_Discovery_Working_Plan.md docs\GSN_TRUSTSLIP_SHIP_READINESS_MANIFEST_2026-05-15.md docs\GSN_TRUSTSLIP_SCREEN_GAP_AUDIT_2026-05-15.md docs\GSN_VERIFIED_COMMUNITY_DOMAIN_SPEC_2026-06-18.md frontend\tools\audit-institutional-proof-surfaces.mjs -S`
+  - result: only forbidden-pattern audit regexes remain.
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:gsn-visible-language`
+
+Truth / remaining risk:
+- This is documentation and audit alignment only. It does not change the live
+  product beyond the audit guard.
+- Broader historical notes in `docs/HANDOFF_NOTES.md` and extracted external
+  review material still preserve older phrases as history. They should not be
+  treated as current customer-facing language without a separate archival/doc
+  cleanup decision.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Community member public labels changed from verification to evidence language
 
 Owner request:

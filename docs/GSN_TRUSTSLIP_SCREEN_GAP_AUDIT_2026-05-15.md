@@ -28,10 +28,10 @@ The target is a consented, time-limited, evidence-backed decision snapshot. It m
 
 The TrustSlip should therefore answer four plain questions at speed:
 
-1. Can this person be trusted for support, contribution, finance discipline, or trade?
+1. What decision can this TrustSlip evidence support?
 2. Do they follow through on commitments after receiving support, credit, goods, or community benefit?
 3. Are they stable inside a real community, and is their attitude consistent across community settings?
-4. Is there a verified history behind what they claim, backed by Trust Events, Trust Graph, Trust Passport, and community evidence?
+4. Which evidence is confirmed, and which evidence is only recorded or still missing across Trust Events, Trust Graph, Trust Passport, and community evidence?
 
 ---
 
