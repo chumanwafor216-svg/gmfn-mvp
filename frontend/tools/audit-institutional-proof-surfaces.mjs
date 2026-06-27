@@ -17,6 +17,8 @@ const files = {
   trustWhyRoute: "gmfn_backend/app/api/routes/trust_why.py",
   evidencePackTrustWhyRoute: "gmfn_backend/app/api/routes/evidence_pack_trustwhy.py",
   adminEvidenceTrustWhyRoute: "gmfn_backend/app/api/routes/admin_evidence_trustwhy.py",
+  evidenceVerifyRoute: "gmfn_backend/app/api/routes/evidence_verify.py",
+  shipmentRoute: "gmfn_backend/app/api/routes/shipment.py",
   trustEvidencePack: "gmfn_backend/app/services/trust_evidence_pack_service.py",
   loanEvidencePack: "gmfn_backend/app/services/loan_evidence_pack_pdf_service.py",
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
@@ -336,14 +338,39 @@ assertNotContains(
   "Admin Trust Why evidence JSON must not include old TP-U reference strings."
 );
 assertContains(
+  "evidenceVerifyRoute",
+  /GSN-EVID-[\s\S]*?"holder": \{[\s\S]*?"private_member_reference": "redacted for evidence verification"/,
+  "Evidence verification must use opaque GSN references and redact the signed-in holder reference."
+);
+assertNotContains(
+  "evidenceVerifyRoute",
+  /return f"TP-|tp:\{user_id\}|"user_id": uid/,
+  "Evidence verification must not expose old TP references or raw signed-in account ids."
+);
+assertContains(
+  "shipmentRoute",
+  /GSN evidence reference for this delivery\/support record/,
+  "Shipment logging schema must describe the pack id as a GSN evidence reference."
+);
+assertNotContains(
+  "shipmentRoute",
+  /Evidence Pack ID \(TP-\.\.\.\)/,
+  "Shipment logging schema must not expose old TP reference wording."
+);
+assertContains(
   "trustEvidencePack",
   /def _safe_event_export\(row: TrustEvent\)[\s\S]*?Private delivery\/support record[\s\S]*?Private operational details redacted for evidence pack[\s\S]*?return \[_safe_event_export\(r\) for r in rows\][\s\S]*?return _safe_event_export\(row\)/,
   "Trust Evidence Pack ZIP shipment, courier, and delivery JSON files must use a redacted event serializer."
 );
+assertContains(
+  "trustEvidencePack",
+  /GSN-PACK-TRUST-[\s\S]*?"holder": \{[\s\S]*?"private_member_reference": "redacted for trust evidence pack"/,
+  "Legacy Trust Evidence Pack ZIP builder must use opaque GSN references and redact holder references if it is re-mounted later."
+);
 assertNotContains(
   "trustEvidencePack",
-  /"actor_user_id": r\.actor_user_id|"subject_user_id": r\.subject_user_id|"actor_user_id": row\.actor_user_id|"subject_user_id": row\.subject_user_id|"meta": _safe_json|"payment_reference"/,
-  "Trust Evidence Pack ZIP auxiliary event files must not expose raw event IDs, metadata, or payment references."
+  /"actor_user_id": r\.actor_user_id|"subject_user_id": r\.subject_user_id|"actor_user_id": row\.actor_user_id|"subject_user_id": row\.subject_user_id|"meta": _safe_json|"payment_reference"|return f"TP-|"user_id": int\(user_id\)/,
+  "Trust Evidence Pack ZIP auxiliary event files must not expose raw event IDs, metadata, payment references, old TP references, or raw holder ids."
 );
 assertContains(
   "trustScoreService",

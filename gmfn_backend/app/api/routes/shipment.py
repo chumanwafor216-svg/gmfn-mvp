@@ -22,7 +22,7 @@ router = APIRouter(prefix="/shipments", tags=["shipments"])
 
 
 class ShipmentLogIn(BaseModel):
-    pack_id: str = Field(..., description="Evidence Pack ID (TP-...)")
+    pack_id: str = Field(..., description="GSN evidence reference for this delivery/support record")
     stage: str = Field(..., description=f"One of: {', '.join(STAGES)}")
 
     # optional logistics fields

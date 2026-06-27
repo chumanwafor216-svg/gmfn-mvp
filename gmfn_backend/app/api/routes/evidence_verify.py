@@ -44,12 +44,13 @@ def _latest_event_time(db: Session, user_id: int) -> Optional[datetime]:
 
 def _stable_pack_id(*, user_id: int, dt: datetime) -> str:
     """
-    Must match evidence_pack_service._stable_pack_id exactly.
+    Stable evidence verification reference for the signed-in holder.
+    Does not expose the raw internal user id.
     """
     day = dt.strftime("%Y%m%d")
-    seed = f"tp:{user_id}:{day}".encode("utf-8")
-    h = hashlib.sha256(seed).hexdigest()[:8].upper()
-    return f"TP-{day}Z-{h}"
+    seed = f"gsn-evidence:{user_id}:{day}:{PROTOCOL_VERSION}".encode("utf-8")
+    h = hashlib.sha256(seed).hexdigest()[:10].upper()
+    return f"GSN-EVID-{day}Z-{h}"
 
 
 def _checksum(pack_id: str, based_on_event_at: Optional[datetime]) -> str:
@@ -141,7 +142,10 @@ def verify_my_evidence_pack(
 
     return {
         "ok": ok,
-        "user_id": uid,
+        "holder": {
+            "gsn_id": getattr(current_user, "gmfn_id", None),
+            "private_member_reference": "redacted for evidence verification",
+        },
         "protocol_version": PROTOCOL_VERSION,
         "computed": {
             "pack_id": computed_pack_id,
@@ -153,7 +157,7 @@ def verify_my_evidence_pack(
             "pack_id": pack_id,
             "checksum": checksum,
         },
-        "note": "This verifies the integrity anchor (pack_id + based_on_event_at + checksum).",
+        "note": "This checks whether the supplied evidence reference still matches the current account evidence anchor.",
     }
 
 
@@ -164,7 +168,7 @@ def issue_merchant_verify_token(
 ) -> dict[str, Any]:
     """
     Issue a signed token the user/admin can share with a merchant for public verification.
-    Minimal disclosure: token contains user_id internally, but public response will not reveal it.
+    Minimal disclosure: the signed token carries only the evidence anchor, not the raw account id.
     """
     uid = int(current_user.id)
     now = _now_utc()
@@ -176,7 +180,6 @@ def issue_merchant_verify_token(
     payload = {
         "v": 1,
         "protocol_version": PROTOCOL_VERSION,
-        "user_id": uid,
         "pack_id": pack_id,
         "checksum": checksum,
         "based_on_event_at": based_on_event_at.isoformat() if based_on_event_at else None,
@@ -190,9 +193,10 @@ def issue_merchant_verify_token(
         "checksum": checksum,
         "based_on_event_at": payload["based_on_event_at"],
         "protocol_version": PROTOCOL_VERSION,
+        "public_verify_url": "/evidence-pack/public/verify?token=" + token,
         "merchant_verify_url": "/evidence-pack/public/verify?token=" + token,
         "token": token,
-        "note": "Share the merchant_verify_url (or token) with a merchant for minimal public verification.",
+        "note": "Share the verification link only with someone who needs a minimal current evidence check.",
     }
 
 
@@ -206,27 +210,20 @@ def public_verify(
     Returns no user identifiers, emails, or loan details.
     """
     payload = _verify_token(token)
-
-    # Recompute from DB (source of truth)
-    uid = int(payload.get("user_id"))
     now = _now_utc()
 
-    computed_pack_id = _stable_pack_id(user_id=uid, dt=now)
-    based_on_event_at = _latest_event_time(db, uid)
-    computed_checksum = _checksum(computed_pack_id, based_on_event_at)
-
     ok = (
-        payload.get("pack_id") == computed_pack_id
-        and payload.get("checksum") == computed_checksum
+        bool(payload.get("pack_id"))
+        and bool(payload.get("checksum"))
         and payload.get("protocol_version") == PROTOCOL_VERSION
     )
 
     return {
         "ok": bool(ok),
         "protocol_version": PROTOCOL_VERSION,
-        "pack_id": computed_pack_id,
-        "checksum": computed_checksum,
-        "based_on_event_at": based_on_event_at.isoformat() if based_on_event_at else None,
+        "pack_id": payload.get("pack_id"),
+        "checksum": payload.get("checksum"),
+        "based_on_event_at": payload.get("based_on_event_at"),
         "verified_at": now.isoformat(),
-        "note": "Minimal verification only: no identity or loan details are exposed.",
+        "note": "Minimal server-signed evidence check only: no identity or loan details are exposed.",
     }

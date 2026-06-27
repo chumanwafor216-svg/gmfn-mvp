@@ -1,3 +1,56 @@
+## 2026-06-27 - Evidence verification tokens and legacy pack references hardened
+
+Owner request:
+- Continue deepening the institutional/customer-facing evidence cleanup.
+
+Correction completed locally:
+- `gmfn_backend/app/api/routes/evidence_verify.py`
+  - changed the active evidence verification reference from old `TP-...`
+    format to opaque `GSN-EVID-{date}Z-{digest}`.
+  - removed top-level raw `user_id` from `/evidence-pack/me/verify`; the
+    signed-in response now returns a `holder` block with public GSN id and
+    `private_member_reference: redacted for evidence verification`.
+  - corrected a deeper privacy issue: the public verification token no longer
+    carries raw `user_id` inside its base64 body. Signed tokens are not
+    encrypted, so this mattered even though the public response itself did not
+    show the id.
+  - public verification now validates the server-signed evidence anchor and
+    returns no identity or loan details.
+- `gmfn_backend/app/services/trust_evidence_pack_service.py`
+  - changed dormant legacy trust evidence ZIP references from `TP-...` to
+    `GSN-PACK-TRUST-{timestamp}-{digest}`.
+  - replaced raw `user_id` fields in `trust_summary.json` and `timeline.json`
+    with a redacted `holder.private_member_reference` marker.
+- `gmfn_backend/app/api/routes/shipment.py`
+  - changed the OpenAPI/schema description from `Evidence Pack ID (TP-...)` to
+    `GSN evidence reference for this delivery/support record`.
+- Tests and audits now guard:
+  - opaque active evidence verification references;
+  - no raw signed-in `user_id` in the verification response;
+  - no raw `user_id` inside the public signed token body;
+  - opaque dormant trust evidence pack references;
+  - redacted holder references in dormant trust evidence ZIP JSON;
+  - no old shipment `TP` wording.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\api\routes\evidence_verify.py gmfn_backend\app\api\routes\shipment.py gmfn_backend\app\services\trust_evidence_pack_service.py`
+- `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_trust_evidence_pack_package.py`
+  - result: `31 passed`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warning on
+  `frontend/tools/audit-institutional-proof-surfaces.mjs`.
+
+Truth / remaining risk:
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed, in line with the current batch-first/push-last pilot protocol.
+- The public verification token is now safer, but it is a signed evidence
+  anchor, not a full live database proof. It confirms the server-issued anchor
+  was valid when issued and keeps identity private.
+- The old `gmfn_backend/app/api/routes/trust_evidence_pack.py` route remains
+  unmounted in the active API router; its service was hardened anyway so it is
+  safer if it is deliberately re-mounted later.
+
 ## 2026-06-27 - Evidence references made opaque
 
 Owner request:

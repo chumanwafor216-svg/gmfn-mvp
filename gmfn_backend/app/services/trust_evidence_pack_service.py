@@ -99,7 +99,7 @@ def _hmac_sha256_hex(secret: bytes, message: bytes) -> str:
 
 
 def _make_pack_id(now: datetime) -> str:
-    return f"TP-{now.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8].upper()}"
+    return f"GSN-PACK-TRUST-{now.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:10].upper()}"
 
 
 # =========================
@@ -139,14 +139,18 @@ def build_trust_evidence_pack_zip_with_meta(
         "pack_id": pack_id,
         "generated_at_utc": generated_at,
         "protocol_version": PROTOCOL_VERSION,
-        "user_id": int(user_id),
+        "holder": {
+            "private_member_reference": "redacted for trust evidence pack",
+        },
         "trust": summary,
     }, indent=2).encode()
 
     timeline_json = json.dumps({
         "pack_id": pack_id,
         "generated_at_utc": generated_at,
-        "user_id": int(user_id),
+        "holder": {
+            "private_member_reference": "redacted for trust evidence pack",
+        },
         "items": list_trust_timeline(db, user_id=int(user_id), limit=50),
     }, indent=2).encode()
 

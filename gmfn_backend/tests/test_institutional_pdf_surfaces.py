@@ -157,6 +157,34 @@ def test_user_trust_why_evidence_json_redacts_member_reference():
     assert '"user_id": uid' not in text
 
 
+def test_evidence_verification_references_are_opaque_and_holder_safe():
+    text = read_service("app/api/routes/evidence_verify.py")
+
+    assert "GSN-EVID-" in text
+    assert '"holder": {' in text
+    assert '"private_member_reference": "redacted for evidence verification"' in text
+    assert 'return f"TP-' not in text
+    assert '"user_id": uid' not in text
+    assert "tp:{user_id}" not in text
+
+
+def test_legacy_trust_evidence_pack_zip_uses_gsn_reference_and_redacts_holder():
+    text = read_service("app/services/trust_evidence_pack_service.py")
+
+    assert "GSN-PACK-TRUST-" in text
+    assert '"holder": {' in text
+    assert '"private_member_reference": "redacted for trust evidence pack"' in text
+    assert 'return f"TP-' not in text
+    assert '"user_id": int(user_id)' not in text
+
+
+def test_shipment_schema_uses_gsn_evidence_reference_language():
+    text = read_service("app/api/routes/shipment.py")
+
+    assert "GSN evidence reference for this delivery/support record" in text
+    assert "Evidence Pack ID (TP-...)" not in text
+
+
 def test_report_pdfs_use_gsn_institutional_shells():
     text = read_service("app/services/reports_service.py")
 

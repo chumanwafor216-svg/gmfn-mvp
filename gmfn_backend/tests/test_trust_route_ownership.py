@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import json
 from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
@@ -12,6 +14,13 @@ from app.api.routes.evidence_pack import router as evidence_pack_router
 from app.api.routes.trust_events import router as trust_events_router
 from app.api.routes.trust_why import router as trust_why_router
 from app.main import app
+
+
+def _decode_signed_token_body(token: str) -> dict:
+    body, _signature = token.split(".", 1)
+    body += "=" * ((4 - (len(body) % 4)) % 4)
+    decoded = base64.urlsafe_b64decode(body.encode("utf-8")).decode("utf-8")
+    return json.loads(decoded)
 
 
 def _route_owners(path: str, method: str = "GET") -> list[str]:
@@ -116,6 +125,49 @@ def test_user_trust_why_evidence_json_uses_share_safe_reference(
     assert "user_id" not in payload
     assert payload["holder"]["private_member_reference"] == "redacted for user evidence pack"
     assert "user_id" not in payload["trust_why"]
+
+
+def test_evidence_verification_route_uses_opaque_holder_reference(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    response = client.get("/evidence-pack/me/verify")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    assert "user_id" not in payload
+    assert payload["holder"]["private_member_reference"] == "redacted for evidence verification"
+    assert payload["computed"]["pack_id"].startswith("GSN-EVID-")
+    assert "TP-" not in payload["computed"]["pack_id"]
+    assert "-U1-" not in payload["computed"]["pack_id"]
+
+
+def test_public_evidence_verification_keeps_identity_private(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    monkeypatch.setenv("SECRET_KEY", "test-evidence-secret")
+
+    issued = client.get("/evidence-pack/me/merchant-token")
+    assert issued.status_code == 200, issued.text
+    issued_payload = issued.json()
+    assert issued_payload["pack_id"].startswith("GSN-EVID-")
+    assert "TP-" not in issued_payload["pack_id"]
+    token_body = _decode_signed_token_body(issued_payload["token"])
+    assert "user_id" not in token_body
+    assert token_body["pack_id"].startswith("GSN-EVID-")
+
+    public = client.get(issued_payload["public_verify_url"])
+    assert public.status_code == 200, public.text
+    public_payload = public.json()
+    assert public_payload["ok"] is True
+    assert public_payload["pack_id"].startswith("GSN-EVID-")
+    assert "user_id" not in public_payload
+    assert "gmfn_id" not in public_payload
 
 
 def test_trust_why_user_explanation_redacts_operational_references(

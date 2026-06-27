@@ -9,7 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base as CoreBase
 from app.db.models import TrustEvent
-from app.services.trust_evidence_pack_service import _events_like, _latest_event
+from app.services.trust_evidence_pack_service import _events_like, _latest_event, _make_pack_id
 from app.services.trust_score_service import humane_trust_level
 
 
@@ -63,6 +63,14 @@ def test_trust_evidence_pack_shipment_events_redact_operational_fields():
     finally:
         db.close()
         engine.dispose()
+
+
+def test_trust_evidence_pack_reference_is_gsn_opaque():
+    pack_id = _make_pack_id(datetime(2026, 6, 27, 12, 0, tzinfo=timezone.utc))
+
+    assert pack_id.startswith("GSN-PACK-TRUST-20260627T120000Z-")
+    assert "TP-" not in pack_id
+    assert "-U" not in pack_id
 
 
 def test_trust_evidence_pack_delivery_confirmation_redacts_operational_fields():
