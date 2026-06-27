@@ -55,13 +55,13 @@ assertContains(
 
 assertContains(
   "loanReadiness",
-  /sectionLabel="Loan Readiness"[\s\S]*?title="Support Readiness"[\s\S]*?subtitle="Use this stage to see whether the next support move is clean enough to continue/,
+  /sectionLabel="Support Readiness"[\s\S]*?title="Support Readiness"[\s\S]*?subtitle="Use this stage to see whether the next support move is clean enough to continue/,
   "Loan Readiness route page must remain the Support Readiness reading opened by Finance."
 );
 
 assertContains(
   "loanReadiness",
-  /what="This page is one step inside Loans & Support\.[\s\S]*?why="Finance records the wider money story\.[\s\S]*?next="Support Readiness is decision support only; it does not approve a loan, approve a guarantor, or authorize release of goods, credit, or money\./,
+  /what="This page is one step inside Loans & Support\.[\s\S]*?why="Finance records the wider money story\.[\s\S]*?next="Support Readiness is decision support only; it does not approve support, choose a supporter, or authorize release of goods, credit, or money\./,
   "Loan Readiness explanation must keep the distinction between Finance's wider money story and readiness's support-path decision."
 );
 

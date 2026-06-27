@@ -1,3 +1,45 @@
+## 2026-06-27 - Finance Signals / Readiness audit realigned
+
+Owner request:
+- Continue from the previous Money In / Money Out / Support & Loans cleanup.
+
+Confirmed continuation state:
+- Tracked worktree was clean before this slice except untracked local review /
+  screenshot folders.
+- Recent commits already contain the latest Money Out support handoff and copy
+  truth fixes.
+- Finance, Money In / Money Out, Marketplace Support Requests, Loans, Trust,
+  visible-language, capability-mirror, and protected-button audits were green
+  except `audit:finance-signals-readiness-lane`.
+
+Local correction:
+- `frontend/tools/audit-finance-signals-readiness-lane.mjs`
+  - realigned the stale guard with the current `LoanReadinessPage` user-facing
+    contract:
+    - page label/title remain `Support Readiness`;
+    - page explanation says Support Readiness is decision support only;
+    - it does not approve support, choose a supporter, or authorize release of
+      goods, credit, or money.
+- No runtime page, backend, route, auth, schema, money-movement, or deploy
+  behavior changed.
+
+Verification passed locally:
+- `npm --prefix frontend run audit:finance-signals-readiness-lane`
+- `npm --prefix frontend run audit:finance-secondary-route-tools`
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:finance-actions`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:button-stability`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- This fixes a stale audit, not product behavior.
+- The Support Readiness page still needs real phone feel review before calling
+  the lane polished.
+- Batch-first / push-last policy still applies; not pushed or deployed in this
+  slice.
+
 ## 2026-06-26 - Money Out support handoff key and copy truth fixed
 
 Owner request:
