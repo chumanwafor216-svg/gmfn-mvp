@@ -71867,6 +71867,35 @@ GSN-branded invite composer and invite-entry continuity.
     accepted frontend hook; backend PDF/report/public backend verify/share
     wording still requires a real `gmfn-api` backend deploy before it is live.
 
+### Follow-up same day - Backend Tests assertion repair after institutional sweep
+
+- Trigger:
+  - after pushing the institutional surface cleanup batch, GitHub Actions
+    Backend Tests run `28288344835` failed on
+    `test_invite_guarantor_non_borrower_member_forbidden_contract`.
+- Unabated truth:
+  - the failure was a stale test assertion, not a route regression from the
+    PDF/report wording work;
+  - the backend route already returns the current institutional message
+    `Only the requester or community admin can add supporters`, and
+    `frontend/tools/audit-gsn-visible-language.mjs` already treats the old
+    borrower/guarantor wording as forbidden.
+- Changed:
+  - `gmfn_backend/tests/test_guarantor_invite_list.py`
+    - updated the expected 403 detail from the old borrower/guarantor wording
+      to the current requester/supporter wording.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_guarantor_invite_list.py`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Full local backend suite could not complete on Windows because pytest
+    temp-directory setup/cleanup hit `PermissionError`, even with workspace
+    temp overrides; this was a local filesystem issue, not the CI failure.
+  - GitHub Actions Backend Tests run `28288573375` passed after pushing commit
+    `1155de05`.
+- Deployment state:
+  - pushed to `main` as `1155de05`; no app deployment needed for this test-only
+    correction.
+
 ### Follow-up same day - Spotlight tester blocker and `GSN-U-66E6A380`
 
 - Trigger:
