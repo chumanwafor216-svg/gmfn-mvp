@@ -2729,7 +2729,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      {moneyPositionDetail}. Open Finance for pool, support, guarantees, earnings, and trade detail.
+                      {moneyPositionDetail}. Open Finance for pool, support commitments, earnings, and trade detail.
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>

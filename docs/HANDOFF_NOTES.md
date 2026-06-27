@@ -1,3 +1,47 @@
+## 2026-06-27 - Loan support wording cleanup continued locally
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published corrections:
+- `frontend/src/components/LoanDecisionPanel.tsx`
+  - raw decision reasons and risk flags now display supporter/support wording
+    instead of leaking backend `guarantor` / `guarantee` terms.
+- `frontend/src/components/LoanSuggestionsPanel.tsx`
+  - raw suggestion reason chips now display supporter/support wording.
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - routed loan workbench suggestion reasons now display supporter/support
+    wording.
+- `frontend/src/pages/CommunityHomePage.tsx`
+  - Finance summary teaser now says support commitments instead of guarantees.
+- `frontend/src/pages/IntroductionPage.tsx`
+  - public intro copy now says support commitments instead of guarantees.
+
+Verification passed locally:
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+- Route-local guards passed:
+  - `node frontend\tools\audit-community-home-button-inventory.mjs`
+  - `node frontend\tools\audit-community-home-phone-buttons.mjs`
+  - `node frontend\tools\audit-community-shop-actions.mjs`
+  - `node frontend\tools\audit-loans-actions.mjs`
+  - `node frontend\tools\audit-button-stability.mjs`
+
+Truth / remaining risk:
+- Commit / Render publication pending.
+- These edits are display-only. Backend route names, API payload keys,
+  TypeScript contract names, debug ids, and compatibility logic still use
+  `guarantor` where they mirror existing backend contracts.
+- Legal/protective copy such as `not a bank guarantee` was intentionally left
+  unchanged.
+- Backend Render remains blocked for the earlier backend-impacting copy batch
+  until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured
+  or gmfn-api is manually deployed and verified.
+
 ## 2026-06-27 - Shared guidance hides legacy support wording
 
 Owner request:

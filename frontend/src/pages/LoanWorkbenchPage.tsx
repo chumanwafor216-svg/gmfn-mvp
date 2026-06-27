@@ -135,6 +135,18 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function supportDisplayText(value: any): string {
+  return safeStr(value)
+    .split("_")
+    .join(" ")
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantors/g, "supporters")
+    .replace(/guarantor/g, "supporter")
+    .replace(/guarantees/g, "support commitments")
+    .replace(/guarantee/g, "support");
+}
+
 function firstDefined(...values: any[]): any {
   for (const value of values) {
     if (value === undefined || value === null) continue;
@@ -692,7 +704,7 @@ function normalizeSuggestedGuarantor(raw: any): SuggestedGuarantor | null {
     approved: Number.isFinite(Number(src?.approved)) ? Number(src.approved) : null,
     declined: Number.isFinite(Number(src?.declined)) ? Number(src.declined) : null,
     expired: Number.isFinite(Number(src?.expired)) ? Number(src.expired) : null,
-    reason: firstTruthy(src?.reason),
+    reason: supportDisplayText(src?.reason),
     recommendedPledge: firstTruthy(
       src?.recommended_pledge_amount,
       src?.recommended_pledge,

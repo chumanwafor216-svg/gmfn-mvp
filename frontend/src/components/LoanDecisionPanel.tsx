@@ -35,7 +35,15 @@ type DecisionResponse = {
 };
 
 function humanize(value: string): string {
-  return value.split("_").join(" ");
+  return value
+    .split("_")
+    .join(" ")
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantors/g, "supporters")
+    .replace(/guarantor/g, "supporter")
+    .replace(/guarantees/g, "support commitments")
+    .replace(/guarantee/g, "support");
 }
 
 function recommendationClass(value?: string): string {
@@ -159,7 +167,7 @@ export default function LoanDecisionPanel({
                 key={flag}
                 className="rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700"
               >
-                {flag}
+                {humanize(flag)}
               </span>
             ))
           ) : (

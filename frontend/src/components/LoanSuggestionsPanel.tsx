@@ -32,7 +32,15 @@ type LoanSuggestionResponse = {
 };
 
 function humanize(value: string): string {
-  return value.split("_").join(" ");
+  return value
+    .split("_")
+    .join(" ")
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantors/g, "supporters")
+    .replace(/guarantor/g, "supporter")
+    .replace(/guarantees/g, "support commitments")
+    .replace(/guarantee/g, "support");
 }
 
 function riskPillClass(level?: string): string {

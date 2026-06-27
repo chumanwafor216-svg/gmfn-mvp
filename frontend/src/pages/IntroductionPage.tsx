@@ -220,7 +220,7 @@ export default function IntroductionPage() {
           >
             GSN is designed to help communities organise support responsibly,
             make trust visible, and preserve a clear evidence trail around commitments,
-            guarantees, and repayment behaviour.
+            support commitments, and repayment behaviour.
           </p>
         </div>
       </div>
