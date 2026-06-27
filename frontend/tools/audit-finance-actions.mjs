@@ -106,6 +106,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/FinancePage.tsx",
+  /\["Support committed", safeStr\(clanLiquidity\?\.pledgedTotal \|\| "0"\)\]/,
+  "Finance community money context must show committed support wording instead of pledged total wording."
+);
+
+assertNotContains(
+  "src/pages/FinancePage.tsx",
+  /\["Pledged total"/,
+  "Finance community money context must not show pledge wording to users."
+);
+
+assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
   /debugId="money-in\.generate-instruction"[\s\S]*?debugId="money-in\.refresh-route"[\s\S]*?debugId="money-in\.reset-task"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?debugId="money-in\.confirm-paid"/,
   "Money In core instruction actions must remain traceable without duplicating the generate panel."

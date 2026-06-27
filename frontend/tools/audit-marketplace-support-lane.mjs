@@ -148,6 +148,7 @@ if (!supportSection.text) {
     /firstTruthy\(item\?\.purpose, item\?\.title, "Support item"\)/,
     /Requested by: \$\{item\.borrower_name\}/,
     /Supporter: \$\{item\.guarantor_name\}/,
+    /suggested support amount first[\s\S]*?Suggested support: \{safeStr\(item\.recommendedPledge\)\}/,
   ].forEach((pattern) => {
     if (!pattern.test(supportSection.text)) {
       addFinding(

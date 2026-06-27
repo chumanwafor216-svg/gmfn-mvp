@@ -11199,7 +11199,7 @@ export default function MarketplacePage() {
                         label="What these fit suggestions do"
                         what="These suggestions show which visible community members may fit the current support request based on the draft amount and the support signals already available."
                         why="They help the user choose who to ask next without treating supporter selection like a blind guess or a random contact list."
-                        next="Read the reason and suggested pledge first, choose only the people that make sense for this request, then continue once the chosen supporters reflect the draft."
+                        next="Read the reason and suggested support amount first, choose only the people that make sense for this request, then continue once the chosen supporters reflect the draft."
                         tone="light"
                         style={{ marginTop: 12 }}
                       />
@@ -11252,7 +11252,7 @@ export default function MarketplacePage() {
 
                                       {safeStr(item.recommendedPledge) ? (
                                         <span style={badge(true)}>
-                                          Suggested pledge: {safeStr(item.recommendedPledge)}
+                                          Suggested support: {safeStr(item.recommendedPledge)}
                                         </span>
                                       ) : null}
                                     </div>

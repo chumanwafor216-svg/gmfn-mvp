@@ -257,6 +257,36 @@ assertContains(
 );
 
 assertContains(
+  "src/components/LoanSuggestionsPanel.tsx",
+  /<th className="px-3 py-2">Support<\/th>/,
+  "Loan Suggestions panel must label the visible suggested amount as support, not pledge."
+);
+
+assertContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /Support amount: \$\{row\.pledgeAmount\}/,
+  "Loan Readiness must describe waiting support decision amounts as support amounts."
+);
+
+assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /suggested support amount for each supporter[\s\S]*?Suggested support: \{safeStr\(item\.recommendedPledge\)\}/,
+  "Loan Suggestions must use support wording for suggested supporter amounts."
+);
+
+assertNotContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /Pledge: \$\{row\.pledgeAmount\}/,
+  "Loan Readiness must not show pledge wording for support amounts."
+);
+
+assertNotContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /suggested pledge|Suggested pledge/,
+  "Loan Suggestions must not show suggested pledge wording to users."
+);
+
+assertContains(
   "src/pages/GuarantorInboxPage.tsx",
   /debugId="guarantor-inbox\.front-next"[\s\S]*?stableHeight=\{isCompact \? 58 : 72\}[\s\S]*?height: isCompact \? 58 : 72,[\s\S]*?maxHeight: isCompact \? 58 : 72,[\s\S]*?guarantorInboxRouteHeading\("navigation", nextStep\.ctaLabel\)/,
   "Guarantor Inbox must keep a compact first-viewport recommended next action before the evidence snapshot and deeper queue sections."

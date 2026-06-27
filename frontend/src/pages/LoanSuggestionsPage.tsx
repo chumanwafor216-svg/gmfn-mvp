@@ -1692,7 +1692,7 @@ export default function LoanSuggestionsPage() {
           label="Why these supporters appear"
           what="This section lists the strongest visible supporter matches for the current support item."
           why="It helps you start from the best current fit instead of guessing who to approach first."
-          next="Review the reason and suggested pledge for each supporter, then continue into the workbench when you are ready to act."
+          next="Review the reason and suggested support amount for each supporter, then continue into the workbench when you are ready to act."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -1746,7 +1746,7 @@ export default function LoanSuggestionsPage() {
 
                         {safeStr(item.recommendedPledge) ? (
                           <span style={badge(true)}>
-                            Suggested pledge: {safeStr(item.recommendedPledge)}
+                            Suggested support: {safeStr(item.recommendedPledge)}
                           </span>
                         ) : null}
 

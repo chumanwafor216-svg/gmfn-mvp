@@ -1642,7 +1642,7 @@ export default function TrustCommandCentrePage() {
                     {formatNumber(liquidity?.lockedTotal || 0)} locked
                   </div>
                   <div style={commandStatDetailStyle()}>
-                    Active loans: {Number(liquidity?.activeLoansCount || 0)} | Pledged: {safeStr(liquidity?.pledgedTotal || "0")}
+                    Active loans: {Number(liquidity?.activeLoansCount || 0)} | Support committed: {safeStr(liquidity?.pledgedTotal || "0")}
                   </div>
                 </div>
 

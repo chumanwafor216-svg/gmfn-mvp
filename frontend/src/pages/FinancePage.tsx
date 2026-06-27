@@ -1628,7 +1628,7 @@ export default function FinancePage() {
   const communityMoneyContextRows: Array<[string, string]> = [
     ["Community", safeStr(clanLiquidity?.clanName || communityLabel)],
     ["Active loans", safeStr(clanLiquidity?.activeLoansCount ?? 0)],
-    ["Pledged total", safeStr(clanLiquidity?.pledgedTotal || "0")],
+    ["Support committed", safeStr(clanLiquidity?.pledgedTotal || "0")],
     ["Locked total", safeStr(clanLiquidity?.lockedTotal || "0")],
     ["Recorded release total", safeStr(clanLiquidity?.releasedTotal || "0")],
     [

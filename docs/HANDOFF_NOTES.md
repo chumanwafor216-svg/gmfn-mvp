@@ -1,3 +1,49 @@
+## 2026-06-27 - Support amount wording cleanup verified locally
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Local corrections:
+- `frontend/src/components/LoanSuggestionsPanel.tsx`
+  - suggestions table now labels the visible amount column as Support instead
+    of Pledge.
+- `frontend/src/pages/LoanReadinessPage.tsx`
+  - waiting support-decision details now say Support amount instead of Pledge.
+- `frontend/src/pages/LoanSuggestionsPage.tsx`
+- `frontend/src/pages/MarketplacePage.tsx`
+  - fit-suggestion guidance and chips now say suggested support amount /
+    Suggested support instead of suggested pledge.
+- `frontend/src/pages/FinancePage.tsx`
+  - community money context now says Support committed instead of Pledged
+    total.
+- `frontend/src/pages/TrustCommandCentrePage.tsx`
+  - community liquidity detail now says Support committed instead of Pledged.
+- `frontend/tools/audit-loans-actions.mjs`
+- `frontend/tools/audit-finance-actions.mjs`
+- `frontend/tools/audit-marketplace-support-lane.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - added/updated narrow guards for this visible wording.
+
+Verification state:
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-finance-actions.mjs`
+- `node frontend\tools\audit-marketplace-support-lane.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Local only at this point. Verified, but not committed, not pushed, and not
+  deployed to Render yet.
+- These edits are display/audit-only. Internal fields such as `pledgeAmount`,
+  `pledgedTotal`, and `recommendedPledge` remain unchanged because they mirror
+  existing API contracts and local data shape.
+
 ## 2026-06-27 - Exposure support wording cleanup
 
 Owner request:

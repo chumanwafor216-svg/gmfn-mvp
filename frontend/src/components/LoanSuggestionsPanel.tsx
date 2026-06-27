@@ -118,7 +118,7 @@ export default function LoanSuggestionsPanel({
               <th className="px-3 py-2">CCI</th>
               <th className="px-3 py-2">Reliability</th>
               <th className="px-3 py-2">Capacity</th>
-              <th className="px-3 py-2">Pledge</th>
+              <th className="px-3 py-2">Support</th>
               <th className="px-3 py-2">Suitability</th>
               <th className="px-3 py-2">Risk</th>
             </tr>

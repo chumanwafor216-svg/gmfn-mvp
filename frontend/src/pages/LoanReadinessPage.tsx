@@ -1744,7 +1744,7 @@ export default function LoanReadinessPage() {
                       <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                         {[
                           row.borrowerName ? `Requester: ${row.borrowerName}` : "",
-                          row.pledgeAmount ? `Pledge: ${row.pledgeAmount}` : "",
+                          row.pledgeAmount ? `Support amount: ${row.pledgeAmount}` : "",
                           row.createdAt ? `Created: ${safeDateTime(row.createdAt)}` : "",
                         ]
                           .filter(Boolean)
