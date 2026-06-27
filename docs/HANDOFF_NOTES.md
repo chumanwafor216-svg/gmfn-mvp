@@ -5,7 +5,7 @@ Owner request:
   screenshotable pages, and copied packages can be wrong, incomplete, or too
   exposing.
 
-Completed local correction:
+Published correction:
 - `gmfn_backend/app/api/routes/share.py`
   - confirmed this route file remains dormant/unmounted under the existing
     dormant-route policy; `/share/loans/{loan_id}/audit-links` still returns
@@ -36,11 +36,25 @@ Verification:
 - `npm run build` from `frontend/`
 
 Truth / remaining risk:
+- Committed and pushed `main` at
+  `b86b7c8f20bdf1546f9510e3225707fb77ff2343`
+  (`Harden dormant loan audit share links`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28291297810` with `deploy_api=true`.
+- Workflow checked out exact commit
+  `b86b7c8f20bdf1546f9510e3225707fb77ff2343`.
+- Frontend Render deploy hook accepted deploy id
+  `dep-d8vtdf67r5hc73albkvg`.
+- Backend deploy did not run. The workflow failed at the exact API credential
+  gate because `RENDER_API_KEY` and `RENDER_API_SERVICE_ID` are still empty in
+  GitHub Actions.
 - This is a source hardening for a dormant route, not a new live feature.
 - No route was mounted, because `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md`
   explicitly says not to mount dormant route files casually.
 - The live user-facing risk from this exact endpoint is currently low because
   the endpoint is not reachable through the main router.
+- Do not tell the owner this backend source hardening is live on gmfn-api until
+  a backend deploy from the exact commit is confirmed.
 - If the product owner later wants `/share/loans/{loan_id}/audit-links` active,
   it still needs a deliberate route-mount review, frontend caller review, and
   end-to-end permission test.
