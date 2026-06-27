@@ -75378,6 +75378,8 @@ GSN-branded invite composer and invite-entry continuity.
   - Local Vite checks could not bind on `5173` or `5174`; both ports reported
     in-use while refusing HTTP, so no browser-render claim is made.
 - Deployment state:
-  - this Marketplace protected-trade UI slice is local only until committed and
-    pushed;
+  - Marketplace protected-trade UI slice was pushed to `origin/main` as
+    `4318a741`;
+  - no backend CI run triggered for this frontend-only slice under the current
+    path-filtered pilot workflow;
   - no Render deploy has been requested or confirmed for this slice.
