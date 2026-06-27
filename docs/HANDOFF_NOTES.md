@@ -71726,6 +71726,42 @@ GSN-branded invite composer and invite-entry continuity.
     GitHub secrets `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID`,
     then rerun `render-deploy.yml` with `deploy_api=true`.
 
+### Follow-up same day - Trust Timeline PDF support-capacity wording
+
+- Trigger:
+  - owner asked to return to the main institutional cleanup after the
+    Spotlight publish interruption;
+  - the Trust Timeline PDF already had the shared GSN institutional shell, but
+    still exposed older customer-facing labels such as `Trust Limit`,
+    `Available Capacity`, `Locked Guarantees`, and `Capacity Ratio`.
+- Unabated truth:
+  - this was not a functional route failure, but it was still a presentation
+    weakness on a customer-facing PDF surface;
+  - the backend field names remain unchanged because they are internal payload
+    keys, but the generated PDF should speak in GSN support-readiness language.
+- Changed:
+  - `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+    - changed the visible Trust Timeline PDF wording to
+      `Trust-limit signal`, `Available support capacity`,
+      `Current locked support`, and `Support capacity ratio`;
+    - tightened the capacity section heading/subtitle to read as current GSN
+      support-capacity context.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added a proof-surface guard so Trust Timeline PDFs must keep the
+      institution-grade labels and must not regress to the older
+      limit/guarantee/capacity wording.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added source-level assertions locking the new Trust Timeline PDF labels.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - local checkpoint only at this point; not pushed or deployed in this slice.
+  - because this is a backend PDF service change, live Render behavior requires
+    a backend deploy before customers will see it in generated PDFs.
+
 ### Follow-up same day - Spotlight tester blocker and `GSN-U-66E6A380`
 
 - Trigger:

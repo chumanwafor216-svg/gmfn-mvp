@@ -61,6 +61,14 @@ def test_trust_timeline_pdf_uses_institutional_shell():
     assert "draw_institutional_header" in text
     assert "draw_institutional_footer" in text
     assert "safe_pdf_text(text)" in text
+    assert "Trust-limit signal" in text
+    assert "Available support capacity" in text
+    assert "Current locked support" in text
+    assert "Support capacity ratio" in text
+    assert "Trust Limit" not in text
+    assert "Locked Guarantees" not in text
+    assert "Available Capacity" not in text
+    assert "Capacity Ratio" not in text
     assert "GMFN Trust Timeline Evidence Report" not in text
 
 

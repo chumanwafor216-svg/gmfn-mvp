@@ -212,6 +212,16 @@ assertNotContains(
   /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)/,
   "TrustSlip PDF must not expose older limit/guarantee/internal actor wording."
 );
+assertContains(
+  "trustTimelinePdf",
+  /Trust-limit signal[\s\S]*?Available support capacity[\s\S]*?Current locked support[\s\S]*?Support capacity ratio/,
+  "Trust Timeline PDF must use institution-grade trust-limit and support-capacity language."
+);
+assertNotContains(
+  "trustTimelinePdf",
+  /Trust Limit|Locked Guarantees|Available Capacity|Capacity Ratio/,
+  "Trust Timeline PDF must not expose older limit/guarantee/capacity wording."
+);
 
 assertContains(
   "reports",

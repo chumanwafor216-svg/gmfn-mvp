@@ -275,7 +275,7 @@ def _draw_scoring_block(
         ("CCI Score", _safe_str(trustslip.get("cci_score"))),
         ("CCI Band", _safe_str(trustslip.get("cci_band"))),
         ("TrustSlip Code", _safe_str(trustslip.get("code"))),
-        ("Trust Limit", f"{_safe_str(trustslip.get('trust_limit'))} {_safe_str(trustslip.get('currency'), '')}".strip()),
+        ("Trust-limit signal", f"{_safe_str(trustslip.get('trust_limit'))} {_safe_str(trustslip.get('currency'), '')}".strip()),
         ("Visibility Policy", _safe_str(trustslip.get("merchant_visibility_level"), "standard")),
     ]
 
@@ -436,8 +436,8 @@ def _draw_capacity_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any]) 
     y = _section_title(
         c,
         y,
-        "5. Current Capacity & Readiness Context",
-        "Current support capacity and coverability summary aligned to the same evidence surface.",
+        "5. Current Support Capacity & Readiness Context",
+        "Current support-capacity and coverability summary aligned to the same evidence surface.",
     )
 
     col_gap = 8 * mm
@@ -448,12 +448,12 @@ def _draw_capacity_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any]) 
 
     row_y = y
     pairs = [
-        ("Available Capacity", _safe_str(capacity.get("available_guarantee_capacity"))),
-        ("Locked Guarantees", _safe_str(capacity.get("current_locked_guarantees"))),
+        ("Available support capacity", _safe_str(capacity.get("available_guarantee_capacity"))),
+        ("Current locked support", _safe_str(capacity.get("current_locked_guarantees"))),
         ("Risk Level", _safe_str(capacity.get("risk_level"))),
         ("Readiness", _safe_str(readiness.get("recommendation"))),
         ("Readiness Score", _safe_str(readiness.get("readiness_score"))),
-        ("Capacity Ratio", _safe_str(readiness.get("capacity_ratio"))),
+        ("Support capacity ratio", _safe_str(readiness.get("capacity_ratio"))),
     ]
 
     for i in range(0, len(pairs), 3):
