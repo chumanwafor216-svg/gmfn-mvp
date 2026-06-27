@@ -112,6 +112,18 @@ assertContains(
 );
 
 assertContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /Your Focus Commitments[\s\S]*?Turn savings, business, repayment, or service targets into[\s\S]*?visible follow-through[\s\S]*?Two active commitments maximum keeps execution clear and reviewable\./,
+  "Dashboard Focus Commitments must present Commitment Builder as visible execution discipline, not only a generic task list."
+);
+
+assertContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /ROSCA linked responsibilities[\s\S]*?does not create personal commitment evidence by itself\./,
+  "Dashboard Focus Commitments must explain that ROSCA-linked responsibilities are shown there without overstating personal commitment evidence."
+);
+
+assertContains(
   "docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md",
   /The real support email must be configured before exposing it publicly\./,
   "The mirror plan must not allow a fake public support email."

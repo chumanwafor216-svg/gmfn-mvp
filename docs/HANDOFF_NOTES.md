@@ -74888,3 +74888,52 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `git diff --check`; only Git line-ending warnings were reported.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Commitment Builder lived-workflow copy deepened
+
+- Trigger:
+  - owner continued with the institutional cleanup after the support/trust
+    wording pass;
+  - the remaining documented gap was that Commitment Builder had been added to
+    the institutional mirror, but the live Focus Commitments surface still read
+    too much like a generic task widget.
+- Unabated truth:
+  - this is a copy and audit-guard improvement only;
+  - no new commitment backend, paid/API verification, automatic payout,
+    protected trade-release rail, or new Dashboard route was added;
+  - the Dashboard Market Wisdom presentation and routing model were left
+    unchanged.
+- Changed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changed the Focus Commitments composer helper from generic measurable
+      wording to a clear Commitment Builder frame:
+      savings, business, repayment, and service targets become visible
+      follow-through;
+    - changed the two-active limit explanation to emphasize clear and
+      reviewable execution;
+    - changed the ROSCA-linked responsibility note so it says Focus shows those
+      responsibilities but does not create personal commitment evidence by
+      itself, avoiding the developer-facing `TrustEvents` wording.
+  - `frontend/src/pages/TrustTimelinePage.tsx`
+    - restored user-facing limitation wording to `complete private records`
+      after a stale audit briefly pulled it toward `complete internal records`.
+  - `frontend/tools/audit-capability-mirror.mjs`
+    - added guards that Dashboard Focus Commitments must present Commitment
+      Builder as visible execution discipline and must not overstate
+      ROSCA-linked personal commitment evidence.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updated the Trust Timeline evidence-share guard to expect
+      `complete private records`, matching the visible-language audit.
+- Verification:
+  - Passed `npm run audit:dashboard-actions` from `frontend`.
+  - Passed `npm run audit:dashboard-button-inventory` from `frontend`.
+  - Passed `npm run audit:capability-mirror` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm run audit:protected-button-freeze` from `frontend`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

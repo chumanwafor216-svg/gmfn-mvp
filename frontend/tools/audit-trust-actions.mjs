@@ -660,7 +660,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
-  /Evidence Share Copy[\s\S]*?Visibility-bound review file[\s\S]*?Download share copy[\s\S]*?leaves[\s\S]*?out private contact details and complete internal records/,
+  /Evidence Share Copy[\s\S]*?Visibility-bound review file[\s\S]*?Download share copy[\s\S]*?leaves[\s\S]*?out private contact details and complete private records/,
   "Trust Timeline evidence export must preserve the displayed evidence reference and present the file as a visibility-bound share copy."
 );
 

@@ -11999,7 +11999,7 @@ export default function DashboardPage() {
                   <DashboardSectionLabel label="ROSCA linked responsibilities" />
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
                     These come from ROSCA Money In records. Focus shows them here
-                    but does not create commitment TrustEvents.
+                    but does not create personal commitment evidence by itself.
                   </div>
                 </div>
                 <span style={badge(true)}>
@@ -12162,7 +12162,8 @@ export default function DashboardPage() {
                   <div>
                     <DashboardSectionLabel label="Your new commitment" />
                     <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                      Keep it measurable and time-bound.
+                      Turn savings, business, repayment, or service targets into
+                      visible follow-through.
                     </div>
                   </div>
 
@@ -12339,7 +12340,7 @@ export default function DashboardPage() {
                   <div style={{ ...helperText(), fontSize: 13 }}>
                     {activeFocusCount >= 2
                       ? "You already have 2 active commitments. Complete or archive one before adding another."
-                      : "Two active commitments maximum keeps the dashboard focused."}
+                      : "Two active commitments maximum keeps execution clear and reviewable."}
                   </div>
 
                   <div style={dashboardActionGrid(isCompact ? 118 : 136)}>
