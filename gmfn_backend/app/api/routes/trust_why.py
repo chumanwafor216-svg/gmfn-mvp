@@ -44,6 +44,7 @@ def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> st
     Deterministic Pack ID:
     - Stable for a given latest event timestamp
     - Changes when the timeline changes
+    - Does not expose the raw internal user id
     """
     if based_on_event_at is None:
         based_on_event_at = datetime.now(timezone.utc).replace(
@@ -58,7 +59,7 @@ def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> st
 
     seed = f"{user_id}|{ts.isoformat()}|{PROTOCOL_VERSION}"
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest().upper()[:10]
-    return f"TP-U{user_id}-{day}-{digest}"
+    return f"GSN-WHY-{day}-{digest}"
 
 
 def _safe_meta(raw: Any) -> dict[str, Any]:

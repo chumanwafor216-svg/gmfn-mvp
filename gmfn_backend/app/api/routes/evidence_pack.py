@@ -47,6 +47,7 @@ def get_evidence_pack_meta(
 @router.get("/evidence-pack.zip")
 def download_evidence_pack_zip(
     level: Optional[str] = None,
+    pack_id: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -67,6 +68,8 @@ def download_evidence_pack_zip(
         db,
         current_user=current_user,
         trustslip_summary=summary,
+        level=visibility_level,
+        pack_id=pack_id,
     )
 
     headers = {

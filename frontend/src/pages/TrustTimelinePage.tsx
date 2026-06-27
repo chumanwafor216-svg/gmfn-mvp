@@ -331,7 +331,8 @@ export default function TrustTimelinePage() {
   async function downloadEvidenceZip() {
     setErr(null);
     try {
-      const blob = await authedBlob("/trust/me/evidence-pack.zip");
+      const query = packId ? `?pack_id=${encodeURIComponent(packId)}` : "";
+      const blob = await authedBlob(`/trust/me/evidence-pack.zip${query}`);
       const pid = packId || "pack";
       downloadBlob(blob, `gsn_evidence_pack_${pid}.zip`);
     } catch (e: any) {

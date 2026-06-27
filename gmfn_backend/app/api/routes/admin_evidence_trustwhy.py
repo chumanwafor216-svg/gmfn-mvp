@@ -46,7 +46,7 @@ def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> st
 
     seed = f"{user_id}|{ts.isoformat()}|{PROTOCOL_VERSION}"
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest().upper()[:10]
-    return f"TP-U{user_id}-{day}-{digest}"
+    return f"GSN-WHY-{day}-{digest}"
 
 
 def _checksum(pack_id: str, latest_event_at: Optional[datetime]) -> str:

@@ -15,6 +15,7 @@ from app.db.models import TrustEvent, User
 from app.services.evidence_pack_service import (
     DEFAULT_FOOTER,
     LIMITATION_STATEMENT,
+    PACK_ID_PATTERN,
     PROTOCOL_VERSION,
     build_evidence_pack_meta,
     build_evidence_pack_zip,
@@ -45,7 +46,9 @@ def test_evidence_pack_meta_faces_users_as_gsn():
         )
         meta = build_evidence_pack_meta(db, current_user=user)
 
-        assert meta["pack_id"].startswith("GSN-PACK-U7-STANDARD-")
+        assert PACK_ID_PATTERN.fullmatch(meta["pack_id"])
+        assert meta["pack_id"].startswith("GSN-PACK-STANDARD-")
+        assert "-U7-" not in meta["pack_id"]
         assert meta["title"] == "GSN Evidence Pack"
         assert meta["surface_brand"] == "GSN"
         assert meta["surface_brand_full"] == "Global Support Network"
@@ -66,7 +69,9 @@ def test_evidence_pack_meta_route_uses_gsn_package_contract(
 
     assert response.status_code == 200, response.text
     meta = response.json()
-    assert meta["pack_id"].startswith("GSN-PACK-U1-STANDARD-")
+    assert PACK_ID_PATTERN.fullmatch(meta["pack_id"])
+    assert meta["pack_id"].startswith("GSN-PACK-STANDARD-")
+    assert "-U1-" not in meta["pack_id"]
     assert not meta["pack_id"].startswith("TP-U")
     assert meta["title"] == "GSN Evidence Pack"
     assert meta["surface_brand"] == "GSN"
@@ -112,7 +117,9 @@ def test_evidence_pack_zip_contains_gsn_manifest_readme_and_checksums():
             snapshot = json.loads(snapshot_text)
             checksums = json.loads(zf.read("checksums.json").decode("utf-8"))
 
-        assert manifest["pack_id"].startswith("GSN-PACK-U9-STANDARD-")
+        assert PACK_ID_PATTERN.fullmatch(manifest["pack_id"])
+        assert manifest["pack_id"].startswith("GSN-PACK-STANDARD-")
+        assert "-U9-" not in manifest["pack_id"]
         assert manifest["title"] == "GSN Evidence Pack"
         assert manifest["surface_brand"] == "GSN"
         assert manifest["document_type"] == "portable_trust_evidence_package"
@@ -134,6 +141,49 @@ def test_evidence_pack_zip_contains_gsn_manifest_readme_and_checksums():
         assert snapshot["private_summary_boundary"].startswith("This portable pack uses")
         assert checksums["checksums"]["manifest.json"]
         assert checksums["checksums"]["trustslip_snapshot.json"]
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_evidence_pack_zip_can_use_displayed_opaque_reference():
+    engine, db = _session()
+    try:
+        user = User(
+            id=12,
+            email="pack-reference@example.com",
+            hashed_password="x",
+            role="user",
+            gmfn_id="GSN-USER-12",
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        displayed_meta = build_evidence_pack_meta(db, current_user=user)
+        displayed_pack_id = displayed_meta["pack_id"]
+
+        zip_bytes = build_evidence_pack_zip(
+            db,
+            current_user=user,
+            trustslip_summary={
+                "code": "TS-GSN-12",
+                "status": "active",
+                "currency": "NGN",
+                "trust_limit": "100.00",
+            },
+            pack_id=displayed_pack_id,
+        )
+
+        with ZipFile(BytesIO(zip_bytes), "r") as zf:
+            manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
+            snapshot = json.loads(zf.read("trustslip_snapshot.json").decode("utf-8"))
+            readme = zf.read("README.txt").decode("utf-8")
+
+        assert manifest["pack_id"] == displayed_pack_id
+        assert snapshot["pack_id"] == displayed_pack_id
+        assert f"Pack ID: {displayed_pack_id}" in readme
+        assert "-U12-" not in displayed_pack_id
     finally:
         db.close()
         engine.dispose()

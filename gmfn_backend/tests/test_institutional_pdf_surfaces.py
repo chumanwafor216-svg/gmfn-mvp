@@ -112,6 +112,9 @@ def test_trust_timeline_pdf_route_uses_gsn_filename_and_user_audience_guard():
 def test_portable_evidence_pack_zip_is_visibility_bound():
     text = read_service("app/services/evidence_pack_service.py")
 
+    assert "PACK_ID_PATTERN" in text
+    assert "GSN-PACK-(MINIMAL|STANDARD|DETAILED)" in text
+    assert "def _safe_requested_pack_id" in text
     assert '"holder": {' in text
     assert '"gsn_id": getattr(current_user, "gmfn_id", None)' in text
     assert '"private_contact_details": "redacted for portable evidence pack"' in text
@@ -122,6 +125,36 @@ def test_portable_evidence_pack_zip_is_visibility_bound():
     assert '"user": {' not in text
     assert '"email": getattr(current_user, "email", None)' not in text
     assert '"phone_e164": getattr(current_user, "phone_e164", None)' not in text
+    assert "GSN-PACK-U" not in text
+
+
+def test_portable_evidence_pack_route_preserves_displayed_reference():
+    text = read_service("app/api/routes/evidence_pack.py")
+
+    assert "pack_id: Optional[str] = None" in text
+    assert "level=visibility_level" in text
+    assert "pack_id=pack_id" in text
+
+
+def test_trust_why_evidence_references_are_opaque():
+    for path in (
+        "app/api/routes/trust_why.py",
+        "app/api/routes/evidence_pack_trustwhy.py",
+        "app/api/routes/admin_evidence_trustwhy.py",
+    ):
+        text = read_service(path)
+
+        assert 'return f"GSN-WHY-{day}-{digest}"' in text
+        assert "TP-U" not in text
+
+
+def test_user_trust_why_evidence_json_redacts_member_reference():
+    text = read_service("app/api/routes/evidence_pack_trustwhy.py")
+
+    assert 'why_share.pop("user_id", None)' in text
+    assert '"holder": {' in text
+    assert '"private_member_reference": "redacted for user evidence pack"' in text
+    assert '"user_id": uid' not in text
 
 
 def test_report_pdfs_use_gsn_institutional_shells():

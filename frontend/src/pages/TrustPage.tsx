@@ -127,6 +127,35 @@ function humanizeEventType(eventType?: string | null): string {
     .replace(/Guarantor/g, "Supporter");
 }
 
+function buildTrustEvidenceShareText(why: TrustWhy | null): string {
+  const lines = [
+    "GSN Trust Explanation Evidence",
+    `Evidence reference: ${supportDisplayText(why?.pack_id, "-")}`,
+    `Checksum: ${supportDisplayText(why?.checksum, "-")}`,
+    `Based on: ${supportDisplayText(why?.latest_event_at, "-")}`,
+    "Privacy: private operational details and internal member ids are not included in this share copy.",
+    "Boundary: this is supporting evidence, not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
+  ];
+
+  const events = Array.isArray(why?.events) ? why.events.slice(0, 5) : [];
+  if (events.length) {
+    lines.push("Recent trust records:");
+    events.forEach((event: any) => {
+      const label = supportDisplayText(
+        event.reference_label || humanizeEventType(event.event_type),
+        "Trust record"
+      );
+      const reason = supportDisplayText(event.reason, "");
+      const note = supportDisplayText(event.note, "");
+      lines.push(
+        `- ${label}${reason ? ` | Reason: ${reason}` : ""}${note ? ` | Note: ${note}` : ""}`
+      );
+    });
+  }
+
+  return lines.join("\n");
+}
+
 function eventTone(eventType: string) {
   const t = (eventType || "").toUpperCase();
   if (t.includes("REPAY")) return "green";
@@ -671,10 +700,10 @@ export default function TrustPage() {
                 <SecondaryButton
                   type="button"
                   style={{ marginTop: 10 }}
-                  onClick={() => safeCopy(JSON.stringify(why, null, 2))}
-                  debugId="trust.copy-explainability-json"
+                  onClick={() => safeCopy(buildTrustEvidenceShareText(why))}
+                  debugId="trust.copy-explainability-share-summary"
                 >
-                  {trustIconLabel("copy", "Copy evidence details", 24)}
+                  {trustIconLabel("copy", "Copy share summary", 24)}
                 </SecondaryButton>
               </div>
             ) : null}

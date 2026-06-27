@@ -12,7 +12,11 @@ const files = {
   package: "frontend/package.json",
   institutionalPdf: "gmfn_backend/app/services/institutional_pdf.py",
   evidencePack: "gmfn_backend/app/services/evidence_pack_pdf_service.py",
+  evidencePackRoute: "gmfn_backend/app/api/routes/evidence_pack.py",
   portableEvidencePack: "gmfn_backend/app/services/evidence_pack_service.py",
+  trustWhyRoute: "gmfn_backend/app/api/routes/trust_why.py",
+  evidencePackTrustWhyRoute: "gmfn_backend/app/api/routes/evidence_pack_trustwhy.py",
+  adminEvidenceTrustWhyRoute: "gmfn_backend/app/api/routes/admin_evidence_trustwhy.py",
   trustEvidencePack: "gmfn_backend/app/services/trust_evidence_pack_service.py",
   loanEvidencePack: "gmfn_backend/app/services/loan_evidence_pack_pdf_service.py",
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
@@ -288,13 +292,48 @@ assertContains(
 );
 assertContains(
   "portableEvidencePack",
-  /"holder": \{[\s\S]*?"gsn_id": getattr\(current_user, "gmfn_id", None\)[\s\S]*?"private_contact_details": "redacted for portable evidence pack"[\s\S]*?"merchant_view": merchant_view[\s\S]*?"private_summary_boundary"/,
-  "GSN Evidence Pack ZIP manifest and snapshot must stay visibility-bound and redact private holder contact details."
+  /PACK_ID_PATTERN[\s\S]*?GSN-PACK-\(MINIMAL\|STANDARD\|DETAILED\)[\s\S]*?def _safe_requested_pack_id[\s\S]*?"holder": \{[\s\S]*?"gsn_id": getattr\(current_user, "gmfn_id", None\)[\s\S]*?"private_contact_details": "redacted for portable evidence pack"[\s\S]*?"merchant_view": merchant_view[\s\S]*?"private_summary_boundary"/,
+  "GSN Evidence Pack ZIP manifest, snapshot, and reference format must stay visibility-bound and redact private holder contact details."
 );
 assertNotContains(
   "portableEvidencePack",
-  /"actor_user_id": getattr\(e, "actor_user_id"|\"subject_user_id\": getattr\(e, "subject_user_id"|\"meta\": meta_val|\"payment_reference\"|"full_summary": summary|"user": \{|"email": getattr\(current_user, "email", None\)|"phone_e164": getattr\(current_user, "phone_e164", None\)/,
-  "GSN Evidence Pack ZIP snapshots must not rebuild raw TrustEvent IDs, metadata, payment references, full TrustSlip summaries, or private contact details."
+  /"actor_user_id": getattr\(e, "actor_user_id"|\"subject_user_id\": getattr\(e, "subject_user_id"|\"meta\": meta_val|\"payment_reference\"|"full_summary": summary|"user": \{|"email": getattr\(current_user, "email", None\)|"phone_e164": getattr\(current_user, "phone_e164", None\)|GSN-PACK-U/,
+  "GSN Evidence Pack ZIP snapshots must not rebuild raw TrustEvent IDs, metadata, payment references, full TrustSlip summaries, private contact details, or raw-user-id pack references."
+);
+assertContains(
+  "evidencePackRoute",
+  /pack_id: Optional\[str\] = None[\s\S]*?level=visibility_level[\s\S]*?pack_id=pack_id/,
+  "GSN Evidence Pack ZIP downloads must preserve the displayed evidence reference when the frontend sends it back."
+);
+assertContains(
+  "trustWhyRoute",
+  /return f"GSN-WHY-\{day\}-\{digest\}"/,
+  "Trust Why evidence references must use an opaque GSN-WHY reference instead of raw-user-id metadata."
+);
+assertNotContains(
+  "trustWhyRoute",
+  /TP-U/,
+  "Trust Why evidence references must not include old raw-user-id TP-U references."
+);
+assertContains(
+  "evidencePackTrustWhyRoute",
+  /return f"GSN-WHY-\{day\}-\{digest\}"[\s\S]*?why_share\.pop\("user_id", None\)[\s\S]*?"holder": \{[\s\S]*?"private_member_reference": "redacted for user evidence pack"/,
+  "User Trust Why evidence JSON must use opaque references and redact the raw member reference."
+);
+assertNotContains(
+  "evidencePackTrustWhyRoute",
+  /TP-U|"user_id": uid/,
+  "User Trust Why evidence JSON must not include old TP-U references or raw account ids."
+);
+assertContains(
+  "adminEvidenceTrustWhyRoute",
+  /return f"GSN-WHY-\{day\}-\{digest\}"/,
+  "Admin Trust Why evidence JSON must also use opaque GSN-WHY references."
+);
+assertNotContains(
+  "adminEvidenceTrustWhyRoute",
+  /TP-U/,
+  "Admin Trust Why evidence JSON must not include old TP-U reference strings."
 );
 assertContains(
   "trustEvidencePack",

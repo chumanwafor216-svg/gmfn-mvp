@@ -46,7 +46,7 @@ def _build_pack_id(*, user_id: int, based_on_event_at: Optional[datetime]) -> st
 
     seed = f"{user_id}|{ts.isoformat()}|{PROTOCOL_VERSION}"
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest().upper()[:10]
-    return f"TP-U{user_id}-{day}-{digest}"
+    return f"GSN-WHY-{day}-{digest}"
 
 
 def _checksum(pack_id: str, latest_event_at: Optional[datetime]) -> str:
@@ -69,6 +69,8 @@ def evidence_pack_trustwhy_json(
     checksum = _checksum(pack_id, latest_event_at)
 
     why = trust_why_me(limit=limit, mode=mode, db=db, current_user=current_user)
+    why_share = dict(why)
+    why_share.pop("user_id", None)
 
     return {
         "pack_id": pack_id,
@@ -76,8 +78,11 @@ def evidence_pack_trustwhy_json(
         "protocol_version": PROTOCOL_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "based_on_event_at": latest_event_at.isoformat() if latest_event_at else None,
-        "user_id": uid,
-        "trust_why": why,
+        "holder": {
+            "gsn_id": getattr(current_user, "gmfn_id", None),
+            "private_member_reference": "redacted for user evidence pack",
+        },
+        "trust_why": why_share,
         "links": {
             "trust_why_me": "/trust/me/why",
             "trust_score_explained": "/trust/score/explained",

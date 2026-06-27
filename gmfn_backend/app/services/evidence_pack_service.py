@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Dict, Optional
@@ -31,6 +32,7 @@ LIMITATION_STATEMENT = (
     "This GSN evidence pack is a system-generated community trust record. "
     "It is not a bank guarantee, not a credit approval, and not an automatic debit authority."
 )
+PACK_ID_PATTERN = re.compile(r"^GSN-PACK-(MINIMAL|STANDARD|DETAILED)-\d{8}T\d{6}Z-[A-F0-9]{12}$")
 
 
 def _now_utc() -> datetime:
@@ -70,9 +72,24 @@ def _sha256_hex(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _make_pack_id(user_id: int, visibility_level: str) -> str:
+def _make_pack_id(current_user: User, visibility_level: str) -> str:
     ts = _now_utc().strftime("%Y%m%dT%H%M%SZ")
-    return f"GSN-PACK-U{int(user_id)}-{visibility_level.upper()}-{ts}"
+    public_seed = (
+        _safe_str(getattr(current_user, "gmfn_id", None))
+        or _safe_str(getattr(current_user, "email", None))
+        or str(int(getattr(current_user, "id", 0) or 0))
+    )
+    digest = hashlib.sha256(
+        f"{public_seed}|{int(getattr(current_user, 'id', 0) or 0)}|{visibility_level}|{ts}".encode("utf-8")
+    ).hexdigest()[:12].upper()
+    return f"GSN-PACK-{visibility_level.upper()}-{ts}-{digest}"
+
+
+def _safe_requested_pack_id(value: Optional[str]) -> Optional[str]:
+    pack_id = _safe_str(value)
+    if not pack_id:
+        return None
+    return pack_id if PACK_ID_PATTERN.fullmatch(pack_id) else None
 
 
 def _load_recent_events(db: Session, *, user_id: int, limit: int = 50) -> list[dict[str, Any]]:
@@ -199,7 +216,7 @@ def build_evidence_pack_meta(
     level: Optional[str] = None,
 ) -> Dict[str, Any]:
     visibility_level = _safe_visibility_level(current_user, level)
-    pack_id = _make_pack_id(int(current_user.id), visibility_level)
+    pack_id = _make_pack_id(current_user, visibility_level)
 
     return {
         "pack_id": pack_id,
@@ -225,6 +242,7 @@ def build_evidence_pack_zip(
     current_user: User,
     trustslip_summary: Dict[str, Any],
     level: Optional[str] = None,
+    pack_id: Optional[str] = None,
 ) -> bytes:
     visibility_level = _safe_visibility_level(current_user, level)
 
@@ -248,7 +266,7 @@ def build_evidence_pack_zip(
         trustslip_summary=summary,
     )
 
-    pack_id = _make_pack_id(int(current_user.id), visibility_level)
+    pack_id = _safe_requested_pack_id(pack_id) or _make_pack_id(current_user, visibility_level)
 
     manifest = _build_manifest(
         current_user=current_user,

@@ -1,3 +1,58 @@
+## 2026-06-27 - Evidence references made opaque
+
+Owner request:
+- Deepen the institutional/customer-facing evidence cleanup for PDFs,
+  TrustSlip-adjacent evidence, screenshotable pages, copied evidence text, and
+  portable proof bundles.
+
+Correction completed:
+- Portable Evidence Pack references no longer use the raw
+  `GSN-PACK-U{id}-...` format. They now use
+  `GSN-PACK-{VISIBILITY}-{timestamp}-{digest}`.
+- `/trust/me/evidence-pack.zip` now accepts the displayed safe `pack_id` from
+  the frontend and passes it into the ZIP builder, so the downloaded manifest,
+  snapshot, README, and visible reference remain aligned.
+- `frontend/src/pages/TrustTimelinePage.tsx` now sends the displayed pack
+  reference when downloading the ZIP share copy.
+- Trust Why references no longer use the raw `TP-U{id}-...` format. The
+  signed-in, user evidence-pack, and admin evidence-pack Trust Why routes now
+  use `GSN-WHY-{date}-{digest}`.
+- `/evidence-pack/me/trust-why.json` no longer exposes a top-level raw
+  `user_id`; it returns a `holder` block with the public GSN id and a redacted
+  private member reference marker.
+- `frontend/src/pages/TrustPage.tsx` no longer copies the full Trust Why JSON
+  from the screenshotable user view. It copies a purpose-built share summary
+  with the evidence reference, checksum, latest event time, privacy boundary,
+  and first few redacted trust records.
+- Added/extended tests and audits to lock down:
+  - opaque portable Evidence Pack references;
+  - frontend ZIP downloads preserving the displayed reference;
+  - opaque Trust Why evidence references;
+  - user Trust Why evidence JSON raw member reference redaction;
+  - TrustPage copy behavior avoiding full JSON export.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\services\evidence_pack_service.py gmfn_backend\app\api\routes\evidence_pack.py gmfn_backend\app\api\routes\trust_why.py gmfn_backend\app\api\routes\evidence_pack_trustwhy.py gmfn_backend\app\api\routes\admin_evidence_trustwhy.py`
+- `python -m pytest -q gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_trust_route_ownership.py`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run audit:trust-actions` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only LF-to-CRLF warnings on touched frontend
+  files.
+
+Truth / remaining risk:
+- This entry is verified locally but not yet committed/pushed/deployed at the
+  time it was written.
+- The authenticated `/trust/why` API still includes `user_id` in its private
+  signed-in JSON response for existing app compatibility, but the screenshotable
+  Trust page no longer copies that full JSON and the customer-facing
+  `/evidence-pack/me/trust-why.json` wrapper redacts it.
+- Admin-only Trust Why evidence JSON still includes the requested `user_id` by
+  design because it is an admin operational route.
+- Backend changes are not live on gmfn-api until a backend Render deploy from
+  the final commit is confirmed. Prior deploy attempts still lacked
+  `RENDER_API_KEY` / `RENDER_API_SERVICE_ID`.
+
 ## 2026-06-27 - Portable Evidence Pack ZIP visibility boundary
 
 Owner request:
@@ -57,9 +112,9 @@ Truth / remaining risk:
 - The frontend Trust Timeline wording can deploy through the accepted frontend
   hook, but the backend ZIP redaction is not live on gmfn-api until a backend
   deploy from the exact commit is confirmed.
-- The pack ID still includes the internal numeric user id in the current
-  `GSN-PACK-U{id}-...` format. That should be reviewed in a future pass if the
-  owner wants the Evidence Pack reference itself to avoid raw internal IDs.
+- Historical note: at this earlier commit, the pack ID still included the
+  internal numeric user id in the `GSN-PACK-U{id}-...` format. That was
+  corrected in the later "Evidence references made opaque" entry above.
 - The ZIP still includes visibility-bound TrustSlip evidence and capacity
   context. That is intentional for the current evidence-pack purpose, but it is
   now more honest about not being a complete private record.

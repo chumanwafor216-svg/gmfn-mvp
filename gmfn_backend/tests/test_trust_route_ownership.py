@@ -80,9 +80,42 @@ def test_trust_why_route_serves_pack_checksum_contract(
     payload = response.json()
     assert payload["user_id"] == 1
     assert payload["pack_id"]
+    assert payload["pack_id"].startswith("GSN-WHY-")
+    assert "TP-U" not in payload["pack_id"]
+    assert "-U1-" not in payload["pack_id"]
     assert payload["checksum"]
     assert payload["links"]["evidence_pack_meta"] == "/trust/me/evidence-pack/meta"
     assert "policy_timeline_estimate" in payload
+
+
+def test_user_trust_why_evidence_json_uses_share_safe_reference(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="loan.repaid",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta={"reason": "portable_trustwhy_probe"},
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    response = client.get("/evidence-pack/me/trust-why.json?limit=5")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["pack_id"].startswith("GSN-WHY-")
+    assert "TP-U" not in payload["pack_id"]
+    assert "-U1-" not in payload["pack_id"]
+    assert "user_id" not in payload
+    assert payload["holder"]["private_member_reference"] == "redacted for user evidence pack"
+    assert "user_id" not in payload["trust_why"]
 
 
 def test_trust_why_user_explanation_redacts_operational_references(

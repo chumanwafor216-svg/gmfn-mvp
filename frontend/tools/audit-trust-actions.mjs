@@ -654,8 +654,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
+  /packId \? `\?pack_id=\$\{encodeURIComponent\(packId\)\}` : ""[\s\S]*?\/trust\/me\/evidence-pack\.zip\$\{query\}/,
+  "Trust Timeline evidence ZIP download must preserve the displayed evidence reference."
+);
+
+assertContains(
+  "src/pages/TrustTimelinePage.tsx",
   /Evidence Share Copy[\s\S]*?Visibility-bound review file[\s\S]*?Download share copy[\s\S]*?leaves[\s\S]*?out private contact details and complete internal records/,
-  "Trust Timeline evidence export must be presented as a visibility-bound share copy, not a complete private record."
+  "Trust Timeline evidence export must preserve the displayed evidence reference and present the file as a visibility-bound share copy."
 );
 
 assertContains(
@@ -683,9 +689,33 @@ assertNotContains(
 );
 
 assertContains(
+  "../gmfn_backend/app/api/routes/trust_why.py",
+  /return f"GSN-WHY-\{day\}-\{digest\}"/,
+  "Signed-in Trust Why evidence references must use opaque GSN-WHY references."
+);
+
+assertNotContains(
+  "../gmfn_backend/app/api/routes/trust_why.py",
+  /TP-U/,
+  "Signed-in Trust Why evidence references must not include old raw-user-id TP-U references."
+);
+
+assertContains(
   "src/pages/TrustPage.tsx",
   /getTrustWhyMe\(\{[\s\S]*?limit: safeLimit[\s\S]*?event_type: eventType\.trim\(\) \|\| undefined[\s\S]*?include_policy_timeline: true/,
   "Trust page must use safe Trust Why records and GSN-named redacted exports."
+);
+
+assertContains(
+  "src/pages/TrustPage.tsx",
+  /function buildTrustEvidenceShareText\(why: TrustWhy \| null\)[\s\S]*?internal member ids are not included in this share copy[\s\S]*?not a bank guarantee, credit approval, payment instruction, or automatic debit authority[\s\S]*?safeCopy\(buildTrustEvidenceShareText\(why\)\)[\s\S]*?Copy share summary/,
+  "Trust page evidence copy must be a redacted share summary instead of raw Trust Why JSON."
+);
+
+assertNotContains(
+  "src/pages/TrustPage.tsx",
+  /JSON\.stringify\(why, null, 2\)|Copy evidence details|trust\.copy-explainability-json/,
+  "Trust page must not copy full Trust Why JSON from the screenshotable user view."
 );
 
 assertContains(
