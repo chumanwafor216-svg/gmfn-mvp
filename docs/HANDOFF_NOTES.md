@@ -1,3 +1,40 @@
+## 2026-06-27 - Support repayment instruction title guard
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/lib/communityMoney.ts`
+  - shared generated repayment route title now says
+    `Generated Support Repayment Instruction` instead of
+    `Generated Loan Repayment Instruction`.
+- `frontend/tools/audit-loans-actions.mjs`
+  - added a guard requiring the support repayment title and rejecting the older
+    generated-loan title.
+
+Verification state:
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `8974be1dba3fb80e5dc22d4dd52a49db123b62cb`
+  (`Align support repayment instruction title`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28285646704` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vpos6gvqtc738q0ng0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: this function is currently not referenced by a live page in
+  the scan. The change is still useful as a shared-logic guardrail because it
+  prevents stale loan wording from leaking if the route helper is wired in
+  later.
+
 ## 2026-06-27 - Loans support-decision wording cleanup
 
 Owner request:
