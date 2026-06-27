@@ -12,6 +12,7 @@ const files = {
   package: "frontend/package.json",
   institutionalPdf: "gmfn_backend/app/services/institutional_pdf.py",
   evidencePack: "gmfn_backend/app/services/evidence_pack_pdf_service.py",
+  portableEvidencePack: "gmfn_backend/app/services/evidence_pack_service.py",
   loanEvidencePack: "gmfn_backend/app/services/loan_evidence_pack_pdf_service.py",
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
   trustSlipPdf: "gmfn_backend/app/services/trust_slip_evidence_pdf_service.py",
@@ -276,6 +277,16 @@ assertNotContains(
   "trustTimelineRoute",
   /gmfn_trust_timeline|X-GMFN-Merchant-Visibility-Level|X-GMFN-TrustSlip-Code|X-GMFN-CCI-Score/g,
   "Trust Timeline PDF route must not keep old GMFN download names or headers."
+);
+assertContains(
+  "portableEvidencePack",
+  /from app\.services\.trust_timeline_service import list_trust_timeline[\s\S]*?def _load_recent_events[\s\S]*?return list_trust_timeline\([\s\S]*?audience="user"/,
+  "GSN Evidence Pack ZIP recent events must reuse the user-safe Trust Timeline serializer."
+);
+assertNotContains(
+  "portableEvidencePack",
+  /"actor_user_id": getattr\(e, "actor_user_id"|\"subject_user_id\": getattr\(e, "subject_user_id"|\"meta\": meta_val|\"payment_reference\"/,
+  "GSN Evidence Pack ZIP snapshots must not rebuild raw TrustEvent IDs, metadata, or payment references."
 );
 
 assertContains(

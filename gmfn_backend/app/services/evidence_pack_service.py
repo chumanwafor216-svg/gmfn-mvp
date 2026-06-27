@@ -9,9 +9,10 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from sqlalchemy.orm import Session
 
-from app.db.models import TrustEvent, User
+from app.db.models import User
 from app.services.loan_readiness_service import build_loan_readiness_plan
 from app.services.liquidity_engine_service import build_user_liquidity_profile
+from app.services.trust_timeline_service import list_trust_timeline
 from app.services.trust_slips_services import (
     build_trust_slip_visibility_view,
 )
@@ -75,38 +76,12 @@ def _make_pack_id(user_id: int, visibility_level: str) -> str:
 
 
 def _load_recent_events(db: Session, *, user_id: int, limit: int = 50) -> list[dict[str, Any]]:
-    rows = (
-        db.query(TrustEvent)
-        .filter(TrustEvent.subject_user_id == int(user_id))
-        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
-        .limit(max(1, min(int(limit), 200)))
-        .all()
+    return list_trust_timeline(
+        db,
+        user_id=int(user_id),
+        limit=max(1, min(int(limit), 200)),
+        audience="user",
     )
-
-    out: list[dict[str, Any]] = []
-    for e in rows:
-        meta_val = None
-        try:
-            meta_val = getattr(e, "meta", None)
-        except Exception:
-            meta_val = None
-
-        out.append(
-            {
-                "id": int(getattr(e, "id")),
-                "event_type": _safe_str(getattr(e, "event_type", None), "unknown"),
-                "clan_id": getattr(e, "clan_id", None),
-                "loan_id": getattr(e, "loan_id", None),
-                "guarantor_id": getattr(e, "guarantor_id", None),
-                "actor_user_id": getattr(e, "actor_user_id", None),
-                "subject_user_id": getattr(e, "subject_user_id", None),
-                "created_at": getattr(e, "created_at", None).isoformat()
-                if getattr(e, "created_at", None)
-                else None,
-                "meta": meta_val if isinstance(meta_val, dict) else None,
-            }
-        )
-    return out
 
 
 def _build_evidence_summary(

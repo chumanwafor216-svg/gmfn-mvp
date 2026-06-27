@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from io import BytesIO
 from zipfile import ZipFile
 
@@ -10,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.base import Base as CoreBase
-from app.db.models import User
+from app.db.models import TrustEvent, User
 from app.services.evidence_pack_service import (
     DEFAULT_FOOTER,
     LIMITATION_STATEMENT,
@@ -120,6 +121,69 @@ def test_evidence_pack_zip_contains_gsn_manifest_readme_and_checksums():
         assert LIMITATION_STATEMENT in readme
         assert checksums["checksums"]["manifest.json"]
         assert checksums["checksums"]["trustslip_snapshot.json"]
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_evidence_pack_zip_redacts_recent_event_operational_references():
+    engine, db = _session()
+    try:
+        user = User(
+            id=10,
+            email="pack-redacted@example.com",
+            hashed_password="x",
+            role="user",
+            gmfn_id="GSN-USER-10",
+        )
+        db.add(user)
+        db.add(
+            TrustEvent(
+                event_type="loan.repaid",
+                clan_id=3,
+                loan_id=77,
+                guarantor_id=44,
+                actor_user_id=9,
+                subject_user_id=10,
+                meta={
+                    "reason": "loan_fully_repaid",
+                    "note": "Settlement confirmed",
+                    "payment_reference": "PRIVATE-PACK-REF-001",
+                },
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+        db.refresh(user)
+
+        zip_bytes = build_evidence_pack_zip(
+            db,
+            current_user=user,
+            trustslip_summary={
+                "code": "TS-GSN-10",
+                "status": "active",
+                "currency": "NGN",
+                "trust_limit": "100.00",
+                "cci_score": "71",
+                "cci_band": "B",
+            },
+        )
+
+        with ZipFile(BytesIO(zip_bytes), "r") as zf:
+            snapshot_text = zf.read("trustslip_snapshot.json").decode("utf-8")
+            snapshot = json.loads(snapshot_text)
+
+        assert snapshot["recent_events"]
+        event = snapshot["recent_events"][0]
+        assert event["reference_label"] == "Private support record"
+        assert "payment_reference" not in event
+        assert "loan_id" not in event
+        assert "clan_id" not in event
+        assert "guarantor_id" not in event
+        assert "actor_user_id" not in event
+        assert "subject_user_id" not in event
+        assert "meta" not in event
+        assert "PRIVATE-PACK-REF-001" not in snapshot_text
     finally:
         db.close()
         engine.dispose()

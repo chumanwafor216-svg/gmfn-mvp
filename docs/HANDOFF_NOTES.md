@@ -71812,6 +71812,44 @@ GSN-branded invite composer and invite-entry continuity.
     deployed with `RENDER_API_KEY`/`RENDER_API_SERVICE_ID` or manually from the
     Render dashboard.
 
+### Follow-up same day - Evidence Pack ZIP recent events redacted
+
+- Trigger:
+  - after the Trust Timeline page/API redaction, the next customer-facing paper
+    risk was the signed-in GSN Evidence Pack ZIP;
+  - code inspection found `trustslip_snapshot.json` was building a second,
+    raw TrustEvent list with internal IDs and full `meta`.
+- Unabated truth:
+  - the earlier Trust Timeline redaction did not automatically protect the
+    portable ZIP snapshot because it had its own raw serializer;
+  - even though the ZIP is a signed-in user export, it is still a customer
+    evidence package and should not expose private payment/support internals by
+    default.
+- Changed:
+  - `gmfn_backend/app/services/evidence_pack_service.py`
+    - `_load_recent_events` now reuses `list_trust_timeline(...,
+      audience="user")` instead of rebuilding TrustEvent rows with raw
+      `id`, `clan_id`, `loan_id`, `guarantor_id`, `actor_user_id`,
+      `subject_user_id`, and `meta`.
+  - `gmfn_backend/tests/test_gsn_evidence_pack_package.py`
+    - added ZIP-level coverage proving `trustslip_snapshot.json` includes only
+      a safe `reference_label` for a private support record and does not contain
+      the raw payment reference or operational IDs.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added a source cage requiring the portable Evidence Pack ZIP to reuse the
+      user-safe Trust Timeline serializer and preventing raw event fields from
+      returning to the snapshot builder.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\services\evidence_pack_service.py`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - verified locally at this entry;
+  - not yet committed, pushed, or Render-confirmed.
+
 ### Follow-up same day - Governance ZIP complete-record boundary
 
 - Trigger:
