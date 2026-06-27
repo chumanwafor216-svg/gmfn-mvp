@@ -75056,3 +75056,37 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Shared paper authority separator stabilized
+
+- Trigger:
+  - owner allowed pushing when needed and asked to continue deeply and widely;
+  - the already verified local batch through `68f1798e` was pushed to
+    `origin/main` before this slice;
+  - continuing the screenshotable-paper pass found that the shared
+    `TrustPaperAuthorityStrip` used a middle-dot separator between generated
+    time and reference.
+- Unabated truth:
+  - this is a screenshot/export robustness fix only;
+  - no backend verification, payout, paid/API verification, escrow, or protected
+    trade-release capability was added;
+  - GitHub now has the prior institutional PDF batch, but this note does not
+    claim Render deployment.
+- Changed:
+  - `frontend/src/components/TrustPaperMarks.tsx`
+    - changed the authority strip to use `Generated: ... | Reference: ...`
+      instead of a middle-dot separator so shared evidence cards stay ASCII and
+      avoid copied/screenshot punctuation ambiguity.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added `TrustPaperMarks.tsx` to the proof-surface audit file map;
+    - added guards requiring the ASCII separator and rejecting the middle-dot
+      separator in the shared authority strip.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - prior verified batch through `68f1798e` was pushed to `origin/main`;
+  - this separator slice is local only until committed and pushed.

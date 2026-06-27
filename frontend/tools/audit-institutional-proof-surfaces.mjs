@@ -33,6 +33,7 @@ const files = {
   analyticsRoute: "gmfn_backend/app/api/routes/analytics.py",
   shareRoute: "gmfn_backend/app/api/routes/share.py",
   publicPaper: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  trustPaperMarks: "frontend/src/components/TrustPaperMarks.tsx",
   privateEvidence: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
   resultCard: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
@@ -833,6 +834,16 @@ assertContains(
   "snapshotPaperCard",
   /GSN record context[\s\S]*?Record details[\s\S]*?Record Details/,
   "Shared visual snapshot paper card must render context and record details as official paper sections."
+);
+assertContains(
+  "trustPaperMarks",
+  /Generated: \{authorityText\(generatedAt, "Current when viewed"\)\} \| Reference:/,
+  "Shared GSN authority strip must use an ASCII separator between generated time and reference."
+);
+assertNotContains(
+  "trustPaperMarks",
+  /Generated:[\s\S]{0,120}·[\s\S]{0,120}Reference:/g,
+  "Shared GSN authority strip must not use a middle-dot separator that can render badly in copied or screenshot papers."
 );
 assertContains(
   "trustSnapshots",

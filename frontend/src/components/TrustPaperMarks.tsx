@@ -453,7 +453,7 @@ export function TrustPaperAuthorityStrip({
             overflowWrap: "anywhere",
           }}
         >
-          Generated: {authorityText(generatedAt, "Current when viewed")} · Reference:{" "}
+          Generated: {authorityText(generatedAt, "Current when viewed")} | Reference:{" "}
           {authorityText(reference, "GSN current record")}
         </div>
       </div>
