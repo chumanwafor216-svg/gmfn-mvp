@@ -1751,7 +1751,7 @@ def trust_slip_verify_page(
       <section class="body">
       <div class="trustmark">
         <span><b>Public / shareable / printable</b></span>
-        <span>Protected public check - private detail stays inside GSN</span>
+        <span>Protected public check - private details stay inside GSN</span>
       </div>
       <div class="badge {status_class}">{_html(badge_text)}</div>
       <div class="plain">

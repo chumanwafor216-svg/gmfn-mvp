@@ -681,7 +681,7 @@ assertContains(
 );
 assertNotContains(
   "trustSlipRoute",
-  /GSN Trust Architecture|private detail protected/,
+  /GSN Trust Architecture|private detail protected|private detail stays/,
   "Backend TrustSlip verification paper must not expose architecture wording or older privacy phrasing."
 );
 assertContains(

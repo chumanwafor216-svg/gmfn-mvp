@@ -1,3 +1,30 @@
+## 2026-06-27 - TrustSlip public privacy banner pluralized
+
+Owner request:
+- Continue meticulous institutional deep cleaning across public TrustSlip and
+  customer-facing evidence surfaces.
+
+Correction completed locally:
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - changed backend public verification banner from
+    `private detail stays inside GSN` to `private details stay inside GSN`.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added a guard against the older singular privacy phrasing returning to the
+    backend public verification paper.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warning on
+  `frontend/tools/audit-institutional-proof-surfaces.mjs`.
+
+Truth / remaining risk:
+- This is wording-only. It does not change TrustSlip verification logic or
+  privacy behavior.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Public TrustSlip footer made evidence-facing
 
 Owner request:
