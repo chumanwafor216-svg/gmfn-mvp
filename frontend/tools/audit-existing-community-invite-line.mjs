@@ -163,8 +163,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MarketplacePage.tsx",
-  /const compactInviteLink = useMemo\([\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\) \|\| personalizedInviteLink[\s\S]*?buildJoinInviteDoorwayMessage\([\s\S]*?inviteLink: compactInviteLink/,
-  "Marketplace outbound invite messages may use the compact link so WhatsApp does not expose a long duplicate URL block."
+  /const compactInviteLink = useMemo\([\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\) \|\| personalizedInviteLink[\s\S]*?buildGsnInviteLinkPackage\([\s\S]*?senderName: joinSenderDisplayName[\s\S]*?senderGsnId: currentGmfnId[\s\S]*?inviteLink: compactInviteLink/,
+  "Marketplace outbound invite messages must use the branded GSN invite paper with a compact link so WhatsApp does not expose a long duplicate URL block."
 );
 
 assertContains(

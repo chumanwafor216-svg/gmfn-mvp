@@ -19,9 +19,9 @@ import {
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import {
   buildGsnCommunityVerifyLinkPackage,
+  buildGsnInviteLinkPackage,
   buildGsnPublicShopLinkPackage,
 } from "../lib/gsnSnapshotPaper";
-import { buildJoinInviteDoorwayMessage } from "../lib/joinInviteMessaging";
 import {
   publicApiUrl,
   publicFrontendUrl,
@@ -5604,17 +5604,28 @@ export default function MarketplacePage() {
 
   const joinInviteDoorwayMessage = useMemo(() => {
     if (!compactInviteLink) return "";
-    return buildJoinInviteDoorwayMessage({
-      inviter: joinSenderDisplayName,
+    return buildGsnInviteLinkPackage({
+      senderName: joinSenderDisplayName,
+      senderGsnId: currentGmfnId,
       communityName: activeJoinCommunityName,
-      marketplaceName: activeCommunityName,
-      receiver: joinRecipientName,
-      customMessage: joinInviteNote,
       inviteLink: compactInviteLink,
+      messageLines: [
+        joinRecipientName ? `Receiver: ${joinRecipientName}` : null,
+        joinSenderDisplayName ? `Invited by ${joinSenderDisplayName}.` : null,
+        activeCommunityName && activeCommunityName !== activeJoinCommunityName
+          ? `Marketplace context: ${activeCommunityName}`
+          : null,
+        joinInviteNote ? `Personal note: ${joinInviteNote}` : null,
+        "This invite opens a request path into the named GSN community.",
+        "Community membership is reviewed before approval.",
+        "GSN helps communities turn visible trust into portable evidence for trade, support, work, and opportunity.",
+        "Private member lists, phone numbers, relationship notes, and private trust history are not included in this invite paper.",
+      ],
     });
   }, [
     compactInviteLink,
     joinSenderDisplayName,
+    currentGmfnId,
     activeJoinCommunityName,
     activeCommunityName,
     joinRecipientName,
