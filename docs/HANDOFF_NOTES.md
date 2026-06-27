@@ -1,3 +1,35 @@
+## 2026-06-27 - TrustSlip PDF repayment reference redaction
+
+Owner request:
+- Continue the institutional/customer-facing paper cleanup for PDFs and
+  screenshotable proof surfaces that may expose too much.
+
+Completed correction:
+- `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+  - stopped reading `payment_reference` from the latest repayment TrustEvent
+    for the generated TrustSlip evidence PDF.
+  - replaced visible `Payment reference` with `Reconciliation reference:
+    private operational detail redacted`.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added guards requiring the redacted reconciliation label and rejecting both
+    visible `Payment reference` and raw `payment_reference` in the TrustSlip PDF
+    service.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added TrustSlip PDF audit coverage so repayment references cannot be
+    reintroduced into the customer-facing paper.
+
+Verification:
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_evidence_surface_permissions.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`
+- `python -m compileall -q gmfn_backend\app\services\trust_slip_evidence_pdf_service.py`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run audit:evidence-surfaces` from `frontend/`
+
+Truth / remaining risk:
+- Local correction is verified and ready to publish.
+- Backend Render deployment is still expected to be blocked by missing
+  `RENDER_API_KEY`; do not tell the owner this backend PDF behavior is live
+  until gmfn-api deploy evidence exists.
+
 ## 2026-06-27 - Trust Timeline PDF redaction and audience guard
 
 Owner request:

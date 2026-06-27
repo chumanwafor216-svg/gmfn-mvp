@@ -54,6 +54,10 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "Confirmed by record" not in text
     assert "confirmation_source = \"GSN recorded trust event\"" in text
     assert "Confirmation source" in text
+    assert "Reconciliation reference" in text
+    assert "private operational detail redacted" in text
+    assert "Payment reference" not in text
+    assert "payment_reference" not in text
     assert "GMFN TrustSlip Evidence Snapshot" not in text
 
 

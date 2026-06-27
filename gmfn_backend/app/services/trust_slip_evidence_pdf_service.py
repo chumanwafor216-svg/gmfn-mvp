@@ -167,7 +167,6 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     user_id = int(summary.get("user_id") or 0)
     event = _find_latest_full_repayment_event(db, user_id)
 
-    payment_reference = None
     confirmation_source = None
     confirmed_at = None
     loan_id = None
@@ -176,17 +175,10 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
         confirmed_at = event.created_at.isoformat() if event.created_at else None
         confirmation_source = "GSN recorded trust event"
         loan_id = event.loan_id
-        try:
-            meta = getattr(event, "meta", None) or {}
-            if not isinstance(meta, dict):
-                meta = {}
-            payment_reference = meta.get("payment_reference")
-        except Exception:
-            payment_reference = None
 
     elements.append(Spacer(1, 0.15 * inch))
     elements.append(_paragraph("Support record ID", loan_id, styles))
-    elements.append(_paragraph("Payment reference", payment_reference, styles))
+    elements.append(_paragraph("Reconciliation reference", "private operational detail redacted", styles))
     elements.append(_paragraph("Confirmed at", confirmed_at, styles))
     elements.append(_paragraph("Confirmation source", confirmation_source, styles))
     elements.append(Spacer(1, 0.25 * inch))

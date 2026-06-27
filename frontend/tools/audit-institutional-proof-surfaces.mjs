@@ -216,10 +216,15 @@ assertContains(
   /confirmation_source = "GSN recorded trust event"[\s\S]*?Confirmation source/,
   "TrustSlip PDF must show a reader-safe confirmation source instead of a raw internal actor record."
 );
+assertContains(
+  "trustSlipPdf",
+  /Reconciliation reference[\s\S]*?private operational detail redacted/,
+  "TrustSlip PDF must redact private repayment reconciliation references."
+);
 assertNotContains(
   "trustSlipPdf",
-  /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id/g,
-  "TrustSlip PDF must not expose older limit/guarantee/internal actor wording."
+  /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id|Payment reference|payment_reference/g,
+  "TrustSlip PDF must not expose older limit/guarantee/internal actor wording or repayment references."
 );
 assertContains(
   "trustTimelinePdf",
