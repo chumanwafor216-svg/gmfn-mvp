@@ -75237,3 +75237,33 @@ GSN-branded invite composer and invite-entry continuity.
   - public guide title alignment commit `fe608d72` was pushed to `origin/main`;
   - this private Vault access paper treatment is pending until the commit
     containing this note is pushed to `origin/main`.
+
+### Follow-up same day - Evidence inventory updated to current truth
+
+- Trigger:
+  - after the shared snapshot, public verification, generated-mark, and private
+    Vault paper passes, `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+    still listed several completed surfaces as open implementation gaps.
+- Unabated truth:
+  - this is documentation alignment only;
+  - several surfaces still need visual phone/print review even though their
+    source-level paper framing is now in place;
+  - no live verification, paid/API verification, payout, escrow, protected
+    trade-release capability, or new customer-facing behavior was added.
+- Changed:
+  - `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+    - updated the inventory date to `2026-06-27`;
+    - marked shared copied snapshots as using the GSN headed-paper snapshot
+      builder;
+    - marked public community verification and confirmation outcome as having
+      shared authority/security/footer/generated-mark treatment;
+    - marked private Vault access as having restricted-access paper marks;
+    - preserved remaining visual phone/print review work instead of pretending
+      these surfaces are visually complete.
+- Verification:
+  - Documentation-only change; no build required for this inventory alignment.
+- Deployment state:
+  - private Vault access paper treatment commit `2980ef8c` was pushed to
+    `origin/main`;
+  - this inventory alignment is pending until the commit containing this note is
+    pushed to `origin/main`.

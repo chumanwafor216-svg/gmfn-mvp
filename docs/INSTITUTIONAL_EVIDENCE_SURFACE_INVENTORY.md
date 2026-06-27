@@ -1,6 +1,6 @@
 # GSN Institutional Evidence Surface Inventory
 
-Last updated: 2026-06-12
+Last updated: 2026-06-27
 
 Canonical path: `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
 
@@ -54,8 +54,8 @@ should be checked visually before rewriting:
 | --- | --- | --- | --- |
 | Public TrustSlip verification paper | `/t/:code`, `/trust-slips/verify/:code/page`, `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` | Has GSN brand mark, watermark, QR, public/private boundary, code/link, and limitation language. | Visual phone/print review, then adjust only gaps. |
 | TrustSlip private evidence area | `/app/trust-slip/verify`, `TrustSlipVerifyPrivateEvidence.tsx` | Printable/private evidence area exists. | Confirm it feels like private headed paper, not a plain panel. |
-| TrustSlip page | `/app/trust-slip`, `TrustSlipPage.tsx` | Has copy, verify link, print, limitation, and snapshot builder. | Move copied text snapshot into official GSN Snapshot format. |
-| Trust Passport page | `/app/trust`, `TrustScorePage.tsx` | Has copy snapshot, print, TrustSlip verify action, and evidence-paper footer references. | Move copied Trust Passport snapshot into official GSN Snapshot format. |
+| TrustSlip page | `/app/trust-slip`, `TrustSlipPage.tsx` | Has copy, verify link, print, limitation, and shared GSN Snapshot builder. | Visual phone/print review, then adjust only gaps. |
+| Trust Passport page | `/app/trust`, `TrustScorePage.tsx` | Has copy snapshot, print, TrustSlip verify action, and shared GSN Snapshot builder. | Visual phone/print review, then adjust only gaps. |
 | Trust Timeline PDF | `/app/open-trust-reading`, `TrustTimelinePage.tsx`, backend `trust_timeline_pdf_service.py` | Backend PDF shell exists with institutional helper. | Open generated PDF visually; confirm watermark/header/footer. |
 | Evidence Pack PDF / ZIP panel | `EvidencePackPanel.tsx`, backend evidence pack services | Backend PDF shell exists; frontend panel still looks like a simple app block. | Upgrade panel and any redacted share copy wording to headed-paper preview language. |
 
@@ -66,16 +66,16 @@ receive, verify, screenshot, or print them.
 
 | Surface | Route / file | Why it needs headed paper | Current gap |
 | --- | --- | --- | --- |
-| Identity & Integrity snapshot | `/app/identity`, `frontend/src/pages/IdentityIntegrityPage.tsx`, `buildIdentityIntegritySnapshot()` | User may copy identity/integrity status to show identity readiness. | Copy output is plain text lines, not official paper/snapshot format. |
-| CCI reading snapshot | `/app/cci-reading`, `CCIReadingPage.tsx`, `buildCciSnapshot()` | Cross-community consistency can be shared as trust evidence. | Copy output is plain text lines. |
-| TrustSlip copied snapshot | `/app/trust-slip`, `TrustSlipPage.tsx`, `buildTrustSlipSnapshot()` | Portable trust evidence for merchants/outsiders. | Plain text snapshot should become GSN Snapshot paper text and screen preview. |
-| TrustSlip verify copied snapshot | public and app verify routes, `TrustSlipVerifyPage.tsx`, `buildTrustSlipVerifySnapshot()` | Visitor/verifier may copy the result as current evidence. | Plain text copy should use official snapshot heading and limitation. |
-| Trust Passport copied snapshot | `/app/trust`, `TrustScorePage.tsx`, `buildTrustPassportSnapshot()` | Member may send wider trust passport summary. | Plain text copy should use official snapshot heading and paper fields. |
-| Community public verification | `/verify/community/:communityKey`, `CommunityVerifyPage.tsx` | Public community confirmation can be shown to outsiders. | Needs official community verification paper framing. |
+| Identity & Integrity snapshot | `/app/identity`, `frontend/src/pages/IdentityIntegrityPage.tsx`, `buildIdentityIntegritySnapshot()` | User may copy identity/integrity status to show identity readiness. | Copy output now uses shared GSN headed-paper snapshot text; visual preview can be added later if needed. |
+| CCI reading snapshot | `/app/cci-reading`, `CCIReadingPage.tsx`, `buildCciSnapshot()` | Cross-community consistency can be shared as trust evidence. | Copy output now uses shared GSN headed-paper snapshot text; visual preview can be added later if needed. |
+| TrustSlip copied snapshot | `/app/trust-slip`, `TrustSlipPage.tsx`, `buildTrustSlipSnapshot()` | Portable trust evidence for merchants/outsiders. | Copy output now uses shared GSN headed-paper snapshot text with limitation language. |
+| TrustSlip verify copied snapshot | public and app verify routes, `TrustSlipVerifyPage.tsx`, `buildTrustSlipVerifySnapshot()` | Visitor/verifier may copy the result as current evidence. | Copy output now uses official snapshot heading, generated time, privacy, and limitation fields. |
+| Trust Passport copied snapshot | `/app/trust`, `TrustScorePage.tsx`, `buildTrustPassportSnapshot()` | Member may send wider trust passport summary. | Copy output now uses official snapshot heading and paper fields. |
+| Community public verification | `/verify/community/:communityKey`, `CommunityVerifyPage.tsx` | Public community confirmation can be shown to outsiders. | Has official GSN authority, screenshot security, watermark, footer, and placeholder-free generated marks; remaining work is visual phone/print review only. |
 | Community verification link package | Any copy/share path that sends `/verify/community/:communityKey` | The link itself may be sent to a community, merchant, institution, or outsider for verification and is a GSN branding surface. | Needs branded link-card copy: GSN title, community name/ref, purpose, verify link, currentness, and limitation. |
-| Community confirmation public outcome | `/community-confirmations/public/:token`, `CommunityConfirmationOutcomePage.tsx` | Public result can be copied, printed, and used as evidence. | Has copy/print actions, but needs final headed-paper visual audit and shared paper wrapper if missing. |
+| Community confirmation public outcome | `/community-confirmations/public/:token`, `CommunityConfirmationOutcomePage.tsx` | Public result can be copied, printed, and used as evidence. | Has shared GSN authority, screenshot security, watermark, footer, and placeholder-free generated marks; remaining work is final visual phone/print review. |
 | Public shop face | `/shop/:gmfnId`, `ShopGalleryPage.tsx` | Public shop link may be sent to visitors. | The shop face is polished visually, but needs an official share/identity paper boundary for copied shop link and screenshotable shop identity. |
-| Private vault access page | `/vault/:token`, `ShopAccessPage.tsx` | Visitor receives private shop/vault link. | Needs link-access paper treatment: who issued it, what access allows, print/share limits. |
+| Private vault access page | `/vault/:token`, `ShopAccessPage.tsx` | Visitor receives private shop/vault link. | Has GSN restricted-access authority marks, watermark, screenshot security note, and footer; remaining work is visual phone review and deeper copy/package audit if needed. |
 
 ## Priority 2: Payment, Withdrawal, And Receipt-Like Papers
 
