@@ -664,6 +664,36 @@ assertNotContains(
   "Trust Timeline must not render raw payment references or internal event IDs on the screenshotable user page."
 );
 
+assertContains(
+  "../gmfn_backend/app/api/routes/trust_why.py",
+  /def _mode_redact_event[\s\S]*?Private trust record[\s\S]*?Private operational details redacted for trust explanation[\s\S]*?"event_number": len\(policy_timeline\) \+ 1/,
+  "Signed-in Trust Why explanations must redact internal event/support IDs and policy event IDs."
+);
+
+assertNotContains(
+  "../gmfn_backend/app/api/routes/trust_why.py",
+  /out\.pop\("actor_user_id"|"event_id": int\(e\.id\)|"loan_id": v\["loan_id"\]/,
+  "Signed-in Trust Why explanations must not keep the older partial-redaction/raw-id output path."
+);
+
+assertContains(
+  "src/pages/TrustPage.tsx",
+  /getTrustWhyMe\(\{[\s\S]*?limit: safeLimit[\s\S]*?event_type: eventType\.trim\(\) \|\| undefined[\s\S]*?include_policy_timeline: true/,
+  "Trust page must use safe Trust Why records and GSN-named redacted exports."
+);
+
+assertContains(
+  "src/pages/TrustPage.tsx",
+  /const filename = `gsn_trust_records_\$\{stamp\}\.csv`;[\s\S]*?"reference_label"[\s\S]*?ev\.reference_label/,
+  "Trust page CSV export must use a GSN name and only redacted Trust Why fields."
+);
+
+assertNotContains(
+  "src/pages/TrustPage.tsx",
+  /listTrustEvents|TrustEventsQuery|gmfn_trust_events|loan_id|guarantor_id|actor_user_id|subject_user_id|safeJson\(ev\.meta\)|Recorded by \{String|Member \{String|Loan \{String/,
+  "Trust page must not call the admin event feed or render/export raw event IDs on the screenshotable user view."
+);
+
 assertNotContains(
   "src/pages/TrustCommandCentrePage.tsx",
   /Needs proof|Evidence proof|Required proof not named/i,

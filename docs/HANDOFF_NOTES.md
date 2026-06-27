@@ -71741,6 +71741,49 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Signed-in Trust Why explanations redacted
+
+- Trigger:
+  - owner continued the institutional/customer-facing cleanup and noted that
+    some PDF/screenshotable/evidence surfaces were wrong, incomplete, or too
+    exposing;
+  - the signed-in Trust Why route and legacy Trust page were still capable of
+    exposing operational event/support/user references.
+- Unabated truth:
+  - admin trust-event surfaces still keep raw operational references by design;
+  - this change hardens the signed-in user explanation route and the
+    screenshotable/exportable Trust page only.
+- Changed:
+  - `gmfn_backend/app/api/routes/trust_why.py`
+    - redacts user-facing event output for `/trust/me/why` and self-owned
+      `/trust/why/{user_id}` explanation responses;
+    - replaces raw event IDs in `policy_timeline_estimate` with
+      `event_number`;
+    - replaces grouped raw `loan_id` output with `Private support group` /
+      `General trust records` reference labels.
+  - `frontend/src/lib/api.ts`
+    - lets `getTrustWhyMe` request limit, event type, and policy-timeline
+      context from the safe signed-in route.
+  - `frontend/src/pages/TrustPage.tsx`
+    - removes the admin event feed call from the signed-in screenshot/export
+      page;
+    - removes raw loan/user/event/meta fields from visible rows and CSV export;
+    - exports `gsn_trust_records_*.csv` with redacted Trust Why fields.
+  - `gmfn_backend/tests/test_trust_route_ownership.py`
+    - adds regression coverage that private payment/support references do not
+      escape through Trust Why events, policy timeline, grouped support output,
+      or raw response text.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - adds audit cages for Trust Why redaction and Trust page export safety.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py gmfn_backend\tests\test_trust_evidence_pack_package.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\api\routes\trust_why.py`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Trust Timeline user references redacted
 
 - Trigger:

@@ -10,10 +10,8 @@ import {
   getSelectedClanId,
   getTrustScoreExplained,
   getTrustWhyMe,
-  listTrustEvents,
   safeCopy,
 } from "../lib/api";
-import type { TrustEventsQuery } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type Me = {
@@ -58,20 +56,18 @@ type TrustWhy = {
   user_id: number;
   pack_id?: string;
   checksum?: string;
-  based_on_event_at?: string | null;
+  latest_event_at?: string | null;
   computed?: any;
   events?: Array<any>;
 };
 
 type TrustEventOut = {
-  id?: number;
   created_at?: string | null;
   event_type?: string;
-  actor_user_id?: number | null;
-  subject_user_id?: number | null;
-  loan_id?: number | null;
-  guarantor_id?: number | null;
-  meta?: any;
+  delta?: string | null;
+  reason?: string | null;
+  note?: string | null;
+  reference_label?: string | null;
 };
 
 function clamp(n: number, min: number, max: number) {
@@ -91,23 +87,6 @@ function timeAgo(iso?: string | null) {
   if (hr < 24) return `${hr}h ago`;
   const day = Math.floor(hr / 24);
   return `${day}d ago`;
-}
-
-function safeJson(meta: any) {
-  if (meta == null) return "";
-  try {
-    if (typeof meta === "string") {
-      const s = meta.trim();
-      if ((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))) {
-        return JSON.stringify(JSON.parse(s));
-      }
-      return s;
-    }
-    if (typeof meta === "object") return JSON.stringify(meta);
-    return String(meta);
-  } catch {
-    return String(meta);
-  }
 }
 
 function safeStr(x: any): string {
@@ -342,9 +321,6 @@ export default function TrustPage() {
 
   // Filters (UI)
   const [limit, setLimit] = useState<number>(50);
-  const [loanId, setLoanId] = useState<string>("");
-  const [actorId, setActorId] = useState<string>("");
-  const [subjectId, setSubjectId] = useState<string>("");
   const [eventType, setEventType] = useState<string>("");
 
   const [showExplain, setShowExplain] = useState(true);
@@ -355,30 +331,21 @@ export default function TrustPage() {
 
     try {
       const safeLimit = clamp(Number(limit) || 50, 1, 200);
-      const q: TrustEventsQuery = { limit: safeLimit };
 
-      const loan_id = loanId.trim() ? Number(loanId.trim()) : undefined;
-      const actor_user_id = actorId.trim() ? Number(actorId.trim()) : undefined;
-      const subject_user_id = subjectId.trim() ? Number(subjectId.trim()) : undefined;
-
-      if (Number.isFinite(loan_id as any)) q.loan_id = loan_id;
-      if (Number.isFinite(actor_user_id as any)) q.actor_user_id = actor_user_id;
-      if (Number.isFinite(subject_user_id as any)) q.subject_user_id = subject_user_id;
-      if (eventType.trim()) q.event_type = eventType.trim();
-
-      const [meRes, scoreRes, whyRes, eventsRes] = await Promise.all([
+      const [meRes, scoreRes, whyRes] = await Promise.all([
         getMe(),
         getTrustScoreExplained(),
-        getTrustWhyMe(),
-        listTrustEvents(q),
+        getTrustWhyMe({
+          limit: safeLimit,
+          event_type: eventType.trim() || undefined,
+          include_policy_timeline: true,
+        }),
       ]);
 
       setMe(meRes);
       setScore(scoreRes);
       setWhy(whyRes as any);
-
-      // backend may return {items,total} or array
-      const items = (eventsRes?.items ?? eventsRes) as any[];
+      const items = ((whyRes as any)?.events ?? []) as any[];
       setEvents(Array.isArray(items) ? items : []);
     } catch (e: any) {
       setErr(String(e?.message || e || "Failed to load trust analytics"));
@@ -396,18 +363,12 @@ export default function TrustPage() {
   const filtered = useMemo(() => {
     // Local filtering safety (if backend ignores some filters)
     let xs = [...events];
-    const loan_id = loanId.trim() ? Number(loanId.trim()) : null;
-    const actor_user_id = actorId.trim() ? Number(actorId.trim()) : null;
-    const subject_user_id = subjectId.trim() ? Number(subjectId.trim()) : null;
     const et = eventType.trim().toUpperCase();
 
-    if (loan_id && Number.isFinite(loan_id)) xs = xs.filter((e) => (e.loan_id ?? null) === loan_id);
-    if (actor_user_id && Number.isFinite(actor_user_id)) xs = xs.filter((e) => e.actor_user_id === actor_user_id);
-    if (subject_user_id && Number.isFinite(subject_user_id)) xs = xs.filter((e) => (e.subject_user_id ?? null) === subject_user_id);
     if (et) xs = xs.filter((e) => ((e.event_type || "").toUpperCase().includes(et)));
 
     return xs;
-  }, [events, loanId, actorId, subjectId, eventType]);
+  }, [events, eventType]);
 
   const latest = useMemo(() => {
     const xs = filtered.filter((e) => !!e.created_at);
@@ -422,19 +383,17 @@ export default function TrustPage() {
   function exportCsv() {
     const now = new Date();
     const stamp = now.toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    const filename = `gmfn_trust_events_${stamp}.csv`;
+    const filename = `gsn_trust_records_${stamp}.csv`;
 
-    const header = ["id", "created_at", "event_type", "actor_user_id", "subject_user_id", "loan_id", "guarantor_id", "meta"];
+    const header = ["created_at", "event_type", "delta", "reason", "note", "reference_label"];
 
     const rows = filtered.map((ev) => [
-      ev.id ?? "",
       ev.created_at ?? "",
       ev.event_type ?? "",
-      ev.actor_user_id ?? "",
-      ev.subject_user_id ?? "",
-      ev.loan_id ?? "",
-      ev.guarantor_id ?? "",
-      safeJson(ev.meta),
+      ev.delta ?? "",
+      ev.reason ?? "",
+      ev.note ?? "",
+      ev.reference_label ?? "",
     ]);
 
     const lines: string[] = [];
@@ -693,7 +652,7 @@ export default function TrustPage() {
                     </div>
                     <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                       {e.delta ? <span style={pill("green")}>Delta {String(e.delta)}</span> : <span style={pill("gray")}>Delta 0</span>}
-                      {e.loan_id ? <span style={pill("blue")}>Loan {String(e.loan_id)}</span> : null}
+                      {e.reference_label ? <span style={pill("blue")}>{supportDisplayText(e.reference_label)}</span> : null}
                       {e.reason ? <span style={pill("gray")}>Reason: {supportDisplayText(e.reason)}</span> : null}
                     </div>
                     {e.note ? <div style={{ ...helperText(), marginTop: 6, fontSize: 13.5 }}>{supportDisplayText(e.note)}</div> : null}
@@ -708,7 +667,7 @@ export default function TrustPage() {
               <div style={{ ...helperText(), marginTop: 10, fontSize: 12.5 }}>
                 <div><b>Evidence reference:</b> {why.pack_id || "-"}</div>
                 <div style={{ wordBreak: "break-all" }}><b>Checksum:</b> {why.checksum || "-"}</div>
-                <div><b>Based on:</b> {why.based_on_event_at || "-"}</div>
+                <div><b>Based on:</b> {why.latest_event_at || "-"}</div>
                 <SecondaryButton
                   type="button"
                   style={{ marginTop: 10 }}
@@ -729,15 +688,6 @@ export default function TrustPage() {
           <div style={{ color: "#526579" }}>Limit</div>
           <input style={fieldInput()} value={String(limit)} onChange={(e) => setLimit(Number(e.target.value || 50))} />
 
-          <div style={{ color: "#526579" }}>Loan reference</div>
-          <input style={fieldInput()} value={loanId} onChange={(e) => setLoanId(e.target.value)} placeholder="e.g. 12" />
-
-          <div style={{ color: "#526579" }}>Recorded by user ID</div>
-          <input style={fieldInput()} value={actorId} onChange={(e) => setActorId(e.target.value)} placeholder="e.g. 1" />
-
-          <div style={{ color: "#526579" }}>Member user ID</div>
-          <input style={fieldInput()} value={subjectId} onChange={(e) => setSubjectId(e.target.value)} placeholder="e.g. 1" />
-
           <div style={{ color: "#526579" }}>Event type</div>
           <input style={fieldInput()} value={eventType} onChange={(e) => setEventType(e.target.value)} placeholder="repayment / support / ..." />
         </div>
@@ -755,7 +705,7 @@ export default function TrustPage() {
           </PrimaryButton>
           <SecondaryButton
             type="button"
-            onClick={() => { setLoanId(""); setActorId(""); setSubjectId(""); setEventType(""); }}
+            onClick={() => { setEventType(""); }}
             disabled={loading}
             debugId="trust.clear-filters"
           >
@@ -778,8 +728,8 @@ export default function TrustPage() {
         </div>
 
         <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-          {filtered.slice(0, 200).map((ev) => (
-            <div key={String(ev.id ?? Math.random())} style={innerCard()}>
+          {filtered.slice(0, 200).map((ev, index) => (
+            <div key={`${ev.created_at ?? "undated"}-${ev.event_type ?? "event"}-${index}`} style={innerCard()}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                   {trustIconTile(trustEventIconName(ev.event_type), 34)}
@@ -788,13 +738,13 @@ export default function TrustPage() {
                 <div style={{ fontSize: 12, color: "#526579" }}>{ev.created_at || ""} {timeAgo(ev.created_at)}</div>
               </div>
               <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {ev.loan_id != null ? <span style={pill("blue")}>Loan {String(ev.loan_id)}</span> : null}
-                {ev.actor_user_id != null ? <span style={pill("gray")}>Recorded by {String(ev.actor_user_id)}</span> : null}
-                {ev.subject_user_id != null ? <span style={pill("gray")}>Member {String(ev.subject_user_id)}</span> : null}
+                {ev.delta ? <span style={pill("green")}>Delta {String(ev.delta)}</span> : <span style={pill("gray")}>Delta 0</span>}
+                {ev.reference_label ? <span style={pill("blue")}>{supportDisplayText(ev.reference_label)}</span> : null}
+                {ev.reason ? <span style={pill("gray")}>Reason: {supportDisplayText(ev.reason)}</span> : null}
               </div>
-              {ev.meta != null ? (
+              {ev.note ? (
                 <div style={{ marginTop: 8, fontSize: 12.5, color: "#526579", wordBreak: "break-word", lineHeight: 1.6 }}>
-                  {supportDisplayText(safeJson(ev.meta))}
+                  {supportDisplayText(ev.note)}
                 </div>
               ) : null}
             </div>

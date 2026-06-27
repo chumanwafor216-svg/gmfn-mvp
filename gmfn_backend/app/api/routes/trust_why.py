@@ -119,25 +119,46 @@ def _serialize_dt(value: Any) -> Any:
 
 def _mode_redact_event(e: dict[str, Any], mode: ExplainMode) -> dict[str, Any]:
     out = dict(e)
+    has_private_reference = any(
+        out.get(key) not in (None, "")
+        for key in (
+            "id",
+            "clan_id",
+            "loan_id",
+            "guarantor_id",
+            "actor_user_id",
+            "subject_user_id",
+        )
+    ) or bool(out.get("meta"))
+
+    safe = {
+        "event_type": out.get("event_type"),
+        "delta": out.get("delta"),
+        "delta_rule": out.get("delta_rule"),
+        "reason": out.get("reason"),
+        "note": out.get("note"),
+        "created_at": out.get("created_at"),
+    }
+    if has_private_reference:
+        safe["reference_label"] = "Private trust record"
+        safe["detail_boundary"] = "Private operational details redacted for trust explanation"
 
     if mode == "detailed":
-        return out
+        return safe
 
     if mode == "standard":
-        out.pop("actor_user_id", None)
-        out.pop("meta", None)
-        return out
+        return safe
 
     if mode == "minimal":
         return {
-            "id": out.get("id"),
-            "event_type": out.get("event_type"),
-            "delta": out.get("delta"),
-            "delta_rule": out.get("delta_rule"),
-            "created_at": out.get("created_at"),
+            "event_type": safe.get("event_type"),
+            "delta": safe.get("delta"),
+            "delta_rule": safe.get("delta_rule"),
+            "reference_label": safe.get("reference_label"),
+            "created_at": safe.get("created_at"),
         }
 
-    return out
+    return safe
 
 
 @router.get("/me/why")
@@ -251,7 +272,7 @@ def trust_why_user(
 
             policy_timeline.append(
                 {
-                    "event_id": int(e.id),
+                    "event_number": len(policy_timeline) + 1,
                     "event_type": e.event_type,
                     "delta": str(d) if d is not None else None,
                     "policy_score_estimate": str(running),
@@ -311,7 +332,9 @@ def trust_why_user(
     if group_by_loan:
         out["grouped_by_loan"] = [
             {
-                "loan_id": v["loan_id"],
+                "reference_label": "Private support group"
+                if v["loan_id"] is not None
+                else "General trust records",
                 "events": v["events"],
                 "delta_total": str(v["delta_total"]),
                 "last_event_at": v["last_event_at"].isoformat() if v["last_event_at"] else None,

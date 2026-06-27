@@ -4009,8 +4009,19 @@ export async function applyAdminTrustRecompute(userId: number): Promise<any> {
   );
 }
 
-export async function getTrustWhyMe(): Promise<any> {
-  return httpJson("/trust/me/why", "GET");
+export async function getTrustWhyMe(params?: {
+  limit?: number;
+  event_type?: string;
+  include_policy_timeline?: boolean;
+}): Promise<any> {
+  return httpJson(
+    `/trust/me/why${buildQuery({
+      limit: params?.limit,
+      event_type: params?.event_type,
+      include_policy_timeline: params?.include_policy_timeline,
+    })}`,
+    "GET"
+  );
 }
 
 export async function getTrustWhyUser(userId: number): Promise<any> {

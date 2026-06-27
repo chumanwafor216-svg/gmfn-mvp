@@ -85,6 +85,62 @@ def test_trust_why_route_serves_pack_checksum_contract(
     assert "policy_timeline_estimate" in payload
 
 
+def test_trust_why_user_explanation_redacts_operational_references(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="loan.repaid",
+                clan_id=1,
+                loan_id=77,
+                guarantor_id=33,
+                actor_user_id=2,
+                subject_user_id=1,
+                meta={
+                    "reason": "loan_fully_repaid",
+                    "note": "Repayment confirmed",
+                    "payment_reference": "PRIVATE-WHY-REF-123",
+                },
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    response = client.get(
+        "/trust/me/why?limit=5&mode=detailed&include_policy_timeline=true&group_by_loan=true"
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["events"]
+    item = payload["events"][0]
+    assert item["reference_label"] == "Private trust record"
+    assert item["detail_boundary"] == "Private operational details redacted for trust explanation"
+    assert item["reason"] == "loan_fully_repaid"
+    assert item["note"] == "Repayment confirmed"
+    for key in (
+        "id",
+        "payment_reference",
+        "loan_id",
+        "clan_id",
+        "guarantor_id",
+        "actor_user_id",
+        "subject_user_id",
+        "meta",
+    ):
+        assert key not in item
+
+    assert payload["policy_timeline_estimate"]
+    assert "event_id" not in payload["policy_timeline_estimate"][0]
+    assert "event_number" in payload["policy_timeline_estimate"][0]
+    assert payload["grouped_by_loan"][0]["reference_label"] == "Private support group"
+    assert "loan_id" not in payload["grouped_by_loan"][0]
+    assert "PRIVATE-WHY-REF-123" not in response.text
+
+
 def test_my_trust_timeline_redacts_operational_references_for_user(
     client: TestClient,
     override_current_user_user,
