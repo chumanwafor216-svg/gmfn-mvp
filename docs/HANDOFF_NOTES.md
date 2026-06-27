@@ -25,10 +25,18 @@ Verification:
 - `npm run audit:evidence-surfaces` from `frontend/`
 
 Truth / remaining risk:
-- Local correction is verified and ready to publish.
-- Backend Render deployment is still expected to be blocked by missing
-  `RENDER_API_KEY`; do not tell the owner this backend PDF behavior is live
-  until gmfn-api deploy evidence exists.
+- Committed and pushed backend evidence fix at
+  `24ba5b659eec75ec50731994c1d3563372bebedf`
+  (`Redact TrustSlip PDF repayment references`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28289767824` with `deploy_api=true`.
+- Workflow checked out exact commit `24ba5b659eec75ec50731994c1d3563372bebedf`.
+- Frontend Render deploy hook accepted deploy id
+  `dep-d8vsfa3tqb8s73f6dbdg`.
+- Backend deploy did not run. The workflow failed at the exact API credential
+  gate because `RENDER_API_KEY` and `RENDER_API_SERVICE_ID` are still empty in
+  GitHub Actions. Do not tell the owner this backend PDF behavior is live until
+  gmfn-api deploy evidence exists.
 
 ## 2026-06-27 - Trust Timeline PDF redaction and audience guard
 
