@@ -75265,5 +75265,66 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - private Vault access paper treatment commit `2980ef8c` was pushed to
     `origin/main`;
-  - this inventory alignment is pending until the commit containing this note is
-    pushed to `origin/main`.
+  - evidence inventory alignment was pushed to `origin/main` as `ca26283a`;
+  - no Render deploy was claimed by this documentation-only update.
+
+### Follow-up same day - Protected Trade backend spine materialized
+
+- Trigger:
+  - owner asked whether the existing backend engines were enough for the new
+    protected trade-release idea, then asked to finish the engines already
+    built but not yet materialized.
+  - code inspection showed GSN already had TrustEvents, TrustSlip,
+    expected-payment, shipment/evidence, merchant release, Vault access, and
+    marketplace engines, but no single commerce record tying a buyer, seller,
+    item, payment claim, release decision, receipt state, dispute state, and
+    evidence references together.
+- Unabated truth:
+  - this materializes a backend protected-trade record spine only;
+  - it is not escrow, not money custody, not automatic payout, not a bank
+    guarantee, not a delivery guarantee, and not paid/API verification;
+  - settlement is recorded as evidence/status unless a real provider or bank
+    reconciliation layer later confirms funds;
+  - no customer-facing frontend screen has been wired to this route yet.
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added `ProtectedTradeRecord` and `ProtectedTradeEvent` models for a
+      non-custodial commerce evidence rail.
+  - `gmfn_backend/alembic/versions/20260627_add_protected_trade_records.py`
+    - added the migration for `protected_trade_records` and
+      `protected_trade_events`, with short Postgres-safe index names.
+  - `gmfn_backend/app/schemas/protected_trades.py`
+    - added create/event/output schemas and a stable events default factory.
+  - `gmfn_backend/app/services/protected_trade_service.py`
+    - added the protected-trade lifecycle service;
+    - supports controlled events such as `payment.claimed`,
+      `payment.recorded`, `release.requested`, `release.recorded`,
+      `receipt.confirmed`, `receipt.not_received`, `dispute.opened`,
+      `dispute.resolved`, `evidence.attached`, `trade.closed`, and
+      `trade.cancelled`;
+    - logs every trade event into canonical `TrustEvent` rows with a clear
+      non-custodial boundary note.
+  - `gmfn_backend/app/api/routes/protected_trades.py`
+    - added authenticated endpoints:
+      - `POST /protected-trades`
+      - `GET /protected-trades`
+      - `GET /protected-trades/{trade_id}`
+      - `POST /protected-trades/{trade_id}/events`
+  - `gmfn_backend/app/api/router.py`
+    - registered the protected-trades router.
+  - `gmfn_backend/tests/test_protected_trades.py`
+    - covered create, payment claim, release recording, detail timeline,
+      TrustEvent logging, and rejection of unsupported escrow-like events.
+  - `gmfn_backend/tests/test_database_metadata.py`
+    - added metadata guards for the two new tables and included the migration
+      in the Postgres identifier-length check.
+- Verification:
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_protected_trades.py gmfn_backend\tests\test_database_metadata.py`.
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_requests.py gmfn_backend\tests\test_vault_domain.py gmfn_backend\tests\test_evidence_surface_permissions.py gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_trust_evidence_pack_package.py gmfn_backend\tests\test_protected_trades.py gmfn_backend\tests\test_database_metadata.py`.
+  - `git diff --check` returned clean.
+- Deployment state:
+  - prior evidence inventory alignment was pushed as `ca26283a`;
+  - this protected-trade backend spine is local only until committed and pushed;
+  - no Render deploy has been requested or confirmed for this slice.

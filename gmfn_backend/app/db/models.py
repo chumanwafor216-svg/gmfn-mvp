@@ -1653,6 +1653,193 @@ class TrustEvent(Base):
     meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
 
 
+class ProtectedTradeRecord(Base):
+    __tablename__ = "protected_trade_records"
+
+    __table_args__ = (
+        Index("ix_protected_trade_records_seller_status", "seller_user_id", "status"),
+        Index("ix_protected_trade_records_buyer_status", "buyer_user_id", "status"),
+        Index("ix_protected_trade_records_clan_status", "clan_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    trade_code: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    creator_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    seller_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    buyer_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    shop_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    vault_access_link_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("vault_access_links.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    trust_slip_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    expected_payment_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    shipment_pack_id: Mapped[Optional[str]] = mapped_column(String(96), nullable=True, index=True)
+    evidence_pack_id: Mapped[Optional[str]] = mapped_column(String(96), nullable=True, index=True)
+
+    item_title: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    terms_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(18, 2), nullable=True)
+    currency: Mapped[str] = mapped_column(
+        String(8),
+        nullable=False,
+        default="NGN",
+        server_default="NGN",
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="draft",
+        server_default="draft",
+        index=True,
+    )
+    payment_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="not_started",
+        server_default="not_started",
+        index=True,
+    )
+    release_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="not_requested",
+        server_default="not_requested",
+        index=True,
+    )
+    receipt_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="not_confirmed",
+        server_default="not_confirmed",
+        index=True,
+    )
+    dispute_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="none",
+        server_default="none",
+        index=True,
+    )
+
+    meta_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+    def _get_meta(self) -> Optional[Dict[str, Any]]:
+        if not self.meta_json:
+            return None
+        try:
+            raw = json.loads(self.meta_json)
+            return raw if isinstance(raw, dict) else None
+        except Exception:
+            return None
+
+    def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
+        self.meta_json = json.dumps(value) if value is not None else None
+
+    meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
+class ProtectedTradeEvent(Base):
+    __tablename__ = "protected_trade_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    trade_id: Mapped[int] = mapped_column(
+        ForeignKey("protected_trade_records.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    actor_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    status_from: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    status_to: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
+    trust_event_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("trust_events.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    meta_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
+    def _get_meta(self) -> Optional[Dict[str, Any]]:
+        if not self.meta_json:
+            return None
+        try:
+            raw = json.loads(self.meta_json)
+            return raw if isinstance(raw, dict) else None
+        except Exception:
+            return None
+
+    def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
+        self.meta_json = json.dumps(value) if value is not None else None
+
+    meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
 class TrustSlip(Base):
     __tablename__ = "trust_slips"
 
