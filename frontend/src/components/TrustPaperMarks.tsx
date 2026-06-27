@@ -367,15 +367,28 @@ function authorityText(value: unknown, fallback: string): string {
   return text || fallback;
 }
 
+function isGeneratedPlaceholder(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized === "current when viewed" || normalized === "current when copied";
+}
+
+function utcGeneratedText(date = new Date()): string {
+  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
 export function TrustPaperAuthorityStrip({
   title = "Official GSN paper",
   reference = "GSN current record",
-  generatedAt = "Current when viewed",
+  generatedAt = "",
   classification = "Traceable public evidence",
   compact = false,
   tone = "light",
   style,
 }: AuthorityStripProps) {
+  const generatedAtText = React.useMemo(() => {
+    const text = String(generatedAt ?? "").trim();
+    return !text || isGeneratedPlaceholder(text) ? utcGeneratedText() : text;
+  }, [generatedAt]);
   const dark = tone === "dark";
   const textColor = dark ? "#FFFFFF" : "#07172C";
   const mutedColor = dark ? "rgba(255,255,255,0.74)" : "#526579";
@@ -453,7 +466,7 @@ export function TrustPaperAuthorityStrip({
             overflowWrap: "anywhere",
           }}
         >
-          Generated: {authorityText(generatedAt, "Current when viewed")} | Reference:{" "}
+          Generated: {generatedAtText} | Reference:{" "}
           {authorityText(reference, "GSN current record")}
         </div>
       </div>

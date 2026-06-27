@@ -75090,3 +75090,39 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - prior verified batch through `68f1798e` was pushed to `origin/main`;
   - this separator slice is local only until committed and pushed.
+
+### Follow-up same day - Shared paper generated timestamps normalized
+
+- Trigger:
+  - continuing the institutional screenshotable-paper pass found that shared
+    customer-facing paper surfaces could still print placeholders like
+    `Current when viewed` or `Current when copied` inside fields labeled
+    `Generated`.
+- Unabated truth:
+  - this is a presentation-integrity fix only;
+  - when no source timestamp exists, the paper now records the UTC render time
+    instead of showing a vague placeholder;
+  - no live verification, paid/API verification, payout, escrow, or protected
+    trade-release capability was added.
+- Changed:
+  - `frontend/src/components/TrustPaperMarks.tsx`
+    - normalizes empty/current-view/current-copy generated labels into an ISO
+      UTC render mark inside the shared `TrustPaperAuthorityStrip`;
+    - keeps the ASCII `Generated: ... | Reference: ...` separator.
+  - `frontend/src/components/GsnSnapshotPaperCard.tsx`
+    - uses the same generated UTC mark for both the shared authority strip and
+      the visible `Generated UTC` evidence tile.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added guards so these shared surfaces cannot drift back to placeholder
+      generated labels.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - `git diff --check` returned clean, aside from line-ending warnings.
+- Deployment state:
+  - separator fix `f333139c` was committed and pushed to `origin/main`;
+  - this generated-timestamp slice is pending until the commit containing this
+    note is pushed to `origin/main`.

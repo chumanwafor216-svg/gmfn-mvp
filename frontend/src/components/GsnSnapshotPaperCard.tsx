@@ -162,6 +162,15 @@ function valueStyle(): React.CSSProperties {
   };
 }
 
+function isGeneratedPlaceholder(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return normalized === "current when viewed" || normalized === "current when copied";
+}
+
+function currentUtcGeneratedText(): string {
+  return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
 export default function GsnSnapshotPaperCard({
   paperText,
   compact = false,
@@ -170,6 +179,10 @@ export default function GsnSnapshotPaperCard({
   style,
 }: Props) {
   const paper = useMemo(() => parsePaperText(paperText), [paperText]);
+  const generatedAtText = useMemo(() => {
+    const text = paper.generatedAt.trim();
+    return !text || isGeneratedPlaceholder(text) ? currentUtcGeneratedText() : text;
+  }, [paper.generatedAt]);
   const visibleDetails = maxBodyLines
     ? paper.details.slice(0, maxBodyLines)
     : paper.details;
@@ -279,7 +292,7 @@ export default function GsnSnapshotPaperCard({
       <TrustPaperAuthorityStrip
         compact={compact}
         title={paper.title}
-        generatedAt={paper.generatedAt || "Current when copied"}
+        generatedAt={generatedAtText}
         reference={paper.reference || "GSN current record"}
         classification="Screenshot-ready"
         style={{ marginTop: compact ? 12 : 14 }}
@@ -303,7 +316,7 @@ export default function GsnSnapshotPaperCard({
           }}
         >
           <div style={labelStyle()}>Generated UTC</div>
-          <div style={valueStyle()}>{paper.generatedAt || "Current when copied"}</div>
+          <div style={valueStyle()}>{generatedAtText}</div>
         </div>
         <div
           style={{

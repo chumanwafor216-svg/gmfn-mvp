@@ -837,13 +837,28 @@ assertContains(
 );
 assertContains(
   "trustPaperMarks",
-  /Generated: \{authorityText\(generatedAt, "Current when viewed"\)\} \| Reference:/,
+  /function isGeneratedPlaceholder[\s\S]*?current when viewed[\s\S]*?current when copied[\s\S]*?function utcGeneratedText[\s\S]*?const generatedAtText = React\.useMemo[\s\S]*?Generated: \{generatedAtText\} \| Reference:/,
+  "Shared GSN authority strip must turn placeholder generated labels into a stable UTC generated mark."
+);
+assertContains(
+  "trustPaperMarks",
+  /Generated: \{generatedAtText\} \| Reference:/,
   "Shared GSN authority strip must use an ASCII separator between generated time and reference."
 );
 assertNotContains(
   "trustPaperMarks",
   /Generated:[\s\S]{0,120}·[\s\S]{0,120}Reference:/g,
   "Shared GSN authority strip must not use a middle-dot separator that can render badly in copied or screenshot papers."
+);
+assertContains(
+  "snapshotPaperCard",
+  /function isGeneratedPlaceholder[\s\S]*?current when viewed[\s\S]*?current when copied[\s\S]*?function currentUtcGeneratedText[\s\S]*?const generatedAtText = useMemo[\s\S]*?generatedAt=\{generatedAtText\}[\s\S]*?>\{generatedAtText\}<\/div>/,
+  "Shared visual snapshot paper card must display a real UTC generated mark instead of a current-view placeholder."
+);
+assertNotContains(
+  "snapshotPaperCard",
+  /Current when copied/g,
+  "Shared visual snapshot paper card must not display the old current-when-copied generated placeholder."
 );
 assertContains(
   "trustSnapshots",
