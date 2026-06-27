@@ -71701,8 +71701,13 @@ GSN-branded invite composer and invite-entry continuity.
     tester to retry after deploy, a separate explicit production-data repair or
     seeded product action is needed.
 - Deployment state:
-  - local only at this entry; ready to commit, push, and promote to `main` for
-    Render after final status check.
+  - committed and pushed to `main` as `5e1dc32c` (`Fix spotlight tester blocker`);
+  - manual `Trigger Render Deploy` workflow run `28287498793` completed
+    successfully for commit `5e1dc32c69125d0a367b9991676bbf25e1e44aa7`;
+  - Render frontend deploy hook accepted the request and returned deploy id
+    `dep-d8vr0apo3t8c73bk6m3g`;
+  - no backend deploy was triggered because this slice changed frontend/docs
+    only.
 
 ### Follow-up same day - Loan Summary shows support purpose
 
