@@ -16,6 +16,16 @@ function supportDisplayText(value: unknown, fallback = "-"): string {
     .replace(/guarantor/g, "supporter");
 }
 
+function memberDisplayReference(gsnId: unknown): string {
+  const text = safeStr(gsnId).trim();
+  return text || "Private member reference";
+}
+
+function memberReferenceContext(gsnId: unknown): string {
+  const text = safeStr(gsnId).trim();
+  return text ? "GSN public member reference" : "Internal account reference hidden";
+}
+
 function fmtDate(iso?: string | null): string {
   if (!iso) return "-";
   const d = new Date(iso);
@@ -176,20 +186,20 @@ export default function TrustGraphEdgeList(props: {
                 <div>
                   <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Source</div>
                   <div style={{ marginTop: 4, fontWeight: 1000, color: "#0B1F33" }}>
-                    User #{safeStr(e.source_user_id)}
+                    {memberDisplayReference(e.source_gmfn_id)}
                   </div>
                   <div style={{ marginTop: 2, fontSize: 12, color: "#475569" }}>
-                    {safeStr(e.source_gmfn_id || "-")}
+                    {memberReferenceContext(e.source_gmfn_id)}
                   </div>
                 </div>
 
                 <div>
                   <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Target</div>
                   <div style={{ marginTop: 4, fontWeight: 1000, color: "#0B1F33" }}>
-                    User #{safeStr(e.target_user_id)}
+                    {memberDisplayReference(e.target_gmfn_id)}
                   </div>
                   <div style={{ marginTop: 2, fontSize: 12, color: "#475569" }}>
-                    {safeStr(e.target_gmfn_id || "-")}
+                    {memberReferenceContext(e.target_gmfn_id)}
                   </div>
                 </div>
               </div>

@@ -1,3 +1,34 @@
+## 2026-06-27 - TrustGraph edge list stopped showing internal user numbers
+
+Owner request:
+- Continue meticulous customer-facing and screenshotable-surface cleanup.
+
+Correction completed locally:
+- `frontend/src/components/TrustGraphEdgeList.tsx`
+  - stopped rendering `User #{source_user_id}` and `User #{target_user_id}` on
+    TrustGraph edge rows.
+  - source/target edge rows now show the public GSN member reference when
+    available.
+  - if no public GSN reference is present, the visible fallback is
+    `Private member reference` with `Internal account reference hidden`.
+- `frontend/tools/audit-gsn-visible-language.mjs`
+  - added a file-specific guard against `User #` returning to
+    `TrustGraphEdgeList.tsx`.
+  - added required guards for the private-reference fallback wording.
+  - corrected a stale visible-language requirement from `GSN Loan Audit` to the
+    current safer dormant-share wording, `GSN Support Evidence`.
+
+Verification:
+- `npm run build` from `frontend/`
+- `npm run audit:gsn-visible-language` from `frontend/`
+
+Truth / remaining risk:
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+- Other admin-only screens and CSV/ZIP complete-record exports still use raw
+  internal IDs by design. This slice only removes an unnecessary visible
+  internal-ID label from a screenshotable TrustGraph edge list.
+
 ## 2026-06-27 - Legacy evidence PDF share copies made redacted by construction
 
 Owner request:

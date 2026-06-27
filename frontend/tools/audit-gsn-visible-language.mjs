@@ -148,6 +148,8 @@ const forbiddenByFile = [
   ["gmfn_backend/app/api/routes/trust_slips_verify_ui.py", "—"],
 ];
 
+forbiddenByFile.push(["frontend/src/components/TrustGraphEdgeList.tsx", "User #"]);
+
 const required = [
   ["gmfn_backend/app/api/routes/clans.py", "Community admin only"],
   ["gmfn_backend/app/api/routes/clans.py", "Community not found"],
@@ -166,7 +168,7 @@ const required = [
   ["gmfn_backend/app/services/daily_insight_service.py", "GSN Market Wisdom"],
   ["gmfn_backend/app/services/trust_graph_service.py", 'display_label": f"Community'],
   ["gmfn_backend/app/services/trust_timeline_pdf_service.py", "GSN trust infrastructure"],
-  ["gmfn_backend/app/api/routes/share.py", "GSN Loan Audit"],
+  ["gmfn_backend/app/api/routes/share.py", "GSN Support Evidence"],
   ["gmfn_backend/app/api/routes/courier_confirm.py", "GSN does not guarantee courier performance."],
   ["gmfn_backend/app/api/routes/merchant_risk.py", "GSN is non-custodial"],
   ["gmfn_backend/app/api/routes/reports.py", "Community admin or platform admin only"],
@@ -197,6 +199,8 @@ const required = [
   ["gmfn_backend/app/services/trust_timeline_pdf_service.py", "Cross-Community Integrity"],
   ["frontend/src/components/TrustGraphEdgeList.tsx", "community structure"],
   ["frontend/src/components/TrustGraphEdgeList.tsx", ">Community</div>"],
+  ["frontend/src/components/TrustGraphEdgeList.tsx", "Private member reference"],
+  ["frontend/src/components/TrustGraphEdgeList.tsx", "Internal account reference hidden"],
   ["frontend/src/components/TrustGraphSummaryCard.tsx", "cross-community trust structure"],
   ["frontend/src/components/TrustGraphSummaryCard.tsx", "Active communities"],
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
