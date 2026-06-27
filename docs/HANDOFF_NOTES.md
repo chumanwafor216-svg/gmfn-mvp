@@ -3,7 +3,7 @@
 Owner request:
 - Continue the supporter-wording cleanup and keep Render updated truthfully.
 
-Local corrections:
+Published corrections:
 - `frontend/src/pages/AdminTrustEventsPage.tsx`
   - visible trust event type, short explanation, source-details preview, and
     copy payload now display supporter wording.
@@ -23,9 +23,15 @@ Verification passed locally:
   frontend files.
 
 Truth / remaining risk:
-- Local only until committed, pushed, and the frontend Render deploy hook
-  accepts a deploy for the pushed commit.
-- This is frontend/docs only and should use `deploy_api=false`.
+- Committed and pushed `main` at
+  `c9f05b90378377ffed644c3b14c72dea839e3392`
+  (`Hide legacy support wording in trust admin displays`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28283823060` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8voi0sm0tmc73d2luh0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- This is frontend/docs only and does not require backend Render credentials.
 - Backend Render remains blocked for the earlier backend-impacting copy batch
   until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured
   or gmfn-api is manually deployed and verified.
