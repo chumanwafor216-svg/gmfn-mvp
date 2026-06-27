@@ -1,3 +1,28 @@
+## 2026-06-27 - Render updated for supporter wording batch
+
+Owner request:
+- Continue, and keep Render updated.
+
+Publish / deployment state:
+- Pushed `main` from `56144ec1` to
+  `e95cbeb52183a2e4e54dafe84027377df50daafd`.
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28283060957`.
+- Workflow succeeded and checked out commit
+  `e95cbeb52183a2e4e54dafe84027377df50daafd`.
+- Render frontend deploy hook accepted the request and returned deploy id
+  `dep-d8vo2am8bjmc738gre4g`.
+- Backend deploy was intentionally skipped:
+  `Backend deploy needed: false`, because this batch is frontend/docs/readiness
+  wording and `deploy_api=false`.
+
+Truth / remaining risk:
+- GitHub Actions proves Render accepted the frontend deploy request for the
+  exact pushed commit.
+- This is not the same as a browser-level live-site screenshot check.
+- Internal filenames, routes, debug IDs, API fields, and compatibility terms
+  still use `guarantor` where changing them would be a contract migration.
+
 ## 2026-06-27 - Visible supporter wording cleanup continued locally
 
 Owner request:
@@ -43,8 +68,8 @@ Verification passed locally:
   frontend files.
 
 Truth / remaining risk:
-- This latest pass is committed locally but is not pushed or deployed.
-- Render currently does not include this latest visible-copy pass.
+- This visible-copy pass has now been pushed and a Render frontend deploy was
+  accepted for the exact commit.
 - Internal filenames, routes, debug IDs, API fields, and compatibility terms
   still use `guarantor` where changing them would be a contract migration.
 
