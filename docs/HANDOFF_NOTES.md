@@ -1,3 +1,37 @@
+## 2026-06-27 - Static executive-summary PDFs regenerated from evidence-backed source
+
+Owner request:
+- Continue the institutional cleanup across outsider-facing papers and keep the
+  customer-facing PDFs aligned with the evidence-backed GSN language.
+
+Correction completed locally:
+- Regenerated the three static executive-summary PDF assets from
+  `frontend/tools/generate-static-gsn-pdfs.py` after the source copy moved away
+  from `trusted commerce` / blanket `trusted member` wording:
+  - `frontend/public/GSN_FINAL_WHITE.pdf`
+  - `frontend/public/gmfn-executive-summary.pdf`
+  - `frontend/public/GMFN_FINAL_WHITE.pdf`
+
+Verification:
+- `npm --prefix frontend run generate:static-pdf-assets`
+  - result: wrote 15,200 bytes to all three static GSN PDF assets.
+- `npm --prefix frontend run audit:static-pdf-assets`
+  - result: passed; the three public PDF aliases remain real PDF binaries and
+    byte-for-byte compatible aliases.
+- `rg -a` did not expose readable PDF text strings, and the local Python/tools
+  environment does not include `pypdf`, `PyPDF2`, `pdfminer`, `pdftotext`,
+  `qpdf`, or `mutool`, so this slice did not perform extracted-text PDF QA.
+
+Truth / remaining risk:
+- This regenerates the public PDF binaries from the corrected source. It does
+  not add paid/API verification, escrow, protected trade release, dispute rails,
+  payout automation, or any new commerce engine.
+- Because local PDF text extraction was unavailable, final semantic PDF QA is
+  source-and-generator based plus binary integrity/alias auditing, not
+  extracted-text verification.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Executive summary PDF source avoids trusted-commerce overclaiming
 
 Owner request:
