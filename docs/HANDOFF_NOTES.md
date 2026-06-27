@@ -1,3 +1,57 @@
+## 2026-06-27 - Generic GSN share poster and shop wording stopped overclaiming trust
+
+Owner request:
+- Continue institutional finishing for outsider-facing documents, screenshotable
+  pages, public share cards, and customer-facing papers while keeping every
+  trust/verification claim truthful.
+
+Correction completed locally:
+- `frontend/public/gsn-share-poster.svg`
+  - changed the static fallback social poster from `Trusted public link` and
+    `Open the verified shop...` to `Public GSN record` and `Open the current
+    shop, community route, or trust check.`
+- `frontend/public/gsn-share-poster.png`
+  - regenerated from the corrected SVG so OpenGraph / Twitter fallback previews
+    use the corrected public-record wording.
+- `frontend/src/lib/share.ts`
+  - changed the generic headed-paper share fallback from `Open this trusted GSN
+    link.` to `Open this GSN record.`
+- `frontend/src/pages/ShopGalleryPage.tsx`
+  - changed the Spotlight fallback trust label from `Trusted visibility` to
+    `Public visibility`.
+  - changed Private Vault wording from `By trust link`, `trusted buyers`, and
+    `trust link` to owner-issued / owner-invitation / access-link language.
+- `frontend/src/components/CommunityMarketplaceSpotlight.tsx`
+  - changed the Spotlight fallback trust label from `Trusted visibility` to
+    `Public visibility`.
+- `frontend/tools/audit-link-contracts.mjs`
+  - now requires the static fallback poster to keep public-record wording and
+    blocks the old `Trusted public link` / `verified shop` copy.
+- `frontend/tools/audit-share-tag-actions.mjs`
+  - now requires the generic share helper fallback to keep public-record
+    wording.
+
+Verification:
+- visually inspected `frontend/public/gsn-share-poster.png`; it now reads
+  `Public GSN record`.
+- `rg -n "Trusted visibility|trusted buyers|trust link|trusted GSN link|Trusted public link|verified shop" frontend\public frontend\src\lib\share.ts frontend\src\pages\ShopGalleryPage.tsx frontend\src\components\CommunityMarketplaceSpotlight.tsx frontend\tools\audit-link-contracts.mjs frontend\tools\audit-share-tag-actions.mjs -S`
+  - result: only the forbidden-pattern audit line remains.
+- `npm --prefix frontend run audit:share-tag-actions`
+- `npm --prefix frontend run audit:link-contracts`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This updates public-facing fallback poster/copy and audit guards only. It
+  does not verify any shop, guarantee any route, approve any private buyer, or
+  create protected trade-release rails.
+- The generic share poster is intentionally broad: it says a current public GSN
+  record can be opened, not that the record is trusted or verified.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Public shop share wording changed from trusted to public record
 
 Owner request:

@@ -65,6 +65,11 @@ function assertNotContains(file, pattern, message) {
   ],
   ["src/lib/share.ts", /buildMailtoShareUrl/, "Email fallback share URL helper is missing."],
   [
+    "src/lib/share.ts",
+    /purposeLine \? paperLineValue\(purposeLine\) : "Open this GSN record\."/,
+    "Generic paper/social share fallback must use public-record language, not trusted-link language.",
+  ],
+  [
     "src/components/SocialTagShareButton.tsx",
     /it cannot guarantee delivery/i,
     "Social share UI must not imply guaranteed delivery.",

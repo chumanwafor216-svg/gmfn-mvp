@@ -537,14 +537,14 @@ assertContains(
 
 assertContains(
   "public/gsn-share-poster.svg",
-  /<text x="600" y="382"[\s\S]*>GSN<\/text>[\s\S]*Trusted public link[\s\S]*Open the verified shop, community route, or trust check\.[\s\S]*gmfn-frontend\.onrender\.com/,
-  "The static fallback share poster must keep important text centered and crop-safe for social preview cards."
+  /<text x="600" y="382"[\s\S]*>GSN<\/text>[\s\S]*Public GSN record[\s\S]*Open the current shop, community route, or trust check\.[\s\S]*gmfn-frontend\.onrender\.com/,
+  "The static fallback share poster must keep important text centered, crop-safe, and bounded to public-record language for social preview cards."
 );
 
 assertNotContains(
   "public/gsn-share-poster.svg",
-  /GSN Trusted Link|x="950"[\s\S]*>OPEN<\/text>/,
-  "The static fallback share poster must not restore the old wide headline or side OPEN badge that crop badly in social cards."
+  /GSN Trusted Link|Trusted public link|verified shop|x="950"[\s\S]*>OPEN<\/text>/,
+  "The static fallback share poster must not restore the old wide headline, overclaiming trust/verification copy, or side OPEN badge that crop badly in social cards."
 );
 
 assertContains(

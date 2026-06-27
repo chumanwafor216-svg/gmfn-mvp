@@ -2328,7 +2328,7 @@ export default function ShopGalleryPage() {
       ),
       tagLabel: messageParts.tagLabel,
       communityName: firstMeaningful(miniSpotlight?.sourceClanName, effectiveShop?.communityName),
-      trustBand: firstMeaningful(miniSpotlight?.trustBand, "Trusted visibility"),
+      trustBand: firstMeaningful(miniSpotlight?.trustBand, "Public visibility"),
       sourceShopWhatsApp: firstMeaningful(miniSpotlight?.sourceShopWhatsApp),
       createdAt: firstMeaningful(miniSpotlight?.createdAt),
       createdLabel: miniSpotlight?.createdAt ? formatWhen(miniSpotlight.createdAt) : "",
@@ -3666,7 +3666,7 @@ export default function ShopGalleryPage() {
               detail: shopCommunityIdText ? "ID check" : "Record pending",
             },
             { icon: "globe" as ShopIconName, title: "Public Shelf", detail: publicBlockText },
-            { icon: "vault" as ShopIconName, title: "Private Vault", detail: "By trust link" },
+            { icon: "vault" as ShopIconName, title: "Private Vault", detail: "Owner-issued link" },
             { icon: "id" as ShopIconName, title: "Trust Identity", detail: "GSN ID visible" },
           ].map((item, itemIndex) => {
             const statusItemStyle: React.CSSProperties = {
@@ -4883,7 +4883,7 @@ export default function ShopGalleryPage() {
                   lineHeight: 1.15,
                 }}
               >
-                Exclusive offers for trusted buyers.
+                Private offers by owner invitation.
               </div>
               <p
                 style={{
@@ -4894,7 +4894,7 @@ export default function ShopGalleryPage() {
                   fontWeight: 650,
                 }}
               >
-                Ask the owner for a trust link to view private deals.
+                Ask the owner for an access link to view private deals.
               </p>
               <div
                 style={{

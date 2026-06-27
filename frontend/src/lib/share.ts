@@ -95,7 +95,7 @@ function compactPaperMessage(value: string): string {
   ].filter(Boolean);
 
   if (pieces.length) return compactText(pieces.join(" "));
-  return compactText(purposeLine ? paperLineValue(purposeLine) : "Open this trusted GSN link.");
+  return compactText(purposeLine ? paperLineValue(purposeLine) : "Open this GSN record.");
 }
 
 function socialMessageForTarget(target: ShareTarget): string {

@@ -360,7 +360,7 @@ export default function CommunityMarketplaceSpotlight() {
       priceLine: "",
       metaLines: [
         `Community: ${activeItem.feed?.source_clan_name || "Current community"}`,
-        `Trust: ${activeItem.feed?.trust_band || "Trusted visibility"}`,
+        `Trust: ${activeItem.feed?.trust_band || "Public visibility"}`,
         `Posted: ${formatWhen(activeItem.feed?.created_at)}`,
       ],
       primaryLabel: gmfnId ? "Open seller shop" : "Open Marketplace",
