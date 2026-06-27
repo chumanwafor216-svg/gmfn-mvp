@@ -1,4 +1,4 @@
-## 2026-06-27 - Admin support queue wording cleanup continued locally
+## 2026-06-27 - Admin support queue wording cleanup
 
 Owner request:
 - Continue the supporter/support wording cleanup and keep Render updated
@@ -31,7 +31,15 @@ Verification passed locally:
   frontend files.
 
 Truth / remaining risk:
-- Commit / Render publication pending.
+- Committed and pushed `main` at
+  `a717d129c18e56f1d296c139fc6cbfbb8a5fb030`
+  (`Update support wording in admin queues`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28284535414` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vp1iernols73dvhin0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- This is frontend/docs only and does not require backend Render credentials.
 - These edits are display-only. Backend field names such as
   `approved_guarantors`, `guarantors_required`, and `locked_coverage` remain
   unchanged because they are existing API contracts.
