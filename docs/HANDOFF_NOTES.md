@@ -71758,9 +71758,12 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
   - Passed `git diff --check`; only Git line-ending warnings were reported.
 - Deployment state:
-  - local checkpoint only at this point; not pushed or deployed in this slice.
-  - because this is a backend PDF service change, live Render behavior requires
-    a backend deploy before customers will see it in generated PDFs.
+  - pushed to `main` as part of the cleanup batch ending at `d3aadfbb`.
+  - backend deployment was requested in GitHub Actions Render workflow run
+    `28288354444`, but failed because `RENDER_API_KEY` is not configured.
+  - because this is a backend PDF service change, customers will not see it in
+    generated PDFs until `gmfn-api` is deployed from Render with the same
+    commit.
 
 ### Follow-up same day - TrustSlip verify label alignment
 
@@ -71797,9 +71800,13 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py`.
   - Passed `git diff --check`; only Git line-ending warnings were reported.
 - Deployment state:
-  - local checkpoint only at this point; not pushed or deployed in this slice.
-  - live backend public verify/share text requires backend deployment; live
-    React TrustSlip verify papers require frontend deployment.
+  - pushed to `main` as part of the cleanup batch ending at `d3aadfbb`.
+  - GitHub Actions Render workflow run `28288354444` accepted the frontend
+    Render deploy hook (`dep-d8vricjtqb8s73f5crv0`), so React TrustSlip verify
+    paper changes are queued/deployed through frontend Render.
+  - backend public verify/share text still requires `gmfn-api` backend deploy;
+    the backend deploy attempt failed because `RENDER_API_KEY` is not
+    configured.
 
 ### Follow-up same day - TrustSlip-family and support-capacity surface sweep
 
@@ -71849,8 +71856,16 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `python -m compileall -q gmfn_backend\app\services\reports_service.py`.
   - Passed `git diff --check`; only Git line-ending warnings were reported.
 - Deployment state:
-  - local checkpoint only at this point; not pushed or deployed in this slice.
-  - live impact requires both frontend and backend deployment.
+  - originally committed locally, then pushed to `main` as part of the
+    cleanup batch ending at `d3aadfbb`.
+  - GitHub Actions Render workflow run `28288354444` triggered the frontend
+    Render deploy hook successfully for commit `d3aadfbb`; Render returned
+    frontend deploy id `dep-d8vricjtqb8s73f5crv0`.
+  - backend deployment was requested, but the workflow failed at the exact API
+    credential guard because `RENDER_API_KEY` is not configured.
+  - frontend-facing TrustSlip/Trust Passport wording can deploy through the
+    accepted frontend hook; backend PDF/report/public backend verify/share
+    wording still requires a real `gmfn-api` backend deploy before it is live.
 
 ### Follow-up same day - Spotlight tester blocker and `GSN-U-66E6A380`
 
