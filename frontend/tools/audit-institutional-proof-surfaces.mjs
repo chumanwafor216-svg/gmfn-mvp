@@ -78,6 +78,8 @@ const files = {
   communityMemberVerify: "frontend/src/pages/CommunityMemberVerifyPage.tsx",
   communityConfirmationPolicy:
     "frontend/src/pages/CommunityConfirmationPolicyPage.tsx",
+  communityConfirmationInbox:
+    "frontend/src/pages/CommunityConfirmationInboxPage.tsx",
   evidencePanel: "frontend/src/components/EvidencePackPanel.tsx",
   rguCustomerDiscovery: "docs/GSN_RGU_Customer_Discovery_Working_Plan.md",
   trustSlipShipReadiness:
@@ -1156,6 +1158,11 @@ assertContains(
   "guarantorEarnings",
   /earningsPaper[\s\S]*?GSN Supporter Value Snapshot[\s\S]*?safeCopy\(earningsPaper\)[\s\S]*?GsnSnapshotPaperCard/,
   "Supporter Value summary must use a branded GSN support evidence package for both visible paper preview and copy."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /buildGsnSnapshotPaper[\s\S]*?GSN Community Confirmation Review Case[\s\S]*?private contacts, responder notes, phone numbers, and raw witness details[\s\S]*?GSN Community Confirmation Review Queue[\s\S]*?Public papers must keep private contacts, responder notes, and raw witness details protected[\s\S]*?safeCopy\(queueText\)[\s\S]*?safeCopy\(buildReviewCasePaper\(row\)\)/,
+  "Community Confirmation Inbox queue and case copies must use bounded internal GSN review papers with private-contact redaction language."
 );
 
 assertContains(

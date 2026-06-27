@@ -29,6 +29,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 import { navigateWithOrigin } from "../lib/nav";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
@@ -598,6 +599,33 @@ function reviewSlaLabel(row: ReviewCaseRow): string {
   return `${firstTruthy(row.reviewSlaLabel, "Age not shown")}${age}`;
 }
 
+function buildReviewCasePaper(row: ReviewCaseRow): string {
+  return buildGsnSnapshotPaper({
+    title: "GSN Community Confirmation Review Case",
+    purpose:
+      "Internal review summary for a community-confirmation case. Use it to coordinate review without exposing private contacts.",
+    reference: `review-case-${row.reviewCaseId}`,
+    context: [
+      { label: "Review case", value: row.reviewCaseId },
+      { label: "Request", value: firstTruthy(row.requestId, "not shown") },
+      { label: "Community", value: firstTruthy(row.communityName, row.communityCode, row.communityId, "Not shown") },
+      { label: "Status", value: firstTruthy(row.status, "not shown") },
+      { label: "Review reason", value: firstTruthy(row.reviewReason, row.reasonType, "not stated") },
+      { label: "SLA", value: reviewSlaLabel(row) },
+      { label: "Trust effect", value: reviewTrustLabel(row) },
+    ],
+    bodyLines: [
+      `Visible outcome: ${firstTruthy(row.visibleOutcome, "not shown")}`,
+      `Trust-reading effect: ${reviewTrustLabel(row)}`,
+      "Reader boundary: this is internal GSN/community review evidence. It is not a public certificate, parent-domain approval, membership guarantee, or transaction authority.",
+    ],
+    privacyNote:
+      "Privacy: private contacts, responder notes, phone numbers, and raw witness details are not included in this copied review paper.",
+    limitationNote:
+      "Limitation: internal review coordination only. Not a bank guarantee, credit approval, release authority, payout approval, or proof that every underlying claim is true.",
+  });
+}
+
 function defaultReviewDraft(row?: ReviewCaseRow | null): ReviewDraft {
   const currentResolution = safeStr(row?.resolution);
   const currentImpact = safeStr(row?.trustImpact);
@@ -708,14 +736,36 @@ function CommunityConfirmationInboxPage() {
     currentUserRole === "admin" || (canManageRelayPolicy && !!reviewCommunityFilter);
 
   const queueText = useMemo(() => {
-    return [
-      "GSN instant community confirmation inbox",
-      `Pending requests: ${pendingCount}`,
-      `Instant pulse: ${instantCount}`,
-      `Relay: ${relayCount}`,
-      `Review cases visible: ${visibleReviewCaseCount} of ${reviewCaseTotalAvailable}`,
-    ].join("\n");
-  }, [instantCount, pendingCount, relayCount, reviewCaseTotalAvailable, visibleReviewCaseCount]);
+    return buildGsnSnapshotPaper({
+      title: "GSN Community Confirmation Review Queue",
+      purpose:
+        "Internal queue summary for community confirmation and controlled-review work.",
+      reference: `community-confirmation-queue-${reviewOffset}`,
+      context: [
+        { label: "Pending requests", value: pendingCount },
+        { label: "Instant pulse", value: instantCount },
+        { label: "Relay", value: relayCount },
+        { label: "Review cases visible", value: `${visibleReviewCaseCount} of ${reviewCaseTotalAvailable}` },
+        { label: "Reviewer role", value: firstTruthy(currentUserRole, "not shown") },
+      ],
+      bodyLines: [
+        "Reader boundary: queue visibility is for allowed GSN/community reviewers.",
+        "Public papers must keep private contacts, responder notes, and raw witness details protected.",
+      ],
+      privacyNote:
+        "Privacy: this copied queue summary excludes private contacts, phone numbers, responder notes, and raw witness details.",
+      limitationNote:
+        "Limitation: internal review coordination only. Not public verification, parent-domain approval, payment confirmation, or transaction release authority.",
+    });
+  }, [
+    currentUserRole,
+    instantCount,
+    pendingCount,
+    relayCount,
+    reviewCaseTotalAvailable,
+    reviewOffset,
+    visibleReviewCaseCount,
+  ]);
 
   async function loadInbox() {
     setLoading(true);
@@ -1779,14 +1829,7 @@ function CommunityConfirmationInboxPage() {
                     <SecondaryButton
                       type="button"
                       onClick={() => {
-                        safeCopy(
-                          [
-                            `Review case: ${row.reviewCaseId}`,
-                            `Request: ${firstTruthy(row.requestId, "not shown")}`,
-                            `Status: ${firstTruthy(row.status, "not shown")}`,
-                            `Trust effect: ${reviewTrustLabel(row)}`,
-                          ].join("\n")
-                        );
+                        safeCopy(buildReviewCasePaper(row));
                         setNotice({ tone: "success", text: "Review case summary copied." });
                       }}
                       stableHeight={isCompact ? 52 : 46}

@@ -133,7 +133,7 @@ default.
 
 | Surface | Route / file | Why it matters | Current gap |
 | --- | --- | --- | --- |
-| Community confirmation inbox summaries | `/app/community-confirmations`, `CommunityConfirmationInboxPage.tsx` | Admin copies review summaries. | Needs redaction and official internal-review paper treatment. |
+| Community confirmation inbox summaries | `/app/community-confirmations`, `CommunityConfirmationInboxPage.tsx` | Admin copies review summaries. | Queue and review-case copies now use bounded internal GSN review papers with private-contact/responder-note redaction language; remaining work is admin workflow visual review. |
 | Community confirmation policy summary | `/app/community-confirmations/policy`, `CommunityConfirmationPolicyPage.tsx` | Policy may be copied for explanation. | Needs official policy-summary paper if shared. |
 | Admin incomplete loan snapshots | `AdminIncompleteLoansPage.tsx` | Admin can copy queue and loan snapshots. | Should be internal GSN review paper, not raw text. |
 | Admin trust event snapshots | `AdminTrustEventsPage.tsx` | Admin can copy event snapshots. | Should be internal GSN audit paper with privacy rules. |
