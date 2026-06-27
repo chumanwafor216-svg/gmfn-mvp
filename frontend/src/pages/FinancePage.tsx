@@ -464,7 +464,7 @@ function normalizeLoanRow(raw: any): LoanRow | null {
       src?.name,
       src?.loan_title,
       src?.description,
-      "Loan support item"
+      "Support item"
     ),
     role: firstTruthy(
       src?.role,
@@ -1439,7 +1439,7 @@ export default function FinancePage() {
       rows.push(
         `You still have ${fmtMoney(
           borrowerRemainingTotal
-        )} ${crossCurrency} showing on borrower records.`
+        )} ${crossCurrency} remaining on support you requested.`
       );
     }
 
@@ -2787,7 +2787,7 @@ export default function FinancePage() {
                     return (
                       <FinanceMobileRecord
                         key={`${row.id || index}`}
-                        title={safeStr(row.title || `Loan ${row.id || index + 1}`)}
+                        title={safeStr(row.title || `Support ${row.id || index + 1}`)}
                         tone={remainingAmount > 0 ? "watch" : "neutral"}
                         rows={[
                           ["Status", safeStr(summary?.status || row.status || "Open")],
@@ -2840,7 +2840,7 @@ export default function FinancePage() {
                         return (
                           <tr key={`${row.id || index}`}>
                             <td style={tableCell(true)}>
-                              {safeStr(row.title || `Loan ${row.id || index + 1}`)}
+                              {safeStr(row.title || `Support ${row.id || index + 1}`)}
                             </td>
                             <td style={tableCell()}>
                               {safeStr(summary?.status || row.status || "Open")}

@@ -130,6 +130,18 @@ assertNotContains(
 );
 
 assertContains(
+  "src/pages/FinancePage.tsx",
+  /"Support item"[\s\S]*?remaining on support you requested[\s\S]*?title=\{safeStr\(row\.title \|\| `Support \$\{row\.id \|\| index \+ 1\}`\)\}[\s\S]*?\{safeStr\(row\.title \|\| `Support \$\{row\.id \|\| index \+ 1\}`\)\}/,
+  "Finance requested-support records must use support/requested wording for fallback titles and watch notices."
+);
+
+assertNotContains(
+  "src/pages/FinancePage.tsx",
+  /Loan support item|showing on borrower records|row\.title \|\| `Loan \$\{row\.id \|\| index \+ 1\}`/,
+  "Finance requested-support records must not restore old loan/borrower fallback wording."
+);
+
+assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
   /debugId="money-in\.generate-instruction"[\s\S]*?debugId="money-in\.refresh-route"[\s\S]*?debugId="money-in\.reset-task"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?debugId="money-in\.confirm-paid"/,
   "Money In core instruction actions must remain traceable without duplicating the generate panel."
