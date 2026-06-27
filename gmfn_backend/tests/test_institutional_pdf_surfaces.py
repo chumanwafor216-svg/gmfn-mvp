@@ -191,6 +191,24 @@ def test_analytics_evidence_downloads_use_gsn_filenames():
     assert "clan_{clan_id}_trust_events.csv" not in text
 
 
+def test_dormant_loan_audit_share_links_are_redacted_if_reenabled():
+    text = read_service("app/api/routes/share.py")
+
+    assert "router = APIRouter(prefix=\"/share\", tags=[\"share\"])" in text
+    assert "ClanMembership.left_at.is_(None)" in text
+    assert "def _can_view_complete_loan_record" in text
+    assert 'str(getattr(current_user, "role", "") or "").lower() == "admin"' in text
+    assert (
+        'csv_url = f"{base}/reports/loans/{loan_id}/trust-report.csv" if can_view_complete else None'
+        in text
+    )
+    assert '"complete_record_available": bool(can_view_complete)' in text
+    assert "GSN Support Evidence" in text
+    assert "Redacted PDF:" in text
+    assert "Complete CSV (admin only):" in text
+    assert "GSN Loan Evidence" not in text
+
+
 def test_simple_evidence_pdfs_keep_reader_boundaries_and_redaction_guards():
     clan_text = read_service("app/services/evidence_pack_pdf_service.py")
     loan_text = read_service("app/services/loan_evidence_pack_pdf_service.py")

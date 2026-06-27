@@ -108,6 +108,17 @@ def test_borrower_gets_redacted_analytics_loan_pdf_but_not_complete_copy(
     assert response.status_code == 403
 
 
+def test_loan_audit_share_links_route_stays_dormant_until_approved(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+    seed_loan,
+):
+    response = client.get("/share/loans/1/audit-links")
+
+    assert response.status_code == 404
+
+
 def test_governance_pack_marks_complete_private_admin_record(
     client,
     override_current_user,

@@ -25,6 +25,7 @@ const files = {
   reports: "gmfn_backend/app/services/reports_service.py",
   reportsRoute: "gmfn_backend/app/api/routes/reports.py",
   analyticsRoute: "gmfn_backend/app/api/routes/analytics.py",
+  shareRoute: "gmfn_backend/app/api/routes/share.py",
   publicPaper: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   privateEvidence: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
@@ -482,6 +483,31 @@ assertContains(
   "analyticsRoute",
   /def _ensure_can_view_complete_loan_evidence\(db: Session, \*, current_user: User, loan: Loan\) -> None:[\s\S]*?_ensure_clan_admin_or_platform_admin\(db, current_user=current_user, clan_id=int\(loan\.clan_id\)\)/,
   "Analytics complete loan evidence downloads must require community-admin or platform-admin access."
+);
+assertContains(
+  "shareRoute",
+  /def _ensure_can_view_loan[\s\S]*?ClanMembership\.left_at\.is_\(None\)/,
+  "Dormant loan audit share links must ignore inactive memberships if the route is re-enabled."
+);
+assertContains(
+  "shareRoute",
+  /def _can_view_complete_loan_record[\s\S]*?role[\s\S]*?admin[\s\S]*?ClanMembership\.left_at\.is_\(None\)/,
+  "Dormant loan audit share links must reserve complete-record access for platform or active community admins."
+);
+assertContains(
+  "shareRoute",
+  /csv_url = f"\{base\}\/reports\/loans\/\{loan_id\}\/trust-report\.csv" if can_view_complete else None[\s\S]*?complete_record_available": bool\(can_view_complete\)/,
+  "Dormant loan audit share links must expose complete CSV links only for complete-record viewers."
+);
+assertContains(
+  "shareRoute",
+  /copy_lines = \[[\s\S]*?GSN Support Evidence[\s\S]*?Redacted PDF:[\s\S]*?if csv_url:[\s\S]*?Complete CSV \(admin only\)/,
+  "Dormant loan audit share copy must use support wording, lead with the redacted PDF, and reserve CSV wording for admin-only complete records."
+);
+assertNotContains(
+  "shareRoute",
+  /GSN Loan Evidence/,
+  "Dormant loan audit share copy must not use old loan wording in the visible share heading."
 );
 assertNotContains(
   "analyticsRoute",

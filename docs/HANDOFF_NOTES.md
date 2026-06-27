@@ -1,3 +1,50 @@
+## 2026-06-27 - Dormant loan audit share links hardened
+
+Owner request:
+- Continue institutional/customer-facing evidence cleanup for cases where PDFs,
+  screenshotable pages, and copied packages can be wrong, incomplete, or too
+  exposing.
+
+Completed local correction:
+- `gmfn_backend/app/api/routes/share.py`
+  - confirmed this route file remains dormant/unmounted under the existing
+    dormant-route policy; `/share/loans/{loan_id}/audit-links` still returns
+    404 through the live router unless deliberately mounted later.
+  - hardened the dormant route so, if re-enabled later, inactive memberships are
+    ignored and complete CSV links are available only to platform admins or
+    active community admins.
+  - changed the future copied share heading from `GSN Loan Evidence` to
+    `GSN Support Evidence`.
+  - kept the copied package led by the redacted PDF and labels any complete CSV
+    link as admin-only.
+- `gmfn_backend/tests/test_evidence_surface_permissions.py`
+  - replaced the false expectation that the dormant route should return 200
+    with the current system-level truth: the route remains unmounted and
+    returns 404.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added source-level guards for the dormant route's privacy behavior if it is
+    re-enabled later.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added stable source guards requiring inactive-membership filtering,
+    complete-record gating, redacted-PDF-first copy, and support wording for the
+    dormant audit-share package.
+
+Verification:
+- `python -m pytest -q gmfn_backend\tests\test_evidence_surface_permissions.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+- `python -m compileall -q gmfn_backend\app\api\routes\share.py`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This is a source hardening for a dormant route, not a new live feature.
+- No route was mounted, because `docs/DORMANT_ROUTE_CLASSIFICATION_2026-04-21.md`
+  explicitly says not to mount dormant route files casually.
+- The live user-facing risk from this exact endpoint is currently low because
+  the endpoint is not reachable through the main router.
+- If the product owner later wants `/share/loans/{loan_id}/audit-links` active,
+  it still needs a deliberate route-mount review, frontend caller review, and
+  end-to-end permission test.
+
 ## 2026-06-27 - TrustSlip PDF repayment reference redaction
 
 Owner request:
