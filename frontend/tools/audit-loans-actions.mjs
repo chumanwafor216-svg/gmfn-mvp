@@ -209,6 +209,18 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/communityMoney.ts",
+  /title: "Generated Support Repayment Instruction"/,
+  "Community money loan repayment instruction titles must use support wording."
+);
+
+assertNotContains(
+  "src/lib/communityMoney.ts",
+  /Generated Loan Repayment Instruction/,
+  "Community money repayment instruction titles must not restore generic loan wording."
+);
+
+assertContains(
   "src/lib/api.ts",
   /sort_code\?: string \| null;[\s\S]*bank_sort_code\?: string \| null;[\s\S]*cleaned\.sort_code = sortCode;[\s\S]*cleaned\.bank_sort_code = sortCode;/,
   "Withdrawal destination API payloads must keep sort_code and bank_sort_code aliases."

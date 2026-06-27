@@ -978,7 +978,7 @@ export async function createLoanRepaymentInstruction(params: {
   const settlement = communityPayIn || normalized.settlement;
 
   return {
-    title: "Generated Loan Repayment Instruction",
+    title: "Generated Support Repayment Instruction",
     detail: [
       settlement?.railName
         ? `Rail: ${settlement.railName}`
