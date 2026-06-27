@@ -76799,8 +76799,16 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm --prefix frontend run audit:protected-button-freeze`.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
-  - local-only continuation work until committed/pushed;
-  - no Render deploy has been requested or confirmed for this slice.
+  - pushed to GitHub in batch ending at `c24b231a`;
+  - frontend Render deploy hook accepted deploy id `dep-d903i5uq1p3s73adcm70`;
+  - backend/API Render deploy was later confirmed by owner-provided Render
+    evidence:
+    `API=June 27, 2026 at 9:58 PM live c24b231 Surface merchant release public desk`;
+  - live API verification passed with
+    `npm --prefix frontend run audit:live-api-identity-routes` against
+    `https://gmfn-api.onrender.com`;
+  - deployment state is now **Render confirmed** for the API on commit
+    `c24b231a`; frontend deploy was requested and accepted by Render.
 
 ### Follow-up same day - Shop following now creates neutral TrustEvents
 
@@ -76840,8 +76848,16 @@ GSN-branded invite composer and invite-entry continuity.
     `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_follow_status_count_and_unfollow gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_product_create_notifies_visible_followers_only`.
   - `git diff --check` returned clean.
 - Deployment state:
-  - local-only continuation work until committed/pushed;
-  - no Render deploy has been requested or confirmed for this slice.
+  - pushed to GitHub in batch ending at `c24b231a`;
+  - frontend Render deploy hook accepted deploy id `dep-d903i5uq1p3s73adcm70`;
+  - backend/API Render deploy was later confirmed by owner-provided Render
+    evidence:
+    `API=June 27, 2026 at 9:58 PM live c24b231 Surface merchant release public desk`;
+  - live API verification passed with
+    `npm --prefix frontend run audit:live-api-identity-routes` against
+    `https://gmfn-api.onrender.com`;
+  - deployment state is now **Render confirmed** for the API on commit
+    `c24b231a`; frontend deploy was requested and accepted by Render.
 
 ### Follow-up same day - Community following backend engine materialized
 
@@ -76883,8 +76899,16 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `python -m pytest -q gmfn_backend\tests\test_community_followers.py gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_follow_status_count_and_unfollow gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_product_create_notifies_visible_followers_only gmfn_backend\tests\test_database_metadata.py`.
   - `git diff --check` returned clean.
 - Deployment state:
-  - local-only continuation work until committed/pushed;
-  - no Render deploy has been requested or confirmed for this slice.
+  - pushed to GitHub in batch ending at `c24b231a`;
+  - frontend Render deploy hook accepted deploy id `dep-d903i5uq1p3s73adcm70`;
+  - backend/API Render deploy was later confirmed by owner-provided Render
+    evidence:
+    `API=June 27, 2026 at 9:58 PM live c24b231 Surface merchant release public desk`;
+  - live API verification passed with
+    `npm --prefix frontend run audit:live-api-identity-routes` against
+    `https://gmfn-api.onrender.com`;
+  - deployment state is now **Render confirmed** for the API on commit
+    `c24b231a`; frontend deploy was requested and accepted by Render.
 
 ### Follow-up same day - Merchant Release rail mounted and domiciled
 
@@ -76957,8 +76981,37 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
-  - local-only continuation work until committed/pushed;
-  - no Render deploy has been requested or confirmed for this slice.
+  - pushed to GitHub in batch ending at `c24b231a`;
+  - frontend Render deploy hook accepted deploy id `dep-d903i5uq1p3s73adcm70`;
+  - backend/API Render deploy was later confirmed by owner-provided Render
+    evidence:
+    `API=June 27, 2026 at 9:58 PM live c24b231 Surface merchant release public desk`;
+  - live API verification passed with
+    `npm --prefix frontend run audit:live-api-identity-routes` against
+    `https://gmfn-api.onrender.com`;
+  - deployment state is now **Render confirmed** for the API on commit
+    `c24b231a`; frontend deploy was requested and accepted by Render.
+
+### Deployment update - Render confirmed for c24b231a batch
+
+- Trigger:
+  - owner confirmed the Render API service is live on
+    `c24b231a Surface merchant release public desk` at June 27, 2026 9:58 PM.
+- Unabated truth:
+  - the earlier GitHub workflow run accepted the frontend Render hook but failed
+    the API step because GitHub still lacks `RENDER_API_KEY`;
+  - the API was therefore confirmed through owner-provided Render evidence plus
+    a live API audit, not through the GitHub workflow's API step.
+- Verification:
+  - Passed `npm --prefix frontend run audit:live-api-identity-routes`.
+  - Audit output:
+    `Live API identity and public verification contracts are present on https://gmfn-api.onrender.com after attempt 1/1.`
+- Deployment state:
+  - API: **Render confirmed** on `c24b231a`;
+  - frontend: deploy hook accepted as `dep-d903i5uq1p3s73adcm70`;
+  - GitHub workflow `28301565938` still shows failure because API exact-commit
+    deploy via workflow requires adding `RENDER_API_KEY` and preferably
+    `RENDER_API_SERVICE_ID` as GitHub secrets.
 
 ### Follow-up same day - Merchant Release public desk surfaced
 
@@ -77009,5 +77062,13 @@ GSN-branded invite composer and invite-entry continuity.
   - Browser visual smoke was not run because no Browser tool was callable in
     this session (`tool_search` found no browser/open/screenshot tool).
 - Deployment state:
-  - local-only continuation work until committed/pushed;
-  - no Render deploy has been requested or confirmed for this slice.
+  - pushed to GitHub in batch ending at `c24b231a`;
+  - frontend Render deploy hook accepted deploy id `dep-d903i5uq1p3s73adcm70`;
+  - backend/API Render deploy was later confirmed by owner-provided Render
+    evidence:
+    `API=June 27, 2026 at 9:58 PM live c24b231 Surface merchant release public desk`;
+  - live API verification passed with
+    `npm --prefix frontend run audit:live-api-identity-routes` against
+    `https://gmfn-api.onrender.com`;
+  - deployment state is now **Render confirmed** for the API on commit
+    `c24b231a`; frontend deploy was requested and accepted by Render.
