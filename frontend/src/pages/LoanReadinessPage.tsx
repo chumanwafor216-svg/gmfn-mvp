@@ -13,6 +13,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
 import { brandClampLines } from "../styles/gmfnBrand";
 
 type LoanRow = {
@@ -1082,6 +1083,76 @@ export default function LoanReadinessPage() {
   const readinessSupportActive =
     cameFromWithdrawalSupport || Boolean(activeBorrowerLoan) || guarantorInbox.length > 0;
 
+  const readinessPaper = useMemo(
+    () =>
+      buildGsnSupportEvidencePackage({
+        title: "GSN Support Readiness Snapshot",
+        purpose:
+          "Keep the current support-readiness reading with the visible community and member context.",
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: communityLabel,
+        communityId: publicCommunityId,
+        routeName: "Support Readiness",
+        loanId: activeBorrowerLoan?.id || "",
+        amount: activeBorrowerLoan
+          ? getLoanAmountText(activeBorrowerLoan)
+          : withdrawalAmount
+          ? `${withdrawalAmount} ${poolCurrency}`
+          : "",
+        status: readiness.level,
+        detailLines: [
+          `Readiness: ${readiness.title}`,
+          `Reading detail: ${readiness.detail}`,
+          `Recommended next action: ${recommendedNext.ctaLabel}`,
+          `Recommended next reason: ${recommendedNext.title}`,
+          `My active support requests: ${borrowerLoans.length}`,
+          `Waiting support decisions: ${guarantorInbox.length}`,
+          `Active support responsibility: ${guarantorLoans.length}`,
+          `Visible pool position: ${poolAmount} ${poolCurrency}`,
+          cameFromWithdrawalSupport ? "Money Out support context: present" : "",
+          supportGap ? `Support gap: ${supportGap} ${poolCurrency}` : "",
+          withdrawalNote ? `Money Out note: ${withdrawalNote}` : "",
+          "What helps readiness:",
+          ...readinessHelps.map((item) => `- ${item}`),
+          "What reduces readiness:",
+          ...(blockers.length
+            ? blockers.map((item) => `- ${item}`)
+            : ["- No strong visible blocker is active right now."]),
+          "Boundary: readiness is decision support only. It is not support approval, supporter selection, payout confirmation, or authority to release goods, credit, or money.",
+        ],
+      }),
+    [
+      activeBorrowerLoan,
+      blockers,
+      borrowerLoans.length,
+      cameFromWithdrawalSupport,
+      communityLabel,
+      gmfnId,
+      guarantorInbox.length,
+      guarantorLoans.length,
+      memberName,
+      memberRole,
+      poolAmount,
+      poolCurrency,
+      publicCommunityId,
+      readiness.detail,
+      readiness.level,
+      readiness.title,
+      readinessHelps,
+      recommendedNext.ctaLabel,
+      recommendedNext.title,
+      supportGap,
+      withdrawalAmount,
+      withdrawalNote,
+    ]
+  );
+
+  function copyReadinessPaper() {
+    api.safeCopy(readinessPaper);
+  }
+
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
@@ -1306,6 +1377,26 @@ export default function LoanReadinessPage() {
             <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF" }}>
               {readiness.detail}
             </div>
+
+            <SubtleButton
+              onClick={copyReadinessPaper}
+              stableHeight={48}
+              fullWidth
+              debugId="loan-readiness.copy-paper"
+              style={{
+                marginTop: 14,
+                borderRadius: 12,
+                border: "1px solid rgba(121,149,190,0.20)",
+                background:
+                  "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+                color: "#E6EEF8",
+                fontWeight: 800,
+                whiteSpace: "nowrap",
+                transition: "none",
+              }}
+            >
+              {loanReadinessActionText("copy", "Copy readiness paper", 20)}
+            </SubtleButton>
           </div>
         </div>
       </section>

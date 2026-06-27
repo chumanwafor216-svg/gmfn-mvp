@@ -1,3 +1,56 @@
+## 2026-06-27 - Loan Readiness copy now uses GSN support-readiness paper
+
+Owner request:
+- Continue the institutional cleanup and answer whether follow-event trust
+  connections are complete while keeping customer-facing evidence papers
+  branded, bounded, and screenshot-safe.
+
+Correction completed locally:
+- `frontend/src/pages/LoanReadinessPage.tsx`
+  - added a `Copy readiness paper` action on `/app/loan-readiness`.
+  - the copy text now uses `buildGsnSupportEvidencePackage()` with the title
+    `GSN Support Readiness Snapshot`.
+  - the paper includes member/community context, visible support-readiness
+    reading, recommended next action, active support counts, pool context,
+    support gap context where visible, readiness helpers, blockers, and a clear
+    boundary that readiness is decision support only.
+  - the boundary explicitly says it is not support approval, supporter
+    selection, payout confirmation, or authority to release goods, credit, or
+    money.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - now requires Loan Readiness to keep the branded support-readiness paper and
+    no-approval/no-release-authority boundary.
+- `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+  - marked Loan Readiness as source-level handled for copy-paper output.
+  - corrected Guarantor Inbox and Guarantor Earnings rows to reflect their
+    already-audited GSN support snapshot papers.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_follow_status_count_and_unfollow gmfn_backend\tests\test_community_followers.py::test_community_follow_status_count_unfollow_and_neutral_trust_events gmfn_backend\tests\test_trust_route_ownership.py::test_my_trust_timeline_shows_follow_attention_as_neutral_user_signal`
+- `git diff --check`
+
+Follow-event truth:
+- Shop follow/unfollow and community follow/unfollow are complete at the
+  TrustEvent spine level: backend writes TrustEvents, Trust Timeline labels them
+  as neutral `Attention event` records, TrustSlip categorizes them as community
+  or shop attention where surfaced, and frontend copy explains the boundary.
+- They are intentionally not verification, endorsement, payment evidence,
+  membership proof, trust-score growth, recommendation ranking, social DMs, or
+  a full public following feed.
+
+Truth / remaining risk:
+- Loan Readiness now has a formal copy-paper output, but it still needs visual
+  phone review before calling the screen screenshot-polished.
+- No Render deploy was triggered in this slice. The current pilot protocol is
+  batch-first / push-last unless the owner explicitly says the batch is ready to
+  publish.
+
 ## 2026-06-27 - Shop and Vault link inventory aligned to audited packages
 
 Owner request:

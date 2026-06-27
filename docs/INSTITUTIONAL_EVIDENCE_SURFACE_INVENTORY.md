@@ -118,11 +118,11 @@ These are sensitive but often become evidence. Treat private details carefully.
 
 | Surface | Route / file | Why it needs headed paper | Current gap |
 | --- | --- | --- | --- |
-| Loan readiness | `/app/loan-readiness`, `LoanReadinessPage.tsx` | Readiness result may be screenshotted before application. | Needs paper-style readiness snapshot if exported/copied. |
+| Loan readiness | `/app/loan-readiness`, `LoanReadinessPage.tsx` | Readiness result may be screenshotted before application. | Copy action now produces a `GSN Support Readiness Snapshot` with member/community context, readiness factors, support gap context where visible, and a decision-support-only boundary. Remaining work is visual phone review. |
 | Loan suggestions | `/app/loan-suggestions`, `LoanSuggestionsPage.tsx` | Suggested support/guarantor fit may be shared internally. | Needs compact official snapshot if copied/shared. |
 | Loan workbench | `/app/loan-workbench`, `LoanWorkbenchPage.tsx` | Borrowing work state may become loan evidence. | Needs audit for copied/exportable surfaces. |
-| Guarantor inbox | `/app/guarantor-inbox`, `GuarantorInboxPage.tsx` | Guarantor decisions become evidence. | Needs evidence-paper wrapper for any decision summary. |
-| Guarantor earnings summary | `/app/guarantor-earnings`, `GuarantorEarningsPage.tsx` | User can copy summary. | Needs official earnings snapshot with limitation that payout is not automatic. |
+| Guarantor inbox | `/app/guarantor-inbox`, `GuarantorInboxPage.tsx` | Guarantor decisions become evidence. | Queue summary now uses `GSN Support Queue Snapshot` for visible paper preview and copy. Remaining work is visual phone review and deeper decision-card export audit. |
+| Guarantor earnings summary | `/app/guarantor-earnings`, `GuarantorEarningsPage.tsx` | User can copy summary. | Summary now uses `GSN Supporter Value Snapshot` for visible paper preview and copy, with payout-truth wording in the detail lines. Remaining work is visual phone review. |
 | Backend loan evidence PDF | `loan_evidence_pack_pdf_service.py` | Loan evidence pack is formal evidence. | Open generated PDF and visually confirm official shell. |
 
 ## Priority 5: Admin/Internal Snapshots

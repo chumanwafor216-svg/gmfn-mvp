@@ -65,6 +65,7 @@ const files = {
   withdrawal: "frontend/src/pages/WithdrawalInstructionsPage.tsx",
   payoutDetails: "frontend/src/pages/PayoutDetailsPage.tsx",
   subscriptionSpotlight: "frontend/src/pages/SubscriptionSpotlightPage.tsx",
+  loanReadiness: "frontend/src/pages/LoanReadinessPage.tsx",
   loanSummary: "frontend/src/pages/LoanSummaryPage.tsx",
   guarantorInbox: "frontend/src/pages/GuarantorInboxPage.tsx",
   guarantorEarnings: "frontend/src/pages/GuarantorEarningsPage.tsx",
@@ -1122,6 +1123,11 @@ assertContains(
   "loanSummary",
   /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Audit Link[\s\S]*?loanSummaryPaper[\s\S]*?GSN Support Summary Snapshot[\s\S]*?GsnSnapshotPaperCard/,
   "Loan Summary copied summary, visual preview, and audit link must use branded GSN support evidence packages."
+);
+assertContains(
+  "loanReadiness",
+  /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Readiness Snapshot[\s\S]*?readiness is decision support only[\s\S]*?not support approval[\s\S]*?authority to release goods, credit, or money[\s\S]*?loan-readiness\.copy-paper/,
+  "Loan Readiness copy must use a branded GSN support-readiness paper and preserve the no-approval/no-release-authority boundary."
 );
 assertContains(
   "guarantorInbox",
