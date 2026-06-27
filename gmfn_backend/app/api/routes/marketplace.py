@@ -2141,6 +2141,30 @@ def follow_marketplace_shop(
         created_at=_now_utc(),
     )
     db.add(follower)
+    db.flush()
+    log_trust_event(
+        db,
+        event_type="marketplace.shop.followed",
+        clan_id=getattr(shop, "clan_id", None),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(getattr(shop, "owner_user_id", None) or current_user.id),
+        loan_id=None,
+        guarantor_id=None,
+        meta={
+            "reason": "shop_followed",
+            "trust_delta": "0.00",
+            "shop_id": int(shop.id),
+            "shop_name": getattr(shop, "name", None),
+            "follower_user_id": int(current_user.id),
+            "shop_owner_user_id": getattr(shop, "owner_user_id", None),
+            "signal_strength": "weak_social_attention",
+            "not_endorsement": True,
+            "not_verification": True,
+            "not_payment_evidence": True,
+        },
+        commit=False,
+        refresh=False,
+    )
     db.commit()
 
     follower_count = _shop_follower_count(db, shop_id=int(shop.id))
@@ -2175,6 +2199,29 @@ def unfollow_marketplace_shop(
     )
     if existing:
         db.delete(existing)
+        log_trust_event(
+            db,
+            event_type="marketplace.shop.unfollowed",
+            clan_id=getattr(shop, "clan_id", None),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(getattr(shop, "owner_user_id", None) or current_user.id),
+            loan_id=None,
+            guarantor_id=None,
+            meta={
+                "reason": "shop_unfollowed",
+                "trust_delta": "0.00",
+                "shop_id": int(shop.id),
+                "shop_name": getattr(shop, "name", None),
+                "follower_user_id": int(current_user.id),
+                "shop_owner_user_id": getattr(shop, "owner_user_id", None),
+                "signal_strength": "weak_social_attention",
+                "not_endorsement": True,
+                "not_verification": True,
+                "not_payment_evidence": True,
+            },
+            commit=False,
+            refresh=False,
+        )
         db.commit()
 
     follower_count = _shop_follower_count(db, shop_id=int(shop.id))

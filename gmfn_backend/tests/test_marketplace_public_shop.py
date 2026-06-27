@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from app.db.models import (
     MarketplaceProductRepost,
     MarketplaceShop,
     ShopFollower,
+    TrustEvent,
 )
 from app.db.notification_models import Notification
 
@@ -26,6 +28,7 @@ def _ensure_marketplace_tables() -> None:
     MarketplaceBroadcast.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProductRepost.__table__.create(bind=engine, checkfirst=True)
     ShopFollower.__table__.create(bind=engine, checkfirst=True)
+    TrustEvent.__table__.create(bind=engine, checkfirst=True)
     Notification.__table__.create(bind=engine, checkfirst=True)
     FeatureEntitlement.__table__.create(bind=engine, checkfirst=True)
     FeatureUsageEvent.__table__.create(bind=engine, checkfirst=True)
@@ -2316,11 +2319,46 @@ def test_shop_follow_status_count_and_unfollow(client, monkeypatch):
     assert first_follow.json()["is_following"] is True
     assert first_follow.json()["already_following"] is False
     assert first_follow.json()["follower_count"] == 1
+    with engine.begin() as conn:
+        follow_events = (
+            conn.execute(
+                text(
+                    """
+                    SELECT event_type, actor_user_id, subject_user_id, meta_json
+                    FROM trust_events
+                    WHERE event_type = 'marketplace.shop.followed'
+                    ORDER BY id
+                    """
+                )
+            )
+            .mappings()
+            .all()
+        )
+    assert len(follow_events) == 1
+    assert follow_events[0]["actor_user_id"] == 2
+    assert follow_events[0]["subject_user_id"] == 1
+    follow_meta = json.loads(follow_events[0]["meta_json"])
+    assert follow_meta["shop_id"] == 1
+    assert follow_meta["trust_delta"] == "0.00"
+    assert follow_meta["signal_strength"] == "weak_social_attention"
+    assert follow_meta["not_endorsement"] is True
+    assert follow_meta["not_verification"] is True
+    assert follow_meta["not_payment_evidence"] is True
 
     second_follow = client.post("/marketplace/shops/1/follow", headers=headers)
     assert second_follow.status_code == 200, second_follow.text
     assert second_follow.json()["already_following"] is True
     assert second_follow.json()["follower_count"] == 1
+    with engine.begin() as conn:
+        follow_event_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM trust_events
+                WHERE event_type = 'marketplace.shop.followed'
+                """
+            )
+        ).scalar_one()
+    assert follow_event_count == 1
 
     public_count = client.get("/marketplace/shops/1/followers/count")
     assert public_count.status_code == 200, public_count.text
@@ -2330,6 +2368,28 @@ def test_shop_follow_status_count_and_unfollow(client, monkeypatch):
     assert unfollow.status_code == 200, unfollow.text
     assert unfollow.json()["is_following"] is False
     assert unfollow.json()["follower_count"] == 0
+    with engine.begin() as conn:
+        unfollow_events = (
+            conn.execute(
+                text(
+                    """
+                    SELECT event_type, actor_user_id, subject_user_id, meta_json
+                    FROM trust_events
+                    WHERE event_type = 'marketplace.shop.unfollowed'
+                    ORDER BY id
+                    """
+                )
+            )
+            .mappings()
+            .all()
+        )
+    assert len(unfollow_events) == 1
+    assert unfollow_events[0]["actor_user_id"] == 2
+    assert unfollow_events[0]["subject_user_id"] == 1
+    unfollow_meta = json.loads(unfollow_events[0]["meta_json"])
+    assert unfollow_meta["trust_delta"] == "0.00"
+    assert unfollow_meta["signal_strength"] == "weak_social_attention"
+    assert unfollow_meta["not_endorsement"] is True
 
 
 def test_shop_product_create_notifies_visible_followers_only(client, monkeypatch):

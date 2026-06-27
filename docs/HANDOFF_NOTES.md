@@ -75515,3 +75515,44 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local-only continuation work until committed/pushed;
   - no Render deploy has been requested or confirmed for this slice.
+
+### Follow-up same day - Shop following now creates neutral TrustEvents
+
+- Trigger:
+  - owner asked whether `following` can become a trust event feed and maybe
+    appear on TrustSlip, including possible future community following.
+  - code inspection showed shop follow/unfollow rows and follower notification
+    logic already exist, but following did not write `TrustEvent` rows.
+- Unabated truth:
+  - this implements shop-follow TrustEvents only;
+  - community following is not yet a first-class backend model in this repo;
+  - these follow events are intentionally weak social-attention signals with
+    `trust_delta: "0.00"`;
+  - they are not verification, not endorsement, not payment evidence, not
+    delivery evidence, and must not be used to inflate trust scoring.
+  - because TrustSlip community activity reads non-excluded TrustEvents, these
+    events can contribute to a visible `Trusted trade` activity category for
+    the shop owner, but only as activity evidence, not verified trust.
+- Changed:
+  - `gmfn_backend/app/api/routes/marketplace.py`
+    - `POST /marketplace/shops/{shop_id}/follow` now logs
+      `marketplace.shop.followed` once when a new follow row is created;
+    - duplicate follow calls return `already_following` without duplicating the
+      TrustEvent;
+    - `DELETE /marketplace/shops/{shop_id}/follow` now logs
+      `marketplace.shop.unfollowed` only when an existing follow row is removed;
+    - metadata marks the event as `weak_social_attention`,
+      `not_endorsement`, `not_verification`, and `not_payment_evidence`.
+  - `gmfn_backend/tests/test_marketplace_public_shop.py`
+    - creates the `trust_events` table for marketplace follow tests;
+    - asserts follow/unfollow TrustEvents, actor/subject users, neutral
+      `trust_delta`, weak signal strength, and duplicate-follow protection.
+- Verification:
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_follow_status_count_and_unfollow`.
+  - Passed
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_follow_status_count_and_unfollow gmfn_backend\tests\test_marketplace_public_shop.py::test_shop_product_create_notifies_visible_followers_only`.
+  - `git diff --check` returned clean.
+- Deployment state:
+  - local-only continuation work until committed/pushed;
+  - no Render deploy has been requested or confirmed for this slice.
