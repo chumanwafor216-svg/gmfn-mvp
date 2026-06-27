@@ -1,3 +1,44 @@
+## 2026-06-27 - Loan decision requester role label
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/pages/LoanDecisionPage.tsx`
+  - the visible fact card now labels the requesting member as `Requester`
+    instead of `Borrower`.
+- `frontend/tools/audit-loans-actions.mjs`
+  - added a guard requiring Loan Decision fact cards to use
+    requester/supporter wording.
+  - expanded the existing Loan Decision regression guard so old `Borrower`
+    fact-card wording fails the audit.
+
+Verification state:
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- Fixed-string scans found no `Loan Summary`, `loan summary`, or
+  `loanDecisionFactHeading("user", "Borrower")` in
+  `frontend/src/pages/LoanDecisionPage.tsx`.
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `7ee0e09de20b47d134359b1e924310a844af35a4`
+  (`Clarify loan decision requester label`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28286279198` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vq61bsq97s738lsp3g`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: the source still reads `borrower_name` from the API because
+  that is a backend compatibility field. This slice changed only the visible
+  role label.
+
 ## 2026-06-27 - Admin incomplete support queue wording
 
 Owner request:
