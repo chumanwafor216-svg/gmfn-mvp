@@ -4,7 +4,7 @@ Owner request:
 - Continue the supporter/support wording cleanup and keep Render updated
   truthfully.
 
-Local correction:
+Published correction:
 - `frontend/tools/audit-trust-passport-lane-map.mjs`
   - Trust Passport lane-map guard now expects `Available support capacity` and
     `Current support commitments`.
@@ -23,13 +23,20 @@ Verification state:
   audit files.
 
 Truth / remaining risk:
+- Committed and pushed `main` at
+  `f9fda6b7dec4484b59491398d7d2eeadb2a03e91`
+  (`Align Trust Passport finance support guards`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28285313528` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vphpho3t8c73biji2g`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
 - This is an audit-only correction. `frontend/src/pages/TrustScorePage.tsx`
   already used the support-language labels; the guards were stale and still
   expected guarantee-era wording.
 - Internal backend field names such as `available_guarantee_capacity` and
   `current_locked_guarantees` remain unchanged because they are existing data
   contracts.
-- Pending publish/deploy evidence at the time this note was written.
 
 ## 2026-06-27 - Institutional proof audit support-title alignment
 
