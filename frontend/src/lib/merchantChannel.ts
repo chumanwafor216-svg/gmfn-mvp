@@ -20,6 +20,27 @@ export type MerchantVerifyPublicResponse = {
   ask_for_pack_id_hint?: string;
 };
 
+export type MerchantReleaseInput = {
+  token: string;
+  goods_value: string;
+  currency?: string;
+  merchant_note?: string;
+};
+
+export type MerchantReleaseResponse = {
+  ok: boolean;
+  release_recorded: boolean;
+  release_event_id?: number;
+  verification_link_id?: string | null;
+  pack_id?: string | null;
+  goods_value: string;
+  currency: string;
+  token_used: boolean;
+  token_was_already_used: boolean;
+  evidence_boundary: string;
+  message: string;
+};
+
 function getToken(): string | null {
   return localStorage.getItem("access_token");
 }
@@ -74,4 +95,23 @@ export async function verifyMerchantPublic(tokenOrUrl: string): Promise<Merchant
   const res = await fetch(`/trust-slips/merchant/verify/${token}`, { method: "GET" });
   if (!res.ok) throw new Error(await parseError(res));
   return (await res.json()) as MerchantVerifyPublicResponse;
+}
+
+export async function recordMerchantRelease(input: MerchantReleaseInput): Promise<MerchantReleaseResponse> {
+  const token = extractMerchantToken(input.token);
+  const res = await fetch("/merchant/releases", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      token,
+      goods_value: input.goods_value,
+      currency: input.currency || "NGN",
+      merchant_note: input.merchant_note || null,
+    }),
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return (await res.json()) as MerchantReleaseResponse;
 }

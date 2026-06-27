@@ -5,6 +5,7 @@ export const OWNER_SHOP_HASHES = {
   freeSpotlight: "shop-control-spotlight",
   subscriptionSpotlight: "shop-control-paid-spotlight",
   communityPackage: "shop-control-community-packages",
+  merchantRelease: "shop-control-merchant-release-rail",
   summary: "shop-control-counts",
 } as const;
 
@@ -18,7 +19,8 @@ export type OwnerShopHandleId =
   | "free-spotlight"
   | "spotlight-subscription"
   | "paid-repost"
-  | "community-package";
+  | "community-package"
+  | "merchant-release";
 
 export type OwnerShopHandle = {
   id: OwnerShopHandleId;
@@ -76,6 +78,13 @@ export const OWNER_SHOP_HANDLES: OwnerShopHandle[] = [
     route: "shop",
     hash: OWNER_SHOP_HASHES.communityPackage,
   },
+  {
+    id: "merchant-release",
+    label: "Merchant Release Rail",
+    detail: "Verification and recorded release evidence for your one shop",
+    route: "shop",
+    hash: OWNER_SHOP_HASHES.merchantRelease,
+  },
 ];
 
 export type ShopControlShortcutId =
@@ -132,6 +141,9 @@ export function ownerShopLayerForTarget(targetId: string):
     return "products";
   }
   if (normalized.includes("spotlight")) return "spotlight";
+  if (normalized.includes("merchant") || normalized.includes("verify") || normalized.includes("release")) {
+    return "shop-details";
+  }
   if (normalized.includes("face")) return "overview";
   if (normalized.includes("details")) return "shop-details";
   if (normalized.includes("vault")) return "vault";

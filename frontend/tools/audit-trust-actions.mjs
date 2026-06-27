@@ -1492,6 +1492,30 @@ assertContains(
 );
 
 assertContains(
+  "../gmfn_backend/app/api/router.py",
+  /from app\.api\.routes\.merchant_release import router as merchant_release_router[\s\S]*?api_router\.include_router\(merchant_release_router\)/,
+  "Merchant Release route must be mounted into the backend API router."
+);
+
+assertContains(
+  "../gmfn_backend/app/api/routes/merchant_release.py",
+  /verify_merchant_token\(db, token=payload\.token\)[\s\S]*?merchant\.release_recorded[\s\S]*?release_evidence_only[\s\S]*?not_escrow[\s\S]*?not_money_custody[\s\S]*?not_payout[\s\S]*?not_bank_confirmation[\s\S]*?not_delivery_guarantee[\s\S]*?not_release_authority/,
+  "Merchant Release must use the signed Merchant Verify token and remain bounded as evidence, not release authority."
+);
+
+assertContains(
+  "src/lib/merchantChannel.ts",
+  /export async function recordMerchantRelease[\s\S]*?fetch\("\/merchant\/releases"[\s\S]*?goods_value[\s\S]*?merchant_note/,
+  "Frontend merchant channel must expose the Merchant Release record endpoint through one helper."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?routes\.merchantRelease/,
+  "Community Home must domicile Merchant Release under the owner-shop tool rows."
+);
+
+assertContains(
   "src/pages/TrustSlipPage.tsx",
   /Merchant verification is evidence for judgement only; it is not release approval for goods, credit, or money/,
   "TrustSlip merchant verification copy must frame verification as evidence, not release approval."
@@ -1501,6 +1525,12 @@ assertContains(
   "src/pages/ShopControlPage.tsx",
   /Visitor verification[\s\S]*?evidence for judgement only, not release approval for goods, credit, or money/,
   "Shop Control visitor verification copy must frame verification as evidence, not release approval."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /1\. Create link[\s\S]*?2\. Merchant verifies[\s\S]*?3\. Release evidence recorded/,
+  "Shop Control must show Merchant Release as a clear 1-2-3 rail."
 );
 
 assertNotContains(

@@ -58,6 +58,7 @@ from app.api.routes.liquidity import router as liquidity_router
 from app.api.routes.public_config import router as public_config_router
 from app.api.routes.merchant_verify import router as merchant_verify_router
 from app.api.routes.merchant_risk import router as merchant_risk_router
+from app.api.routes.merchant_release import router as merchant_release_router
 from app.api.routes.marketplace import router as marketplace_router
 from app.api.routes.marketplace_media import router as marketplace_media_router
 from app.api.routes.protected_trades import router as protected_trades_router
@@ -159,6 +160,7 @@ api_router.include_router(liquidity_router)
 api_router.include_router(public_config_router)
 api_router.include_router(merchant_verify_router)
 api_router.include_router(merchant_risk_router)
+api_router.include_router(merchant_release_router)
 api_router.include_router(marketplace_media_router)
 api_router.include_router(marketplace_router)
 api_router.include_router(protected_trades_router)

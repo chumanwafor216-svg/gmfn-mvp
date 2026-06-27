@@ -76885,3 +76885,77 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local-only continuation work until committed/pushed;
   - no Render deploy has been requested or confirmed for this slice.
+
+### Follow-up same day - Merchant Release rail mounted and domiciled
+
+- Trigger:
+  - owner asked to complete `merchant_release` and domicile it in Community
+    Home / marketplace-adjacent shop work, tied to the one Global ID / one shop
+    identity rather than treating each marketplace as a separate merchant
+    identity.
+- Unabated truth:
+  - this completes the backend Merchant Release evidence endpoint enough for
+    the pilot 1-2-3 rail:
+    1. owner creates a signed merchant verification link;
+    2. merchant/public checker verifies the signed link;
+    3. merchant release evidence can be recorded against the same signed rail;
+  - it is still evidence only, not escrow, money custody, payout automation,
+    bank confirmation, delivery guarantee, or automatic release authority;
+  - because the outside merchant is not a signed-in GSN user, the `TrustEvent`
+    uses the holder as actor/subject and marks metadata with
+    `actor_context: external_merchant_public_release_rail`;
+  - the backend POST rail exists, and the frontend has one helper for it, but a
+    polished outside-merchant human form/page for entering goods value and note
+    has not yet been surfaced as a full React screen;
+  - no age-group/school paid API verification is implemented in this slice.
+- Changed:
+  - `gmfn_backend/app/api/routes/merchant_release.py`
+    - updated stale token handling to call the current HMAC-backed
+      `verify_merchant_token(db, token=...)`;
+    - records one `merchant.release_recorded` event per signed token using a
+      `merchant-release:{jti}` dedupe key;
+    - allows release evidence after the public verify endpoint has already
+      marked the token used;
+    - marks the token used if release is recorded first;
+    - returns Link ID / Pack ID and evidence-boundary copy, without exposing raw
+      `user_id`/`uid` in the public response.
+  - `gmfn_backend/app/api/router.py`
+    - mounted the Merchant Release router.
+  - `gmfn_backend/app/schemas/merchant_release.py`
+    - changed the schema comment so it says release evidence is not approval or
+      escrow authority.
+  - `gmfn_backend/tests/test_merchant_verify.py`
+    - added coverage for verify-then-release, duplicate release rejection,
+      release-first token marking, neutral trust delta, boundary flags, and no
+      raw member ID in public release response.
+  - `frontend/src/lib/merchantChannel.ts`
+    - added `recordMerchantRelease(...)` for `POST /merchant/releases`.
+  - `frontend/src/lib/ownerShopHandles.ts`
+    - added `merchant-release` as an owner-shop handle with
+      `shop-control-merchant-release-rail` hash routing.
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - added a compact `Merchant Release Rail` row in the owner tools list,
+      routed through the selected-community guard into Shop Control.
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - anchored the verification card with `id="shop-control-merchant-release-rail"`;
+    - added a visible 1-2-3 rail: create link, merchant verifies, release
+      evidence recorded;
+    - kept copy bounded as evidence for judgement only, not approval for goods,
+      credit, or money.
+  - Audits:
+    - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - `frontend/tools/audit-community-shop-actions.mjs`
+    - `frontend/tools/audit-trust-actions.mjs`
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_merchant_verify.py`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-home-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm --prefix frontend run audit:shop-control-button-inventory`.
+  - Passed `node frontend\tools\audit-community-shop-actions.mjs`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local-only continuation work until committed/pushed;
+  - no Render deploy has been requested or confirmed for this slice.

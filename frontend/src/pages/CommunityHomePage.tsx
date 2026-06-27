@@ -114,6 +114,7 @@ const COMMUNITY_OWNER_HANDLE_ICONS: Record<OwnerShopHandleId, CommunityIconMark>
   "spotlight-subscription": "financeInstitution",
   "paid-repost": "spotlight-megaphone",
   "community-package": "financeInstitution",
+  "merchant-release": "evidence",
 };
 
 function ownerShopHandle(id: OwnerShopHandleId) {
@@ -1178,6 +1179,12 @@ export default function CommunityHomePage() {
         selectedClanId,
         "community-home.route.shop-gallery-tools",
         { hash: OWNER_SHOP_HASHES.diaries }
+      ),
+      merchantRelease: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-home.route.merchant-release",
+        { hash: OWNER_SHOP_HASHES.merchantRelease }
       ),
       communityPackages: routeTarget(
         "shop",
@@ -3081,6 +3088,18 @@ export default function CommunityHomePage() {
               detail: ownerShopHandle("shop-control").detail,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityShopControl(event),
+            },
+            {
+              icon: COMMUNITY_OWNER_HANDLE_ICONS["merchant-release"],
+              id: ownerShopHandle("merchant-release").id,
+              title: ownerShopHandle("merchant-release").label,
+              detail: ownerShopHandle("merchant-release").detail,
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openSelectedCommunityRoute(
+                  event,
+                  routes.merchantRelease,
+                  "Choose a community first, then open the Merchant Release rail."
+                ),
             },
             {
               icon: COMMUNITY_OWNER_HANDLE_ICONS["shop-gallery-tools"],

@@ -1,4 +1,3 @@
-# app/api/routes/merchant_release.py
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
@@ -8,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.db.models import TrustEvent
 from app.schemas.merchant_release import MerchantReleaseIn
 from app.services.merchant_verify_service import verify_merchant_token, mark_token_used, is_token_used
 from app.services.public_rate_limit_service import check_rate_limit, RateLimitRule
@@ -34,40 +34,57 @@ def record_release(
 ) -> Dict[str, Any]:
     """
     Public endpoint (no auth):
-    - verifies token (signed + exp)
-    - marks token used (one-time)
-    - logs merchant.release_recorded TrustEvent (append-only)
+    - verifies the signed merchant token and expiry
+    - records one release evidence event per token
+    - marks the token as used if public verification has not already done so
     """
     ip = request.client.host if request.client else "unknown"
     if not check_rate_limit(bucket="merchant_release", key=ip, rule=RateLimitRule(window_seconds=60, max_requests=20)):
         raise HTTPException(status_code=429, detail="Too many requests. Please try again shortly.")
 
     try:
-        info = verify_merchant_token(payload.token)
+        info = verify_merchant_token(db, token=payload.token)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
 
-    uid = int(info["user_id"])
+    uid = int(info["uid"])
     jti = str(info["jti"])
+    link_id = info.get("link_id")
+    pack_id = info.get("pack_id")
+    token_level = str(info.get("lvl") or "standard")
 
-    # one-time token enforcement
-    if is_token_used(db, user_id=uid, jti=jti):
-        raise HTTPException(status_code=400, detail="This verification link has already been used.")
+    release_dedupe_key = f"merchant-release:{jti}"
+    existing_release = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == "merchant.release_recorded")
+        .filter(TrustEvent.dedupe_key == release_dedupe_key)
+        .first()
+    )
+    if existing_release:
+        raise HTTPException(status_code=400, detail="This merchant release has already been recorded.")
 
     amount = _parse_decimal(payload.goods_value)
     currency = str(payload.currency or "NGN")
 
-    # mark as used first (prevents race)
-    mark_token_used(db, user_id=uid, jti=jti, token_level=str(info["level"]))
+    token_was_used = is_token_used(db, jti=jti)
+    if not token_was_used:
+        mark_token_used(
+            db,
+            actor_user_id=uid,
+            subject_user_id=uid,
+            jti=jti,
+            link_id=link_id,
+            pack_id=pack_id,
+        )
 
     # append-only merchant release evidence
-    log_trust_event(
+    release_event = log_trust_event(
         db,
         event_type="merchant.release_recorded",
-        clan_id=0,
-        loan_id=0,
+        clan_id=None,
+        loan_id=None,
         guarantor_id=None,
-        actor_user_id=0,
+        actor_user_id=uid,
         subject_user_id=uid,
         meta={
             "policy": "trust_constitution_v1",
@@ -77,13 +94,35 @@ def record_release(
             "currency": currency,
             "merchant_note": payload.merchant_note,
             "jti": jti,
+            "link_id": link_id,
+            "pack_id": pack_id,
+            "token_level": token_level,
+            "actor_context": "external_merchant_public_release_rail",
+            "global_id_subject_user_id": uid,
+            "release_evidence_only": True,
+            "not_escrow": True,
+            "not_money_custody": True,
+            "not_payout": True,
+            "not_bank_confirmation": True,
+            "not_delivery_guarantee": True,
+            "not_release_authority": True,
         },
+        dedupe_key=release_dedupe_key,
     )
 
     return {
         "ok": True,
-        "user_id": uid,
+        "release_recorded": True,
+        "release_event_id": release_event.id,
+        "verification_link_id": link_id,
+        "pack_id": pack_id,
         "goods_value": str(amount),
         "currency": currency,
-        "message": "Release recorded as evidence.",
+        "token_used": True,
+        "token_was_already_used": token_was_used,
+        "evidence_boundary": (
+            "Release recorded as GSN evidence only. This is not escrow, money custody, "
+            "payout approval, bank confirmation, delivery guarantee, or automatic release authority."
+        ),
+        "message": "Merchant release recorded as evidence.",
     }

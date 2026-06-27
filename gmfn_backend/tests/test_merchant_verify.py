@@ -137,3 +137,125 @@ def test_merchant_verify_rejects_tampered_token_body(client, monkeypatch):
             .filter(TrustEvent.event_type == "merchant.verify_token_used")
             .count()
         ) == 0
+
+
+def test_merchant_release_records_evidence_after_public_verify(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-merchant-verify-secret")
+    _seed_merchant_verify_user()
+
+    token = create_access_token({"sub": "merchant-holder@example.com"})
+    issued = client.get(
+        "/trust-slips/me/merchant-link?ttl_hours=12&level=standard",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert issued.status_code == 200, issued.text
+
+    path = issued.json()["path"]
+    public = client.get(path)
+    assert public.status_code == 200, public.text
+    assert public.json()["used"] is True
+
+    raw_token = path.rsplit("/", 1)[-1]
+    release = client.post(
+        "/merchant/releases",
+        json={
+            "token": raw_token,
+            "goods_value": "140.00",
+            "currency": "NGN",
+            "merchant_note": "Goods released after reviewing the GSN evidence page.",
+        },
+    )
+    assert release.status_code == 200, release.text
+    release_payload = release.json()
+    assert release_payload["ok"] is True
+    assert release_payload["release_recorded"] is True
+    assert release_payload["verification_link_id"] == issued.json()["verification_link_id"]
+    assert release_payload["pack_id"] == issued.json()["pack_id"]
+    assert release_payload["token_used"] is True
+    assert release_payload["token_was_already_used"] is True
+    assert "user_id" not in release_payload
+    assert "uid" not in release_payload
+    assert "not escrow" in release_payload["evidence_boundary"].lower()
+    assert "bank confirmation" in release_payload["evidence_boundary"].lower()
+
+    duplicate = client.post(
+        "/merchant/releases",
+        json={
+            "token": raw_token,
+            "goods_value": "140.00",
+            "currency": "NGN",
+            "merchant_note": "Duplicate attempt.",
+        },
+    )
+    assert duplicate.status_code == 400, duplicate.text
+    assert duplicate.json()["detail"] == "This merchant release has already been recorded."
+
+    with SessionLocal() as db:
+        used_events = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "merchant.verify_token_used")
+            .all()
+        )
+        release_events = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "merchant.release_recorded")
+            .all()
+        )
+    assert len(used_events) == 1
+    assert len(release_events) == 1
+    release_meta = json.loads(release_events[0].meta_json)
+    assert release_meta["link_id"] == issued.json()["verification_link_id"]
+    assert release_meta["pack_id"] == issued.json()["pack_id"]
+    assert release_meta["goods_value"] == "140.00"
+    assert release_meta["currency"] == "NGN"
+    assert release_meta["trust_delta"] == "0.00"
+    assert release_meta["actor_context"] == "external_merchant_public_release_rail"
+    assert release_meta["release_evidence_only"] is True
+    assert release_meta["not_escrow"] is True
+    assert release_meta["not_money_custody"] is True
+    assert release_meta["not_payout"] is True
+    assert release_meta["not_bank_confirmation"] is True
+    assert release_meta["not_delivery_guarantee"] is True
+    assert release_meta["not_release_authority"] is True
+
+
+def test_merchant_release_first_marks_token_used_once(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-merchant-verify-secret")
+    _seed_merchant_verify_user()
+
+    token = create_access_token({"sub": "merchant-holder@example.com"})
+    issued = client.get(
+        "/trust-slips/me/merchant-link?ttl_hours=12&level=standard",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert issued.status_code == 200, issued.text
+
+    raw_token = issued.json()["path"].rsplit("/", 1)[-1]
+    release = client.post(
+        "/merchant/releases",
+        json={
+            "token": raw_token,
+            "goods_value": "85.50",
+            "currency": "NGN",
+        },
+    )
+    assert release.status_code == 200, release.text
+    release_payload = release.json()
+    assert release_payload["token_used"] is True
+    assert release_payload["token_was_already_used"] is False
+
+    public = client.get(issued.json()["path"])
+    assert public.status_code == 200, public.text
+    assert public.json()["used"] is True
+
+    with SessionLocal() as db:
+        assert (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "merchant.verify_token_used")
+            .count()
+        ) == 1
+        assert (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "merchant.release_recorded")
+            .count()
+        ) == 1

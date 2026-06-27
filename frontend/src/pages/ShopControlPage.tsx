@@ -3556,14 +3556,23 @@ export default function ShopControlPage() {
             </div>
           </div>
 
-          <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+          <div
+            id="shop-control-merchant-release-rail"
+            style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}
+          >
             <div style={sectionLabel()}>Verification</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
               Visitor verification
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
               Let visitors review this shop through your TrustSlip page before they rely on it.
-              This is evidence for judgement only, not release approval for goods, credit, or money.
+              A merchant can later record release evidence against the same signed rail, but it is still
+              evidence for judgement only, not release approval for goods, credit, or money.
+            </div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(true)}>1. Create link</span>
+              <span style={badge(false)}>2. Merchant verifies</span>
+              <span style={badge(false)}>3. Release evidence recorded</span>
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>

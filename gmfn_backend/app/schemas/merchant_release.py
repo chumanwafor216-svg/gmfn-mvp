@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field
 
 class MerchantReleaseIn(BaseModel):
     """
-    Merchant logs goods release after reviewing current TrustSlip evidence.
+    Merchant records a goods-release evidence note after reviewing current GSN evidence.
+    This does not approve release, confirm payment, or create escrow authority.
     """
     token: str = Field(..., min_length=20)
     goods_value: str = Field(..., min_length=1)  # decimal string

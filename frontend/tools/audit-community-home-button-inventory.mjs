@@ -15,7 +15,7 @@ const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 5;
 const expectedSpotlightGuidedActionCount = 5;
-const expectedCompactToolRowCount = 11;
+const expectedCompactToolRowCount = 12;
 const expectedExpandedRouteLocalActionTemplates = 30;
 const expectedMobileShellBreakdown = {
   top: 2,
@@ -294,12 +294,13 @@ assertContains(
 );
 
 assertContains(
-  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?id: "rosca"[\s\S]*?id: ownerShopHandle\("community-package"\)\.id[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?id: "rosca"[\s\S]*?id: ownerShopHandle\("community-package"\)\.id[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact tool row manifest must stay traceable and ordered."
 );
 
 [
   ["owner-actions", "joinRequests", false],
+  ["merchant-release", "merchantRelease", true],
   ["shop-gallery-tools", "shopGalleryTools", true],
   ["vault-control", "vaultControl", true],
   ["spotlight-subscription", "subscriptionSpotlight", true],
@@ -322,6 +323,11 @@ assertContains(
 assertContains(
   /id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?title: ownerShopHandle\("free-spotlight"\)\.label[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?"spotlight"/,
   "Community Home Free Spotlight row must stay as the single local status handle on Community Home."
+);
+
+assertContains(
+  /merchantRelease: routeTarget\([\s\S]*?"shop"[\s\S]*?hash: OWNER_SHOP_HASHES\.merchantRelease[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?routes\.merchantRelease/,
+  "Community Home Merchant Release row must route to the Shop Control merchant release rail."
 );
 
 assertContains(
