@@ -187,7 +187,7 @@ if (!supportSection.text) {
     }
   });
 
-  if (/(Owner Shop|Trusted Trade|Trust Passport|TrustSlip|CCI|ROSCA|Money Pool)/.test(supportSection.text)) {
+  if (/(Owner Shop|Trade Evidence|Trust Passport|TrustSlip|CCI|ROSCA|Money Pool)/.test(supportSection.text)) {
     addFinding(
       supportSection.start,
       "Support Requests detail section must not expose other major lane responsibilities.",

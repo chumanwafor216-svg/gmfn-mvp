@@ -118,7 +118,7 @@ if (!roscaSection.text) {
     }
   });
 
-  if (/(Trust Passport|TrustSlip|CCI|Owner Shop|Support Requests|Trusted Trade|Money In \/ Money Out)/.test(roscaSection.text)) {
+  if (/(Trust Passport|TrustSlip|CCI|Owner Shop|Support Requests|Trade Evidence|Money In \/ Money Out)/.test(roscaSection.text)) {
     addFinding(
       roscaSection.start,
       "ROSCA detail section must not expose other major lane responsibilities.",

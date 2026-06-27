@@ -98,7 +98,7 @@ page shorter. Instead, reduce what is exposed at once.
 Examples:
 
 - Marketplace still owns one selected community's Money Pool, ROSCA, Support
-  Request, Trusted Trade, Demand, and marketplace-owned links.
+  Request, Trade Evidence, Demand, and marketplace-owned links.
 - Finance still owns the member's cumulative money story across communities.
 - Trust Passport still owns the member's fuller trust/evidence story.
 - Dashboard still reflects and launches; it does not become the workshop.
@@ -114,7 +114,7 @@ Its first repair sequence should protect these major lanes first:
 1. Money Pool
 2. ROSCA
 3. Support Request
-4. Trusted Trade
+4. Trade Evidence
 
 ROSCA must not assume every community member belongs to every ROSCA cycle. A
 single community may have multiple ROSCA cycles at the same time. Each cycle
@@ -219,7 +219,7 @@ For Support Requests lane work, also run:
 npm --prefix frontend run audit:marketplace-support-lane
 ```
 
-For Trusted Trade lane work, also run:
+For Trade Evidence lane work, also run:
 
 ```bash
 npm --prefix frontend run audit:marketplace-trusted-trade-lane

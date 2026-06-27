@@ -30,7 +30,7 @@ The strategic frame for the next ten years is:
 - e-commerce can move goods without proving enough community context;
 - community platforms can hold belonging without making demonstrated value portable;
 - finance tools can read balances without reading contribution, support, repayment, and commitment behaviour;
-- GSN's wedge is to connect these gaps through community trust portability, community capital, Trust Passport, TrustSlip, public verification, trusted commerce, and Commitment Builder.
+- GSN's wedge is to connect these gaps through community trust portability, community capital, Trust Passport, TrustSlip, public verification, evidence-backed commerce, and Commitment Builder.
 
 ## Document Model
 

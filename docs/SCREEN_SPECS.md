@@ -356,7 +356,7 @@ Must show:
   - Money Pool
   - ROSCA
   - Support Request
-  - Trusted Trade
+  - Trade Evidence
 - compact trust/status signal for this marketplace
 - a clear way to return to Community Home or Dashboard
 
@@ -373,7 +373,7 @@ Rules:
 - Open only one major lane as the main visible work area at a time.
 - When a lane opens, unrelated lanes must visually step back until the user
   finishes, pauses, or returns to the lane chooser.
-- Money Pool, ROSCA, Support Request, and Trusted Trade must be stabilized
+- Money Pool, ROSCA, Support Request, and Trade Evidence must be stabilized
   lane-by-lane, with outside launcher, target section/hash/open state, inner
   buttons, fields, copy, and pictograms audited before moving to the next lane.
 - ROSCA cycles must be named and member-scoped. Do not assume every community

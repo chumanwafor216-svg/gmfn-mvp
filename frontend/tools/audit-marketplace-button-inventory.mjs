@@ -385,13 +385,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trusted Trade[\s\S]*?Demand Box[\s\S]*?Public Shops/,
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trade Evidence[\s\S]*?Demand Box[\s\S]*?Public Shops/,
   "Marketplace Trade & Shops grouped card must open the members/shops trade lane with community-bound wording."
 );
 
 assertContains(
   /visibleTradeMemberRows = memberRows\.slice\(0, isCompact \? 3 : 5\)[\s\S]*?hiddenTradeMemberRows = memberRows\.slice\(visibleTradeMemberRows\.length\)[\s\S]*?visibleTradeShopCount = memberRows\.filter\(\(row\) => row\.shopTo\)\.length/,
-  "Marketplace Trusted Trade must cap the first visible member list and tuck the rest behind a compact disclosure."
+  "Marketplace Trade Evidence must cap the first visible member list and tuck the rest behind a compact disclosure."
 );
 
 assertContains(
@@ -526,12 +526,12 @@ if (!trustedTradeSection) {
   findings.push({
     file: marketplaceFile,
     line: 1,
-    message: "Marketplace Trusted Trade section was not found for scoped button auditing.",
+    message: "Marketplace Trade Evidence section was not found for scoped button auditing.",
     text: "Expected id=\"marketplace-members-shops\" before id=\"marketplace-loans-support\".",
   });
 } else {
   [
-    /Trusted Trade/,
+    /Trade Evidence/,
     /See known members and visible shops inside this selected/,
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
@@ -548,7 +548,7 @@ if (!trustedTradeSection) {
       findings.push({
         file: marketplaceFile,
         line: lineAt(source.indexOf(trustedTradeSection)),
-        message: "Marketplace Trusted Trade lane must keep the guided member/shop structure.",
+        message: "Marketplace Trade Evidence lane must keep the guided member/shop structure.",
         text: pattern.toString(),
       });
     }
@@ -558,8 +558,8 @@ if (!trustedTradeSection) {
     findings.push({
       file: marketplaceFile,
       line: lineAt(source.indexOf(trustedTradeSection)),
-      message: "Marketplace Trusted Trade lane must not expose support or guarantor actions.",
-      text: "Trusted Trade should stay member/shop focused; Support Requests owns guarantor selection.",
+      message: "Marketplace Trade Evidence lane must not expose support or guarantor actions.",
+      text: "Trade Evidence should stay member/shop focused; Support Requests owns guarantor selection.",
     });
   }
 
@@ -567,8 +567,17 @@ if (!trustedTradeSection) {
     findings.push({
       file: marketplaceFile,
       line: lineAt(source.indexOf(trustedTradeSection)),
-      message: "Marketplace Trusted Trade lane must not restore the old explainer and three-card instruction stack.",
+      message: "Marketplace Trade Evidence lane must not restore the old explainer and three-card instruction stack.",
       text: "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure.",
+    });
+  }
+
+  if (/Trusted Trade/.test(trustedTradeSection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(trustedTradeSection)),
+      message: "Marketplace Trade Evidence lane must not restore the old Trusted Trade label.",
+      text: "Use Trade Evidence so the customer-facing lane does not overclaim protected commerce.",
     });
   }
 }

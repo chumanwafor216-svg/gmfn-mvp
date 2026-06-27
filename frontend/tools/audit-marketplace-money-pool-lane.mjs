@@ -139,7 +139,7 @@ if (!moneySection.text) {
     }
   });
 
-  if (/(Trust Passport|TrustSlip|CCI|Owner Shop|ROSCA|Support Requests|Trusted Trade)/.test(moneySection.text)) {
+  if (/(Trust Passport|TrustSlip|CCI|Owner Shop|ROSCA|Support Requests|Trade Evidence)/.test(moneySection.text)) {
     addFinding(
       moneySection.start,
       "Money Pool detail section must not expose other major lane responsibilities.",

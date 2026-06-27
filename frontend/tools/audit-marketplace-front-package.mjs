@@ -105,7 +105,7 @@ assertContains(
     id: "marketplace.tile.members",
     glyph: "trade",
     label: "Trade & Shops",
-    tags: ["Trusted Trade", "Demand Box", "Public Shops"],
+    tags: ["Trade Evidence", "Demand Box", "Public Shops"],
   },
   {
     id: "marketplace.tile.support",

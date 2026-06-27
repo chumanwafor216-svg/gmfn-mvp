@@ -1,3 +1,49 @@
+## 2026-06-27 - Marketplace trade lane changed from trust claim to evidence language
+
+Owner request:
+- Continue the institutional deep cleanup and avoid customer-facing wording that
+  implies full protected commerce, escrow, payout automation, delivery
+  guarantee, paid/API verification, or blanket trust certification.
+
+Correction completed locally:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - changed the visible Marketplace lane label from `Trusted Trade` to
+    `Trade Evidence`.
+  - changed `Protected Trade Record` to `Trade Evidence Record`.
+  - changed the screenshot-ready paper title from `GSN Protected Trade Evidence
+    Paper` to `GSN Trade Evidence Paper`.
+  - kept the non-custodial limitation language: evidence for judgement only,
+    not escrow, not automatic payout, not bank confirmation, not bank
+    guarantee, and not delivery guarantee.
+- Marketplace audit files now require `Trade Evidence` and reject the old
+  visible `Trusted Trade` label inside the lane.
+- `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` and `docs/SCREEN_SPECS.md` now name
+  the lane `Trade Evidence`.
+- `docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md` now describes GSN's
+  commerce wedge as `evidence-backed commerce`, not `trusted commerce`.
+
+Verification:
+- `npm --prefix frontend run audit:marketplace-trusted-trade-lane`
+- `npm --prefix frontend run audit:marketplace-button-inventory`
+- `npm --prefix frontend run audit:marketplace-front-package`
+- `npm --prefix frontend run audit:marketplace-money-pool-lane`
+- `npm --prefix frontend run audit:marketplace-rosca-lane`
+- `npm --prefix frontend run audit:marketplace-support-lane`
+- `npm --prefix frontend run audit:marketplace-records-links-lane`
+- `rg -n "Trusted Trade|trusted commerce|GSN Protected Trade Evidence Paper|Protected Trade Record" frontend\src frontend\tools docs\GUIDED_WORK_SURFACE_PROTOCOL.md docs\SCREEN_SPECS.md docs\GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md -S`
+  - result: remaining `Trusted Trade` / `trusted commerce` hits are audit
+    forbidden-string guards only.
+
+Truth / remaining risk:
+- This is a customer-facing language and audit-boundary correction. It does not
+  add escrow, settlement custody, automatic payout, delivery guarantee,
+  release-before-payment rails, or paid/API verification.
+- Internal code names still include `protectedTrade*` because those are route
+  and state contracts. This slice intentionally did not rename backend/API
+  contracts.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Static executive-summary PDFs regenerated from evidence-backed source
 
 Owner request:

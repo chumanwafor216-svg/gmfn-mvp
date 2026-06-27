@@ -1423,7 +1423,7 @@ function buildProtectedTradeEvidencePaperText({
 }): string {
   if (!trade) return "";
 
-  const tradeCode = safeStr(trade.trade_code) || "Protected trade record";
+  const tradeCode = safeStr(trade.trade_code) || "Trade evidence record";
   const itemTitle = safeStr(trade.item_title) || "Item or service not named";
   const termsSummary =
     safeStr(trade.terms_summary) || "No terms summary recorded yet.";
@@ -1437,8 +1437,8 @@ function buildProtectedTradeEvidencePaperText({
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
     "Official GSN headed paper",
-    "Title: GSN Protected Trade Evidence Paper",
-    "Purpose: A signed-in Marketplace paper for one community trade record. It helps the parties show what was recorded before, during, or after a trade without pretending GSN held money.",
+    "Title: GSN Trade Evidence Paper",
+    "Purpose: A signed-in Marketplace paper for one community trade evidence record. It helps the parties show what was recorded before, during, or after a trade without pretending GSN held money.",
     `Generated (UTC): ${generatedAt}`,
     `Reference: ${tradeCode}`,
     "GSN record context",
@@ -1447,7 +1447,7 @@ function buildProtectedTradeEvidencePaperText({
     `Trade code: ${tradeCode}`,
     `Trade status: ${protectedTradeStatusLabel(trade.status, "draft")}`,
     `Payment status: ${protectedTradeStatusLabel(trade.payment_status)}`,
-    `Release status: ${protectedTradeStatusLabel(trade.release_status)}`,
+    `Release evidence status: ${protectedTradeStatusLabel(trade.release_status)}`,
     `Receipt status: ${protectedTradeStatusLabel(trade.receipt_status)}`,
     `Dispute status: ${protectedTradeStatusLabel(trade.dispute_status)}`,
     `Amount: ${protectedTradeAmountLabel(trade)}`,
@@ -1458,7 +1458,7 @@ function buildProtectedTradeEvidencePaperText({
     `Last updated in GSN: ${updatedAt}`,
     ...timelineLines,
     `Boundary: ${boundaryNote}`,
-    "Signed-in evidence paper: screenshot-ready inside Marketplace for the people who can already see this trade record.",
+    "Signed-in evidence paper: screenshot-ready inside Marketplace for the people who can already see this trade evidence record.",
     `Verification / action link: ${actionPath} (signed-in Marketplace record only)`,
     "Security marks: GSN headed paper, watermark, reference code, issue time, community identity, privacy boundary, limitation note, and official footer.",
     "Privacy: Private participant/community record. Do not forward as public verification unless GSN later provides a public verification link for this exact record.",
@@ -7549,7 +7549,7 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
                   >
-                    Trusted Trade
+                    Trade Evidence
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
@@ -10737,7 +10737,7 @@ export default function MarketplacePage() {
               <MarketplaceGlyph name="trade" size={26} />
             </span>
             <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>Trusted Trade</div>
+              <div style={sectionLabel()}>Trade Evidence</div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 See known members and visible shops inside this selected
                 community. Open the shop record for current evidence before
@@ -10910,7 +10910,7 @@ export default function MarketplacePage() {
                 <MarketplaceGlyph name="ledger" size={24} />
               </span>
               <div style={{ minWidth: 0 }}>
-                <div style={sectionLabel()}>Protected Trade Record</div>
+                <div style={sectionLabel()}>Trade Evidence Record</div>
                 <div
                   style={{
                     marginTop: 5,

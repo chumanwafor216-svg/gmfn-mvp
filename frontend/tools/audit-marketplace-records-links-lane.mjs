@@ -59,7 +59,7 @@ const recordsLinksSection = sectionBetween(
 );
 
 if (!recordsLinksSection.text) {
-  addFinding(-1, "Public Links detail section must exist before Trusted Trade.");
+  addFinding(-1, "Public Links detail section must exist before Trade Evidence.");
 } else {
   const actionIds = [
     ...recordsLinksSection.text.matchAll(/debugId="(marketplace\.(?:links|public-shop|network-repost)\.[^"]+)"/g),
@@ -161,7 +161,7 @@ if (!recordsLinksSection.text) {
     );
   }
 
-  if (/(Member Ledger|People, shops|Trusted Trade|Support Requests|Money Pool|guarantor|Loan Readiness|Trust Passport|TrustSlip|CCI|What these links do|Choose the door|Outgoing links)/.test(recordsLinksSection.text)) {
+  if (/(Member Ledger|People, shops|Trade Evidence|Support Requests|Money Pool|guarantor|Loan Readiness|Trust Passport|TrustSlip|CCI|What these links do|Choose the door|Outgoing links)/.test(recordsLinksSection.text)) {
     addFinding(
       recordsLinksSection.start,
       "Public Links detail section must stay compact and must not expose other major lane responsibilities.",
