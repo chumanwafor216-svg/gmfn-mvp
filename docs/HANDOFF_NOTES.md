@@ -1,3 +1,59 @@
+## 2026-06-27 - Trust Timeline PDF redaction and audience guard
+
+Owner request:
+- Continue the institutional/customer-facing paper cleanup, especially cases
+  where PDFs can be wrong, incomplete, or too exposing.
+
+Completed correction:
+- `gmfn_backend/app/api/routes/trust_timeline_pdf.py`
+  - `/trust/me/timeline.pdf` now forces redacted output.
+  - normal signed-in users can no longer self-label the PDF as
+    `Audience: admin` by passing `audience=admin`; the admin label is only used
+    when the current user has platform admin role.
+  - download filename changed from old GMFN form to
+    `gsn-trust-timeline-u{user_id}-{visibility_level}.pdf`.
+  - response headers now use `X-GSN-*` PDF metadata headers instead of the old
+    Trust Timeline `X-GMFN-*` names.
+- `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+  - Trust Timeline PDF now includes a reader boundary explaining that the
+    document is a redacted personal trust history, not a bank guarantee, credit
+    approval, payment instruction, or automatic debit authority.
+  - TrustEvent metadata in event notes now defaults to
+    `private event details redacted for timeline PDF` instead of exposing raw
+    details such as payment references, GSN IDs, or codes.
+  - non-email contact strings are masked as `private contact`.
+  - `build_trust_timeline_pdf` now accepts existing evidence-pack `pack_meta`
+    callers, preventing the Trust Evidence Pack builder from failing on that
+    argument.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added guards for redaction, reader boundary, GSN filename/header contract,
+    and user/admin audience behavior.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added route/service guards for Trust Timeline PDF redaction and old GMFN
+    download/header regression.
+- `frontend/tools/audit-gsn-visible-language.mjs`
+  - added Trust Timeline PDF route to the visible-language scan and required
+    the GSN filename contract.
+
+Verification:
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_evidence_surface_permissions.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`
+- `python -m compileall -q gmfn_backend\app\api\routes\trust_timeline_pdf.py gmfn_backend\app\services\trust_timeline_pdf_service.py gmfn_backend\app\services\trust_evidence_pack_service.py`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run audit:evidence-surfaces` from `frontend/`
+- `npm run audit:gsn-visible-language` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only existing LF-to-CRLF warnings on touched
+  frontend audit files.
+
+Truth / remaining risk:
+- Local correction is verified. Backend deploy is still expected to fail in the
+  GitHub Render workflow until `RENDER_API_KEY` is configured; frontend deploy
+  can still be accepted by the deploy hook.
+- This hardens the Trust Timeline PDF, but the JSON Trust Timeline endpoint and
+  complete admin evidence ZIPs may still intentionally carry fuller records for
+  authenticated/admin contexts and should be reviewed separately if the owner
+  wants a system-wide export privacy audit.
+
 ## 2026-06-27 - Exposure admin support queue wording
 
 Owner request:

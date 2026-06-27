@@ -54,7 +54,7 @@ def _mask_email(email: Optional[str]) -> str:
         return "-"
     e = email.strip()
     if "@" not in e:
-        return e
+        return "private contact"
     user, domain = e.split("@", 1)
     if len(user) <= 2:
         return user[:1] + "*" + "@" + domain
@@ -405,9 +405,13 @@ def _draw_sponsors_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any], 
     return y
 
 
-def _event_meta_summary(meta: Any) -> str:
+def _event_meta_summary(meta: Any, *, redact: bool = True) -> str:
     if not isinstance(meta, dict):
         return ""
+
+    if redact and any(value not in (None, "") for value in meta.values()):
+        return "private event details redacted for timeline PDF"
+
     parts: list[str] = []
 
     for key in (
@@ -416,9 +420,6 @@ def _event_meta_summary(meta: Any) -> str:
         "status",
         "amount",
         "currency",
-        "code",
-        "gmfn_id",
-        "payment_reference",
         "released_amount",
         "default_amount",
     ):
@@ -488,6 +489,7 @@ def _draw_events_block(
     events: list[TrustEvent],
     *,
     footer_text: Optional[str],
+    redact: bool = True,
 ) -> float:
     y = _section_title(
         c,
@@ -513,7 +515,7 @@ def _draw_events_block(
 
         when_text = _fmt_dt(getattr(e, "created_at", None))
         event_type = _safe_str(getattr(e, "event_type", None))
-        meta_summary = _event_meta_summary(getattr(e, "meta", None))
+        meta_summary = _event_meta_summary(getattr(e, "meta", None), redact=redact)
 
         _draw_text(c, LEFT, y, when_text, size=8, color=colors.HexColor("#0F172A"))
         event_bottom = _draw_wrapped_block(
@@ -597,9 +599,15 @@ def build_trust_timeline_pdf(
     footer: Optional[str] = None,
     score: Optional[str] = None,
     last_change: Optional[Dict[str, Any]] = None,
+    pack_meta: Optional[Dict[str, Any]] = None,
+    redact: bool = True,
 ) -> bytes:
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
+
+    if isinstance(pack_meta, dict):
+        pack_id = pack_id or _safe_str(pack_meta.get("pack_id"), "")
+        protocol_version = protocol_version or _safe_str(pack_meta.get("protocol_version"), "")
 
     user = db.get(User, int(user_id))
     trustslip = get_trust_slip_payload(db, user_id=int(user_id))
@@ -611,6 +619,19 @@ def build_trust_timeline_pdf(
     y -= 5 * mm
     _line(c, y)
     y -= 6 * mm
+
+    y = _draw_wrapped_block(
+        c,
+        LEFT,
+        y,
+        "Reader boundary: redacted personal trust history for controlled review. Not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
+        max_width=(RIGHT - LEFT),
+        size=9,
+        leading=11,
+        bold=True,
+        color=colors.HexColor("#475569"),
+    )
+    y -= 4 * mm
 
     y = _draw_identity_block(c, y, user, trustslip)
     y = _ensure_space(c, y, 42 * mm, footer)
@@ -627,7 +648,7 @@ def build_trust_timeline_pdf(
     y = _draw_capacity_block(c, y, trustslip)
     y = _ensure_space(c, y, 60 * mm, footer)
 
-    y = _draw_events_block(c, y, events, footer_text=footer)
+    y = _draw_events_block(c, y, events, footer_text=footer, redact=redact)
     y = _ensure_space(c, y, 30 * mm, footer)
 
     y = _draw_evidence_block(

@@ -16,6 +16,7 @@ const files = {
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
   trustSlipPdf: "gmfn_backend/app/services/trust_slip_evidence_pdf_service.py",
   trustTimelinePdf: "gmfn_backend/app/services/trust_timeline_pdf_service.py",
+  trustTimelineRoute: "gmfn_backend/app/api/routes/trust_timeline_pdf.py",
   trustSlipRoute: "gmfn_backend/app/api/routes/trust_slips.py",
   reports: "gmfn_backend/app/services/reports_service.py",
   reportsRoute: "gmfn_backend/app/api/routes/reports.py",
@@ -225,10 +226,40 @@ assertContains(
   /Trust-limit signal[\s\S]*?Available support capacity[\s\S]*?Current locked support[\s\S]*?Support capacity ratio/,
   "Trust Timeline PDF must use institution-grade trust-limit and support-capacity language."
 );
+assertContains(
+  "trustTimelinePdf",
+  /Reader boundary: redacted personal trust history for controlled review\./,
+  "Trust Timeline PDF must explain the redacted reader boundary."
+);
+assertContains(
+  "trustTimelinePdf",
+  /private event details redacted for timeline PDF/,
+  "Trust Timeline PDF must hide private TrustEvent metadata in event notes."
+);
+assertContains(
+  "trustTimelinePdf",
+  /redact: bool = True/,
+  "Trust Timeline PDF must default to redacted output."
+);
+assertContains(
+  "trustTimelinePdf",
+  /pack_meta: Optional\[Dict\[str, Any\]\] = None/,
+  "Trust Timeline PDF builder must stay compatible with evidence-pack metadata callers."
+);
 assertNotContains(
   "trustTimelinePdf",
-  /Trust Limit|Locked Guarantees|Available Capacity|Capacity Ratio/,
-  "Trust Timeline PDF must not expose older limit/guarantee/capacity wording."
+  /Trust Limit|Locked Guarantees|Available Capacity|Capacity Ratio|payment_reference/,
+  "Trust Timeline PDF must not expose older limit/guarantee/capacity wording or payment references."
+);
+assertContains(
+  "trustTimelineRoute",
+  /is_platform_admin[\s\S]*?pdf_audience = "admin" if audience == "admin" and is_platform_admin else "user"[\s\S]*?redact=True[\s\S]*?gsn-trust-timeline-u\{user_id\}-\{visibility_level\}\.pdf[\s\S]*?X-GSN-Merchant-Visibility-Level/,
+  "Trust Timeline PDF route must protect the admin audience label, force redacted output, and use GSN download contracts."
+);
+assertNotContains(
+  "trustTimelineRoute",
+  /gmfn_trust_timeline|X-GMFN-Merchant-Visibility-Level|X-GMFN-TrustSlip-Code|X-GMFN-CCI-Score/g,
+  "Trust Timeline PDF route must not keep old GMFN download names or headers."
 );
 
 assertContains(

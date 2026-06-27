@@ -68,11 +68,30 @@ def test_trust_timeline_pdf_uses_institutional_shell():
     assert "Available support capacity" in text
     assert "Current locked support" in text
     assert "Support capacity ratio" in text
+    assert "Reader boundary: redacted personal trust history for controlled review." in text
+    assert "private event details redacted for timeline PDF" in text
+    assert "redact: bool = True" in text
+    assert "pack_meta: Optional[Dict[str, Any]] = None" in text
     assert "Trust Limit" not in text
     assert "Locked Guarantees" not in text
     assert "Available Capacity" not in text
     assert "Capacity Ratio" not in text
+    assert '"payment_reference"' not in text
     assert "GMFN Trust Timeline Evidence Report" not in text
+
+
+def test_trust_timeline_pdf_route_uses_gsn_filename_and_user_audience_guard():
+    text = read_service("app/api/routes/trust_timeline_pdf.py")
+
+    assert "is_platform_admin" in text
+    assert 'pdf_audience = "admin" if audience == "admin" and is_platform_admin else "user"' in text
+    assert "redact=True" in text
+    assert 'filename = f"gsn-trust-timeline-u{user_id}-{visibility_level}.pdf"' in text
+    assert '"X-GSN-Merchant-Visibility-Level"' in text
+    assert '"X-GSN-TrustSlip-Code"' in text
+    assert '"X-GSN-CCI-Score"' in text
+    assert "gmfn_trust_timeline" not in text
+    assert "X-GMFN-Merchant-Visibility-Level" not in text
 
 
 def test_report_pdfs_use_gsn_institutional_shells():

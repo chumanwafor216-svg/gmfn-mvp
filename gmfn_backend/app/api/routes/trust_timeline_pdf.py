@@ -107,24 +107,28 @@ def download_my_trust_timeline_pdf(
     else:
         footer = visibility_footer
 
+    is_platform_admin = str(getattr(current_user, "role", "") or "").strip().lower() == "admin"
+    pdf_audience = "admin" if audience == "admin" and is_platform_admin else "user"
+
     pdf = build_trust_timeline_pdf(
         db,
         user_id=user_id,
         limit=max(1, min(int(limit or 200), 300)),
-        audience="admin" if audience == "admin" else "user",
+        audience=pdf_audience,
         pack_id=pack_id,
         protocol_version=protocol_version,
         footer=footer,
         score=score,
         last_change=last_change,
+        redact=True,
     )
 
-    filename = f"gmfn_trust_timeline_u{user_id}_{visibility_level}.pdf"
+    filename = f"gsn-trust-timeline-u{user_id}-{visibility_level}.pdf"
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',
-        "X-GMFN-Merchant-Visibility-Level": visibility_level,
-        "X-GMFN-TrustSlip-Code": str(trustslip_summary.get("code") or ""),
-        "X-GMFN-CCI-Score": str(
+        "X-GSN-Merchant-Visibility-Level": visibility_level,
+        "X-GSN-TrustSlip-Code": str(trustslip_summary.get("code") or ""),
+        "X-GSN-CCI-Score": str(
             trustslip_summary.get("cci_score")
             or trustslip_summary.get("trust_score")
             or ""
