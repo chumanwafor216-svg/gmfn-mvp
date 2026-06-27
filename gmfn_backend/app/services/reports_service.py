@@ -551,7 +551,7 @@ def build_clan_exposure_report_pdf(
     y -= 5 * mm
     c.drawString(left, y, f"Total Exposure: {_fmt_money(total_exposure)}")
     y -= 5 * mm
-    c.drawString(left, y, f"Total Available Capacity: {_fmt_money(total_available)}")
+    c.drawString(left, y, f"Total Available Support Capacity: {_fmt_money(total_available)}")
     y -= 7 * mm
 
     exposure_ratio = Decimal("0.00")
@@ -569,7 +569,7 @@ def build_clan_exposure_report_pdf(
     c.setFont("Helvetica-Oblique", 8)
     c.drawString(left, y, "Exposure = approved/locked supporter responsibility visible across the community evidence surface.")
     y -= 5 * mm
-    c.drawString(left, y, "Available = current remaining support capacity after existing exposure.")
+    c.drawString(left, y, "Available support capacity = current remaining support capacity after existing exposure.")
     y -= 5 * mm
 
     draw_institutional_footer(c, width, "GSN community exposure report - controlled community trust record.")

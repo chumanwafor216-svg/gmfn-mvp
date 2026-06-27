@@ -183,7 +183,7 @@ assertOrderedSnippets(
   "trust",
   [
     "const institutionalRows = [",
-    "\"Trust limit signal\"",
+    "\"Trust-limit signal\"",
     "\"Available support capacity\"",
     "\"Current support commitments\"",
     "\"Overexposure ratio\"",

@@ -422,7 +422,7 @@ export default function TrustSlipReaderBlock({
             )}
           </div>
           <div style={{ marginTop: 8, ...body() }}>
-            Trust limit signal:{" "}
+            Trust-limit signal:{" "}
             <b>
               {clean(trustLimit, "0.00")} {clean(currency)}
             </b>

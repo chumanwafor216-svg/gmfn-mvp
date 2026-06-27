@@ -3376,7 +3376,7 @@ export default function TrustSlipPage() {
               </div>
               {[
                 ["Trust band", merchantBandDisplay],
-                ["Trust limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
+                ["Trust-limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
                 ["Evidence depth", trustSlipEvidenceLanguage.label],
               ].map(([label, value]) => (
                 <div

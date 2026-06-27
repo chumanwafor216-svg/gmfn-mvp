@@ -47,6 +47,7 @@ const files = {
   guarantorEarnings: "frontend/src/pages/GuarantorEarningsPage.tsx",
   trustSlip: "frontend/src/pages/TrustSlipPage.tsx",
   trustPassport: "frontend/src/pages/TrustScorePage.tsx",
+  trustSlipReader: "frontend/src/components/TrustSlipReaderBlock.tsx",
   evidencePanel: "frontend/src/components/EvidencePackPanel.tsx",
   pilotChecklist: "docs/PILOT_EVIDENCE_PACK_CHECKLIST.md",
   phoneProofChecklist: "docs/GSN_RGU_PHONE_PROOF_PATH_CHECKLIST.md",
@@ -242,12 +243,12 @@ assertContains(
 );
 assertContains(
   "reports",
-  /Community Exposure Summary[\s\S]*?GSN community exposure report - controlled community trust record\./,
-  "Community exposure reports must use current GSN community-facing summary and footer wording."
+  /Community Exposure Summary[\s\S]*?Total Available Support Capacity[\s\S]*?Available support capacity = current remaining support capacity after existing exposure\.[\s\S]*?GSN community exposure report - controlled community trust record\./,
+  "Community exposure reports must use current GSN community-facing support-capacity summary and footer wording."
 );
 assertNotContains(
   "reports",
-  /GSN Clan Exposure Report|Clan Exposure Table|Clan Exposure Summary|Clan Exposure Ratio|p\("Clan"|clan exposure report/,
+  /GSN Clan Exposure Report|Clan Exposure Table|Clan Exposure Summary|Clan Exposure Ratio|Total Available Capacity|Available = current remaining support capacity|p\("Clan"|clan exposure report/,
   "Community exposure reports must not expose older clan wording."
 );
 assertContains(
@@ -644,6 +645,16 @@ assertContains(
   "TrustSlip page must keep institutional limitation language visible."
 );
 assertContains(
+  "trustSlip",
+  /Trust-limit signal/,
+  "TrustSlip page must use the institution-grade trust-limit label."
+);
+assertNotContains(
+  "trustSlip",
+  /Trust limit signal|Trust Limit Signal/,
+  "TrustSlip page must not regress to the older trust limit label."
+);
+assertContains(
   "trustPassport",
   /7\. Shareable trust tools[\s\S]*?debugId="trust-score\.verify"[\s\S]*?Open TrustSlip verify/,
   "Trust Passport must keep the shareable TrustSlip verify action."
@@ -657,6 +668,36 @@ assertContains(
   "trustPassport",
   /TrustPaperSecurityFooter/,
   "Trust Passport must keep the evidence-paper security footer on institutional sections."
+);
+assertContains(
+  "trustPassport",
+  /Trust-limit signal/,
+  "Trust Passport must use the institution-grade trust-limit label."
+);
+assertNotContains(
+  "trustPassport",
+  /Trust limit signal|Trust Limit Signal/,
+  "Trust Passport must not regress to the older trust limit label."
+);
+assertContains(
+  "trustSlipReader",
+  /Trust-limit signal/,
+  "TrustSlip reader block must use the institution-grade trust-limit label."
+);
+assertNotContains(
+  "trustSlipReader",
+  /Trust limit signal|Trust Limit Signal/,
+  "TrustSlip reader block must not regress to the older trust limit label."
+);
+assertContains(
+  "trustSnapshots",
+  /Trust-limit signal/,
+  "Copied TrustSlip snapshots must use the institution-grade trust-limit label."
+);
+assertNotContains(
+  "trustSnapshots",
+  /Trust limit signal|Trust Limit Signal/,
+  "Copied TrustSlip snapshots must not regress to the older trust limit label."
 );
 
 assertContains(

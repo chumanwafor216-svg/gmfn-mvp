@@ -193,7 +193,7 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
     bodyLines: [
       cleanLine("Portable trust reading", friendlyTrustBand(params.merchantBand)),
       cleanLine(
-        "Trust limit signal",
+        "Trust-limit signal",
         `${params.merchantCurrency} ${params.merchantTrustLimit}`
       ),
       cleanLine("Cross-community reading", friendlyConsistency(params.cciBand)),

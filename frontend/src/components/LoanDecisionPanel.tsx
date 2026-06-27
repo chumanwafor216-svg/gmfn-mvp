@@ -147,7 +147,7 @@ export default function LoanDecisionPanel({
             <div className="font-bold">{data.clan_context.member_count}</div>
           </div>
           <div className="rounded-xl bg-slate-50 p-3">
-            <div className="text-slate-500">Available Capacity</div>
+            <div className="text-slate-500">Available support capacity</div>
             <div className="font-bold">{data.clan_context.total_available_guarantee_capacity}</div>
           </div>
           <div className="rounded-xl bg-slate-50 p-3">

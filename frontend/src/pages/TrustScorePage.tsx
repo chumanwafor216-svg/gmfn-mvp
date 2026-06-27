@@ -2647,7 +2647,7 @@ export default function TrustScorePage() {
     "No recent trust movement is shown yet. When new events occur, the reason will appear here in plain language.";
 
   const institutionalRows = [
-    ["Trust limit signal", `${trustLimit} ${trustCurrency}`],
+    ["Trust-limit signal", `${trustLimit} ${trustCurrency}`],
     ["Event count", eventCount],
     ["Counterparties", counterpartiesCount],
     [

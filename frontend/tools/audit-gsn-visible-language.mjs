@@ -120,6 +120,7 @@ const forbidden = [
   "This task is in focus",
   "main routes stay cleaner",
   "decision on a pledge",
+  "Available Capacity",
 ];
 
 const forbiddenByFile = [

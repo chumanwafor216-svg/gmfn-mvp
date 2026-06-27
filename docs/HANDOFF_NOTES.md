@@ -71801,6 +71801,57 @@ GSN-branded invite composer and invite-entry continuity.
   - live backend public verify/share text requires backend deployment; live
     React TrustSlip verify papers require frontend deployment.
 
+### Follow-up same day - TrustSlip-family and support-capacity surface sweep
+
+- Trigger:
+  - continued the main institutional cleanup after aligning the direct
+    TrustSlip verify pages;
+  - a follow-up source sweep still found older labels on reusable TrustSlip
+    reader/copy surfaces plus a loan decision card and community exposure PDF.
+- Unabated truth:
+  - these were not broken routes, but they were the kind of wording drift that
+    makes customer-facing proof surfaces feel less institutional when
+    screenshots or copied papers are compared side by side;
+  - one remaining `TrustSlip Limit Increased After Full Repayment` phrase is
+    inside `gmfn_backend/docs/innovation_trail.md`, an internal historical log,
+    not a live customer-facing surface.
+- Changed:
+  - `frontend/src/components/TrustSlipReaderBlock.tsx`
+    - changed visible reader text to `Trust-limit signal`.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - changed copied TrustSlip snapshot text to `Trust-limit signal`.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changed Trust Passport institutional row text to `Trust-limit signal`.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed the TrustSlip page decision row to `Trust-limit signal`.
+  - `frontend/src/components/LoanDecisionPanel.tsx`
+    - changed `Available Capacity` to `Available support capacity`.
+  - `gmfn_backend/app/services/reports_service.py`
+    - changed generated community exposure PDF summary text from
+      `Total Available Capacity` to `Total Available Support Capacity`;
+    - changed the explanatory footer line to
+      `Available support capacity = current remaining support capacity after existing exposure.`
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - extended guards to the reusable TrustSlip reader, copied TrustSlip
+      snapshot, TrustSlip page, Trust Passport, and community exposure report
+      capacity wording.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - forbids the old `Available Capacity` frontend label.
+  - `frontend/tools/audit-trust-passport-lane-map.mjs`
+    - aligned the Trust Passport lane-map expectation to `Trust-limit signal`.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:trust-passport-lane-map` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\services\reports_service.py`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - local checkpoint only at this point; not pushed or deployed in this slice.
+  - live impact requires both frontend and backend deployment.
+
 ### Follow-up same day - Spotlight tester blocker and `GSN-U-66E6A380`
 
 - Trigger:
