@@ -1,3 +1,26 @@
+## 2026-06-27 - Shop and Vault link inventory aligned to audited packages
+
+Owner request:
+- Continue wide institutional cleanup and make sure customer-facing papers,
+  links, and screenshotable surfaces are accurately tracked.
+
+Correction completed locally:
+- `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+  - updated Shop owner public link, Shop Assets public link, Public Shop
+    invite/link, and Vault invite/private-view rows to match current audited
+    source behavior.
+  - recorded that Community Home shop-control, Shop Assets, Marketplace, and
+    Public Shop copy paths use branded GSN shop invitation packages where those
+    copy actions exist.
+  - recorded that owner Vault link copies use `GSN Private Vault Invitation`
+    and that the visitor Vault access page already has restricted-access paper
+    authority marks.
+
+Truth / remaining risk:
+- This is an inventory correction, not a new runtime behavior change.
+- The remaining work on these shop/vault link surfaces is visual phone review,
+  text-fit inspection, and any future token-policy wording refinement.
+
 ## 2026-06-27 - Legacy Clans invite package now uses GSN invite paper
 
 Owner request:
