@@ -101,7 +101,7 @@ not like raw copied URLs.
 
 | Surface | Route / file | Why it needs headed paper | Current gap |
 | --- | --- | --- | --- |
-| Join/invite package | `/app/build-first-circle`, `BuildFirstCirclePage.tsx` | User copies/shares invite bundle by WhatsApp, share sheet, Facebook, or link. | Invite message should have official GSN invitation paper preview. |
+| Join/invite package | `/app/build-first-circle`, `BuildFirstCirclePage.tsx` | User copies/shares invite bundle by WhatsApp, share sheet, Facebook, or link. | Copy/share text and visible previews now use the branded `GSN Community Invite` paper package through `GsnSnapshotPaperCard`; remaining work is visual phone text-fit review. |
 | Community invite link package | Join links from `/join`, `/join/:code`, `/join/community/:clanId`, Build First Circle, and Marketplace link tools | A community invite is a branded doorway into GSN, not a raw URL. | Build First Circle, legacy Clans, and Marketplace Link Center copy/share paths now use branded GSN Community Invite paper; remaining work is visual review across each invite entry surface. |
 | Legacy clans invite package | `ClansPage.tsx` | Contains copy link/full package and fallback PDF references. | Full package copy now uses the shared `GSN Community Invite` headed-paper format while preserving guide and fallback PDF references; remaining work is visual review if the legacy page remains in pilot use. |
 | Marketplace join/public shop link center | `/app/marketplace`, `MarketplacePage.tsx` | Links are copied for join/shop/community package routes. | Community verify, join invite, and public shop copy/share paths now use branded GSN headed-paper packages; remaining work is visual phone review of the Link Center panels. |

@@ -984,8 +984,8 @@ assertNotContains(
 );
 assertContains(
   "firstCircle",
-  /buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle/,
-  "First Circle community invite copy/share text must use the branded GSN invite package."
+  /GsnSnapshotPaperCard[\s\S]*?buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle[\s\S]*?paperText=\{readyContacts\.length > 0 \? inviteBundle : joinInviteMessage\}[\s\S]*?paperText=\{inviteBundle \|\| joinInviteMessage\}/,
+  "First Circle community invite copy/share text and visible preview must use the branded GSN invite paper package."
 );
 assertContains(
   "clansPage",

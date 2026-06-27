@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
+import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
@@ -1376,10 +1377,6 @@ export default function BuildFirstCirclePage() {
     "trader",
     "service_provider",
   ].filter((role) => (ROLE_OPTIONS as string[]).includes(role));
-  const messagePreview =
-    readyContacts.length > 0
-      ? inviteBundle
-      : "Hi! I am inviting you to join me on GSN.\nLet us build trust and grow together.";
   const showLegacyFirstCirclePanels = false;
 
   if (loading) {
@@ -1896,22 +1893,13 @@ export default function BuildFirstCirclePage() {
                 <div style={{ marginTop: 6, ...helperText() }}>
                   A ready message to invite your people.
                 </div>
-                <div
-                  style={{
-                    marginTop: 12,
-                    borderRadius: 14,
-                    border: "1px solid rgba(203,220,240,0.16)",
-                    background: "rgba(3,12,24,0.72)",
-                    padding: 14,
-                    color: "#DCEBFB",
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {messagePreview}
-                </div>
+                <GsnSnapshotPaperCard
+                  paperText={readyContacts.length > 0 ? inviteBundle : joinInviteMessage}
+                  compact={isCompact}
+                  icon="community"
+                  maxBodyLines={isCompact ? 5 : 8}
+                  style={{ marginTop: 12 }}
+                />
                 <div style={{ ...actionRow(isCompact), marginTop: 14 }}>
                   <SecondaryButton
                     onClick={() => {
@@ -2800,23 +2788,13 @@ export default function BuildFirstCirclePage() {
             <div style={innerCard("#FCFEFF")}>
               <div style={sectionLabel()}>Message preview</div>
 
-              <div
-                style={{
-                  marginTop: 12,
-                  borderRadius: 14,
-                  border: "1px solid rgba(11,31,51,0.08)",
-                  background:
-                    "linear-gradient(180deg, rgba(10,22,36,0.94) 0%, rgba(14,31,50,0.92) 100%)",
-                  padding: 14,
-                  color: "#F8FBFF",
-                  fontSize: 13,
-                  lineHeight: 1.65,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {inviteBundle || "Invite message will appear here when ready."}
-              </div>
+              <GsnSnapshotPaperCard
+                paperText={inviteBundle || joinInviteMessage}
+                compact={isCompact}
+                icon="community"
+                maxBodyLines={isCompact ? 5 : 8}
+                style={{ marginTop: 12 }}
+              />
             </div>
 
             <div style={softCard("#FFFFFF")}>
