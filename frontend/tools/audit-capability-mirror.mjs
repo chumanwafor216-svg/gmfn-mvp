@@ -73,6 +73,12 @@ for (const title of capabilityTitles) {
     title,
     "The document-to-system gap review must include every capability."
   );
+
+  assertTextIncludes(
+    "frontend/tools/generate-static-gsn-pdfs.py",
+    `"${title}"`,
+    "The public executive-summary PDF generator must mirror the exact 22-capability registry titles."
+  );
 }
 
 for (const value of [

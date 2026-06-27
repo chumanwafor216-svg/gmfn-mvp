@@ -95,6 +95,14 @@ if (!/Missing public PDF capability explanation/.test(generatorSource)) {
 if (/21 core capabilities/.test(generatorSource)) {
   addFinding("Static PDF generator must not keep the old 21-capability heading.");
 }
+for (const driftedTitle of [
+  "People-backed support",
+  "Trust savings and ROSCA support",
+]) {
+  if (generatorSource.includes(`"${driftedTitle}"`)) {
+    addFinding(`Static PDF generator must use the exact capability title instead of: ${driftedTitle}.`);
+  }
+}
 
 if (findings.length) {
   console.error("Static PDF asset audit failed:");

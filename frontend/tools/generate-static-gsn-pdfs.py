@@ -20,33 +20,33 @@ from app.services.institutional_pdf import (  # noqa: E402
 
 
 CAPABILITIES = [
-    "Release before payment",
-    "Trusted buying and selling",
-    "Cross-community trade",
-    "Fraud reduction before action",
-    "Spotlight visibility",
-    "Reputation-based visibility",
-    "Marketplace presence across communities",
-    "People-backed support",
-    "Supporting others",
-    "Emergency support",
-    "Diaspora trust bridge",
-    "Trust savings and ROSCA support",
-    "Contribution tracking",
-    "Continuity across distance",
-    "Portable trust identity",
-    "Reputation mobility",
-    "One global shop",
-    "Service economy participation",
-    "Trust-based hiring",
+    "Release Before Payment",
+    "Trusted Buying and Selling",
+    "Cross-Community Trade",
+    "Fraud Reduction Before Action",
+    "Spotlight Visibility",
+    "Reputation-Based Visibility",
+    "Marketplace Presence Across Communities",
+    "People-Backed Loans",
+    "Supporting Others",
+    "Emergency Support",
+    "Diaspora Trust Bridge",
+    "Trust Savings (ROSCA Support)",
+    "Contribution Tracking",
+    "Continuity Across Distance",
+    "Portable Trust Identity",
+    "Reputation Mobility",
+    "One Global Shop",
+    "Service Economy Participation",
+    "Trust-Based Hiring",
     "Demand Box",
-    "Community economic power",
+    "Community Economic Power",
     "Commitment Builder",
 ]
 
 
 CAPABILITY_EXPLANATIONS = {
-    "Release before payment": (
+    "Release Before Payment": (
         "What it is: a trust-first trade posture where evidence is checked "
         "before goods, services, or value are released on confidence. How it "
         "works: GSN can surface TrustSlip, community context, shop identity, "
@@ -54,35 +54,35 @@ CAPABILITY_EXPLANATIONS = {
         "chance of preventable loss without pretending that GSN is already a "
         "full escrow or automated release rail."
     ),
-    "Trusted buying and selling": (
+    "Trusted Buying and Selling": (
         "What it is: marketplace activity strengthened by identity, community "
         "signals, and readable trust evidence. How it works: GSN gives buyers "
         "and sellers public shop, TrustSlip, demand, and verification cues so "
         "they can ask better questions before acting. Why it matters: commerce "
         "becomes less dependent on guesswork, screenshots, or noise."
     ),
-    "Cross-community trade": (
+    "Cross-Community Trade": (
         "What it is: the ability for trust earned in one community to support "
         "decisions in another. How it works: GSN connects community membership, "
         "shop presence, TrustSlip, and public verification so a person or "
         "merchant does not restart from zero. Why it matters: trustworthy "
         "people and businesses can travel farther without losing accountability."
     ),
-    "Fraud reduction before action": (
+    "Fraud Reduction Before Action": (
         "What it is: a prevention layer that encourages checks before money, "
         "goods, work, or support are committed. How it works: GSN exposes "
         "limited trust evidence, mismatch warnings, stale-record warnings, and "
         "community confirmation paths. Why it matters: the strongest fraud "
         "control is often a timely question before the loss happens."
     ),
-    "Spotlight visibility": (
+    "Spotlight Visibility": (
         "What it is: a focused way to show one product, service, update, or "
         "community signal without turning the app into a noisy feed. How it "
         "works: GSN presents active spotlight material with status, context, "
         "and contact routes. Why it matters: visibility becomes tied to useful "
         "community context instead of attention alone."
     ),
-    "Reputation-based visibility": (
+    "Reputation-Based Visibility": (
         "What it is: a visibility model where trust quality can shape how "
         "people, shops, and opportunities are presented. How it works: GSN "
         "can combine trust readings, community evidence, and marketplace "
@@ -90,91 +90,91 @@ CAPABILITY_EXPLANATIONS = {
         "reputation should create clearer access while weak evidence stays "
         "appropriately limited."
     ),
-    "Marketplace presence across communities": (
+    "Marketplace Presence Across Communities": (
         "What it is: a merchant or member presence that can be understood "
         "outside one local group. How it works: GSN links public shop, gallery, "
         "vault, demand, community, and TrustSlip surfaces. Why it matters: "
         "market access can grow while the reader still sees where the claim "
         "comes from."
     ),
-    "People-backed support": (
+    "People-Backed Loans": (
         "What it is: support shaped by people, responsibility, and repayment "
         "context, not only a form submission. How it works: GSN can show "
         "support needs, supporter fit, guarantor responsibility, expected "
         "payments, and expiry windows. Why it matters: access improves while "
         "risk, obligation, and follow-through remain visible."
     ),
-    "Supporting others": (
+    "Supporting Others": (
         "What it is: a way for trusted members to stand behind another person "
         "with clearer responsibility. How it works: GSN records support "
         "decisions, locked responsibility, earnings or service-fee context, "
         "and repayment status where available. Why it matters: help becomes "
         "more accountable than a private promise."
     ),
-    "Emergency support": (
+    "Emergency Support": (
         "What it is: urgent help made easier when identity, community, and "
         "trust context are already organized. How it works: GSN can reuse the "
         "support and TrustSlip layer so a serious need is not judged from a "
         "blank page. Why it matters: urgency should reduce confusion, not "
         "remove accountability."
     ),
-    "Diaspora trust bridge": (
+    "Diaspora Trust Bridge": (
         "What it is: portable confidence for people supporting, trading, or "
         "verifying across distance. How it works: GSN lets a reader use public "
         "verification, TrustSlip, shop, and community evidence without needing "
         "to personally know the local circle. Why it matters: distance should "
         "not erase trustworthy history."
     ),
-    "Trust savings and ROSCA support": (
+    "Trust Savings (ROSCA Support)": (
         "What it is: familiar rotating savings and contribution culture with "
         "a clearer evidence layer. How it works: GSN can connect Money In, "
         "expected payments, linked responsibilities, and community readings. "
         "Why it matters: savings discipline becomes easier to read without "
         "turning every private record into a public claim."
     ),
-    "Contribution tracking": (
+    "Contribution Tracking": (
         "What it is: a clearer record of who contributed, what was expected, "
         "and what still needs reconciliation. How it works: GSN can show "
         "payment references, expected-payment status, pool events, and manual "
         "pilot review where needed. Why it matters: community capital grows "
         "when contribution memory becomes durable and reviewable."
     ),
-    "Continuity across distance": (
+    "Continuity Across Distance": (
         "What it is: trust history that survives movement between places, "
         "phones, markets, and communities. How it works: GSN ties identity, "
         "community membership, TrustSlip, shop, and finance context into a "
         "portable record. Why it matters: a person should not lose every "
         "earned signal when life moves."
     ),
-    "Portable trust identity": (
+    "Portable Trust Identity": (
         "What it is: a way to carry a good name beyond the place where people "
         "already know you. How it works: Trust Passport holds broader private "
         "context while TrustSlip shares a smaller checkable paper. Why it "
         "matters: informal credibility can become useful evidence without "
         "forcing private life into the open."
     ),
-    "Reputation mobility": (
+    "Reputation Mobility": (
         "What it is: earned reputation becoming usable in new decisions and "
         "new communities. How it works: GSN can present trust readings, "
         "community confirmation, and public verification in proportion to the "
         "reader's need. Why it matters: opportunity should follow dependable "
         "behaviour, not stay trapped in one place."
     ),
-    "One global shop": (
+    "One Global Shop": (
         "What it is: one merchant identity that can serve more than one local "
         "audience. How it works: GSN connects public shop, gallery, owner "
         "contact, vault access, and trust context. Why it matters: a small "
         "seller can grow reach without scattering their credibility across "
         "unconnected pages."
     ),
-    "Service economy participation": (
+    "Service Economy Participation": (
         "What it is: trust evidence for work that is often informal, local, "
         "or relationship-based. How it works: GSN can connect services, "
         "TrustSlip, demand signals, marketplace presence, and reader-safe "
         "verification. Why it matters: dependable workers and service "
         "providers can show credibility before a buyer takes a risk."
     ),
-    "Trust-based hiring": (
+    "Trust-Based Hiring": (
         "What it is: hiring support based on visible credibility, not only CV "
         "claims or personal referrals. How it works: GSN can provide Trust "
         "Passport, TrustSlip, community confirmation, and work/service signals "
@@ -188,7 +188,7 @@ CAPABILITY_EXPLANATIONS = {
         "opportunity becomes easier to match when demand is visible and "
         "organized."
     ),
-    "Community economic power": (
+    "Community Economic Power": (
         "What it is: the shared strength created when contribution, trust, "
         "trade, support, and participation can be read together. How it works: "
         "GSN combines community finance, marketplace, TrustSlip, support, and "

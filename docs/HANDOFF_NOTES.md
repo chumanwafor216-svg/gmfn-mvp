@@ -74985,3 +74985,42 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - Public PDF capability titles locked to registry
+
+- Trigger:
+  - continuing the institutional cleanup showed a title-mirror drift in the
+    static executive-summary PDF generator;
+  - the app registry says `People-Backed Loans`, but the public PDF generator
+    had softened that row to `People-backed support`, and it also used a
+    non-exact ROSCA title.
+- Unabated truth:
+  - this is an institutional paper alignment fix only;
+  - the public paper now mirrors the exact 22 capability titles, but the
+    explanations still state the bounded current truth;
+  - no paid/API verification, payout automation, escrow, protected trade
+    release, or new loan backend was added.
+- Changed:
+  - `frontend/tools/generate-static-gsn-pdfs.py`
+    - changed the public PDF capability list and explanation keys to mirror the
+      registry titles exactly, including `People-Backed Loans`,
+      `Trust Savings (ROSCA Support)`, and title capitalization;
+    - regenerated `frontend/public/GSN_FINAL_WHITE.pdf`,
+      `frontend/public/gmfn-executive-summary.pdf`, and
+      `frontend/public/GMFN_FINAL_WHITE.pdf`.
+  - `frontend/tools/audit-capability-mirror.mjs`
+    - now checks that every registry title is present exactly in the static PDF
+      generator, not only in the app registry and gap-review document.
+  - `frontend/tools/audit-static-pdf-assets.mjs`
+    - added negative guards for the drifted public PDF titles.
+- Verification:
+  - Passed `npm run generate:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:capability-mirror` from `frontend`.
+  - Passed `npm run audit:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
