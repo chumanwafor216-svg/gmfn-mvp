@@ -118,6 +118,18 @@ assertNotContains(
 );
 
 assertContains(
+  "src/pages/FinancePage.tsx",
+  /Earnings from backing others[\s\S]*?title=\{`Support \$\{safeStr\(item\?\.loan_id \|\| "-"\)\}`\}[\s\S]*?<th style=\{tableHeadCell\(\)\}>Support ID<\/th>/,
+  "Finance supporter-value rows must label backend loan IDs as support IDs in visible copy."
+);
+
+assertNotContains(
+  "src/pages/FinancePage.tsx",
+  /title=\{`Loan \$\{safeStr\(item\?\.loan_id \|\| "-"\)\}`\}|<th style=\{tableHeadCell\(\)\}>Loan ID<\/th>/,
+  "Finance supporter-value rows must not restore old visible Loan ID labels."
+);
+
+assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
   /debugId="money-in\.generate-instruction"[\s\S]*?debugId="money-in\.refresh-route"[\s\S]*?debugId="money-in\.reset-task"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?debugId="money-in\.confirm-paid"/,
   "Money In core instruction actions must remain traceable without duplicating the generate panel."

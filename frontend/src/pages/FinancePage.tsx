@@ -2945,7 +2945,7 @@ export default function FinancePage() {
                   {guarantorEarningsItems.slice(0, 10).map((item, index) => (
                     <FinanceMobileRecord
                       key={`${item?.loan_guarantor_id || index}`}
-                      title={`Loan ${safeStr(item?.loan_id || "-")}`}
+                      title={`Support ${safeStr(item?.loan_id || "-")}`}
                       tone={parseMoneyNumber(item?.share_amount) > 0 ? "good" : "neutral"}
                       rows={[
                         ["Support row", safeStr(item?.loan_guarantor_id || "-")],
@@ -2962,7 +2962,7 @@ export default function FinancePage() {
                   <table style={financeTable()}>
                     <thead>
                       <tr>
-                        <th style={tableHeadCell()}>Loan ID</th>
+                        <th style={tableHeadCell()}>Support ID</th>
                         <th style={tableHeadCell()}>Support row</th>
                         <th style={tableHeadCell()}>Support weight</th>
                         <th style={tableHeadCell()}>Potential share</th>
