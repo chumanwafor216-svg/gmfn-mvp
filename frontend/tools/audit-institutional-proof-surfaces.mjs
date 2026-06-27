@@ -286,10 +286,15 @@ assertContains(
   /from app\.services\.trust_timeline_service import list_trust_timeline[\s\S]*?def _load_recent_events[\s\S]*?return list_trust_timeline\([\s\S]*?audience="user"/,
   "GSN Evidence Pack ZIP recent events must reuse the user-safe Trust Timeline serializer."
 );
+assertContains(
+  "portableEvidencePack",
+  /"holder": \{[\s\S]*?"gsn_id": getattr\(current_user, "gmfn_id", None\)[\s\S]*?"private_contact_details": "redacted for portable evidence pack"[\s\S]*?"merchant_view": merchant_view[\s\S]*?"private_summary_boundary"/,
+  "GSN Evidence Pack ZIP manifest and snapshot must stay visibility-bound and redact private holder contact details."
+);
 assertNotContains(
   "portableEvidencePack",
-  /"actor_user_id": getattr\(e, "actor_user_id"|\"subject_user_id\": getattr\(e, "subject_user_id"|\"meta\": meta_val|\"payment_reference\"/,
-  "GSN Evidence Pack ZIP snapshots must not rebuild raw TrustEvent IDs, metadata, or payment references."
+  /"actor_user_id": getattr\(e, "actor_user_id"|\"subject_user_id\": getattr\(e, "subject_user_id"|\"meta\": meta_val|\"payment_reference\"|"full_summary": summary|"user": \{|"email": getattr\(current_user, "email", None\)|"phone_e164": getattr\(current_user, "phone_e164", None\)/,
+  "GSN Evidence Pack ZIP snapshots must not rebuild raw TrustEvent IDs, metadata, payment references, full TrustSlip summaries, or private contact details."
 );
 assertContains(
   "trustEvidencePack",

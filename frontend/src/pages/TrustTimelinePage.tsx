@@ -481,14 +481,14 @@ export default function TrustTimelinePage() {
               flexWrap: "wrap",
             }}
           >
-            <div style={sectionLabel()}>{sectionHeading("vault", "Evidence Bundle")}</div>
-            <div style={{ fontSize: 12, ...helperText() }}>Reference for review</div>
+            <div style={sectionLabel()}>{sectionHeading("vault", "Evidence Share Copy")}</div>
+            <div style={{ fontSize: 12, ...helperText() }}>Visibility-bound review file</div>
           </div>
 
           <div style={{ marginTop: 10 }}>
             <div style={helperText()}>
-              This reference helps you point to the exact evidence bundle during
-              a merchant, support, or admin review.
+              This reference helps you point to the same visibility-bound
+              evidence during a merchant, support, or admin review.
             </div>
 
             <div style={{ marginTop: 10, fontSize: 14 }}>
@@ -515,12 +515,13 @@ export default function TrustTimelinePage() {
                 stableHeight={52}
                 debugId="trust-timeline.download-evidence-zip"
               >
-                {actionLabel("vault", "Download evidence")}
+                {actionLabel("vault", "Download share copy")}
               </SubtleButton>
             </CardActionRow>
 
             <div style={{ marginTop: 10, fontSize: 12, ...helperText() }}>
-              Use this reference when someone needs to check the same evidence later.
+              The share copy follows your TrustSlip visibility level and leaves
+              out private contact details and complete internal records.
             </div>
           </div>
         </section>

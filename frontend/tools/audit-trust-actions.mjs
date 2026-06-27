@@ -654,6 +654,12 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
+  /Evidence Share Copy[\s\S]*?Visibility-bound review file[\s\S]*?Download share copy[\s\S]*?leaves[\s\S]*?out private contact details and complete internal records/,
+  "Trust Timeline evidence export must be presented as a visibility-bound share copy, not a complete private record."
+);
+
+assertContains(
+  "src/pages/TrustTimelinePage.tsx",
   /reference_label\?: string \| null[\s\S]*?if \(e\.reference_label\) refs\.push\(supportDisplayText\(e\.reference_label\)\)/,
   "Trust Timeline must use the backend's safe display reference for screenshotable user timelines."
 );

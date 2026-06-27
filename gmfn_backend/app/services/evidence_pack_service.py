@@ -165,15 +165,14 @@ def _build_manifest(
         "limitation_statement": LIMITATION_STATEMENT,
         "evidence_alignment": "trustslip_visibility_bound_plus_capacity_context",
         "merchant_visibility_level": visibility_level,
-        "user": {
-            "user_id": int(getattr(current_user, "id")),
-            "email": getattr(current_user, "email", None),
-            "gmfn_id": getattr(current_user, "gmfn_id", None),
-            "phone_e164": getattr(current_user, "phone_e164", None),
+        "holder": {
+            "gsn_id": getattr(current_user, "gmfn_id", None),
+            "display_name": getattr(current_user, "display_name", None),
             "phone_verified": bool(
                 getattr(current_user, "phone_verified_at", None)
                 and getattr(current_user, "phone_e164", None)
             ),
+            "private_contact_details": "redacted for portable evidence pack",
         },
         "trustslip": {
             "code": trustslip_summary.get("code"),
@@ -269,11 +268,14 @@ def build_evidence_pack_zip(
         "protocol_version": PROTOCOL_VERSION,
         "limitation_statement": LIMITATION_STATEMENT,
         "merchant_visibility_level": visibility_level,
-        "full_summary": summary,
         "merchant_view": merchant_view,
         "evidence_summary": evidence_summary,
         "recent_events": recent_events,
         "evidence_alignment": "trustslip_visibility_bound_plus_capacity_context",
+        "private_summary_boundary": (
+            "This portable pack uses the selected TrustSlip visibility level. "
+            "Private contact fields and complete TrustSlip internals are not included."
+        ),
     }
 
     files: dict[str, bytes] = {}
@@ -303,6 +305,11 @@ Files:
 
 Evidence note:
 {LIMITATION_STATEMENT}
+
+Privacy note:
+This portable pack uses the selected TrustSlip visibility level. It does not
+include private contact details, raw TrustEvent metadata, payment references, or
+complete TrustSlip internals.
 """
     files["README.txt"] = readme_text.encode("utf-8")
 

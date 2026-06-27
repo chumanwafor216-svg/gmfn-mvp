@@ -109,6 +109,21 @@ def test_trust_timeline_pdf_route_uses_gsn_filename_and_user_audience_guard():
     assert "X-GMFN-Merchant-Visibility-Level" not in text
 
 
+def test_portable_evidence_pack_zip_is_visibility_bound():
+    text = read_service("app/services/evidence_pack_service.py")
+
+    assert '"holder": {' in text
+    assert '"gsn_id": getattr(current_user, "gmfn_id", None)' in text
+    assert '"private_contact_details": "redacted for portable evidence pack"' in text
+    assert '"merchant_view": merchant_view' in text
+    assert '"private_summary_boundary"' in text
+    assert "complete TrustSlip internals are not included" in text
+    assert '"full_summary": summary' not in text
+    assert '"user": {' not in text
+    assert '"email": getattr(current_user, "email", None)' not in text
+    assert '"phone_e164": getattr(current_user, "phone_e164", None)' not in text
+
+
 def test_report_pdfs_use_gsn_institutional_shells():
     text = read_service("app/services/reports_service.py")
 

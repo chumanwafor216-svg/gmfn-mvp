@@ -1,3 +1,56 @@
+## 2026-06-27 - Portable Evidence Pack ZIP visibility boundary
+
+Owner request:
+- Continue the customer-facing papers/documents cleanup, especially cases where
+  exported evidence may expose more than it should.
+
+Completed local correction:
+- `gmfn_backend/app/services/evidence_pack_service.py`
+  - removed `full_summary` from `trustslip_snapshot.json` inside the portable
+    Evidence Pack ZIP.
+  - changed manifest identity from raw `user` fields to a reader-safe `holder`
+    block with `gsn_id`, optional display name, phone verified status, and
+    `private_contact_details: redacted for portable evidence pack`.
+  - stopped writing raw email, phone number, and internal user id into the
+    portable ZIP manifest.
+  - added a README privacy note stating that private contact details, raw
+    TrustEvent metadata, payment references, and complete TrustSlip internals
+    are not included.
+- `frontend/src/pages/TrustTimelinePage.tsx`
+  - changed the active export section from `Evidence Bundle` / `Download
+    evidence` to `Evidence Share Copy` / `Download share copy`.
+  - added visible helper text explaining the file follows the user's TrustSlip
+    visibility level and leaves out private contact details and complete
+    internal records.
+- `gmfn_backend/tests/test_gsn_evidence_pack_package.py`
+  - added ZIP-level assertions that the manifest/snapshot do not contain
+    `full_summary`, raw email, raw phone, or internal user id.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added source guards for the visibility-bound portable ZIP contract.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs` and
+  `frontend/tools/audit-trust-actions.mjs`
+  - added audit guards for the ZIP privacy boundary and Trust Timeline export
+    wording.
+
+Verification:
+- `python -m pytest -q gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+- `python -m compileall -q gmfn_backend\app\services\evidence_pack_service.py`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run audit:trust-actions` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only existing LF-to-CRLF warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- This correction is verified locally only until committed, pushed, and
+  deployed.
+- The pack ID still includes the internal numeric user id in the current
+  `GSN-PACK-U{id}-...` format. That should be reviewed in a future pass if the
+  owner wants the Evidence Pack reference itself to avoid raw internal IDs.
+- The ZIP still includes visibility-bound TrustSlip evidence and capacity
+  context. That is intentional for the current evidence-pack purpose, but it is
+  now more honest about not being a complete private record.
+
 ## 2026-06-27 - Dormant loan audit share links hardened
 
 Owner request:
