@@ -1,3 +1,33 @@
+## 2026-06-27 - Public TrustSlip footer made evidence-facing
+
+Owner request:
+- Continue meticulous institutional deep cleaning across TrustSlip,
+  screenshotable public papers, and customer-facing evidence surfaces.
+
+Correction completed locally:
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - changed the backend-rendered public verification footer from
+    `GSN Trust Architecture` to `GSN Trust Evidence`.
+  - changed `private detail protected` to `private details protected`.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - made the same footer wording change on the React public paper.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added guards requiring evidence-facing footer wording and rejecting the old
+    architecture wording in both public verification surfaces.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warnings on edited
+  frontend files.
+
+Truth / remaining risk:
+- This is a public-paper wording cleanup only. It does not change TrustSlip
+  verification logic, permissions, or data fields.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Redacted report PDFs stopped showing masked member contacts
 
 Owner request:

@@ -666,8 +666,23 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /decision left with the reader/,
+  /GSN Trust Evidence[\s\S]*?public evidence first, private details protected, decision left with the reader/,
   "Public TrustSlip paper footer must keep the reader-decision limitation."
+);
+assertNotContains(
+  "publicPaper",
+  /GSN Trust Architecture|private detail protected/,
+  "Public TrustSlip paper footer must not expose architecture wording or older privacy phrasing."
+);
+assertContains(
+  "trustSlipRoute",
+  /GSN Trust Evidence - public evidence first, private details protected, decision left with the reader\./,
+  "Backend TrustSlip verification paper must keep evidence-facing footer wording."
+);
+assertNotContains(
+  "trustSlipRoute",
+  /GSN Trust Architecture|private detail protected/,
+  "Backend TrustSlip verification paper must not expose architecture wording or older privacy phrasing."
 );
 assertContains(
   "publicPaper",

@@ -1783,10 +1783,10 @@ export default function TrustSlipVerifyPublicPaper({
         </span>
         <div>
           <div style={{ color: "#F6D77A", fontSize: compact ? 15 : 18, fontWeight: 1000 }}>
-            GSN Trust Architecture
+            GSN Trust Evidence
           </div>
           <div style={{ marginTop: 4, color: "#DCE8F4", fontSize: compact ? 13 : 16, lineHeight: 1.35, fontWeight: 780 }}>
-            public evidence first, private detail protected, decision left with the reader.
+            public evidence first, private details protected, decision left with the reader.
           </div>
         </div>
         {!compact ? <GsnRealisticIcon name="public-globe" size={66} decorative /> : null}

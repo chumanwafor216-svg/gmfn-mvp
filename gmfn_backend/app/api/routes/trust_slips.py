@@ -1821,7 +1821,7 @@ def trust_slip_verify_page(
         goods or money without current context.
       </div>
       </section>
-      <div class="footer">GSN Trust Architecture - public evidence first, private detail protected, decision left with the reader.</div>
+      <div class="footer">GSN Trust Evidence - public evidence first, private details protected, decision left with the reader.</div>
     </main>
   </body>
 </html>"""
