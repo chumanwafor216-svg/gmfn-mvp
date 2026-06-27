@@ -24,6 +24,16 @@ EV_DEFAULT = "loan_defaulted"
 EV_FRAUD = "fraud_flag"
 EV_GUARANTEE_GIVEN = "guarantee_given"
 EV_GUARANTEE_RELEASED = "guarantee_released"
+FOLLOW_ATTENTION_EVENT_TYPES = {
+    "community.followed",
+    "community.unfollowed",
+    "marketplace.shop.followed",
+    "marketplace.shop.unfollowed",
+}
+FOLLOW_ATTENTION_NOTE = (
+    "Attention only. Following keeps a community or shop close; it is not "
+    "membership, endorsement, verification, payment evidence, or a trust-score increase."
+)
 
 ALIASES = {
     EV_FULL_REPAID: {
@@ -178,6 +188,10 @@ def _should_hide_for_user(event_type_raw: str) -> bool:
     return (event_type_raw or "").strip() == "trust.score_updated"
 
 
+def _is_follow_attention_event(event_type_raw: str) -> bool:
+    return (event_type_raw or "").strip().lower() in FOLLOW_ATTENTION_EVENT_TYPES
+
+
 def list_trust_timeline(
     db: Session,
     *,
@@ -206,6 +220,11 @@ def list_trust_timeline(
         reason = meta.get("reason") or (meta.get("meta", {}) or {}).get("reason")
         note = meta.get("note") or (meta.get("meta", {}) or {}).get("note")
         payment_reference = meta.get("payment_reference")
+        is_follow_attention = _is_follow_attention_event(raw_type)
+
+        if audience == "user" and is_follow_attention:
+            reason = "Attention event"
+            note = FOLLOW_ATTENTION_NOTE
 
         if audience == "user":
             if _should_hide_for_user(raw_type):
@@ -223,12 +242,7 @@ def list_trust_timeline(
                     keep = True
                 if rt in {"repayment.claimed", "repayment_claimed", "repayment.claim"}:
                     keep = True
-                if rt in {
-                    "community.followed",
-                    "community.unfollowed",
-                    "marketplace.shop.followed",
-                    "marketplace.shop.unfollowed",
-                }:
+                if rt in FOLLOW_ATTENTION_EVENT_TYPES:
                     keep = True
                 if rt.startswith("merchant.") or rt.startswith("courier."):
                     keep = True

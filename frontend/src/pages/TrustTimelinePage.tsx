@@ -545,6 +545,20 @@ export default function TrustTimelinePage() {
         </div>
 
         <div style={{ marginTop: 10 }}>
+          <div
+            style={{
+              ...innerCard("#F8FAFC"),
+              marginBottom: 10,
+              color: "#475569",
+              fontSize: 13,
+              lineHeight: 1.55,
+            }}
+          >
+            Follow events are attention records. They help you remember the
+            communities and shops you want to keep close, but they do not prove
+            membership, endorsement, verification, payment evidence, or trust-score
+            growth.
+          </div>
           {loading ? (
             <div style={helperText()}>Loading...</div>
           ) : items.length === 0 ? (

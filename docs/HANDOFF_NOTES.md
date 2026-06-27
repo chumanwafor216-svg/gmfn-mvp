@@ -1,3 +1,52 @@
+## 2026-06-27 - Trust Timeline explains neutral follow attention
+
+Owner request:
+- Continue materializing the following engine while keeping trust-facing
+  surfaces honest, institutional, and hard to misread.
+
+Correction completed locally:
+- `gmfn_backend/app/services/trust_timeline_service.py`
+  - added a shared follow-attention event set for community and shop follow /
+    unfollow events.
+  - returns signed-in Trust Timeline follow records with `reason:
+    Attention event`.
+  - returns a plain-language note that following is attention only, not
+    membership, endorsement, verification, payment evidence, or a trust-score
+    increase.
+  - keeps these events visible even when their trust delta is `0.00`.
+- `frontend/src/pages/TrustTimelinePage.tsx`
+  - added a compact Events-table explanation so screenshotable Trust Timeline
+    pages do not make follow events look like evidence, endorsement, or score
+    growth.
+- `frontend/tools/audit-trust-actions.mjs`
+  - added source guards for the frontend explanation and backend follow-event
+    boundary.
+- `gmfn_backend/tests/test_trust_route_ownership.py`
+  - now proves follow attention records keep `0.00`, use `Attention event`,
+    and include the non-endorsement / non-score-growth warning.
+- `docs/HANDOFF_NOTES.md`
+  - cleaned one earlier smart-quote phrase to ASCII.
+
+Verification:
+- `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py::test_my_trust_timeline_shows_follow_attention_as_neutral_user_signal gmfn_backend\tests\test_trust_route_ownership.py::test_my_trust_timeline_redacts_operational_references_for_user`
+  - result: `2 passed`
+- `python -m compileall -q gmfn_backend\app\services\trust_timeline_service.py`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warnings on edited
+  frontend files.
+- `npm --prefix frontend run audit:gsn-visible-language`
+
+Truth / remaining risk:
+- This clarifies an already-visible neutral attention signal. It does not add a
+  separate social feed, ranking system, recommendation engine, or proof of
+  membership.
+- Follow events remain weak attention records with no trust-score increase.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Follow events added to neutral TrustSlip and timeline surfaces
 
 Owner request:
@@ -84,7 +133,7 @@ Verification:
 
 Truth / remaining risk:
 - This surfaces the backend community-follow engine on the public community
-  record. This frontend slice alone did not create a separate “following feed”
+  record. This frontend slice alone did not create a separate "following feed"
   page; TrustSlip and Trust Timeline neutral surfacing is tracked in the later
   `Follow events added to neutral TrustSlip and timeline surfaces` entry above.
 - Follow/unfollow requires a signed-in session. Visitors only get the public

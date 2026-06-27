@@ -316,6 +316,10 @@ def test_my_trust_timeline_shows_follow_attention_as_neutral_user_signal(
     ]
     assert follow_items
     assert {item["delta"] for item in follow_items} == {"0.00"}
+    assert {item["reason"] for item in follow_items} == {"Attention event"}
+    assert all("Attention only." in item["note"] for item in follow_items)
+    assert all("not membership" in item["note"] for item in follow_items)
+    assert all("trust-score increase" in item["note"] for item in follow_items)
     assert "Private Community Name" not in response.text
     assert "Private Shop Name" not in response.text
     assert "actor_user_id" not in response.text

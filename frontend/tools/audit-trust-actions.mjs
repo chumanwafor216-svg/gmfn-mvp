@@ -688,6 +688,18 @@ assertContains(
   "Trust Timeline must use the backend's safe display reference for screenshotable user timelines."
 );
 
+assertContains(
+  "src/pages/TrustTimelinePage.tsx",
+  /Follow events are attention records[\s\S]*?communities and shops[\s\S]*?do not prove[\s\S]*?membership[\s\S]*?endorsement[\s\S]*?verification[\s\S]*?payment evidence[\s\S]*?trust-score\s+growth/,
+  "Trust Timeline must explain that follow events are neutral attention records, not trust growth or verification."
+);
+
+assertContains(
+  "../gmfn_backend/app/services/trust_timeline_service.py",
+  /FOLLOW_ATTENTION_EVENT_TYPES[\s\S]*?community\.followed[\s\S]*?marketplace\.shop\.followed[\s\S]*?FOLLOW_ATTENTION_NOTE[\s\S]*?Attention only[\s\S]*?not[\s\S]*?membership[\s\S]*?endorsement[\s\S]*?verification[\s\S]*?payment evidence[\s\S]*?trust-score increase[\s\S]*?reason = "Attention event"[\s\S]*?note = FOLLOW_ATTENTION_NOTE/,
+  "Trust Timeline API must return follow events as neutral attention notes for the user audience."
+);
+
 assertNotContains(
   "src/pages/TrustTimelinePage.tsx",
   /payment_reference|loan:\$\{e\.loan_id\}|support:\$\{e\.guarantor_id\}|actor_user_id|subject_user_id/,
