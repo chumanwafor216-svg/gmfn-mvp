@@ -133,6 +133,14 @@ def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> 
 
     if et_lower in ("merchant.release_recorded", "merchant_release_recorded"):
         return "Merchant recorded goods release"
+    if et_lower == "marketplace.shop.followed":
+        return "Followed a shop"
+    if et_lower == "marketplace.shop.unfollowed":
+        return "Updated shop follow"
+    if et_lower == "community.followed":
+        return "Followed a community"
+    if et_lower == "community.unfollowed":
+        return "Updated community follow"
     if et_lower == "merchant.dispatched":
         return "Goods dispatched"
     if et_lower == "merchant.in_transit":
@@ -214,6 +222,13 @@ def list_trust_timeline(
                 if (raw_type or "").upper() in {"LOAN_CANCELLED", "LOAN_INCOMPLETE"}:
                     keep = True
                 if rt in {"repayment.claimed", "repayment_claimed", "repayment.claim"}:
+                    keep = True
+                if rt in {
+                    "community.followed",
+                    "community.unfollowed",
+                    "marketplace.shop.followed",
+                    "marketplace.shop.unfollowed",
+                }:
                     keep = True
                 if rt.startswith("merchant.") or rt.startswith("courier."):
                     keep = True

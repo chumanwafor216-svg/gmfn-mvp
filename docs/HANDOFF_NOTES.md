@@ -1,3 +1,51 @@
+## 2026-06-27 - Follow events added to neutral TrustSlip and timeline surfaces
+
+Owner request:
+- Continue finishing following as a trust-event feed and allow community
+  following to appear in trust-facing surfaces without overstating it.
+
+Correction completed locally:
+- `gmfn_backend/app/services/trust_slips_services.py`
+  - classifies `community.followed` / `community.unfollowed` as
+    `Community attention`.
+  - classifies `marketplace.shop.followed` / `marketplace.shop.unfollowed` as
+    `Shop attention`.
+  - this lets TrustSlip community activity summaries reflect follow attention
+    without treating it as verification or repayment evidence.
+- `gmfn_backend/app/services/trust_timeline_service.py`
+  - keeps these zero-delta follow events visible in the signed-in personal
+    Trust Timeline.
+  - labels them as `Followed a community`, `Updated community follow`,
+    `Followed a shop`, and `Updated shop follow`.
+  - preserves `delta: "0.00"` for these events.
+- `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+  - renders neutral readable PDF event labels such as
+    `Community follow recorded` instead of exposing raw event names.
+- `gmfn_backend/tests/test_community_followers.py`
+  - now proves community following appears on TrustSlip as
+    `Community attention` while remaining zero-delta and bounded.
+- `gmfn_backend/tests/test_trust_route_ownership.py`
+  - now proves the signed-in Trust Timeline shows follow events as neutral
+    attention and does not expose private community/shop names or user ids.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\services\trust_slips_services.py gmfn_backend\app\services\trust_timeline_service.py gmfn_backend\app\services\trust_timeline_pdf_service.py`
+- `python -m pytest -q gmfn_backend\tests\test_community_followers.py`
+  - result: `1 passed`
+- `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py::test_my_trust_timeline_shows_follow_attention_as_neutral_user_signal gmfn_backend\tests\test_trust_route_ownership.py::test_my_trust_timeline_redacts_operational_references_for_user`
+  - result: `2 passed`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_trust_timeline_pdf_uses_institutional_shell`
+  - result: `1 passed`
+- `git diff --check` passed.
+
+Truth / remaining risk:
+- This finishes the backend trust-surface materialization for follow events.
+  It does not create a standalone social-style feed, follower recommendations,
+  or ranking.
+- Follow events remain weak attention signals with no trust-score increase.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Community following surfaced on public community record
 
 Owner request:
@@ -36,8 +84,9 @@ Verification:
 
 Truth / remaining risk:
 - This surfaces the backend community-follow engine on the public community
-  record. It does not yet add a separate “following feed” page or TrustSlip
-  line item for community follows.
+  record. This frontend slice alone did not create a separate “following feed”
+  page; TrustSlip and Trust Timeline neutral surfacing is tracked in the later
+  `Follow events added to neutral TrustSlip and timeline surfaces` entry above.
 - Follow/unfollow requires a signed-in session. Visitors only get the public
   count and record boundary.
 - This slice is local-only at the time of writing. It has not been pushed or

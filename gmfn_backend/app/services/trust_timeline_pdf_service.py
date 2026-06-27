@@ -428,6 +428,20 @@ def _event_meta_summary(meta: Any, *, redact: bool = True) -> str:
     return " | ".join(parts)
 
 
+def _event_type_label(event_type: Any) -> str:
+    value = _safe_str(event_type)
+    text = value.lower()
+    if text == "community.followed":
+        return "Community follow recorded"
+    if text == "community.unfollowed":
+        return "Community follow updated"
+    if text == "marketplace.shop.followed":
+        return "Shop follow recorded"
+    if text == "marketplace.shop.unfollowed":
+        return "Shop follow updated"
+    return value
+
+
 def _draw_capacity_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any]) -> float:
     evidence_summary = trustslip.get("evidence_summary", {}) or {}
     capacity = evidence_summary.get("capacity_context", {}) or {}
@@ -513,7 +527,7 @@ def _draw_events_block(
         y = _ensure_space(c, y, 18 * mm, footer_text)
 
         when_text = _fmt_dt(getattr(e, "created_at", None))
-        event_type = _safe_str(getattr(e, "event_type", None))
+        event_type = _event_type_label(getattr(e, "event_type", None))
         meta_summary = _event_meta_summary(getattr(e, "meta", None), redact=redact)
 
         _draw_text(c, LEFT, y, when_text, size=8, color=colors.HexColor("#0F172A"))

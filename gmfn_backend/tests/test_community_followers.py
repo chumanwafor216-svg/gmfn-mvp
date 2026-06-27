@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 
 from app.core.security import create_access_token
 from app.db.database import SessionLocal
-from app.db.models import Clan, CommunityFollower, TrustEvent, User
+from app.db.models import Clan, ClanMembership, CommunityFollower, TrustEvent, User
+from app.services.trust_slips_services import get_trust_slip_payload
 
 
 def _seed_followable_community() -> None:
@@ -38,6 +39,11 @@ def _seed_followable_community() -> None:
                     status="active",
                     invite_uses=0,
                     created_at=datetime.now(timezone.utc),
+                ),
+                ClanMembership(
+                    clan_id=1,
+                    user_id=2,
+                    role="user",
                 ),
             ]
         )
@@ -82,6 +88,11 @@ def test_community_follow_status_count_unfollow_and_neutral_trust_events(client)
     assert follow_meta["not_endorsement"] is True
     assert follow_meta["not_verification"] is True
     assert follow_meta["not_payment_evidence"] is True
+
+    with SessionLocal() as db:
+        trustslip = get_trust_slip_payload(db, user_id=2)
+    assert trustslip["community_activity_count"] == 1
+    assert trustslip["community_activity_categories"] == ["Community attention"]
 
     second_follow = client.post("/clans/1/follow", headers=headers)
     assert second_follow.status_code == 200, second_follow.text

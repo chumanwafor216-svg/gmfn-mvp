@@ -261,6 +261,67 @@ def test_my_trust_timeline_redacts_operational_references_for_user(
     assert "PRIVATE-REF-123" not in response.text
 
 
+def test_my_trust_timeline_shows_follow_attention_as_neutral_user_signal(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with SessionLocal() as db:
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="community.followed",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta={
+                        "reason": "community_followed",
+                        "trust_delta": "0.00",
+                        "community_name": "Private Community Name",
+                        "not_membership": True,
+                        "not_endorsement": True,
+                        "not_verification": True,
+                    },
+                    created_at=datetime(2026, 6, 27, 10, 0, tzinfo=timezone.utc),
+                ),
+                TrustEvent(
+                    event_type="marketplace.shop.followed",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta={
+                        "reason": "shop_followed",
+                        "trust_delta": "0.00",
+                        "shop_name": "Private Shop Name",
+                        "not_endorsement": True,
+                        "not_verification": True,
+                    },
+                    created_at=datetime(2026, 6, 27, 10, 1, tzinfo=timezone.utc),
+                ),
+            ]
+        )
+        db.commit()
+
+    response = client.get("/trust/me/timeline?limit=5")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    labels = [item["label"] for item in payload["items"]]
+    assert "Followed a shop" in labels
+    assert "Followed a community" in labels
+    follow_items = [
+        item
+        for item in payload["items"]
+        if item["event_type"] in {"community.followed", "marketplace.shop.followed"}
+    ]
+    assert follow_items
+    assert {item["delta"] for item in follow_items} == {"0.00"}
+    assert "Private Community Name" not in response.text
+    assert "Private Shop Name" not in response.text
+    assert "actor_user_id" not in response.text
+    assert "subject_user_id" not in response.text
+
+
 def test_admin_trust_timeline_keeps_operational_references_for_admin(
     client: TestClient,
     override_current_user,

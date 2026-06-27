@@ -562,6 +562,10 @@ def _public_activity_category(event_type: Any) -> str:
     text = _safe_str(event_type).lower()
     if not text:
         return "Community activity"
+    if text in {"community.followed", "community.unfollowed"}:
+        return "Community attention"
+    if text in {"marketplace.shop.followed", "marketplace.shop.unfollowed"}:
+        return "Shop attention"
     if "verification" in text or "verified" in text or "confirmation" in text or text in {
         "clan_joined",
         "community_member_joined",
