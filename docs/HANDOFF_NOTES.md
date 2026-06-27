@@ -1,3 +1,31 @@
+## 2026-06-27 - Institutional proof audit support-title alignment
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Local correction:
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - institutional proof guards now expect the current visible support titles:
+    `GSN Support Repayment Instruction`, `GSN Support Audit Link`,
+    `GSN Support Summary Snapshot`, `GSN Support Queue Snapshot`, and
+    `GSN Supporter Value Snapshot`.
+
+Verification state:
+- `node frontend\tools\audit-institutional-proof-surfaces.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on the touched
+  audit file.
+
+Truth / remaining risk:
+- This is an audit-only correction. The affected pages already used the support
+  titles; the guard was stale and was still looking for older Loan/Guarantor
+  paper titles.
+- Pending publish/deploy evidence at the time this note was written.
+
 ## 2026-06-27 - Shared guidance support-decision wording cleanup
 
 Owner request:

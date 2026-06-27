@@ -532,7 +532,7 @@ assertContains(
 );
 assertContains(
   "repayment",
-  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Loan Repayment Instruction[\s\S]*?safeCopy\(text\)/,
+  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Support Repayment Instruction[\s\S]*?safeCopy\(text\)/,
   "Repayment copied full instructions must use the branded GSN payment instruction package."
 );
 assertContains(
@@ -557,18 +557,18 @@ assertContains(
 );
 assertContains(
   "loanSummary",
-  /buildGsnSupportEvidencePackage[\s\S]*?GSN Loan Audit Link[\s\S]*?loanSummaryPaper[\s\S]*?GSN Loan Summary Snapshot[\s\S]*?GsnSnapshotPaperCard/,
+  /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Audit Link[\s\S]*?loanSummaryPaper[\s\S]*?GSN Support Summary Snapshot[\s\S]*?GsnSnapshotPaperCard/,
   "Loan Summary copied summary, visual preview, and audit link must use branded GSN support evidence packages."
 );
 assertContains(
   "guarantorInbox",
-  /queuePaper[\s\S]*?GSN Guarantor Queue Snapshot[\s\S]*?safeCopy\(queuePaper\)[\s\S]*?GsnSnapshotPaperCard/,
-  "Guarantor Inbox queue summary must use a branded GSN support evidence package for both visible paper preview and copy."
+  /queuePaper[\s\S]*?GSN Support Queue Snapshot[\s\S]*?safeCopy\(queuePaper\)[\s\S]*?GsnSnapshotPaperCard/,
+  "Incoming Requests queue summary must use a branded GSN support evidence package for both visible paper preview and copy."
 );
 assertContains(
   "guarantorEarnings",
-  /earningsPaper[\s\S]*?GSN Guarantor Earnings Snapshot[\s\S]*?safeCopy\(earningsPaper\)[\s\S]*?GsnSnapshotPaperCard/,
-  "Guarantor Earnings summary must use a branded GSN support evidence package for both visible paper preview and copy."
+  /earningsPaper[\s\S]*?GSN Supporter Value Snapshot[\s\S]*?safeCopy\(earningsPaper\)[\s\S]*?GsnSnapshotPaperCard/,
+  "Supporter Value summary must use a branded GSN support evidence package for both visible paper preview and copy."
 );
 
 assertContains(
