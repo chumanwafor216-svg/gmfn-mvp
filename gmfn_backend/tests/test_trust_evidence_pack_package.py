@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -9,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.db.base import Base as CoreBase
 from app.db.models import TrustEvent
 from app.services.trust_evidence_pack_service import _events_like, _latest_event
+from app.services.trust_score_service import humane_trust_level
 
 
 def _session():
@@ -93,3 +95,16 @@ def test_trust_evidence_pack_delivery_confirmation_redacts_operational_fields():
     finally:
         db.close()
         engine.dispose()
+
+
+def test_trust_level_labels_are_plain_institutional_text():
+    labels = [
+        humane_trust_level(Decimal("0.00")),
+        humane_trust_level(Decimal("1.00")),
+        humane_trust_level(Decimal("3.00")),
+        humane_trust_level(Decimal("7.00")),
+        humane_trust_level(Decimal("20.00")),
+    ]
+
+    assert labels == ["Starting", "Growing", "Strong", "Established", "Pillar"]
+    assert all(label.isascii() for label in labels)

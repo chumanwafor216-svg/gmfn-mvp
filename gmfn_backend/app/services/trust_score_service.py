@@ -193,14 +193,14 @@ def _explicit_trust_delta(meta: Dict[str, Any]) -> Decimal:
 def humane_trust_level(score: Decimal) -> str:
     s = _d(score)
     if s < Decimal("0.50"):
-        return "Starting 🌱"
+        return "Starting"
     if s < Decimal("2.00"):
-        return "Growing 🌿"
+        return "Growing"
     if s < Decimal("6.00"):
-        return "Strong 🌳"
+        return "Strong"
     if s < Decimal("15.00"):
-        return "Established 🛡️"
-    return "Pillar 🏛️"
+        return "Established"
+    return "Pillar"
 
 
 def trust_band_for_score(score: Union[Decimal, str, int]) -> str:

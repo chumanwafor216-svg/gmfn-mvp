@@ -71911,6 +71911,39 @@ GSN-branded invite composer and invite-entry continuity.
     is deployed with exact Render API credentials or manually from the Render
     dashboard.
 
+### Follow-up same day - Trust level labels made institutional
+
+- Trigger:
+  - continued evidence-package inspection after auxiliary Trust Evidence Pack
+    JSON redaction;
+  - `trust_summary.json`, report rows, and trust evidence exports use
+    `humane_trust_level`, which still returned emoji-bearing labels such as
+    `Starting`, `Growing`, `Strong`, `Established`, and `Pillar` with symbols.
+- Unabated truth:
+  - emoji labels may feel friendly inside app UI, but they are weak in
+    institutional PDFs/JSON and can render as mojibake in some readers;
+  - trust level labels are backend data reused across evidence surfaces, so the
+    safest system-level correction is to make them plain text at source.
+- Changed:
+  - `gmfn_backend/app/services/trust_score_service.py`
+    - `humane_trust_level` now returns plain ASCII labels:
+      `Starting`, `Growing`, `Strong`, `Established`, `Pillar`.
+  - `gmfn_backend/tests/test_trust_evidence_pack_package.py`
+    - added coverage confirming the labels and ASCII-only output.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added a cage preventing emoji/mojibake from returning to evidence-facing
+      trust level labels.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_trust_evidence_pack_package.py gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\services\trust_evidence_pack_service.py gmfn_backend\app\services\trust_score_service.py`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - verified locally at this entry;
+  - not yet committed, pushed, or Render-confirmed.
+
 ### Follow-up same day - Governance ZIP complete-record boundary
 
 - Trigger:

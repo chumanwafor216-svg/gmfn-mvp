@@ -21,6 +21,7 @@ const files = {
   trustTimelinePdf: "gmfn_backend/app/services/trust_timeline_pdf_service.py",
   trustTimelineRoute: "gmfn_backend/app/api/routes/trust_timeline_pdf.py",
   trustSlipRoute: "gmfn_backend/app/api/routes/trust_slips.py",
+  trustScoreService: "gmfn_backend/app/services/trust_score_service.py",
   reports: "gmfn_backend/app/services/reports_service.py",
   reportsRoute: "gmfn_backend/app/api/routes/reports.py",
   analyticsRoute: "gmfn_backend/app/api/routes/analytics.py",
@@ -298,6 +299,16 @@ assertNotContains(
   "trustEvidencePack",
   /"actor_user_id": r\.actor_user_id|"subject_user_id": r\.subject_user_id|"actor_user_id": row\.actor_user_id|"subject_user_id": row\.subject_user_id|"meta": _safe_json|"payment_reference"/,
   "Trust Evidence Pack ZIP auxiliary event files must not expose raw event IDs, metadata, or payment references."
+);
+assertContains(
+  "trustScoreService",
+  /def humane_trust_level\(score: Decimal\)[\s\S]*?return "Starting"[\s\S]*?return "Growing"[\s\S]*?return "Strong"[\s\S]*?return "Established"[\s\S]*?return "Pillar"/,
+  "Evidence-facing trust level labels must stay plain institutional text."
+);
+assertNotContains(
+  "trustScoreService",
+  /🌱|🌿|🌳|🛡|🏛|ð|â|ï/,
+  "Evidence-facing trust level labels must not use emoji or mojibake."
 );
 
 assertContains(
