@@ -1,3 +1,41 @@
+## 2026-06-27 - Admin incomplete support action labels
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+  - phone-critical row actions now say `Copy support` and `Support Summary`
+    instead of `Copy loan` and `Loan Summary`.
+- `frontend/tools/audit-button-stability.mjs`
+  - updated the Admin Incomplete Loans button-geometry guard to require the
+    support labels and reject the old row action wording.
+
+Verification state:
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-admin-ops-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `162d06483cb4a17e513c08cd68a8924ea8e62594`
+  (`Clarify admin incomplete support actions`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28285802253` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vps31o3t8c73bj041g`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: the page and backend model are still named incomplete
+  loans. This slice intentionally changed only the compact user action labels
+  where the surrounding admin copy already frames the work as support decisions
+  and coverage review.
+
 ## 2026-06-27 - Support repayment instruction title guard
 
 Owner request:
