@@ -115,6 +115,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoanDecisionPage.tsx",
+  /Support Summary or the Workbench[\s\S]*?workbench or the support summary/,
+  "Loan Decision guidance must send users toward Support Summary wording, not old Loan Summary wording."
+);
+
+assertNotContains(
+  "src/pages/LoanDecisionPage.tsx",
+  /Loan Summary|loan summary/,
+  "Loan Decision guidance must not restore old Loan Summary wording."
+);
+
+assertContains(
   "src/pages/LoansPage.tsx",
   /debugId="loans\.hero\.start-support"[\s\S]*?stableHeight=\{isCompact \? 58 : 68\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?height: isCompact \? 58 : 68,[\s\S]*?minHeight: isCompact \? 58 : 68,[\s\S]*?maxHeight: isCompact \? 58 : 68,[\s\S]*?Start Support Request/,
   "Loans first phone viewport must expose a fixed-height Start Support Request CTA in the hero before the user reaches the deeper route grid."

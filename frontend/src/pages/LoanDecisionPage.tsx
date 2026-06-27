@@ -297,7 +297,7 @@ export default function LoanDecisionPage() {
         label="What this screen does"
         what="This page gives you a calmer reading view for live support decisions before you act."
         why="Loans and Support is still the main working door, and Finance still keeps the wider money file across communities. This screen helps you read one support position without mixing it with every other money record."
-        next="Read the current support item first, then move into Loan Summary or the Workbench only when you are ready to act."
+        next="Read the current support item first, then move into Support Summary or the Workbench only when you are ready to act."
         tone="blue"
       />
 
@@ -308,7 +308,7 @@ export default function LoanDecisionPage() {
         </div>
         <div style={{ ...helperText(), marginTop: 8, maxWidth: 760 }}>
           Keep this page for calm reading. When a support item needs action, jump
-          from here into the workbench or the loan summary instead of trying to
+          from here into the workbench or the support summary instead of trying to
           decode everything from Finance.
         </div>
 
