@@ -32,7 +32,15 @@ Verification passed locally:
   - `node frontend\tools\audit-button-stability.mjs`
 
 Truth / remaining risk:
-- Commit / Render publication pending.
+- Committed and pushed `main` at
+  `d9b0eda14ab99753e077d66c6887d1630938d52f`
+  (`Hide legacy support wording in loan surfaces`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28284360256` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8votmreo5us73bgmn9g`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- This is frontend/docs only and does not require backend Render credentials.
 - These edits are display-only. Backend route names, API payload keys,
   TypeScript contract names, debug ids, and compatibility logic still use
   `guarantor` where they mirror existing backend contracts.
