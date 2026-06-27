@@ -1,3 +1,46 @@
+## 2026-06-27 - Public shop share wording changed from trusted to public record
+
+Owner request:
+- Continue deep institutional cleanup across customer-facing, outsider-facing,
+  screenshotable, and shareable GSN surfaces without overstating verification,
+  trust, or protected-trade capability.
+
+Correction completed locally:
+- `frontend/src/pages/ShopGalleryPage.tsx`
+  - changed fallback public shop descriptions from trusted-product language to
+    visible public-record language.
+  - changed the copied shop package line from `Trusted marketplace. Real people.
+    Real value.` to `Public marketplace record. Real people. Current evidence.`
+  - changed the public shop social-share caption from `Trusted public shop` to
+    `Public shop record`.
+  - changed the inactive Spotlight fallback from `trusted shop updates` to
+    `public shop updates`.
+  - changed Private Vault helper wording from a generic trust-link claim to an
+    owner-issued-link boundary.
+- `frontend/src/pages/MarketplacePage.tsx`
+  - changed the public shop social-share caption from `Trusted public shop` to
+    `Public shop record`.
+- `frontend/tools/audit-share-tag-actions.mjs`
+  - updated the share-action audit so the public shop Share button must keep the
+    public-record caption and backend social-preview route.
+
+Verification:
+- `rg -n "Trusted marketplace|trusted products|Trusted public shop|trusted shop updates|Trusted GSN shop|Trusted product" frontend\src\pages\ShopGalleryPage.tsx frontend\src\pages\MarketplacePage.tsx frontend\tools -S`
+  - result: no matches in the checked files.
+- `npm --prefix frontend run audit:share-tag-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This is wording and presentation truth only. It does not change shop
+  visibility rules, TrustSlip logic, shop verification, backend data, routing,
+  or any protected trade-release workflow.
+- A public shop record is not the same thing as a verified trusted shop.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Share-preview cards stopped overclaiming public shops as trusted
 
 Owner request:

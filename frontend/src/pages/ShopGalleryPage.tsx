@@ -1683,7 +1683,7 @@ export default function ShopGalleryPage() {
           `${ownerName} Shop`,
           "GSN Shop"
         ),
-        description: "Public GSN shop face for trusted products.",
+        description: "Public GSN shop face for visible product records.",
       };
       const candidateClanIds = [preferredClanId, 0];
 
@@ -2502,7 +2502,7 @@ export default function ShopGalleryPage() {
       : shopLoadFailed
       ? "This public shop link has reached the shop page, but the backend has not connected it to an active owner shop yet."
       : effectiveShop?.description ||
-          "Public shop face for trusted products. Private Vault offers open only through a trust link."
+          "Public shop face for visible product records. Private Vault offers open only through an owner-issued link."
   );
   const showShopHeroDescription =
     Boolean(shopDescriptionText) &&
@@ -3064,7 +3064,7 @@ export default function ShopGalleryPage() {
                 lineHeight: 1.25,
               }}
             >
-              Trusted marketplace. Real people. Real value.
+              Public marketplace record. Real people. Current evidence.
             </div>
           </div>
         </div>
@@ -3270,7 +3270,7 @@ export default function ShopGalleryPage() {
                     }}
                   >
                     {inlineShopIcon("shield", "#8C6829", 14)}
-                    <span>Trusted marketplace. Real people. Real value.</span>
+                    <span>Public marketplace record. Real people. Current evidence.</span>
                   </div>
                 ) : null}
               </div>
@@ -3553,13 +3553,13 @@ export default function ShopGalleryPage() {
                   "GSN public shop"
                 ),
                 message: buildPublicShopPackage(absoluteShopShareLink, [
-                  "Trusted marketplace. Real people. Real value.",
+                  "Public marketplace record. Real people. Current evidence.",
                 ]),
                 socialMessage: `${firstMeaningful(
                   effectiveShop?.shopName,
                   effectiveShop?.ownerName,
                   "GSN public shop"
-                )} on GSN. Trusted public shop. Open the shop link.`,
+                )} on GSN. Public shop record. Open the shop link.`,
                 socialUrl: firstMeaningful(effectiveShop?.gmfnId, gmfnId)
                   ? publicShopSocialPreviewUrl({
                       gmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
@@ -4623,7 +4623,7 @@ export default function ShopGalleryPage() {
                 >
                   {publicShopSpotlightActive
                     ? miniSpotlightView.detail
-                    : "Fresh items, hot deals, and trusted shop updates."}
+                    : "Fresh items, hot deals, and public shop updates."}
                 </div>
                 {miniSpotlightView.tagLabel ? (
                   <div

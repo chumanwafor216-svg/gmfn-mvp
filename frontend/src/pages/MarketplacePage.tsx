@@ -9824,7 +9824,7 @@ export default function MarketplacePage() {
                         target={{
                           title: shopEmailSubject,
                           message: publicShopSocialPackage,
-                          socialMessage: `${firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop"} on GSN. Trusted public shop. Open the shop link.`,
+                          socialMessage: `${firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop"} on GSN. Public shop record. Open the shop link.`,
                           socialUrl: publicShopSocialPreviewLink,
                           url: publicShopSocialLink,
                         }}

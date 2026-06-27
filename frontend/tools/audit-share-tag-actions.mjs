@@ -156,7 +156,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /publicShopSocialPreviewUrl[\s\S]*<SocialTagShareButton[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Trusted public shop\. Open the shop link\.[\s\S]*socialUrl: firstMeaningful\([\s\S]*?publicShopSocialPreviewUrl[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
+    /publicShopSocialPreviewUrl[\s\S]*<SocialTagShareButton[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: firstMeaningful\([\s\S]*?publicShopSocialPreviewUrl[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
     "Public Shop Share must open the social chooser with a short caption and backend social-preview URL while WhatsApp/formal copy stay separate.",
   ],
   [
