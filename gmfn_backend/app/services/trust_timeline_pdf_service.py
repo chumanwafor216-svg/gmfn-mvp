@@ -49,16 +49,15 @@ def _safe_int(x: Any, default: int = 0) -> int:
         return default
 
 
-def _mask_email(email: Optional[str]) -> str:
-    if not email:
-        return "-"
-    e = email.strip()
-    if "@" not in e:
-        return "private contact"
-    user, domain = e.split("@", 1)
-    if len(user) <= 2:
-        return user[:1] + "*" + "@" + domain
-    return user[:2] + ("*" * max(1, len(user) - 2)) + "@" + domain
+def _timeline_contact_boundary() -> str:
+    return "redacted for timeline PDF"
+
+
+def _audience_label(audience: Any) -> str:
+    value = _safe_str(audience, "user").strip().lower()
+    if value == "admin":
+        return "admin redacted review"
+    return "controlled reader review"
 
 
 def _fmt_dt(value: Any) -> str:
@@ -238,7 +237,7 @@ def _draw_identity_block(c: canvas.Canvas, y: float, user: Optional[User], trust
     x2 = LEFT + col_width + col_gap
 
     y1 = _kv_pair(c, x1, y, "GSN ID", _safe_str(trustslip.get("gmfn_id")), col_width=col_width)
-    y2 = _kv_pair(c, x2, y, "User Email", _mask_email(getattr(user, "email", None)), col_width=col_width)
+    y2 = _kv_pair(c, x2, y, "Private contact", _timeline_contact_boundary(), col_width=col_width)
 
     y_next = min(y1, y2) - 3 * mm
 
@@ -385,7 +384,7 @@ def _draw_sponsors_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any], 
         _draw_text(c, LEFT + 3 * mm, y - 4 * mm, f"Sponsor {idx}", size=9, bold=True, color=colors.HexColor("#0F172A"))
         _draw_text(c, LEFT + 3 * mm, y - 8 * mm, f"GSN ID: {_safe_str(sponsor.get('gmfn_id'))}", size=9)
         _draw_text(c, LEFT + 70 * mm, y - 8 * mm, f"Type: {_safe_str(sponsor.get('edge_type'))}", size=9)
-        _draw_text(c, LEFT + 3 * mm, y - 12 * mm, f"Email: {_mask_email(sponsor.get('email'))}", size=9)
+        _draw_text(c, LEFT + 3 * mm, y - 12 * mm, f"Contact: {_timeline_contact_boundary()}", size=9)
         _draw_text(c, LEFT + 70 * mm, y - 12 * mm, f"Phone verified: {'Yes' if sponsor.get('phone_verified') else 'No'}", size=9)
 
         weight = sponsor.get("weight")
@@ -615,7 +614,7 @@ def build_trust_timeline_pdf(
 
     y = _draw_page_frame(c)
 
-    _draw_right_text(c, RIGHT, y, f"Audience: {_safe_str(audience, 'user')}", size=9, bold=True, color=colors.HexColor("#475569"))
+    _draw_right_text(c, RIGHT, y, f"Audience: {_audience_label(audience)}", size=9, bold=True, color=colors.HexColor("#475569"))
     y -= 5 * mm
     _line(c, y)
     y -= 6 * mm

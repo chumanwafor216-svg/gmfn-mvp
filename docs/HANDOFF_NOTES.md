@@ -1,3 +1,43 @@
+## 2026-06-27 - Trust Timeline PDF contact boundary tightened
+
+Owner request:
+- Continue deep institutional/customer-facing paper cleanup with meticulous
+  attention to documents that may expose too much.
+
+Correction completed locally:
+- `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+  - stopped rendering even masked holder email inside the Trust Timeline PDF.
+  - changed the identity row from `User Email` to `Private contact` with
+    `redacted for timeline PDF`.
+  - stopped rendering even masked sponsor emails in the Sponsor / Support
+    References block; sponsors now show a reader-safe `Contact: redacted for
+    timeline PDF` boundary instead.
+  - replaced the raw-looking `Audience: user` / `Audience: admin` label with
+    `Audience: controlled reader review` or `Audience: admin redacted review`.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added guards against `User Email`, `_mask_email`, sponsor `Email:` output,
+    and raw audience rendering returning to the Trust Timeline PDF.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added matching proof-surface audit guards so future PDF cleanup/build passes
+    keep the contact and audience boundary intact.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\services\trust_timeline_pdf_service.py`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+  - result: `18 passed`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warning on
+  `frontend/tools/audit-institutional-proof-surfaces.mjs`.
+
+Truth / remaining risk:
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+- The Trust Timeline PDF still shows GSN ID, TrustSlip code, CCI/trust signals,
+  support capacity, sponsor GSN IDs, edge type, phone verification status, and
+  weight/confidence where present. That remains intentional evidence content,
+  but it is still a controlled trust paper, not a public profile.
+
 ## 2026-06-27 - TrustSlip PDF private member reference redacted
 
 Owner request:

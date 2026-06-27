@@ -87,10 +87,18 @@ def test_trust_timeline_pdf_uses_institutional_shell():
     assert "Available support capacity" in text
     assert "Current locked support" in text
     assert "Support capacity ratio" in text
+    assert "Private contact" in text
+    assert "redacted for timeline PDF" in text
+    assert "def _timeline_contact_boundary" in text
+    assert "def _audience_label" in text
     assert "Reader boundary: redacted personal trust history for controlled review." in text
     assert "private event details redacted for timeline PDF" in text
     assert "redact: bool = True" in text
     assert "pack_meta: Optional[Dict[str, Any]] = None" in text
+    assert "User Email" not in text
+    assert "Email: {_mask_email" not in text
+    assert "def _mask_email" not in text
+    assert "Audience: {_safe_str(audience, 'user')}" not in text
     assert "Trust Limit" not in text
     assert "Locked Guarantees" not in text
     assert "Available Capacity" not in text

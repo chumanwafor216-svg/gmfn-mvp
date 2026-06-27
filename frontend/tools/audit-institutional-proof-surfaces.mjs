@@ -269,6 +269,16 @@ assertContains(
 );
 assertContains(
   "trustTimelinePdf",
+  /def _timeline_contact_boundary[\s\S]*?redacted for timeline PDF[\s\S]*?Private contact[\s\S]*?Contact: \{_timeline_contact_boundary\(\)\}/,
+  "Trust Timeline PDF must redact holder and sponsor contact details instead of rendering masked private emails."
+);
+assertContains(
+  "trustTimelinePdf",
+  /def _audience_label[\s\S]*?admin redacted review[\s\S]*?controlled reader review[\s\S]*?Audience: \{_audience_label\(audience\)\}/,
+  "Trust Timeline PDF must translate audience values into reader-safe review labels."
+);
+assertContains(
+  "trustTimelinePdf",
   /redact: bool = True/,
   "Trust Timeline PDF must default to redacted output."
 );
@@ -279,8 +289,8 @@ assertContains(
 );
 assertNotContains(
   "trustTimelinePdf",
-  /Trust Limit|Locked Guarantees|Available Capacity|Capacity Ratio|payment_reference/,
-  "Trust Timeline PDF must not expose older limit/guarantee/capacity wording or payment references."
+  /Trust Limit|Locked Guarantees|Available Capacity|Capacity Ratio|payment_reference|User Email|Email: \{_mask_email|def _mask_email|Audience: \{_safe_str\(audience, 'user'\)\}/,
+  "Trust Timeline PDF must not expose older limit/guarantee/capacity wording, payment references, private contact labels, or raw audience values."
 );
 assertContains(
   "trustTimelineRoute",
