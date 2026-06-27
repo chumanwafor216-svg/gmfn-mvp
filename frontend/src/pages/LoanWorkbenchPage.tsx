@@ -18,6 +18,7 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
 import { brandClampLines } from "../styles/gmfnBrand";
 
 type NoticeTone = "success" | "error";
@@ -1193,6 +1194,118 @@ export default function LoanWorkbenchPage() {
     safeStr(firstTruthy(me?.role, me?.account_role, me?.user_role)).toLowerCase() ===
       "admin" || currentClanRole === "admin";
   const revenueRoute = canOpenCommandRevenue ? routes.revenueAllocation : routes.finance;
+  const workbenchPaper = useMemo(
+    () =>
+      buildGsnSupportEvidencePackage({
+        title: "GSN Support Workbench Snapshot",
+        purpose:
+          "Keep the current support workbench state with visible support, finance, and supporter-context readings.",
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: communityLabel,
+        communityId: publicCommunityId,
+        routeName: "Support Workbench",
+        loanId: selectedLoanId || loanDetail?.id || "",
+        amount: `${amountText} ${currency}`,
+        status: currentStatus,
+        detailLines: [
+          `Work item: ${workbenchTitle}`,
+          `Current status: ${currentStatus}`,
+          `Amount: ${amountText} ${currency}`,
+          `Support gap: ${guaranteeGap} ${currency}`,
+          `Supporters needed: ${guarantorsRequired}`,
+          `Paid total: ${paidTotal} ${currency}`,
+          `Remaining amount: ${remainingAmount} ${currency}`,
+          `Service fee: ${safeStr(loanDetail?.serviceFee || "0.00")} ${currency}`,
+          `Net disbursed preview: ${safeStr(loanDetail?.netDisbursedAmount || "0.00")} ${currency}`,
+          `Pool used: ${safeStr(loanDetail?.poolUsed || "0.00")} ${currency}`,
+          `Personal pool at request: ${safeStr(loanDetail?.personalPoolAtRequest || "0.00")} ${currency}`,
+          `Supporter pool: ${safeStr(loanDetail?.guarantorPool || "0.00")} ${currency}`,
+          `Platform revenue: ${safeStr(loanDetail?.platformRevenue || "0.00")} ${currency}`,
+          `Created: ${safeDateTime(loanDetail?.createdAt)}`,
+          `Due: ${safeDateTime(loanDetail?.dueAt)}`,
+          `Decision at: ${safeDateTime(loanDetail?.decisionAt)}`,
+          `Repaid at: ${safeDateTime(loanDetail?.repaidAt)}`,
+          cameFromWithdrawalSupport ? "Money Out support context: present" : "",
+          withdrawalAmount ? `Money Out amount: ${withdrawalAmount}` : "",
+          supportGap ? `Money Out support gap: ${supportGap}` : "",
+          withdrawalNote ? `Money Out note: ${withdrawalNote}` : "",
+          "Visible supporter-fit rows:",
+          ...(suggestedGuarantors.length
+            ? suggestedGuarantors.slice(0, 5).map((item, index) => {
+                const parts = [
+                  firstTruthy(item.displayName, item.email, item.gmfnId, "Candidate"),
+                  safeStr(item.trustScore)
+                    ? `trust signal: ${safeStr(item.trustScore)}${
+                        safeStr(item.trustBand) ? ` / ${safeStr(item.trustBand)}` : ""
+                      }`
+                    : "",
+                  safeStr(item.reliabilityScore)
+                    ? `reliability: ${safeStr(item.reliabilityScore)}`
+                    : "",
+                  safeStr(item.recommendedPledge)
+                    ? `suggested support: ${safeStr(item.recommendedPledge)}`
+                    : "",
+                  safeStr(item.reason) ? `reason: ${safeStr(item.reason)}` : "",
+                ].filter(Boolean);
+
+                return `- ${index + 1}. ${parts.join("; ")}`;
+              })
+            : ["- No supporter-fit rows are currently shown for this support item."]),
+          "Visible support request rows:",
+          ...(guarantorRequests.length
+            ? guarantorRequests.slice(0, 5).map((item, index) => {
+                const parts = [
+                  firstTruthy(
+                    item.guarantorName,
+                    item.guarantorEmail,
+                    item.guarantorUserId ? `Supporter user ${item.guarantorUserId}` : "",
+                    "Supporter"
+                  ),
+                  safeStr(item.pledgeAmount)
+                    ? `pledge: ${safeStr(item.pledgeAmount)} ${currency}`
+                    : "",
+                  safeStr(item.status) ? `status: ${supportDisplayText(item.status)}` : "",
+                  item.isLocked ? "locked support visible" : "",
+                  safeStr(item.lockedAmount)
+                    ? `locked amount: ${safeStr(item.lockedAmount)} ${currency}`
+                    : "",
+                  safeStr(item.releasedAmount)
+                    ? `released amount: ${safeStr(item.releasedAmount)} ${currency}`
+                    : "",
+                ].filter(Boolean);
+
+                return `- ${index + 1}. ${parts.join("; ")}`;
+              })
+            : ["- No support request row is currently shown for this support item."]),
+          "Boundary: workbench readings and visible rows are decision support only. They do not approve support, choose a supporter, confirm payout, settle exposure, or authorize release of goods, credit, or money.",
+        ],
+      }),
+    [
+      amountText,
+      cameFromWithdrawalSupport,
+      communityLabel,
+      currency,
+      currentStatus,
+      gmfnId,
+      guaranteeGap,
+      guarantorRequests,
+      guarantorsRequired,
+      loanDetail,
+      memberName,
+      memberRole,
+      paidTotal,
+      publicCommunityId,
+      remainingAmount,
+      selectedLoanId,
+      suggestedGuarantors,
+      supportGap,
+      withdrawalAmount,
+      withdrawalNote,
+      workbenchTitle,
+    ]
+  );
 
   if (loading) {
     return (
@@ -1398,6 +1511,31 @@ export default function LoanWorkbenchPage() {
               >
                 {actionText("copy", "Copy ID")}
               </SubtleButton>
+
+              <SubtleButton
+                onClick={() =>
+                  handleCopy(
+                    workbenchPaper,
+                    "GSN support workbench paper copied.",
+                    "Support workbench paper is not ready yet."
+                  )
+                }
+                disabled={!selectedLoanId}
+                fullWidth
+                stableHeight={isCompact ? 50 : 52}
+                debugId="loan-workbench.front-copy-paper"
+                style={{
+                  border: "1px solid rgba(121,149,190,0.20)",
+                  background:
+                    "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+                  color: !selectedLoanId ? "#94A3B8" : "#E6EEF8",
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                  transition: "none",
+                }}
+              >
+                {actionText("document", "Copy paper")}
+              </SubtleButton>
             </div>
           </div>
 
@@ -1476,6 +1614,31 @@ export default function LoanWorkbenchPage() {
                 }}
               >
                 {actionText("copy", "Copy ID")}
+              </SubtleButton>
+
+              <SubtleButton
+                onClick={() =>
+                  handleCopy(
+                    workbenchPaper,
+                    "GSN support workbench paper copied.",
+                    "Support workbench paper is not ready yet."
+                  )
+                }
+                disabled={!selectedLoanId}
+                fullWidth
+                stableHeight={52}
+                debugId="loan-workbench.copy-paper"
+                style={{
+                  border: "1px solid rgba(121,149,190,0.20)",
+                  background:
+                    "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+                  color: !selectedLoanId ? "#94A3B8" : "#E6EEF8",
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                  transition: "none",
+                }}
+              >
+                {actionText("document", "Copy paper")}
               </SubtleButton>
             </div>
           </div>

@@ -67,6 +67,7 @@ const files = {
   subscriptionSpotlight: "frontend/src/pages/SubscriptionSpotlightPage.tsx",
   loanReadiness: "frontend/src/pages/LoanReadinessPage.tsx",
   loanSuggestions: "frontend/src/pages/LoanSuggestionsPage.tsx",
+  loanWorkbench: "frontend/src/pages/LoanWorkbenchPage.tsx",
   loanSummary: "frontend/src/pages/LoanSummaryPage.tsx",
   guarantorInbox: "frontend/src/pages/GuarantorInboxPage.tsx",
   guarantorEarnings: "frontend/src/pages/GuarantorEarningsPage.tsx",
@@ -1134,6 +1135,11 @@ assertContains(
   "loanSuggestions",
   /buildGsnSupportEvidencePackage[\s\S]*?GSN Supporter Fit Snapshot[\s\S]*?Visible supporter-fit candidates[\s\S]*?supporter fit is decision support only[\s\S]*?does not choose a supporter[\s\S]*?authorize release of goods, credit, or money[\s\S]*?loan-suggestions\.copy-paper/,
   "Loan Suggestions copy must use a branded GSN supporter-fit paper and preserve the no-selection/no-release-authority boundary."
+);
+assertContains(
+  "loanWorkbench",
+  /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Workbench Snapshot[\s\S]*?Visible supporter-fit rows[\s\S]*?Visible support request rows[\s\S]*?workbench readings and visible rows are decision support only[\s\S]*?do not approve support[\s\S]*?settle exposure[\s\S]*?authorize release of goods, credit, or money[\s\S]*?loan-workbench\.copy-paper/,
+  "Loan Workbench copy must use a branded GSN support workbench paper and preserve the no-approval/no-settlement/no-release boundary."
 );
 assertContains(
   "guarantorInbox",

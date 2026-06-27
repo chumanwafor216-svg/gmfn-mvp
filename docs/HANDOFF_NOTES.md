@@ -1,3 +1,45 @@
+## 2026-06-27 - Loan Workbench copy now uses GSN support workbench paper
+
+Owner request:
+- Continue institutional cleanup across support/commerce evidence surfaces.
+
+Correction completed locally:
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - added `Copy paper` actions to the front workbench context and current work
+    item card.
+  - the copy text now uses `buildGsnSupportEvidencePackage()` with the title
+    `GSN Support Workbench Snapshot`.
+  - the paper includes member/community context, support item amount/status,
+    support gap, paid/remaining totals, pool/revenue figures, dates, Money Out
+    handoff context where visible, capped supporter-fit rows, and capped support
+    request rows.
+  - the boundary says workbench readings and visible rows are decision support
+    only; they do not approve support, choose a supporter, confirm payout,
+    settle exposure, or authorize release of goods, credit, or money.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - now requires Loan Workbench to keep the branded support workbench paper and
+    no-approval/no-settlement/no-release boundary.
+- `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+  - marked Loan Workbench as source-level handled for copied paper output.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- This is a presentation/copy-safety upgrade. It does not approve support,
+  select a supporter, confirm payout, settle exposure, move money, or authorize
+  release of goods/credit/money.
+- Visual phone review is still needed before calling `/app/loan-workbench`
+  screenshot-polished.
+- No Render deploy was triggered in this slice.
+
 ## 2026-06-27 - Merchant Verify token spine hardened, rail still partial
 
 Owner request:
