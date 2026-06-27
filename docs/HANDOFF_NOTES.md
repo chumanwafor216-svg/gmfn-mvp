@@ -1,3 +1,45 @@
+## 2026-06-27 - TrustSlip bands and stale shop contact use evidence language
+
+Owner request:
+- Continue customer-facing institutional cleanup so TrustSlip, shop, and
+  screenshotable surfaces do not overstate trust, verification, or release
+  authority.
+
+Correction completed locally:
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - changed public TrustSlip band labels from `Strongly trusted` and
+    `Generally trusted` to `Strong evidence` and `Generally steady evidence`.
+  - this aligns the backend-rendered public TrustSlip paper with the frontend
+    trust-band language that already uses evidence wording.
+- `frontend/src/pages/ShopGalleryPage.tsx`
+  - changed the stale public-shop owner-contact blocker from `owner contact can
+    be trusted` to `owner contact is reliable`.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added guards requiring evidence-band labels and blocking the old blanket
+    trust labels.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added proof-surface guards for backend TrustSlip evidence-band wording and
+    public-shop stale-contact reliability wording.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_public_trust_slip_verify_page_title_and_links_are_institutional`
+  - result: `1 passed`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This is evidence-language cleanup only. It does not change TrustSlip scoring,
+  merchant verification status, public shop data, owner-contact validity, or
+  any trade-release workflow.
+- Dashboard still has frozen Spotlight trust-band fallbacks that were not
+  touched in this slice.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - 22-capability visible cards tightened against overclaiming
 
 Owner request:

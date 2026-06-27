@@ -2751,7 +2751,7 @@ export default function ShopGalleryPage() {
     if (shopLoadFailed) {
       setNotice({
         tone: "error",
-        text: "This shop link needs the owner to refresh it from Marketplace before owner contact can be trusted.",
+        text: "This shop link needs the owner to refresh it from Marketplace before owner contact is reliable.",
       });
       return;
     }

@@ -669,10 +669,15 @@ assertContains(
   /safe_code_path = quote\(str\(code\), safe=""\)[\s\S]*?print_link = f"\/trust-slips\/verify\/\{safe_code_path\}\/print\?level=\{visibility_level\}"[\s\S]*?qr_img = f"\/trust-slips\/verify\/\{safe_code_path\}\/qr\.png\?level=\{visibility_level\}"[\s\S]*?<title>GSN TrustSlip Verification Paper<\/title>/,
   "Backend-rendered public TrustSlip paper must use a GSN title and quoted TrustSlip code paths for print and QR links."
 );
+assertContains(
+  "trustSlipRoute",
+  /"A": "Strong evidence"[\s\S]*?"B": "Generally steady evidence"/,
+  "Backend-rendered public TrustSlip paper must use evidence-band labels, not blanket trust labels."
+);
 assertNotContains(
   "trustSlipRoute",
-  /<title>TrustSlip Verification<\/title>/,
-  "Backend-rendered public TrustSlip paper must not keep the old generic browser title."
+  /<title>TrustSlip Verification<\/title>|"A": "Strongly trusted"|"B": "Generally trusted"/,
+  "Backend-rendered public TrustSlip paper must not keep the old generic browser title or blanket trust band labels."
 );
 assertContains(
   "legacyVerifyUi",
@@ -1001,6 +1006,16 @@ assertContains(
   "publicShop",
   /function copyShopLink[\s\S]*?safeCopy\(absoluteShopShareLink\)[\s\S]*?Public shop link copied\./,
   "Public Shop plain Copy link must copy only the public shop URL; branded packages belong to owner/share-package paths."
+);
+assertContains(
+  "publicShop",
+  /before owner contact is reliable/,
+  "Public Shop owner-contact blocker must frame stale owner contact as unreliable, not trusted."
+);
+assertNotContains(
+  "publicShop",
+  /owner contact can be trusted/,
+  "Public Shop must not say stale owner contact can become trusted just because the owner refreshes the link."
 );
 assertContains(
   "shopAssets",

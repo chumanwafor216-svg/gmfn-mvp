@@ -361,8 +361,8 @@ def _band_short_label(value: Any) -> str:
     match = re.search(r"\b([A-F])\b", raw)
     band = match.group(1) if match else raw[:1]
     return {
-        "A": "Strongly trusted",
-        "B": "Generally trusted",
+        "A": "Strong evidence",
+        "B": "Generally steady evidence",
         "C": "Mixed",
         "D": "Needs attention",
         "E": "High pressure",

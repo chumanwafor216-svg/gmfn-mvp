@@ -192,6 +192,10 @@ def test_public_trust_slip_verify_page_title_and_links_are_institutional():
     assert 'safe_code_path = quote(str(code), safe="")' in text
     assert 'print_link = f"/trust-slips/verify/{safe_code_path}/print?level={visibility_level}"' in text
     assert 'qr_img = f"/trust-slips/verify/{safe_code_path}/qr.png?level={visibility_level}"' in text
+    assert '"A": "Strong evidence"' in text
+    assert '"B": "Generally steady evidence"' in text
+    assert '"A": "Strongly trusted"' not in text
+    assert '"B": "Generally trusted"' not in text
 
 
 def test_legacy_merchant_verify_ui_is_bounded_and_escaped_if_reenabled():
