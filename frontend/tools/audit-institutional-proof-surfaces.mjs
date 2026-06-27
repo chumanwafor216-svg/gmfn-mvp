@@ -13,6 +13,7 @@ const files = {
   institutionalPdf: "gmfn_backend/app/services/institutional_pdf.py",
   evidencePack: "gmfn_backend/app/services/evidence_pack_pdf_service.py",
   portableEvidencePack: "gmfn_backend/app/services/evidence_pack_service.py",
+  trustEvidencePack: "gmfn_backend/app/services/trust_evidence_pack_service.py",
   loanEvidencePack: "gmfn_backend/app/services/loan_evidence_pack_pdf_service.py",
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
   trustSlipPdf: "gmfn_backend/app/services/trust_slip_evidence_pdf_service.py",
@@ -287,6 +288,16 @@ assertNotContains(
   "portableEvidencePack",
   /"actor_user_id": getattr\(e, "actor_user_id"|\"subject_user_id\": getattr\(e, "subject_user_id"|\"meta\": meta_val|\"payment_reference\"/,
   "GSN Evidence Pack ZIP snapshots must not rebuild raw TrustEvent IDs, metadata, or payment references."
+);
+assertContains(
+  "trustEvidencePack",
+  /def _safe_event_export\(row: TrustEvent\)[\s\S]*?Private delivery\/support record[\s\S]*?Private operational details redacted for evidence pack[\s\S]*?return \[_safe_event_export\(r\) for r in rows\][\s\S]*?return _safe_event_export\(row\)/,
+  "Trust Evidence Pack ZIP shipment, courier, and delivery JSON files must use a redacted event serializer."
+);
+assertNotContains(
+  "trustEvidencePack",
+  /"actor_user_id": r\.actor_user_id|"subject_user_id": r\.subject_user_id|"actor_user_id": row\.actor_user_id|"subject_user_id": row\.subject_user_id|"meta": _safe_json|"payment_reference"/,
+  "Trust Evidence Pack ZIP auxiliary event files must not expose raw event IDs, metadata, or payment references."
 );
 
 assertContains(

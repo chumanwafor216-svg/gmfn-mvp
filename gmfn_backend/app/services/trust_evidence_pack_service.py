@@ -38,6 +38,23 @@ def _safe_json(meta: Any) -> Dict[str, Any]:
     return {}
 
 
+def _safe_event_export(row: TrustEvent) -> Dict[str, Any]:
+    meta = _safe_json(getattr(row, "meta", None))
+    has_private_context = any(
+        getattr(row, field, None) not in (None, "")
+        for field in ("loan_id", "clan_id", "guarantor_id", "actor_user_id", "subject_user_id")
+    ) or bool(meta)
+
+    out: Dict[str, Any] = {
+        "event_type": row.event_type,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+    if has_private_context:
+        out["reference_label"] = "Private delivery/support record"
+        out["detail_boundary"] = "Private operational details redacted for evidence pack"
+    return out
+
+
 def _events_like(db: Session, *, user_id: int, prefix: str, limit: int = 100) -> List[Dict[str, Any]]:
     limit = max(1, min(int(limit), 300))
 
@@ -50,18 +67,7 @@ def _events_like(db: Session, *, user_id: int, prefix: str, limit: int = 100) ->
         .all()
     )
 
-    return [
-        {
-            "event_type": r.event_type,
-            "created_at": r.created_at.isoformat() if r.created_at else None,
-            "loan_id": r.loan_id,
-            "clan_id": r.clan_id,
-            "actor_user_id": r.actor_user_id,
-            "subject_user_id": r.subject_user_id,
-            "meta": _safe_json(getattr(r, "meta", None)),
-        }
-        for r in rows
-    ]
+    return [_safe_event_export(r) for r in rows]
 
 
 def _latest_event(db: Session, *, user_id: int, event_type: str) -> Optional[Dict[str, Any]]:
@@ -76,15 +82,7 @@ def _latest_event(db: Session, *, user_id: int, event_type: str) -> Optional[Dic
     if not row:
         return None
 
-    return {
-        "event_type": row.event_type,
-        "created_at": row.created_at.isoformat() if row.created_at else None,
-        "loan_id": row.loan_id,
-        "clan_id": row.clan_id,
-        "actor_user_id": row.actor_user_id,
-        "subject_user_id": row.subject_user_id,
-        "meta": _safe_json(getattr(row, "meta", None)),
-    }
+    return _safe_event_export(row)
 
 
 def _sha256_hex(data: bytes) -> str:

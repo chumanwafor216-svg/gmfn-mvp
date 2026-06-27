@@ -71860,6 +71860,47 @@ GSN-branded invite composer and invite-entry continuity.
     Render-confirmed until gmfn-api is deployed with exact Render API
     credentials or manually from the Render dashboard.
 
+### Follow-up same day - Trust Evidence Pack auxiliary JSON redacted
+
+- Trigger:
+  - continuing the customer-facing evidence package cleanup after the portable
+    `trustslip_snapshot.json` fix;
+  - code inspection found a second ZIP builder,
+    `trust_evidence_pack_service.py`, whose `shipment_events.json`,
+    `courier_confirmations.json`, and `delivery_confirmation.json` files still
+    rebuilt raw TrustEvent IDs and full metadata.
+- Unabated truth:
+  - fixing `evidence_pack_service.py` did not protect this separate Trust
+    Evidence Pack builder;
+  - shipment/courier/delivery JSON can contain private tracking, phone,
+    payment, support, and internal actor details, so the package should show a
+    redacted evidence marker by default rather than raw operational data.
+- Changed:
+  - `gmfn_backend/app/services/trust_evidence_pack_service.py`
+    - added `_safe_event_export`;
+    - `_events_like` and `_latest_event` now emit only `event_type`,
+      `created_at`, and, where private context exists, safe labels:
+      `Private delivery/support record` and
+      `Private operational details redacted for evidence pack`;
+    - raw `loan_id`, `clan_id`, `guarantor_id`, `actor_user_id`,
+      `subject_user_id`, and `meta` no longer enter auxiliary event JSON.
+  - `gmfn_backend/tests/test_trust_evidence_pack_package.py`
+    - added focused coverage for shipment and delivery-confirmation redaction,
+      including private tracking, phone, and payment reference strings.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added a source cage requiring the Trust Evidence Pack auxiliary JSON
+      files to use the redacted serializer and blocking raw ID/meta exports.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_trust_evidence_pack_package.py gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\services\trust_evidence_pack_service.py`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - verified locally at this entry;
+  - not yet committed, pushed, or Render-confirmed.
+
 ### Follow-up same day - Governance ZIP complete-record boundary
 
 - Trigger:
