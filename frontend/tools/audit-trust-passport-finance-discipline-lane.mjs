@@ -41,8 +41,8 @@ function assertContains(key, pattern, message, text) {
 
 assertContains(
   "trust",
-  /const financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"Available capacity"[\s\S]*?"Locked guarantees"[\s\S]*?"Overexposure"[\s\S]*?"Risk level"/,
-  "Finance Discipline lane must keep a plain card model for limit, capacity, locked guarantees, overexposure, and risk."
+  /const financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"Available capacity"[\s\S]*?"Locked support"[\s\S]*?"Overexposure"[\s\S]*?"Risk level"/,
+  "Finance Discipline lane must keep a plain card model for limit, capacity, locked support, overexposure, and risk."
 );
 
 assertContains(

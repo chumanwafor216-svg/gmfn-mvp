@@ -1,3 +1,36 @@
+## 2026-06-27 - Trust Passport finance support-label audit alignment
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Local correction:
+- `frontend/tools/audit-trust-passport-lane-map.mjs`
+  - Trust Passport lane-map guard now expects `Available support capacity` and
+    `Current support commitments`.
+- `frontend/tools/audit-trust-passport-finance-discipline-lane.mjs`
+  - Finance Discipline card guard now expects `Locked support`.
+
+Verification state:
+- `node frontend\tools\audit-trust-passport-lane-map.mjs`
+- `node frontend\tools\audit-trust-passport-finance-discipline-lane.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-institutional-proof-surfaces.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on the touched
+  audit files.
+
+Truth / remaining risk:
+- This is an audit-only correction. `frontend/src/pages/TrustScorePage.tsx`
+  already used the support-language labels; the guards were stale and still
+  expected guarantee-era wording.
+- Internal backend field names such as `available_guarantee_capacity` and
+  `current_locked_guarantees` remain unchanged because they are existing data
+  contracts.
+- Pending publish/deploy evidence at the time this note was written.
+
 ## 2026-06-27 - Institutional proof audit support-title alignment
 
 Owner request:
