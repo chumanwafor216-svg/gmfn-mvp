@@ -847,11 +847,11 @@ function buildGuarantorInboxNotices(raw: any): GuidanceNotice[] {
       id: `guarantor-${loanId || index}-${index}`,
       kind: "loan-guarantor-request",
       title: loanId
-        ? `Support request waiting on loan #${loanId}`
+        ? `Support request waiting on support #${loanId}`
         : "Support request waiting",
       detail: pledge
-        ? `A borrower is waiting for your support decision on ${pledge}.`
-        : "A borrower is waiting for your support decision.",
+        ? `A requester is waiting for your support decision on ${pledge}.`
+        : "A requester is waiting for your support decision.",
       ctaLabel: "Open Action Inbox",
       ctaTo: GUIDANCE_TARGETS.NOTIFICATIONS,
       bucket: "actNow",
