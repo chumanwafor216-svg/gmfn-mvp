@@ -86,7 +86,9 @@ def test_report_pdfs_use_gsn_institutional_shells():
     assert "Official evidence summary" in text
     assert "Official exposure summary" in text
     assert text.count("Reader Boundary") == 2
-    assert "Private support evidence for allowed GSN reviewers" in text
+    assert "Redacted support evidence for allowed GSN reviewers" in text
+    assert "Use redact=false only for admin complete-record review." in text
+    assert "meta redacted for share copy" in text
     assert "Private community exposure evidence for allowed GSN reviewers" in text
     assert 'p("Community", f"{getattr(clan, \'name\', None) or \'-\'} (ID: {getattr(loan, \'clan_id\', \'-\')})")' in text
     assert 'p("Clan"' not in text
@@ -102,6 +104,10 @@ def test_governance_pack_uses_gsn_community_language():
 
     assert "ClanMembership.left_at.is_(None)" in text
     assert "is_platform_admin" in text
+    assert "def _ensure_can_view_complete_loan_report" in text
+    assert "_ensure_can_view_complete_loan_report(db, current_user=current_user, loan=loan)" in text
+    assert "redact: bool = True" in text
+    assert "redact=False" in text
     assert "GSN Community Governance Pack" in text
     assert "Community ID:" in text
     assert "Community Name:" in text

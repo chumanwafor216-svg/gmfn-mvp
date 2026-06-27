@@ -36,6 +36,20 @@ def _fmt_dt(x: Any) -> str:
     return str(x)
 
 
+def _mask_email(email: Any) -> str:
+    raw = str(email or "").strip()
+    if not raw:
+        return "-"
+    if "@" not in raw:
+        return "record hidden"
+    name, domain = raw.split("@", 1)
+    if len(name) <= 1:
+        masked = "*"
+    else:
+        masked = f"{name[0]}***"
+    return f"{masked}@{domain}"
+
+
 def _safe_meta(te: TrustEvent) -> Dict[str, Any]:
     try:
         m = getattr(te, "meta", None)
@@ -44,8 +58,11 @@ def _safe_meta(te: TrustEvent) -> Dict[str, Any]:
         return {}
 
 
-def _timeline_note(te: TrustEvent) -> str:
+def _timeline_note(te: TrustEvent, *, redact: bool = True) -> str:
     meta = _safe_meta(te)
+    if redact and meta:
+        return "meta redacted for share copy"
+
     event_type = str(getattr(te, "event_type", "") or "").lower()
 
     parts: List[str] = []
@@ -141,6 +158,7 @@ def build_loan_trust_report_pdf(
     clan_exposure_rows: List[Dict[str, Any]],
     borrower_trust_score: Optional[Dict[str, Any]],
     guarantor_trust_scores: Dict[int, Dict[str, Any]],
+    redact: bool = True,
 ) -> bytes:
     from io import BytesIO
 
@@ -200,19 +218,25 @@ def build_loan_trust_report_pdf(
         c.line(left, y, right, y)
         y -= 6 * mm
 
+    def visible_email(uid: int | None, fallback: Any = None) -> str:
+        value = fallback or (user_email_by_id.get(int(uid)) if uid is not None else None)
+        if redact:
+            return _mask_email(value)
+        return str(value or (f"user:{uid}" if uid is not None else "-"))
+
     h1("Official evidence summary")
     line()
 
     h2("Reader Boundary")
     p(
         "Boundary",
-        "Private support evidence for allowed GSN reviewers; not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
+        "Redacted support evidence for allowed GSN reviewers; not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
     )
-    p("Use", "Share only with reviewers allowed to see loan, supporter, repayment, exposure, and trust-event details.")
+    p("Use", "Use redact=false only for admin complete-record review.")
     line()
 
     h2("Loan Summary")
-    borrower_email = user_email_by_id.get(
+    borrower_email = visible_email(
         int(getattr(loan, "borrower_user_id", 0)),
         getattr(borrower, "email", "-"),
     )
@@ -297,7 +321,7 @@ def build_loan_trust_report_pdf(
         for g in guarantors:
             ensure_space()
             uid = int(getattr(g, "guarantor_user_id", 0) or 0)
-            email = user_email_by_id.get(uid, f"user:{uid}")
+            email = visible_email(uid)
             s = guarantor_trust_scores.get(uid, {}) or {}
             band = s.get("band", "-")
             standing = s.get("standing_score", "0")
@@ -356,7 +380,7 @@ def build_loan_trust_report_pdf(
             if bal < 0:
                 bal = Decimal("0")
 
-            payer_email = user_email_by_id.get(
+            payer_email = visible_email(
                 int(getattr(r, "payer_user_id", 0)),
                 f"user:{getattr(r, 'payer_user_id', 0)}",
             )
@@ -394,7 +418,7 @@ def build_loan_trust_report_pdf(
     else:
         for row in clan_exposure_rows:
             ensure_space()
-            email = str(row.get("email", "-"))[:45]
+            email = _mask_email(row.get("email")) if redact else str(row.get("email", "-"))[:45]
             pool_v = row.get("pool_balance", 0)
             exposure_v = row.get("exposure", 0)
             available_v = row.get("available", 0)
@@ -425,9 +449,15 @@ def build_loan_trust_report_pdf(
         for te in trust_events:
             ensure_space()
 
-            actor_email = user_email_by_id.get(int(getattr(te, "actor_user_id", 0)), f"user:{getattr(te, 'actor_user_id', 0)}")
-            subject_email = user_email_by_id.get(int(getattr(te, "subject_user_id", 0)), f"user:{getattr(te, 'subject_user_id', 0)}")
-            note = _timeline_note(te)
+            actor_email = visible_email(
+                int(getattr(te, "actor_user_id", 0)),
+                f"user:{getattr(te, 'actor_user_id', 0)}",
+            )
+            subject_email = visible_email(
+                int(getattr(te, "subject_user_id", 0)),
+                f"user:{getattr(te, 'subject_user_id', 0)}",
+            )
+            note = _timeline_note(te, redact=redact)
 
             c.drawString(left, y, _fmt_dt(getattr(te, "created_at", None))[:16])
             c.drawString(left + 30 * mm, y, str(getattr(te, "event_type", ""))[:22])
@@ -453,6 +483,7 @@ def build_clan_exposure_report_pdf(
     clan_id: int,
     clan_name: str | None,
     clan_exposure_rows: List[Dict[str, Any]],
+    redact: bool = True,
 ) -> bytes:
     from io import BytesIO
 
@@ -553,7 +584,7 @@ def build_clan_exposure_report_pdf(
     else:
         for row in clan_exposure_rows:
             ensure_space()
-            email = str(row.get("email", "-"))[:45]
+            email = _mask_email(row.get("email")) if redact else str(row.get("email", "-"))[:45]
             pool_v = _d(row.get("pool_balance", 0))
             exposure_v = _d(row.get("exposure", 0))
             available_v = _d(row.get("available", 0))

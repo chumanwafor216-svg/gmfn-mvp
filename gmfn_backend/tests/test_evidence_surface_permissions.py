@@ -66,3 +66,25 @@ def test_platform_admin_can_download_loan_report_without_membership(
 
     assert response.status_code == 200
     assert response.headers["content-disposition"] == 'attachment; filename="gsn-loan-1-trust-report.csv"'
+
+
+def test_borrower_gets_redacted_pdf_but_not_complete_loan_exports(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+    seed_loan,
+):
+    blocked_endpoints = [
+        "/reports/loans/1/trust-report.csv",
+        "/reports/loans/1/trust-report.pdf?redact=false",
+        "/reports/loans/1/evidence-pack.zip",
+    ]
+
+    for endpoint in blocked_endpoints:
+        response = client.get(endpoint)
+        assert response.status_code == 403, endpoint
+
+    response = client.get("/reports/loans/1/trust-report.pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == 'attachment; filename="gsn-loan-1-trust-report.pdf"'

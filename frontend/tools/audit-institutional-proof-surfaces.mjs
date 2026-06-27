@@ -253,8 +253,8 @@ assertContains(
 );
 assertContains(
   "reports",
-  /Reader Boundary[\s\S]*?Private support evidence for allowed GSN reviewers[\s\S]*?Reader Boundary[\s\S]*?Private community exposure evidence for allowed GSN reviewers/,
-  "Report PDFs must include reader boundaries before private support or exposure evidence is shared."
+  /meta redacted for share copy[\s\S]*?Reader Boundary[\s\S]*?Redacted support evidence for allowed GSN reviewers[\s\S]*?Use redact=false only for admin complete-record review\.[\s\S]*?Reader Boundary[\s\S]*?Private community exposure evidence for allowed GSN reviewers/,
+  "Report PDFs must include redacted reader boundaries and hide trust-event metadata in share copies."
 );
 assertNotContains(
   "reports",
@@ -310,8 +310,23 @@ assertContains(
 );
 assertContains(
   "reportsRoute",
-  /ClanMembership\.left_at\.is_\(None\)[\s\S]*?is_platform_admin[\s\S]*?gsn-loan-\{loan\.id\}-trust-report\.csv[\s\S]*?gsn-loan-\{loan\.id\}-trust-report\.pdf[\s\S]*?"artifact": "gsn_loan_evidence_pack"[\s\S]*?gsn-loan-\{loan\.id\}-evidence-pack-\{ts\}\.zip/,
-  "Report routes must ignore inactive memberships, allow platform admins, and use GSN loan report/evidence filenames."
+  /ClanMembership\.left_at\.is_\(None\)[\s\S]*?is_platform_admin[\s\S]*?def _ensure_can_view_complete_loan_report/,
+  "Report routes must ignore inactive memberships, allow platform admins, default PDFs to redacted, gate complete exports, and use GSN filenames."
+);
+assertContains(
+  "reportsRoute",
+  /download_loan_trust_report_csv[\s\S]*?_ensure_can_view_complete_loan_report\(db, current_user=current_user, loan=loan\)[\s\S]*?gsn-loan-\{loan\.id\}-trust-report\.csv/,
+  "Loan trust report CSV must be a complete admin record behind the complete-record gate."
+);
+assertContains(
+  "reportsRoute",
+  /download_loan_trust_report_pdf[\s\S]*?redact: bool = True[\s\S]*?if not redact:[\s\S]*?_ensure_can_view_complete_loan_report\(db, current_user=current_user, loan=loan\)[\s\S]*?redact=redact[\s\S]*?gsn-loan-\{loan\.id\}-trust-report\.pdf/,
+  "Loan trust report PDF must default to redacted and require complete-record access for redact=false."
+);
+assertContains(
+  "reportsRoute",
+  /download_loan_evidence_pack_zip[\s\S]*?_ensure_can_view_complete_loan_report\(db, current_user=current_user, loan=loan\)[\s\S]*?redact=False[\s\S]*?"artifact": "gsn_loan_evidence_pack"[\s\S]*?gsn-loan-\{loan\.id\}-evidence-pack-\{ts\}\.zip/,
+  "Loan evidence ZIP must be a complete admin record behind the complete-record gate."
 );
 assertNotContains(
   "reportsRoute",

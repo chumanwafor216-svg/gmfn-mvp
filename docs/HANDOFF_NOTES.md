@@ -71636,6 +71636,56 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Loan report complete-record exports separated from borrower PDFs
+
+- Trigger:
+  - continued from the PDF/evidence privacy work;
+  - remaining risk was that `/reports/loans/{loan_id}/trust-report.csv` was
+    borrower-accessible while containing supporter emails, community exposure
+    rows, actor/subject emails, and raw trust-event metadata.
+- Unabated truth:
+  - the previous gating pass stopped outsiders, but it still allowed an
+    allowed borrower to download a complete administrative CSV;
+  - that CSV is not a borrower share paper, it is a complete admin record.
+- Changed:
+  - `gmfn_backend/app/api/routes/reports.py`
+    - added `_ensure_can_view_complete_loan_report`;
+    - made loan trust report CSV admin/platform-admin only;
+    - made loan evidence ZIP admin/platform-admin only;
+    - kept loan trust report PDF borrower-viewable, but defaulted it to
+      `redact=True`;
+    - requires complete-record access for `trust-report.pdf?redact=false`;
+    - passes `redact=False` only inside the admin-only ZIP export.
+  - `gmfn_backend/app/services/reports_service.py`
+    - added report-PDF email masking;
+    - masks borrower/supporter/payer/exposure/timeline emails in redacted
+      report PDFs;
+    - replaces trust-event metadata notes with
+      `meta redacted for share copy` in redacted report PDFs.
+  - `gmfn_backend/tests/test_evidence_surface_permissions.py`
+    - added endpoint-level proof that a borrower can download the default
+      redacted PDF but cannot download the complete CSV, complete ZIP, or
+      `redact=false` PDF.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added source guards for complete-record gating and redacted report PDF
+      behavior.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added audit guards for complete-record CSV/ZIP gating, redacted default
+      PDF behavior, and report metadata redaction.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_evidence_surface_permissions.py gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
+  - Passed `python -m compileall -q` on edited report route/service/test
+    files.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+- Still not changed:
+  - complete admin CSVs and governance ZIP CSVs still contain private data for
+    admins by design; they should not be treated as public/share artifacts;
+  - no Render backend deploy can complete until GitHub has `RENDER_API_KEY`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Analytics CSV/report PDF hardening continuation
 
 - Trigger:

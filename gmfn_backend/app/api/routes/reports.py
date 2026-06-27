@@ -93,6 +93,10 @@ def _ensure_can_view_loan_report(db: Session, *, current_user: User, loan: Loan)
         raise HTTPException(status_code=403, detail="Not allowed")
 
 
+def _ensure_can_view_complete_loan_report(db: Session, *, current_user: User, loan: Loan) -> None:
+    _ensure_clan_admin_or_platform_admin(db, current_user=current_user, clan_id=int(loan.clan_id))
+
+
 def _user_email_map(
     db: Session,
     *,
@@ -404,7 +408,7 @@ def download_loan_trust_report_csv(
 ):
     data = _gather_report_data(db, loan_id=loan_id)
     loan: Loan = data["loan"]
-    _ensure_can_view_loan_report(db, current_user=current_user, loan=loan)
+    _ensure_can_view_complete_loan_report(db, current_user=current_user, loan=loan)
 
     clan: Clan | None = data["clan"]
     guarantors: List[LoanGuarantor] = data["guarantors"]
@@ -509,12 +513,15 @@ def download_loan_trust_report_csv(
 @router.get("/loans/{loan_id}/trust-report.pdf")
 def download_loan_trust_report_pdf(
     loan_id: int,
+    redact: bool = True,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     data = _gather_report_data(db, loan_id=loan_id)
     loan: Loan = data["loan"]
     _ensure_can_view_loan_report(db, current_user=current_user, loan=loan)
+    if not redact:
+        _ensure_can_view_complete_loan_report(db, current_user=current_user, loan=loan)
 
     pdf_bytes = build_loan_trust_report_pdf(
         loan=data["loan"],
@@ -527,6 +534,7 @@ def download_loan_trust_report_pdf(
         clan_exposure_rows=data["clan_exposure_rows"],
         borrower_trust_score=data["borrower_trust_score"],
         guarantor_trust_scores=data["guarantor_trust_scores"],
+        redact=redact,
     )
 
     filename = f"gsn-loan-{loan.id}-trust-report.pdf"
@@ -545,7 +553,7 @@ def download_loan_evidence_pack_zip(
 ):
     data = _gather_report_data(db, loan_id=loan_id)
     loan: Loan = data["loan"]
-    _ensure_can_view_loan_report(db, current_user=current_user, loan=loan)
+    _ensure_can_view_complete_loan_report(db, current_user=current_user, loan=loan)
 
     trust_slip = data.get("trust_slip")
     pdf_bytes = build_loan_trust_report_pdf(
@@ -559,6 +567,7 @@ def download_loan_evidence_pack_zip(
         clan_exposure_rows=data["clan_exposure_rows"],
         borrower_trust_score=data["borrower_trust_score"],
         guarantor_trust_scores=data["guarantor_trust_scores"],
+        redact=False,
     )
 
     snapshot = None
