@@ -4,7 +4,7 @@ Owner request:
 - Continue the supporter/support wording cleanup and keep Render updated
   truthfully.
 
-Local corrections:
+Published corrections:
 - `frontend/src/lib/guidance.ts`
   - added display-only supporter wording formatting for raw loan row titles
     and roles;
@@ -21,9 +21,15 @@ Verification passed locally:
   `frontend/src/lib/guidance.ts`.
 
 Truth / remaining risk:
-- Local only until committed, pushed, and the frontend Render deploy hook
-  accepts a deploy for the pushed commit.
-- This is frontend-only and should use `deploy_api=false`.
+- Committed and pushed `main` at
+  `a3e6dcd5911f1ec45a31d634d1027f0180d6fa3a`
+  (`Hide legacy support wording in shared guidance`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28284185227` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vopt1o3t8c73bhl9ig`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- This is frontend/docs only and does not require backend Render credentials.
 - Internal guidance kind matching, route ids, API calls, and backend contract
   names still use `guarantor` where they are compatibility logic rather than
   user-facing wording.
