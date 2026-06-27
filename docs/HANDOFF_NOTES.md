@@ -1,3 +1,46 @@
+## 2026-06-27 - Marketplace support intent wording
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - the `Ask for support` marketplace intent detail now says
+    `Start or continue a support request.` instead of exposing the old
+    support-or-loan wording.
+- `frontend/tools/audit-marketplace-support-lane.mjs`
+  - added a guard requiring the visible marketplace support intent to use
+    support-request wording.
+  - preserved the existing `Borrow / Lend / Support` technical metadata and
+    legacy search keywords for discoverability.
+  - added a regression guard rejecting the old visible
+    `Start or continue a support or loan request.` detail.
+
+Verification state:
+- `node frontend\tools\audit-marketplace-support-lane.mjs`
+- `node frontend\tools\audit-marketplace-button-inventory.mjs`
+- `node frontend\tools\audit-marketplace-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `a33a5fab7cf4334f869d94a0510a74c6f419f9d8`
+  (`Clarify marketplace support intent wording`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28286556380` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vqc4btqb8s73f415g0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: `technical` and `keywords` still include borrow/loan/lend
+  terms. That is intentional for search and compatibility; this slice only
+  removes the old loan wording from the visible intent detail.
+
 ## 2026-06-27 - Finance supporter-value support ID labels
 
 Owner request:
