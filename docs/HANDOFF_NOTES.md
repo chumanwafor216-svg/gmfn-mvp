@@ -71782,7 +71782,16 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run audit:proof-surfaces` from `frontend`.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
-  - local only at this entry; not pushed or deployed yet.
+  - committed and pushed to `main` as `bf01871a`
+    (`Redact Trust Why user explanations`);
+  - manual GitHub Actions Render workflow run `28290765967` checked out
+    `bf01871aa5bed2259901d137e5a5471d4df972c5`;
+  - frontend Render deploy hook accepted the request and returned deploy id
+    `dep-d8vt2tm8bjmc738lse9g`;
+  - backend/API deploy did not run because the workflow still lacks
+    `RENDER_API_KEY`; this route-level backend hardening is pushed to GitHub
+    but should not be claimed live on Render API until gmfn-api is deployed by
+    Render API credentials or manually from Render dashboard.
 
 ### Follow-up same day - Trust Timeline user references redacted
 
