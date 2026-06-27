@@ -1,3 +1,39 @@
+## 2026-06-27 - TrustSlip decision question now frames evidence, not personal verdict
+
+Owner request:
+- Continue the institutional deep-cleaning across TrustSlip, PDFs, public
+  verification papers, and screenshotable evidence surfaces so GSN does not
+  overclaim trust, verification, or trade-release authority.
+
+Correction completed locally:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - changed the TrustSlip decision-question headline from `Can this person be
+    trusted for support, contribution, finance, or trade?` to `What decision
+    can this TrustSlip evidence support?`.
+  - kept the existing answer boundary that says the TrustSlip supports a
+    careful decision and is not an automatic approval.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added a guard requiring the evidence-first TrustSlip decision question.
+  - added a guard blocking the old blanket personal-trust verdict question.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This is visible TrustSlip wording and audit hardening only. It does not
+  change TrustSlip scoring, community evidence, merchant verification status,
+  payment confirmation, escrow, protected release, or payout automation.
+- The deeper commerce rail still needs to remain separate from TrustSlip:
+  TrustSlip can support a decision, but it must not become a silent permission
+  to release goods, credit, or money.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - TrustSlip bands and stale shop contact use evidence language
 
 Owner request:

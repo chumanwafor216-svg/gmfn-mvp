@@ -2248,7 +2248,7 @@ export default function TrustSlipPage() {
     : `This TrustSlip gives a reader a short public trust story for ${holderName}. It should help them decide what to do next, not replace their judgement.`;
   const fourDecisionQuestions = [
     {
-      title: "Can this person be trusted for support, contribution, finance, or trade?",
+      title: "What decision can this TrustSlip evidence support?",
       answer: hasBlockingTrustSlipState
         ? "Not from this TrustSlip alone. Ask for a fresh TrustSlip or the fuller Trust Passport before any risky decision."
         : `The visible reading is ${merchantBand} (${merchantBandLabel}), with TrustSlip limit signal ${merchantTrustLimit} ${merchantCurrency} and cross-community consistency ${cciScore} / ${cciBand}. This supports a careful decision; it is not an automatic approval.`,

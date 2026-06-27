@@ -1109,6 +1109,16 @@ assertContains(
   "TrustSlip page must use the institution-grade trust-limit label."
 );
 assertContains(
+  "trustSlip",
+  /What decision can this TrustSlip evidence support\?/,
+  "TrustSlip decision questions must frame the paper as evidence support, not a personal trust verdict."
+);
+assertNotContains(
+  "trustSlip",
+  /Can this person be trusted for support, contribution, finance, or trade\?/g,
+  "TrustSlip page must not ask a blanket personal-trust verdict question."
+);
+assertContains(
   "trustSlipRoute",
   /GSN TrustSlip Release Evidence Paper[\s\S]*?Security marks: GSN\s+watermark[\s\S]*?This page prepares an admin release evidence record only[\s\S]*?does not collect[\s\S]*?confirm bank receipt[\s\S]*?approve credit[\s\S]*?guarantee delivery[\s\S]*?permission to release goods, credit, or money[\s\S]*?Release evidence helper; not\s+a bank[\s\S]*?guarantee[\s\S]*?automatic release authority/,
   "TrustSlip release helper page must read as a restricted GSN evidence paper, not a developer/plain release page."
