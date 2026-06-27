@@ -15,6 +15,16 @@ function safeStr(x: any): string {
   return (x ?? "").toString();
 }
 
+function supportDisplayText(value: unknown, fallback = "-"): string {
+  const text = safeStr(value).trim();
+  if (!text) return fallback;
+  return text
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/guarantors/g, "supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantor/g, "supporter");
+}
+
 function fmtBool(v: any): string {
   return v ? "Verified" : "Not verified";
 }
@@ -314,7 +324,7 @@ export default function TrustGraphAdminPage() {
                   color: "#334155",
                 }}
               >
-                {JSON.stringify(graph.summary?.explainability || {}, null, 2)}
+                {supportDisplayText(JSON.stringify(graph.summary?.explainability || {}, null, 2), "")}
               </pre>
             </details>
           </Card>

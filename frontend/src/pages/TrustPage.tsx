@@ -794,7 +794,7 @@ export default function TrustPage() {
               </div>
               {ev.meta != null ? (
                 <div style={{ marginTop: 8, fontSize: 12.5, color: "#526579", wordBreak: "break-word", lineHeight: 1.6 }}>
-                  {safeJson(ev.meta)}
+                  {supportDisplayText(safeJson(ev.meta))}
                 </div>
               ) : null}
             </div>

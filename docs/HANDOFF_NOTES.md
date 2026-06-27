@@ -1,9 +1,42 @@
-## 2026-06-27 - Trust screens hide legacy supporter event wording locally
+## 2026-06-27 - Trust raw-record displays use supporter wording locally
+
+Owner request:
+- Continue the supporter-wording cleanup and keep Render truth explicit.
+
+Local corrections:
+- `frontend/src/pages/TrustPage.tsx`
+  - visible raw event meta is now display-formatted to supporter wording;
+    CSV export remains raw contract data.
+- `frontend/src/components/TrustGraphEdgeList.tsx`
+  - visible edge type, provenance, and meta display now use supporter wording.
+- `frontend/src/pages/TrustGraphAdminPage.tsx`
+  - visible source reading details now display supporter wording.
+- `docs/HANDOFF_NOTES.md`
+  - corrected the previous trust-screen slice to record its actual pushed
+    commit and frontend Render deploy id.
+
+Verification passed locally:
+- targeted scan for obvious visible legacy support phrases on Trust /
+  TrustTimeline / TrustGraph surfaces
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Local only until committed, pushed, and frontend Render deploy is accepted.
+- This is frontend/docs only and does not require backend Render credentials.
+- Backend Render remains blocked for the earlier backend-impacting copy batch
+  until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured
+  or gmfn-api is manually deployed and verified.
+
+## 2026-06-27 - Trust screens hide legacy supporter event wording
 
 Owner request:
 - Continue after the supporter-wording batch and keep Render truth clear.
 
-Local corrections:
+Published corrections:
 - `frontend/src/pages/TrustTimelinePage.tsx`
   - added display-only supporter text formatting for trust signal type,
     reason, and note fields;
@@ -26,7 +59,14 @@ Verification passed locally:
   frontend files.
 
 Truth / remaining risk:
-- Local only until committed, pushed, and a frontend Render deploy is accepted.
+- Committed and pushed `main` at
+  `675b78c9b802c77ee9bb64b9c38f3d66f4614da3`
+  (`Hide legacy support event wording on trust screens`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28283548209` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8voc8ok1i2s73evf4dg`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
 - This follow-up is frontend/docs only; it does not need the blocked backend
   Render API credential path.
 - The previous backend deploy blocker remains for backend-impacting commits:

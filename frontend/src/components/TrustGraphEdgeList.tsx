@@ -6,6 +6,16 @@ function safeStr(x: any): string {
   return (x ?? "").toString();
 }
 
+function supportDisplayText(value: unknown, fallback = "-"): string {
+  const text = safeStr(value).trim();
+  if (!text) return fallback;
+  return text
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/guarantors/g, "supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantor/g, "supporter");
+}
+
 function fmtDate(iso?: string | null): string {
   if (!iso) return "-";
   const d = new Date(iso);
@@ -140,7 +150,9 @@ export default function TrustGraphEdgeList(props: {
                 }}
               >
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                  <Pill kind={edgeKind(String(e.edge_type)) as any}>{safeStr(e.edge_type)}</Pill>
+                  <Pill kind={edgeKind(String(e.edge_type)) as any}>
+                    {supportDisplayText(e.edge_type)}
+                  </Pill>
                   {isInbound ? <Pill kind="green">inbound</Pill> : null}
                   {isOutbound ? <Pill kind="gold">outbound</Pill> : null}
                 </div>
@@ -215,7 +227,7 @@ export default function TrustGraphEdgeList(props: {
                   <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {e.provenance.map((p: any) => (
                       <Pill key={String(p)} kind="gray">
-                        {p}
+                        {supportDisplayText(p)}
                       </Pill>
                     ))}
                   </div>
@@ -236,7 +248,7 @@ export default function TrustGraphEdgeList(props: {
                       color: "#334155",
                     }}
                   >
-                    {JSON.stringify(e.meta, null, 2)}
+                    {supportDisplayText(JSON.stringify(e.meta, null, 2), "")}
                   </pre>
                 </div>
               ) : null}
