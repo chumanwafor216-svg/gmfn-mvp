@@ -71869,7 +71869,16 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run build` from `frontend`.
   - Passed `git diff --check`; only Git line-ending warnings were reported.
 - Deployment state:
-  - local only at this entry; not pushed or deployed yet.
+  - committed and pushed to `main` as `ff814801`
+    (`Gate complete analytics loan evidence PDFs`);
+  - manual GitHub Actions Render workflow run `28291049492` checked out
+    `ff8148017d667ec7464ffc657a425680db3d29d7`;
+  - frontend Render deploy hook accepted the request and returned deploy id
+    `dep-d8vt8g4m0tmc73d7gq2g`;
+  - backend/API deploy did not run because the workflow still lacks
+    `RENDER_API_KEY`; this backend route-permission fix is pushed to GitHub
+    but should not be claimed live on Render API until gmfn-api is deployed by
+    Render API credentials or manually from Render dashboard.
 
 ### Follow-up same day - Trust Timeline user references redacted
 
