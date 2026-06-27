@@ -1,3 +1,49 @@
+## 2026-06-27 - Admin incomplete support queue wording
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+  - visible page title and hero now say `Incomplete Support` /
+    `Incomplete Support Queue`.
+  - row and copied-snapshot labels now say `Support item`, `Support #`, and
+    `Requester #` instead of old loan/borrower labels.
+  - helper copy now says the queue does not approve the whole support request
+    and tells admins to open the support item first.
+  - empty state and copy-success messages now say incomplete support/support
+    queue, not incomplete loans.
+- `frontend/tools/audit-admin-ops-actions.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - updated admin queue guards to require support-item/support-request framing.
+  - added rejection coverage for restoring visible `Incomplete Loans`,
+    `Loan #`, `Loan:`, `Borrower #`, `Borrower:`, or `whole loan` wording on
+    the page.
+
+Verification state:
+- `node frontend\tools\audit-admin-ops-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `80ae4ba07d84976eb17f61dff73479288c3fc04c`
+  (`Clarify admin incomplete support queue wording`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28286172937` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vq3ou8bjmc738ivrm0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: route names, debug IDs, API fields, and source file names
+  still use `loan`/`borrower` compatibility terms. This slice only changed
+  visible admin copy and copied support snapshots.
+
 ## 2026-06-27 - Loan decision support summary wording
 
 Owner request:
