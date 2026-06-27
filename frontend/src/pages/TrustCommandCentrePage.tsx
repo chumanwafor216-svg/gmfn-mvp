@@ -1271,7 +1271,7 @@ export default function TrustCommandCentrePage() {
             ? "One incomplete loan is nearing auto-cancel"
             : `${urgentIncompleteCount} incomplete loans are nearing auto-cancel`,
         detail:
-          "The unresolved loan queue now has items running short on time. Review pledge progress and coverage before they fall out of the active path.",
+          "The unresolved loan queue now has items running short on time. Review support progress and coverage before they fall out of the active path.",
         to: routes.incompleteLoans,
         cta: "Open Incomplete Loans",
       };

@@ -1,3 +1,39 @@
+## 2026-06-27 - Exposure support wording cleanup verified locally
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Local corrections:
+- `frontend/src/pages/ExposureAdminPage.tsx`
+  - exposure queue and overview copy now say support decisions / locked support
+    coverage instead of pledge decisions / locked pledge coverage.
+- `frontend/src/pages/ExposurePage.tsx`
+  - legacy exposure description now says locked support coverage.
+- `frontend/src/pages/TrustCommandCentrePage.tsx`
+  - unresolved-loan pressure guidance now says review support progress and
+    coverage.
+- `frontend/tools/audit-admin-ops-actions.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - updated route-local source guards so the exposure and trust command-centre
+    cages preserve support-coverage wording.
+
+Verification state:
+- `node frontend\tools\audit-admin-ops-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Local only at this point. Verified, but not committed, not pushed, and not
+  deployed to Render yet.
+- These edits are display/audit-only. Backend contract names and route paths
+  still use existing guarantor/pledge terms where they mirror API fields.
+
 ## 2026-06-27 - Admin support queue wording cleanup
 
 Owner request:

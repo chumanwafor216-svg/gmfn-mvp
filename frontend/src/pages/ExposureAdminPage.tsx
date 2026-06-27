@@ -678,7 +678,7 @@ export default function ExposureAdminPage() {
       key: `incomplete-${firstTruthy(row.id, row.loan_id, Math.random())}`,
       title: `Incomplete loan ${firstTruthy(row.loan_id, row.id, "")}`.trim(),
       detail: [
-        `Pledge decisions ${toNum(row.approved_count)} / ${toNum(row.required_count)}`,
+        `Support decisions ${toNum(row.approved_count)} / ${toNum(row.required_count)}`,
         row.required_gap != null ? `Gap ${toNum(row.required_gap)}` : "",
         toNum(row.auto_cancel_remaining_seconds) > 0
           ? `${toNum(row.auto_cancel_remaining_seconds)}s remaining`
@@ -826,7 +826,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Read locked pledge coverage, stale demand, pending pool review, and bank pressure in one place.
+              Read locked support coverage, stale demand, pending pool review, and bank pressure in one place.
             </div>
 
             <div
@@ -1055,7 +1055,7 @@ export default function ExposureAdminPage() {
                 Concentration pressure
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Shows locked pledge coverage readings and who is close to the edge.
+                Shows locked support coverage readings and who is close to the edge.
               </div>
 
               <div

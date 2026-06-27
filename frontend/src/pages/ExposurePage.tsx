@@ -310,7 +310,7 @@ export default function ExposurePage() {
       <h2 style={{ marginTop: 0 }}>Exposure (Admin)</h2>
 
       <div style={{ color: "#6b7280", marginBottom: 12 }}>
-        Exposure is a recorded risk reading from locked pledge coverage minus release records in this community. It is not settlement, release authority, or evidence that money moved.
+        Exposure is a recorded risk reading from locked support coverage minus release records in this community. It is not settlement, release authority, or evidence that money moved.
       </div>
 
       {msg && (

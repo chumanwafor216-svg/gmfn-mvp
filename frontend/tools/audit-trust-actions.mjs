@@ -660,8 +660,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /Check database and service health[\s\S]*?Check community-admin exposure access[\s\S]*?Review pledge progress and coverage[\s\S]*?exposure reading[\s\S]*?Buffer:/,
-  "Trust Command Centre overview must frame admin readings as checks, pledge progress, exposure readings, and buffer signals."
+  /Check database and service health[\s\S]*?Check community-admin exposure access[\s\S]*?Review support progress and coverage[\s\S]*?exposure reading[\s\S]*?Buffer:/,
+  "Trust Command Centre overview must frame admin readings as checks, support progress, exposure readings, and buffer signals."
 );
 
 assertNotContains(
@@ -1104,8 +1104,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ExposureAdminPage.tsx",
-  /Pledge decisions[\s\S]*?Pending pool finance review[\s\S]*?practical risk reading; it is not settlement, release authority, or evidence that money moved[\s\S]*?locked pledge coverage/,
-  "Exposure Admin must frame exposure as a risk reading and pledge-coverage review, not settlement, release authority, or payment proof."
+  /Support decisions[\s\S]*?Pending pool finance review[\s\S]*?practical risk reading; it is not settlement, release authority, or evidence that money moved[\s\S]*?locked support coverage/,
+  "Exposure Admin must frame exposure as a risk reading and support-coverage review, not settlement, release authority, or payment proof."
 );
 
 assertNotContains(
@@ -1116,7 +1116,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/ExposurePage.tsx",
-  /Exposure is a recorded risk reading from locked pledge coverage minus release records[\s\S]*?not settlement, release authority, or evidence that money moved/,
+  /Exposure is a recorded risk reading from locked support coverage minus release records[\s\S]*?not settlement, release authority, or evidence that money moved/,
   "Legacy Exposure page must frame exposure as a recorded risk reading, not settlement, release authority, or payment proof."
 );
 
