@@ -1,10 +1,10 @@
-## 2026-06-27 - Exposure support wording cleanup verified locally
+## 2026-06-27 - Exposure support wording cleanup
 
 Owner request:
 - Continue the supporter/support wording cleanup and keep Render updated
   truthfully.
 
-Local corrections:
+Published corrections:
 - `frontend/src/pages/ExposureAdminPage.tsx`
   - exposure queue and overview copy now say support decisions / locked support
     coverage instead of pledge decisions / locked pledge coverage.
@@ -29,8 +29,15 @@ Verification state:
   frontend files.
 
 Truth / remaining risk:
-- Local only at this point. Verified, but not committed, not pushed, and not
-  deployed to Render yet.
+- Committed and pushed `main` at
+  `132f774077a4fee1d362b9a67d4fd4d125eaaf5c`
+  (`Update exposure support wording`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28284706784` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vp536rnols73dvlv50`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- This is frontend/docs only and does not require backend Render credentials.
 - These edits are display/audit-only. Backend contract names and route paths
   still use existing guarantor/pledge terms where they mirror API fields.
 
