@@ -71796,8 +71796,21 @@ GSN-branded invite composer and invite-entry continuity.
     their own exposure audit; this slice focused on Trust Timeline JSON/page
     and TrustSlip evidence filename.
 - Deployment state:
-  - verified locally at this entry;
-  - not yet committed, pushed, or Render-confirmed.
+  - committed as `d585d314` (`Redact Trust Timeline user references`) and
+    pushed to `origin/main`;
+  - manual GitHub Actions Render workflow run `28290079253` checked out
+    `d585d3141214952310fdfb51fecaf9d8c54dc7cb`;
+  - frontend Render deploy hook accepted the request and returned
+    `dep-d8vslcv7f7vs739hbk2g`;
+  - backend/API deploy did **not** run: the workflow failed at the required
+    API credential gate because `RENDER_API_KEY` is still missing, and the
+    workflow no longer trusts the old API deploy hook for exact backend
+    commit deployment;
+  - truth for pilot testing: frontend bundle can update from Render deploy
+    `dep-d8vslcv7f7vs739hbk2g`, but the backend Trust Timeline redaction and
+    TrustSlip filename route are not Render-confirmed until gmfn-api is
+    deployed with `RENDER_API_KEY`/`RENDER_API_SERVICE_ID` or manually from the
+    Render dashboard.
 
 ### Follow-up same day - Governance ZIP complete-record boundary
 
