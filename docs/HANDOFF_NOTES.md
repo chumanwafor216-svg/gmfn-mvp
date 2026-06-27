@@ -1,3 +1,46 @@
+## 2026-06-27 - Finance supporter-value support ID labels
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/pages/FinancePage.tsx`
+  - the `Earnings from backing others` mobile record title now says
+    `Support ...` instead of `Loan ...`.
+  - the desktop table column now says `Support ID` instead of `Loan ID`.
+- `frontend/tools/audit-finance-actions.mjs`
+  - added a guard requiring supporter-value rows to label backend `loan_id`
+    values as support IDs in visible copy.
+  - added a regression guard rejecting the old visible `Loan` / `Loan ID`
+    labels in that Finance supporter-value block.
+
+Verification state:
+- `node frontend\tools\audit-finance-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-finance-banking-rails-lane.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `976379fbc89623d1d63cfc56a8ce3e90246265ff`
+  (`Clarify finance support ID labels`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28286410923` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted the request. This run returned `Accepted` and
+  `{}` rather than a deploy id, so no Render deploy id can be truthfully
+  reported for this slice.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: the values still come from `loan_id` / `loan_guarantor_id`
+  backend fields. This slice only changes visible Finance labels where the
+  surrounding lane already talks about support and backing others.
+
 ## 2026-06-27 - Loan decision requester role label
 
 Owner request:
