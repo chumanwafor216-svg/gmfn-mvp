@@ -1,3 +1,43 @@
+## 2026-06-27 - Shared support request guidance wording
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/lib/guidance.ts`
+  - shared Action Inbox guidance now titles supporter decisions as
+    `Support request waiting on support #...` instead of `loan #...`.
+  - the shared detail now says `A requester is waiting for your support
+    decision...` instead of `A borrower is waiting...`.
+- `frontend/tools/audit-gsn-visible-language.mjs`
+  - now requires the requester/support wording for shared guidance.
+  - now rejects the old borrower/support and support-on-loan visible phrases.
+
+Verification state:
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-link-contracts.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `fe0a501f0c6dddeaf8446483b89cb3d66918882b`
+  (`Clarify shared support request guidance`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28286807301` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vqhh6q1p3s73a5ie4g`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: the notice kind remains `loan-guarantor-request`, and the
+  ID still comes from backend `loan_id`. This slice changes the shared
+  user-facing guidance only.
+
 ## 2026-06-27 - Trust Passport requester repayment label
 
 Owner request:
