@@ -81,6 +81,16 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function supportDisplayText(value: any, fallback = ""): string {
+  const text = safeStr(value);
+  if (!text) return fallback;
+  return text
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantors/g, "supporters")
+    .replace(/guarantor/g, "supporter");
+}
+
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -347,19 +357,23 @@ async function callFirstAvailable<T = any>(
 function normalizeGraphNode(raw: any, index: number): GraphNode {
   return {
     id: firstTruthy(raw?.id, raw?.node_id, raw?.gmfn_id, `node-${index}`),
-    label: firstTruthy(
-      raw?.label,
-      raw?.name,
-      raw?.display_name,
-      raw?.title,
-      raw?.gmfn_id,
-      `Node ${index + 1}`
+    label: supportDisplayText(
+      firstTruthy(
+        raw?.label,
+        raw?.name,
+        raw?.display_name,
+        raw?.title,
+        raw?.gmfn_id,
+        `Node ${index + 1}`
+      )
     ),
     gmfnId: firstTruthy(raw?.gmfn_id),
-    cluster: firstTruthy(raw?.cluster, raw?.community, raw?.group, raw?.bucket),
+    cluster: supportDisplayText(
+      firstTruthy(raw?.cluster, raw?.community, raw?.group, raw?.bucket)
+    ),
     degree: positiveNumber(raw?.degree || raw?.weight || raw?.connections) || undefined,
-    risk: firstTruthy(raw?.risk, raw?.risk_level, raw?.status),
-    role: firstTruthy(raw?.role),
+    risk: supportDisplayText(firstTruthy(raw?.risk, raw?.risk_level, raw?.status)),
+    role: supportDisplayText(firstTruthy(raw?.role)),
   };
 }
 
@@ -368,9 +382,9 @@ function normalizeGraphEdge(raw: any, index: number): GraphEdge {
     id: firstTruthy(raw?.id, raw?.edge_id, `edge-${index}`),
     from: firstTruthy(raw?.from, raw?.source, raw?.source_id),
     to: firstTruthy(raw?.to, raw?.target, raw?.target_id),
-    label: firstTruthy(raw?.label, raw?.relationship, raw?.kind),
-    status: firstTruthy(raw?.status),
-    risk: firstTruthy(raw?.risk, raw?.risk_level),
+    label: supportDisplayText(firstTruthy(raw?.label, raw?.relationship, raw?.kind)),
+    status: supportDisplayText(firstTruthy(raw?.status)),
+    risk: supportDisplayText(firstTruthy(raw?.risk, raw?.risk_level)),
     weight: positiveNumber(raw?.weight || raw?.score || raw?.strength) || undefined,
   };
 }
@@ -405,12 +419,16 @@ function normalizeGraphSignal(raw: any, index: number): GraphSignal {
 
   return {
     id: firstTruthy(raw?.id, `signal-${index}`),
-    title: firstTruthy(raw?.title, raw?.label, raw?.kind, "Graph signal"),
-    detail: firstTruthy(
-      raw?.detail,
-      raw?.message,
-      raw?.description,
-      "A structural graph signal is visible."
+    title: supportDisplayText(
+      firstTruthy(raw?.title, raw?.label, raw?.kind, "Graph signal")
+    ),
+    detail: supportDisplayText(
+      firstTruthy(
+        raw?.detail,
+        raw?.message,
+        raw?.description,
+        "A structural graph signal is visible."
+      )
     ),
     level,
     createdAt: firstTruthy(raw?.created_at),
@@ -465,12 +483,14 @@ function normalizeGraphSnapshot(raw: any): GraphSnapshot | null {
 
   const clusters = (clusterRows as any[])
     .map((row: any, index: number) =>
-      firstTruthy(
-        row?.label,
-        row?.name,
-        row?.title,
-        row?.id,
-        `Cluster ${index + 1}`
+      supportDisplayText(
+        firstTruthy(
+          row?.label,
+          row?.name,
+          row?.title,
+          row?.id,
+          `Cluster ${index + 1}`
+        )
       )
     )
     .filter(Boolean);
@@ -516,19 +536,23 @@ function fallbackSignalsFromEvents(events: TrustEventRow[]): GraphSignal[] {
 
     return {
       id: firstTruthy(row?.id, `fallback-${index}`),
-      title: firstTruthy(
-        row?.title,
-        row?.message,
-        row?.detail,
-        row?.kind,
-        row?.event_type,
-        "Relationship signal"
+      title: supportDisplayText(
+        firstTruthy(
+          row?.title,
+          row?.message,
+          row?.detail,
+          row?.kind,
+          row?.event_type,
+          "Relationship signal"
+        )
       ),
-      detail: firstTruthy(
-        row?.detail,
-        row?.description,
-        row?.message,
-        "A relationship-related trust signal is visible."
+      detail: supportDisplayText(
+        firstTruthy(
+          row?.detail,
+          row?.description,
+          row?.message,
+          "A relationship-related trust signal is visible."
+        )
       ),
       level,
       createdAt: firstTruthy(row?.created_at),

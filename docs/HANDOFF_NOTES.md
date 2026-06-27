@@ -1,9 +1,43 @@
-## 2026-06-27 - Trust raw-record displays use supporter wording locally
+## 2026-06-27 - Trust admin displays continue supporter wording
+
+Owner request:
+- Continue the supporter-wording cleanup and keep Render updated truthfully.
+
+Local corrections:
+- `frontend/src/pages/AdminTrustEventsPage.tsx`
+  - visible trust event type, short explanation, source-details preview, and
+    copy payload now display supporter wording.
+- `frontend/src/pages/TrustAnalyticsPage.tsx`
+  - normalized visible event labels and kind values now display supporter
+    wording.
+- `frontend/src/pages/AdminTrustGraphPage.tsx`
+  - visible graph node labels, clusters, roles, risks, edge labels/status/risk,
+    graph signal text, and fallback event-derived signal text now display
+    supporter wording.
+
+Verification passed locally:
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Local only until committed, pushed, and the frontend Render deploy hook
+  accepts a deploy for the pushed commit.
+- This is frontend/docs only and should use `deploy_api=false`.
+- Backend Render remains blocked for the earlier backend-impacting copy batch
+  until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured
+  or gmfn-api is manually deployed and verified.
+- These changes do not migrate historical database values or rename backend
+  contract keys/routes that still contain `guarantor`.
+
+## 2026-06-27 - Trust raw-record displays use supporter wording
 
 Owner request:
 - Continue the supporter-wording cleanup and keep Render truth explicit.
 
-Local corrections:
+Published corrections:
 - `frontend/src/pages/TrustPage.tsx`
   - visible raw event meta is now display-formatted to supporter wording;
     CSV export remains raw contract data.
@@ -25,7 +59,14 @@ Verification passed locally:
   frontend files.
 
 Truth / remaining risk:
-- Local only until committed, pushed, and frontend Render deploy is accepted.
+- Committed and pushed `main` at
+  `ab6c7f2a6a3ddc0e5a5b18a6016c319334e68294`
+  (`Hide legacy support wording in trust raw displays`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28283659330` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8voei0k1i2s73evhrfg`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
 - This is frontend/docs only and does not require backend Render credentials.
 - Backend Render remains blocked for the earlier backend-impacting copy batch
   until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured

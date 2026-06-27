@@ -52,6 +52,16 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function supportDisplayText(value: any, fallback = ""): string {
+  const text = safeStr(value);
+  if (!text) return fallback;
+  return text
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantors/g, "supporters")
+    .replace(/guarantor/g, "supporter");
+}
+
 function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input)) return input as T[];
   if (Array.isArray(input?.items)) return input.items as T[];
@@ -535,17 +545,19 @@ export default function TrustAnalyticsPage() {
 
         return {
           id: firstTruthy(row.id, `event-${index}`),
-          label: firstTruthy(
-            row.title,
-            row.message,
-            row.detail,
-            row.description,
-            row.kind,
-            row.type,
-            row.event_type,
-            "Trust event"
+          label: supportDisplayText(
+            firstTruthy(
+              row.title,
+              row.message,
+              row.detail,
+              row.description,
+              row.kind,
+              row.type,
+              row.event_type,
+              "Trust event"
+            )
           ),
-          kind: firstTruthy(row.kind, row.type, row.event_type),
+          kind: supportDisplayText(firstTruthy(row.kind, row.type, row.event_type)),
           category,
           createdAt: safeStr(row.created_at),
           ageDays: daysSince(row.created_at),

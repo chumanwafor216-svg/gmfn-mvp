@@ -10,6 +10,16 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function supportDisplayText(value: unknown, fallback = "-"): string {
+  const text = safeStr(value);
+  if (!text) return fallback;
+  return text
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/guarantors/g, "supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantor/g, "supporter");
+}
+
 function toNum(x: any): number | null {
   const n = Number(x);
   return Number.isFinite(n) ? n : null;
@@ -233,13 +243,13 @@ function eventToneStyle(tone: "pos" | "neg" | "zero" | "none"): React.CSSPropert
 
 function buildEventSnapshot(row: any): string {
   return [
-    `Event: ${safeStr(row?.event_type || "trust.event")}`,
+    `Event: ${supportDisplayText(row?.event_type || "trust.event")}`,
     `When: ${fmtWhen(row?.created_at)}`,
     `Delta: ${deltaMeta(row?.delta).label}`,
     `Actor: ${safeStr(row?.actor_user_id || "-")}`,
     `Subject: ${safeStr(row?.subject_user_id || "-")}`,
-    `Reason: ${safeStr(row?.reason || "Not stated")}`,
-    `Note: ${safeStr(row?.note || "Not stated")}`,
+    `Reason: ${supportDisplayText(row?.reason || "Not stated")}`,
+    `Note: ${supportDisplayText(row?.note || "Not stated")}`,
   ].join("`n");
 }
 
@@ -310,7 +320,7 @@ export default function AdminTrustEventsPage() {
   }
 
   async function copyEvent(row: any) {
-    const payload = JSON.stringify(row, null, 2);
+    const payload = supportDisplayText(JSON.stringify(row, null, 2), "");
     const snapshot = buildEventSnapshot(row);
     try {
       safeCopy(`${snapshot}` + "`n`n" + `${payload}`);
@@ -412,7 +422,7 @@ export default function AdminTrustEventsPage() {
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                     <div>
                       <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
-                        {labelWithIcon("document", safeStr(row?.event_type || "trust.event"))}
+                        {labelWithIcon("document", supportDisplayText(row?.event_type || "trust.event"))}
                       </div>
                       <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>
                         {labelWithIcon("calendar", fmtWhen(row?.created_at))}
@@ -438,7 +448,7 @@ export default function AdminTrustEventsPage() {
                   </div>
 
                   <div style={{ marginTop: 14, ...helperText(), color: "#0B1F33" }}>
-                    {safeStr(row?.reason || row?.note) || "No short explanation was attached to this event yet."}
+                    {supportDisplayText(row?.reason || row?.note || "No short explanation was attached to this event yet.")}
                   </div>
 
                   <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -466,7 +476,7 @@ export default function AdminTrustEventsPage() {
                     <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
                       <div>{sectionLabelWithIcon("document", "Source event details")}</div>
                       <pre style={{ margin: "12px 0 0", whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 12, color: "#334155", lineHeight: 1.7 }}>
-                        {JSON.stringify(row, null, 2)}
+                        {supportDisplayText(JSON.stringify(row, null, 2), "")}
                       </pre>
                     </div>
                   ) : null}
