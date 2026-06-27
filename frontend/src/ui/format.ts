@@ -32,8 +32,8 @@ export function displayNameFromEmail(email?: string | null): string {
 
 export function maskedEmail(email?: string | null): string {
   const e = safeStr(email).trim();
-  if (!e) return "member@gmfn.com";
+  if (!e) return "member@gsn.example";
   const head = e.split("@")[0] || "member";
-  const short = head.length <= 3 ? head : head.slice(0, 3) + "…";
-  return `${short}@gmfn.com`;
+  const short = head.length <= 3 ? head : `${head.slice(0, 3)}...`;
+  return `${short}@gsn.example`;
 }

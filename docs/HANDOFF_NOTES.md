@@ -72320,6 +72320,26 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Masked email placeholder branding cleaned
+
+- Trigger:
+  - after the public paper passes, frontend visible-language scanning found the
+    shared `maskedEmail()` helper still emitted `member@gmfn.com` and used a
+    non-ASCII ellipsis that rendered as mojibake in PowerShell.
+- Changed:
+  - `frontend/src/ui/format.ts`
+    - changed empty/masked placeholder emails to `member@gsn.example`;
+    - replaced the Unicode ellipsis in masked email prefixes with ASCII `...`.
+  - `frontend/tools/audit-gsn-visible-language.mjs`
+    - added `frontend/src/ui/format.ts` to the visible-language audit;
+    - added guards against `member@gmfn.com`, `@gmfn.com`, and ellipsis/mojibake
+      regressions in that shared formatter.
+- Verification:
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Public TrustSlip verify paper security marks aligned
 
 - Trigger:

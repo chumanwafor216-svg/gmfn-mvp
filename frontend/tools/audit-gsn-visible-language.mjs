@@ -22,6 +22,7 @@ const files = [
   "frontend/src/components/TrustGraphSummaryCard.tsx",
   "frontend/src/components/LoanDecisionPanel.tsx",
   "frontend/src/pages/ShopGalleryPage.tsx",
+  "frontend/src/ui/format.ts",
   "frontend/src/lib/guidance.ts",
   "gmfn_backend/app/api/routes/analytics_liquidity.py",
   "gmfn_backend/app/api/routes/auth.py",
@@ -154,6 +155,10 @@ forbiddenByFile.push(["frontend/src/pages/TrustSlipPage.tsx", "Overexposure rati
 forbiddenByFile.push(["frontend/src/pages/TrustScorePage.tsx", "Overexposure ratio"]);
 forbiddenByFile.push(["frontend/src/pages/TrustScorePage.tsx", '"Overexposure",']);
 forbiddenByFile.push(["frontend/src/pages/TrustTimelinePage.tsx", "complete internal records"]);
+forbiddenByFile.push(["frontend/src/ui/format.ts", "member@gmfn.com"]);
+forbiddenByFile.push(["frontend/src/ui/format.ts", "@gmfn.com"]);
+forbiddenByFile.push(["frontend/src/ui/format.ts", "…"]);
+forbiddenByFile.push(["frontend/src/ui/format.ts", "â€¦"]);
 
 const required = [
   ["gmfn_backend/app/api/routes/clans.py", "Community admin only"],
@@ -210,6 +215,8 @@ const required = [
   ["frontend/src/components/TrustGraphSummaryCard.tsx", "Active communities"],
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
   ["frontend/src/pages/ShopGalleryPage.tsx", "GSN ID"],
+  ["frontend/src/ui/format.ts", "member@gsn.example"],
+  ["frontend/src/ui/format.ts", "`${short}@gsn.example`"],
   ["frontend/src/lib/guidance.ts", "Support request waiting on support #"],
   ["frontend/src/lib/guidance.ts", "A requester is waiting for your support decision on"],
   ["frontend/src/lib/guidance.ts", "A requester is waiting for your support decision."],
