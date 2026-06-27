@@ -27,6 +27,19 @@ function assertContains(pattern, message) {
   addFinding(-1, message);
 }
 
+function assertNotContains(pattern, message) {
+  source.split(/\r?\n/).forEach((line, index) => {
+    if (pattern.test(line)) {
+      findings.push({
+        file: marketplaceFile,
+        line: index + 1,
+        message,
+        text: line.trim(),
+      });
+    }
+  });
+}
+
 function sectionBetween(startPattern, endPattern) {
   const start = source.search(startPattern);
   if (start === -1) return { text: "", start: -1 };
@@ -51,6 +64,21 @@ assertContains(
 assertContains(
   /const MARKETPLACE_SECTION_ANCHORS:[\s\S]*?support: "marketplace-loans-support"/,
   "Support Requests section anchor must remain marketplace-loans-support."
+);
+
+assertContains(
+  /id: "support"[\s\S]*?label: "Ask for support"[\s\S]*?detail: "Start or continue a support request\."[\s\S]*?technical: "Borrow \/ Lend \/ Support"/,
+  "Marketplace support intent detail must use support-request wording while preserving internal discoverability metadata."
+);
+
+assertContains(
+  /id: "support"[\s\S]*?keywords: \[[\s\S]*?"loan"[\s\S]*?"borrow"[\s\S]*?"support"[\s\S]*?"lend"[\s\S]*?"help"[\s\S]*?"guarantor"[\s\S]*?\]/,
+  "Marketplace support intent keywords must keep legacy search terms for discoverability even while visible copy says support."
+);
+
+assertNotContains(
+  /detail: "Start or continue a support or loan request\."/,
+  "Marketplace support intent detail must not restore the old visible support-or-loan request wording."
 );
 
 assertContains(

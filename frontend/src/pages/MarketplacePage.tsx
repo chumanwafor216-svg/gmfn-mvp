@@ -496,7 +496,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   {
     id: "support",
     label: "Ask for support",
-    detail: "Start or continue a support or loan request.",
+    detail: "Start or continue a support request.",
     technical: "Borrow / Lend / Support",
     to: "#marketplace-loans-support",
     tone: "secondary",
