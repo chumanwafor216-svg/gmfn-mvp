@@ -114,6 +114,16 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function supportDisplayText(value: unknown, fallback = "-"): string {
+  const text = safeStr(value);
+  if (!text) return fallback;
+  return text
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/guarantors/g, "supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantor/g, "supporter");
+}
+
 function humanizeEventType(eventType?: string | null): string {
   const raw = safeStr(eventType);
   if (!raw) return "Event";
@@ -133,7 +143,9 @@ function humanizeEventType(eventType?: string | null): string {
 
   return raw
     .replace(/[._]+/g, " ")
-    .replace(/\b\w/g, (char: string) => char.toUpperCase());
+    .replace(/\b\w/g, (char: string) => char.toUpperCase())
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/Guarantor/g, "Supporter");
 }
 
 function eventTone(eventType: string) {
@@ -472,14 +484,16 @@ export default function TrustPage() {
     },
   ];
   const hasStarterEvidence = starterEvidenceItems.some((item) => item.enabled);
-  const latestReason =
+  const latestReason = supportDisplayText(
     score?.latest_reason ??
     score?.breakdown?.latest_reason ??
-    "Your trust position reflects the evidence and trust events already recorded on your account.";
-  const trustExplanation =
+    "Your trust position reflects the evidence and trust events already recorded on your account."
+  );
+  const trustExplanation = supportDisplayText(
     score?.explanation ??
     score?.breakdown?.explanation ??
-    "The score is explainable. Verified onboarding evidence can establish a starter base before later transactions deepen or weaken it.";
+    "The score is explainable. Verified onboarding evidence can establish a starter base before later transactions deepen or weaken it."
+  );
 
   return (
     <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 0 28px" }}>
@@ -680,9 +694,9 @@ export default function TrustPage() {
                     <div style={{ marginTop: 6, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                       {e.delta ? <span style={pill("green")}>Delta {String(e.delta)}</span> : <span style={pill("gray")}>Delta 0</span>}
                       {e.loan_id ? <span style={pill("blue")}>Loan {String(e.loan_id)}</span> : null}
-                      {e.reason ? <span style={pill("gray")}>Reason: {String(e.reason)}</span> : null}
+                      {e.reason ? <span style={pill("gray")}>Reason: {supportDisplayText(e.reason)}</span> : null}
                     </div>
-                    {e.note ? <div style={{ ...helperText(), marginTop: 6, fontSize: 13.5 }}>{String(e.note)}</div> : null}
+                    {e.note ? <div style={{ ...helperText(), marginTop: 6, fontSize: 13.5 }}>{supportDisplayText(e.note)}</div> : null}
                   </div>
                 ))}
               </div>

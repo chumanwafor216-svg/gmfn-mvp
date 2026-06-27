@@ -72,6 +72,16 @@ function apiUrl(path: string): string {
   return `${apiBase()}${cleanPath}`;
 }
 
+function supportDisplayText(value: unknown, fallback = "-"): string {
+  const text = String(value ?? "").trim();
+  if (!text) return fallback;
+  return text
+    .replace(/Guarantors/g, "Supporters")
+    .replace(/guarantors/g, "supporters")
+    .replace(/Guarantor/g, "Supporter")
+    .replace(/guarantor/g, "supporter");
+}
+
 async function parseError(res: Response): Promise<string> {
   const text = await res.text();
   try {
@@ -450,16 +460,17 @@ export default function TrustTimelinePage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               <div>
-                <b>Type:</b> {lastChange?.event_type || lastChange?.source || "-"}
+                <b>Type:</b>{" "}
+                {supportDisplayText(lastChange?.event_type || lastChange?.source)}
               </div>
               <div>
                 <b>When:</b> {fmtWhen(lastChange?.created_at)}
               </div>
               <div>
-                <b>Reason:</b> {lastChange?.reason || "-"}
+                <b>Reason:</b> {supportDisplayText(lastChange?.reason)}
               </div>
               <div>
-                <b>Note:</b> {lastChange?.note || "-"}
+                <b>Note:</b> {supportDisplayText(lastChange?.note)}
               </div>
             </div>
           </div>
@@ -567,7 +578,7 @@ export default function TrustTimelinePage() {
                     const refs: string[] = [];
                     if (e.loan_id) refs.push(`loan:${e.loan_id}`);
                     if (e.payment_reference) refs.push(`ref:${e.payment_reference}`);
-                    if (e.guarantor_id) refs.push(`guarantor:${e.guarantor_id}`);
+                    if (e.guarantor_id) refs.push(`support:${e.guarantor_id}`);
 
                     return (
                       <tr key={`${e.created_at || "t"}-${idx}`}>
@@ -576,7 +587,7 @@ export default function TrustTimelinePage() {
                         </td>
                         <td style={{ padding: 10, borderBottom: "1px solid #F1F5F9", whiteSpace: "nowrap" }}>
                           <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12 }}>
-                            {e.event_type || "-"}
+                            {supportDisplayText(e.event_type)}
                           </span>
                         </td>
                         <td style={{ padding: 10, borderBottom: "1px solid #F1F5F9" }}>{e.label || "-"}</td>
@@ -587,7 +598,8 @@ export default function TrustTimelinePage() {
                           {refs.length ? refs.join(", ") : "-"}
                         </td>
                         <td style={{ padding: 10, borderBottom: "1px solid #F1F5F9", ...helperText(), fontSize: 12 }}>
-                          {(e.reason || "-") + (e.note ? ` | ${e.note}` : "")}
+                          {supportDisplayText(e.reason) +
+                            (e.note ? ` | ${supportDisplayText(e.note)}` : "")}
                         </td>
                       </tr>
                     );

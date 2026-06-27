@@ -1,9 +1,44 @@
+## 2026-06-27 - Trust screens hide legacy supporter event wording locally
+
+Owner request:
+- Continue after the supporter-wording batch and keep Render truth clear.
+
+Local corrections:
+- `frontend/src/pages/TrustTimelinePage.tsx`
+  - added display-only supporter text formatting for trust signal type,
+    reason, and note fields;
+  - changed visible timeline reference chip from `guarantor:<id>` to
+    `support:<id>` while preserving the underlying `guarantor_id` data field.
+- `frontend/src/pages/TrustPage.tsx`
+  - added display-only supporter text formatting for fallback trust event
+    labels, latest trust reason/explanation, and visible reason/note chips.
+- `docs/HANDOFF_NOTES.md`
+  - corrected the prior batch from `ready for publish` to the real pushed /
+    frontend-deploy-accepted / backend-deploy-blocked state.
+
+Verification passed locally:
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- targeted trust-screen scan for `guarantor:` and obvious visible legacy
+  phrases
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Local only until committed, pushed, and a frontend Render deploy is accepted.
+- This follow-up is frontend/docs only; it does not need the blocked backend
+  Render API credential path.
+- The previous backend deploy blocker remains for backend-impacting commits:
+  GitHub still needs `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID`
+  before backend Render updates can be truthfully claimed.
+
 ## 2026-06-27 - Supporter wording rounded through loan/backend surfaces
 
 Owner request:
 - Continue until rounded off, and keep Render updated.
 
-Local corrections ready for publish:
+Published corrections:
 - Extended the visible `guarantor` -> `supporter/support` wording cleanup
   beyond frontend copy into backend API errors, trust-event notes, repayment
   release notes, evidence-pack PDFs, institutional reports, revenue allocation
@@ -31,12 +66,27 @@ Verification passed locally:
 - `npm run build` from `frontend/` passed when rerun unsandboxed after the
   sandbox blocked Vite/esbuild with `spawn EPERM`.
 
-Render / publish note:
-- This batch changes backend files, so the next deploy trigger should use
-  `deploy_api=true` as well as frontend deploy.
-- Truth: if GitHub still lacks the Render backend API credentials, frontend
-  Render can be updated but backend Render cannot be truthfully claimed updated
-  until the backend deploy request is accepted.
+Publish / deployment state:
+- Committed and pushed `main` at
+  `de7f68695fb6a13ef1906f876df81e7d2d4e7282`
+  (`Round off supporter wording surfaces`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28283391974` with `deploy_api=true`.
+- Workflow checked out the exact pushed commit.
+- Frontend Render deploy hook accepted the request and returned deploy id
+  `dep-d8vo8s9o3t8c73bh082g`.
+- Backend deploy did not happen. The workflow failed at `Require exact API
+  deploy credentials` because `RENDER_API_KEY` is empty and
+  `RENDER_API_SERVICE_ID` is not configured.
+
+Truth / remaining risk:
+- The frontend deploy request was accepted for the exact pushed commit.
+- The backend-visible wording changes are in GitHub but cannot be truthfully
+  called Render-live until GitHub secrets include `RENDER_API_KEY` and
+  preferably `RENDER_API_SERVICE_ID`, or until gmfn-api is manually deployed
+  from Render and verified.
+- Do not keep retrying backend Render deploy with the same missing credentials;
+  it will fail by design.
 
 ## 2026-06-27 - Render updated for supporter wording batch
 
