@@ -1,3 +1,57 @@
+## 2026-06-27 - Merchant Verify token spine hardened, rail still partial
+
+Owner request:
+- Continue institutional cleanup and answer whether the complete merchant
+  verification rail is finished.
+
+Correction completed locally:
+- `gmfn_backend/app/services/merchant_verify_service.py`
+  - replaced the old token signature placeholder with real HMAC-SHA256 signing.
+  - public merchant verification now rejects tampered token bodies instead of
+    merely parsing the body.
+- `gmfn_backend/tests/test_merchant_verify.py`
+  - added coverage for signed-in merchant link creation, Link ID, Pack ID,
+    public verification, one-time token-used event logging, no raw member ID in
+    the public response, and tampered-token rejection.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - tightened Merchant verification copy: it is evidence for judgement only,
+    not release approval for goods, credit, or money.
+- `frontend/src/pages/ShopControlPage.tsx`
+  - tightened Visitor verification copy with the same no-release-approval
+    boundary.
+- `frontend/tools/audit-trust-actions.mjs`
+  - now requires HMAC signing/verification in the merchant token service.
+  - now requires TrustSlip and Shop Control merchant verification copy to keep
+    the no-release-approval boundary.
+
+Verification:
+- `python -m pytest -q gmfn_backend\tests\test_merchant_verify.py`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:shop-control-button-inventory`
+- `npm --prefix frontend run audit:button-stability`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Unabated truth:
+- Complete merchant verification rail is not finished yet.
+- Finished / strengthened now: signed-in merchant link creation, public token
+  verification, Link ID / Pack ID display, token-used TrustEvent logging, and
+  tamper rejection.
+- Still partial: the active merchant-facing page journey, paid Merchant Verify
+  subscription activation boundary, public trust/document presentation review,
+  full protected trade-release rails, API paid verification, and any regulated
+  payout/settlement automation.
+- The dormant `gmfn_backend/app/api/routes/merchant_release.py` is not mounted
+  in `api_router`; it should not be treated as live release infrastructure.
+
+Truth / remaining risk:
+- This hardens the current verification spine but does not make GSN a custodian,
+  escrow service, delivery guarantor, bank verifier, or automatic release
+  authority.
+- No Render deploy was triggered in this slice.
+
 ## 2026-06-27 - Loan Suggestions copy now uses GSN supporter-fit paper
 
 Owner request:

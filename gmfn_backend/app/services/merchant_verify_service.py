@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import base64
+import hashlib
+import hmac
 import json
 import os
 import secrets
@@ -46,18 +48,18 @@ def _b64url(data: bytes) -> str:
 def _make_token(payload: Dict[str, Any]) -> str:
     secret = _get_secret().encode("utf-8")
     body = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
-    sig = secrets.token_bytes(16)  # MVP: opaque token signature (not JWT)
-    # We bind signature to secret by XOR-ish mix (simple, non-crypto MVP)
-    # NOTE: This is not a bank security primitive, just a tamper-avoid token for pilot UX.
-    mixed = bytes([(sig[i] ^ secret[i % len(secret)]) for i in range(len(sig))])
-    return f"{_b64url(body)}.{_b64url(mixed)}"
+    sig = hmac.new(secret, body, hashlib.sha256).digest()
+    return f"{_b64url(body)}.{_b64url(sig)}"
 
 
 def _parse_token(token: str) -> Dict[str, Any]:
     try:
         body_b64, sig_b64 = token.split(".", 1)
         body = base64.urlsafe_b64decode(body_b64 + "==")
-        _sig = base64.urlsafe_b64decode(sig_b64 + "==")
+        sig = base64.urlsafe_b64decode(sig_b64 + "==")
+        expected_sig = hmac.new(_get_secret().encode("utf-8"), body, hashlib.sha256).digest()
+        if not hmac.compare_digest(sig, expected_sig):
+            raise ValueError("bad signature")
         obj = json.loads(body.decode("utf-8"))
         if not isinstance(obj, dict):
             raise ValueError("bad payload")

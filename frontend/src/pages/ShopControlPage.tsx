@@ -3562,7 +3562,8 @@ export default function ShopControlPage() {
               Visitor verification
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Let visitors confirm this shop through your TrustSlip page.
+              Let visitors review this shop through your TrustSlip page before they rely on it.
+              This is evidence for judgement only, not release approval for goods, credit, or money.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>

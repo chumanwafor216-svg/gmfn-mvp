@@ -4211,7 +4211,8 @@ export default function TrustSlipPage() {
           <div>
             <div style={sectionLabel()}>Merchant verification</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Use this when someone outside GSN needs to check whether this TrustSlip is current enough to review.
+              Use this when someone outside GSN needs to check whether this TrustSlip is current enough to review before they rely on it.
+              Merchant verification is evidence for judgement only; it is not release approval for goods, credit, or money.
             </div>
           </div>
 

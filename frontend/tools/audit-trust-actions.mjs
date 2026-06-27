@@ -1485,6 +1485,24 @@ assertNotContains(
   "Merchant release schema comments must frame TrustSlip as reviewed evidence, not as automatic release authority."
 );
 
+assertContains(
+  "../gmfn_backend/app/services/merchant_verify_service.py",
+  /import hashlib[\s\S]*?import hmac[\s\S]*?hmac\.new\(secret, body, hashlib\.sha256\)\.digest\(\)[\s\S]*?expected_sig = hmac\.new\(_get_secret\(\)\.encode\("utf-8"\), body, hashlib\.sha256\)\.digest\(\)[\s\S]*?hmac\.compare_digest\(sig, expected_sig\)/,
+  "Merchant verification tokens must be protected by HMAC signing and checked on public verification."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /Merchant verification is evidence for judgement only; it is not release approval for goods, credit, or money/,
+  "TrustSlip merchant verification copy must frame verification as evidence, not release approval."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /Visitor verification[\s\S]*?evidence for judgement only, not release approval for goods, credit, or money/,
+  "Shop Control visitor verification copy must frame verification as evidence, not release approval."
+);
+
 assertNotContains(
   "../gmfn_backend/app/api/routes/withdrawal_destinations.py",
   /against your verified identity|Payout proof is recorded/i,
