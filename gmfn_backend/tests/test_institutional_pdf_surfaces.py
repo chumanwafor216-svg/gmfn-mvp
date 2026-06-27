@@ -194,6 +194,29 @@ def test_public_trust_slip_verify_page_title_and_links_are_institutional():
     assert 'qr_img = f"/trust-slips/verify/{safe_code_path}/qr.png?level={visibility_level}"' in text
 
 
+def test_legacy_merchant_verify_ui_is_bounded_and_escaped_if_reenabled():
+    text = read_service("app/api/routes/trust_slips_verify_ui.py")
+
+    assert "from html import escape" in text
+    assert "def html_text" in text
+    assert "escape(text or fallback, quote=True)" in text
+    assert "<title>GSN Merchant Verification Record</title>" in text
+    assert "GSN Merchant Verification Record" in text
+    assert "Record found" in text
+    assert "release authority" in text
+    assert "TrustSlip limit signal" in text
+    assert "GSN does not guarantee delivery, receipt, repayment, or release of goods, credit, or money" in text
+    assert "{html_text(user_id)}" in text
+    assert "{html_text(level)}" in text
+    assert "{html_text(level_label)}" in text
+    assert "{html_text(trust_limit)}" in text
+    assert "{html_text(prog.get(\"loan_id\"))}" in text
+    assert "<div class=\"pill\">Verified</div>" not in text
+    assert "<title>GSN Verification</title>" not in text
+    assert "Borrower ID" not in text
+    assert "does not guarantee delivery performance" not in text
+
+
 def test_trust_timeline_pdf_uses_institutional_shell():
     text = read_service("app/services/trust_timeline_pdf_service.py")
 

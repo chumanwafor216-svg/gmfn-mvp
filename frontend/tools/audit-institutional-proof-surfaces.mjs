@@ -24,6 +24,7 @@ const files = {
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
   trustSlipPdf: "gmfn_backend/app/services/trust_slip_evidence_pdf_service.py",
   trustSlipEvidenceRoute: "gmfn_backend/app/api/routes/trust_slip_evidence.py",
+  legacyVerifyUi: "gmfn_backend/app/api/routes/trust_slips_verify_ui.py",
   trustTimelinePdf: "gmfn_backend/app/services/trust_timeline_pdf_service.py",
   trustTimelineRoute: "gmfn_backend/app/api/routes/trust_timeline_pdf.py",
   trustSlipRoute: "gmfn_backend/app/api/routes/trust_slips.py",
@@ -672,6 +673,16 @@ assertNotContains(
   "trustSlipRoute",
   /<title>TrustSlip Verification<\/title>/,
   "Backend-rendered public TrustSlip paper must not keep the old generic browser title."
+);
+assertContains(
+  "legacyVerifyUi",
+  /from html import escape[\s\S]*?def html_text[\s\S]*?escape\(text or fallback, quote=True\)[\s\S]*?<title>GSN Merchant Verification Record<\/title>[\s\S]*?release authority[\s\S]*?Record found[\s\S]*?TrustSlip limit signal[\s\S]*?GSN does not guarantee delivery, receipt, repayment, or release of goods, credit, or money/,
+  "Legacy merchant verification UI must be HTML-escaped and bounded as a GSN evidence record if it is ever re-enabled."
+);
+assertNotContains(
+  "legacyVerifyUi",
+  /<div class="pill">Verified<\/div>|<title>GSN Verification<\/title>|Borrower ID|does not guarantee delivery performance/g,
+  "Legacy merchant verification UI must not present a blanket verified stamp, borrower framing, or weak delivery-only limitation."
 );
 assertContains(
   "publicPaper",

@@ -1,3 +1,55 @@
+## 2026-06-27 - Legacy merchant verification UI bounded before any future re-enable
+
+Owner request:
+- Continue institutional deep-cleaning for customer-facing and outsider-facing
+  verification surfaces, especially where documents/pages might overclaim trust,
+  verification, release authority, or trade protection.
+
+Correction completed locally:
+- `gmfn_backend/app/api/routes/trust_slips_verify_ui.py`
+  - changed the dormant merchant verification UI from generic
+    `GSN Verification` / blanket `Verified` presentation to
+    `GSN Merchant Verification Record` with `Record found`.
+  - changed `Borrower ID` to `Holder reference`.
+  - changed `TrustSlip limit` to `TrustSlip limit signal`.
+  - added a stronger limitation: the page is not a bank guarantee, credit
+    approval, payment instruction, release authority, delivery guarantee,
+    receipt guarantee, repayment guarantee, or permission to release goods,
+    credit, or money.
+  - added HTML escaping for visible dynamic values and progress step text.
+  - removed stale inline comments that described imported services as "your
+    existing" code.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added a source guard proving the legacy UI is escaped and bounded if ever
+    re-enabled.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added the dormant route to the institutional proof-surface audit and blocks
+    blanket `Verified`, generic `GSN Verification`, `Borrower ID`, and weak
+    delivery-only limitation wording.
+- `frontend/tools/audit-gsn-visible-language.mjs`
+  - updated required visible-language expectations for the stronger merchant
+    verification record wording.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\api\routes\trust_slips_verify_ui.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_legacy_merchant_verify_ui_is_bounded_and_escaped_if_reenabled`
+  - result: `1 passed`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:gsn-visible-language`
+
+Truth / remaining risk:
+- Confirmed from `gmfn_backend/app/api/router.py`: this legacy
+  `trust_slips_verify_ui.py` router is not currently mounted. The active public
+  TrustSlip verifier is still owned by `trust_slips.py` and the frontend
+  TrustSlip Verify pages.
+- This slice hardens dormant source so it cannot be accidentally reintroduced
+  as an overclaiming customer-facing page. It does not create paid/API
+  verification, payment confirmation, escrow, or protected trade-release rails.
+- One pre-existing docstring line in the legacy file still contains mojibake in
+  a non-runtime comment; the customer-facing HTML was corrected and guarded.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Generic GSN share poster and shop wording stopped overclaiming trust
 
 Owner request:
