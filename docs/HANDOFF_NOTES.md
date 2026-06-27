@@ -1,3 +1,44 @@
+## 2026-06-27 - Loan Suggestions copy now uses GSN supporter-fit paper
+
+Owner request:
+- Continue the institutional cleanup deeply and widely across support evidence
+  surfaces, with customer-facing copy that looks official without overclaiming.
+
+Correction completed locally:
+- `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - added a `Copy fit paper` action on `/app/loan-suggestions`.
+  - the copy text now uses `buildGsnSupportEvidencePackage()` with the title
+    `GSN Supporter Fit Snapshot`.
+  - the paper includes member/community context, support item amount/status,
+    fit reading, fit note, recommended next route, support counts, Money Out
+    handoff context where visible, and capped visible supporter-fit candidate
+    lines.
+  - the boundary says supporter fit is decision support only. It does not
+    choose a supporter, approve support, confirm payout, verify private records,
+    or authorize release of goods, credit, or money.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - now requires Loan Suggestions to keep the branded supporter-fit paper and
+    no-selection/no-release-authority boundary.
+- `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+  - marked Loan Suggestions as source-level handled for copied paper output.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- This is a presentation/copy-safety upgrade. It does not create automatic
+  supporter selection, support approval, payout confirmation, private-record
+  verification, or protected trade release authority.
+- Visual phone review is still needed before calling `/app/loan-suggestions`
+  screenshot-polished.
+- No Render deploy was triggered in this slice.
+
 ## 2026-06-27 - Loan Readiness copy now uses GSN support-readiness paper
 
 Owner request:

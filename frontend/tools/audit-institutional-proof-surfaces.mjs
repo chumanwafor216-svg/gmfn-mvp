@@ -66,6 +66,7 @@ const files = {
   payoutDetails: "frontend/src/pages/PayoutDetailsPage.tsx",
   subscriptionSpotlight: "frontend/src/pages/SubscriptionSpotlightPage.tsx",
   loanReadiness: "frontend/src/pages/LoanReadinessPage.tsx",
+  loanSuggestions: "frontend/src/pages/LoanSuggestionsPage.tsx",
   loanSummary: "frontend/src/pages/LoanSummaryPage.tsx",
   guarantorInbox: "frontend/src/pages/GuarantorInboxPage.tsx",
   guarantorEarnings: "frontend/src/pages/GuarantorEarningsPage.tsx",
@@ -1128,6 +1129,11 @@ assertContains(
   "loanReadiness",
   /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Readiness Snapshot[\s\S]*?readiness is decision support only[\s\S]*?not support approval[\s\S]*?authority to release goods, credit, or money[\s\S]*?loan-readiness\.copy-paper/,
   "Loan Readiness copy must use a branded GSN support-readiness paper and preserve the no-approval/no-release-authority boundary."
+);
+assertContains(
+  "loanSuggestions",
+  /buildGsnSupportEvidencePackage[\s\S]*?GSN Supporter Fit Snapshot[\s\S]*?Visible supporter-fit candidates[\s\S]*?supporter fit is decision support only[\s\S]*?does not choose a supporter[\s\S]*?authorize release of goods, credit, or money[\s\S]*?loan-suggestions\.copy-paper/,
+  "Loan Suggestions copy must use a branded GSN supporter-fit paper and preserve the no-selection/no-release-authority boundary."
 );
 assertContains(
   "guarantorInbox",

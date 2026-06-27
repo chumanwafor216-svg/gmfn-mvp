@@ -17,6 +17,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
 import { brandClampLines } from "../styles/gmfnBrand";
 
 type LoanRow = {
@@ -1065,6 +1066,93 @@ export default function LoanSuggestionsPage() {
   const suggestionsSupportActive =
     cameFromWithdrawalSupport || Boolean(activeBorrowerLoan);
 
+  const suggestionsPaper = useMemo(
+    () =>
+      buildGsnSupportEvidencePackage({
+        title: "GSN Supporter Fit Snapshot",
+        purpose:
+          "Keep the current supporter-fit reading with the visible community and support-request context.",
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: communityLabel,
+        communityId: publicCommunityId,
+        routeName: "Find Supporters",
+        loanId: activeBorrowerLoan?.id || loanSummary?.id || "",
+        amount: getLoanAmountText(loanSummary || activeBorrowerLoan),
+        status: fitReading.title,
+        detailLines: [
+          `Fit reading: ${fitReading.title}`,
+          `Reading detail: ${fitReading.detail}`,
+          `Fit note: ${
+            suggestionMessage ||
+            (activeBorrowerLoan
+              ? "The system has not returned a fuller fit note yet."
+              : "Start or resume the support draft first to see fit suggestions.")
+          }`,
+          `Recommended next action: ${nextRoute.ctaLabel}`,
+          `Recommended next reason: ${nextRoute.title}`,
+          `Supporters needed: ${requiredGuarantors}`,
+          `Suggested supporters visible: ${suggestedSupporters.length}`,
+          `Recorded / sent: ${approvedGuarantors} / ${sentGuarantors}`,
+          `Status: ${safeStr(loanSummary?.status || activeBorrowerLoan?.status || "Awaiting issue")}`,
+          `Decision at: ${safeDateTime(loanSummary?.decisionAt)}`,
+          `Due at: ${safeDateTime(loanSummary?.dueAt)}`,
+          cameFromWithdrawalSupport ? "Money Out support context: present" : "",
+          supportGap ? `Support gap: ${supportGap}` : "",
+          withdrawalAmount ? `Money Out amount: ${withdrawalAmount}` : "",
+          withdrawalNote ? `Money Out note: ${withdrawalNote}` : "",
+          "Visible supporter-fit candidates:",
+          ...(suggestedSupporters.length
+            ? suggestedSupporters.slice(0, 5).map((item, index) => {
+                const parts = [
+                  safeStr(item.name),
+                  safeStr(item.gmfnId) ? `GSN ID ${safeStr(item.gmfnId)}` : "",
+                  safeStr(item.reason) ? `reason: ${safeStr(item.reason)}` : "",
+                  safeStr(item.recommendedPledge)
+                    ? `suggested support: ${safeStr(item.recommendedPledge)}`
+                    : "",
+                  safeStr(item.trustScore)
+                    ? `visible trust signal: ${safeStr(item.trustScore)}${
+                        safeStr(item.trustBand) ? ` / ${safeStr(item.trustBand)}` : ""
+                      }`
+                    : "",
+                ].filter(Boolean);
+
+                return `- ${index + 1}. ${parts.join("; ")}`;
+              })
+            : ["- No fit suggestion is available for this support item right now."]),
+          "Boundary: supporter fit is decision support only. It does not choose a supporter, approve support, confirm payout, verify private records, or authorize release of goods, credit, or money.",
+        ],
+      }),
+    [
+      activeBorrowerLoan,
+      approvedGuarantors,
+      cameFromWithdrawalSupport,
+      communityLabel,
+      fitReading.detail,
+      fitReading.title,
+      gmfnId,
+      loanSummary,
+      memberName,
+      memberRole,
+      nextRoute.ctaLabel,
+      nextRoute.title,
+      publicCommunityId,
+      requiredGuarantors,
+      sentGuarantors,
+      suggestedSupporters,
+      suggestionMessage,
+      supportGap,
+      withdrawalAmount,
+      withdrawalNote,
+    ]
+  );
+
+  function copySuggestionsPaper() {
+    api.safeCopy(suggestionsPaper);
+  }
+
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
@@ -1281,8 +1369,32 @@ export default function LoanSuggestionsPage() {
               {fitReading.detail}
             </div>
 
-            {activeBorrowerLoan?.id ? (
-              <div style={{ marginTop: 12 }}>
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <SubtleButton
+                onClick={copySuggestionsPaper}
+                minWidth={isCompact ? undefined : 178}
+                stableHeight={48}
+                debugId="loan-suggestions.copy-paper"
+                style={{
+                  border: "1px solid rgba(121,149,190,0.20)",
+                  background:
+                    "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+                  color: "#E6EEF8",
+                  fontWeight: 800,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {loanSuggestionsActionText("copy", "Copy fit paper", 20)}
+              </SubtleButton>
+
+              {activeBorrowerLoan?.id ? (
                 <SecondaryButton
                   onClick={() => handleRefresh()}
                   disabled={refreshing}
@@ -1306,8 +1418,8 @@ export default function LoanSuggestionsPage() {
                     20
                   )}
                 </SecondaryButton>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         </div>
       </section>
