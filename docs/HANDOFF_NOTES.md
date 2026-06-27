@@ -1,3 +1,33 @@
+## 2026-06-27 - Proof-surface audit now guards Marketplace Trade Evidence paper
+
+Owner request:
+- Continue the institutional cleanup and make sure screenshotable/customer-
+  facing evidence papers do not drift back into overclaiming language.
+
+Correction completed locally:
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - now requires the Marketplace signed-in trade paper to use `GSN Trade
+    Evidence Paper`.
+  - now requires the paper to keep the explicit limitation: evidence for
+    judgement only; not escrow, automatic payout, bank confirmation, bank
+    guarantee, or delivery guarantee.
+  - now requires the visible lane labels `Trade Evidence` and `Trade Evidence
+    Record`.
+  - now rejects the older customer-facing labels `Trusted Trade`, `Protected
+    Trade Record`, and `GSN Protected Trade Evidence Paper`.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:marketplace-trusted-trade-lane`
+- `rg -n "Trusted Trade|Protected Trade Record|GSN Protected Trade Evidence Paper|Trade Evidence Record|GSN Trade Evidence Paper" frontend\src\pages\MarketplacePage.tsx frontend\tools\audit-institutional-proof-surfaces.mjs -S`
+
+Truth / remaining risk:
+- This is audit hardening only. It protects wording but does not create escrow,
+  paid/API verification, automatic payout, delivery guarantee, or full protected
+  trade-release rails.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Marketplace trade lane changed from trust claim to evidence language
 
 Owner request:

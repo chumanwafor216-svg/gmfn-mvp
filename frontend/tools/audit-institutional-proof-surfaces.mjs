@@ -1254,6 +1254,21 @@ assertContains(
   /GsnRealisticIcon/,
   "Evidence pack panel must use the shared 3D icon system."
 );
+assertContains(
+  "marketplace",
+  /Title: GSN Trade Evidence Paper[\s\S]*?Limitation: Evidence for judgement only\. Not escrow, not automatic payout, not bank confirmation, not a bank guarantee, and not a delivery guarantee\./,
+  "Marketplace trade evidence paper must keep the evidence-first title and explicit non-custodial limits."
+);
+assertContains(
+  "marketplace",
+  /Trade Evidence[\s\S]*?Trade Evidence Record/,
+  "Marketplace trade lane must use evidence-first labels."
+);
+assertNotContains(
+  "marketplace",
+  /Trusted Trade|Protected Trade Record|GSN Protected Trade Evidence Paper/g,
+  "Marketplace trade papers must not restore older protected-commerce or trusted-trade labels."
+);
 
 assertContains(
   "pilotChecklist",
