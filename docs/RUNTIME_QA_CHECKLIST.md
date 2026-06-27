@@ -240,7 +240,7 @@ Record for each item:
 
 ### PDF assets
 - Open:
-  - `/GMFN_FINAL_WHITE.pdf`
+  - `/GSN_FINAL_WHITE.pdf`
   - `/gmfn-executive-summary.pdf`
 - Confirm files load in browser
 - Confirm they are the expected documents

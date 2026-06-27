@@ -318,7 +318,7 @@ type CommunityConfirmationOutcome = {
 };
 
 const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v4";
-const GMFN_EXEC_SUMMARY_URL = "/gmfn-executive-summary.pdf";
+const GSN_EXEC_SUMMARY_URL = "/GSN_FINAL_WHITE.pdf";
 const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
 
 function safeStr(x: any): string {
@@ -4792,7 +4792,7 @@ export default function TrustSlipPage() {
                 }}
               >
                 <StableCtaLink
-                  to={GMFN_EXEC_SUMMARY_URL}
+                  to={GSN_EXEC_SUMMARY_URL}
                   target="_blank"
                   rel="noreferrer"
                   stableHeight={isCompact ? 52 : 48}

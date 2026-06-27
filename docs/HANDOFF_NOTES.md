@@ -72320,6 +72320,66 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Static public executive summary PDFs repaired
+
+- Trigger:
+  - during the institutional customer-facing paper cleanup, the public summary
+    assets under `frontend/public` were inspected as part of the TrustSlip and
+    screenshotable-document pass.
+- Unabated truth:
+  - `GSN_FINAL_WHITE.pdf`, `gmfn-executive-summary.pdf`, and
+    `GMFN_FINAL_WHITE.pdf` were not real PDF binaries before this slice;
+  - they were plain text content saved with `.pdf` names, which means a
+    customer, lender, partner, or browser could treat them as broken or
+    non-institutional.
+- Changed:
+  - `frontend/tools/generate-static-gsn-pdfs.py`
+    - added a tracked generator for the static public executive summary PDF;
+    - reuses the backend institutional PDF header/footer helpers so the static
+      customer-facing asset carries the same GSN paper treatment as generated
+      evidence documents;
+    - writes one canonical GSN executive summary and keeps the legacy filenames
+      as byte-for-byte compatibility aliases.
+  - `frontend/public/GSN_FINAL_WHITE.pdf`,
+    `frontend/public/gmfn-executive-summary.pdf`, and
+    `frontend/public/GMFN_FINAL_WHITE.pdf`
+    - replaced the text masquerading as PDFs with real PDF binaries.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - changed the visible executive summary action to point at
+      `/GSN_FINAL_WHITE.pdf` as the canonical GSN-branded document.
+  - `frontend/tools/audit-static-pdf-assets.mjs`
+    - added a regression audit that checks the three public assets exist, start
+      with `%PDF-`, include a PDF EOF marker, are large enough for the
+      institutional summary, are not the old plain-text body, and remain
+      byte-for-byte aliases.
+  - `frontend/package.json`
+    - added `generate:static-pdf-assets` and `audit:static-pdf-assets`.
+  - `.gitattributes`
+    - marked `*.pdf` as binary so institutional PDF assets are not treated as
+      text by Git whitespace checks or line-ending normalization.
+  - `docs/RUNTIME_QA_CHECKLIST.md` and
+    `docs/RUNTIME_QA_RESULTS_TEMPLATE.md`
+    - switched the browser-load QA target from the old GMFN filename to the
+      canonical `/GSN_FINAL_WHITE.pdf` while retaining the legacy executive
+      summary alias check.
+- Verification:
+  - Passed `npm run generate:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed a direct byte check confirming all three public PDF assets start
+    with `%PDF-`, contain `%%EOF` near the end, are 9,158 bytes, and are
+    byte-for-byte identical.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Verification boundary:
+  - the static assets are now real PDFs and the structural/security-regression
+    checks pass;
+  - no rasterized/manual visual PDF review was completed in this environment,
+    so a human browser/PDF viewer pass should still confirm final visual
+    presentation before treating the public papers as fully signed off.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Seeded PDF endpoint generation guard
 
 - Trigger:

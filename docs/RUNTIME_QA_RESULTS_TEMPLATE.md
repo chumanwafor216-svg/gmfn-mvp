@@ -132,7 +132,7 @@
 | TrustSlip verify route | Valid code | Correct banner/state |  |  |  |
 | TrustSlip verify route | Pending / expired / invalid codes | Correct banner/state |  |  |  |
 | TrustSlip verify route | Print action | Works |  |  |  |
-| `/GMFN_FINAL_WHITE.pdf` | Browser load | Opens expected document |  |  |  |
+| `/GSN_FINAL_WHITE.pdf` | Browser load | Opens expected document |  |  |  |
 | `/gmfn-executive-summary.pdf` | Browser load | Opens expected document |  |  |  |
 
 ---
@@ -189,4 +189,3 @@
 - `NOT READY`
 
 ## Final notes
-

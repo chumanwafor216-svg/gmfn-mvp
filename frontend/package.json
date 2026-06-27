@@ -33,6 +33,8 @@
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:evidence-surfaces": "node tools/audit-institutional-evidence-surfaces.mjs",
     "audit:proof-surfaces": "node tools/audit-institutional-proof-surfaces.mjs",
+    "generate:static-pdf-assets": "python tools/generate-static-gsn-pdfs.py",
+    "audit:static-pdf-assets": "node tools/audit-static-pdf-assets.mjs",
     "audit:trust-passport-button-inventory": "node tools/audit-trust-passport-button-inventory.mjs",
     "audit:trust-passport-community-confirmation-lane": "node tools/audit-trust-passport-community-confirmation-lane.mjs",
     "audit:trust-passport-evidence-story-lane": "node tools/audit-trust-passport-evidence-story-lane.mjs",
