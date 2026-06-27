@@ -4,7 +4,7 @@ Owner request:
 - Continue the supporter/support wording cleanup and keep Render updated
   truthfully.
 
-Local correction:
+Published correction:
 - `frontend/tools/audit-institutional-proof-surfaces.mjs`
   - institutional proof guards now expect the current visible support titles:
     `GSN Support Repayment Instruction`, `GSN Support Audit Link`,
@@ -21,10 +21,17 @@ Verification state:
   audit file.
 
 Truth / remaining risk:
+- Committed and pushed `main` at
+  `7ab1634eeec257f5c5d27c09309313dbad7ec624`
+  (`Align institutional proof support title guards`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28285161486` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vpen3sq97s738l2ebg`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
 - This is an audit-only correction. The affected pages already used the support
   titles; the guard was stale and was still looking for older Loan/Guarantor
   paper titles.
-- Pending publish/deploy evidence at the time this note was written.
 
 ## 2026-06-27 - Shared guidance support-decision wording cleanup
 
