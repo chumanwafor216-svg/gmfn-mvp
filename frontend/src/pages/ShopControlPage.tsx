@@ -703,7 +703,7 @@ function shopControlRequestErrorMessage(error: any): string {
   ) {
     return (
       "GSN could not reach the server from this browser. " +
-      "Check that the phone is on the same WiFi and the local backend is running, then try again."
+      "Check your connection and try again. If this keeps happening, reopen GSN and retry the action."
     );
   }
   return message || "Shop Control could not complete that request.";

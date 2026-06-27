@@ -411,6 +411,22 @@ function apiUrl(path: string): string {
   return `${apiBase()}${cleanPath}`;
 }
 
+function shopAssetsRequestErrorMessage(error: any): string {
+  const message = safeStr(error?.message || error);
+  const lower = message.toLowerCase();
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("load failed")
+  ) {
+    return (
+      "GSN could not reach the server from this browser. " +
+      "Check your connection and try again. If this keeps happening, reopen GSN and retry the action."
+    );
+  }
+  return message || "Shop Gallery Tools could not complete that request.";
+}
+
 async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   const headers = new Headers(init?.headers || {});
@@ -422,11 +438,16 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(apiUrl(path), {
-    ...init,
-    headers,
-    credentials: "include",
-  });
+  let res: Response;
+  try {
+    res = await fetch(apiUrl(path), {
+      ...init,
+      headers,
+      credentials: "include",
+    });
+  } catch (err: any) {
+    throw new Error(shopAssetsRequestErrorMessage(err));
+  }
 
   const text = await res.text();
   const contentType = String(res.headers.get("content-type") || "").toLowerCase();
@@ -779,6 +800,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [productVideoDurationSeconds, setProductVideoDurationSeconds] = useState<number | null>(null);
   const [productVideoPreviewUrl, setProductVideoPreviewUrl] = useState("");
   const [selectedPublicSlot, setSelectedPublicSlot] = useState(1);
+  const selectedPublicSlotRef = useRef(selectedPublicSlot);
+  selectedPublicSlotRef.current = selectedPublicSlot;
   const [productEditorOpen, setProductEditorOpen] = useState(false);
   const [productFormNotice, setProductFormNotice] = useState<{
     tone: NoticeTone;
@@ -892,14 +915,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
   const loadPage = useCallback(async (): Promise<ProductRecord[]> => {
     setLoading(true);
+    const seedProducts = normalizeProductRecords(props.seedProducts || []);
+    const seedShop = (props.seedShop || null) as ShopRecord | null;
 
     try {
       let loadedProducts: ProductRecord[] = [];
       const meRes = await getMe().catch(() => null);
       setMe(meRes || null);
 
-      const seedProducts = normalizeProductRecords(props.seedProducts || []);
-      const seedShop = (props.seedShop || null) as ShopRecord | null;
       const gmfnId = firstTruthy(
         props.preferredGmfnId,
         seedShop?.owner_gmfn_id,
@@ -1003,6 +1026,16 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       setProducts(nextProducts);
       loadedProducts = nextProducts;
       return loadedProducts;
+    } catch (err: any) {
+      const message = shopAssetsRequestErrorMessage(err);
+      setShop(seedShop);
+      setProducts(seedProducts);
+      showGalleryActionNotice(
+        "error",
+        message,
+        selectedPublicSlotRef.current
+      );
+      return seedProducts;
     } finally {
       setLoading(false);
     }

@@ -71636,6 +71636,74 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Spotlight tester blocker and `GSN-U-66E6A380`
+
+- Trigger:
+  - tester screenshot showed Shop Control publish/preview failing with the old
+    local-backend phone guidance:
+    `GSN could not reach the server from this browser. Check that the phone is
+    on the same WiFi and the local backend is running, then try again.`;
+  - tester screenshot showed Dashboard `Your Spotlight` as `Spotlight 1 / 3`
+    when the owner expected the active published Spotlight to read as one;
+  - tester screenshot showed Shop Gallery Tools block #1 empty with raw
+    `Failed to fetch`;
+  - owner supplied `GSN-U-66E6A380`.
+- Live API truth checked against Render:
+  - `GET https://gmfn-api.onrender.com/marketplace/public/shop/GSN-U-66E6A380?product_limit=100&broadcast_limit=24`
+    returned `ok: true`;
+  - the ID normalizes to `GMFN-U-66E6A380`, shop `id=3`, owner `Chidimma`,
+    community/shop face `GSN Marketplace`;
+  - production currently returns zero products for that shop, so block #1
+    being empty is a real production-data state, not only a frontend rendering
+    bug;
+  - production currently returns one community Spotlight for that public shop
+    response, but it belongs to `GMFN-U-63655DE6` / shop `id=4` (`Ardent Ebony
+    Uplift LTD`) in clan `5`, not to `GMFN-U-66E6A380`.
+- Changed:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - replaced the local-development WiFi/backend connection message with
+      production-safe GSN wording: check connection, reopen GSN, retry.
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - added production-safe network error mapping for Shop Gallery Tools;
+    - wrapped `fetch` failures so raw browser `Failed to fetch` no longer
+      leaks into the selected-block action notice;
+    - added a page-load catch that keeps seed data usable and shows the same
+      friendly connection guidance on the selected block.
+  - `frontend/src/pages/DashboardPage.tsx`
+    - added published-Spotlight grouping before Dashboard display;
+    - replicated placement rows from one Spotlight publish now collapse into
+      one visible Spotlight item, so a single free Spotlight propagated across
+      three communities should no longer show as `Spotlight 1 / 3`;
+    - kept the authenticated all-active-communities feed contract intact and
+      did not touch the frozen Market Wisdom area.
+- Verification:
+  - Passed `node frontend\tools\audit-spotlight-system-feed.mjs`.
+  - Passed `node frontend\tools\audit-shop-assets-slots.mjs`.
+  - Passed `node frontend\tools\audit-shop-control-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-dashboard-actions.mjs`.
+  - Passed `node frontend\tools\audit-dashboard-phone-buttons.mjs`.
+  - Passed `node frontend\tools\audit-button-stability.mjs`.
+  - Passed `node frontend\tools\audit-community-shop-actions.mjs`.
+  - Passed `node frontend\tools\audit-shop-gallery-button-inventory.mjs`.
+  - Passed `node frontend\tools\audit-link-contracts.mjs`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Browser check:
+  - attempted to start a local Vite smoke server on ports `5173`, `5174`, and
+    `5188`;
+  - local ports reported unavailable or failed to produce a reachable server,
+    so no honest browser screenshot/visual smoke was completed for this slice.
+- Still not changed:
+  - no backend data was inserted for `GSN-U-66E6A380`;
+  - no backend Spotlight placement rules were changed;
+  - if the owner wants block #1 populated for that shop without asking the
+    tester to retry after deploy, a separate explicit production-data repair or
+    seeded product action is needed.
+- Deployment state:
+  - local only at this entry; ready to commit, push, and promote to `main` for
+    Render after final status check.
+
 ### Follow-up same day - Loan Summary shows support purpose
 
 - Trigger:

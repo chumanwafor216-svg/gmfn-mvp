@@ -1135,6 +1135,41 @@ function spotlightIsActive(item: SpotlightItem | null): boolean {
   return !expiresAt || expiresAt.getTime() > Date.now();
 }
 
+function spotlightPublishKey(item: SpotlightItem): string {
+  const publishedParts = [
+    item.author_gmfn_id,
+    item.created_at,
+    item.message,
+    item.image_url || item.image,
+    item.video_url,
+    item.source_product_id,
+  ].map(safeStr);
+
+  if (publishedParts.some(Boolean)) {
+    return `published:${publishedParts.join("|")}`;
+  }
+
+  return `row:${safeStr(item.id)}`;
+}
+
+function uniqueSpotlightItems(rawItems: any[]): SpotlightItem[] {
+  const seen = new Set<string>();
+  const items: SpotlightItem[] = [];
+
+  for (const rawItem of rawItems) {
+    const item = normalizeSpotlightItem(rawItem);
+    if (!item || !spotlightIsActive(item)) continue;
+
+    const key = spotlightPublishKey(item);
+    if (!key || seen.has(key)) continue;
+
+    seen.add(key);
+    items.push(item);
+  }
+
+  return items.sort((a, b) => spotlightSortTime(b) - spotlightSortTime(a));
+}
+
 function normalizePublicShopSpotlights(raw: any): SpotlightItem[] {
   const candidates = [
     raw?.primary_broadcast,
@@ -1142,29 +1177,7 @@ function normalizePublicShopSpotlights(raw: any): SpotlightItem[] {
     ...(Array.isArray(raw?.broadcasts) ? raw.broadcasts : []),
     ...(Array.isArray(raw?.items) ? raw.items : []),
   ];
-  const seen = new Set<string>();
-  const items: SpotlightItem[] = [];
-
-  for (const candidate of candidates) {
-    const item = normalizeSpotlightItem(candidate);
-    if (!item || !spotlightIsActive(item)) continue;
-
-    const key = safeStr(item.id) || [
-      item.author_gmfn_id,
-      item.created_at,
-      item.message,
-      item.image_url,
-      item.video_url,
-    ]
-      .map(safeStr)
-      .join("|");
-
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    items.push(item);
-  }
-
-  return items.sort((a, b) => spotlightSortTime(b) - spotlightSortTime(a));
+  return uniqueSpotlightItems(candidates);
 }
 
 function dashboardAvatarStorageKeysForUser(user: any): string[] {
@@ -3191,24 +3204,15 @@ export default function DashboardPage() {
 
         if (!alive) return;
 
-        const items: SpotlightItem[] = Array.isArray(res)
+        const rawItems: SpotlightItem[] = Array.isArray(res)
           ? res
           : Array.isArray((res as any)?.items)
           ? (res as any).items
           : [];
-        const reportedTotal = Number(
-          (res as any)?.active_total ??
-            (res as any)?.matching_total ??
-            (res as any)?.total ??
-            items.length
-        );
+        const items = uniqueSpotlightItems(rawItems);
 
         setSpotlights(items);
-        setSpotlightQueueTotal(
-          Number.isFinite(reportedTotal)
-            ? Math.max(items.length, reportedTotal)
-            : items.length
-        );
+        setSpotlightQueueTotal(items.length);
 
         if (items.length > 0) {
           setLatestSpotlightSnapshot(items[0] || null);
@@ -3231,12 +3235,7 @@ export default function DashboardPage() {
 
           if (publicShopSpotlights.length > 0) {
             setSpotlights(publicShopSpotlights);
-            setSpotlightQueueTotal(
-              Math.max(
-                publicShopSpotlights.length,
-                Number((publicShopRes as any)?.broadcasts?.length || 0)
-              )
-            );
+            setSpotlightQueueTotal(publicShopSpotlights.length);
             setLatestSpotlightSnapshot(publicShopSpotlights[0] || null);
             return;
           }
@@ -3250,11 +3249,12 @@ export default function DashboardPage() {
 
         if (!alive) return;
 
-        const recentItems: SpotlightItem[] = Array.isArray(recentRes)
+        const rawRecentItems: SpotlightItem[] = Array.isArray(recentRes)
           ? recentRes
           : Array.isArray((recentRes as any)?.items)
           ? (recentRes as any).items
           : [];
+        const recentItems = uniqueSpotlightItems(rawRecentItems);
 
         setLatestSpotlightSnapshot(recentItems[0] || null);
         setSpotlightQueueTotal(0);
