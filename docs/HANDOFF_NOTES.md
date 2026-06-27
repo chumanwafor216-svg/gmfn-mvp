@@ -1,3 +1,43 @@
+## 2026-06-27 - Demand Box requests now copy as GSN request papers
+
+Owner request:
+- Continue the institutional deep cleanup for screenshotable/shareable customer
+  surfaces and close remaining GSN book/document gaps without overclaiming.
+
+Correction completed locally:
+- `frontend/src/pages/DemandBoxPage.tsx`
+  - added a `GSN Demand Request Paper` copy package for live Demand Box request
+    cards.
+  - added stable `Copy paper` actions for the signed-in member's own live
+    demand cards and for community-visible demand cards.
+  - the copied paper includes request title/detail, visible requester context,
+    Community ID context, urgency, area, terms preference, visible contact when
+    already shown, generated time, privacy note, and limitation note.
+  - the paper explicitly says it is not release authority for goods, money,
+    credit, or service and is not proof that the request was fulfilled.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added `DemandBoxPage.tsx` to the institutional proof-surface audit map.
+  - added a guard requiring the branded demand request paper and
+    release-authority boundary.
+- `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+  - marked the Demand Box copy-paper gap as source-level handled, with visual
+    phone review still outstanding.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:button-stability`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- This is a customer-facing presentation and copy-safety upgrade only. It does
+  not verify the requester, guarantee availability, prove fulfillment, approve
+  credit, or authorize release of goods/money/service.
+- Visual phone review of the Demand Box cards is still needed before calling the
+  route screenshot-polished.
+
 ## 2026-06-27 - Money In pay-in details copy now uses GSN payment paper
 
 Owner request:

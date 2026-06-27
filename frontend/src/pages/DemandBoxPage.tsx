@@ -23,9 +23,11 @@ import {
   listMarketplaceRequests,
   selectClan,
   setSelectedClanId as persistSelectedClanId,
+  safeCopy,
   updateMarketplaceRequestStatus,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
 type DemandRow = {
@@ -52,6 +54,7 @@ type DemandRow = {
 };
 
 type NoticeTone = "success" | "error";
+type DemandPaperScope = "owner" | "community";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -593,6 +596,88 @@ export default function DemandBoxPage() {
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function buildDemandRequestPaper(
+    row: DemandRow,
+    scope: DemandPaperScope
+  ): string {
+    const rowId = Number(row?.id || 0);
+    const requester =
+      scope === "owner" ? memberName : requesterName(row);
+    const requesterGsnId =
+      scope === "owner"
+        ? safeStr(me?.gmfn_id)
+        : safeStr(row?.requester_gmfn_id);
+    const details = [
+      `Request title: ${firstTruthy(row?.title, "Community demand request")}`,
+      row?.description ? `Request detail: ${safeStr(row.description)}` : "",
+      row?.category ? `Category: ${safeStr(row.category)}` : "",
+      `Urgency: ${urgencyLabel(row?.urgency)}`,
+      row?.area ? `Area: ${safeStr(row.area)}` : "",
+      row?.payment_mode ? `Terms preference: ${safeStr(row.payment_mode)}` : "",
+      row?.allow_trust_credit
+        ? "Trust-credit preference: requester is open to trust credit where appropriate."
+        : "",
+      row?.whatsapp_number ? `Visible contact: ${safeStr(row.whatsapp_number)}` : "",
+      row?.requester_trust_band
+        ? `Visible trust band: ${safeStr(row.requester_trust_band)}`
+        : "",
+      row?.status ? `Request status: ${safeStr(row.status)}` : "",
+      row?.created_at ? `Created: ${safeDateTime(row.created_at)}` : "",
+      row?.expires_at ? `Expires: ${safeDateTime(row.expires_at)}` : "",
+      "Reader boundary: confirm identity evidence, TrustSlip context, price, availability, and fit before acting.",
+      "Do not treat this request paper as release authority for goods, money, credit, or service.",
+    ];
+
+    return buildGsnSnapshotPaper({
+      title: "GSN Demand Request Paper",
+      purpose:
+        "Keep a community demand request with its visible requester and community context.",
+      reference: rowId ? `Demand #${rowId}` : requesterGsnId,
+      context: [
+        { label: "Requester", value: requester },
+        { label: "Requester GSN ID", value: requesterGsnId },
+        { label: "Community", value: currentCommunityName },
+        { label: "Community ID", value: selectedClanId || "" },
+        { label: "Route", value: "Demand Box" },
+        { label: "Audience", value: scope === "owner" ? "request owner" : "community responder" },
+      ],
+      bodyLines: details,
+      privacyNote:
+        "Privacy: only request facts already visible on this Demand Box route are shown.",
+      limitationNote:
+        "Limitation: request evidence only. Not approval to release goods, credit, money, or service, not a bank guarantee, and not proof that the request was fulfilled.",
+    });
+  }
+
+  async function handleCopyDemandPaper(
+    row: DemandRow,
+    scope: DemandPaperScope
+  ) {
+    const copied = await safeCopy(buildDemandRequestPaper(row, scope));
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? "GSN demand request paper copied."
+        : "Clipboard copy was blocked. Use the request details shown here."
+    );
+  }
+
+  function demandPaperAction(
+    row: DemandRow,
+    scope: DemandPaperScope,
+    debugId: string
+  ): React.ReactElement {
+    return (
+      <SubtleButton
+        onClick={() => void handleCopyDemandPaper(row, scope)}
+        debugId={debugId}
+        style={demandActionStyle(54)}
+      >
+        {demandIconText("copy", "Copy paper", 20)}
+      </SubtleButton>
+    );
   }
 
   const revealDemandCreate = useCallback((attempt = 0) => {
@@ -1773,6 +1858,12 @@ export default function DemandBoxPage() {
                       >
                         {demandIconText("lock", "Cancel", 20)}
                       </SubtleButton>
+
+                      {demandPaperAction(
+                        row,
+                        "owner",
+                        `demand-box.request.${row?.id || index}.copy-paper`
+                      )}
                     </div>
                   </div>
                 );
@@ -1890,6 +1981,12 @@ export default function DemandBoxPage() {
                             >
                               {demandIconText("lock", "Cancel", 20)}
                             </SubtleButton>
+
+                            {demandPaperAction(
+                              row,
+                              "owner",
+                              `demand-box.request.${row?.id || debugIndex}.copy-paper`
+                            )}
                           </div>
                         </div>
                       );
@@ -2007,6 +2104,14 @@ export default function DemandBoxPage() {
                       <span style={badge(false)}>Open to trust credit</span>
                     ) : null}
                   </div>
+
+                  <div style={demandActionRowStyle(isCompact, 54, 160, 12)}>
+                    {demandPaperAction(
+                      row,
+                      "community",
+                      `demand-box.visible-request.${row?.id || index}.copy-paper`
+                    )}
+                  </div>
                 </div>
               ))}
 
@@ -2098,6 +2203,14 @@ export default function DemandBoxPage() {
                             {row?.allow_trust_credit ? (
                               <span style={badge(false)}>Open to trust credit</span>
                             ) : null}
+                          </div>
+
+                          <div style={demandActionRowStyle(isCompact, 54, 160, 12)}>
+                            {demandPaperAction(
+                              row,
+                              "community",
+                              `demand-box.visible-request.${row?.id || debugIndex}.copy-paper`
+                            )}
                           </div>
                         </div>
                       );

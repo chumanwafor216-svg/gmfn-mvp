@@ -52,6 +52,7 @@ const files = {
   joinEntry: "frontend/src/pages/JoinEntryPage.tsx",
   joinInviteMessaging: "frontend/src/lib/joinInviteMessaging.ts",
   marketplace: "frontend/src/pages/MarketplacePage.tsx",
+  demandBox: "frontend/src/pages/DemandBoxPage.tsx",
   shopAssets: "frontend/src/pages/ShopAssetsPage.tsx",
   communityShopControl: "frontend/src/components/CommunityShopControlPanel.tsx",
   shopControl: "frontend/src/pages/ShopControlPage.tsx",
@@ -1015,6 +1016,21 @@ assertContains(
   "marketplace",
   /buildGsnPublicShopLinkPackage[\s\S]*?Public shop package refreshed and copied/,
   "Marketplace public shop link copy/email must use the branded GSN public shop package."
+);
+assertContains(
+  "demandBox",
+  /buildDemandRequestPaper[\s\S]*?Reader boundary: confirm identity evidence, TrustSlip context, price, availability, and fit before acting\.[\s\S]*?Do not treat this request paper as release authority for goods, money, credit, or service\.[\s\S]*?buildGsnSnapshotPaper[\s\S]*?GSN Demand Request Paper[\s\S]*?not proof that the request was fulfilled/,
+  "Demand Box request copies must use a branded GSN demand request paper with a release-authority boundary."
+);
+assertContains(
+  "demandBox",
+  /demand-box\.request\.\$\{row\?\.id \|\| index\}\.copy-paper[\s\S]*?demand-box\.request\.\$\{row\?\.id \|\| debugIndex\}\.copy-paper/,
+  "Demand Box owned request cards must expose stable Copy paper actions."
+);
+assertContains(
+  "demandBox",
+  /demand-box\.visible-request\.\$\{row\?\.id \|\| index\}\.copy-paper[\s\S]*?demand-box\.visible-request\.\$\{row\?\.id \|\| debugIndex\}\.copy-paper/,
+  "Demand Box community-visible request cards must expose stable Copy paper actions."
 );
 assertContains(
   "publicShop",
