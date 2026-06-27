@@ -408,7 +408,7 @@ export default function LoanDecisionPage() {
                     }}
                   >
                     <div style={innerCard()}>
-                      {loanDecisionFactHeading("user", "Borrower")}
+                      {loanDecisionFactHeading("user", "Requester")}
                       <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B1F33" }}>
                         {safeStr(loan?.borrower_name) || "Not visible yet"}
                       </div>

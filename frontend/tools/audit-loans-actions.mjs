@@ -120,10 +120,16 @@ assertContains(
   "Loan Decision guidance must send users toward Support Summary wording, not old Loan Summary wording."
 );
 
+assertContains(
+  "src/pages/LoanDecisionPage.tsx",
+  /loanDecisionFactHeading\("user", "Requester"\)[\s\S]*?loanDecisionFactHeading\("shield", "Supporter"\)/,
+  "Loan Decision fact cards must use requester/supporter wording for visible roles."
+);
+
 assertNotContains(
   "src/pages/LoanDecisionPage.tsx",
-  /Loan Summary|loan summary/,
-  "Loan Decision guidance must not restore old Loan Summary wording."
+  /Loan Summary|loan summary|loanDecisionFactHeading\("user", "Borrower"\)/,
+  "Loan Decision guidance and fact cards must not restore old Loan Summary or Borrower wording."
 );
 
 assertContains(
