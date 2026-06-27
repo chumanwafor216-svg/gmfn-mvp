@@ -128,7 +128,7 @@ def test_invite_guarantor_non_borrower_member_forbidden_contract(
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
     assert r.status_code == 403, r.text
-    assert r.json()["detail"] == "Only the borrower or community admin can add guarantors"
+    assert r.json()["detail"] == "Only the requester or community admin can add supporters"
 
 
 def test_invite_guarantor_loan_not_found_contract(
