@@ -31,6 +31,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
@@ -626,19 +627,43 @@ function CommunityConfirmationPolicyPage() {
   }, [location.hash, memberWitnessRequestToken]);
 
   const copyText = useMemo(() => {
-    return [
-      "GSN instant community confirmation policy",
-      `Community: ${firstTruthy(community?.name, communityId ? `Community ${communityId}` : "")}`,
-      `Request routing: ${policy.relay_enabled ? "on" : "off"}`,
-      `Instant confirmation: ${policy.instant_pulse_enabled ? "on" : "off"}`,
-      `Review attention: ${hoursLabel(policy.review_attention_after_hours || 24)}`,
-      `Review overdue: ${hoursLabel(policy.review_overdue_after_hours || 72)}`,
-      `Contactable references: ${policy.contactable_reference_count || 0}`,
-      `Incoming domain affiliation requests: ${incomingAffiliations.length}`,
-      `Outgoing domain affiliation requests: ${outgoingAffiliations.length}`,
-      `External registration evidence records: ${externalRegistrationRecords.length}`,
-      `Active member candidates: ${members.length}`,
-    ].join("\n");
+    return buildGsnSnapshotPaper({
+      title: "GSN Community Confirmation Policy Summary",
+      purpose:
+        "Internal policy summary for controlled community confirmation, relay, and review routing.",
+      reference: `community-policy-${communityId || "pending"}`,
+      context: [
+        {
+          label: "Community",
+          value: firstTruthy(community?.name, communityId ? `Community ${communityId}` : ""),
+        },
+        { label: "Request routing", value: policy.relay_enabled ? "on" : "off" },
+        {
+          label: "Instant confirmation",
+          value: policy.instant_pulse_enabled ? "on" : "off",
+        },
+        {
+          label: "Review attention",
+          value: hoursLabel(policy.review_attention_after_hours || 24),
+        },
+        {
+          label: "Review overdue",
+          value: hoursLabel(policy.review_overdue_after_hours || 72),
+        },
+      ],
+      bodyLines: [
+        `Contactable references: ${policy.contactable_reference_count || 0}`,
+        `Incoming domain affiliation requests: ${incomingAffiliations.length}`,
+        `Outgoing domain affiliation requests: ${outgoingAffiliations.length}`,
+        `External registration evidence records: ${externalRegistrationRecords.length}`,
+        `Active member candidates: ${members.length}`,
+        "Reader boundary: this summary explains internal confirmation policy and routing. It is not public membership proof, parent-domain approval, or transaction authority.",
+      ],
+      privacyNote:
+        "Privacy: private contacts, raw member lists, responder notes, phone numbers, and private witness details are not included in this copied policy paper.",
+      limitationNote:
+        "Limitation: internal policy summary only. Not public verification, credit approval, payment confirmation, payout approval, or authority to release goods or money.",
+    });
   }, [
     community,
     communityId,

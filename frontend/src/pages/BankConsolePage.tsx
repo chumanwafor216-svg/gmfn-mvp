@@ -21,6 +21,7 @@ import {
   safeCopy,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 
 type CommunityLite = {
   id?: number;
@@ -255,6 +256,57 @@ function normalizeRow(raw: any): BankConsoleRow | null {
     created_at:
       firstTruthy(src?.created_at, src?.recorded_at, src?.updated_at) || null,
   };
+}
+
+function buildBankEventReviewPaper(row: BankConsoleRow, displayReference: string): string {
+  return buildGsnSnapshotPaper({
+    title: "GSN Bank Console Event Review",
+    purpose:
+      "Internal reconciliation review for one bank-console event or expected payment row.",
+    reference: firstTruthy(displayReference, row.id, row.bank_txn_id, "bank-row"),
+    context: [
+      { label: "Reference", value: displayReference },
+      {
+        label: "Amount",
+        value: `${safeStr(row.amount || "Not stated")} ${safeStr(row.currency || "")}`.trim(),
+      },
+      { label: "Status", value: safeStr(row.status || "Not stated") },
+      { label: "Direction", value: safeStr(row.direction || "Not stated") },
+      { label: "Recorded", value: safeDateTime(row.created_at) },
+    ],
+    bodyLines: [
+      `Description: ${safeStr(row.description || "Not stated")}`,
+      "Reader boundary: this is reconciliation review evidence only. It does not prove settlement, confirm money moved, approve payout, or authorize release of goods or credit.",
+    ],
+    privacyNote:
+      "Privacy: copied bank-console summaries exclude raw bank payloads, full account details, private contacts, and complete configuration secrets.",
+    limitationNote:
+      "Limitation: internal finance review only. Not a receipt, bank guarantee, payment confirmation, payout approval, or release authority.",
+  });
+}
+
+function buildBankSettingsReviewPaper(cfg: any): string {
+  const enabledText = cfg ? "Configuration visible to this admin surface" : "No configuration visible";
+  return buildGsnSnapshotPaper({
+    title: "GSN Bank Console Settings Review",
+    purpose:
+      "Internal settings summary for bank-console reconciliation behavior.",
+    reference: "bank-console-settings",
+    context: [
+      { label: "Configuration state", value: enabledText },
+      { label: "Provider", value: firstTruthy(cfg?.provider, cfg?.bank_provider, "not shown") },
+      { label: "Expected payment detail", value: firstTruthy(cfg?.detail, "not shown") },
+      { label: "Public mode", value: firstTruthy(cfg?.mode, cfg?.status, "not shown") },
+    ],
+    bodyLines: [
+      "Reader boundary: this settings paper is for internal reconciliation review. It deliberately avoids raw JSON and secrets.",
+      "Use the live admin console for complete protected configuration review.",
+    ],
+    privacyNote:
+      "Privacy: API keys, webhook secrets, raw provider payloads, account secrets, and private contacts are not included in this copied settings paper.",
+    limitationNote:
+      "Limitation: internal settings summary only. Not a payment instruction, bank guarantee, receipt, payout approval, or release authority.",
+  });
 }
 
 function statusTone(status?: string | null) {
@@ -752,16 +804,7 @@ export default function BankConsolePage() {
                 >
                   <SecondaryButton
                     onClick={() =>
-                      safeCopy(
-                        [
-                          `Reference: ${displayReference}`,
-                          `Amount: ${safeStr(row.amount || "Not stated")} ${safeStr(
-                            row.currency || ""
-                          )}`.trim(),
-                          `Status: ${safeStr(row.status || "Not stated")}`,
-                          `Direction: ${safeStr(row.direction || "Not stated")}`,
-                        ].join(" | ")
-                      )
+                      safeCopy(buildBankEventReviewPaper(row, displayReference))
                     }
                     fullWidth={isCompact}
                     minWidth={isCompact ? undefined : 132}
@@ -1300,7 +1343,7 @@ export default function BankConsolePage() {
                     }}
                   >
                     <SecondaryButton
-                      onClick={() => safeCopy(JSON.stringify(cfg, null, 2))}
+                      onClick={() => safeCopy(buildBankSettingsReviewPaper(cfg))}
                       minWidth={150}
                       stableHeight={52}
                       debugId="bank-console.copy-config"

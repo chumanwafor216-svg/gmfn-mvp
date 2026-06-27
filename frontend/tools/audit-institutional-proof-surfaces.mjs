@@ -80,6 +80,10 @@ const files = {
     "frontend/src/pages/CommunityConfirmationPolicyPage.tsx",
   communityConfirmationInbox:
     "frontend/src/pages/CommunityConfirmationInboxPage.tsx",
+  adminIncompleteLoans: "frontend/src/pages/AdminIncompleteLoansPage.tsx",
+  adminTrustEvents: "frontend/src/pages/AdminTrustEventsPage.tsx",
+  bankConsole: "frontend/src/pages/BankConsolePage.tsx",
+  revenueAllocation: "frontend/src/pages/RevenueAllocationPage.tsx",
   evidencePanel: "frontend/src/components/EvidencePackPanel.tsx",
   rguCustomerDiscovery: "docs/GSN_RGU_Customer_Discovery_Working_Plan.md",
   trustSlipShipReadiness:
@@ -1161,8 +1165,138 @@ assertContains(
 );
 assertContains(
   "communityConfirmationInbox",
-  /buildGsnSnapshotPaper[\s\S]*?GSN Community Confirmation Review Case[\s\S]*?private contacts, responder notes, phone numbers, and raw witness details[\s\S]*?GSN Community Confirmation Review Queue[\s\S]*?Public papers must keep private contacts, responder notes, and raw witness details protected[\s\S]*?safeCopy\(queueText\)[\s\S]*?safeCopy\(buildReviewCasePaper\(row\)\)/,
+  /GSN Community Confirmation Review Case/,
   "Community Confirmation Inbox queue and case copies must use bounded internal GSN review papers with private-contact redaction language."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /GSN Community Confirmation Review Queue/,
+  "Community Confirmation Inbox queue copy must use a bounded internal GSN review queue paper."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /private contacts, responder notes, phone numbers, and raw witness details/,
+  "Community Confirmation Inbox copied papers must preserve private-contact redaction language."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /safeCopy\(queueText\)/,
+  "Community Confirmation Inbox queue copy must use the prepared paper text."
+);
+assertContains(
+  "communityConfirmationInbox",
+  /safeCopy\(buildReviewCasePaper\(row\)\)/,
+  "Community Confirmation Inbox review-case copy must use the prepared review-case paper."
+);
+assertContains(
+  "communityConfirmationPolicy",
+  /GSN Community Confirmation Policy Summary/,
+  "Community Confirmation Policy copied summary must use a bounded internal GSN policy paper."
+);
+assertContains(
+  "communityConfirmationPolicy",
+  /private contacts, raw member lists, responder notes, phone numbers, and private witness details/,
+  "Community Confirmation Policy copied summary must keep redaction language."
+);
+assertContains(
+  "communityConfirmationPolicy",
+  /safeCopy\(copyText\)/,
+  "Community Confirmation Policy Copy summary must use the prepared paper text."
+);
+assertContains(
+  "adminIncompleteLoans",
+  /GSN Incomplete Support Review Snapshot/,
+  "Admin Incomplete Loans per-support copies must use bounded internal GSN support review papers."
+);
+assertContains(
+  "adminIncompleteLoans",
+  /GSN Incomplete Support Queue Snapshot/,
+  "Admin Incomplete Loans queue copy must use a bounded internal GSN support queue paper."
+);
+assertContains(
+  "adminIncompleteLoans",
+  /private borrower contact details, supporter contacts, bank details, raw metadata, and internal notes/,
+  "Admin Incomplete Loans copied papers must keep private support-record redaction language."
+);
+assertContains(
+  "adminTrustEvents",
+  /GSN Trust Event Audit Snapshot/,
+  "Admin Trust Events copies must use bounded internal GSN audit papers and must not copy raw JSON payloads."
+);
+assertContains(
+  "adminTrustEvents",
+  /exclude raw JSON metadata, private contacts, phone numbers, bank details, and complete private records/,
+  "Admin Trust Events copied papers must keep raw-metadata redaction language."
+);
+assertContains(
+  "adminTrustEvents",
+  /safeCopy\(snapshot\)/,
+  "Admin Trust Events copy must use the prepared audit snapshot only."
+);
+assertNotContains(
+  "adminTrustEvents",
+  /const payload|safeCopy\([^)]*payload/g,
+  "Admin Trust Events must not append raw event JSON to copied audit papers."
+);
+assertContains(
+  "bankConsole",
+  /GSN Bank Console Event Review/,
+  "Bank Console row and settings copies must use bounded reconciliation review papers, not raw summaries or raw JSON settings."
+);
+assertContains(
+  "bankConsole",
+  /GSN Bank Console Settings Review/,
+  "Bank Console settings copy must use a bounded internal settings review paper."
+);
+assertContains(
+  "bankConsole",
+  /reconciliation review evidence only/,
+  "Bank Console copied row paper must keep the no-settlement boundary."
+);
+assertContains(
+  "bankConsole",
+  /avoids raw JSON and secrets/,
+  "Bank Console settings paper must state that it avoids raw JSON and secrets."
+);
+assertContains(
+  "bankConsole",
+  /safeCopy\(buildBankEventReviewPaper\(row, displayReference\)\)/,
+  "Bank Console row copy must use the prepared review paper."
+);
+assertContains(
+  "bankConsole",
+  /safeCopy\(buildBankSettingsReviewPaper\(cfg\)\)/,
+  "Bank Console settings copy must use the prepared settings paper."
+);
+assertNotContains(
+  "bankConsole",
+  /safeCopy\(JSON\.stringify\(cfg, null, 2\)\)/g,
+  "Bank Console settings copy must not expose raw JSON configuration."
+);
+assertContains(
+  "revenueAllocation",
+  /GSN Revenue Allocation Review Summary/,
+  "Revenue Allocation summary copy must use a bounded internal GSN allocation review paper."
+);
+assertContains(
+  "revenueAllocation",
+  /allocation review evidence only/,
+  "Revenue Allocation copied paper must keep the allocation-review-only boundary."
+);
+assertContains(
+  "revenueAllocation",
+  /does not confirm payout/,
+  "Revenue Allocation copied paper must not imply payout or disbursement confirmation."
+);
+assertContains(
+  "revenueAllocation",
+  /private bank details, private supporter contacts, raw ledger metadata/,
+  "Revenue Allocation copied paper must keep private finance-record redaction language."
+);
+assertContains(
+  "revenueAllocation",
+  /safeCopy\(text\)/,
+  "Revenue Allocation Copy summary must use the prepared paper text."
 );
 
 assertContains(

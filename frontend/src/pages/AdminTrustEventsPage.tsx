@@ -5,6 +5,7 @@ import { SecondaryButton, StableCtaLink, SubtleButton } from "../components/Stab
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { adminRecentTrustEvents, getSelectedClanId, safeCopy } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -242,15 +243,28 @@ function eventToneStyle(tone: "pos" | "neg" | "zero" | "none"): React.CSSPropert
 }
 
 function buildEventSnapshot(row: any): string {
-  return [
-    `Event: ${supportDisplayText(row?.event_type || "trust.event")}`,
-    `When: ${fmtWhen(row?.created_at)}`,
-    `Delta: ${deltaMeta(row?.delta).label}`,
-    `Actor: ${safeStr(row?.actor_user_id || "-")}`,
-    `Subject: ${safeStr(row?.subject_user_id || "-")}`,
-    `Reason: ${supportDisplayText(row?.reason || "Not stated")}`,
-    `Note: ${supportDisplayText(row?.note || "Not stated")}`,
-  ].join("`n");
+  return buildGsnSnapshotPaper({
+    title: "GSN Trust Event Audit Snapshot",
+    purpose:
+      "Internal audit snapshot for a trust-event record before deeper admin review.",
+    reference: `trust-event-${safeStr(row?.id || row?.event_id || row?.created_at || "pending")}`,
+    context: [
+      { label: "Event", value: supportDisplayText(row?.event_type || "trust.event") },
+      { label: "When", value: fmtWhen(row?.created_at) },
+      { label: "Delta", value: deltaMeta(row?.delta).label },
+      { label: "Actor reference", value: safeStr(row?.actor_user_id || "-") },
+      { label: "Subject reference", value: safeStr(row?.subject_user_id || "-") },
+    ],
+    bodyLines: [
+      `Reason: ${supportDisplayText(row?.reason || "Not stated")}`,
+      `Note: ${supportDisplayText(row?.note || "Not stated")}`,
+      "Reader boundary: this is internal trust-event audit evidence. Use complete records only inside authorized admin review.",
+    ],
+    privacyNote:
+      "Privacy: copied event snapshots exclude raw JSON metadata, private contacts, phone numbers, bank details, and complete private records.",
+    limitationNote:
+      "Limitation: internal audit snapshot only. Not public verification, credit approval, payment confirmation, payout approval, or release authority.",
+  });
 }
 
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
@@ -320,10 +334,9 @@ export default function AdminTrustEventsPage() {
   }
 
   async function copyEvent(row: any) {
-    const payload = supportDisplayText(JSON.stringify(row, null, 2), "");
     const snapshot = buildEventSnapshot(row);
     try {
-      safeCopy(`${snapshot}` + "`n`n" + `${payload}`);
+      safeCopy(snapshot);
       setNotice("Event snapshot copied.");
     } catch {
       setNotice("Clipboard is not available here.");

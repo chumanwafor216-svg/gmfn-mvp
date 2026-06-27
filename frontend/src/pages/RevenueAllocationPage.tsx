@@ -18,6 +18,7 @@ import {
   safeCopy,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 
 type NoticeTone = "success" | "error";
 
@@ -718,16 +719,28 @@ export default function RevenueAllocationPage() {
       return;
     }
 
-    const text = [
-      `Community: ${communityLabel}`,
-      `Community ID: ${communityPublicId}`,
-      `Member: ${memberName}`,
-      `GSN ID: ${gmfnId}`,
-      memberRole ? `Role: ${memberRole}` : "",
-      ...detailPairs(allocation).map(([label, value]) => `${label}: ${value}`),
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const text = buildGsnSnapshotPaper({
+      title: "GSN Revenue Allocation Review Summary",
+      purpose:
+        "Internal review summary for how one support item allocates visible service, platform, supporter, and net-disbursed figures.",
+      reference: allocation.loanId ? `support-${allocation.loanId}` : "revenue-allocation",
+      context: [
+        { label: "Community", value: communityLabel },
+        { label: "Community ID", value: communityPublicId },
+        { label: "Member", value: memberName },
+        { label: "GSN ID", value: gmfnId },
+        { label: "Role", value: memberRole },
+        { label: "Status", value: allocation.status },
+      ],
+      bodyLines: [
+        ...detailPairs(allocation).map(([label, value]) => `${label}: ${value}`),
+        "Reader boundary: this is allocation review evidence only. It does not confirm payout, prove disbursement, settle exposure, or authorize release of goods, credit, or money.",
+      ],
+      privacyNote:
+        "Privacy: private bank details, private supporter contacts, raw ledger metadata, and complete admin records are not included in this copied allocation paper.",
+      limitationNote:
+        "Limitation: internal allocation summary only. Not a receipt, bank guarantee, payout approval, payment confirmation, disbursement proof, or release authority.",
+    });
 
     safeCopy(text);
     setNotice({

@@ -10,6 +10,7 @@ import {
   safeCopy,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -184,17 +185,36 @@ function formatRemaining(seconds: any): string {
 }
 
 function buildLoanSnapshot(loan: any): string {
-  return [
-    `Support item: ${safeStr(loan?.loan_id || loan?.id || "-")}`,
-    `Requester: ${safeStr(loan?.borrower_user_id || "-")}`,
-    `Amount: ${fmtMoney(loan?.amount ?? "0")} ${safeStr(loan?.currency || "NGN")}`,
-    `Support decisions: ${toNum(loan?.approved_guarantors)} / ${toNum(loan?.guarantors_required)}`,
-    `Pending support responses: ${toNum(loan?.pending_guarantors)}`,
-    `Locked support coverage: ${fmtMoney(loan?.locked_coverage ?? 0)}`,
-    `Coverage gap: ${fmtMoney(loan?.required_gap ?? 0)}`,
-    `Time remaining: ${formatRemaining(loan?.auto_cancel_remaining_seconds)}`,
-    `Status: ${safeStr(loan?.status || "incomplete")}`,
-  ].join("`n");
+  return buildGsnSnapshotPaper({
+    title: "GSN Incomplete Support Review Snapshot",
+    purpose:
+      "Internal review snapshot for one incomplete support item needing admin attention.",
+    reference: `support-${safeStr(loan?.loan_id || loan?.id || "pending")}`,
+    context: [
+      { label: "Support item", value: safeStr(loan?.loan_id || loan?.id || "-") },
+      { label: "Requester reference", value: safeStr(loan?.borrower_user_id || "-") },
+      {
+        label: "Amount",
+        value: `${fmtMoney(loan?.amount ?? "0")} ${safeStr(loan?.currency || "NGN")}`,
+      },
+      {
+        label: "Support decisions",
+        value: `${toNum(loan?.approved_guarantors)} / ${toNum(loan?.guarantors_required)}`,
+      },
+      { label: "Pending support responses", value: toNum(loan?.pending_guarantors) },
+      { label: "Status", value: safeStr(loan?.status || "incomplete") },
+    ],
+    bodyLines: [
+      `Locked support coverage: ${fmtMoney(loan?.locked_coverage ?? 0)}`,
+      `Coverage gap: ${fmtMoney(loan?.required_gap ?? 0)}`,
+      `Time remaining: ${formatRemaining(loan?.auto_cancel_remaining_seconds)}`,
+      "Reader boundary: this is internal support review evidence. It does not approve support, settle exposure, confirm payment, or authorize release of goods or money.",
+    ],
+    privacyNote:
+      "Privacy: private borrower contact details, supporter contacts, bank details, raw metadata, and internal notes are not included in this copied review paper.",
+    limitationNote:
+      "Limitation: internal admin review snapshot only. Not a credit approval, disbursement instruction, payout approval, receipt, or release authority.",
+  });
 }
 
 function routeTarget(
@@ -296,16 +316,35 @@ export default function AdminIncompleteLoansPage() {
   }
 
   function copyQueueSnapshot() {
-    const snapshot = [
-      `Community: ${communityLabel}`,
-      `Incomplete support items: ${rows.length}`,
-      `Ending soon: ${queueSummary.urgentCount}`,
-      `Missing support decisions: ${queueSummary.missingPledgeDecisionCount}`,
-      `Total coverage gap: ${fmtMoney(queueSummary.totalGap)}`,
-      `Locked support coverage: ${fmtMoney(queueSummary.lockedCoverage)}`,
-      "",
-      ...rows.map((loan) => buildLoanSnapshot(loan)),
-    ].join("`n`n");
+    const snapshot = buildGsnSnapshotPaper({
+      title: "GSN Incomplete Support Queue Snapshot",
+      purpose:
+        "Internal queue snapshot for support items that need admin attention.",
+      reference: `incomplete-support-${selectedClanId || "community"}`,
+      context: [
+        { label: "Community", value: communityLabel },
+        { label: "Incomplete support items", value: rows.length },
+        { label: "Ending soon", value: queueSummary.urgentCount },
+        {
+          label: "Missing support decisions",
+          value: queueSummary.missingPledgeDecisionCount,
+        },
+        { label: "Total coverage gap", value: fmtMoney(queueSummary.totalGap) },
+        { label: "Locked support coverage", value: fmtMoney(queueSummary.lockedCoverage) },
+      ],
+      bodyLines: [
+        ...rows.slice(0, 8).map((loan) => {
+          const supportId = safeStr(loan?.loan_id || loan?.id || "-");
+          return `Support ${supportId}: ${fmtMoney(loan?.required_gap ?? 0)} gap, ${formatRemaining(loan?.auto_cancel_remaining_seconds)}, ${safeStr(loan?.status || "incomplete")}`;
+        }),
+        rows.length > 8 ? `Additional hidden rows: ${rows.length - 8}` : "",
+        "Reader boundary: this is internal queue evidence. It does not approve support, settle exposure, confirm payment, or authorize release of goods or money.",
+      ],
+      privacyNote:
+        "Privacy: private borrower contact details, supporter contacts, bank details, raw metadata, and internal notes are not included in this copied queue paper.",
+      limitationNote:
+        "Limitation: internal admin review queue only. Not a credit approval, disbursement instruction, payout approval, receipt, or release authority.",
+    });
 
     void copyText(snapshot, "Incomplete support queue snapshot copied.", "Clipboard is not available here.");
   }

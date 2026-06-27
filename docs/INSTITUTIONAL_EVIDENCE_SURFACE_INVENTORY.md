@@ -134,11 +134,11 @@ default.
 | Surface | Route / file | Why it matters | Current gap |
 | --- | --- | --- | --- |
 | Community confirmation inbox summaries | `/app/community-confirmations`, `CommunityConfirmationInboxPage.tsx` | Admin copies review summaries. | Queue and review-case copies now use bounded internal GSN review papers with private-contact/responder-note redaction language; remaining work is admin workflow visual review. |
-| Community confirmation policy summary | `/app/community-confirmations/policy`, `CommunityConfirmationPolicyPage.tsx` | Policy may be copied for explanation. | Needs official policy-summary paper if shared. |
-| Admin incomplete loan snapshots | `AdminIncompleteLoansPage.tsx` | Admin can copy queue and loan snapshots. | Should be internal GSN review paper, not raw text. |
-| Admin trust event snapshots | `AdminTrustEventsPage.tsx` | Admin can copy event snapshots. | Should be internal GSN audit paper with privacy rules. |
-| Bank console summaries/settings | `BankConsolePage.tsx` | Admin can copy summaries/config. | Must not become public evidence without redaction. |
-| Revenue allocation summary | `RevenueAllocationPage.tsx` | Admin can copy allocation summary. | Needs internal official summary if shared. |
+| Community confirmation policy summary | `/app/community-confirmations/policy`, `CommunityConfirmationPolicyPage.tsx` | Policy may be copied for explanation. | Copy summary now uses `GSN Community Confirmation Policy Summary` with internal-policy boundary and private-contact/member-list redaction language; remaining work is admin visual review. |
+| Admin incomplete loan snapshots | `AdminIncompleteLoansPage.tsx` | Admin can copy queue and loan snapshots. | Queue and per-support copies now use bounded internal GSN support review papers; remaining work is admin visual review. |
+| Admin trust event snapshots | `AdminTrustEventsPage.tsx` | Admin can copy event snapshots. | Event copies now use `GSN Trust Event Audit Snapshot` and no longer append raw event JSON; remaining work is admin visual review. |
+| Bank console summaries/settings | `BankConsolePage.tsx` | Admin can copy summaries/config. | Row and settings copies now use bounded internal reconciliation review papers and avoid raw settings JSON; remaining work is admin visual review and live finance QA. |
+| Revenue allocation summary | `RevenueAllocationPage.tsx` | Admin can copy allocation summary. | Copy summary now uses `GSN Revenue Allocation Review Summary` with no-payout/no-disbursement/no-release-authority boundary; remaining work is admin visual review. |
 
 ## Backend PDF Surfaces To Visually Open
 
