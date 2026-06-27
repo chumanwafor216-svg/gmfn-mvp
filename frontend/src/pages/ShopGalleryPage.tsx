@@ -2120,7 +2120,7 @@ export default function ShopGalleryPage() {
     if (!getAccessToken()) {
       setNotice({
         tone: "error",
-        text: "Sign in to follow this shop and receive GSN marketplace updates.",
+        text: "Sign in to follow this shop and record a neutral GSN attention event.",
       });
       return;
     }
@@ -2145,7 +2145,8 @@ export default function ShopGalleryPage() {
       }));
       setNotice({
         tone: "success",
-        text: "You are now following this shop.",
+        text:
+          "Shop followed. GSN records this as a neutral attention event, not endorsement, verification, payment evidence, or trust-score growth.",
       });
     } catch (err: any) {
       setShopFollowState((current) => ({ ...current, busy: false }));
@@ -2173,7 +2174,8 @@ export default function ShopGalleryPage() {
       }));
       setNotice({
         tone: "success",
-        text: "You have unfollowed this shop.",
+        text:
+          "Shop unfollowed. GSN records the update as a neutral attention event.",
       });
     } catch (err: any) {
       setShopFollowState((current) => ({ ...current, busy: false }));
@@ -3329,7 +3331,7 @@ export default function ShopGalleryPage() {
                         onClick={() =>
                           setNotice({
                             tone: "error",
-                            text: "Sign in to follow this shop and receive GSN marketplace updates.",
+                            text: "Sign in to follow this shop and record a neutral GSN attention event.",
                           })
                         }
                         minWidth={0}
@@ -3411,6 +3413,20 @@ export default function ShopGalleryPage() {
                     )}
                   </div>
                 ) : null}
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    color: "#5B6878",
+                    fontSize: isCompact ? 10 : 12,
+                    fontWeight: 800,
+                    lineHeight: 1.35,
+                    maxWidth: "100%",
+                  }}
+                >
+                  Following writes a neutral attention event in GSN. It is not
+                  endorsement, verification, payment evidence, or trust-score
+                  growth.
+                </div>
               </div>
               <div
                 style={{

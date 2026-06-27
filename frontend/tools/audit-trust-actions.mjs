@@ -652,6 +652,30 @@ assertContains(
   "Public Shop verification panel must keep the trade decision boundary before goods, credit, or money move."
 );
 
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /aria-label="Shop follow controls"[\s\S]*?record a neutral GSN attention event[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"[\s\S]*?debugId="shop-gallery\.public-shop\.follow"/,
+  "Public Shop follow controls must tell signed-out users that following records a neutral attention event."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /Following writes a neutral attention event in GSN[\s\S]*?not[\s\S]*?endorsement[\s\S]*?verification[\s\S]*?payment evidence[\s\S]*?trust-score[\s\S]*?growth/,
+  "Public Shop following must explain that follow is not endorsement, verification, payment evidence, or trust-score growth."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /Shop followed\. GSN records this as a neutral attention event[\s\S]*?not endorsement[\s\S]*?verification[\s\S]*?payment evidence[\s\S]*?trust-score growth[\s\S]*?Shop unfollowed\. GSN records the update as a neutral attention event\./,
+  "Public Shop follow and unfollow notices must expose the neutral TrustEvent boundary."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /receive GSN marketplace updates|You are now following this shop|You have unfollowed this shop/g,
+  "Public Shop follow notices must not hide the TrustEvent boundary behind generic social-follow wording."
+);
+
 assertNotContains(
   "src/pages/TrustSlipPage.tsx",
   /Verified member|Phone and community membership are verified|Identity confirmed by active community membership|Identity verified|Verified history|Merchant view verified|What verification confirms|concise outward-facing proof|safe to rely on|Profile image is not identity proof/,

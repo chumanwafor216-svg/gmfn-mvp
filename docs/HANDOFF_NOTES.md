@@ -1,3 +1,43 @@
+## 2026-06-27 - Public shop following surfaced as neutral TrustEvent attention
+
+Owner request:
+- Continue materializing existing GSN engines and consider whether following can
+  become a trust event feed / TrustSlip-adjacent signal without overclaiming.
+
+Confirmed system fact:
+- Shop follow/unfollow already writes backend TrustEvents:
+  `marketplace.shop.followed` and `marketplace.shop.unfollowed`.
+- Trust Timeline already treats follow events as zero-score attention records,
+  not membership, endorsement, verification, payment evidence, or trust-score
+  increase.
+
+Correction completed locally:
+- `frontend/src/pages/ShopGalleryPage.tsx`
+  - changed signed-out follow guidance to say following records a neutral GSN
+    attention event.
+  - changed follow/unfollow success notices to expose the TrustEvent boundary.
+  - added a compact helper line beside the public shop follow controls:
+    following writes a neutral attention event; it is not endorsement,
+    verification, payment evidence, or trust-score growth.
+- `frontend/tools/audit-trust-actions.mjs`
+  - now requires the Public Shop follow controls and notices to preserve that
+    neutral TrustEvent boundary.
+  - now rejects the old generic social-follow notices.
+
+Verification:
+- `npm --prefix frontend run audit:trust-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- This surfaces an existing backend engine in the public shop UI. It does not
+  make following a trust-score boost, endorsement, payment proof, verification,
+  membership proof, or commercial guarantee.
+- Community follow already has similar boundary language; this slice aligns
+  shop follow with that standard.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Proof-surface audit now guards Marketplace Trade Evidence paper
 
 Owner request:
