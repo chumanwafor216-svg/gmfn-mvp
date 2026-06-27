@@ -71825,7 +71825,16 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run audit:proof-surfaces` from `frontend`.
   - Passed `npm run build` from `frontend`.
 - Deployment state:
-  - local only at this entry; not pushed or deployed yet.
+  - committed and pushed to `main` as `9cf63848`
+    (`Redact support IDs from evidence PDFs`);
+  - manual GitHub Actions Render workflow run `28290899429` checked out
+    `9cf63848c21d8b5f8b79914bdbd9d94db631a55f`;
+  - frontend Render deploy hook accepted the request and returned deploy id
+    `dep-d8vt5hlaeets73dfdej0`;
+  - backend/API deploy did not run because the workflow still lacks
+    `RENDER_API_KEY`; these PDF service changes are pushed to GitHub but
+    should not be claimed live on Render API until gmfn-api is deployed by
+    Render API credentials or manually from Render dashboard.
 
 ### Follow-up same day - Trust Timeline user references redacted
 
