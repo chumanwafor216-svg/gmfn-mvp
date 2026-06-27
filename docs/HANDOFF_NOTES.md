@@ -4,7 +4,7 @@ Owner request:
 - Continue the customer-facing papers/documents cleanup, especially cases where
   exported evidence may expose more than it should.
 
-Completed local correction:
+Published correction:
 - `gmfn_backend/app/services/evidence_pack_service.py`
   - removed `full_summary` from `trustslip_snapshot.json` inside the portable
     Evidence Pack ZIP.
@@ -42,8 +42,21 @@ Verification:
   frontend files.
 
 Truth / remaining risk:
-- This correction is verified locally only until committed, pushed, and
-  deployed.
+- Committed and pushed `main` at
+  `12cff486736efe0cdb5cf168c99724a9d7490190`
+  (`Redact portable evidence pack internals`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28291445244` with `deploy_api=true`.
+- Workflow checked out exact commit
+  `12cff486736efe0cdb5cf168c99724a9d7490190`.
+- Frontend Render deploy hook accepted deploy id
+  `dep-d8vtg9km0tmc73d7ofeg`.
+- Backend deploy did not run. The workflow failed at the exact API credential
+  gate because `RENDER_API_KEY` and `RENDER_API_SERVICE_ID` are still empty in
+  GitHub Actions.
+- The frontend Trust Timeline wording can deploy through the accepted frontend
+  hook, but the backend ZIP redaction is not live on gmfn-api until a backend
+  deploy from the exact commit is confirmed.
 - The pack ID still includes the internal numeric user id in the current
   `GSN-PACK-U{id}-...` format. That should be reviewed in a future pass if the
   owner wants the Evidence Pack reference itself to avoid raw internal IDs.
