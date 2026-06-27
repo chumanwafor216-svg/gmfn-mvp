@@ -149,6 +149,29 @@ for (const oldLine of [
   );
 }
 
+for (const oldPdfLine of [
+  "trusted commerce",
+  "trusted members to stand behind another person",
+]) {
+  assertTextExcludes(
+    "frontend/tools/generate-static-gsn-pdfs.py",
+    oldPdfLine,
+    "The public executive-summary PDF source must not use blanket trusted-commerce or trusted-member wording."
+  );
+}
+
+assertTextIncludes(
+  "frontend/tools/generate-static-gsn-pdfs.py",
+  "evidence-backed commerce",
+  "The public executive-summary PDF source must use evidence-backed commerce wording."
+);
+
+assertTextIncludes(
+  "frontend/tools/generate-static-gsn-pdfs.py",
+  "eligible community members to stand behind another person",
+  "The public executive-summary PDF source must frame supporter standing as eligibility, not blanket trusted-member certification."
+);
+
 assertContains(
   "docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md",
   /paid\/API verification integrations[\s\S]*?automatic bank payout[\s\S]*?protected trade release-before-payment/,

@@ -109,7 +109,7 @@ CAPABILITY_EXPLANATIONS = {
         "risk, obligation, and follow-through remain visible."
     ),
     "Supporting Others": (
-        "What it is: a way for trusted members to stand behind another person "
+        "What it is: a way for eligible community members to stand behind another person "
         "with clearer responsibility. How it works: GSN records support "
         "decisions, locked responsibility, earnings or service-fee context, "
         "and repayment status where available. Why it matters: help becomes "
@@ -311,7 +311,7 @@ def build_executive_summary_pdf() -> bytes:
     paragraph(
         "Modern SaaS, e-commerce, and community platforms often move activity online without carrying the "
         "real trust history that makes people reliable in their communities. GSN addresses that gap by "
-        "connecting community evidence, portable trust identity, decision support, trusted commerce, "
+        "connecting community evidence, portable trust identity, decision support, evidence-backed commerce, "
         "community capital, and commitment discipline in one institutional layer.",
         size=9,
         gap=12,

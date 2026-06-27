@@ -1,3 +1,35 @@
+## 2026-06-27 - Executive summary PDF source avoids trusted-commerce overclaiming
+
+Owner request:
+- Continue tightening outsider-facing papers and documents so GSN reads as
+  institutional evidence infrastructure without implying paid/API
+  verification, protected trade release, or blanket trusted-member
+  certification.
+
+Correction completed locally:
+- `frontend/tools/generate-static-gsn-pdfs.py`
+  - changed the `Supporting Others` explanation from `trusted members` to
+    `eligible community members`.
+  - changed the strategic gap paragraph from `trusted commerce` to
+    `evidence-backed commerce`.
+- `frontend/tools/audit-capability-mirror.mjs`
+  - added guards blocking those old public-PDF phrases and requiring the new
+    evidence-backed/eligibility wording.
+
+Verification:
+- `npm --prefix frontend run audit:capability-mirror`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `python -m py_compile frontend\tools\generate-static-gsn-pdfs.py`
+- `rg -n "trusted commerce|trusted members to stand behind|evidence-backed commerce|eligible community members" frontend\tools\generate-static-gsn-pdfs.py frontend\tools\audit-capability-mirror.mjs -S`
+  - result: old phrases only remain inside the audit's forbidden-list strings.
+
+Truth / remaining risk:
+- This is static executive-summary PDF source wording only. It does not
+  regenerate PDFs in this slice and does not add any commerce, verification,
+  escrow, or payout engine.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - 22-capability title changed to evidence-backed buying and selling
 
 Owner request:
