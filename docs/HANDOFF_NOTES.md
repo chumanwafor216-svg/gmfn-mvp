@@ -1,10 +1,10 @@
-## 2026-06-27 - Support amount wording cleanup verified locally
+## 2026-06-27 - Support amount wording cleanup
 
 Owner request:
 - Continue the supporter/support wording cleanup and keep Render updated
   truthfully.
 
-Local corrections:
+Published corrections:
 - `frontend/src/components/LoanSuggestionsPanel.tsx`
   - suggestions table now labels the visible amount column as Support instead
     of Pledge.
@@ -38,8 +38,15 @@ Verification state:
   frontend files.
 
 Truth / remaining risk:
-- Local only at this point. Verified, but not committed, not pushed, and not
-  deployed to Render yet.
+- Committed and pushed `main` at
+  `8e5066ae644f84d7fe48140b70bc97b23b864b1f`
+  (`Update support amount wording`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28284874324` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vp8l9o3t8c73bi82a0`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- This is frontend/docs only and does not require backend Render credentials.
 - These edits are display/audit-only. Internal fields such as `pledgeAmount`,
   `pledgedTotal`, and `recommendedPledge` remain unchanged because they mirror
   existing API contracts and local data shape.
