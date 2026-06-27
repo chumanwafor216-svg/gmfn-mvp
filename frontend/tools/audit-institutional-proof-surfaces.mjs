@@ -643,8 +643,8 @@ for (const key of pdfServices) {
 
 assertContains(
   "publicPaper",
-  /import GSNBrandMark/,
-  "Public TrustSlip paper must use the official GSN brand mark."
+  /import GSNBrandMark[\s\S]*?TrustPaperAuthorityStrip[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperWatermark/,
+  "Public TrustSlip paper must use the official GSN brand mark, authority strip, security note, and watermark."
 );
 assertContains(
   "publicPaper",
@@ -660,6 +660,11 @@ assertContains(
   "publicPaper",
   /Public verification paper[\s\S]*?TrustSlip Verify/,
   "Public TrustSlip paper must present itself as an institutional verification paper."
+);
+assertContains(
+  "publicPaper",
+  /TrustPaperAuthorityStrip[\s\S]*?GSN TrustSlip Verification Paper[\s\S]*?TrustPaperSecurityNote/,
+  "Public TrustSlip paper must carry shared GSN authority and screenshot security marks."
 );
 assertContains(
   "publicPaper",

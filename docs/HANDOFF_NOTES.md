@@ -72320,6 +72320,37 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Public TrustSlip verify paper security marks aligned
+
+- Trigger:
+  - after repairing the static public PDF assets, the remaining public
+    verification/screenshot surfaces were mapped;
+  - `TrustSlipVerifyPublicPaper` had its own watermark and footer treatment,
+    but did not yet use the shared GSN authority strip and screenshot security
+    note already applied to the Community Verification, Community Member
+    Credential, and Community Confirmation Outcome papers.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - added `TrustPaperAuthorityStrip` below the public TrustSlip Verify hero;
+    - added `TrustPaperSecurityNote` beside the code/QR verification reference;
+    - kept the existing TrustSlip verification route contract, QR support,
+      public/private boundary, community confirmation flow, and reader-decision
+      limitation intact.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added coverage requiring the public TrustSlip paper to carry the shared
+      GSN brand mark, authority strip, screenshot security note, watermark, and
+      security-mark sequence.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Verification boundary:
+  - this confirms source-level audit coverage and TypeScript/Vite build
+    compatibility;
+  - no browser screenshot or PDF/print visual raster review was completed for
+    this surface in this slice.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Static public executive summary PDFs repaired
 
 - Trigger:

@@ -4,7 +4,9 @@ import GSNBrandMark from "../../components/GSNBrandMark";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../../components/GsnRealisticIcon";
 import { PrimaryButton, StableCtaLink } from "../../components/StableButton";
 import {
+  TrustPaperAuthorityStrip,
   TrustPaperSeal,
+  TrustPaperSecurityNote,
   TrustPaperWatermark,
 } from "../../components/TrustPaperMarks";
 import {
@@ -1027,6 +1029,14 @@ export default function TrustSlipVerifyPublicPaper({
           alignItems: "stretch",
         }}
       >
+        <TrustPaperAuthorityStrip
+          title="GSN TrustSlip Verification Paper"
+          reference={resolvedCode || verifyPath || "TrustSlip verify record"}
+          generatedAt={issuedAtLabel || "Current when viewed"}
+          classification={validNow ? "Current public evidence" : "Caution public evidence"}
+          compact={compact}
+        />
+
         <div style={publicVerifyShell("#F8FBFF", compact)}>
           <TrustPaperWatermark
             name={validNow ? "shield" : "lock"}
@@ -1291,6 +1301,12 @@ export default function TrustSlipVerifyPublicPaper({
                     <GsnRealisticIcon name="qr-record" size={58} decorative />
                   )}
                 </div>
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <TrustPaperSecurityNote
+                  reference={resolvedCode || verifyPath || "TrustSlip verify record"}
+                  compact={compact}
+                />
               </div>
             </div>
 
