@@ -58,6 +58,7 @@ export function buildGsnSnapshotPaper(params: GsnSnapshotPaperParams): string {
     params.purpose ? `Purpose: ${safeText(params.purpose)}` : "",
     `Generated (UTC): ${generatedAt}`,
     reference ? `Reference: ${reference}` : "",
+    `Security marks: GSN brand mark, watermark, UTC time, reference, privacy note, and limitation note must travel with screenshots or printed copies.`,
     "",
     contextLines.length ? "GSN record context" : "",
     ...contextLines,

@@ -15,6 +15,7 @@ def test_shared_institutional_pdf_helper_exists():
     assert "def draw_institutional_header" in text
     assert "def draw_institutional_footer" in text
     assert "GLOBAL SUPPORT NETWORK" in text
+    assert "Security marks: GSN watermark | UTC time | reference | limitation" in text
 
 
 def test_simple_evidence_pdfs_use_gsn_institutional_shell():

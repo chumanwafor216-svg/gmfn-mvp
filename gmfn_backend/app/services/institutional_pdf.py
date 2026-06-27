@@ -106,8 +106,18 @@ def draw_institutional_header(
     pdf_canvas.setFont("Helvetica-Bold", 8)
     pdf_canvas.drawString(left + 4 * mm, top - 42 * mm, f"Generated: {safe_pdf_text(generated_at)}")
     pdf_canvas.drawString(left + 74 * mm, top - 42 * mm, f"Reference: {safe_pdf_text(reference)}")
+
+    pdf_canvas.setFillColor(GSN_BLUE)
+    pdf_canvas.roundRect(left + 4 * mm, top - 50 * mm, right - left - 8 * mm, 6 * mm, 2 * mm, stroke=0, fill=1)
+    pdf_canvas.setFillColor(colors.white)
+    pdf_canvas.setFont("Helvetica-Bold", 6.7)
+    pdf_canvas.drawString(
+        left + 7 * mm,
+        top - 47.9 * mm,
+        "Security marks: GSN watermark | UTC time | reference | limitation | verify current record before relying.",
+    )
     pdf_canvas.restoreState()
-    return top - 52 * mm
+    return top - 60 * mm
 
 
 def draw_institutional_footer(pdf_canvas: Any, width: float, footer_text: str) -> None:

@@ -1,4 +1,5 @@
 import React from "react";
+import GSNBrandMark from "./GSNBrandMark";
 
 export type TrustPaperIconName =
   | "alert"
@@ -350,6 +351,178 @@ export function TrustPaperBadgeIcon({ name, ok = true }: BadgeIconProps) {
 type FooterProps = {
   text: string;
 };
+
+type AuthorityStripProps = {
+  title?: string;
+  reference?: string;
+  generatedAt?: string;
+  classification?: string;
+  compact?: boolean;
+  tone?: "light" | "dark";
+  style?: React.CSSProperties;
+};
+
+function authorityText(value: unknown, fallback: string): string {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+export function TrustPaperAuthorityStrip({
+  title = "Official GSN paper",
+  reference = "GSN current record",
+  generatedAt = "Current when viewed",
+  classification = "Traceable public evidence",
+  compact = false,
+  tone = "light",
+  style,
+}: AuthorityStripProps) {
+  const dark = tone === "dark";
+  const textColor = dark ? "#FFFFFF" : "#07172C";
+  const mutedColor = dark ? "rgba(255,255,255,0.74)" : "#526579";
+  const shellBackground = dark
+    ? "rgba(6,24,39,0.48)"
+    : "linear-gradient(135deg, rgba(255,255,255,0.94), rgba(248,251,255,0.88))";
+
+  return (
+    <section
+      aria-label="GSN document authority marks"
+      style={{
+        position: "relative",
+        zIndex: 2,
+        display: "grid",
+        gridTemplateColumns: compact ? "auto minmax(0, 1fr)" : "auto minmax(0, 1fr) auto",
+        gap: compact ? 10 : 12,
+        alignItems: "center",
+        borderRadius: compact ? 16 : 18,
+        border: dark ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(212,175,55,0.28)",
+        background: shellBackground,
+        boxShadow: dark
+          ? "inset 0 1px 0 rgba(255,255,255,0.10)"
+          : "0 14px 30px rgba(6,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
+        padding: compact ? "10px 11px" : "12px 14px",
+        overflow: "hidden",
+        ...style,
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          width: compact ? 42 : 50,
+          height: compact ? 42 : 50,
+          borderRadius: compact ? 14 : 16,
+          display: "grid",
+          placeItems: "center",
+          background: dark ? "rgba(255,255,255,0.92)" : "#FFFFFF",
+          border: "1px solid rgba(214,170,69,0.24)",
+          boxShadow: "0 10px 22px rgba(6,24,39,0.12)",
+          flex: "0 0 auto",
+        }}
+      >
+        <GSNBrandMark width={compact ? 24 : 29} height={compact ? 30 : 36} />
+      </div>
+
+      <div style={{ minWidth: 0, display: "grid", gap: 3 }}>
+        <div
+          style={{
+            color: dark ? "#F6D77A" : "#0B63D1",
+            fontSize: compact ? 10.5 : 11,
+            fontWeight: 1000,
+            letterSpacing: 0,
+            textTransform: "uppercase",
+          }}
+        >
+          Global Support Network
+        </div>
+        <strong
+          style={{
+            color: textColor,
+            fontSize: compact ? 14 : 15,
+            fontWeight: 1000,
+            lineHeight: 1.16,
+            overflowWrap: "anywhere",
+          }}
+        >
+          {authorityText(title, "Official GSN paper")}
+        </strong>
+        <div
+          style={{
+            color: mutedColor,
+            fontSize: compact ? 11.5 : 12,
+            fontWeight: 850,
+            lineHeight: 1.32,
+            overflowWrap: "anywhere",
+          }}
+        >
+          Generated: {authorityText(generatedAt, "Current when viewed")} · Reference:{" "}
+          {authorityText(reference, "GSN current record")}
+        </div>
+      </div>
+
+      <div
+        style={{
+          gridColumn: compact ? "1 / -1" : undefined,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: compact ? "flex-start" : "flex-end",
+          gap: 7,
+          minWidth: 0,
+        }}
+      >
+        {[classification, "Watermark", "Traceable"].map((item) => (
+          <span
+            key={item}
+            style={{
+              minHeight: compact ? 26 : 28,
+              borderRadius: 999,
+              padding: compact ? "5px 8px" : "6px 9px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              color: dark ? "#F6D77A" : "#7A5A10",
+              background: dark ? "rgba(246,215,122,0.10)" : "rgba(255,247,220,0.82)",
+              border: dark ? "1px solid rgba(246,215,122,0.18)" : "1px solid rgba(214,170,69,0.22)",
+              fontSize: compact ? 10.5 : 11,
+              fontWeight: 1000,
+              lineHeight: 1.1,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <TrustPaperIcon name={item === "Watermark" ? "shield" : "lock"} size={14} />
+            {item}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function TrustPaperSecurityNote({
+  reference,
+  compact = false,
+}: {
+  reference?: string;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      aria-label="GSN screenshot security note"
+      style={{
+        borderRadius: compact ? 14 : 16,
+        border: "1px dashed rgba(11,99,209,0.28)",
+        background: "rgba(232,241,255,0.70)",
+        padding: compact ? "9px 10px" : "10px 12px",
+        color: "#24415C",
+        fontSize: compact ? 11.5 : 12,
+        fontWeight: 900,
+        lineHeight: 1.42,
+      }}
+    >
+      Screenshot security: this paper should travel with the GSN mark, watermark,
+      generated time, and reference{reference ? ` ${reference}` : ""}. Reopen the
+      QR or link for the current record before relying on the screenshot.
+    </div>
+  );
+}
 
 export function TrustPaperSecurityFooter({ text }: FooterProps) {
   return (

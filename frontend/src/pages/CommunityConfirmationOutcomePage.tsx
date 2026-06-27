@@ -4,6 +4,9 @@ import { useParams } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
+  TrustPaperAuthorityStrip,
+  TrustPaperSecurityNote,
+  TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
 import {
@@ -1012,6 +1015,14 @@ export default function CommunityConfirmationOutcomePage() {
           </header>
 
           <div style={paperBody(isCompactPaper)}>
+            <TrustPaperAuthorityStrip
+              title="GSN Community Confirmation Outcome"
+              reference={firstTruthy(outcome?.public_token, outcome?.request_id, tokenText)}
+              generatedAt={outcome?.created_at ? safeDateTime(outcome.created_at) : "Current when viewed"}
+              classification="Privacy-safe public outcome"
+              compact={isCompactPaper}
+            />
+
             {notice ? (
               <div
                 role="status"
@@ -1376,6 +1387,12 @@ export default function CommunityConfirmationOutcomePage() {
                       {outcome.requester_callback?.delivery_note ||
                         "SMS or WhatsApp return delivery will work only after a real delivery rail is configured."}
                     </p>
+                    <div style={{ marginTop: 10 }}>
+                      <TrustPaperSecurityNote
+                        reference={firstTruthy(outcome.public_token, outcome.request_id, tokenText)}
+                        compact={isCompactPaper}
+                      />
+                    </div>
                   </div>
                 </section>
 
@@ -1956,33 +1973,7 @@ export default function CommunityConfirmationOutcomePage() {
               </>
             ) : null}
           </div>
-          <div
-            style={{
-              padding: "24px 38px",
-              background: "linear-gradient(90deg, #061827 0%, #0B2D4A 100%)",
-              color: "#F6D77A",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 14,
-              fontWeight: 1000,
-              flexWrap: "wrap",
-            }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
-              <GsnLegacyIcon name="shield" size={36} />
-              <span>
-                Human-first community confirmation:{" "}
-                <span style={{ color: "#FFFFFF" }}>
-                  public outcome, private contacts protected.
-                </span>
-              </span>
-            </span>
-            <span style={{ display: "inline-flex", gap: 12, color: "#F6D77A" }} aria-hidden="true">
-              <GsnLegacyIcon name="spark" size={30} />
-              <GsnLegacyIcon name="lock" size={30} />
-            </span>
-          </div>
+          <TrustPaperSecurityFooter text="Human-first community confirmation: public outcome, private contacts protected." />
         </article>
       </div>
     </div>

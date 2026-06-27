@@ -72320,6 +72320,70 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Institutional proof marks and screenshot security layer
+
+- Trigger:
+  - owner reported that some customer-facing verification papers, PDFs,
+    TrustSlip-style documents, and screenshotable pages still did not carry
+    enough GSN watermark/logo/security marking to feel institutional.
+- Unabated truth:
+  - many key evidence surfaces already had some GSN paper treatment;
+  - the remaining weakness was inconsistent finishing: some pages had an icon
+    watermark or text `GSN` mark, but not a shared official brand mark,
+    generated/reference strip, screenshot-security note, and shared footer.
+- Changed:
+  - `frontend/src/components/TrustPaperMarks.tsx`
+    - added reusable `TrustPaperAuthorityStrip` with the actual `GSNBrandMark`,
+      generated time, reference, classification chip, watermark chip, and
+      traceability chip;
+    - added `TrustPaperSecurityNote` for screenshotable papers, telling the
+      reader to reopen the QR/link for the current record before relying on a
+      screenshot.
+  - `frontend/src/components/GsnSnapshotPaperCard.tsx`
+    - added the new authority strip and screenshot-security note to shared
+      visual snapshot papers, so Identity, CCI, TrustSlip, TrustSlip Verify,
+      Trust Passport, payment, shop, vault, invite, and support snapshot cards
+      inherit stronger institutional presentation.
+  - `frontend/src/lib/gsnSnapshotPaper.ts`
+    - added a copied-paper `Security marks` line so text packages also carry
+      the GSN brand mark/watermark/reference/limitation requirement.
+  - `frontend/src/pages/CommunityVerifyPage.tsx`
+    - added the shared GSN authority strip and screenshot-security note to the
+      public community verification paper.
+  - `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+    - added the shared GSN authority strip and screenshot-security note to the
+      public member credential paper.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - added the shared GSN authority strip and screenshot-security note to the
+      public confirmation outcome paper;
+    - replaced the page-local dark footer with shared
+      `TrustPaperSecurityFooter`.
+  - `gmfn_backend/app/services/institutional_pdf.py`
+    - added a shared PDF header security strip: GSN watermark, UTC time,
+      reference, limitation, and current-record verification instruction;
+    - all PDF services that already use `draw_institutional_header` inherit
+      this mark.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - expanded the proof audit to require the new authority/security treatment
+      on shared snapshot papers, public Community Verify, public Member
+      Credential, public Community Confirmation Outcome, and backend PDF
+      headers.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added a guard that the shared PDF helper keeps the security-mark strip.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\services\institutional_pdf.py`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Remaining honest risk:
+  - this slice is source/build/audit verified;
+  - generated PDFs still need visual opening with sample data before saying
+    their actual rendered layout is perfect on paper;
+  - no Render deploy was performed in this slice.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Signed-in Trust Why explanations redacted
 
 - Trigger:

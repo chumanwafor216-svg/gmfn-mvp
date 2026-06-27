@@ -5,6 +5,8 @@ import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticI
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
+  TrustPaperAuthorityStrip,
+  TrustPaperSecurityNote,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
@@ -482,6 +484,14 @@ export default function CommunityMemberVerifyPage() {
         </div>
 
         <div style={{ padding: 18, display: "grid", gap: 14 }}>
+          <TrustPaperAuthorityStrip
+            title="GSN Community Member Credential"
+            reference={`${memberAnchor} / ${communityAnchor}`}
+            generatedAt="Current when viewed"
+            classification="Scoped public credential"
+            compact
+          />
+
           {loading ? (
             <div style={innerCard()}>Loading the public membership credential...</div>
           ) : error ? (
@@ -726,6 +736,7 @@ export default function CommunityMemberVerifyPage() {
                   </p>
                 </div>
               </div>
+              <TrustPaperSecurityNote reference={memberAnchor} compact />
             </>
           ) : null}
         </div>

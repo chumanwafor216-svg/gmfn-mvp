@@ -9,6 +9,8 @@ import {
   StableDisclosureSummary,
 } from "../components/StableButton";
 import {
+  TrustPaperAuthorityStrip,
+  TrustPaperSecurityNote,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
@@ -713,6 +715,14 @@ export default function CommunityVerifyPage() {
               </div>
             </header>
 
+            <TrustPaperAuthorityStrip
+              title="GSN Community Verification Paper"
+              reference={communityAnchor}
+              generatedAt="Current when viewed"
+              classification="Public community record"
+              compact
+            />
+
             {notice ? (
               <div
                 role="status"
@@ -1109,6 +1119,7 @@ export default function CommunityVerifyPage() {
                         body="It does not verify every member, shop, subgroup, line, or transaction."
                       />
                     </div>
+                    <TrustPaperSecurityNote reference={communityAnchor} compact />
                   </div>
                   <details
                     style={{

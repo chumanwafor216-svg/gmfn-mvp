@@ -2,6 +2,8 @@ import React, { useMemo } from "react";
 import GSNBrandMark from "./GSNBrandMark";
 import {
   TrustPaperIcon,
+  TrustPaperAuthorityStrip,
+  TrustPaperSecurityNote,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
   type TrustPaperIconName,
@@ -20,6 +22,7 @@ type ParsedPaper = {
   context: ParsedFact[];
   details: string[];
   actionLink: string;
+  securityMarks: string;
   privacy: string;
   limitation: string;
   footer: string;
@@ -62,6 +65,7 @@ function parsePaperText(paperText: string): ParsedPaper {
     context: [],
     details: [],
     actionLink: "",
+    securityMarks: "",
     privacy: "",
     limitation: "",
     footer: "Global Support Network (GSN). Trust infrastructure for organized communities.",
@@ -100,6 +104,11 @@ function parsePaperText(paperText: string): ParsedPaper {
     }
     if (line.startsWith("Verification / action link:")) {
       paper.actionLink = stripPrefix(line, "Verification / action link:");
+      mode = "none";
+      continue;
+    }
+    if (line.startsWith("Security marks:")) {
+      paper.securityMarks = line;
       mode = "none";
       continue;
     }
@@ -267,6 +276,15 @@ export default function GsnSnapshotPaperCard({
         </div>
       </header>
 
+      <TrustPaperAuthorityStrip
+        compact={compact}
+        title={paper.title}
+        generatedAt={paper.generatedAt || "Current when copied"}
+        reference={paper.reference || "GSN current record"}
+        classification="Screenshot-ready"
+        style={{ marginTop: compact ? 12 : 14 }}
+      />
+
       <section
         style={{
           position: "relative",
@@ -395,6 +413,23 @@ export default function GsnSnapshotPaperCard({
           <div style={{ ...valueStyle(), color: "#0B4AA2" }}>{paper.actionLink}</div>
         </section>
       ) : null}
+
+      <section style={{ position: "relative", marginTop: 14 }}>
+        <TrustPaperSecurityNote reference={paper.reference} compact={compact} />
+        {paper.securityMarks ? (
+          <div
+            style={{
+              marginTop: 8,
+              color: "#526579",
+              fontSize: 11,
+              fontWeight: 850,
+              lineHeight: 1.4,
+            }}
+          >
+            {paper.securityMarks}
+          </div>
+        ) : null}
+      </section>
 
       <section
         style={{

@@ -40,6 +40,8 @@ const files = {
   snapshotPaperCard: "frontend/src/components/GsnSnapshotPaperCard.tsx",
   trustSnapshots: "frontend/src/lib/trustDocumentSnapshots.ts",
   communityVerify: "frontend/src/pages/CommunityVerifyPage.tsx",
+  communityMemberVerify: "frontend/src/pages/CommunityMemberVerifyPage.tsx",
+  communityConfirmationOutcome: "frontend/src/pages/CommunityConfirmationOutcomePage.tsx",
   firstCircle: "frontend/src/pages/BuildFirstCirclePage.tsx",
   joinEntry: "frontend/src/pages/JoinEntryPage.tsx",
   joinInviteMessaging: "frontend/src/lib/joinInviteMessaging.ts",
@@ -173,6 +175,11 @@ assertContains(
   "institutionalPdf",
   /GLOBAL SUPPORT NETWORK[\s\S]*?Generated:[\s\S]*?Reference:/,
   "Institutional header must show GSN authority, generated time, and reference."
+);
+assertContains(
+  "institutionalPdf",
+  /Security marks: GSN watermark \| UTC time \| reference \| limitation \| verify current record before relying\./,
+  "Institutional PDF header must stamp security marks for screenshots and printed copies."
 );
 assertContains(
   "institutionalPdf",
@@ -759,8 +766,8 @@ assertContains(
 
 assertContains(
   "snapshotPaper",
-  /Official GSN headed paper[\s\S]*?Generated \(UTC\):[\s\S]*?Global Support Network \(GSN\)/,
-  "Shared copied snapshot papers must keep GSN headed-paper authority, generated time, and footer."
+  /Official GSN headed paper[\s\S]*?Generated \(UTC\):[\s\S]*?Security marks: GSN brand mark, watermark, UTC time, reference, privacy note, and limitation note must travel with screenshots or printed copies\.[\s\S]*?Global Support Network \(GSN\)/,
+  "Shared copied snapshot papers must keep GSN headed-paper authority, generated time, security marks, and footer."
 );
 assertContains(
   "snapshotPaper",
@@ -804,8 +811,8 @@ assertNotContains(
 );
 assertContains(
   "snapshotPaperCard",
-  /import GSNBrandMark[\s\S]*?TrustPaperWatermark[\s\S]*?TrustPaperSecurityFooter/,
-  "Shared visual snapshot paper card must use the GSN mark, watermark, and institutional footer."
+  /import GSNBrandMark[\s\S]*?TrustPaperAuthorityStrip[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperWatermark[\s\S]*?TrustPaperSecurityFooter/,
+  "Shared visual snapshot paper card must use the GSN mark, authority strip, screenshot security note, watermark, and institutional footer."
 );
 assertContains(
   "snapshotPaperCard",
@@ -861,6 +868,21 @@ assertContains(
   "communityVerify",
   /copyLink[\s\S]*?safeCopy\(publicLink\)[\s\S]*?GSN community verification link copied\./,
   "Public Community Verification Copy link must copy only the public verification URL, not a long headed-paper package for QR visitors."
+);
+assertContains(
+  "communityVerify",
+  /TrustPaperAuthorityStrip[\s\S]*?GSN Community Verification Paper[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
+  "Public Community Verification paper must carry shared GSN authority, screenshot security, and footer marks."
+);
+assertContains(
+  "communityMemberVerify",
+  /TrustPaperAuthorityStrip[\s\S]*?GSN Community Member Credential[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
+  "Public Community Member Credential paper must carry shared GSN authority, screenshot security, and footer marks."
+);
+assertContains(
+  "communityConfirmationOutcome",
+  /TrustPaperAuthorityStrip[\s\S]*?GSN Community Confirmation Outcome[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
+  "Public Community Confirmation Outcome paper must carry shared GSN authority, screenshot security, and footer marks."
 );
 assertContains(
   "firstCircle",
