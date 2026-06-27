@@ -11,6 +11,7 @@ import {
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnInviteLinkPackage } from "../lib/gsnSnapshotPaper";
 import {
   createClan,
   createClanInvite,
@@ -313,29 +314,25 @@ function buildInviteState(
   const personalNote = safeStr(shortMessage);
   const receiver = safeStr(receiverField);
 
-  const packagedShareText = [
-    receiver ? `Hello ${receiver},` : "Hello,",
-    "",
-    `${senderName || "A known GSN member"} from ${selectedCommunityName} is inviting you to begin the GSN join request for ${selectedCommunityName}.`,
-    "This link lets you send your request back to the community for review. It is not automatic entry.",
-    "",
-    personalNote ? `Personal note: ${personalNote}` : "",
-    "",
-    "GSN helps existing trust become visible, recordable, and useful.",
-    shareLink ? `Open secure join link: ${shareLink}` : "",
-    code ? `Invite code: ${code}` : "",
-    expiresAt ? `Expiry: ${safeDateTime(expiresAt)}` : "",
-    "",
-    "Guide: My GSN and I",
-    guideUrl,
-    "",
-    "Fallback PDF guide:",
-    fallbackGuideUrl,
-    "",
-    "Sent through GSN",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const packagedShareText = buildGsnInviteLinkPackage({
+    senderName: senderName || "A known GSN member",
+    communityName: selectedCommunityName,
+    inviteLink: shareLink,
+    messageLines: [
+      receiver ? `Recipient: ${receiver}` : "",
+      `${senderName || "A known GSN member"} from ${selectedCommunityName} is inviting you to begin the GSN join request for ${selectedCommunityName}.`,
+      "This link lets you send your request back to the community for review. It is not automatic entry.",
+      personalNote ? `Personal note: ${personalNote}` : "",
+      "GSN helps existing trust become visible, recordable, and useful.",
+      code ? `Invite code: ${code}` : "",
+      expiresAt ? `Expiry: ${safeDateTime(expiresAt)}` : "",
+      "Guide: My GSN and I",
+      guideUrl,
+      "Fallback PDF guide:",
+      fallbackGuideUrl,
+      "Sent through GSN",
+    ],
+  });
 
   return {
     code,
@@ -1295,7 +1292,7 @@ export default function ClansPage() {
                             textTransform: "uppercase",
                           }}
                         >
-                          Share-ready copy
+                          GSN invite paper
                         </div>
                         <div
                           style={{
@@ -1342,8 +1339,8 @@ export default function ClansPage() {
                           debugId="clans.invite.copy-package"
                         >
                           {copied === "package"
-                            ? "Copied package"
-                            : "Copy full package"}
+                            ? "Copied paper"
+                            : "Copy GSN invite paper"}
                         </SecondaryButton>
                       ) : null}
 

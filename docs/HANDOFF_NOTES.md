@@ -1,3 +1,38 @@
+## 2026-06-27 - Legacy Clans invite package now uses GSN invite paper
+
+Owner request:
+- Continue institutional cleanup across outsider-facing invite, link, document,
+  TrustSlip-adjacent, and screenshotable surfaces.
+
+Correction completed locally:
+- `frontend/src/pages/ClansPage.tsx`
+  - changed the legacy invite full-package text from a hand-built casual
+    share block to the shared `buildGsnInviteLinkPackage()` headed-paper format.
+  - preserved the recipient line, personal note, invite code, expiry, `My GSN
+    and I` guide link, fallback PDF guide link, and `Sent through GSN` marker.
+  - renamed the visible preview from `Share-ready copy` to `GSN invite paper`.
+  - renamed the full copy action to `Copy GSN invite paper`.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added `ClansPage.tsx` to the proof-surface audit map.
+  - added a guard requiring the legacy invite full package to use the branded
+    GSN invite paper helper.
+- `docs/INSTITUTIONAL_EVIDENCE_SURFACE_INVENTORY.md`
+  - marked the legacy Clans invite copy gap as source-level handled.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check`
+
+Truth / remaining risk:
+- This is a copy/package branding correction only. It does not approve entry,
+  verify the recipient, or prove community membership. The invite still opens a
+  request path and depends on community rules.
+- If the legacy Clans page remains in pilot use, it still needs visual phone
+  review beside the newer First Circle and Marketplace invite surfaces.
+
 ## 2026-06-27 - Demand Box requests now copy as GSN request papers
 
 Owner request:

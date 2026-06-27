@@ -49,6 +49,7 @@ const files = {
   communityMemberVerify: "frontend/src/pages/CommunityMemberVerifyPage.tsx",
   communityConfirmationOutcome: "frontend/src/pages/CommunityConfirmationOutcomePage.tsx",
   firstCircle: "frontend/src/pages/BuildFirstCirclePage.tsx",
+  clansPage: "frontend/src/pages/ClansPage.tsx",
   joinEntry: "frontend/src/pages/JoinEntryPage.tsx",
   joinInviteMessaging: "frontend/src/lib/joinInviteMessaging.ts",
   marketplace: "frontend/src/pages/MarketplacePage.tsx",
@@ -981,6 +982,11 @@ assertContains(
   "firstCircle",
   /buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle/,
   "First Circle community invite copy/share text must use the branded GSN invite package."
+);
+assertContains(
+  "clansPage",
+  /buildGsnInviteLinkPackage[\s\S]*?packagedShareText[\s\S]*?GSN invite paper[\s\S]*?Copy GSN invite paper/,
+  "Legacy Clans invite package copy must use the branded GSN invite paper package."
 );
 assertContains(
   "joinInviteMessaging",
