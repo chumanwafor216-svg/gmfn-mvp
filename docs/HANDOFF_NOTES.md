@@ -1,3 +1,47 @@
+## 2026-06-27 - Trust Passport requester repayment label
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - the Trust Passport technical finance breakdown now labels
+    `borrower_repayment_delta` as `Requester repayment delta` in visible copy.
+  - the paired support-side row remains `Support repayment delta`.
+- `frontend/tools/audit-trust-passport-finance-discipline-lane.mjs`
+  - added a guard requiring requester/support repayment labels while preserving
+    backend ruleset field compatibility.
+  - added a regression guard rejecting the old visible
+    `Borrower repayment delta` label.
+
+Verification state:
+- `node frontend\tools\audit-trust-passport-finance-discipline-lane.mjs`
+- `node frontend\tools\audit-trust-passport-front-package.mjs`
+- `node frontend\tools\audit-trust-passport-lane-map.mjs`
+- `node frontend\tools\audit-trust-passport-button-inventory.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `e5c5bc689bf3da10cc32fdeea685c69f74611723`
+  (`Clarify Trust Passport requester repayment label`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28286688376` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vqetrsq97s738m6r9g`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: the backend contract still calls the field
+  `borrower_repayment_delta`. This slice changes only the human-facing Trust
+  Passport label so the UI no longer introduces a borrower role in that
+  finance-detail row.
+
 ## 2026-06-27 - Marketplace support intent wording
 
 Owner request:
