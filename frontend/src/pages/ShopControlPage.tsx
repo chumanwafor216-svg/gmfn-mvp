@@ -14,6 +14,7 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import ShopAssetsPage from "./ShopAssetsPage";
 import {
   createMarketplaceShop,
+  createMarketplaceBroadcast,
   getPublicMarketplaceShopByGmfnId,
   getMe,
   getMarketplaceShopByGmfnId,
@@ -2501,17 +2502,14 @@ export default function ShopControlPage() {
         }
       }
 
-      const createRes = await apiJson<any>("/api/marketplace/broadcasts", {
-        method: "POST",
-        body: JSON.stringify({
-          clan_id: targetClanId,
-          shop_id: Number(activeShop.id),
-          message: message || "Spotlight update",
-          image_url: imageUrl || null,
-          video_url: videoUrl || null,
-          priority_mode: spotlightPriorityMode,
-          visibility_scope: "direct_communities",
-        }),
+      const createRes = await createMarketplaceBroadcast({
+        clan_id: targetClanId,
+        shop_id: Number(activeShop.id),
+        message: message || "Spotlight update",
+        image_url: imageUrl || null,
+        video_url: videoUrl || null,
+        priority_mode: spotlightPriorityMode,
+        visibility_scope: "direct_communities",
       });
 
       const createdSpotlight =

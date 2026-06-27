@@ -143,6 +143,18 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
+  /import \{[\s\S]*?createMarketplaceBroadcast[\s\S]*?\} from "\.\.\/lib\/api";[\s\S]*?async function handleCreateSpotlight\(\)[\s\S]*?const createRes = await createMarketplaceBroadcast\(\{[\s\S]*?priority_mode: spotlightPriorityMode[\s\S]*?visibility_scope: "direct_communities"/,
+  "Shop Control Free Spotlight publish must use the shared API client so mobile browsers and Render use the same backend origin as media upload."
+);
+
+assertNotContains(
+  "src/pages/ShopControlPage.tsx",
+  /apiJson<any>\("\/api\/marketplace\/broadcasts"/,
+  "Shop Control Free Spotlight publish must not bypass the shared API client for the final broadcast POST."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
   /navigateWithOrigin\(navigate, routes\.subscriptionSpotlight, location[\s\S]*?debugId="shop-control\.spotlight\.paid-lane"[\s\S]*?debugId="shop-control\.subscription\.open"[\s\S]*?debugId="shop-control\.subscription\.publisher"/,
   "Shop Control paid spotlight actions must keep routing to the subscription spotlight lane."
 );

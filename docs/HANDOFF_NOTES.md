@@ -71636,6 +71636,50 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Chidimma Free Spotlight publish reachability
+
+- Trigger:
+  - tester Chidimma sent a phone screenshot from the Free Spotlight publisher
+    showing: `GSN could not reach the server from this browser...` while on
+    the final `Publish spotlight` step.
+- Unabated truth:
+  - the message is a frontend network/call-path failure before the app receives
+    a meaningful backend response;
+  - media upload already used shared `frontend/src/lib/api.ts` helpers, but the
+    final Free Spotlight broadcast POST still bypassed that shared API client
+    through Shop Control's route-local `apiJson`;
+  - that split-brain path could make upload/preview appear fine while the final
+    publish step posts to the wrong origin in a mobile browser or Render-hosted
+    context.
+- Changed:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - Free Spotlight final publish now calls shared
+      `createMarketplaceBroadcast(...)` from `frontend/src/lib/api.ts`;
+    - preserved the existing payload contract:
+      `clan_id`, `shop_id`, `message`, `image_url`, `video_url`,
+      `priority_mode`, and `visibility_scope: "direct_communities"`;
+    - did not change backend Spotlight placement, quota, paid/repost
+      separation, or feed behavior.
+  - `frontend/tools/audit-community-shop-actions.mjs`
+    - added a cage requiring Free Spotlight publish to use the shared API
+      client;
+    - added a regression block against route-local
+      `apiJson<any>("/api/marketplace/broadcasts"...` for the final publish
+      POST.
+- Verification:
+  - Passed `npm run audit:community-shop-actions` from `frontend`.
+  - Passed `npm run audit:spotlight-system-feed` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - owner requested publish/deploy after this local checkpoint.
+  - frontend-only change; push `main`, then run `render-deploy.yml` with
+    `deploy_api=false` and record the GitHub Actions result in chat.
+  - this is frontend-only; a frontend Render deploy is required before
+    Chidimma can verify it on the live phone link.
+
 ### Follow-up same day - TrustSlip evidence PDF institutional shell
 
 - Trigger:
