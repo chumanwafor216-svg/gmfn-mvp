@@ -586,7 +586,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustPage.tsx",
-  /import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust\.refresh"[\s\S]*?debugId="trust\.export-csv"[\s\S]*?debugId="trust\.toggle-explainability"[\s\S]*?debugId="trust\.copy-explainability-json"[\s\S]*?debugId="trust\.apply-filters"[\s\S]*?debugId="trust\.clear-filters"/,
+  /import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust\.refresh"[\s\S]*?debugId="trust\.export-csv"[\s\S]*?debugId="trust\.toggle-explainability"[\s\S]*?debugId="trust\.copy-explainability-share-summary"[\s\S]*?debugId="trust\.apply-filters"[\s\S]*?debugId="trust\.clear-filters"/,
   "Trust page must use shared stable button primitives and shared CTA resolution for refresh, export, explainability, copy, filter, and top-nav actions."
 );
 

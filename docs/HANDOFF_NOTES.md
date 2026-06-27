@@ -74834,3 +74834,57 @@ GSN-branded invite composer and invite-entry continuity.
     `dep-d8vv0v6gvqtc73906eog`;
   - backend/API deploy was intentionally skipped because this slice changed
     frontend static PDF assets, documentation, and audit guards only.
+
+### Follow-up same day - Support and trust wording tightened
+
+- Trigger:
+  - owner continued after the `22 things GSN does` institutional mirror work;
+  - next safe cleanup target was the remaining deep support/trust surfaces where
+    wording could still sound like broad approval, settlement, or completed
+    money movement.
+- Unabated truth:
+  - this is presentation and guardrail cleanup only;
+  - no backend support, payout, paid/API verification, or protected trade-release
+    integration was added;
+  - backend enum/status names such as `approved` still exist internally where
+    they are part of API contracts, but visible copy now avoids making those
+    counts sound like whole-request approval.
+- Changed:
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+    - changed the hero title from `Loan fit suggestions` to
+      `Supporter fit suggestions`;
+    - changed the summary label from `Approved / sent` to `Recorded / sent`.
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+    - changed `Net disbursed` to `Net disbursed preview` so the workbench does
+      not imply money has moved.
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+    - changed copied and visible queue counts from `Approved` to
+      `Recorded support`;
+    - kept the underlying filter/status values unchanged for backend
+      compatibility.
+  - `frontend/src/pages/TrustTimelinePage.tsx`
+    - restored the audited visibility-bound share-copy limitation wording:
+      the share copy leaves out private contact details and complete internal
+      records.
+  - `frontend/src/pages/TrustPage.tsx`
+    - kept the copy action as a redacted share summary, not full Trust Why JSON.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added regression guards for Supporter Suggestions, Incoming Requests, and
+      Loan Workbench preview wording.
+  - `frontend/tools/audit-button-stability.mjs`
+    - updated the Trust page stable-action expectation to the privacy-safe
+      `trust.copy-explainability-share-summary` debug id.
+- Verification:
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:loans-actions` from `frontend`.
+  - Passed `npm run audit:button-stability` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run audit:static-pdf-assets` from `frontend`.
+  - Passed `npm run audit:capability-mirror` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Page-only source scan found no remaining `Loan fit suggestions`,
+    `Approved / sent`, or plain `Net disbursed` visible labels in the changed
+    support pages.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.

@@ -1199,7 +1199,7 @@ export default function LoanSuggestionsPage() {
                 lineHeight: 1.1,
               }}
             >
-              Loan fit suggestions for {memberName}
+              Supporter fit suggestions for {memberName}
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
@@ -1423,7 +1423,7 @@ export default function LoanSuggestionsPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Approved / sent</div>
+              <div style={sectionLabel()}>Recorded / sent</div>
               <div
                 style={{
                   marginTop: 8,

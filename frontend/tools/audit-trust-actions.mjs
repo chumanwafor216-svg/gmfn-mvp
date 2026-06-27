@@ -978,6 +978,18 @@ assertContains(
 
 assertContains(
   "src/pages/LoanWorkbenchPage.tsx",
+  /Net disbursed preview/,
+  "Loan Workbench must label net disbursed figures as preview figures."
+);
+
+assertNotContains(
+  "src/pages/LoanWorkbenchPage.tsx",
+  /Net disbursed(?! preview)/,
+  "Loan Workbench must not label preview figures as plain net disbursed."
+);
+
+assertContains(
+  "src/pages/LoanWorkbenchPage.tsx",
   /Candidate quality and support request state stay together here;[\s\S]*?fit rows do not choose a supporter or authorize release\./,
   "Loan Workbench supporter-fit lane must not let fit rows read as supporter choice or release authority."
 );
@@ -986,6 +998,30 @@ assertNotContains(
   "src/pages/LoanWorkbenchPage.tsx",
   /Confirm the item, then use the summary or supporter section\.|`Approved: \$\{String\(item\.approved\)\}`/,
   "Loan Workbench must not use broad confirmation or approved-count wording for fit/suggestion evidence."
+);
+
+assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /Supporter fit suggestions for \{memberName\}[\s\S]*?Recorded \/ sent/,
+  "Loan Suggestions must frame fit as supporter guidance and support-response counts, not broad loan approval."
+);
+
+assertNotContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /Loan fit suggestions|Approved \/ sent/,
+  "Loan Suggestions must not restore loan-fit or broad approved/sent visible labels."
+);
+
+assertContains(
+  "src/pages/GuarantorInboxPage.tsx",
+  /Recorded support: \$\{counts\.approved\}[\s\S]*?Recorded support<\/div>/,
+  "Incoming Requests must label approved-status counts as recorded support responses in visible and copied queue summaries."
+);
+
+assertNotContains(
+  "src/pages/GuarantorInboxPage.tsx",
+  /`Approved: \$\{counts\.approved\}`|<span style=\{badge\(false\)\}>Approved: \{counts\.approved\}<\/span>|<div style=\{sectionLabel\(\)\}>Approved<\/div>/,
+  "Incoming Requests must not make support-response counts sound like whole-request approval."
 );
 
 assertContains(

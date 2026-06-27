@@ -1772,7 +1772,7 @@ export default function LoanWorkbenchPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Net disbursed</div>
+              <div style={sectionLabel()}>Net disbursed preview</div>
               <div
                 style={{
                   marginTop: 8,

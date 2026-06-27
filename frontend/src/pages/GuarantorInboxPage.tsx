@@ -740,7 +740,7 @@ export default function GuarantorInboxPage() {
         status: filter,
         detailLines: [
           `Pending: ${counts.pending}`,
-          `Approved: ${counts.approved}`,
+          `Recorded support: ${counts.approved}`,
           `Declined: ${counts.declined}`,
           `Visible: ${counts.all}`,
           `Filter: ${filter}`,
@@ -987,7 +987,7 @@ export default function GuarantorInboxPage() {
               <span style={badge(true)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Pending: {counts.pending}</span>
-              <span style={badge(false)}>Approved: {counts.approved}</span>
+              <span style={badge(false)}>Recorded support: {counts.approved}</span>
               <span style={badge(false)}>Declined: {counts.declined}</span>
             </div>
 
@@ -1114,7 +1114,7 @@ export default function GuarantorInboxPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Approved</div>
+              <div style={sectionLabel()}>Recorded support</div>
               <div
                 style={{
                   marginTop: 8,
