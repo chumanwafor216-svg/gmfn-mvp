@@ -676,7 +676,7 @@ export default function ExposureAdminPage() {
 
     const incompleteQueue = incompleteLoans.slice(0, 4).map((row) => ({
       key: `incomplete-${firstTruthy(row.id, row.loan_id, Math.random())}`,
-      title: `Incomplete loan ${firstTruthy(row.loan_id, row.id, "")}`.trim(),
+      title: `Incomplete support ${firstTruthy(row.loan_id, row.id, "")}`.trim(),
       detail: [
         `Support decisions ${toNum(row.approved_count)} / ${toNum(row.required_count)}`,
         row.required_gap != null ? `Gap ${toNum(row.required_gap)}` : "",
@@ -687,7 +687,7 @@ export default function ExposureAdminPage() {
         .filter(Boolean)
         .join(" | "),
       route: routes.incompleteLoans,
-      routeLabel: "Open Incomplete Loans",
+      routeLabel: "Open Incomplete Support",
     }));
 
     const bankQueue = bankUnmatched.slice(0, 4).map((row) => ({
@@ -964,7 +964,7 @@ export default function ExposureAdminPage() {
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              {sectionLabelWithIcon("document", "Incomplete loans", "red")}
+              {sectionLabelWithIcon("document", "Incomplete support", "red")}
               <div
                 style={{
                   marginTop: 8,
@@ -1083,7 +1083,7 @@ export default function ExposureAdminPage() {
                 Queue pressure
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Pressure also rises when demand, bank, pool, or loan queues stack up.
+                Pressure also rises when demand, bank, pool, or support queues stack up.
               </div>
 
               <div

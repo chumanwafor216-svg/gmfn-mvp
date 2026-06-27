@@ -162,7 +162,7 @@ assertContains(
 
 assertNotContains(
   "src/pages/ExposureAdminPage.tsx",
-  /locked money|Pending pool confirmation|pool confirmation|Clean bank events|`Approved \$\{toNum\(row\.approved_count\)\}/,
+  /locked money|Pending pool confirmation|pool confirmation|Clean bank events|Incomplete loan|Incomplete loans|Open Incomplete Loans|loan queues stack up|`Approved \$\{toNum\(row\.approved_count\)\}/,
   "Exposure Admin must not use broad money, confirmation, or approval wording for exposure readings."
 );
 
