@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 68;
-const expectedNativeFieldCount = 27;
+const expectedStableActionCount = 72;
+const expectedNativeFieldCount = 36;
 const expectedSourceBreakdown = {
   front: 12,
-  body: 56,
+  body: 60,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -385,7 +385,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open trusted trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trusted Trade[\s\S]*?Demand Box[\s\S]*?Public Shops/,
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trusted Trade[\s\S]*?Demand Box[\s\S]*?Public Shops/,
   "Marketplace Trade & Shops grouped card must open the members/shops trade lane with community-bound wording."
 );
 

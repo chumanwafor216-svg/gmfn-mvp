@@ -1,3 +1,55 @@
+## 2026-06-27 - Dashboard and Marketplace active copy moved to evidence-backed wording
+
+Owner request:
+- Continue institutional cleanup and branding alignment across screenshotable
+  app surfaces, especially where trust/trade wording can overclaim.
+
+Correction completed locally:
+- `frontend/src/pages/DashboardPage.tsx`
+  - changed Marketplace-use detail from `trusted trade` to
+    `evidence-backed trade`.
+  - changed the Trust Passport helper from `Accepted and trusted where it
+    matters` to `Accepted with evidence where it matters`.
+  - changed Spotlight trust-band fallback labels from `Trusted member` to
+    `Member evidence`.
+- `frontend/src/pages/MarketplacePage.tsx`
+  - changed the Trade & Shops grouped-card aria label from `Open trusted trade,
+    members and visible shops` to `Open evidence-backed trade, members and
+    visible shops`.
+- `frontend/tools/audit-dashboard-actions.mjs`
+  - updated the Dashboard reference-card guard to require the evidence-backed
+    helper text.
+- `frontend/tools/audit-marketplace-button-inventory.mjs`
+  - updated the Trade & Shops aria-label expectation.
+  - accepted the current Marketplace inventory baseline reported by the audit:
+    72 stable source actions and 36 native fields, split 12 front / 60 body.
+- `frontend/tools/audit-marketplace-trusted-trade-lane.mjs`
+  - updated the Trade & Shops aria-label expectation.
+
+Verification:
+- `npm --prefix frontend run audit:dashboard-actions`
+- `npm --prefix frontend run audit:marketplace-button-inventory`
+- `npm --prefix frontend run audit:marketplace-trusted-trade-lane`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This is copy and audit-baseline cleanup only. It does not change Dashboard or
+  Marketplace routes, action handlers, trust scoring, trade protection, escrow,
+  or release authority.
+- The Marketplace inventory baseline was already drifted before this wording
+  slice exposed it. The audit now cages the current source inventory, but this
+  is not the same as a physical-phone review of all 72 action roots and 36
+  fields.
+- The broader product/capability term `Trusted Trade` still exists as a lane
+  name. This slice removes overclaiming helper/fallback copy around it; a
+  full lane-renaming decision should be handled separately because docs,
+  capability naming, audits, and user mental model all refer to that lane.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - TrustSlip and community-evidence docs aligned with evidence wording
 
 Owner request:

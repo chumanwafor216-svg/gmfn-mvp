@@ -2358,7 +2358,7 @@ function buildMostUsedAppFallback(params: {
     marketplace: {
       key: "marketplace",
       label: "Your Marketplace",
-      detail: "See goods, services, and trusted trade around you.",
+      detail: "See goods, services, and evidence-backed trade around you.",
       to: DASHBOARD_TARGETS.MARKETPLACE,
       count: 0,
       lastOpenedAt: "",
@@ -7320,7 +7320,7 @@ export default function DashboardPage() {
                   ? "Verifiable identity you can see"
                   : item.label === "Portable"
                   ? "Your identity, anytime, anywhere"
-                  : "Accepted and trusted where it matters";
+                  : "Accepted with evidence where it matters";
 
               return (
                 <StableButton
@@ -9320,7 +9320,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <span style={badge(true)}>
-                      {safeStr(activeSpotlight.trust_band || "Trusted member")}
+                      {safeStr(activeSpotlight.trust_band || "Member evidence")}
                     </span>
                     <span
                       style={{
@@ -9866,7 +9866,7 @@ export default function DashboardPage() {
                       backdropFilter: "blur(10px)",
                     }}
                   >
-                    {safeStr(activeSpotlight!.trust_band || "Trusted member")}
+                    {safeStr(activeSpotlight!.trust_band || "Member evidence")}
                   </span>
 
                   <span
@@ -10086,7 +10086,7 @@ export default function DashboardPage() {
                       }}
                     >
                       <span style={badge(true)}>
-                        {safeStr(activeSpotlight.trust_band || "Trusted member")}
+                        {safeStr(activeSpotlight.trust_band || "Member evidence")}
                       </span>
                       <span
                         style={{

@@ -7519,7 +7519,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.members"
-              aria-label="Open trusted trade, members and visible shops"
+              aria-label="Open evidence-backed trade, members and visible shops"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
