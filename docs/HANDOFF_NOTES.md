@@ -75329,3 +75329,55 @@ GSN-branded invite composer and invite-entry continuity.
   - protected-trade backend spine was pushed to `origin/main` as `8b0ef954`;
   - GitHub `Backend Tests` passed for push run `28296256439`;
   - no Render deploy has been requested or confirmed for this slice.
+
+### Follow-up same day - Protected Trade surfaced in Marketplace
+
+- Trigger:
+  - after the backend protected-trade spine landed, owner asked to continue
+    materializing engines that already exist but were not visible to users.
+  - `docs/SCREEN_SPECS.md` places trusted commerce inside Marketplace's
+    `Trusted Trade` lane, so this slice used the existing lane instead of
+    inventing a new screen.
+- Unabated truth:
+  - this is the first customer-facing protected-trade creation/view surface;
+  - it lets a signed-in marketplace member start a protected trade record with
+    the other side, item/service, amount/currency, and basic terms;
+  - it shows recent protected-trade records in the lane;
+  - it does not yet expose payment-claim, release, receipt, dispute, or evidence
+    attachment event controls in the UI, even though the backend supports those
+    controlled events;
+  - it is still not escrow, not money custody, not automatic payout, not a bank
+    guarantee, and not a delivery guarantee.
+- Changed:
+  - `frontend/src/lib/api.ts`
+    - added typed protected-trade API helpers for create, list, and append
+      events.
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - imported the protected-trade helpers;
+    - loads the signed-in user's recent protected-trade records and filters
+      them to the selected community;
+    - added a compact `Protected Trade Record` card inside the existing
+      `Trusted Trade` lane;
+    - added buyer/seller side, counterpart member, item/service, amount,
+      currency, and basic-terms fields;
+    - validates the real blockers before creation and speaks back through the
+      existing Marketplace notice surface;
+    - keeps release/payment lifecycle buttons out of this first UI pass to avoid
+      compressing a serious trade-release process into a casual button row.
+  - `frontend/tools/audit-marketplace-trusted-trade-lane.mjs`
+    - added source guards for the protected-trade card, field touch props,
+      create action, refresh action, and non-escrow copy.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-trusted-trade-lane`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+  - `git diff --check` returned clean, aside from line-ending warnings.
+  - Browser visual check was not available because the in-app browser returned
+    `Browser is not available: iab`.
+  - Local Vite checks could not bind on `5173` or `5174`; both ports reported
+    in-use while refusing HTTP, so no browser-render claim is made.
+- Deployment state:
+  - this Marketplace protected-trade UI slice is local only until committed and
+    pushed;
+  - no Render deploy has been requested or confirmed for this slice.

@@ -417,6 +417,15 @@ function buildQuery(params: Record<string, any> | undefined | null): string {
   return q.length ? `?${q.join("&")}` : "";
 }
 
+function rowsFromApi<T = any>(input: any): T[] {
+  if (Array.isArray(input)) return input as T[];
+  if (Array.isArray(input?.items)) return input.items as T[];
+  if (Array.isArray(input?.data?.items)) return input.data.items as T[];
+  if (Array.isArray(input?.results)) return input.results as T[];
+  if (Array.isArray(input?.rows)) return input.rows as T[];
+  return [];
+}
+
 function buildMarketplaceReadOptions(params?: {
   clan_id?: number | null;
   header_clan_id?: number | null;
@@ -3477,6 +3486,110 @@ export async function getMarketplaceProducts(params?: {
     "GET",
     undefined,
     options
+  );
+}
+
+export type ProtectedTradeCreatePayload = {
+  clan_id?: number | null;
+  participant_role?: "seller" | "buyer";
+  seller_user_id?: number | null;
+  buyer_user_id?: number | null;
+  shop_id?: number | null;
+  product_id?: number | null;
+  vault_access_link_id?: number | null;
+  trust_slip_code?: string | null;
+  expected_payment_id?: number | null;
+  shipment_pack_id?: string | null;
+  evidence_pack_id?: string | null;
+  item_title?: string | null;
+  terms_summary?: string | null;
+  amount?: string | number | null;
+  currency?: string | null;
+  meta?: Record<string, any> | null;
+};
+
+export type ProtectedTradeEventPayload = {
+  event_type: string;
+  note?: string | null;
+  expected_payment_id?: number | null;
+  shipment_pack_id?: string | null;
+  evidence_pack_id?: string | null;
+  trust_slip_code?: string | null;
+  meta?: Record<string, any> | null;
+};
+
+export type ProtectedTradeEventRecord = {
+  id?: number;
+  trade_id?: number;
+  event_type?: string | null;
+  actor_user_id?: number | null;
+  status_from?: string | null;
+  status_to?: string | null;
+  trust_event_id?: number | null;
+  note?: string | null;
+  meta?: Record<string, any> | null;
+  created_at?: string | null;
+};
+
+export type ProtectedTradeRecord = {
+  id?: number;
+  trade_code?: string | null;
+  clan_id?: number | null;
+  creator_user_id?: number | null;
+  seller_user_id?: number | null;
+  buyer_user_id?: number | null;
+  shop_id?: number | null;
+  product_id?: number | null;
+  vault_access_link_id?: number | null;
+  trust_slip_code?: string | null;
+  expected_payment_id?: number | null;
+  shipment_pack_id?: string | null;
+  evidence_pack_id?: string | null;
+  item_title?: string | null;
+  terms_summary?: string | null;
+  amount?: string | number | null;
+  currency?: string | null;
+  status?: string | null;
+  payment_status?: string | null;
+  release_status?: string | null;
+  receipt_status?: string | null;
+  dispute_status?: string | null;
+  meta?: Record<string, any> | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  closed_at?: string | null;
+  events?: ProtectedTradeEventRecord[];
+  boundary_note?: string | null;
+};
+
+export async function createProtectedTrade(
+  payload: ProtectedTradeCreatePayload
+): Promise<ProtectedTradeRecord> {
+  return httpJson("/protected-trades", "POST", payload);
+}
+
+export async function listProtectedTrades(params?: {
+  status?: string | null;
+  limit?: number;
+}): Promise<ProtectedTradeRecord[]> {
+  const out = await httpJson(
+    `/protected-trades${buildQuery({
+      status: params?.status ?? undefined,
+      limit: params?.limit ?? 20,
+    })}`,
+    "GET"
+  );
+  return Array.isArray(out) ? out : rowsFromApi(out);
+}
+
+export async function addProtectedTradeEvent(
+  tradeId: number,
+  payload: ProtectedTradeEventPayload
+): Promise<ProtectedTradeEventRecord> {
+  return httpJson(
+    `/protected-trades/${encodeURIComponent(String(tradeId))}/events`,
+    "POST",
+    payload
   );
 }
 

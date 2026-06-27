@@ -44,6 +44,7 @@ import {
   createSpotlightPaymentInstruction,
   createClanInvite,
   createLoanRequest,
+  createProtectedTrade,
   getCommunityPackageStatus,
   getMarketplaceRepostTargetSuggestions,
   getMarketplaceShopSpotlightStatus,
@@ -62,6 +63,7 @@ import {
   getSelectedClanId,
   getStoredGmfnId,
   listMyPaymentInstructionExpectedPayments,
+  listProtectedTrades,
   recordRoscaCyclePayout,
   setSelectedClanId,
   listClanMembers,
@@ -69,6 +71,7 @@ import {
   listMyLoans,
   safeCopy,
   type ClanInviteRelationshipEvidencePayload,
+  type ProtectedTradeRecord,
 } from "../lib/api";
 import {
   communityPayInReady,
@@ -217,6 +220,15 @@ type PaidRepostHandoff = {
 };
 
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
+
+type ProtectedTradeDraft = {
+  role: "seller" | "buyer";
+  counterpartUserId: string;
+  itemTitle: string;
+  amount: string;
+  currency: string;
+  termsSummary: string;
+};
 
 type ExpectedPaymentRecord = {
   id?: number | string | null;
@@ -3672,6 +3684,20 @@ export default function MarketplacePage() {
   const routeRepostSelectionTokenRef = useRef("");
   const repostTargetSuggestionRequestRef = useRef(0);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
+  const [protectedTrades, setProtectedTrades] = useState<ProtectedTradeRecord[]>(
+    []
+  );
+  const [protectedTradeDraft, setProtectedTradeDraft] =
+    useState<ProtectedTradeDraft>({
+      role: "seller",
+      counterpartUserId: "",
+      itemTitle: "",
+      amount: "",
+      currency: "NGN",
+      termsSummary: "",
+    });
+  const [creatingProtectedTrade, setCreatingProtectedTrade] = useState(false);
+  const [loadingProtectedTrades, setLoadingProtectedTrades] = useState(false);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
   );
@@ -4557,6 +4583,7 @@ export default function MarketplacePage() {
         trustRes,
         packageStatusRes,
         roscaCyclesRes,
+        protectedTradesRes,
       ] =
         await Promise.all([
           currentCommunityId
@@ -4610,6 +4637,9 @@ export default function MarketplacePage() {
                 clan_id: currentCommunityId,
               }).catch(() => null)
             : Promise.resolve(null),
+          currentCommunityId
+            ? listProtectedTrades({ limit: 30 }).catch(() => [])
+            : Promise.resolve([]),
         ]);
 
             const memberRows = rowsOf<ClanMember>(membersRes);
@@ -4629,6 +4659,15 @@ export default function MarketplacePage() {
         return loanClanId <= 0 || loanClanId === currentCommunityId;
       });
 
+      const filteredProtectedTrades = rowsOf<ProtectedTradeRecord>(
+        protectedTradesRes
+      )
+        .filter((item) => {
+          const tradeClanId = Number(item?.clan_id || 0);
+          return tradeClanId <= 0 || tradeClanId === currentCommunityId;
+        })
+        .slice(0, 8);
+
       setMe(meRes || null);
       setSelectedCommunity(resolvedCommunity);
       setMembers(memberRows);
@@ -4638,6 +4677,7 @@ export default function MarketplacePage() {
       setMarketplaceTrust(trustRes || null);
       setInviteLink(getInviteUrl(inviteRes));
       setLoans(filteredLoans);
+      setProtectedTrades(filteredProtectedTrades);
       setCommunityPackageItems(
         Array.isArray(packageStatusRes?.packages)
           ? (packageStatusRes.packages as CommunityPackageStatusItem[])
@@ -5506,6 +5546,21 @@ export default function MarketplacePage() {
     return rows;
   }, [activeCommunityId, members, shops]);
 
+  const currentUserId = positiveNumber(
+    firstDefined(me?.id, me?.user_id, me?.account_id)
+  );
+
+  const protectedTradeCounterpartOptions = useMemo(() => {
+    return memberRows
+      .filter((row) => positiveNumber(row.userId) > 0)
+      .filter((row) => !currentUserId || row.userId !== currentUserId)
+      .slice(0, 24);
+  }, [currentUserId, memberRows]);
+
+  const recentProtectedTrades = useMemo(() => {
+    return protectedTrades.slice(0, isCompact ? 3 : 5);
+  }, [isCompact, protectedTrades]);
+
   const roscaSelectableMembers = useMemo(() => {
     return memberRows
       .filter((row) => positiveNumber(row.userId) > 0)
@@ -5533,6 +5588,101 @@ export default function MarketplacePage() {
       prev.filter((userId) => availableIds.has(userId))
     );
   }, [roscaSelectableMembers]);
+
+  async function refreshProtectedTrades() {
+    if (!activeCommunityId) return;
+    setLoadingProtectedTrades(true);
+    try {
+      const rows = await listProtectedTrades({ limit: 30 });
+      setProtectedTrades(
+        rows
+          .filter((item) => {
+            const tradeClanId = Number(item?.clan_id || 0);
+            return tradeClanId <= 0 || tradeClanId === activeCommunityId;
+          })
+          .slice(0, 8)
+      );
+      showNotice("success", "Protected trade records refreshed.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Protected trade records could not load."
+      );
+    } finally {
+      setLoadingProtectedTrades(false);
+    }
+  }
+
+  async function handleCreateProtectedTrade(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeMarketplaceButtonEvent(event);
+
+    if (!activeCommunityId) {
+      showNotice("error", "Choose a community before starting protected trade.");
+      return;
+    }
+
+    const counterpartUserId = positiveNumber(
+      protectedTradeDraft.counterpartUserId
+    );
+    if (!counterpartUserId) {
+      showNotice("error", "Choose the buyer or seller on the other side.");
+      return;
+    }
+
+    const itemTitle = safeStr(protectedTradeDraft.itemTitle);
+    if (!itemTitle) {
+      showNotice("error", "Name the goods or service before recording trade.");
+      return;
+    }
+
+    const termsSummary = safeStr(protectedTradeDraft.termsSummary);
+    if (!termsSummary) {
+      showNotice(
+        "error",
+        "Write the basic terms first so the record has useful evidence."
+      );
+      return;
+    }
+
+    setCreatingProtectedTrade(true);
+    try {
+      const isSeller = protectedTradeDraft.role === "seller";
+      const created = await createProtectedTrade({
+        clan_id: activeCommunityId,
+        participant_role: protectedTradeDraft.role,
+        seller_user_id: isSeller ? undefined : counterpartUserId,
+        buyer_user_id: isSeller ? counterpartUserId : undefined,
+        item_title: itemTitle,
+        terms_summary: termsSummary,
+        amount: safeStr(protectedTradeDraft.amount) || undefined,
+        currency: safeStr(protectedTradeDraft.currency || "NGN").toUpperCase(),
+        meta: {
+          source: "marketplace_trusted_trade_lane",
+          community_name: communityName(selectedCommunity),
+          boundary:
+            "Non-custodial record only. Not escrow, not automatic payout, not a delivery guarantee.",
+        },
+      });
+
+      setProtectedTrades((prev) => [created, ...prev].slice(0, 8));
+      setProtectedTradeDraft((prev) => ({
+        ...prev,
+        itemTitle: "",
+        amount: "",
+        termsSummary: "",
+      }));
+      showNotice("success", "Protected trade record started.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Protected trade record could not be created."
+      );
+    } finally {
+      setCreatingProtectedTrade(false);
+    }
+  }
 
   const activeLoanCount = useMemo(() => {
     return loans.filter((item) => {
@@ -10358,6 +10508,324 @@ export default function MarketplacePage() {
             >
               Demand Box
             </StableButton>
+          </div>
+        ) : null}
+
+        {sectionsOpen.members ? (
+          <div
+            style={{
+              marginTop: 12,
+              ...innerCard("#F8FBFF"),
+              borderColor: "rgba(13,95,168,0.12)",
+              display: "grid",
+              gap: 12,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "46px minmax(0, 1fr) 150px",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  ...marketplaceOsIconStyle(
+                    "linear-gradient(180deg, #244969 0%, #061827 100%)",
+                    true
+                  ),
+                  display: isCompact ? "none" : "inline-flex",
+                }}
+              >
+                <MarketplaceGlyph name="ledger" size={24} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel()}>Protected Trade Record</div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    ...helperText(),
+                    fontSize: 13,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Record the item, other side, and basic terms before goods,
+                  service, or money move. This creates evidence, not escrow.
+                </div>
+              </div>
+              <span
+                style={{
+                  ...stableStatusPillStyle(protectedTrades.length > 0),
+                  justifySelf: isCompact ? "start" : "end",
+                }}
+              >
+                {protectedTrades.length
+                  ? `${protectedTrades.length} recent`
+                  : "No records yet"}
+              </span>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "0.7fr 1fr 1.2fr 0.7fr 0.55fr",
+                gap: 10,
+                alignItems: "end",
+              }}
+            >
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Your side
+                </div>
+                <select
+                  {...marketplaceFieldTouchProps("marketplace.protected-trade.role")}
+                  value={protectedTradeDraft.role}
+                  onChange={(event) =>
+                    setProtectedTradeDraft((prev) => ({
+                      ...prev,
+                      role: event.target.value === "buyer" ? "buyer" : "seller",
+                    }))
+                  }
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                >
+                  <option value="seller">Seller</option>
+                  <option value="buyer">Buyer</option>
+                </select>
+              </label>
+
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Other side
+                </div>
+                <select
+                  {...marketplaceFieldTouchProps("marketplace.protected-trade.counterpart")}
+                  value={protectedTradeDraft.counterpartUserId}
+                  onChange={(event) =>
+                    setProtectedTradeDraft((prev) => ({
+                      ...prev,
+                      counterpartUserId: event.target.value,
+                    }))
+                  }
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                >
+                  <option value="">Choose member</option>
+                  {protectedTradeCounterpartOptions.map((row) => (
+                    <option key={row.userId} value={row.userId}>
+                      {row.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Item or service
+                </div>
+                <input
+                  {...marketplaceFieldTouchProps("marketplace.protected-trade.item")}
+                  value={protectedTradeDraft.itemTitle}
+                  onChange={(event) =>
+                    setProtectedTradeDraft((prev) => ({
+                      ...prev,
+                      itemTitle: event.target.value,
+                    }))
+                  }
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                  placeholder="Example: two bags of rice"
+                  maxLength={160}
+                />
+              </label>
+
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Amount
+                </div>
+                <input
+                  {...marketplaceFieldTouchProps("marketplace.protected-trade.amount")}
+                  value={protectedTradeDraft.amount}
+                  onChange={(event) =>
+                    setProtectedTradeDraft((prev) => ({
+                      ...prev,
+                      amount: event.target.value,
+                    }))
+                  }
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                  inputMode="decimal"
+                  placeholder="0.00"
+                />
+              </label>
+
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Currency
+                </div>
+                <input
+                  {...marketplaceFieldTouchProps("marketplace.protected-trade.currency")}
+                  value={protectedTradeDraft.currency}
+                  onChange={(event) =>
+                    setProtectedTradeDraft((prev) => ({
+                      ...prev,
+                      currency: event.target.value.toUpperCase(),
+                    }))
+                  }
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                  maxLength={8}
+                  placeholder="NGN"
+                />
+              </label>
+            </div>
+
+            <label style={{ display: "block" }}>
+              <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                Basic terms
+              </div>
+              <textarea
+                {...marketplaceFieldTouchProps("marketplace.protected-trade.terms")}
+                value={protectedTradeDraft.termsSummary}
+                onChange={(event) =>
+                  setProtectedTradeDraft((prev) => ({
+                    ...prev,
+                    termsSummary: event.target.value,
+                  }))
+                }
+                style={{ ...textAreaStyle(), marginTop: 6, minHeight: 78 }}
+                placeholder="Example: buyer pays first; seller releases after payment claim is reviewed."
+                maxLength={4000}
+              />
+            </label>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                gap: 8,
+              }}
+            >
+              <StableButton
+                debugId="marketplace.protected-trade.create"
+                type="button"
+                busy={creatingProtectedTrade}
+                busyLabel="Starting"
+                onClick={(event) => void handleCreateProtectedTrade(event)}
+                stableHeight={52}
+                style={marketplaceInlineActionStyle("primary", false, isCompact)}
+              >
+                Start record
+              </StableButton>
+              <StableButton
+                debugId="marketplace.protected-trade.refresh"
+                type="button"
+                busy={loadingProtectedTrades}
+                busyLabel="Refreshing"
+                onClick={(event) => {
+                  consumeMarketplaceButtonEvent(event);
+                  void refreshProtectedTrades();
+                }}
+                stableHeight={52}
+                style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+              >
+                Refresh records
+              </StableButton>
+            </div>
+
+            {recentProtectedTrades.length ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {recentProtectedTrades.map((trade) => (
+                  <div
+                    key={trade.id || trade.trade_code || trade.item_title}
+                    style={{
+                      borderRadius: 14,
+                      border: "1px solid rgba(16,37,59,0.08)",
+                      background: "#FFFFFF",
+                      padding: isCompact ? 10 : 12,
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "1fr"
+                        : "minmax(0, 1fr) 120px",
+                      gap: 8,
+                      alignItems: "center",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontSize: isCompact ? 14 : 15,
+                          fontWeight: 950,
+                          lineHeight: 1.18,
+                          overflow: "hidden",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflowWrap: "break-word",
+                        }}
+                      >
+                        {safeStr(trade.item_title) || "Protected trade record"}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 6,
+                          minWidth: 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            ...stableStatusPillStyle(Boolean(trade.trade_code)),
+                            height: "auto",
+                            minHeight: 28,
+                            whiteSpace: "normal",
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {safeStr(trade.trade_code) || "Code pending"}
+                        </span>
+                        <span style={stableStatusPillStyle(Boolean(trade.status))}>
+                          {safeStr(trade.status || "draft").replace(/_/g, " ")}
+                        </span>
+                        <span style={stableStatusPillStyle(Boolean(trade.release_status))}>
+                          {safeStr(trade.release_status || "not requested").replace(/_/g, " ")}
+                        </span>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        color: "#173750",
+                        fontSize: isCompact ? 13 : 14,
+                        fontWeight: 950,
+                        justifySelf: isCompact ? "start" : "end",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {safeStr(trade.amount)
+                        ? `${safeStr(trade.currency || "NGN")} ${safeStr(trade.amount)}`
+                        : "No amount"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                style={{
+                  ...innerCard("#FFFFFF"),
+                  padding: isCompact ? 10 : 12,
+                  color: "#41556B",
+                  fontSize: isCompact ? 12 : 13,
+                  fontWeight: 800,
+                  lineHeight: 1.35,
+                }}
+              >
+                Start with one serious trade record. It will sit beside the
+                member, shop, and evidence history for this community.
+              </div>
+            )}
           </div>
         ) : null}
 
