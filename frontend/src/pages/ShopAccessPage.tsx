@@ -5,6 +5,12 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { StableCtaLink } from "../components/StableButton";
 import {
+  TrustPaperAuthorityStrip,
+  TrustPaperSecurityFooter,
+  TrustPaperSecurityNote,
+  TrustPaperWatermark,
+} from "../components/TrustPaperMarks";
+import {
   getVaultShopAccessView,
   recordVaultShopAccessOpen,
   type VaultShopAccessProduct,
@@ -38,6 +44,7 @@ function pageShell(): React.CSSProperties {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
+    position: "relative",
     borderRadius: 24,
     border: "1px solid rgba(17,37,58,0.11)",
     background: bg,
@@ -445,6 +452,13 @@ export default function ShopAccessPage() {
             "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
           )}
         >
+          <TrustPaperWatermark
+            name="lock"
+            color="#F6D77A"
+            size={230}
+            opacity={0.055}
+            style={{ right: -42, bottom: -48 }}
+          />
           <div style={sectionLabel()}>
             {shopAccessIconText("vault", "Vault access", 22)}
           </div>
@@ -515,6 +529,15 @@ export default function ShopAccessPage() {
               {shopAccessIconText("home", "Return to entry")}
             </StableCtaLink>
           </div>
+
+          <TrustPaperAuthorityStrip
+            title="GSN Private Vault Access Paper"
+            reference={firstTruthy(view?.gmfn_id, view?.shop_name, "Private vault access")}
+            classification="Restricted access evidence"
+            compact
+            tone="dark"
+            style={{ marginTop: 16 }}
+          />
         </section>
 
         <section style={pageCard("#FFFFFF")}>
@@ -631,6 +654,12 @@ export default function ShopAccessPage() {
             These details show how this private access works. They explain what is allowed here,
             but they do not promise impossible device-wide blocking.
           </div>
+          <div style={{ marginTop: 14 }}>
+            <TrustPaperSecurityNote
+              reference={firstTruthy(view?.gmfn_id, view?.shop_name, "private vault access")}
+              compact
+            />
+          </div>
           <div
             style={{
               marginTop: 14,
@@ -686,6 +715,7 @@ export default function ShopAccessPage() {
               </div>
             </div>
           </div>
+          <TrustPaperSecurityFooter text="Global Support Network (GSN) private access record" />
         </section>
 
         <section style={pageCard("#FFFFFF")}>

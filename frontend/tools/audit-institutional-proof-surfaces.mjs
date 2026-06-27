@@ -50,6 +50,7 @@ const files = {
   shopAssets: "frontend/src/pages/ShopAssetsPage.tsx",
   communityShopControl: "frontend/src/components/CommunityShopControlPanel.tsx",
   shopControl: "frontend/src/pages/ShopControlPage.tsx",
+  shopAccess: "frontend/src/pages/ShopAccessPage.tsx",
   publicShop: "frontend/src/pages/ShopGalleryPage.tsx",
   vaultControl: "frontend/src/pages/VaultControlPage.tsx",
   paymentInstructions: "frontend/src/pages/PaymentInstructionsPage.tsx",
@@ -994,6 +995,16 @@ assertContains(
   "shopControl",
   /buildGsnVaultInvitePackage[\s\S]*?function buildVaultViewingLinkPackage[\s\S]*?Vault viewing package/,
   "Shop Control private Vault viewing links must use the branded GSN Vault invitation package."
+);
+assertContains(
+  "shopAccess",
+  /import \{[\s\S]*?TrustPaperAuthorityStrip[\s\S]*?TrustPaperSecurityFooter[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperWatermark[\s\S]*?\} from "\.\.\/components\/TrustPaperMarks";/,
+  "Private Vault access visitor page must import shared GSN paper authority marks."
+);
+assertContains(
+  "shopAccess",
+  /TrustPaperWatermark[\s\S]*?TrustPaperAuthorityStrip[\s\S]*?title="GSN Private Vault Access Paper"[\s\S]*?classification="Restricted access evidence"[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter text="Global Support Network \(GSN\) private access record"/,
+  "Private Vault access visitor page must carry GSN authority, watermark, screenshot security note, and institutional footer."
 );
 assertContains(
   "vaultControl",

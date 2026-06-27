@@ -75199,3 +75199,41 @@ GSN-branded invite composer and invite-entry continuity.
     `origin/main`;
   - this guide-title alignment is pending until the commit containing this note
     is pushed to `origin/main`.
+
+### Follow-up same day - Private Vault access paper marked
+
+- Trigger:
+  - continuing from the institutional evidence surface inventory identified
+    `/vault/:token` / `ShopAccessPage.tsx` as a visitor-facing private-access
+    surface that still looked like a polished app page rather than a GSN
+    restricted-access paper.
+- Unabated truth:
+  - this is a screenshot/institutional presentation upgrade only;
+  - the full private vault token is not printed as the authority-strip
+    reference, to avoid making screenshots easier to redistribute;
+  - no live verification, paid/API verification, payout, escrow, protected
+    trade-release capability, or new vault permission behavior was added.
+- Changed:
+  - `frontend/src/pages/ShopAccessPage.tsx`
+    - imported the shared GSN paper mark components;
+    - added a faint restricted-access watermark to the hero;
+    - added `GSN Private Vault Access Paper` authority marks with restricted
+      access classification;
+    - added screenshot security note and institutional footer to the access
+      details section;
+    - made the page-local card helper a positioned container so the watermark
+      stays inside the vault card.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added `ShopAccessPage.tsx` to the proof-surface file map;
+    - added guards requiring shared authority, watermark, screenshot security,
+      and footer marks on the visitor-facing Vault access page.
+- Verification:
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+- Deployment state:
+  - public guide title alignment commit `fe608d72` was pushed to `origin/main`;
+  - this private Vault access paper treatment is pending until the commit
+    containing this note is pushed to `origin/main`.
