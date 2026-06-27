@@ -4,7 +4,7 @@ Owner request:
 - Continue the supporter/support wording cleanup and keep Render updated
   truthfully.
 
-Local correction:
+Published correction:
 - `frontend/src/lib/guidance.ts`
   - shared Action Inbox guidance now says a borrower is waiting for a support
     decision instead of a decision on a pledge.
@@ -23,10 +23,17 @@ Verification state:
   frontend files.
 
 Truth / remaining risk:
+- Committed and pushed `main` at
+  `1a2c1c21db837defadd40c3244e9711f38c19ea7`
+  (`Update shared support decision guidance`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28285029128` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vpbsjsq97s738kv2sg`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
 - This is a frontend display/audit-only slice. It does not rename internal
   guidance function names, debug ids, routes, or API fields that still carry
   legacy `guarantor` / `pledge` terms for compatibility.
-- Pending publish/deploy evidence at the time this note was written.
 
 ## 2026-06-27 - Support amount wording cleanup
 
