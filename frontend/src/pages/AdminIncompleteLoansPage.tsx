@@ -458,7 +458,7 @@ export default function AdminIncompleteLoansPage() {
                       debugId={`admin-incomplete-loans.loan.${loanId}.copy`}
                       style={adminIncompleteLoanActionStyle("secondary")}
                     >
-                      {actionText("copy", "Copy loan")}
+                      {actionText("copy", "Copy support")}
                     </SecondaryButton>
                     <StableCtaLink
                       to={routeTarget(
@@ -472,7 +472,7 @@ export default function AdminIncompleteLoansPage() {
                       stableHeight={52}
                       style={adminIncompleteLoanActionStyle("primary")}
                     >
-                      {actionText("document", "Loan Summary")}
+                      {actionText("document", "Support Summary")}
                     </StableCtaLink>
                   </div>
                 </div>

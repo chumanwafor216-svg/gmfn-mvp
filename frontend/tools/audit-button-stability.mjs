@@ -1078,13 +1078,13 @@ assertContains(
 
 assertContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
-  /function adminIncompleteLoanActionStyle\([\s\S]*?minWidth: 142[\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(148px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="admin-incomplete-loans\.copy-queue"[\s\S]*?actionText\("copy", "Copy queue"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.system-operations"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("briefcase", "Operations"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.bank-console"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("bank", "Bank Console"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.command-center"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("home", "Command Center"\)[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(142px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.copy`\}[\s\S]*?actionText\("copy", "Copy loan"\)[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.summary`\}[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("document", "Loan Summary"\)/,
+  /function adminIncompleteLoanActionStyle\([\s\S]*?minWidth: 142[\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(148px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="admin-incomplete-loans\.copy-queue"[\s\S]*?actionText\("copy", "Copy queue"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.system-operations"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("briefcase", "Operations"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.bank-console"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("bank", "Bank Console"\)[\s\S]*?debugId="admin-incomplete-loans\.route\.command-center"[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("home", "Command Center"\)[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(142px, 1fr\)\)"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.copy`\}[\s\S]*?actionText\("copy", "Copy support"\)[\s\S]*?debugId=\{`admin-incomplete-loans\.loan\.\$\{loanId\}\.summary`\}[\s\S]*?stableHeight=\{52\}[\s\S]*?actionText\("document", "Support Summary"\)/,
   "Admin Incomplete Loans controls must keep compact 3D icon-led labels, fixed 52px heights, full-width grid rows, and no-wrap geometry."
 );
 
 assertNotContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
-  /Copy queue snapshot|Open System Operations|Open Bank Console|Back to Command Center|Copy loan snapshot|Open Loan Summary/,
+  /Copy queue snapshot|Open System Operations|Open Bank Console|Back to Command Center|Copy loan snapshot|Open Loan Summary|Copy loan|Loan Summary/,
   "Admin Incomplete Loans must not restore old long action labels on phone-critical action rows."
 );
 
