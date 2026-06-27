@@ -41,8 +41,18 @@ Verification:
   files.
 
 Truth / remaining risk:
-- This entry is verified locally but not yet committed/pushed/deployed at the
-  time it was written.
+- Committed and pushed `main` at
+  `dff324e6d616c717fca154b8518e67f90ef46828`
+  (`Make evidence references opaque`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28291761923` with `deploy_api=true`.
+- Workflow checked out exact commit
+  `dff324e6d616c717fca154b8518e67f90ef46828`.
+- Frontend Render deploy hook accepted deploy id
+  `dep-d8vtmm37uimc738sbebg`.
+- Backend deploy did not run. The workflow failed at the exact API credential
+  gate because `RENDER_API_KEY` and `RENDER_API_SERVICE_ID` are still empty in
+  GitHub Actions.
 - The authenticated `/trust/why` API still includes `user_id` in its private
   signed-in JSON response for existing app compatibility, but the screenshotable
   Trust page no longer copies that full JSON and the customer-facing
@@ -50,8 +60,7 @@ Truth / remaining risk:
 - Admin-only Trust Why evidence JSON still includes the requested `user_id` by
   design because it is an admin operational route.
 - Backend changes are not live on gmfn-api until a backend Render deploy from
-  the final commit is confirmed. Prior deploy attempts still lacked
-  `RENDER_API_KEY` / `RENDER_API_SERVICE_ID`.
+  this exact commit is confirmed.
 
 ## 2026-06-27 - Portable Evidence Pack ZIP visibility boundary
 
