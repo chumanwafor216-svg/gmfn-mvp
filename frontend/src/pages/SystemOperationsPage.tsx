@@ -946,7 +946,7 @@ export default function SystemOperationsPage() {
           kind: "loan.incomplete",
           title: "Incomplete loan queue item",
           detail: [
-            `Pledge decisions ${toNum(row?.approved_guarantors)}/${toNum(
+            `Support decisions ${toNum(row?.approved_guarantors)}/${toNum(
               row?.guarantors_required
             )}`,
             row?.required_gap != null ? `Gap ${row.required_gap}` : "",

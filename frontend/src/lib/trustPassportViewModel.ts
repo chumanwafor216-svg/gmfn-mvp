@@ -324,7 +324,7 @@ export function buildTrustPassportViewModel(
       status: financeStatus,
       meaning: hasRepayment
         ? "Completed repayment evidence is visible."
-        : "Repayment or guarantee follow-through is not complete enough on this screen. Ask for more evidence before money, credit, or goods.",
+        : "Repayment or support follow-through is not complete enough on this screen. Ask for more evidence before money, credit, or goods.",
     },
     {
       title: "Trade / merchant trust",

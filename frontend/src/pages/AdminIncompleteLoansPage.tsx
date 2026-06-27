@@ -188,9 +188,9 @@ function buildLoanSnapshot(loan: any): string {
     `Loan: ${safeStr(loan?.loan_id || loan?.id || "-")}`,
     `Borrower: ${safeStr(loan?.borrower_user_id || "-")}`,
     `Amount: ${fmtMoney(loan?.amount ?? "0")} ${safeStr(loan?.currency || "NGN")}`,
-    `Pledge decisions: ${toNum(loan?.approved_guarantors)} / ${toNum(loan?.guarantors_required)}`,
-    `Pending pledge responses: ${toNum(loan?.pending_guarantors)}`,
-    `Locked pledge coverage: ${fmtMoney(loan?.locked_coverage ?? 0)}`,
+    `Support decisions: ${toNum(loan?.approved_guarantors)} / ${toNum(loan?.guarantors_required)}`,
+    `Pending support responses: ${toNum(loan?.pending_guarantors)}`,
+    `Locked support coverage: ${fmtMoney(loan?.locked_coverage ?? 0)}`,
     `Coverage gap: ${fmtMoney(loan?.required_gap ?? 0)}`,
     `Time remaining: ${formatRemaining(loan?.auto_cancel_remaining_seconds)}`,
     `Status: ${safeStr(loan?.status || "incomplete")}`,
@@ -300,9 +300,9 @@ export default function AdminIncompleteLoansPage() {
       `Community: ${communityLabel}`,
       `Incomplete loans: ${rows.length}`,
       `Ending soon: ${queueSummary.urgentCount}`,
-      `Missing pledge decisions: ${queueSummary.missingPledgeDecisionCount}`,
+      `Missing support decisions: ${queueSummary.missingPledgeDecisionCount}`,
       `Total coverage gap: ${fmtMoney(queueSummary.totalGap)}`,
-      `Locked pledge coverage: ${fmtMoney(queueSummary.lockedCoverage)}`,
+      `Locked support coverage: ${fmtMoney(queueSummary.lockedCoverage)}`,
       "",
       ...rows.map((loan) => buildLoanSnapshot(loan)),
     ].join("`n`n");
@@ -316,7 +316,7 @@ export default function AdminIncompleteLoansPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="See unresolved support items, pledge decisions, coverage gaps, and time pressure for this community."
+        what="See unresolved support items, support decisions, coverage gaps, and time pressure for this community."
         why="This is an admin review queue; it does not approve the whole loan, authorize release, or show that money moved."
         next="Open the loan that needs follow-up now."
         tone="light"
@@ -327,14 +327,14 @@ export default function AdminIncompleteLoansPage() {
         <div style={{ padding: 24 }}>
           <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Incomplete Loans Queue</div>
           <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.45 }}>
-            Check {communityLabel} for items short on pledge decisions, coverage, or time.
+            Check {communityLabel} for items short on support decisions, coverage, or time.
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(true)}>Context: {communityLabel}</span>
             <span style={badge(false)}>Incomplete: {rows.length}</span>
             <span style={badge(false)}>Ending soon: {queueSummary.urgentCount}</span>
-            <span style={badge(false)}>Missing pledge decisions: {queueSummary.missingPledgeDecisionCount}</span>
+            <span style={badge(false)}>Missing support decisions: {queueSummary.missingPledgeDecisionCount}</span>
           </div>
 
           {notice ? <div style={{ marginTop: 16, padding: "12px 14px", borderRadius: 14, background: "#ECFDF3", border: "1px solid #A7F3D0", color: "#166534", fontWeight: 900 }}>{notice}</div> : null}
@@ -347,9 +347,9 @@ export default function AdminIncompleteLoansPage() {
               <div style={{ marginTop: 6, ...helperText() }}>Remaining support gap.</div>
             </div>
             <div style={statTile()}>
-              <div style={sectionLabel()}>Locked pledge coverage</div>
+              <div style={sectionLabel()}>Locked support coverage</div>
               <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 1000, fontSize: 24 }}>{fmtMoney(queueSummary.lockedCoverage)}</div>
-              <div style={{ marginTop: 6, ...helperText() }}>Pledge coverage already recorded.</div>
+              <div style={{ marginTop: 6, ...helperText() }}>Support coverage already recorded.</div>
             </div>
             <div style={statTile()}>
               <div style={sectionLabel()}>What to do next</div>
@@ -423,13 +423,13 @@ export default function AdminIncompleteLoansPage() {
 
                   <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
                     <div>
-                      <div style={sectionLabel()}>Pledge progress</div>
-                      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>Pledge decisions {toNum(loan?.approved_guarantors)} / {toNum(loan?.guarantors_required)}</div>
-                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Pending pledge responses: {toNum(loan?.pending_guarantors)}</div>
+                      <div style={sectionLabel()}>Support progress</div>
+                      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>Support decisions {toNum(loan?.approved_guarantors)} / {toNum(loan?.guarantors_required)}</div>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Pending support responses: {toNum(loan?.pending_guarantors)}</div>
                     </div>
                     <div>
                       <div style={sectionLabel()}>Coverage</div>
-                      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>Locked pledge coverage {fmtMoney(loan?.locked_coverage ?? 0)}</div>
+                      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 900 }}>Locked support coverage {fmtMoney(loan?.locked_coverage ?? 0)}</div>
                       <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>Gap: {fmtMoney(loan?.required_gap ?? 0)}</div>
                     </div>
                     <div>

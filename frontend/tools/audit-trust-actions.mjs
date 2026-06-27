@@ -978,7 +978,7 @@ assertContains(
 
 assertContains(
   "src/pages/FinancePage.tsx",
-  /Guarantee release records[\s\S]*?Recorded releases[\s\S]*?Recorded release total/,
+  /Support release records[\s\S]*?Recorded releases[\s\S]*?Recorded release total/,
   "Finance release labels must frame released amounts as records/readings."
 );
 
@@ -1080,7 +1080,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/SystemOperationsPage.tsx",
-  /settlement-ready[\s\S]*?waiting for finance review[\s\S]*?clear through finance evidence[\s\S]*?Pledge decisions \$\{toNum\(row\?\.approved_guarantors\)\}\/\$\{toNum[\s\S]*?Pool finance review pending/,
+  /settlement-ready[\s\S]*?waiting for finance review[\s\S]*?clear through finance evidence[\s\S]*?Support decisions \$\{toNum\(row\?\.approved_guarantors\)\}\/\$\{toNum[\s\S]*?Pool finance review pending/,
   "System Operations must frame admin money/support queues as review and reconciliation readings."
 );
 
@@ -1092,14 +1092,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
-  /pledge decisions, coverage gaps[\s\S]*?does not approve the whole loan, authorize release, or show that money moved[\s\S]*?Missing pledge decisions[\s\S]*?Locked pledge coverage[\s\S]*?Pledge decisions/,
-  "Admin Incomplete Loans must frame the queue as pledge-decision and coverage review, not whole-loan approval, release authority, or money movement."
+  /support decisions, coverage gaps[\s\S]*?does not approve the whole loan, authorize release, or show that money moved[\s\S]*?Missing support decisions[\s\S]*?Locked support coverage[\s\S]*?Support decisions/,
+  "Admin Incomplete Loans must frame the queue as support-decision and coverage review, not whole-loan approval, release authority, or money movement."
 );
 
 assertNotContains(
   "src/pages/AdminIncompleteLoansPage.tsx",
   /Approved guarantors:|Missing approvals|Approval progress|approved \/ \{toNum\(loan\?\.guarantors_required\)\} required|Pending guarantors:|Coverage already held|money movement looks wrong/,
-  "Admin Incomplete Loans must not use broad approval or custody wording for pledge-decision coverage review."
+  "Admin Incomplete Loans must not use broad approval or custody wording for support-decision coverage review."
 );
 
 assertContains(

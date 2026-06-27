@@ -1,3 +1,46 @@
+## 2026-06-27 - Admin support queue wording cleanup continued locally
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published corrections:
+- `frontend/src/lib/trustPassportViewModel.ts`
+  - finance discipline guidance now says repayment or support follow-through
+    instead of guarantee follow-through.
+- `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+  - incomplete-loan queue labels, copied snapshots, and coverage summary now
+    say support decisions/responses/coverage instead of pledge wording.
+- `frontend/src/pages/SystemOperationsPage.tsx`
+  - incomplete-loan system row detail now says support decisions instead of
+    pledge decisions.
+- `frontend/tools/audit-admin-ops-actions.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - updated source guards so they now cage support-decision/support-release
+    wording instead of old pledge/guarantee labels.
+
+Verification passed locally:
+- `node frontend\tools\audit-admin-ops-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-trust-passport-front-package.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Commit / Render publication pending.
+- These edits are display-only. Backend field names such as
+  `approved_guarantors`, `guarantors_required`, and `locked_coverage` remain
+  unchanged because they are existing API contracts.
+- Legal/protective copy such as `not a bank guarantee` remains intentionally
+  unchanged.
+- Backend Render remains blocked for the earlier backend-impacting copy batch
+  until `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID` are configured
+  or gmfn-api is manually deployed and verified.
+
 ## 2026-06-27 - Loan support wording cleanup continued locally
 
 Owner request:
