@@ -2633,11 +2633,17 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    const copied = await safeCopy(absoluteShopShareLink);
+    const copied = await safeCopy(
+      buildPublicShopPackage(absoluteShopShareLink, [
+        "Public marketplace record. Real people. Current evidence.",
+        "Open the shop link to view the public shop face and public blocks.",
+        "Check current availability and trust evidence before goods, credit, or money move.",
+      ])
+    );
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
-        ? "Public shop link copied."
+        ? "GSN public shop invitation copied."
         : "Clipboard copy was blocked. Use Share, or copy the page address from your browser.",
     });
   }
@@ -5114,7 +5120,7 @@ export default function ShopGalleryPage() {
                     minHeight: isCompact ? 52 : 48,
                   }}
                 >
-                  Copy public shop link
+                  Copy GSN shop paper
                 </SecondaryButton>
               </div>
             </div>

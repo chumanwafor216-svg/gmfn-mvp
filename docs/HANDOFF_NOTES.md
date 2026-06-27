@@ -1,3 +1,42 @@
+## 2026-06-27 - Public Shop Copy now sends GSN shop invitation paper
+
+Owner request:
+- Continue institutional finishing for customer-facing papers, documents,
+  TrustSlip-adjacent surfaces, and screenshotable/shareable pages.
+
+Correction completed locally:
+- `frontend/src/pages/ShopGalleryPage.tsx`
+  - changed the direct Public Shop copy action from copying only the raw public
+    shop URL to copying the branded `GSN Public Shop Invitation` package through
+    `buildGsnPublicShopLinkPackage()`.
+  - changed the empty/public-shop copy button label from `Copy public shop link`
+    to `Copy GSN shop paper`.
+  - changed success feedback to `GSN public shop invitation copied.`
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`,
+  `frontend/tools/audit-link-contracts.mjs`, and
+  `frontend/tools/audit-share-tag-actions.mjs`
+  - updated the older raw-link expectation so the formal Copy path is now
+    required to carry the GSN shop invitation paper.
+  - kept social Share separate and short for social apps.
+
+Verification:
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:link-contracts`
+- `npm --prefix frontend run audit:share-tag-actions`
+- `npm --prefix frontend run audit:shop-gallery-button-inventory`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `git diff --check`
+
+Truth / remaining risk:
+- This upgrades the copied Public Shop package presentation. It does not verify
+  the shop, guarantee availability, guarantee delivery, approve credit, or
+  create payment protection.
+- Social Share still uses the short social caption plus backend social-preview
+  URL; the formal headed-paper package is for the Copy path.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Public shop following surfaced as neutral TrustEvent attention
 
 Owner request:

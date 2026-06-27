@@ -875,8 +875,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopShareLink\)[\s\S]*?Public shop link copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
-  "Public Shop Gallery copy must block failed public-shop links and copy only the canonical root-shop URL after clipboard success."
+  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\([\s\S]*?buildPublicShopPackage\(absoluteShopShareLink[\s\S]*?GSN public shop invitation copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
+  "Public Shop Gallery copy must block failed public-shop links and copy the branded GSN public shop invitation package."
 );
 
 assertContains(

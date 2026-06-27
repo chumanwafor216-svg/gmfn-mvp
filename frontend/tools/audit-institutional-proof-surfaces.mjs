@@ -1018,8 +1018,8 @@ assertContains(
 );
 assertContains(
   "publicShop",
-  /function copyShopLink[\s\S]*?safeCopy\(absoluteShopShareLink\)[\s\S]*?Public shop link copied\./,
-  "Public Shop plain Copy link must copy only the public shop URL; branded packages belong to owner/share-package paths."
+  /function copyShopLink[\s\S]*?safeCopy\([\s\S]*?buildPublicShopPackage\(absoluteShopShareLink[\s\S]*?GSN public shop invitation copied\./,
+  "Public Shop direct Copy action must copy the branded GSN public shop invitation package."
 );
 assertContains(
   "publicShop",

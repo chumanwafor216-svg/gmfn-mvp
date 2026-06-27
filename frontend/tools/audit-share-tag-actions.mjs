@@ -166,8 +166,8 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /async function copyShopLink\(\)[\s\S]*safeCopy\(absoluteShopShareLink\)[\s\S]*Public shop link copied\./,
-    "Public Shop plain Copy link action must copy only the URL, not the long headed-paper package.",
+    /async function copyShopLink\(\)[\s\S]*safeCopy\([\s\S]*buildPublicShopPackage\(absoluteShopShareLink[\s\S]*GSN public shop invitation copied\./,
+    "Public Shop Copy action must copy the formal GSN public shop invitation package while Share keeps the short social caption.",
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
