@@ -664,6 +664,16 @@ assertContains(
   "Public TrustSlip paper must present itself as an institutional verification paper."
 );
 assertContains(
+  "trustSlipRoute",
+  /safe_code_path = quote\(str\(code\), safe=""\)[\s\S]*?print_link = f"\/trust-slips\/verify\/\{safe_code_path\}\/print\?level=\{visibility_level\}"[\s\S]*?qr_img = f"\/trust-slips\/verify\/\{safe_code_path\}\/qr\.png\?level=\{visibility_level\}"[\s\S]*?<title>GSN TrustSlip Verification Paper<\/title>/,
+  "Backend-rendered public TrustSlip paper must use a GSN title and quoted TrustSlip code paths for print and QR links."
+);
+assertNotContains(
+  "trustSlipRoute",
+  /<title>TrustSlip Verification<\/title>/,
+  "Backend-rendered public TrustSlip paper must not keep the old generic browser title."
+);
+assertContains(
   "publicPaper",
   /TrustPaperAuthorityStrip[\s\S]*?GSN TrustSlip Verification Paper[\s\S]*?TrustPaperSecurityNote/,
   "Public TrustSlip paper must carry shared GSN authority and screenshot security marks."

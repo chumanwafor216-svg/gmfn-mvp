@@ -184,6 +184,16 @@ def test_trust_slip_release_helper_page_is_institutional_and_bounded():
     assert "Log Release (Admin)" not in text
 
 
+def test_public_trust_slip_verify_page_title_and_links_are_institutional():
+    text = read_service("app/api/routes/trust_slips.py")
+
+    assert '<title>GSN TrustSlip Verification Paper</title>' in text
+    assert '<title>TrustSlip Verification</title>' not in text
+    assert 'safe_code_path = quote(str(code), safe="")' in text
+    assert 'print_link = f"/trust-slips/verify/{safe_code_path}/print?level={visibility_level}"' in text
+    assert 'qr_img = f"/trust-slips/verify/{safe_code_path}/qr.png?level={visibility_level}"' in text
+
+
 def test_trust_timeline_pdf_uses_institutional_shell():
     text = read_service("app/services/trust_timeline_pdf_service.py")
 

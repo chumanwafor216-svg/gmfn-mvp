@@ -18,17 +18,27 @@ Correction completed locally:
     guarantee delivery, or grant permission to release goods, credit, or money.
   - escaped the visible TrustSlip code, holder GSN ID, protected action path,
     and verify link before inserting them into the HTML page.
+  - changed the backend-rendered public TrustSlip verify browser title from
+    generic `TrustSlip Verification` to `GSN TrustSlip Verification Paper`.
+  - quotes the TrustSlip code path before building public verify print and QR
+    links.
 - `frontend/tools/audit-institutional-proof-surfaces.mjs`
   - now requires the TrustSlip release helper page to keep GSN evidence-paper
     framing and no-release-authority language.
   - now blocks the older Swagger/plain-admin wording from returning.
+  - now requires the backend-rendered public TrustSlip verify paper to keep the
+    GSN title and quoted print / QR paths.
 - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
   - added a backend source test for the release helper page boundary and
     institutional wording.
+  - added a backend source test for the public TrustSlip verify title and
+    quoted print / QR paths.
 
 Verification:
 - `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`
 - `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_trust_slip_release_helper_page_is_institutional_and_bounded gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_trust_slip_pdf_route_uses_gsn_filename`
+  - result: `2 passed`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_public_trust_slip_verify_page_title_and_links_are_institutional gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_trust_slip_release_helper_page_is_institutional_and_bounded`
   - result: `2 passed`
 - `npm --prefix frontend run audit:proof-surfaces`
 - `npm --prefix frontend run audit:gsn-visible-language`

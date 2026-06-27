@@ -1422,9 +1422,10 @@ def trust_slip_verify_page(
         "revoked": "Revoked",
         "frozen": "Frozen",
     }.get(effective, "Not current")
-    print_link = f"/trust-slips/verify/{code}/print?level={visibility_level}"
+    safe_code_path = quote(str(code), safe="")
+    print_link = f"/trust-slips/verify/{safe_code_path}/print?level={visibility_level}"
     lite_link = _lite_page_url(code, visibility_level)
-    qr_img = f"/trust-slips/verify/{code}/qr.png?level={visibility_level}"
+    qr_img = f"/trust-slips/verify/{safe_code_path}/qr.png?level={visibility_level}"
     holder_refresh_link = "/app/trust-slip"
 
     html = f"""<!doctype html>
@@ -1432,7 +1433,7 @@ def trust_slip_verify_page(
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>TrustSlip Verification</title>
+    <title>GSN TrustSlip Verification Paper</title>
     <style>
       :root {{
         --navy: #07172C;
