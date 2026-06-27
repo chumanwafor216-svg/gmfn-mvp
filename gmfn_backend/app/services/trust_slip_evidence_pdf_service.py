@@ -158,7 +158,7 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     elements.append(Paragraph("Support & capacity context", styles["Heading2"]))
     elements.append(_paragraph("Available support capacity", capacity_context.get("available_guarantee_capacity"), styles))
     elements.append(_paragraph("Current locked support", capacity_context.get("current_locked_guarantees"), styles))
-    elements.append(_paragraph("Overexposure ratio", capacity_context.get("overexposure_ratio"), styles))
+    elements.append(_paragraph("Support pressure reading", capacity_context.get("overexposure_ratio"), styles))
     elements.append(_paragraph("Risk level", capacity_context.get("risk_level"), styles))
     elements.append(_paragraph("Readiness recommendation", readiness_context.get("recommendation"), styles))
     elements.append(_paragraph("Readiness score", readiness_context.get("readiness_score"), styles))

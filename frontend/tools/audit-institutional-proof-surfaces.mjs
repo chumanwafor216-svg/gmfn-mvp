@@ -234,7 +234,7 @@ assertNotContains(
 );
 assertContains(
   "trustSlipPdf",
-  /Trust-limit signal[\s\S]*?Available support capacity[\s\S]*?Estimated support gap/,
+  /Trust-limit signal[\s\S]*?Available support capacity[\s\S]*?Support pressure reading[\s\S]*?Estimated support gap/,
   "TrustSlip PDF must use institution-grade trust-limit and support-capacity language."
 );
 assertContains(
@@ -249,7 +249,7 @@ assertContains(
 );
 assertNotContains(
   "trustSlipPdf",
-  /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id|Payment reference|payment_reference|TP-UNKNOWN|"User ID", summary\.get\("user_id"\)/g,
+  /TrustSlip Limit|Available Guarantee Capacity|Overexposure ratio|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id|Payment reference|payment_reference|TP-UNKNOWN|"User ID", summary\.get\("user_id"\)/g,
   "TrustSlip PDF must not expose older limit/guarantee/internal actor wording, old TP fallbacks, raw member ids, or repayment references."
 );
 assertContains(

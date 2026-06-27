@@ -55,8 +55,8 @@ function assertNotContains(key, pattern, message) {
 
 assertContains(
   "trust",
-  /const financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"Available capacity"[\s\S]*?"Locked support"[\s\S]*?"Overexposure"[\s\S]*?"Risk level"/,
-  "Finance Discipline lane must keep a plain card model for limit, capacity, locked support, overexposure, and risk."
+  /const financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"Available capacity"[\s\S]*?"Locked support"[\s\S]*?"Support pressure"[\s\S]*?"Risk level"/,
+  "Finance Discipline lane must keep a plain card model for limit, capacity, locked support, support pressure, and risk."
 );
 
 assertContains(
@@ -85,7 +85,7 @@ assertNotContains(
 
 assertContains(
   "trust",
-  /function trustIconBadge\([\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?size=\{Math\.max\(26, Math\.round\(size \* 0\.96\)\)\}[\s\S]*?financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"financeInstitution"[\s\S]*?"Overexposure"[\s\S]*?"financeInstitution"[\s\S]*?financeDisciplineCards\.map\(\(\[label, value, detail, icon\]\) =>[\s\S]*?trustIconBadge\(icon, 28[\s\S]*?\{value\}[\s\S]*?\{detail\}/,
+  /function trustIconBadge\([\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?size=\{Math\.max\(26, Math\.round\(size \* 0\.96\)\)\}[\s\S]*?financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"financeInstitution"[\s\S]*?"Support pressure"[\s\S]*?"financeInstitution"[\s\S]*?financeDisciplineCards\.map\(\(\[label, value, detail, icon\]\) =>[\s\S]*?trustIconBadge\(icon, 28[\s\S]*?\{value\}[\s\S]*?\{detail\}/,
   "Finance Discipline lane must render the finance signal cards with real icons, values, and plain detail."
 );
 

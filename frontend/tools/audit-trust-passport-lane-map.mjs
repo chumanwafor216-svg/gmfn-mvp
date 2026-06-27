@@ -186,7 +186,7 @@ assertOrderedSnippets(
     "\"Trust-limit signal\"",
     "\"Available support capacity\"",
     "\"Current support commitments\"",
-    "\"Overexposure ratio\"",
+    "\"Support pressure reading\"",
     "\"Risk level\"",
   ],
   "Finance Discipline lane must keep finance-discipline question mapping and institutional capacity/risk context."

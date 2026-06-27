@@ -1,3 +1,43 @@
+## 2026-06-27 - TrustSlip evidence PDF pressure wording aligned
+
+Owner request:
+- Continue institutional deep cleaning and alignment across customer-facing
+  papers, TrustSlip, and screenshotable pages.
+
+Correction completed locally:
+- `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+  - changed the TrustSlip evidence PDF capacity row from `Overexposure ratio`
+    to `Support pressure reading`.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - now requires the safer pressure wording and rejects the old
+    `Overexposure ratio` PDF label.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - extended the TrustSlip PDF proof-surface audit to require
+    `Support pressure reading` and forbid the old PDF wording.
+- `frontend/tools/audit-trust-passport-lane-map.mjs`
+  - updated the Trust Passport lane audit to protect the new institutional
+    pressure label.
+- `frontend/tools/audit-trust-passport-finance-discipline-lane.mjs`
+  - updated Finance Discipline lane guards from `Overexposure` to
+    `Support pressure`.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\services\trust_slip_evidence_pdf_service.py`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+  - result: `18 passed`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run audit:trust-passport-lane-map` from `frontend/`
+- `npm run audit:trust-passport-finance-discipline-lane` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warnings on edited
+  frontend audit files.
+
+Truth / remaining risk:
+- The backend JSON field remains `overexposure_ratio`; only official paper and
+  frontend-facing language changed.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Trust evidence pressure language cleaned
 
 Owner request:
