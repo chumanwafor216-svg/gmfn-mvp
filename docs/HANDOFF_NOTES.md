@@ -71636,6 +71636,115 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Analytics CSV/report PDF hardening continuation
+
+- Trigger:
+  - after the first PDF privacy pass, the remaining documented risk was that
+    analytics CSV/JSON routes and report papers still needed the same
+    customer-facing privacy/name discipline.
+- Unabated truth:
+  - the earlier PDF fix was necessary but incomplete for the route family;
+  - analytics JSON and CSV endpoints could still expose community analytics to
+    any signed-in user who guessed a community id;
+  - report routes were mostly gated, but inactive memberships were not
+    consistently excluded and loan report download names still used old GMFN
+    artifact names.
+- Changed:
+  - `gmfn_backend/app/api/routes/analytics.py`
+    - added community-admin/platform-admin enforcement to all clan analytics
+      JSON, CSV, and PDF handlers;
+    - kept loan evidence PDF borrower/community-admin/platform-admin gated;
+    - kept evidence PDFs defaulting to `redact=True`.
+  - `gmfn_backend/app/api/routes/reports.py`
+    - excludes inactive memberships in community/loan report permission
+      checks;
+    - allows platform admins to view loan reports without requiring a
+      community membership row;
+    - changed loan report CSV/PDF and loan evidence ZIP filenames from old
+      `gmfn-loan...` names to `gsn-loan...`;
+    - changed the loan evidence ZIP manifest artifact name to
+      `gsn_loan_evidence_pack`.
+  - `gmfn_backend/app/services/reports_service.py`
+    - added reader-boundary sections to the loan trust report PDF and
+      community exposure report PDF before private support/exposure evidence.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added regression checks for full analytics route gating, GSN report
+      filenames, inactive-membership filtering, and report reader boundaries.
+  - `gmfn_backend/tests/test_evidence_surface_permissions.py`
+    - added endpoint-level permission tests proving normal members cannot pull
+      admin analytics evidence surfaces, inactive admin memberships do not
+      count for report downloads, and platform admins can still download loan
+      reports without a community membership row.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added source audit guards for the same report and analytics protections.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_evidence_surface_permissions.py`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
+  - Passed `python -m compileall -q` on the edited backend route/service
+    files.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Still not changed:
+  - report CSVs still contain complete private administrative data for allowed
+    viewers and should be treated as complete records, not public share copies;
+  - no Render deploy was triggered for this local continuation batch.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
+### Follow-up same day - PDF content/privacy hardening pass
+
+- Trigger:
+  - owner reported that some customer-facing PDFs can be wrong, missing,
+    incomplete, or too exposing.
+- Unabated truth:
+  - this was not only a wording issue;
+  - the analytics evidence PDF routes were protected by login, but not by a
+    community-admin / borrower / loan-community relationship check;
+  - share PDFs also defaulted to the more revealing mode before this pass.
+- Changed:
+  - `gmfn_backend/app/api/routes/analytics.py`
+    - added community-admin/platform-admin enforcement before building
+      community evidence PDFs;
+    - added borrower/community-admin/platform-admin enforcement before
+      building loan evidence PDFs;
+    - added `404 Loan not found` handling before loan PDF generation;
+    - changed community and loan evidence PDF route defaults to
+      `redact=True`.
+  - `gmfn_backend/app/services/evidence_pack_pdf_service.py`
+    - masks invite codes in redacted/share copies;
+    - replaces vague partner-framing text with a direct reader boundary.
+  - `gmfn_backend/app/services/loan_evidence_pack_pdf_service.py`
+    - redacts trust-event metadata in share copies;
+    - adds a direct reader boundary for loan/support/repayment details.
+  - `gmfn_backend/app/services/user_evidence_pack_pdf_service.py`
+    - adds a direct reader boundary for private member evidence.
+  - `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+    - stops exposing a raw confirming actor ID label;
+    - shows `Confirmation source` as a GSN recorded trust event.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added regression checks for route permissions, redaction defaults,
+      invite-code masking, reader boundaries, metadata redaction, and
+      TrustSlip actor-ID wording.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added source-level audit guards for the same PDF privacy/content rules.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
+  - Passed `python -m compileall -q` on the edited backend route/services.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Still not changed:
+  - analytics CSV routes remain login-gated only and may need a separate
+    permission hardening pass;
+  - report PDFs are admin/borrower-gated but still need a deeper content
+    completeness/privacy review if the owner wants every PDF paper audited
+    field-by-field;
+  - no Render deploy was triggered for this local continuation batch.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Chidimma Free Spotlight publish reachability
 
 - Trigger:

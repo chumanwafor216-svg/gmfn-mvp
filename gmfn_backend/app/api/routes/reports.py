@@ -60,6 +60,7 @@ def _ensure_clan_admin_or_platform_admin(db: Session, *, current_user: User, cla
         .filter(
             ClanMembership.user_id == int(current_user.id),
             ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
         )
         .first()
     )
@@ -70,11 +71,16 @@ def _ensure_clan_admin_or_platform_admin(db: Session, *, current_user: User, cla
 
 
 def _ensure_can_view_loan_report(db: Session, *, current_user: User, loan: Loan) -> None:
+    is_platform_admin = (getattr(current_user, "role", "") or "").lower() == "admin"
+    if is_platform_admin:
+        return
+
     m = (
         db.query(ClanMembership)
         .filter(
             ClanMembership.user_id == int(current_user.id),
             ClanMembership.clan_id == loan.clan_id,
+            ClanMembership.left_at.is_(None),
         )
         .first()
     )
@@ -492,7 +498,7 @@ def download_loan_trust_report_csv(
         ])
 
     data_bytes = _csv_bytes(rows)
-    filename = f"gmfn-loan-{loan.id}-trust-report.csv"
+    filename = f"gsn-loan-{loan.id}-trust-report.csv"
     return StreamingResponse(
         BytesIO(data_bytes),
         media_type="text/csv",
@@ -523,7 +529,7 @@ def download_loan_trust_report_pdf(
         guarantor_trust_scores=data["guarantor_trust_scores"],
     )
 
-    filename = f"gmfn-loan-{loan.id}-trust-report.pdf"
+    filename = f"gsn-loan-{loan.id}-trust-report.pdf"
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
@@ -563,7 +569,7 @@ def download_loan_evidence_pack_zip(
             snapshot = {"raw_snapshot_json": trust_slip.snapshot_json}
 
     manifest = {
-        "artifact": "gmfn_loan_evidence_pack",
+        "artifact": "gsn_loan_evidence_pack",
         "loan_id": int(loan.id),
         "clan_id": int(loan.clan_id),
         "borrower_user_id": int(loan.borrower_user_id),
@@ -611,7 +617,7 @@ def download_loan_evidence_pack_zip(
         z.writestr("checksums.json", json.dumps(checksums, indent=2, default=str))
         z.writestr("README.txt", readme)
 
-    filename = f"gmfn-loan-{loan.id}-evidence-pack-{ts}.zip"
+    filename = f"gsn-loan-{loan.id}-evidence-pack-{ts}.zip"
     return StreamingResponse(
         BytesIO(zip_buf.getvalue()),
         media_type="application/zip",

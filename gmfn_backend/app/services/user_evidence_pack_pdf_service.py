@@ -172,9 +172,14 @@ def build_user_evidence_pack_pdf(
             line(f"- {when} | {et}{tail}", size=8, gap=12)
 
     line("")
-    line("Visa/partner framing", bold=True, gap=18)
+    line("Reader boundary", bold=True, gap=18)
     line(
-        "GSN produces explainable trust evidence derived from auditable TrustEvents (repayments, supporter behaviour, invites).",
+        "This paper supports a trust decision. It is not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
+        size=9,
+        gap=13,
+    )
+    line(
+        "Use the redacted share copy for outside review. Use the complete record only when the reviewer is allowed to see private member evidence.",
         size=9,
         gap=13,
     )

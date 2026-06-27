@@ -168,13 +168,13 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     event = _find_latest_full_repayment_event(db, user_id)
 
     payment_reference = None
-    confirmed_by = None
+    confirmation_source = None
     confirmed_at = None
     loan_id = None
 
     if event:
         confirmed_at = event.created_at.isoformat() if event.created_at else None
-        confirmed_by = event.actor_user_id
+        confirmation_source = "GSN recorded trust event"
         loan_id = event.loan_id
         try:
             meta = getattr(event, "meta", None) or {}
@@ -188,7 +188,7 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     elements.append(_paragraph("Support record ID", loan_id, styles))
     elements.append(_paragraph("Payment reference", payment_reference, styles))
     elements.append(_paragraph("Confirmed at", confirmed_at, styles))
-    elements.append(_paragraph("Confirmed by record", confirmed_by, styles))
+    elements.append(_paragraph("Confirmation source", confirmation_source, styles))
     elements.append(Spacer(1, 0.25 * inch))
 
     elements.append(Paragraph("Merchant verification QR", styles["Heading2"]))

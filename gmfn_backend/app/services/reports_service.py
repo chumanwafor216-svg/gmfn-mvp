@@ -203,6 +203,14 @@ def build_loan_trust_report_pdf(
     h1("Official evidence summary")
     line()
 
+    h2("Reader Boundary")
+    p(
+        "Boundary",
+        "Private support evidence for allowed GSN reviewers; not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
+    )
+    p("Use", "Share only with reviewers allowed to see loan, supporter, repayment, exposure, and trust-event details.")
+    line()
+
     h2("Loan Summary")
     borrower_email = user_email_by_id.get(
         int(getattr(loan, "borrower_user_id", 0)),
@@ -499,6 +507,24 @@ def build_clan_exposure_report_pdf(
         y -= 6 * mm
 
     h1("Official exposure summary")
+    line()
+
+    h2("Reader Boundary")
+    c.setFont("Helvetica", 10)
+    c.drawString(
+        left,
+        y,
+        safe_pdf_text(
+            "Private community exposure evidence for allowed GSN reviewers; not a bank guarantee, credit approval, payment instruction, or automatic debit authority."
+        ),
+    )
+    y -= 5 * mm
+    c.drawString(
+        left,
+        y,
+        safe_pdf_text("Share only with reviewers allowed to see member support-capacity and exposure details."),
+    )
+    y -= 7 * mm
     line()
 
     h2("Community")

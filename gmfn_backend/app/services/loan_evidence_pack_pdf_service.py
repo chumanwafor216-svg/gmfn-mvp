@@ -316,7 +316,9 @@ def build_loan_evidence_pack_pdf(
             meta = _loads_meta(getattr(ev, "meta_json", None))
 
             meta_small = ""
-            if meta:
+            if meta and redact:
+                meta_small = " | meta: redacted for share copy"
+            elif meta:
                 keys = list(meta.keys())[:3]
                 meta_small = " | meta: " + ", ".join([f"{k}={meta.get(k)}" for k in keys])
 
@@ -329,9 +331,14 @@ def build_loan_evidence_pack_pdf(
             line(f"... ({len(trust_events)-90} more not shown)", size=8, gap=12)
 
     line("")
-    line("Visa/partner framing (one-liner)", bold=True, gap=18)
+    line("Reader boundary", bold=True, gap=18)
     line(
-        "This report demonstrates GSN trust infrastructure: explainable trust scores derived from auditable TrustEvents, linked to supporter and repayment behaviour.",
+        "This paper supports a trust decision. It is not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
+        size=9,
+        gap=13,
+    )
+    line(
+        "Use the redacted share copy for outside review. Use the complete record only when the reviewer is allowed to see private loan, supporter, and repayment details.",
         size=9,
         gap=13,
     )

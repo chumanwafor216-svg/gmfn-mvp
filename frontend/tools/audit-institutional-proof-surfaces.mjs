@@ -210,9 +210,14 @@ assertContains(
   /Trust-limit signal[\s\S]*?Available support capacity[\s\S]*?Estimated support gap/,
   "TrustSlip PDF must use institution-grade trust-limit and support-capacity language."
 );
+assertContains(
+  "trustSlipPdf",
+  /confirmation_source = "GSN recorded trust event"[\s\S]*?Confirmation source/,
+  "TrustSlip PDF must show a reader-safe confirmation source instead of a raw internal actor record."
+);
 assertNotContains(
   "trustSlipPdf",
-  /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)/,
+  /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id/g,
   "TrustSlip PDF must not expose older limit/guarantee/internal actor wording."
 );
 assertContains(
@@ -246,6 +251,11 @@ assertContains(
   /Community Exposure Summary[\s\S]*?Total Available Support Capacity[\s\S]*?Available support capacity = current remaining support capacity after existing exposure\.[\s\S]*?GSN community exposure report - controlled community trust record\./,
   "Community exposure reports must use current GSN community-facing support-capacity summary and footer wording."
 );
+assertContains(
+  "reports",
+  /Reader Boundary[\s\S]*?Private support evidence for allowed GSN reviewers[\s\S]*?Reader Boundary[\s\S]*?Private community exposure evidence for allowed GSN reviewers/,
+  "Report PDFs must include reader boundaries before private support or exposure evidence is shared."
+);
 assertNotContains(
   "reports",
   /GSN Clan Exposure Report|Clan Exposure Table|Clan Exposure Summary|Clan Exposure Ratio|Total Available Capacity|Available = current remaining support capacity|p\("Clan"|clan exposure report/,
@@ -256,19 +266,56 @@ assertContains(
   /kv\("Community", clan_name or "-"\)/,
   "Loan evidence pack PDFs must label the route context as Community, not Clan."
 );
+assertContains(
+  "evidencePack",
+  /def _mask_code[\s\S]*?invite_code = _mask_code/,
+  "Community evidence pack share PDFs must mask invite codes by default."
+);
+assertContains(
+  "evidencePack",
+  /Reader boundary[\s\S]*?controlled community review[\s\S]*?redacted share copy for outside review/,
+  "Community evidence pack PDFs must explain the reader boundary and share-copy privacy limit."
+);
+assertContains(
+  "loanEvidencePack",
+  /meta: redacted for share copy[\s\S]*?Reader boundary[\s\S]*?private loan, supporter, and repayment details/,
+  "Loan evidence pack PDFs must redact trust-event metadata in share copies and explain the reader boundary."
+);
+assertContains(
+  "userEvidencePack",
+  /Reader boundary[\s\S]*?private member evidence/,
+  "User evidence pack PDFs must explain the reader boundary before private member evidence is shared."
+);
 assertNotContains(
   "loanEvidencePack",
   /kv\("Clan"/,
   "Loan evidence pack PDFs must not expose older Clan labels."
 );
+for (const key of ["evidencePack", "loanEvidencePack", "userEvidencePack"]) {
+  assertNotContains(
+    key,
+    /visa \/ partner framing|Visa\/partner framing/g,
+    "Simple evidence PDFs must not use vague partner-framing language in customer-facing papers."
+  );
+  assertContains(
+    key,
+    /bank guarantee, credit approval, payment instruction, or automatic debit authority/,
+    "Simple evidence PDFs must keep the limitation that evidence papers are not financial approvals or payment instructions."
+  );
+}
 assertContains(
   "reportsRoute",
   /GSN Community Governance Pack[\s\S]*?Community ID:[\s\S]*?Community Name:[\s\S]*?gsn-community-\{clan_id\}-governance-pack/,
   "Governance ZIP README and filename must use GSN community-facing wording."
 );
+assertContains(
+  "reportsRoute",
+  /ClanMembership\.left_at\.is_\(None\)[\s\S]*?is_platform_admin[\s\S]*?gsn-loan-\{loan\.id\}-trust-report\.csv[\s\S]*?gsn-loan-\{loan\.id\}-trust-report\.pdf[\s\S]*?"artifact": "gsn_loan_evidence_pack"[\s\S]*?gsn-loan-\{loan\.id\}-evidence-pack-\{ts\}\.zip/,
+  "Report routes must ignore inactive memberships, allow platform admins, and use GSN loan report/evidence filenames."
+);
 assertNotContains(
   "reportsRoute",
-  /GMFN Clan Governance Pack|Clan ID:|Clan Name:|gmfn-clan-\{clan_id\}-governance-pack|clan-\{clan_id\}-exposure\.(?:csv|pdf)/,
+  /GMFN Clan Governance Pack|Clan ID:|Clan Name:|gmfn-clan-\{clan_id\}-governance-pack|gmfn-loan-\{loan\.id\}-trust-report\.(?:csv|pdf)|gmfn-loan-\{loan\.id\}-evidence-pack-\{ts\}\.zip|"artifact": "gmfn_loan_evidence_pack"|clan-\{clan_id\}-exposure\.(?:csv|pdf)/,
   "Governance ZIP artifacts must not expose older GMFN/clan wording."
 );
 assertContains(
@@ -285,6 +332,21 @@ assertContains(
   "analyticsRoute",
   /gsn-community-\{clan_id\}-recent-invite-joins\.csv[\s\S]*?gsn-community-\{clan_id\}-trust-events\.csv[\s\S]*?gsn-community-\{clan_id\}-evidence-pack\.pdf[\s\S]*?gsn-loan-\{loan_id\}-evidence-pack\.pdf/,
   "Analytics evidence download filenames must use GSN community-facing wording."
+);
+assertContains(
+  "analyticsRoute",
+  /def _ensure_clan_admin_or_platform_admin[\s\S]*?Community admin or platform admin only[\s\S]*?def _ensure_can_view_loan_evidence[\s\S]*?Loan not found/,
+  "Analytics evidence PDF routes must enforce community-admin and loan-viewer permissions before building PDFs."
+);
+assertContains(
+  "analyticsRoute",
+  /clan_invite_analytics[\s\S]*?_ensure_clan_admin_or_platform_admin\(db, current_user=user, clan_id=int\(clan_id\)\)[\s\S]*?clan_recent_invite_joins[\s\S]*?_ensure_clan_admin_or_platform_admin\(db, current_user=user, clan_id=int\(clan_id\)\)[\s\S]*?clan_trust_events[\s\S]*?_ensure_clan_admin_or_platform_admin\(db, current_user=user, clan_id=int\(clan_id\)\)[\s\S]*?export_recent_invite_joins_csv[\s\S]*?_ensure_clan_admin_or_platform_admin\(db, current_user=user, clan_id=int\(clan_id\)\)[\s\S]*?export_trust_events_csv[\s\S]*?_ensure_clan_admin_or_platform_admin\(db, current_user=user, clan_id=int\(clan_id\)\)[\s\S]*?evidence_pack_pdf[\s\S]*?_ensure_clan_admin_or_platform_admin\(db, current_user=user, clan_id=int\(clan_id\)\)/,
+  "All clan analytics JSON, CSV, and PDF handlers must enforce community-admin/platform-admin access."
+);
+assertContains(
+  "analyticsRoute",
+  /def evidence_pack_pdf\([\s\S]*?redact: bool = True[\s\S]*?def loan_evidence_pack_pdf\([\s\S]*?redact: bool = True/,
+  "Analytics evidence PDF routes must default to redacted share copies."
 );
 assertNotContains(
   "analyticsRoute",

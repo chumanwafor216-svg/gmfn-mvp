@@ -51,6 +51,9 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "Available Guarantee Capacity" not in text
     assert "Estimated Guarantee Gap" not in text
     assert "Confirmed By (Actor ID)" not in text
+    assert "Confirmed by record" not in text
+    assert "confirmation_source = \"GSN recorded trust event\"" in text
+    assert "Confirmation source" in text
     assert "GMFN TrustSlip Evidence Snapshot" not in text
 
 
@@ -82,6 +85,9 @@ def test_report_pdfs_use_gsn_institutional_shells():
     assert "safe_pdf_text" in text
     assert "Official evidence summary" in text
     assert "Official exposure summary" in text
+    assert text.count("Reader Boundary") == 2
+    assert "Private support evidence for allowed GSN reviewers" in text
+    assert "Private community exposure evidence for allowed GSN reviewers" in text
     assert 'p("Community", f"{getattr(clan, \'name\', None) or \'-\'} (ID: {getattr(loan, \'clan_id\', \'-\')})")' in text
     assert 'p("Clan"' not in text
     assert text.count("GSN loan trust report - controlled community trust record.") == 2
@@ -94,13 +100,23 @@ def test_report_pdfs_use_gsn_institutional_shells():
 def test_governance_pack_uses_gsn_community_language():
     text = read_service("app/api/routes/reports.py")
 
+    assert "ClanMembership.left_at.is_(None)" in text
+    assert "is_platform_admin" in text
     assert "GSN Community Governance Pack" in text
     assert "Community ID:" in text
     assert "Community Name:" in text
     assert "GSN Loan Evidence Pack" in text
     assert "gsn-community-{clan_id}-governance-pack" in text
+    assert "gsn-loan-{loan.id}-trust-report.csv" in text
+    assert "gsn-loan-{loan.id}-trust-report.pdf" in text
+    assert "gsn-loan-{loan.id}-evidence-pack-{ts}.zip" in text
+    assert '"artifact": "gsn_loan_evidence_pack"' in text
     assert "GMFN Clan Governance Pack" not in text
     assert "GMFN Loan Evidence Pack" not in text
+    assert "gmfn-loan-{loan.id}-trust-report.csv" not in text
+    assert "gmfn-loan-{loan.id}-trust-report.pdf" not in text
+    assert "gmfn-loan-{loan.id}-evidence-pack-{ts}.zip" not in text
+    assert '"artifact": "gmfn_loan_evidence_pack"' not in text
     assert "Clan ID:" not in text
     assert "Clan Name:" not in text
     assert "gmfn-clan-{clan_id}-governance-pack" not in text
@@ -109,6 +125,12 @@ def test_governance_pack_uses_gsn_community_language():
 def test_analytics_evidence_downloads_use_gsn_filenames():
     text = read_service("app/api/routes/analytics.py")
 
+    assert "def _ensure_clan_admin_or_platform_admin" in text
+    assert "def _ensure_can_view_loan_evidence" in text
+    assert "Community admin or platform admin only" in text
+    assert "Loan not found" in text
+    assert "redact: bool = True" in text
+    assert text.count("_ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))") == 6
     assert "gsn-community-{clan_id}-recent-invite-joins.csv" in text
     assert "gsn-community-{clan_id}-trust-events.csv" in text
     assert "gsn-community-{clan_id}-evidence-pack.pdf" in text
@@ -117,3 +139,26 @@ def test_analytics_evidence_downloads_use_gsn_filenames():
     assert "GMFN_loan_{loan_id}_evidence_pack.pdf" not in text
     assert "clan_{clan_id}_recent_invite_joins.csv" not in text
     assert "clan_{clan_id}_trust_events.csv" not in text
+
+
+def test_simple_evidence_pdfs_keep_reader_boundaries_and_redaction_guards():
+    clan_text = read_service("app/services/evidence_pack_pdf_service.py")
+    loan_text = read_service("app/services/loan_evidence_pack_pdf_service.py")
+    user_text = read_service("app/services/user_evidence_pack_pdf_service.py")
+
+    assert "def _mask_code" in clan_text
+    assert "invite_code = _mask_code" in clan_text
+    assert "Reader boundary" in clan_text
+    assert "redacted share copy for outside review" in clan_text
+
+    assert "Reader boundary" in loan_text
+    assert "meta: redacted for share copy" in loan_text
+    assert "private loan, supporter, and repayment details" in loan_text
+
+    assert "Reader boundary" in user_text
+    assert "private member evidence" in user_text
+
+    for text in [clan_text, loan_text, user_text]:
+        assert "visa / partner framing" not in text
+        assert "Visa/partner framing" not in text
+        assert "bank guarantee, credit approval, payment instruction, or automatic debit authority" in text

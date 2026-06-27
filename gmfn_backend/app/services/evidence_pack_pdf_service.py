@@ -39,6 +39,14 @@ def _mask_email(email: Optional[str]) -> Optional[str]:
     return f"{masked}@{domain}"
 
 
+def _mask_code(code: Optional[str]) -> str:
+    raw = str(code or "").strip()
+    if not raw:
+        return "-"
+    tail = raw[-4:] if len(raw) > 4 else raw[-1:]
+    return f"***{tail}"
+
+
 def build_clan_evidence_pack_pdf(
     db: Session,
     *,
@@ -134,8 +142,9 @@ def build_clan_evidence_pack_pdf(
                 inviter_email = _mask_email(inviter_email)
                 joiner_email = _mask_email(joiner_email)
             when = r["joined_at"].strftime("%Y-%m-%d %H:%M") if hasattr(r["joined_at"], "strftime") else str(r["joined_at"])
+            invite_code = _mask_code(r.get("invite_code")) if redact else str(r.get("invite_code") or "-")
             line(
-                f"- {when} | joiner: {joiner_email or r.get('joined_user_id')} | inviter: {inviter_email or r.get('invited_by_user_id')} | code: {r.get('invite_code')}",
+                f"- {when} | joiner: {joiner_email or r.get('joined_user_id')} | inviter: {inviter_email or r.get('invited_by_user_id')} | code: {invite_code}",
                 size=9,
                 gap=13,
             )
@@ -146,14 +155,14 @@ def build_clan_evidence_pack_pdf(
         line(f"- {k}: {counts[k]}")
 
     line("")
-    line("Why this matters (visa / partner framing)", bold=True, gap=18)
+    line("Reader boundary", bold=True, gap=18)
     line(
-        "GSN is a trust infrastructure: invite creation, invite use, join actions and revocations are logged as TrustEvents.",
+        "This paper is evidence for controlled community review. It is not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
         size=9,
         gap=13,
     )
     line(
-        "This creates auditable, privacy-aware accountability in community finance-supporting safer inclusion and scalable governance.",
+        "Use the redacted share copy for outside review. Use the complete record only when the reviewer is allowed to see private member details.",
         size=9,
         gap=13,
     )

@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.deps import get_db
-from app.db.models import User
+from app.db.models import ClanMembership, Loan, User
 
 from app.schemas.analytics import (
     InviteAnalyticsOut,
@@ -26,6 +26,45 @@ from app.services.loan_evidence_pack_pdf_service import build_loan_evidence_pack
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
+def _ensure_clan_admin_or_platform_admin(db: Session, *, current_user: User, clan_id: int) -> None:
+    is_platform_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    is_community_admin = bool(membership) and str(getattr(membership, "role", "") or "").lower() == "admin"
+    if not (is_platform_admin or is_community_admin):
+        raise HTTPException(status_code=403, detail="Community admin or platform admin only")
+
+
+def _ensure_can_view_loan_evidence(db: Session, *, current_user: User, loan: Loan) -> None:
+    is_platform_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
+    if is_platform_admin:
+        return
+
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.clan_id == int(loan.clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    is_owner = int(getattr(loan, "borrower_user_id", 0) or 0) == int(current_user.id)
+    is_community_admin = str(getattr(membership, "role", "") or "").lower() == "admin"
+    if not (is_owner or is_community_admin):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+
 @router.get("/clans/{clan_id}/invites", response_model=InviteAnalyticsOut)
 def clan_invite_analytics(
     clan_id: int,
@@ -35,6 +74,7 @@ def clan_invite_analytics(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
     return get_invite_analytics(db, clan_id=clan_id, from_dt=from_dt, to_dt=to_dt, top_n=top_n)
 
 
@@ -45,6 +85,7 @@ def clan_recent_invite_joins(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
     limit = max(1, min(int(limit), 500))
     return get_recent_invite_joins(db, clan_id=clan_id, limit=limit)
 
@@ -57,6 +98,7 @@ def clan_trust_events(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
     limit = max(1, min(int(limit), 1000))
     return get_trust_events_timeline(db, clan_id=clan_id, limit=limit, event_type=event_type)
 
@@ -68,6 +110,7 @@ def export_recent_invite_joins_csv(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
     limit = max(1, min(int(limit), 2000))
     rows = get_recent_invite_joins(db, clan_id=clan_id, limit=limit)
     csv_text = csv_for_recent_invite_joins(rows)
@@ -88,6 +131,7 @@ def export_trust_events_csv(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
     limit = max(1, min(int(limit), 5000))
     rows = get_trust_events_timeline(db, clan_id=clan_id, limit=limit, event_type=event_type)
     csv_text = csv_for_trust_events(rows)
@@ -101,10 +145,11 @@ def export_trust_events_csv(
 @router.get("/clans/{clan_id}/evidence-pack.pdf")
 def evidence_pack_pdf(
     clan_id: int,
-    redact: bool = False,
+    redact: bool = True,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
     pdf_bytes = build_clan_evidence_pack_pdf(db, clan_id=clan_id, redact=redact)
     return Response(
         content=pdf_bytes,
@@ -112,15 +157,17 @@ def evidence_pack_pdf(
         headers={"Content-Disposition": f'attachment; filename="gsn-community-{clan_id}-evidence-pack.pdf"'},
     )
 
-
-# ✅ NEW: Per-loan evidence pack PDF
 @router.get("/loans/{loan_id}/evidence-pack.pdf")
 def loan_evidence_pack_pdf(
     loan_id: int,
-    redact: bool = False,
+    redact: bool = True,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    loan = db.get(Loan, int(loan_id))
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    _ensure_can_view_loan_evidence(db, current_user=user, loan=loan)
     pdf_bytes = build_loan_evidence_pack_pdf(db, loan_id=loan_id, redact=redact)
     return Response(
         content=pdf_bytes,
