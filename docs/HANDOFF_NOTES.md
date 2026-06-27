@@ -71672,10 +71672,15 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm run audit:trust-actions` from `frontend`.
   - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py gmfn_backend\tests\test_gsn_evidence_pack_package.py`.
 - Deployment state:
-  - local only at this entry; not pushed or deployed yet.
-  - backend Render deployment cannot honestly be confirmed by the frontend
-    deploy hook alone; this PDF service change requires the backend API to
-    deploy from the target commit.
+  - committed and pushed to `main` as `b3f67fd3`
+    (`Polish TrustSlip evidence PDF shell`).
+  - GitHub Actions Render workflow run `28287795568` triggered the frontend
+    deploy hook successfully, but backend deployment failed at the exact API
+    credential guard because `RENDER_API_KEY` is not configured.
+  - backend Render deployment is therefore not confirmed for this PDF service
+    change; deploy `gmfn-api` manually from the Render dashboard or configure
+    GitHub secrets `RENDER_API_KEY` and preferably `RENDER_API_SERVICE_ID`,
+    then rerun `render-deploy.yml` with `deploy_api=true`.
 
 ### Follow-up same day - Spotlight tester blocker and `GSN-U-66E6A380`
 
