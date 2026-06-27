@@ -1,3 +1,48 @@
+## 2026-06-27 - 22-capability title changed to evidence-backed buying and selling
+
+Owner request:
+- Continue the institutional cleanup, including `22 things GSN does`, and avoid
+  overclaiming protected commerce, paid/API verification, escrow, payout
+  automation, or trade-release rails.
+
+Correction completed locally:
+- `frontend/src/lib/gmfnCapabilities.ts`
+  - changed capability #2 from `Trusted Buying and Selling` to
+    `Evidence-Backed Buying and Selling`.
+  - changed the proverb and summary so the capability speaks about clearer
+    trade decisions from identity, trust evidence, and community context.
+- `frontend/tools/generate-static-gsn-pdfs.py`
+  - changed the public executive-summary capability title and explanation key
+    to match the app registry exactly.
+- `frontend/tools/audit-capability-mirror.mjs`
+  - updated the canonical 22-capability title list so the app registry, gap
+    review, and static PDF generator must stay aligned.
+- `docs/GSN_99_PERCENT_MIRROR_COMPLETION_PLAN_2026-06-26.md`
+  - changed the corresponding capability heading to `Evidence-Backed Buying
+    and Selling`.
+- `docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md`
+  - changed the capability row and Demand Box note from trusted-trade phrasing
+    to evidence-backed trade phrasing while keeping the protected-commerce gap
+    explicit.
+
+Verification:
+- `npm --prefix frontend run audit:capability-mirror`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `python -m py_compile frontend\tools\generate-static-gsn-pdfs.py`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm run build` from `frontend/`
+
+Truth / remaining risk:
+- This is naming, copy, static-PDF source, and audit alignment only. It does
+  not add escrow, protected trade release, dispute workflow maturity, merchant
+  release guarantee, payout automation, or paid/API verification.
+- Some historical docs and older handoff notes may still contain `Trusted
+  Buying and Selling` or `Trusted Trade` as archived language. This slice
+  aligns the active 22-capability mirror and current gap/plan docs.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - Dashboard and Marketplace active copy moved to evidence-backed wording
 
 Owner request:

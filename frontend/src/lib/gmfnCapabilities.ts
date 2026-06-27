@@ -56,10 +56,10 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   },
   {
     id: 2,
-    title: "Trusted Buying and Selling",
-    proverb: "Trusted Buying and Selling turns reputation into safer trade.",
+    title: "Evidence-Backed Buying and Selling",
+    proverb: "Evidence-Backed Buying and Selling turns reputation into clearer trade decisions.",
     gmfn:
-      "GSN helps buyers and sellers act with more confidence because identity, trust, and community are visible in one flow.",
+      "GSN helps buyers and sellers act with more confidence because identity, trust evidence, and community context are visible in one flow.",
     category: "trade",
     tone: "focus",
     priority: 6,

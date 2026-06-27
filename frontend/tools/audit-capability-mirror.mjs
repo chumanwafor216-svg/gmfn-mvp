@@ -45,7 +45,7 @@ function assertTextExcludes(file, value, message) {
 
 const capabilityTitles = [
   "Release Before Payment",
-  "Trusted Buying and Selling",
+  "Evidence-Backed Buying and Selling",
   "Cross-Community Trade",
   "Fraud Reduction Before Action",
   "Spotlight Visibility",

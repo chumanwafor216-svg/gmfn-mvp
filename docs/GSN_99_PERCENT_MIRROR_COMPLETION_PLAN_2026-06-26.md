@@ -148,7 +148,7 @@ These are deeper versions of current capabilities. They do not block a 99 percen
      - release/reject/hold outcome;
      - trust consequences.
 
-2. Trusted Buying and Selling
+2. Evidence-Backed Buying and Selling
    - Current app has shop, marketplace, TrustSlip, Demand Box, Vault.
    - Missing:
      - complete transaction lane;

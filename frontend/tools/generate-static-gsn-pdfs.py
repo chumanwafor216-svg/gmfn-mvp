@@ -25,7 +25,7 @@ STATIC_SUMMARY_REFERENCE = "GSN-EXECUTIVE-SUMMARY-2026-06-27"
 
 CAPABILITIES = [
     "Release Before Payment",
-    "Trusted Buying and Selling",
+    "Evidence-Backed Buying and Selling",
     "Cross-Community Trade",
     "Fraud Reduction Before Action",
     "Spotlight Visibility",
@@ -58,7 +58,7 @@ CAPABILITY_EXPLANATIONS = {
         "chance of preventable loss without pretending that GSN is already a "
         "full escrow or automated release rail."
     ),
-    "Trusted Buying and Selling": (
+    "Evidence-Backed Buying and Selling": (
         "What it is: marketplace activity strengthened by identity, community "
         "signals, and readable trust evidence. How it works: GSN gives buyers "
         "and sellers public shop, TrustSlip, demand, and verification cues so "
