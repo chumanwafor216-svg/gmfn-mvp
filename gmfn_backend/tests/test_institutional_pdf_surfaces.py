@@ -61,6 +61,13 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "GMFN TrustSlip Evidence Snapshot" not in text
 
 
+def test_trust_slip_pdf_route_uses_gsn_filename():
+    text = read_service("app/api/routes/trust_slip_evidence.py")
+
+    assert 'filename="gsn-trustslip-evidence.pdf"' in text
+    assert "trust_slip_evidence.pdf" not in text
+
+
 def test_trust_timeline_pdf_uses_institutional_shell():
     text = read_service("app/services/trust_timeline_pdf_service.py")
 

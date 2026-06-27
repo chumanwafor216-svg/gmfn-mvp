@@ -652,6 +652,18 @@ assertNotContains(
   "Trust Timeline must frame exported trust history as supporting evidence, not blanket certainty."
 );
 
+assertContains(
+  "src/pages/TrustTimelinePage.tsx",
+  /reference_label\?: string \| null[\s\S]*?if \(e\.reference_label\) refs\.push\(supportDisplayText\(e\.reference_label\)\)/,
+  "Trust Timeline must use the backend's safe display reference for screenshotable user timelines."
+);
+
+assertNotContains(
+  "src/pages/TrustTimelinePage.tsx",
+  /payment_reference|loan:\$\{e\.loan_id\}|support:\$\{e\.guarantor_id\}|actor_user_id|subject_user_id/,
+  "Trust Timeline must not render raw payment references or internal event IDs on the screenshotable user page."
+);
+
 assertNotContains(
   "src/pages/TrustCommandCentrePage.tsx",
   /Needs proof|Evidence proof|Required proof not named/i,

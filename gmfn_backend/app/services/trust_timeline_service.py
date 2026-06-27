@@ -94,67 +94,67 @@ def _parse_meta(meta_json: Optional[str]) -> Dict[str, Any]:
 
 def _humane_label(event_type_raw: str, canonical: str, meta: Dict[str, Any]) -> str:
     if canonical == EV_FULL_REPAID:
-        return "Full repayment ✅"
+        return "Full repayment recorded"
     if canonical == EV_GUARANTOR_SUCCESS:
-        return "Support worked well 🤝"
+        return "Support worked well"
     if canonical == EV_GUARANTEE_GIVEN:
-        return "A supporter backed you 🤝"
+        return "A supporter backed you"
     if canonical == EV_GUARANTEE_RELEASED:
-        return "Support lock released 🔓"
+        return "Support lock released"
     if canonical == EV_MISSED:
-        return "Payment missed ⚠️"
+        return "Payment missed"
     if canonical == EV_DEFAULT:
-        return "Loan not repaid ❗"
+        return "Support request not repaid"
     if canonical == EV_FRAUD:
-        return "Safety flag 🚫"
+        return "Safety flag"
 
     et = (event_type_raw or "").strip()
     et_lower = et.lower()
     et_upper = et.upper()
 
     if et == "loan.created":
-        return "You asked for support 💬"
+        return "You asked for support"
     if et_upper == "LOAN_AUTO_APPROVED":
-        return "Your community approved ✅"
+        return "Your community approved"
     if et_upper == "LOAN_INCOMPLETE":
-        return "Needs more support 👥"
+        return "Needs more support"
     if et_upper == "LOAN_CANCELLED":
         return "Request cancelled"
 
     if et_upper == "GUARANTOR_APPROVED":
-        return "A supporter approved 🤝"
+        return "A supporter approved"
     if et_upper == "GUARANTOR_DECLINED":
-        return "A supporter declined 🙏"
+        return "A supporter declined"
     if et_upper == "GUARANTOR_EXPIRED":
-        return "Support request expired ⏳"
+        return "Support request expired"
 
     if et_lower in ("repayment.claimed", "repayment_claimed", "repayment.claim"):
-        return "You said you paid 💸"
+        return "You said you paid"
 
     if et_lower in ("merchant.release_recorded", "merchant_release_recorded"):
-        return "Merchant recorded goods release 🧾"
+        return "Merchant recorded goods release"
     if et_lower == "merchant.dispatched":
-        return "Goods dispatched 🚚"
+        return "Goods dispatched"
     if et_lower == "merchant.in_transit":
-        return "Package in transit 🚚"
+        return "Package in transit"
     if et_lower == "merchant.delivered":
-        return "Marked as delivered 📦"
+        return "Marked as delivered"
     if et_lower == "merchant.delivery_issue":
-        return "Delivery issue reported ⚠️"
+        return "Delivery issue reported"
     if et_lower == "merchant.delivery_confirmed":
-        return "Delivery confirmed ✅"
+        return "Delivery confirmed"
 
     if et_lower == "courier.received":
-        return "Courier acknowledged receipt 📦"
+        return "Courier acknowledged receipt"
     if et_lower == "courier.in_transit":
-        return "Courier marked in transit 🚚"
+        return "Courier marked in transit"
     if et_lower == "courier.delivered":
-        return "Courier marked delivered 📬"
+        return "Courier marked delivered"
 
     if et == "invite_created":
-        return "Invite link created 🔗"
+        return "Invite link created"
     if et == "invite_joined":
-        return "Someone joined via invite 🎉"
+        return "Someone joined via invite"
 
     if et == "trust.score_updated":
         return "Internal update"
@@ -224,21 +224,31 @@ def list_trust_timeline(
         created_at = _to_aware(getattr(r, "created_at", None))
         label = _humane_label(raw_type, canonical, meta) if audience == "user" else _admin_label(raw_type, canonical)
 
-        out.append(
-            {
-                "event_type": canonical if audience == "user" else (raw_type or canonical),
-                "label": label,
-                "delta": str(delta),
-                "reason": reason,
-                "note": note,
-                "payment_reference": payment_reference,
-                "loan_id": getattr(r, "loan_id", None),
-                "clan_id": getattr(r, "clan_id", None),
-                "guarantor_id": getattr(r, "guarantor_id", None),
-                "actor_user_id": getattr(r, "actor_user_id", None),
-                "subject_user_id": getattr(r, "subject_user_id", None),
-                "created_at": created_at.isoformat() if created_at else None,
-            }
-        )
+        loan_id = getattr(r, "loan_id", None)
+        guarantor_id = getattr(r, "guarantor_id", None)
+        item = {
+            "event_type": canonical if audience == "user" else (raw_type or canonical),
+            "label": label,
+            "delta": str(delta),
+            "reason": reason,
+            "note": note,
+            "created_at": created_at.isoformat() if created_at else None,
+        }
+
+        if audience == "admin":
+            item.update(
+                {
+                    "payment_reference": payment_reference,
+                    "loan_id": loan_id,
+                    "clan_id": getattr(r, "clan_id", None),
+                    "guarantor_id": guarantor_id,
+                    "actor_user_id": getattr(r, "actor_user_id", None),
+                    "subject_user_id": getattr(r, "subject_user_id", None),
+                }
+            )
+        elif loan_id or guarantor_id or payment_reference:
+            item["reference_label"] = "Private support record"
+
+        out.append(item)
 
     return out

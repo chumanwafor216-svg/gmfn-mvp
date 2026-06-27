@@ -15,6 +15,7 @@ const files = {
   loanEvidencePack: "gmfn_backend/app/services/loan_evidence_pack_pdf_service.py",
   userEvidencePack: "gmfn_backend/app/services/user_evidence_pack_pdf_service.py",
   trustSlipPdf: "gmfn_backend/app/services/trust_slip_evidence_pdf_service.py",
+  trustSlipEvidenceRoute: "gmfn_backend/app/api/routes/trust_slip_evidence.py",
   trustTimelinePdf: "gmfn_backend/app/services/trust_timeline_pdf_service.py",
   trustTimelineRoute: "gmfn_backend/app/api/routes/trust_timeline_pdf.py",
   trustSlipRoute: "gmfn_backend/app/api/routes/trust_slips.py",
@@ -205,6 +206,16 @@ assertContains(
   "trustSlipPdf",
   /draw_institutional_header[\s\S]*?draw_institutional_footer/,
   "TrustSlip PDF must draw the shared official header, watermark, and footer on every page."
+);
+assertContains(
+  "trustSlipEvidenceRoute",
+  /filename="gsn-trustslip-evidence\.pdf"/,
+  "TrustSlip evidence PDF route must use a GSN-branded download filename."
+);
+assertNotContains(
+  "trustSlipEvidenceRoute",
+  /trust_slip_evidence\.pdf/,
+  "TrustSlip evidence PDF route must not keep the old generic download filename."
 );
 assertContains(
   "trustSlipPdf",

@@ -85,6 +85,74 @@ def test_trust_why_route_serves_pack_checksum_contract(
     assert "policy_timeline_estimate" in payload
 
 
+def test_my_trust_timeline_redacts_operational_references_for_user(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="loan.repaid",
+                clan_id=1,
+                loan_id=77,
+                guarantor_id=33,
+                actor_user_id=2,
+                subject_user_id=1,
+                meta={"reason": "loan_fully_repaid", "payment_reference": "PRIVATE-REF-123"},
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    response = client.get("/trust/me/timeline?limit=5")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["items"]
+    item = payload["items"][0]
+    assert item["reference_label"] == "Private support record"
+    assert "payment_reference" not in item
+    assert "loan_id" not in item
+    assert "guarantor_id" not in item
+    assert "actor_user_id" not in item
+    assert "subject_user_id" not in item
+    assert "PRIVATE-REF-123" not in response.text
+
+
+def test_admin_trust_timeline_keeps_operational_references_for_admin(
+    client: TestClient,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="loan.repaid",
+                clan_id=1,
+                loan_id=88,
+                guarantor_id=44,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta={"reason": "loan_fully_repaid", "payment_reference": "ADMIN-REF-456"},
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    response = client.get("/trust/timeline/1?limit=5")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["items"]
+    item = payload["items"][0]
+    assert item["payment_reference"] == "ADMIN-REF-456"
+    assert item["loan_id"] == 88
+    assert item["guarantor_id"] == 44
+    assert item["actor_user_id"] == 1
+    assert item["subject_user_id"] == 1
+
+
 def test_admin_trust_events_recent_filters_match_frontend_query_contract(
     client: TestClient,
     override_current_user,

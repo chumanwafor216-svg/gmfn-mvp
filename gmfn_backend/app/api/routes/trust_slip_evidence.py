@@ -28,6 +28,6 @@ def get_my_trust_slip_pdf(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={
-            "Content-Disposition": "inline; filename=trust_slip_evidence.pdf"
+            "Content-Disposition": 'inline; filename="gsn-trustslip-evidence.pdf"'
         },
     )

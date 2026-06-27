@@ -71741,6 +71741,64 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Trust Timeline user references redacted
+
+- Trigger:
+  - owner resumed the institutional/customer-facing evidence cleanup and
+    called out that some PDFs and screenshotable papers were missing, wrong,
+    incomplete, or too exposing;
+  - the next concrete risk found was the signed-in Trust Timeline JSON and
+    page rendering raw operational references such as loan IDs, support IDs,
+    actor/subject IDs, and payment references.
+- Unabated truth:
+  - the previous PDF redaction work did not fully solve the system-level
+    exposure problem;
+  - the signed-in Trust Timeline page is screenshotable customer-facing
+    evidence, so it must not show raw internal support/payment identifiers.
+- Changed:
+  - `gmfn_backend/app/services/trust_timeline_service.py`
+    - redacts `payment_reference`, `loan_id`, `clan_id`, `guarantor_id`,
+      `actor_user_id`, and `subject_user_id` from `audience="user"` timeline
+      responses;
+    - keeps those operational fields for `audience="admin"` timeline responses;
+    - adds the safe user-facing marker `reference_label:
+      "Private support record"` when a hidden internal reference exists;
+    - removes emoji from user timeline labels so evidence text is stable in
+      PDFs/screenshots and not vulnerable to mojibake.
+  - `frontend/src/pages/TrustTimelinePage.tsx`
+    - stopped accepting/rendering raw payment, loan, support, actor, or subject
+      references;
+    - renders only the backend-provided safe `reference_label`.
+  - `gmfn_backend/app/api/routes/trust_slip_evidence.py`
+    - changed the TrustSlip evidence PDF filename from the generic
+      `trust_slip_evidence.pdf` to `gsn-trustslip-evidence.pdf`.
+  - `gmfn_backend/tests/test_trust_route_ownership.py`
+    - added coverage proving signed-in user timeline responses are redacted
+      while admin timeline responses retain operational references.
+  - `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+    - added a cage for the GSN-branded TrustSlip evidence PDF filename.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added a frontend cage preventing raw timeline references from returning
+      to the screenshotable page.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - added a cage for the TrustSlip evidence route filename.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_trust_route_ownership.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`.
+  - Passed `python -m compileall -q gmfn_backend\app\services\trust_timeline_service.py gmfn_backend\app\api\routes\trust_slip_evidence.py`.
+  - Passed `npm run audit:trust-actions` from `frontend`.
+  - Passed `npm run audit:proof-surfaces` from `frontend`.
+  - Passed `npm run audit:evidence-surfaces` from `frontend`.
+  - Passed `npm run audit:gsn-visible-language` from `frontend`.
+  - Passed `npm run build` from `frontend`.
+  - Passed `git diff --check`; only Git line-ending warnings were reported.
+- Remaining risk:
+  - deeper private exports such as the signed-in Evidence Pack ZIP still need
+    their own exposure audit; this slice focused on Trust Timeline JSON/page
+    and TrustSlip evidence filename.
+- Deployment state:
+  - verified locally at this entry;
+  - not yet committed, pushed, or Render-confirmed.
+
 ### Follow-up same day - Governance ZIP complete-record boundary
 
 - Trigger:

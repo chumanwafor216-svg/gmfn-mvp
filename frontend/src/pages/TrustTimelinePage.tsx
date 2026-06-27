@@ -17,12 +17,7 @@ type TimelineItem = {
   delta?: string;
   reason?: string | null;
   note?: string | null;
-  payment_reference?: string | null;
-  loan_id?: number | null;
-  clan_id?: number | null;
-  guarantor_id?: number | null;
-  actor_user_id?: number | null;
-  subject_user_id?: number | null;
+  reference_label?: string | null;
   created_at?: string | null;
 };
 
@@ -576,9 +571,7 @@ export default function TrustTimelinePage() {
                   {items.map((e, idx) => {
                     const d = deltaTone(e.delta);
                     const refs: string[] = [];
-                    if (e.loan_id) refs.push(`loan:${e.loan_id}`);
-                    if (e.payment_reference) refs.push(`ref:${e.payment_reference}`);
-                    if (e.guarantor_id) refs.push(`support:${e.guarantor_id}`);
+                    if (e.reference_label) refs.push(supportDisplayText(e.reference_label));
 
                     return (
                       <tr key={`${e.created_at || "t"}-${idx}`}>
