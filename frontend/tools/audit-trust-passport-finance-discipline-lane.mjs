@@ -39,6 +39,20 @@ function assertContains(key, pattern, message, text) {
   addFinding(files[key], source, -1, message, text);
 }
 
+function assertNotContains(key, pattern, message) {
+  const source = sourceByFile[key];
+  source.split(/\r?\n/).forEach((line, index) => {
+    if (pattern.test(line)) {
+      findings.push({
+        file: files[key],
+        line: index + 1,
+        message,
+        text: line.trim(),
+      });
+    }
+  });
+}
+
 assertContains(
   "trust",
   /const financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"Available capacity"[\s\S]*?"Locked support"[\s\S]*?"Overexposure"[\s\S]*?"Risk level"/,
@@ -55,6 +69,18 @@ assertContains(
   "trust",
   /It does not[\s\S]*?move money[\s\S]*?create a bank guarantee[\s\S]*?start auto-debit[\s\S]*?Finance[\s\S]*?fuller money story/,
   "Finance Discipline lane must clearly separate Trust Passport trust signals from actual Finance money movement."
+);
+
+assertContains(
+  "trust",
+  /"Requester repayment delta"[\s\S]*?ruleset\?\.borrower_repayment_delta[\s\S]*?"Support repayment delta"[\s\S]*?ruleset\?\.guarantor_repayment_delta/,
+  "Trust Passport technical finance rows must label backend borrower deltas as requester repayment deltas in visible copy."
+);
+
+assertNotContains(
+  "trust",
+  /"Borrower repayment delta"/,
+  "Trust Passport technical finance rows must not restore old Borrower repayment delta wording."
 );
 
 assertContains(
