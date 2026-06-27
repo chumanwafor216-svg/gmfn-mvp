@@ -174,7 +174,7 @@ def build_user_evidence_pack_pdf(
     line("")
     line("Visa/partner framing", bold=True, gap=18)
     line(
-        "GSN produces explainable trust evidence derived from auditable TrustEvents (repayments, guarantor behaviour, invites).",
+        "GSN produces explainable trust evidence derived from auditable TrustEvents (repayments, supporter behaviour, invites).",
         size=9,
         gap=13,
     )

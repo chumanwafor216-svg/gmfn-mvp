@@ -599,7 +599,7 @@ export default function TrustTimelinePage() {
 
           <div style={{ marginTop: 12, fontSize: 12, ...helperText() }}>
             This timeline is a community trust record. It is not a bank
-            guarantee and it does not move money from any guarantor.
+            guarantee and it does not move money from any supporter.
           </div>
         </div>
       </section>

@@ -24,8 +24,8 @@ RULES: dict[str, TrustDeltaRule] = {
     "repayment.completed": TrustDeltaRule("repayment.completed", Decimal("0.10"), "Borrower repaid in full", "positive"),
 
     # Guarantor benefit (only if you emit these explicitly)
-    "guarantor.repayment.confirmed": TrustDeltaRule("guarantor.repayment.confirmed", Decimal("0.03"), "Guarantor supported a successful repayment", "positive"),
-    "guarantor.support.confirmed": TrustDeltaRule("guarantor.support.confirmed", Decimal("0.03"), "Guarantor supported a successful repayment", "positive"),
+    "guarantor.repayment.confirmed": TrustDeltaRule("guarantor.repayment.confirmed", Decimal("0.03"), "Supporter helped a successful repayment", "positive"),
+    "guarantor.support.confirmed": TrustDeltaRule("guarantor.support.confirmed", Decimal("0.03"), "Supporter helped a successful repayment", "positive"),
 
     # Onboarding identity evidence
     "identity.phone_verified": TrustDeltaRule("identity.phone_verified", Decimal("0.50"), "Verified phone attached to identity", "positive"),

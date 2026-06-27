@@ -254,7 +254,7 @@ function normalizeLoanRow(raw: any): any | null {
       src?.role,
       src?.my_role,
       src?.participant_role,
-      src?.is_guarantor ? "Guarantor" : "",
+      src?.is_guarantor ? "Supporter" : "",
       src?.is_borrower ? "Borrower" : ""
     ),
     borrower_name: firstTruthy(
@@ -474,8 +474,9 @@ function resolveNoticeTarget(raw: any): string {
       "effective available",
       "pending deposits",
       "pending withdrawals",
-      "locked by guarantees",
-      "released guarantees",
+      "locked by support",
+      "released support",
+      "support exposure",
       "guarantor exposure",
       "requester-side total",
       "remaining to repay",
@@ -500,6 +501,7 @@ function resolveNoticeTarget(raw: any): string {
   if (
     containsAny(text, [
       "loan suggestions",
+      "supporter suggestions",
       "guarantor suggestions",
       "fit suggestions",
       "suggestions",
@@ -520,6 +522,10 @@ function resolveNoticeTarget(raw: any): string {
 
   if (
     containsAny(text, [
+      "incoming support request",
+      "support request",
+      "approve support",
+      "decline support",
       "incoming guarantor request",
       "guarantor request",
       "approve guarantor",
@@ -825,8 +831,8 @@ function buildGuarantorInboxNotices(raw: any): GuidanceNotice[] {
       id: `guarantor-${loanId || index}-${index}`,
       kind: "loan-guarantor-request",
       title: loanId
-        ? `Guarantor request waiting on loan #${loanId}`
-        : "Guarantor request waiting",
+        ? `Support request waiting on loan #${loanId}`
+        : "Support request waiting",
       detail: pledge
         ? `A borrower is waiting for your decision on a pledge of ${pledge}.`
         : "A borrower is waiting for your decision.",

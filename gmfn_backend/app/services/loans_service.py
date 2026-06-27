@@ -256,7 +256,7 @@ def evaluate_loan_after_guarantor_change(db: Session, *, loan_id: int) -> Loan:
                 "coverage": str(coverage),
                 "system": True,
                 "reason": "incomplete_quorum_or_coverage",
-                "prompt": "Continue? Add another guarantor (see suggestions) or cancel.",
+                "prompt": "Continue? Add another supporter (see suggestions) or cancel.",
                 "auto_cancel_seconds": 120,
             },
             commit=False,
@@ -293,13 +293,13 @@ def add_loan_guarantor(
     if (loan.status or "").lower() not in ACTIVE_LOAN_STATUSES_FOR_GUARANTORS:
         raise HTTPException(
             status_code=400,
-            detail=f"Cannot add guarantors when loan status is '{loan.status}'",
+            detail=f"Cannot add supporters when loan status is '{loan.status}'",
         )
 
     if int(getattr(loan, "borrower_user_id", 0) or 0) == int(guarantor_user_id):
         raise HTTPException(
             status_code=400,
-            detail="Borrower cannot be a guarantor on their own loan",
+            detail="Requester cannot support their own loan",
         )
 
     try:
@@ -326,7 +326,7 @@ def add_loan_guarantor(
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Guarantor already added for this loan")
+        raise HTTPException(status_code=409, detail="Supporter already added for this loan")
 
     db.refresh(row)
     return row
@@ -423,7 +423,7 @@ def cancel_loan(
                 guarantor_id=int(g.id),
                 released_amount=locked_amount,
                 release_reason=release_reason or "loan_cancelled",
-                note=note or "Guarantor exposure released after cancellation",
+                note=note or "Supporter responsibility released after cancellation",
                 commit=False,
                 refresh=False,
             )
@@ -471,7 +471,7 @@ def mark_loan_defaulted(
     """
     Deterministically mark a loan as defaulted.
 
-    Locked guarantor exposure is intentionally not auto-released here.
+    Locked supporter responsibility is intentionally not auto-released here.
     """
     loan = db.get(Loan, int(loan_id))
     if not loan:
@@ -539,7 +539,7 @@ def update_loan_guarantor_status(
     if normalized_status not in ALLOWED_GUARANTOR_STATUSES:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid guarantor status '{normalized_status}'",
+            detail=f"Invalid supporter status '{normalized_status}'",
         )
 
     return _impl(

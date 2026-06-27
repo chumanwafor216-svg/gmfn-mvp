@@ -98,7 +98,7 @@ def coverage_ok_for_loan(
     coverage_ok = approved >= gap
 
     if gap == Decimal("0"):
-        message = "Within personal pool; no guarantor coverage required"
+        message = "Within personal pool; no support coverage required"
     elif not pledge_bits["pledge_valid"]:
         message = "Positive guarantee gap requires a positive pledge amount"
     elif coverage_ok:

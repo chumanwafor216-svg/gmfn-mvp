@@ -75,7 +75,7 @@ def bulk_approve_pending_guarantors(
             "succeeded": ok,
             "failed": fail,
             "affected_guarantor_ids": affected_ids[:50],
-            "note": "Admin bulk-approved pending guarantors",
+            "note": "Admin bulk-approved pending supporters",
         },
     )
 
@@ -143,7 +143,7 @@ def bulk_decline_pending_guarantors(
             "succeeded": ok,
             "failed": fail,
             "affected_guarantor_ids": affected_ids[:50],
-            "note": "Admin bulk-declined pending guarantors",
+            "note": "Admin bulk-declined pending supporters",
         },
     )
 

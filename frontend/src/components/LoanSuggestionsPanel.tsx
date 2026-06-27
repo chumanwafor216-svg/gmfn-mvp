@@ -73,14 +73,14 @@ export default function LoanSuggestionsPanel({
   if (!data) {
     return (
       <div className="rounded-2xl border bg-white p-4 shadow-sm">
-        <div className="text-sm text-slate-500">No guarantor suggestions loaded yet.</div>
+        <div className="text-sm text-slate-500">No supporter suggestions loaded yet.</div>
       </div>
     );
   }
 
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm">
-      <div className="mb-3 text-lg font-bold">Guarantor Suggestions</div>
+      <div className="mb-3 text-lg font-bold">Supporter Suggestions</div>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-xl bg-slate-50 p-3">
@@ -88,7 +88,7 @@ export default function LoanSuggestionsPanel({
           <div className="font-bold">{data.loan_id}</div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
-          <div className="text-slate-500">Target Guarantee</div>
+          <div className="text-slate-500">Target Support</div>
           <div className="font-bold">{data.target_guarantee_amount}</div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">

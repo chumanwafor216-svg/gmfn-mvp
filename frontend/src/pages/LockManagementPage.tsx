@@ -161,7 +161,7 @@ export default function LockManagementPage() {
         <div style={{ marginTop: 12, ...helperText(), maxWidth: 900 }}>
           GSN will not show a release button until the repayment, cancellation,
           or admin decision can be checked safely. That protects the member,
-          guarantor, and community record from a release that cannot be defended.
+          supporter, and community record from a release that cannot be defended.
         </div>
 
         <div

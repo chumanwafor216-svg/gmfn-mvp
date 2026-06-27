@@ -1513,7 +1513,7 @@ export async function requestLoanGuarantor(payload: {
   }
 
   if (!guarantorUserId && !guarantorGmfnId) {
-    throw new Error("guarantor_user_id or guarantor_gmfn_id is required");
+    throw new Error("supporter user id or GSN id is required");
   }
 
   const cleaned: Record<string, any> = {
@@ -1668,7 +1668,7 @@ export async function addLoanGuarantorRequest(payload: {
   }
 
   if (!guarantorUserId) {
-    throw new Error("guarantor_user_id is required");
+    throw new Error("supporter user id is required");
   }
 
   if (!pledgeAmount) {

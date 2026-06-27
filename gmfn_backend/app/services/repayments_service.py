@@ -177,7 +177,7 @@ def create_repayment(
                     guarantor_id=int(getattr(g, "id", 0) or 0),
                     released_amount=locked,
                     release_reason="loan_fully_repaid",
-                    note="Locked guarantor exposure released because the loan was fully repaid.",
+                    note="Locked supporter responsibility released because the loan was fully repaid.",
                     commit=False,
                     refresh=False,
                 )

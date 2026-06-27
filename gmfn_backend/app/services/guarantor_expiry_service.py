@@ -141,7 +141,7 @@ def expire_pending_guarantors(
                 meta={
                     # ✅ explainability contract
                     "reason": "guarantor_response_timeout",
-                    "note": f"Guarantor did not respond within {expiry_hours} hours; request auto-expired.",
+                    "note": f"Supporter did not respond within {expiry_hours} hours; request auto-expired.",
                     # context
                     "expiry_hours": expiry_hours,
                     "cutoff_utc": cutoff.isoformat(),
@@ -238,8 +238,8 @@ def expire_stale_support_loans(
             reason="support_window_expired",
             release_reason="support_window_expired",
             note=(
-                "Support window expired before enough guarantors accepted. "
-                "Any locked guarantor exposure was released."
+                "Support window expired before enough supporters accepted. "
+                "Any locked supporter exposure was released."
             ),
         )
         cancelled_ids.append(int(loan.id))

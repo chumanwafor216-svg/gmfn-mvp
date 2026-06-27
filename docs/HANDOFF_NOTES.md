@@ -1,3 +1,43 @@
+## 2026-06-27 - Supporter wording rounded through loan/backend surfaces
+
+Owner request:
+- Continue until rounded off, and keep Render updated.
+
+Local corrections ready for publish:
+- Extended the visible `guarantor` -> `supporter/support` wording cleanup
+  beyond frontend copy into backend API errors, trust-event notes, repayment
+  release notes, evidence-pack PDFs, institutional reports, revenue allocation
+  status text, loan hardening messages, and trust-score reasons.
+- Updated frontend loan helper panels/workbench labels from `Guarantor
+  Suggestions` / `Target Guarantee` to supporter/support wording.
+- Preserved internal contracts: route paths, database fields, event types,
+  schemas, debug IDs, compatibility aliases, and export keys still use
+  `guarantor` where changing them would be a migration rather than a copy fix.
+- Updated `frontend/tools/audit-gsn-visible-language.mjs` so the visible-copy
+  guard expects the new supporter wording in the touched backend routes.
+
+Verification passed locally:
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `python -m pytest -q gmfn_backend\tests\test_guarantor_decision.py gmfn_backend\tests\test_loan_hardening_service.py gmfn_backend\tests\test_repayment_completion_service.py gmfn_backend\tests\test_gsn_evidence_pack_package.py gmfn_backend\tests\test_protocol_readiness_status.py gmfn_backend\tests\test\guarantor_flow.py`
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:protocol-readiness`
+- `npm --prefix frontend run audit:finance-front-package`
+- `npm --prefix frontend run audit:finance-lane-map`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:button-stability`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+- `npm run build` from `frontend/` passed when rerun unsandboxed after the
+  sandbox blocked Vite/esbuild with `spawn EPERM`.
+
+Render / publish note:
+- This batch changes backend files, so the next deploy trigger should use
+  `deploy_api=true` as well as frontend deploy.
+- Truth: if GitHub still lacks the Render backend API credentials, frontend
+  Render can be updated but backend Render cannot be truthfully claimed updated
+  until the backend deploy request is accepted.
+
 ## 2026-06-27 - Render updated for supporter wording batch
 
 Owner request:

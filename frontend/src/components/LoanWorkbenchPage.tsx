@@ -118,7 +118,7 @@ export default function LoanWorkbenchPage() {
       <div className="rounded-2xl border bg-white p-4 shadow-sm">
         <div className="mb-2 text-xl font-bold">Loan Intelligence Workspace</div>
         <div className="mb-4 text-sm text-slate-600">
-          One place to inspect guarantor suggestions and proceed/caution/block intelligence for a loan.
+          One place to inspect supporter suggestions and proceed/caution/block intelligence for a loan.
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-end">

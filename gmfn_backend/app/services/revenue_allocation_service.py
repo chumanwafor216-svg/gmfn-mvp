@@ -44,20 +44,20 @@ def _earning_status_for_loan(loan: Loan, share: Decimal) -> tuple[str, str]:
     if share <= Decimal("0.00"):
         return (
             "no_reward",
-            "No guarantor reward share is available for this support row yet.",
+            "No supporter reward share is available for this support row yet.",
         )
 
     status = str(getattr(loan, "status", "") or "").strip().lower()
     if _loan_is_repaid(loan):
         return (
             "earned",
-            "Loan fully repaid, so this guarantor reward share is earned.",
+            "Loan fully repaid, so this supporter reward share is earned.",
         )
 
     if status in {"defaulted", "cancelled", "rejected", "declined"}:
         return (
             "blocked",
-            "Loan did not close cleanly, so this guarantor reward is not payable.",
+            "Loan did not close cleanly, so this supporter reward is not payable.",
         )
 
     return (

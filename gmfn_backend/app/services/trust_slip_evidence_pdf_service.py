@@ -167,7 +167,7 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     breakdown = summary.get("counts", {}) or summary.get("breakdown", {}) or {}
     breakdown_items = [
         f"Full Repayments: {breakdown.get('full_repayments') or breakdown.get('loan_repaid') or 0}",
-        f"Guarantor Success: {breakdown.get('guarantor_success') or breakdown.get('guarantor_approved') or 0}",
+        f"Support Success: {breakdown.get('guarantor_success') or breakdown.get('guarantor_approved') or 0}",
         f"Missed Payments: {breakdown.get('missed_payments') or breakdown.get('missed_payment') or 0}",
         f"Defaults: {breakdown.get('defaults') or breakdown.get('default') or 0}",
         f"Fraud Flags: {breakdown.get('fraud_flags') or breakdown.get('fraud') or 0}",

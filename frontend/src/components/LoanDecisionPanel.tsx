@@ -116,7 +116,7 @@ export default function LoanDecisionPanel({
           <div className="mb-2 text-sm font-semibold text-slate-700">Coverage</div>
           <div className="space-y-2 text-sm">
             <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
-              <span>Target Guarantee</span>
+              <span>Target Support</span>
               <span className="font-bold">{data.coverage.target_guarantee_amount}</span>
             </div>
             <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3">

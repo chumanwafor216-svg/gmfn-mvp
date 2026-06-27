@@ -94,7 +94,7 @@ export const FIRST_CIRCLE_RELATIONSHIP_OPTIONS: FirstCircleRelationshipOption[] 
     { value: "customer", label: "Customer" },
     { value: "dealer", label: "Dealer" },
     { value: "partner", label: "Partner" },
-    { value: "guarantor_candidate", label: "Guarantor Candidate" },
+    { value: "guarantor_candidate", label: "Supporter Candidate" },
     { value: "family_support", label: "Family Support Person" },
     { value: "remittance_contact", label: "Remittance Contact" },
     { value: "group_officer", label: "Group Officer" },

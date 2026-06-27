@@ -67,5 +67,5 @@ def my_guarantor_exposure(
         "total_released": str(total_released),
         "active_guarantees": int(active),
         "historical_guarantees": int(historical),
-        "note": "Exposure is informational in MVP; guarantors are not auto-debited.",
+        "note": "Exposure is informational in MVP; supporters are not auto-debited.",
     }

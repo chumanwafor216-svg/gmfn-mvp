@@ -241,9 +241,9 @@ def create_loan(
                 f"Personal pool at request={str(personal_pool)}. "
                 f"Pool used={str(pool_used)}. "
                 f"Guarantee gap={str(guarantee_gap)}. "
-                f"Guarantors required={int(guarantors_required)}. "
+                f"Supporters required={int(guarantors_required)}. "
                 f"Status='{loan.status}'. "
-                f"{'Covered fully by personal pool.' if within_pool else 'Guarantors required to cover gap beyond personal pool.'}"
+                f"{'Covered fully by personal pool.' if within_pool else 'Supporters required to cover gap beyond personal pool.'}"
             ),
             "amount": str(requested),
             "currency": loan.currency,
@@ -452,7 +452,7 @@ def create_loan_guarantor(
     if not (is_owner or is_admin):
         raise HTTPException(
             status_code=403,
-            detail="Only the borrower or community admin can add guarantors",
+            detail="Only the requester or community admin can add supporters",
         )
 
     guarantor = add_loan_guarantor(
@@ -474,7 +474,7 @@ def create_loan_guarantor(
         meta={
             "reason": "guarantor_request_sent",
             "note": (
-                f"Guarantor request sent for loan #{loan.id}. "
+                f"Support request sent for loan #{loan.id}. "
                 f"Requested pledge amount: {loan.currency} {str(payload.pledge_amount)}."
             ),
             "pledge_amount": str(payload.pledge_amount),
@@ -593,7 +593,7 @@ def decide_loan_guarantor(
 
     g = db.get(LoanGuarantor, guarantor_id)
     if not g or int(g.loan_id) != int(loan_id):
-        raise HTTPException(status_code=404, detail="Guarantor not found")
+        raise HTTPException(status_code=404, detail="Supporter record not found")
 
     is_guarantor = int(g.guarantor_user_id) == _uid(current_user)
     is_admin = (membership.role or "").lower() == "admin"
@@ -601,7 +601,7 @@ def decide_loan_guarantor(
     if (not is_guarantor) and (not is_admin):
         raise HTTPException(
             status_code=403,
-            detail="Only the guarantor or a community admin can decide",
+            detail="Only the supporter or a community admin can decide",
         )
 
     if int(loan.borrower_user_id) == _uid(current_user) and not is_guarantor:
@@ -838,7 +838,7 @@ def trustslip_preview(
         if last_repayment
         else None,
         "breach_consequence": (
-            "If trust is breached, guarantors are notified and future trust access may be reduced. "
+            "If trust is breached, supporters are notified and future trust access may be reduced. "
             "This is not a bank guarantee."
         ),
     }

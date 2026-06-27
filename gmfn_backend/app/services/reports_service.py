@@ -156,7 +156,7 @@ def build_loan_trust_report_pdf(
         width,
         height,
         title="GSN Loan Trust Report",
-        subtitle="Loan decision, repayment, guarantor, exposure, and trust timeline evidence.",
+        subtitle="Loan decision, repayment, supporter, exposure, and trust timeline evidence.",
         generated_at=generated_at,
         reference=f"Loan {getattr(loan, 'id', '-')}",
     )
@@ -171,7 +171,7 @@ def build_loan_trust_report_pdf(
                 width,
                 height,
                 title="GSN Loan Trust Report",
-                subtitle="Loan decision, repayment, guarantor, exposure, and trust timeline evidence.",
+                subtitle="Loan decision, repayment, supporter, exposure, and trust timeline evidence.",
                 generated_at=generated_at,
                 reference=f"Loan {getattr(loan, 'id', '-')}",
             )
@@ -221,7 +221,7 @@ def build_loan_trust_report_pdf(
     p("Amount", f"{_fmt_money(amount)} {getattr(loan, 'currency', '')}")
     p("Pool Used", _fmt_money(pool_used))
     p("Guarantee Gap", _fmt_money(guarantee_gap))
-    p("Guarantors Required", str(guarantors_required))
+    p("Supporters Required", str(guarantors_required))
     p("Created At", _fmt_dt(getattr(loan, "created_at", None)))
     p("Decision At", _fmt_dt(getattr(loan, "decision_at", None)))
     p("Repaid At", _fmt_dt(getattr(loan, "repaid_at", None)))
@@ -245,7 +245,7 @@ def build_loan_trust_report_pdf(
     elif guarantee_gap > Decimal("0") and total_locked < guarantee_gap:
         recommendation = "reduce_amount"
 
-    p("Approved Guarantors", str(approved_guarantors))
+    p("Approved Supporters", str(approved_guarantors))
     p("Approved Locked Coverage", _fmt_money(total_locked))
     p("Coverage Ratio", f"{capacity_ratio:.2f}")
     p("Evidence Recommendation", recommendation)
@@ -263,7 +263,7 @@ def build_loan_trust_report_pdf(
         p("Standing Score", str(borrower_trust_score.get("standing_score", "0")))
         p("Recency Factor", str(borrower_trust_score.get("recency_factor", "0")))
         p("Full Repayments", str(counts.get("full_repayments", 0)))
-        p("Guarantor Success", str(counts.get("guarantor_success", 0)))
+        p("Support Success", str(counts.get("guarantor_success", 0)))
         p("Missed Payments", str(counts.get("missed_payments", 0)))
         p("Defaults", str(counts.get("defaults", 0)))
         p("Fraud Flags", str(counts.get("fraud_flags", 0)))
@@ -274,16 +274,16 @@ def build_loan_trust_report_pdf(
     line()
 
     ensure_space()
-    h2("Guarantor Trust Scores")
+    h2("Supporter Trust Scores")
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(left, y, "Guarantor")
+    c.drawString(left, y, "Supporter")
     c.drawRightString(right - 55 * mm, y, "Band")
     c.drawRightString(right, y, "Standing Score")
     y -= 5 * mm
     c.setFont("Helvetica", 9)
 
     if not guarantors:
-        c.drawString(left, y, "No guarantors.")
+        c.drawString(left, y, "No supporters.")
         y -= 6 * mm
     else:
         for g in guarantors:
@@ -319,7 +319,7 @@ def build_loan_trust_report_pdf(
     p("Principal", _fmt_money(amount))
     p("Service Fee", _fmt_money(service_fee))
     p("Net Disbursed", _fmt_money(net_disbursed))
-    p("Guarantor Pool", _fmt_money(guarantor_pool))
+    p("Supporter Pool", _fmt_money(guarantor_pool))
     p("Platform Revenue", _fmt_money(platform_revenue))
     p("Paid Total", _fmt_money(paid_total))
     p("Remaining", _fmt_money(remaining_amount))
@@ -361,7 +361,7 @@ def build_loan_trust_report_pdf(
     line()
 
     ensure_space()
-    h2("Guarantor Exposure Snapshot")
+    h2("Supporter Exposure Snapshot")
     total_released = sum((_d(getattr(g, "released_amount", 0)) for g in guarantors), Decimal("0"))
     total_pledged = sum((_d(getattr(g, "pledge_amount", 0)) for g in guarantors), Decimal("0"))
     p("Total Pledged", _fmt_money(total_pledged))
@@ -567,7 +567,7 @@ def build_clan_exposure_report_pdf(
 
     ensure_space()
     c.setFont("Helvetica-Oblique", 8)
-    c.drawString(left, y, "Exposure = approved/locked guarantor pressure visible across the community evidence surface.")
+    c.drawString(left, y, "Exposure = approved/locked supporter responsibility visible across the community evidence surface.")
     y -= 5 * mm
     c.drawString(left, y, "Available = current remaining support capacity after existing exposure.")
     y -= 5 * mm

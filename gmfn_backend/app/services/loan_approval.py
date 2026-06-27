@@ -36,7 +36,7 @@ def approve_loan(db: Session, *, loan: Loan, decided_by_user_id: int) -> Loan:
         if approved_count < guarantors_required:
             raise HTTPException(
                 status_code=400,
-                detail=f"Cannot approve loan: requires {guarantors_required} approved guarantor(s), but has {approved_count}.",
+                detail=f"Cannot approve loan: requires {guarantors_required} approved supporter(s), but has {approved_count}.",
             )
 
         raw_gap = getattr(loan, "guarantee_gap", None)
@@ -75,9 +75,9 @@ def approve_loan(db: Session, *, loan: Loan, decided_by_user_id: int) -> Loan:
         )
         for g in guarantors:
             if not bool(getattr(g, "is_locked", False)):
-                raise HTTPException(status_code=400, detail="Approved guarantor is not locked; cannot approve loan.")
+                raise HTTPException(status_code=400, detail="Approved supporter is not locked; cannot approve loan.")
             if Decimal(str(getattr(g, "locked_amount", 0) or 0)) <= 0:
-                raise HTTPException(status_code=400, detail="Approved guarantor has zero locked_amount; cannot approve loan.")
+                raise HTTPException(status_code=400, detail="Approved supporter has zero locked_amount; cannot approve loan.")
 
     service_fee, net_disbursed, guarantor_pool, platform_revenue = calc_loan_financials(
         db,

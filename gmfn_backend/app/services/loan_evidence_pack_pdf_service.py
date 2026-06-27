@@ -200,7 +200,7 @@ def build_loan_evidence_pack_pdf(
         width,
         height,
         title="GSN Loan Evidence Pack",
-        subtitle="Loan, trust snapshot, guarantor, repayment, and timeline evidence.",
+        subtitle="Loan, trust snapshot, supporter, repayment, and timeline evidence.",
         generated_at=ts,
         reference=f"Loan {loan_id}",
     )
@@ -215,7 +215,7 @@ def build_loan_evidence_pack_pdf(
                 width,
                 height,
                 title="GSN Loan Evidence Pack",
-                subtitle="Loan, trust snapshot, guarantor, repayment, and timeline evidence.",
+                subtitle="Loan, trust snapshot, supporter, repayment, and timeline evidence.",
                 generated_at=ts,
                 reference=f"Loan {loan_id}",
             )
@@ -244,7 +244,7 @@ def build_loan_evidence_pack_pdf(
         kv("Borrower trust updated", "-")
 
     if guarantor_trust_rows:
-        line("Guarantors trust (stored + fallback compute)", size=10, gap=14, bold=True)
+        line("Supporter trust (stored + fallback compute)", size=10, gap=14, bold=True)
         for r in guarantor_trust_rows[:12]:
             line(
                 f"- {r['email'] or r['user_id']} | score={r['score'] if r['score'] is not None else '-'} | band={r['band'] or '-'}",
@@ -252,7 +252,7 @@ def build_loan_evidence_pack_pdf(
                 gap=13,
             )
     else:
-        line("- No guarantors yet", size=10, gap=14)
+        line("- No supporters yet", size=10, gap=14)
 
     line("")
 
@@ -264,8 +264,8 @@ def build_loan_evidence_pack_pdf(
     kv("Due date", str(getattr(loan, "due_date", "-")))
     line("")
 
-    # Guarantors list
-    line("Guarantors (decisions)", bold=True)
+    # Supporters list
+    line("Supporters (decisions)", bold=True)
     if not guarantors:
         line("- None", size=10, gap=14)
     else:
@@ -331,7 +331,7 @@ def build_loan_evidence_pack_pdf(
     line("")
     line("Visa/partner framing (one-liner)", bold=True, gap=18)
     line(
-        "This report demonstrates GSN trust infrastructure: explainable trust scores derived from auditable TrustEvents, linked to guarantor and repayment behaviour.",
+        "This report demonstrates GSN trust infrastructure: explainable trust scores derived from auditable TrustEvents, linked to supporter and repayment behaviour.",
         size=9,
         gap=13,
     )

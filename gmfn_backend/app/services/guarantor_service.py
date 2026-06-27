@@ -74,7 +74,7 @@ def update_loan_guarantor_status(
 
     status = (new_status or "").strip().lower()
     if status not in ALLOWED_GUARANTOR_STATUSES:
-        raise ValueError(f"Invalid guarantor status: {new_status}")
+        raise ValueError(f"Invalid supporter status: {new_status}")
 
     row: Optional[LoanGuarantor] = None
 
@@ -83,7 +83,7 @@ def update_loan_guarantor_status(
         if isinstance(v, LoanGuarantor):
             row = v
             if clan_id is not None and int(getattr(row, "clan_id", -1)) != int(clan_id):
-                raise LookupError("LoanGuarantor not found")
+                raise LookupError("Supporter record not found")
             try:
                 row_db = db.get(LoanGuarantor, int(row.id))
                 if row_db is not None:
@@ -108,7 +108,7 @@ def update_loan_guarantor_status(
                 q = q.filter(LoanGuarantor.clan_id == int(clan_id))
             row = q.first()
             if row is None:
-                raise LookupError("LoanGuarantor not found")
+                raise LookupError("Supporter record not found")
 
     if row is None:
         if loan_id is None:
@@ -134,10 +134,10 @@ def update_loan_guarantor_status(
 
         row = q.first()
         if row is None:
-            raise LookupError("LoanGuarantor not found")
+            raise LookupError("Supporter record not found")
 
     if clan_id is not None and int(getattr(row, "clan_id", -1)) != int(clan_id):
-        raise LookupError("LoanGuarantor not found")
+        raise LookupError("Supporter record not found")
 
     loan = db.get(Loan, int(getattr(row, "loan_id", 0) or 0))
     if not loan:
@@ -148,12 +148,12 @@ def update_loan_guarantor_status(
 
     loan_status = (getattr(loan, "status", "") or "").lower()
     if loan_status not in {"pending", "incomplete"}:
-        raise ValueError(f"Cannot decide guarantor when loan status is '{getattr(loan, 'status', None)}'")
+        raise ValueError(f"Cannot decide support request when loan status is '{getattr(loan, 'status', None)}'")
 
     prev_status = (getattr(row, "status", "") or "").lower()
 
     if prev_status in {"approved", "declined"} and status != prev_status:
-        raise ValueError("Guarantor decision is final and cannot be changed")
+        raise ValueError("Support decision is final and cannot be changed")
 
     if status == prev_status:
         return row

@@ -489,7 +489,7 @@ def recompute_trust_for_user(
         latest_reason = "Verified phone established a starter trust standing"
         latest_source = EV_IDENTITY_PHONE_VERIFIED
     elif guarantor_success > 0 and full_repayments == 0:
-        latest_reason = "Successful guarantor support strengthened trust standing"
+        latest_reason = "Successful support strengthened trust standing"
         latest_source = EV_GUARANTOR_SUCCESS
     elif review_positive > 0:
         latest_reason = "A resolved community confirmation review supported the trust reading"
