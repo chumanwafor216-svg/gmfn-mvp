@@ -76959,3 +76959,55 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local-only continuation work until committed/pushed;
   - no Render deploy has been requested or confirmed for this slice.
+
+### Follow-up same day - Merchant Release public desk surfaced
+
+- Trigger:
+  - after the Merchant Release backend rail was mounted, the remaining honest
+    gap was that an outside merchant still had no polished React screen for
+    entering goods value and a release note.
+- Unabated truth:
+  - this adds the public merchant-facing release desk and the owner-side link
+    creation bridge;
+  - the page verifies the signed merchant rail first, then records release
+    evidence through `POST /api/merchant/releases`;
+  - it remains evidence only, not escrow, payout approval, bank confirmation,
+    delivery guarantee, or automatic release authority;
+  - this does not add paid/API verification, regulated payout automation,
+    school/age-group verification, or settlement custody.
+- Changed:
+  - `docs/SCREEN_REGISTRY.md`
+    - registered `MerchantReleasePage` under public verification screens.
+  - `frontend/src/pages/MerchantReleasePage.tsx`
+    - added a public no-auth task screen at `/merchant-release/:token`;
+    - checks the signed merchant token with `verifyMerchantPublic`;
+    - shows Link ID, Pack ID, expiry, evidence-only security marks, and a
+      release-note form;
+    - records release evidence with goods value, currency, and merchant note;
+    - shows a copyable release receipt after success.
+  - `frontend/src/App.tsx`
+    - added the public `/merchant-release/:token` route.
+  - `frontend/src/lib/merchantChannel.ts`
+    - added `merchantReleaseDeskPath(...)`;
+    - corrected `recordMerchantRelease(...)` to call `/api/merchant/releases`
+      instead of an unproxied `/merchant/releases` frontend path.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - added a signed `Merchant Release Desk` creator inside the Merchant
+      verification section;
+    - holder can create the signed merchant rail, see Link ID / Pack ID /
+      expiry, copy the public merchant desk URL, or open it.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - added guards for the public route, page, `/api` helper path, and
+      TrustSlip signed-desk controls.
+- Verification:
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_merchant_verify.py`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+  - `git diff --check` returned clean, aside from line-ending warnings.
+  - Browser visual smoke was not run because no Browser tool was callable in
+    this session (`tool_search` found no browser/open/screenshot tool).
+- Deployment state:
+  - local-only continuation work until committed/pushed;
+  - no Render deploy has been requested or confirmed for this slice.

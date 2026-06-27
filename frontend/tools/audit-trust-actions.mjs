@@ -1505,8 +1505,26 @@ assertContains(
 
 assertContains(
   "src/lib/merchantChannel.ts",
-  /export async function recordMerchantRelease[\s\S]*?fetch\("\/merchant\/releases"[\s\S]*?goods_value[\s\S]*?merchant_note/,
+  /export function merchantReleaseDeskPath[\s\S]*?\/merchant-release\/\$\{encodeURIComponent\(token\)\}[\s\S]*?export async function recordMerchantRelease[\s\S]*?fetch\("\/api\/merchant\/releases"[\s\S]*?goods_value[\s\S]*?merchant_note/,
   "Frontend merchant channel must expose the Merchant Release record endpoint through one helper."
+);
+
+assertContains(
+  "src/App.tsx",
+  /const MerchantReleasePage = React\.lazy[\s\S]*?path="\/merchant-release\/:token" element=\{<MerchantReleasePage \/>/,
+  "Merchant Release public screen must be routed without auth."
+);
+
+assertContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /verifyMerchantPublic[\s\S]*?recordMerchantRelease[\s\S]*?Record release evidence[\s\S]*?not payment confirmation or automatic release authority[\s\S]*?No escrow[\s\S]*?No payout approval/,
+  "Merchant Release page must verify the signed rail and record bounded release evidence."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /getMerchantLink[\s\S]*?merchantReleaseDeskPath[\s\S]*?Signed merchant release desk[\s\S]*?debugId="trust-slip\.merchant-release\.create"[\s\S]*?debugId="trust-slip\.merchant-release\.copy"/,
+  "TrustSlip merchant verification must let the holder create and copy the signed merchant release desk."
 );
 
 assertContains(

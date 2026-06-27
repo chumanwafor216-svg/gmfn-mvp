@@ -39,6 +39,9 @@ const TrustSlipPage = React.lazy(() => import("./pages/TrustSlipPage"));
 const TrustSlipVerifyPage = React.lazy(
   () => import("./pages/TrustSlipVerifyPage")
 );
+const MerchantReleasePage = React.lazy(
+  () => import("./pages/MerchantReleasePage")
+);
 const OpenTrustPage = React.lazy(() => import("./pages/OpenTrustPage"));
 const CCIReadingPage = React.lazy(() => import("./pages/CCIReadingPage"));
 const PaymentInstructionsPage = React.lazy(
@@ -780,6 +783,7 @@ export default function App() {
       <Route path="/trust-slips/verify/:code/page" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/lite" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/print" element={<TrustSlipVerifyPage />} />
+      <Route path="/merchant-release/:token" element={<MerchantReleasePage />} />
       <Route
         path="/community-confirmations/public/:token"
         element={<CommunityConfirmationOutcomePage />}

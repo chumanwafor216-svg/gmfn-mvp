@@ -90,6 +90,11 @@ export function extractMerchantToken(fullUrlOrToken: string): string {
   return v.replace(/^\/+/, "");
 }
 
+export function merchantReleaseDeskPath(tokenOrUrl: string): string {
+  const token = extractMerchantToken(tokenOrUrl);
+  return token ? `/merchant-release/${encodeURIComponent(token)}` : "";
+}
+
 export async function verifyMerchantPublic(tokenOrUrl: string): Promise<MerchantVerifyPublicResponse> {
   const token = extractMerchantToken(tokenOrUrl);
   const res = await fetch(`/trust-slips/merchant/verify/${token}`, { method: "GET" });
@@ -99,7 +104,7 @@ export async function verifyMerchantPublic(tokenOrUrl: string): Promise<Merchant
 
 export async function recordMerchantRelease(input: MerchantReleaseInput): Promise<MerchantReleaseResponse> {
   const token = extractMerchantToken(input.token);
-  const res = await fetch("/merchant/releases", {
+  const res = await fetch("/api/merchant/releases", {
     method: "POST",
     headers: {
       Accept: "application/json",

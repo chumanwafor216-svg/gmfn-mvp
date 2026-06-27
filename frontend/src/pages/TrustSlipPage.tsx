@@ -32,6 +32,11 @@ import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildTrustSlipGuideItems } from "../lib/trustDocumentGuide";
 import { buildTrustSlipSnapshot } from "../lib/trustDocumentSnapshots";
 import {
+  getMerchantLink,
+  merchantReleaseDeskPath,
+  type MerchantLinkResponse,
+} from "../lib/merchantChannel";
+import {
   getTrustBandShortLabel,
   getTrustEvidenceLanguage,
   normalizeTrustBand,
@@ -1550,6 +1555,8 @@ export default function TrustSlipPage() {
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [confirmationOutcome, setConfirmationOutcome] =
     useState<CommunityConfirmationOutcome | null>(null);
+  const [merchantRailBusy, setMerchantRailBusy] = useState(false);
+  const [merchantRailLink, setMerchantRailLink] = useState<MerchantLinkResponse | null>(null);
   const guideItems = useMemo(() => buildTrustSlipGuideItems(), []);
   const actionGuide = useMemo(() => buildTrustSlipActionGuide(), []);
   const trustDocumentFamilyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
@@ -1802,6 +1809,14 @@ export default function TrustSlipPage() {
     );
   }, [summary, trustSlipCode]);
   const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
+  const merchantRailReleasePath = useMemo(
+    () => (merchantRailLink?.path ? merchantReleaseDeskPath(merchantRailLink.path) : ""),
+    [merchantRailLink?.path]
+  );
+  const merchantRailReleaseUrl = useMemo(
+    () => toFrontendAbsoluteUrl(merchantRailReleasePath),
+    [merchantRailReleasePath]
+  );
 
   const qrValue = firstTruthy(verifyUrl, verifyPath, trustSlipCode);
 
@@ -2531,6 +2546,24 @@ export default function TrustSlipPage() {
       showNotice("error", "Community confirmation could not be opened yet.");
     } finally {
       setConfirmationBusy(false);
+    }
+  }
+
+  async function createMerchantRailLink() {
+    setMerchantRailBusy(true);
+    try {
+      const result = await getMerchantLink(72, "standard");
+      setMerchantRailLink(result);
+      showNotice("success", "Signed merchant release desk created. Copy it for the merchant.");
+    } catch (error) {
+      showNotice(
+        "error",
+        error instanceof Error
+          ? error.message
+          : "GSN could not create the merchant release desk yet."
+      );
+    } finally {
+      setMerchantRailBusy(false);
     }
   }
 
@@ -4349,6 +4382,77 @@ export default function TrustSlipPage() {
                 <div style={helperText()}>
                   Expires: {safeStr(summary?.expires_at) ? safeDateTime(summary?.expires_at) : "No expiry stated"}
                 </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 14,
+                  borderRadius: 18,
+                  border: "1px solid rgba(214,226,239,0.9)",
+                  background: "#F8FBFF",
+                  padding: 14,
+                }}
+              >
+                <div style={sectionLabel()}>Signed merchant release desk</div>
+                <div style={{ marginTop: 7, ...helperText() }}>
+                  Create this link when a merchant needs to check the signed rail and record release evidence.
+                  The record is still not escrow, payout approval, bank confirmation, or delivery guarantee.
+                </div>
+                {merchantRailLink ? (
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(true)}>
+                      Link ID: {merchantRailLink.verification_link_id}
+                    </span>
+                    <span style={badge(false)}>
+                      Pack ID: {merchantRailLink.pack_id || "Not shown"}
+                    </span>
+                    <span style={badge(false)}>
+                      Expires in {merchantRailLink.ttl_hours}h
+                    </span>
+                  </div>
+                ) : null}
+                <CardActionRow style={{ marginTop: 12 }}>
+                  <PrimaryButton
+                    onClick={() => void createMerchantRailLink()}
+                    busy={merchantRailBusy}
+                    busyLabel="Creating..."
+                    stableHeight={isCompact ? 52 : 50}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 190}
+                    debugId="trust-slip.merchant-release.create"
+                  >
+                    Create merchant desk
+                  </PrimaryButton>
+                  <SecondaryButton
+                    onClick={() =>
+                      void handleCopy(
+                        merchantRailReleaseUrl,
+                        "Merchant release desk copied.",
+                        "Create the merchant desk first."
+                      )
+                    }
+                    stableHeight={isCompact ? 52 : 50}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 190}
+                    debugId="trust-slip.merchant-release.copy"
+                  >
+                    Copy merchant desk
+                  </SecondaryButton>
+                  {merchantRailReleasePath ? (
+                    <StableCtaLink
+                      to={merchantRailReleasePath}
+                      target="_blank"
+                      rel="noreferrer"
+                      kind="soft"
+                      stableHeight={isCompact ? 52 : 50}
+                      fullWidth={isCompact}
+                      minWidth={isCompact ? undefined : 176}
+                      debugId="trust-slip.merchant-release.open"
+                    >
+                      Open desk
+                    </StableCtaLink>
+                  ) : null}
+                </CardActionRow>
               </div>
 
               <CardActionRow style={{ marginTop: 14 }}>
