@@ -1,3 +1,48 @@
+## 2026-06-27 - Community following surfaced on public community record
+
+Owner request:
+- Continue materializing already-built trust engines, especially following as a
+  trust-event feed, while keeping GSN public evidence honest.
+
+Correction completed locally:
+- `frontend/src/lib/api.ts`
+  - added explicit community-follow API helpers:
+    `getCommunityFollowerCount`, `getCommunityFollowStatus`,
+    `followCommunity`, and `unfollowCommunity`.
+  - the helpers call the new backend community-follow routes directly and do
+    not depend on the currently selected community header.
+- `frontend/src/pages/CommunityVerifyPage.tsx`
+  - added a compact `Community following` block to the public community
+    verification snapshot.
+  - visitors can see the public follower count when the public record includes
+    a numeric community id.
+  - signed-in users can follow or unfollow the community from the public record.
+  - the visible copy states that following is light community-interest evidence
+    only, not membership, endorsement, verification, or payment evidence.
+  - the serious action remains `Request scoped confirmation`; following is a
+    secondary attention signal, not a decision signal.
+- `frontend/tools/audit-trust-actions.mjs`
+  - added source guards for the community-follow API helpers, numeric
+    community-id usage, signed-in follow/unfollow behavior, and the public
+    limitation wording.
+
+Verification:
+- `npm --prefix frontend run audit:trust-actions`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warnings on edited
+  frontend files.
+
+Truth / remaining risk:
+- This surfaces the backend community-follow engine on the public community
+  record. It does not yet add a separate “following feed” page or TrustSlip
+  line item for community follows.
+- Follow/unfollow requires a signed-in session. Visitors only get the public
+  count and record boundary.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - TrustSlip public privacy banner pluralized
 
 Owner request:

@@ -15,9 +15,13 @@ import {
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
 import {
+  followCommunity,
+  getCommunityFollowerCount,
+  getCommunityFollowStatus,
   getPublicCommunityVerification,
   requestPublicCommunityVerificationConfirmation,
   safeCopy,
+  unfollowCommunity,
 } from "../lib/api";
 import { publicFrontendUrl } from "../lib/publicLinks";
 
@@ -76,6 +80,14 @@ type Notice = {
   text: string;
 };
 
+type CommunityFollowState = {
+  loading: boolean;
+  busy: boolean;
+  statusKnown: boolean;
+  isFollowing: boolean;
+  followerCount: number | null;
+};
+
 function safeStr(value: any): string {
   return String(value ?? "").trim();
 }
@@ -110,6 +122,19 @@ function labelize(value: any): string {
   const text = safeStr(value).replace(/[_-]+/g, " ");
   if (!text) return "Not shown";
   return text.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function positiveNumber(value: any): number | null {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue) || numberValue <= 0) return null;
+  return Math.trunc(numberValue);
+}
+
+function responseFollowerCount(value: any): number | null {
+  const count = positiveNumber(value?.follower_count ?? value?.followers_count);
+  if (count !== null) return count;
+  const rawCount = Number(value?.follower_count ?? value?.followers_count);
+  return Number.isFinite(rawCount) && rawCount === 0 ? 0 : null;
 }
 
 function normalizePublicRecordLabel(value: any): string {
@@ -333,10 +358,22 @@ export default function CommunityVerifyPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [requestingConfirmation, setRequestingConfirmation] = useState(false);
+  const [communityFollowState, setCommunityFollowState] =
+    useState<CommunityFollowState>({
+      loading: false,
+      busy: false,
+      statusKnown: false,
+      isFollowing: false,
+      followerCount: null,
+    });
   const keyText = safeStr(communityKey);
   const publicLink = useMemo(
     () => publicFrontendUrl(`/verify/community/${encodeURIComponent(keyText)}`),
     [keyText]
+  );
+  const communityFollowId = useMemo(
+    () => positiveNumber(record?.community_id),
+    [record?.community_id]
   );
 
   const loadRecord = useCallback(async () => {
@@ -367,6 +404,65 @@ export default function CommunityVerifyPage() {
     const timer = window.setTimeout(() => setNotice(null), 2600);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  const loadCommunityFollowState = useCallback(async () => {
+    if (!communityFollowId) {
+      setCommunityFollowState({
+        loading: false,
+        busy: false,
+        statusKnown: false,
+        isFollowing: false,
+        followerCount: null,
+      });
+      return;
+    }
+
+    setCommunityFollowState((prev) => ({ ...prev, loading: true }));
+    try {
+      const countResult = await getCommunityFollowerCount(communityFollowId);
+      const followerCount = responseFollowerCount(countResult);
+      let statusKnown = false;
+      let isFollowing = false;
+
+      try {
+        const statusResult = await getCommunityFollowStatus(communityFollowId);
+        statusKnown = true;
+        isFollowing = Boolean(statusResult?.is_following);
+        const statusCount = responseFollowerCount(statusResult);
+        setCommunityFollowState((prev) => ({
+          ...prev,
+          loading: false,
+          statusKnown,
+          isFollowing,
+          followerCount: statusCount ?? followerCount ?? 0,
+        }));
+        return;
+      } catch {
+        statusKnown = false;
+        isFollowing = false;
+      }
+
+      setCommunityFollowState((prev) => ({
+        ...prev,
+        loading: false,
+        statusKnown,
+        isFollowing,
+        followerCount: followerCount ?? 0,
+      }));
+    } catch {
+      setCommunityFollowState((prev) => ({
+        ...prev,
+        loading: false,
+        statusKnown: false,
+        isFollowing: false,
+        followerCount: null,
+      }));
+    }
+  }, [communityFollowId]);
+
+  useEffect(() => {
+    void loadCommunityFollowState();
+  }, [loadCommunityFollowState]);
 
   async function copyLink() {
     const copied = await safeCopy(publicLink);
@@ -551,6 +647,51 @@ export default function CommunityVerifyPage() {
   const confirmationActionBody = requestConfirmationAvailable
     ? "Use Request confirmation when you need a current answer from the community without exposing private member contacts."
     : "This community cannot receive controlled confirmation from this public page yet. Ask for a scoped member credential, TrustSlip, acknowledged affiliate record, or fresh community evidence before acting.";
+
+  async function toggleCommunityFollow() {
+    if (!communityFollowId) {
+      setNotice({
+        tone: "error",
+        text: "Community following is not ready for this public record yet.",
+      });
+      return;
+    }
+
+    setCommunityFollowState((prev) => ({ ...prev, busy: true }));
+    try {
+      const result = communityFollowState.isFollowing
+        ? await unfollowCommunity(communityFollowId)
+        : await followCommunity(communityFollowId);
+      const followerCount = responseFollowerCount(result);
+      const isFollowing = Boolean(result?.is_following);
+      setCommunityFollowState((prev) => ({
+        ...prev,
+        busy: false,
+        statusKnown: true,
+        isFollowing,
+        followerCount: followerCount ?? prev.followerCount ?? 0,
+      }));
+      setNotice({
+        tone: "success",
+        text: isFollowing
+          ? "You are following this community. GSN records this as light community-interest evidence, not membership, endorsement, verification, or payment evidence."
+          : "You have unfollowed this community. GSN records this as a light community-interest update, not a trust downgrade.",
+      });
+    } catch (err: any) {
+      const message = safeStr(err?.message || err);
+      const needsSignIn =
+        message.toLowerCase().includes("not authenticated") ||
+        message.toLowerCase().includes("401") ||
+        message.toLowerCase().includes("credentials");
+      setCommunityFollowState((prev) => ({ ...prev, busy: false }));
+      setNotice({
+        tone: "error",
+        text: needsSignIn
+          ? "Sign in to follow this community. Visitors can still read the public community record."
+          : message || "Community following could not be updated. Try again from this page.",
+      });
+    }
+  }
 
   async function requestConfirmation() {
     if (!requestConfirmationAvailable) {
@@ -1097,6 +1238,80 @@ export default function CommunityVerifyPage() {
                         {communityVerifyIconBadge("public-globe", 32, "navy")}
                         Copy
                       </SecondaryButton>
+                    </div>
+                    <div
+                      aria-label="Community following"
+                      style={{
+                        borderRadius: 17,
+                        border: "1px solid rgba(8,35,58,0.11)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,251,235,0.90) 0%, rgba(255,255,255,0.96) 100%)",
+                        padding: 10,
+                        display: "grid",
+                        gap: 9,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "38px minmax(0, 1fr)",
+                          gap: 9,
+                          alignItems: "center",
+                        }}
+                      >
+                        {communityVerifyIconBadge("community-building", 34, "amber")}
+                        <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                          <strong
+                            style={{
+                              color: "#07172C",
+                              fontSize: 14,
+                              lineHeight: 1.16,
+                            }}
+                          >
+                            Community following
+                          </strong>
+                          <span
+                            style={{
+                              color: "#526579",
+                              fontSize: 12.5,
+                              lineHeight: 1.32,
+                            }}
+                          >
+                            {communityFollowState.loading
+                              ? "Checking follow record."
+                              : communityFollowState.followerCount === null
+                                ? "Follower count is not available yet."
+                                : `${communityFollowState.followerCount} people follow this community in GSN.`}
+                          </span>
+                        </div>
+                      </div>
+                      <SecondaryButton
+                        debugId={
+                          communityFollowState.isFollowing
+                            ? "community-verify.community-unfollow"
+                            : "community-verify.community-follow"
+                        }
+                        stableHeight={50}
+                        busy={communityFollowState.busy}
+                        busyLabel="Updating"
+                        onClick={() => void toggleCommunityFollow()}
+                        style={{ borderRadius: 15, fontSize: 13.5 }}
+                      >
+                        {communityVerifyIconBadge("trust-shield", 30, "navy")}
+                        {communityFollowState.isFollowing ? "Unfollow" : "Follow community"}
+                      </SecondaryButton>
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "#6B5B1A",
+                          fontSize: 12.5,
+                          lineHeight: 1.35,
+                          fontWeight: 850,
+                        }}
+                      >
+                        Following is light community-interest evidence only. It is not
+                        membership, endorsement, verification, or payment evidence.
+                      </p>
                     </div>
                     <div
                       style={{

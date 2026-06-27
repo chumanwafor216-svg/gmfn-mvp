@@ -2407,6 +2407,48 @@ export async function updateMyCommunityConfirmationContactSetting(
   );
 }
 
+export async function getCommunityFollowerCount(
+  communityId: number | string
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/followers/count`,
+    "GET",
+    undefined,
+    { header_clan_id: null, quiet: true }
+  );
+}
+
+export async function getCommunityFollowStatus(
+  communityId: number | string
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/follow-status`,
+    "GET",
+    undefined,
+    { header_clan_id: null, quiet: true }
+  );
+}
+
+export async function followCommunity(communityId: number | string): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/follow`,
+    "POST",
+    {},
+    { header_clan_id: null }
+  );
+}
+
+export async function unfollowCommunity(
+  communityId: number | string
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(communityId))}/follow`,
+    "DELETE",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
 export async function respondToCommunityConfirmation(
   requestId: number | string,
   payload: {

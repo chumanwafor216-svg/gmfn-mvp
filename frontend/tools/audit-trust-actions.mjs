@@ -515,6 +515,24 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /followCommunity[\s\S]*?getCommunityFollowerCount[\s\S]*?getCommunityFollowStatus[\s\S]*?unfollowCommunity[\s\S]*?const communityFollowId = useMemo\([\s\S]*?positiveNumber\(record\?\.community_id\)[\s\S]*?async function toggleCommunityFollow\(\)[\s\S]*?Sign in to follow this community[\s\S]*?Visitors can still read the public community record/,
+  "CommunityVerifyPage community following must use the numeric community id from the public record and must require sign-in for follow/unfollow."
+);
+
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /aria-label="Community following"[\s\S]*?Community following[\s\S]*?community-verify\.community-unfollow[\s\S]*?community-verify\.community-follow[\s\S]*?Follow community[\s\S]*?Following is light community-interest evidence only[\s\S]*?not[\s\S]*?membership[\s\S]*?endorsement[\s\S]*?verification[\s\S]*?payment evidence/,
+  "CommunityVerifyPage must present following as a light interest signal only, not membership, endorsement, verification, or payment evidence."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /export async function getCommunityFollowerCount[\s\S]*?\/clans\/\$\{encodeURIComponent\(String\(communityId\)\)\}\/followers\/count[\s\S]*?export async function getCommunityFollowStatus[\s\S]*?\/clans\/\$\{encodeURIComponent\(String\(communityId\)\)\}\/follow-status[\s\S]*?export async function followCommunity[\s\S]*?\/clans\/\$\{encodeURIComponent\(String\(communityId\)\)\}\/follow[\s\S]*?export async function unfollowCommunity[\s\S]*?\/clans\/\$\{encodeURIComponent\(String\(communityId\)\)\}\/follow/,
+  "Community following must have explicit API helpers for count, signed-in status, follow, and unfollow."
+);
+
+assertContains(
   "src/lib/api.ts",
   /requestPublicCommunityVerificationConfirmation[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}\/confirmation-request/,
   "CommunityVerifyPage request confirmation must call the controlled public verification relay endpoint."
