@@ -75383,3 +75383,51 @@ GSN-branded invite composer and invite-entry continuity.
   - no backend CI run triggered for this frontend-only slice under the current
     path-filtered pilot workflow;
   - no Render deploy has been requested or confirmed for this slice.
+
+### Follow-up same day - Protected Trade lifecycle updates surfaced
+
+- Trigger:
+  - owner asked to continue after the first Marketplace protected-trade create
+    and recent-record surface landed.
+  - backend already supported controlled protected-trade events, but the UI
+    still could not append those events to a trade record.
+- Unabated truth:
+  - this adds a controlled event recorder inside the existing Marketplace
+    `Trusted Trade` lane;
+  - users can choose a recent protected trade record, choose an update type,
+    write an evidence note, and record the update;
+  - exposed update types include payment claim, payment note, release request,
+    release recorded, release declined, receipt confirmed, not received,
+    dispute opened/resolved, evidence note, and close record;
+  - payment claim copy says it is not bank confirmation;
+  - every update remains an evidence record only: not escrow, not money custody,
+    not automatic payout, not bank guarantee, not delivery guarantee, and not
+    paid/API verification;
+  - no dedicated public protected-trade paper, QR, PDF, TrustSlip attachment,
+    or external verification page exists yet.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - imported `addProtectedTradeEvent`;
+    - added `PROTECTED_TRADE_EVENT_OPTIONS` with safe labels and boundary copy;
+    - added selected trade/update/note state;
+    - auto-selects the first recent protected-trade record;
+    - after creating a protected trade, selects the created record for the next
+      update;
+    - added `handleRecordProtectedTradeEvent` to append a lifecycle event and
+      reload the recent protected-trade rows;
+    - added a compact `Record update` block under recent records in the
+      existing protected-trade card.
+  - `frontend/tools/audit-marketplace-trusted-trade-lane.mjs`
+    - added guards for the record/update/note controls;
+    - added guards for non-bank-confirmation and non-custodial boundary copy;
+    - added a negative guard against escrow, bank-confirmed, automatic-payout,
+      and delivery-guarantee wording.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-trusted-trade-lane`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+  - `git diff --check` returned clean, aside from line-ending warnings.
+- Deployment state:
+  - local only until committed and pushed;
+  - no Render deploy has been requested or confirmed for this slice.

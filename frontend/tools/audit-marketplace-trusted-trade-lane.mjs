@@ -63,6 +63,16 @@ assertContains(
   "Trusted Trade must cap the first visible member list and tuck the rest behind a compact disclosure."
 );
 
+assertContains(
+  /PROTECTED_TRADE_EVENT_OPTIONS[\s\S]*?Payment claimed[\s\S]*?This is not bank confirmation/,
+  "Protected Trade event options must warn that payment claims are not bank confirmation."
+);
+
+assertContains(
+  /Evidence update only\. Not escrow, not automatic payout, not a bank guarantee, not a delivery guarantee/,
+  "Protected Trade event logging must keep the non-custodial boundary in metadata."
+);
+
 const trustedTradeSection = sectionBetween(
   /id="marketplace-members-shops"/,
   /id="marketplace-loans-support"/
@@ -87,6 +97,11 @@ if (!trustedTradeSection.text) {
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.counterpart"\)/,
     /debugId="marketplace\.protected-trade\.create"[\s\S]*?Start record/,
     /debugId="marketplace\.protected-trade\.refresh"[\s\S]*?Refresh records/,
+    /Record update/,
+    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.record"\)/,
+    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.type"\)/,
+    /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.note"\)/,
+    /debugId="marketplace\.protected-trade\.record-update"[\s\S]*?Record update/,
     /Visible members/,
     /Full visible list shown/,
     /more tucked away/,
@@ -118,6 +133,14 @@ if (!trustedTradeSection.text) {
       trustedTradeSection.start,
       "Trusted Trade detail section must not restore the old explainer and three-card instruction stack.",
       "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure."
+    );
+  }
+
+  if (/(escrow released|bank confirmed|automatic payout|guaranteed delivery|release money automatically)/i.test(trustedTradeSection.text)) {
+    addFinding(
+      trustedTradeSection.start,
+      "Trusted Trade protected-record updates must not imply escrow, bank confirmation, payout automation, or delivery guarantee.",
+      "Keep the protected-trade lane as an evidence rail unless paid/API verification and regulated release rails exist."
     );
   }
 }

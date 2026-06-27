@@ -45,6 +45,7 @@ import {
   createClanInvite,
   createLoanRequest,
   createProtectedTrade,
+  addProtectedTradeEvent,
   getCommunityPackageStatus,
   getMarketplaceRepostTargetSuggestions,
   getMarketplaceShopSpotlightStatus,
@@ -229,6 +230,64 @@ type ProtectedTradeDraft = {
   currency: string;
   termsSummary: string;
 };
+
+const PROTECTED_TRADE_EVENT_OPTIONS = [
+  {
+    value: "payment.claimed",
+    label: "Payment claimed",
+    detail: "Someone says payment was sent. This is not bank confirmation.",
+  },
+  {
+    value: "payment.recorded",
+    label: "Payment note recorded",
+    detail: "Record payment evidence seen by the parties, not automatic payout.",
+  },
+  {
+    value: "release.requested",
+    label: "Release requested",
+    detail: "Ask for goods or service release after checking current evidence.",
+  },
+  {
+    value: "release.recorded",
+    label: "Release recorded",
+    detail: "Record that the seller says goods or service were released.",
+  },
+  {
+    value: "release.declined",
+    label: "Release declined",
+    detail: "Record that release was refused or paused.",
+  },
+  {
+    value: "receipt.confirmed",
+    label: "Receipt confirmed",
+    detail: "Record that the buyer says goods or service were received.",
+  },
+  {
+    value: "receipt.not_received",
+    label: "Not received",
+    detail: "Record that the buyer says goods or service were not received.",
+  },
+  {
+    value: "dispute.opened",
+    label: "Dispute opened",
+    detail: "Record a problem that needs community or party review.",
+  },
+  {
+    value: "dispute.resolved",
+    label: "Dispute resolved",
+    detail: "Record that the parties/community resolved the problem.",
+  },
+  {
+    value: "evidence.attached",
+    label: "Evidence note",
+    detail: "Record a supporting reference or note for the trade file.",
+  },
+  {
+    value: "trade.closed",
+    label: "Close record",
+    detail: "Close the trade record after the parties are done.",
+  },
+] as const;
 
 type ExpectedPaymentRecord = {
   id?: number | string | null;
@@ -3696,7 +3755,13 @@ export default function MarketplacePage() {
       currency: "NGN",
       termsSummary: "",
     });
+  const [selectedProtectedTradeId, setSelectedProtectedTradeId] = useState("");
+  const [protectedTradeEventType, setProtectedTradeEventType] =
+    useState("payment.claimed");
+  const [protectedTradeEventNote, setProtectedTradeEventNote] = useState("");
   const [creatingProtectedTrade, setCreatingProtectedTrade] = useState(false);
+  const [recordingProtectedTradeEvent, setRecordingProtectedTradeEvent] =
+    useState(false);
   const [loadingProtectedTrades, setLoadingProtectedTrades] = useState(false);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
@@ -5561,6 +5626,32 @@ export default function MarketplacePage() {
     return protectedTrades.slice(0, isCompact ? 3 : 5);
   }, [isCompact, protectedTrades]);
 
+  const selectedProtectedTrade = useMemo(() => {
+    const selectedId = positiveNumber(selectedProtectedTradeId);
+    return (
+      protectedTrades.find((trade) => positiveNumber(trade.id) === selectedId) ||
+      recentProtectedTrades[0] ||
+      null
+    );
+  }, [protectedTrades, recentProtectedTrades, selectedProtectedTradeId]);
+
+  const selectedProtectedTradeEventOption =
+    PROTECTED_TRADE_EVENT_OPTIONS.find(
+      (option) => option.value === protectedTradeEventType
+    ) || PROTECTED_TRADE_EVENT_OPTIONS[0];
+
+  useEffect(() => {
+    if (selectedProtectedTradeId) {
+      const stillAvailable = protectedTrades.some(
+        (trade) => positiveNumber(trade.id) === positiveNumber(selectedProtectedTradeId)
+      );
+      if (stillAvailable) return;
+    }
+
+    const firstId = positiveNumber(protectedTrades[0]?.id);
+    setSelectedProtectedTradeId(firstId ? String(firstId) : "");
+  }, [protectedTrades, selectedProtectedTradeId]);
+
   const roscaSelectableMembers = useMemo(() => {
     return memberRows
       .filter((row) => positiveNumber(row.userId) > 0)
@@ -5667,6 +5758,9 @@ export default function MarketplacePage() {
       });
 
       setProtectedTrades((prev) => [created, ...prev].slice(0, 8));
+      if (positiveNumber(created?.id)) {
+        setSelectedProtectedTradeId(String(positiveNumber(created.id)));
+      }
       setProtectedTradeDraft((prev) => ({
         ...prev,
         itemTitle: "",
@@ -5681,6 +5775,60 @@ export default function MarketplacePage() {
       );
     } finally {
       setCreatingProtectedTrade(false);
+    }
+  }
+
+  async function handleRecordProtectedTradeEvent(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeMarketplaceButtonEvent(event);
+
+    const tradeId = positiveNumber(selectedProtectedTrade?.id);
+    if (!tradeId) {
+      showNotice("error", "Choose a protected trade record first.");
+      return;
+    }
+
+    const note = safeStr(protectedTradeEventNote);
+    if (!note) {
+      showNotice(
+        "error",
+        "Add a short note so this trade update is useful evidence."
+      );
+      return;
+    }
+
+    setRecordingProtectedTradeEvent(true);
+    try {
+      await addProtectedTradeEvent(tradeId, {
+        event_type: protectedTradeEventType,
+        note,
+        meta: {
+          source: "marketplace_trusted_trade_lane",
+          trade_code: selectedProtectedTrade?.trade_code || null,
+          boundary:
+            "Evidence update only. Not escrow, not automatic payout, not a bank guarantee, not a delivery guarantee.",
+        },
+      });
+
+      const rows = await listProtectedTrades({ limit: 30 });
+      setProtectedTrades(
+        rows
+          .filter((item) => {
+            const tradeClanId = Number(item?.clan_id || 0);
+            return tradeClanId <= 0 || tradeClanId === activeCommunityId;
+          })
+          .slice(0, 8)
+      );
+      setProtectedTradeEventNote("");
+      showNotice("success", "Protected trade update recorded.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Protected trade update could not be recorded."
+      );
+    } finally {
+      setRecordingProtectedTradeEvent(false);
     }
   }
 
@@ -10810,6 +10958,126 @@ export default function MarketplacePage() {
                     </div>
                   </div>
                 ))}
+                <div
+                  style={{
+                    borderRadius: 14,
+                    border: "1px solid rgba(214,170,69,0.22)",
+                    background:
+                      "linear-gradient(180deg, #FFFDF7 0%, #F8FBFF 100%)",
+                    padding: isCompact ? 10 : 12,
+                    display: "grid",
+                    gap: 10,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={sectionLabel()}>Record update</div>
+                    <span style={stableStatusPillStyle(Boolean(selectedProtectedTrade?.id))}>
+                      {safeStr(selectedProtectedTrade?.trade_code) || "Choose record"}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                      gap: 10,
+                      alignItems: "end",
+                    }}
+                  >
+                    <label style={{ display: "block" }}>
+                      <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                        Trade record
+                      </div>
+                      <select
+                        {...marketplaceFieldTouchProps("marketplace.protected-trade.update.record")}
+                        value={selectedProtectedTradeId}
+                        onChange={(event) =>
+                          setSelectedProtectedTradeId(event.target.value)
+                        }
+                        style={{ ...inputStyle(), marginTop: 6 }}
+                      >
+                        {recentProtectedTrades.map((trade) => (
+                          <option
+                            key={trade.id || trade.trade_code || trade.item_title}
+                            value={positiveNumber(trade.id) || ""}
+                          >
+                            {safeStr(trade.item_title) ||
+                              safeStr(trade.trade_code) ||
+                              "Protected trade"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label style={{ display: "block" }}>
+                      <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                        Update type
+                      </div>
+                      <select
+                        {...marketplaceFieldTouchProps("marketplace.protected-trade.update.type")}
+                        value={protectedTradeEventType}
+                        onChange={(event) =>
+                          setProtectedTradeEventType(event.target.value)
+                        }
+                        style={{ ...inputStyle(), marginTop: 6 }}
+                      >
+                        {PROTECTED_TRADE_EVENT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#41556B",
+                      fontSize: isCompact ? 12 : 13,
+                      fontWeight: 850,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {selectedProtectedTradeEventOption.detail}
+                  </div>
+
+                  <label style={{ display: "block" }}>
+                    <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                      Evidence note
+                    </div>
+                    <textarea
+                      {...marketplaceFieldTouchProps("marketplace.protected-trade.update.note")}
+                      value={protectedTradeEventNote}
+                      onChange={(event) =>
+                        setProtectedTradeEventNote(event.target.value)
+                      }
+                      style={{ ...textAreaStyle(), marginTop: 6, minHeight: 72 }}
+                      placeholder="Write what happened and who can stand by this update."
+                      maxLength={4000}
+                    />
+                  </label>
+
+                  <StableButton
+                    debugId="marketplace.protected-trade.record-update"
+                    type="button"
+                    busy={recordingProtectedTradeEvent}
+                    busyLabel="Recording"
+                    onClick={(event) => void handleRecordProtectedTradeEvent(event)}
+                    stableHeight={52}
+                    style={marketplaceInlineActionStyle("primary", false, isCompact)}
+                  >
+                    Record update
+                  </StableButton>
+                </div>
               </div>
             ) : (
               <div
