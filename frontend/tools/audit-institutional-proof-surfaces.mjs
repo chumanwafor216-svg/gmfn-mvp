@@ -1072,6 +1072,16 @@ assertContains(
   /Trust-limit signal/,
   "TrustSlip page must use the institution-grade trust-limit label."
 );
+assertContains(
+  "trustSlipRoute",
+  /GSN TrustSlip Release Evidence Paper[\s\S]*?Security marks: GSN\s+watermark[\s\S]*?This page prepares an admin release evidence record only[\s\S]*?does not collect[\s\S]*?confirm bank receipt[\s\S]*?approve credit[\s\S]*?guarantee delivery[\s\S]*?permission to release goods, credit, or money[\s\S]*?Release evidence helper; not\s+a bank[\s\S]*?guarantee[\s\S]*?automatic release authority/,
+  "TrustSlip release helper page must read as a restricted GSN evidence paper, not a developer/plain release page."
+);
+assertNotContains(
+  "trustSlipRoute",
+  /Use Swagger|Open Swagger|href="\/docs"|Log Release \(Admin\)/,
+  "TrustSlip release helper page must not expose developer-facing Swagger wording or the old plain admin title."
+);
 assertNotContains(
   "trustSlip",
   /Trust limit signal|Trust Limit Signal/,

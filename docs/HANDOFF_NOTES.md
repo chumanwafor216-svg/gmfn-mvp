@@ -1,3 +1,46 @@
+## 2026-06-27 - TrustSlip release helper made institutional and bounded
+
+Owner request:
+- Continue customer-facing / screenshotable evidence cleanup, especially where
+  GSN documents or helper pages could look unfinished, expose developer wording,
+  or overstate protected trade-release capability.
+
+Correction completed locally:
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - upgraded the active admin-only `/trust-slips/{code}/release/page` HTML
+    from a plain helper page into `GSN TrustSlip Release Evidence Paper`.
+  - added a GSN watermark-style paper frame, authority section, security marks,
+    TrustSlip code, GSN ID, protected action path, and institutional footer.
+  - removed `Use Swagger`, `Open Swagger`, `/docs`, and the old `Log Release
+    (Admin)` presentation from the page.
+  - added clear limitation language: the page prepares an admin evidence record
+    only and does not collect payment, confirm bank receipt, approve credit,
+    guarantee delivery, or grant permission to release goods, credit, or money.
+  - escaped the visible TrustSlip code, holder GSN ID, protected action path,
+    and verify link before inserting them into the HTML page.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - now requires the TrustSlip release helper page to keep GSN evidence-paper
+    framing and no-release-authority language.
+  - now blocks the older Swagger/plain-admin wording from returning.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added a backend source test for the release helper page boundary and
+    institutional wording.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_trust_slip_release_helper_page_is_institutional_and_bounded gmfn_backend\tests\test_institutional_pdf_surfaces.py::test_trust_slip_pdf_route_uses_gsn_filename`
+  - result: `2 passed`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run audit:trust-actions`
+
+Truth / remaining risk:
+- This does not add a new release engine, payment collection, bank
+  confirmation, delivery guarantee, or protected trade-release rail. It only
+  makes an existing admin helper page look and read like bounded GSN evidence.
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+
 ## 2026-06-27 - My GSN capability map aligned with 22-things institutional paper
 
 Owner request:

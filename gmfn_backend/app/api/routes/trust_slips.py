@@ -2015,32 +2015,171 @@ def trust_slip_release_page(
 
     holder = _slip_holder(db, slip)
     holder_gmfn_id = getattr(holder, "gmfn_id", None) if holder else "N/A"
+    verify_href = _verify_page_url(slip.code)
+    safe_code = _html(code)
+    safe_holder_gmfn_id = _html(holder_gmfn_id, "N/A")
+    safe_post_path = _html(f"/trust-slips/{code}/release")
+    safe_verify_href = _html(verify_href)
 
     html = f"""<!doctype html>
 <html>
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Log TrustSlip Release</title>
+    <title>GSN TrustSlip Release Evidence Paper</title>
     <style>
-      body {{ font-family: Arial, sans-serif; margin: 18px; }}
-      .box {{ border:1px solid #ddd; border-radius:12px; padding:16px; max-width:720px; }}
-      .btn {{ display:inline-block; padding:10px 12px; border-radius:10px; background:#111; color:#fff; text-decoration:none; margin-top:12px; }}
-      .muted {{ color:#666; font-size:13px; }}
-      pre {{ background:#f4f4f4; padding:10px; border-radius:10px; overflow:auto; }}
+      :root {{
+        --gsn-navy:#07172c;
+        --gsn-blue:#0b63d1;
+        --gsn-gold:#c8a85c;
+        --gsn-muted:#526579;
+        --gsn-paper:#fffdf7;
+      }}
+      * {{ box-sizing:border-box; }}
+      body {{
+        margin:0;
+        font-family: Arial, system-ui, -apple-system, Segoe UI, sans-serif;
+        background: linear-gradient(180deg, #eaf3ff 0%, #fffdf7 52%, #f8fbff 100%);
+        color:var(--gsn-navy);
+      }}
+      .wrap {{ max-width:820px; margin:0 auto; padding:18px; }}
+      .paper {{
+        position:relative;
+        overflow:hidden;
+        border:1px solid rgba(200,168,92,0.42);
+        border-radius:22px;
+        padding:18px;
+        background:rgba(255,253,247,0.96);
+        box-shadow:0 18px 44px rgba(7,23,44,0.12);
+      }}
+      .paper:before {{
+        content:"GSN";
+        position:absolute;
+        right:-18px;
+        top:112px;
+        color:rgba(11,99,209,0.055);
+        font-size:112px;
+        font-weight:1000;
+        transform:rotate(-18deg);
+        pointer-events:none;
+      }}
+      .authority {{
+        position:relative;
+        display:grid;
+        gap:6px;
+        padding:14px;
+        border-radius:18px;
+        background:linear-gradient(135deg, #ffffff, #f8fbff);
+        border:1px solid rgba(200,168,92,0.26);
+      }}
+      .eyebrow {{
+        color:var(--gsn-blue);
+        font-size:11px;
+        font-weight:900;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+      }}
+      h1 {{ margin:0; font-size:24px; line-height:1.1; }}
+      .muted {{ color:var(--gsn-muted); font-size:13px; line-height:1.5; }}
+      .grid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px; margin-top:14px; }}
+      .fact {{
+        position:relative;
+        z-index:1;
+        padding:12px;
+        border-radius:16px;
+        background:#ffffff;
+        border:1px solid rgba(214,226,239,0.9);
+      }}
+      .label {{ color:var(--gsn-muted); font-size:11px; font-weight:900; text-transform:uppercase; }}
+      .value {{ margin-top:4px; font-size:15px; font-weight:900; overflow-wrap:anywhere; }}
+      .notice {{
+        position:relative;
+        z-index:1;
+        margin-top:14px;
+        padding:12px;
+        border-radius:16px;
+        background:#fff7df;
+        border:1px solid rgba(200,168,92,0.35);
+        color:#6b4a00;
+        font-size:13px;
+        line-height:1.5;
+        font-weight:700;
+      }}
+      pre {{
+        position:relative;
+        z-index:1;
+        margin:12px 0 0;
+        padding:12px;
+        border-radius:16px;
+        background:#07172c;
+        color:#f8fbff;
+        overflow:auto;
+        font-size:12px;
+        line-height:1.45;
+      }}
+      .btn {{
+        position:relative;
+        z-index:1;
+        display:inline-block;
+        min-height:44px;
+        padding:12px 14px;
+        border-radius:999px;
+        background:var(--gsn-blue);
+        color:#fff;
+        font-weight:900;
+        text-decoration:none;
+        margin-top:14px;
+      }}
+      .footer {{
+        position:relative;
+        z-index:1;
+        margin-top:14px;
+        padding-top:12px;
+        border-top:1px solid rgba(214,226,239,0.9);
+        color:var(--gsn-muted);
+        font-size:12px;
+        line-height:1.45;
+      }}
     </style>
   </head>
   <body>
-    <div class="box">
-      <h3>Log Release (Admin)</h3>
-      <div class="muted">TrustSlip code: <b>{code}</b></div>
-      <div class="muted">GSN ID: <b>{holder_gmfn_id}</b></div>
-      <div class="muted">This is admin-only. It does not collect payments.</div>
+    <div class="wrap">
+      <main class="paper">
+        <section class="authority" aria-label="GSN release evidence authority marks">
+          <div class="eyebrow">Global Support Network</div>
+          <h1>GSN TrustSlip Release Evidence Paper</h1>
+          <div class="muted">
+            Restricted admin evidence helper. Security marks: GSN watermark, TrustSlip code,
+            GSN ID, protected action path, no-store response, and limitation note.
+          </div>
+        </section>
 
-      <p class="muted">Use Swagger to submit the actual release:</p>
-      <div class="muted"><code>POST /trust-slips/{code}/release</code></div>
+        <section class="grid" aria-label="Release evidence identifiers">
+          <div class="fact">
+            <div class="label">TrustSlip code</div>
+            <div class="value">{safe_code}</div>
+          </div>
+          <div class="fact">
+            <div class="label">GSN ID</div>
+            <div class="value">{safe_holder_gmfn_id}</div>
+          </div>
+          <div class="fact">
+            <div class="label">Protected action</div>
+            <div class="value">POST {safe_post_path}</div>
+          </div>
+        </section>
 
-      <p class="muted" style="margin-top:12px;">Suggested JSON body:</p>
+        <div class="notice">
+          This page prepares an admin release evidence record only. It does not collect
+          payment, confirm bank receipt, approve credit, guarantee delivery, or grant
+          permission to release goods, credit, or money.
+        </div>
+
+        <p class="muted" style="position:relative;z-index:1;margin:14px 0 0;">
+          Submit the record through the protected admin action using this payload shape.
+          Keep the note factual and do not include private information that is not needed
+          for the evidence record.
+        </p>
       <pre>{{
   "supplier_name": "Merchant name",
   "supplier_phone": "080...",
@@ -2048,8 +2187,14 @@ def trust_slip_release_page(
   "note": "Goods released"
 }}</pre>
 
-      <a class="btn" href="/docs">Open Swagger</a>
-      <a class="btn" style="background:#444;" href="/trust-slips/verify/{code}/page">Back to Verify</a>
+        <a class="btn" href="{safe_verify_href}">Back to current TrustSlip verification</a>
+        <div class="footer">
+          Global Support Network (GSN). Release evidence helper; not a bank
+          guarantee, payment instruction, credit approval, delivery guarantee, or
+          automatic release authority. Verify the current TrustSlip before relying
+          on an old screenshot or printed copy.
+        </div>
+      </main>
     </div>
   </body>
 </html>"""

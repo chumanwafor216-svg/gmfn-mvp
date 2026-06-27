@@ -165,6 +165,25 @@ def test_trust_slip_pdf_route_uses_gsn_filename():
     assert "trust_slip_evidence.pdf" not in text
 
 
+def test_trust_slip_release_helper_page_is_institutional_and_bounded():
+    text = read_service("app/api/routes/trust_slips.py")
+
+    assert "GSN TrustSlip Release Evidence Paper" in text
+    assert "Security marks: GSN watermark" in text
+    assert "This page prepares an admin release evidence record only" in text
+    assert "does not collect" in text
+    assert "confirm bank receipt" in text
+    assert "approve credit" in text
+    assert "guarantee delivery" in text
+    assert "permission to release goods, credit, or money" in text
+    assert "Release evidence helper; not a bank" in text
+    assert "automatic release authority" in text
+    assert "Use Swagger" not in text
+    assert "Open Swagger" not in text
+    assert 'href="/docs"' not in text
+    assert "Log Release (Admin)" not in text
+
+
 def test_trust_timeline_pdf_uses_institutional_shell():
     text = read_service("app/services/trust_timeline_pdf_service.py")
 
