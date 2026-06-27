@@ -1,3 +1,48 @@
+## 2026-06-27 - Supporter wording extended into Loans overview and status details
+
+Owner request:
+- Continue after the Render update and local supporter-readiness copy cleanup.
+
+Confirmed gap:
+- The previous local cleanup changed the pilot-readiness API copy to
+  `Supporter flow`, but `protocol_status()` still exposed the structured
+  status detail label as `Guarantor flow`.
+- `LoansPage` could still translate backend `is_guarantor` role data into the
+  visible role label `Guarantor`.
+- One admin-readiness sentence still said `loan, guarantor, and reason
+  context`.
+
+Local corrections:
+- `gmfn_backend/app/api/routes/protocol_status.py`
+  - visible summary detail label is now `Supporter flow` while the internal key
+    remains `guarantor_flow` for compatibility.
+- `gmfn_backend/app/api/routes/pilot_readiness.py`
+  - admin-readiness copy now says `loan, supporter, and reason context`.
+- `gmfn_backend/tests/test_protocol_readiness_status.py`
+  - now pins the `Supporter flow` label in protocol status details.
+- `frontend/src/pages/LoansPage.tsx`
+  - backend `is_guarantor` role data now displays as `Supporter`.
+- `frontend/tools/audit-loans-actions.mjs`
+  - now guards that role translation so the user-facing label does not regress.
+
+Verification passed locally:
+- `python -m pytest -q gmfn_backend\tests\test_protocol_readiness_status.py`
+- `npm --prefix frontend run audit:loans-actions`
+- `npm --prefix frontend run audit:protocol-readiness`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:button-stability`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Local only until pushed/deployed.
+- Internal route names, API fields, debug ids, and compatibility keys still use
+  `guarantor` where changing them would be a contract rename, not a copy fix.
+- This is copy/status hygiene only; it does not change support approval, payout
+  execution, auth, schema, or money movement.
+
 ## 2026-06-27 - Render updated, readiness copy continues locally
 
 Owner request:

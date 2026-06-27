@@ -60,6 +60,7 @@ def test_protocol_status_keeps_summary_and_structured_truth_details():
 
     assert details_by_key["loan_repayment_e2e"]["remaining"]
     assert details_by_key["loan_repayment_e2e"]["next_route"] == "/app/loans"
+    assert details_by_key["guarantor_flow"]["label"] == "Supporter flow"
     assert details_by_key["guarantor_flow"]["remaining"]
     assert details_by_key["guarantor_flow"]["next_route"] == "/app/loans"
     assert "supporter borrower/admin invite phone evidence and payout-route decision" in " ".join(payload["next_priority"])

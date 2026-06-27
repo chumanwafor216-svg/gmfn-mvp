@@ -127,7 +127,7 @@ function normalizeLoanRow(raw: any): LoanRow | null {
       src?.role,
       src?.my_role,
       src?.participant_role,
-      src?.is_guarantor ? "Guarantor" : "",
+      src?.is_guarantor ? "Supporter" : "",
       src?.is_borrower ? "Borrower" : ""
     ),
     borrowerName: firstTruthy(

@@ -110,6 +110,12 @@ assertContains(
 
 assertContains(
   "src/pages/LoansPage.tsx",
+  /src\?\.is_guarantor \? "Supporter" : ""/,
+  "Loans overview must translate backend is_guarantor role data into the user-facing Supporter label."
+);
+
+assertContains(
+  "src/pages/LoansPage.tsx",
   /debugId="loans\.hero\.start-support"[\s\S]*?stableHeight=\{isCompact \? 58 : 68\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?height: isCompact \? 58 : 68,[\s\S]*?minHeight: isCompact \? 58 : 68,[\s\S]*?maxHeight: isCompact \? 58 : 68,[\s\S]*?Start Support Request/,
   "Loans first phone viewport must expose a fixed-height Start Support Request CTA in the hero before the user reaches the deeper route grid."
 );

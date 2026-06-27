@@ -57,7 +57,7 @@ def protocol_status():
         },
         {
             "key": "guarantor_flow",
-            "label": "Guarantor flow",
+            "label": "Supporter flow",
             "status": summary["guarantor_flow"],
             "next_step": str(readiness_by_key["guarantor_flow"]["next_step"]),
             "remaining": readiness_by_key["guarantor_flow"]["remaining"],
