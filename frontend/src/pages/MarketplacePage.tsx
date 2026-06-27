@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
+import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
@@ -1358,6 +1359,76 @@ function communityIdentity(row: CommunityRow | null | undefined): string {
   );
 
   return raw ? displayGsnLabel(raw) : "Pending";
+}
+
+function protectedTradeStatusLabel(value: any, fallback = "not recorded"): string {
+  return (safeStr(value) || fallback).replace(/_/g, " ");
+}
+
+function protectedTradeAmountLabel(
+  trade: ProtectedTradeRecord | null | undefined
+): string {
+  const amount = safeStr(trade?.amount);
+  if (!amount) return "No amount recorded";
+  const currency = safeStr(trade?.currency || "NGN").toUpperCase() || "NGN";
+  return `${currency} ${amount}`;
+}
+
+function buildProtectedTradeEvidencePaperText({
+  trade,
+  community,
+  communityLabel,
+  generatedAt,
+  actionPath,
+}: {
+  trade: ProtectedTradeRecord | null | undefined;
+  community: CommunityRow | null | undefined;
+  communityLabel: string;
+  generatedAt: string;
+  actionPath: string;
+}): string {
+  if (!trade) return "";
+
+  const tradeCode = safeStr(trade.trade_code) || "Protected trade record";
+  const itemTitle = safeStr(trade.item_title) || "Item or service not named";
+  const termsSummary =
+    safeStr(trade.terms_summary) || "No terms summary recorded yet.";
+  const createdAt = safeStr(trade.created_at) || "Not recorded";
+  const updatedAt = safeStr(trade.updated_at) || "Not recorded";
+  const boundaryNote =
+    safeStr(trade.boundary_note) ||
+    "Non-custodial evidence record only. GSN does not hold money, guarantee delivery, or release funds automatically.";
+
+  return [
+    "GLOBAL SUPPORT NETWORK (GSN)",
+    "Official GSN headed paper",
+    "Title: GSN Protected Trade Evidence Paper",
+    "Purpose: A signed-in Marketplace paper for one community trade record. It helps the parties show what was recorded before, during, or after a trade without pretending GSN held money.",
+    `Generated (UTC): ${generatedAt}`,
+    `Reference: ${tradeCode}`,
+    "GSN record context",
+    `Community: ${communityLabel || "Selected community"}`,
+    `Community ID: ${communityIdentity(community)}`,
+    `Trade code: ${tradeCode}`,
+    `Trade status: ${protectedTradeStatusLabel(trade.status, "draft")}`,
+    `Payment status: ${protectedTradeStatusLabel(trade.payment_status)}`,
+    `Release status: ${protectedTradeStatusLabel(trade.release_status)}`,
+    `Receipt status: ${protectedTradeStatusLabel(trade.receipt_status)}`,
+    `Dispute status: ${protectedTradeStatusLabel(trade.dispute_status)}`,
+    `Amount: ${protectedTradeAmountLabel(trade)}`,
+    "Record details",
+    `Item or service: ${itemTitle}`,
+    `Basic terms: ${termsSummary}`,
+    `Created in GSN: ${createdAt}`,
+    `Last updated in GSN: ${updatedAt}`,
+    `Boundary: ${boundaryNote}`,
+    "Signed-in evidence paper: screenshot-ready inside Marketplace for the people who can already see this trade record.",
+    `Verification / action link: ${actionPath} (signed-in Marketplace record only)`,
+    "Security marks: GSN headed paper, watermark, reference code, issue time, community identity, privacy boundary, limitation note, and official footer.",
+    "Privacy: Private participant/community record. Do not forward as public verification unless GSN later provides a public verification link for this exact record.",
+    "Limitation: Evidence for judgement only. Not escrow, not automatic payout, not bank confirmation, not a bank guarantee, and not a delivery guarantee.",
+    "Footer: Global Support Network (GSN). Community commerce evidence for organized trust, portable records, and safer marketplace decisions.",
+  ].join("\n");
 }
 
 function marketplaceTrustLabel(
@@ -5639,6 +5710,22 @@ export default function MarketplacePage() {
     PROTECTED_TRADE_EVENT_OPTIONS.find(
       (option) => option.value === protectedTradeEventType
     ) || PROTECTED_TRADE_EVENT_OPTIONS[0];
+
+  const protectedTradeEvidencePaperText = useMemo(() => {
+    if (!selectedProtectedTrade) return "";
+    return buildProtectedTradeEvidencePaperText({
+      trade: selectedProtectedTrade,
+      community: selectedCommunity,
+      communityLabel: activeCommunityName,
+      generatedAt: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+      actionPath: routeWithCommunity(APP_ROUTES.MARKETPLACE, activeCommunityId),
+    });
+  }, [
+    activeCommunityId,
+    activeCommunityName,
+    selectedCommunity,
+    selectedProtectedTrade,
+  ]);
 
   useEffect(() => {
     if (selectedProtectedTradeId) {
@@ -11077,6 +11164,93 @@ export default function MarketplacePage() {
                   >
                     Record update
                   </StableButton>
+
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(212,175,55,0.26)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,253,247,0.96) 0%, rgba(248,251,255,0.98) 100%)",
+                      padding: isCompact ? 10 : 12,
+                      display: "grid",
+                      gap: 10,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={sectionLabel()}>Evidence paper</div>
+                        <div
+                          style={{
+                            marginTop: 4,
+                            ...helperText(),
+                            fontSize: 12,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          Signed-in evidence paper for screenshot review. Private
+                          to the people who can already see this record.
+                        </div>
+                      </div>
+                      <span style={stableStatusPillStyle(Boolean(selectedProtectedTrade?.id))}>
+                        {safeStr(selectedProtectedTrade?.trade_code) || "Not ready"}
+                      </span>
+                    </div>
+
+                    {protectedTradeEvidencePaperText ? (
+                      <>
+                        <GsnSnapshotPaperCard
+                          paperText={protectedTradeEvidencePaperText}
+                          compact={isCompact}
+                          icon="document"
+                          maxBodyLines={isCompact ? 4 : 6}
+                        />
+                        <StableButton
+                          debugId="marketplace.protected-trade.copy-paper"
+                          type="button"
+                          onClick={(event) => {
+                            consumeMarketplaceButtonEvent(event);
+                            void safeCopy(protectedTradeEvidencePaperText).then(
+                              (copied) => {
+                                showNotice(
+                                  copied ? "success" : "error",
+                                  copied
+                                    ? "Protected trade evidence paper copied."
+                                    : "Evidence paper could not be copied."
+                                );
+                              }
+                            );
+                          }}
+                          stableHeight={50}
+                          style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+                        >
+                          Copy paper text
+                        </StableButton>
+                      </>
+                    ) : (
+                      <div
+                        style={{
+                          ...innerCard("#FFFFFF"),
+                          padding: isCompact ? 10 : 12,
+                          color: "#41556B",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 800,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        Start or choose a protected trade record before copying
+                        the GSN evidence paper.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (

@@ -75434,3 +75434,47 @@ GSN-branded invite composer and invite-entry continuity.
   - no backend CI run triggered for this frontend-only slice under the current
     path-filtered pilot workflow;
   - no Render deploy has been requested or confirmed for this slice.
+
+### Follow-up same day - Protected Trade evidence paper surfaced
+
+- Trigger:
+  - owner asked to continue materializing protected-trade rails after the
+    lifecycle update recorder was added.
+  - the next useful customer-facing gap was a screenshotable institutional
+    paper for one protected trade record, but a public protected-trade
+    verification route would expose commerce details before GSN has a deliberate
+    disclosure model.
+- Unabated truth:
+  - this adds an authenticated Marketplace evidence paper only;
+  - it is screenshot-ready inside the existing `Trusted Trade` lane for users
+    who can already see the selected protected trade record;
+  - it is not a public verification page, QR code, PDF export, TrustSlip
+    attachment, paid/API verification, escrow, money custody, automatic payout,
+    bank confirmation, bank guarantee, or delivery guarantee;
+  - a proper public verifier can come later only after we decide exactly which
+    trade fields are safe to disclose outside the signed-in community context.
+- Changed:
+  - `frontend/src/pages/MarketplacePage.tsx`
+    - imported the shared `GsnSnapshotPaperCard` headed-paper component;
+    - added `GSN Protected Trade Evidence Paper` text generation with community
+      identity, trade code, status fields, amount, terms summary, creation and
+      update timestamps, privacy line, security marks, official footer, and
+      non-custodial limitation language;
+    - added an `Evidence paper` block below `Record update` in the existing
+      protected-trade card;
+    - added a `Copy paper text` stable action for the selected record;
+    - kept the paper link marked as a signed-in Marketplace record only.
+  - `frontend/tools/audit-marketplace-trusted-trade-lane.mjs`
+    - added guards requiring the shared headed-paper component, private-record
+      privacy language, limitation language, evidence paper block, and copy
+      action.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-trusted-trade-lane`.
+  - Passed `npm exec -- tsc -b --pretty false` from `frontend`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm run build` from `frontend`.
+  - `git diff --check` returned clean, aside from line-ending warnings.
+- Deployment state:
+  - this protected-trade evidence-paper slice is local only until committed and
+    pushed;
+  - no Render deploy has been requested or confirmed for this slice.

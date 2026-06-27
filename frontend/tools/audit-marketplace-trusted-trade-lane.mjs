@@ -73,6 +73,16 @@ assertContains(
   "Protected Trade event logging must keep the non-custodial boundary in metadata."
 );
 
+assertContains(
+  /import GsnSnapshotPaperCard from "\.\.\/components\/GsnSnapshotPaperCard"/,
+  "Protected Trade evidence papers must use the shared GSN headed-paper card."
+);
+
+assertContains(
+  /Title: GSN Protected Trade Evidence Paper[\s\S]*?Privacy: Private participant\/community record[\s\S]*?Limitation: Evidence for judgement only\. Not escrow, not automatic payout, not bank confirmation, not a bank guarantee, and not a delivery guarantee\./,
+  "Protected Trade evidence paper must carry private-record privacy and non-custodial limitation language."
+);
+
 const trustedTradeSection = sectionBetween(
   /id="marketplace-members-shops"/,
   /id="marketplace-loans-support"/
@@ -102,6 +112,10 @@ if (!trustedTradeSection.text) {
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.type"\)/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.note"\)/,
     /debugId="marketplace\.protected-trade\.record-update"[\s\S]*?Record update/,
+    /Evidence paper/,
+    /Signed-in evidence paper/,
+    /<GsnSnapshotPaperCard[\s\S]*?paperText=\{protectedTradeEvidencePaperText\}/,
+    /debugId="marketplace\.protected-trade\.copy-paper"[\s\S]*?Copy paper text/,
     /Visible members/,
     /Full visible list shown/,
     /more tucked away/,
