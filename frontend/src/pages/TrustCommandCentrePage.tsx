@@ -781,7 +781,7 @@ export default function TrustCommandCentrePage() {
         selectedClanId > 0
           ? getAdminIncompleteLoans(selectedClanId, 100).catch((error: any) => ({
               __error: safeStr(
-                error?.message || error || "Incomplete loan summary unavailable."
+                error?.message || error || "Incomplete support summary unavailable."
               ),
             }))
           : Promise.resolve(null);
@@ -1062,9 +1062,9 @@ export default function TrustCommandCentrePage() {
           detail: "Review device overlap, account clusters, and identity pressure.",
         },
         {
-          label: "Incomplete Loans",
+          label: "Incomplete Support",
           to: routes.incompleteLoans,
-          detail: "Inspect unresolved loan items still in motion.",
+          detail: "Inspect unresolved support items still in motion.",
         }
       );
     }
@@ -1108,7 +1108,7 @@ export default function TrustCommandCentrePage() {
         { label: "Trust Analytics", to: routes.trustAnalytics, kind: "primary" as const },
         { label: "Trust Events", to: routes.trustEvents, kind: "secondary" as const },
         { label: "Identity Risk", to: routes.identityRisk, kind: "secondary" as const },
-        { label: "Incomplete Loans", to: routes.incompleteLoans, kind: "secondary" as const },
+        { label: "Incomplete Support", to: routes.incompleteLoans, kind: "secondary" as const },
         { label: "Bank Console", to: routes.bankConsole, kind: "secondary" as const },
         { label: "Revenue Allocation", to: routes.revenueAllocation, kind: "secondary" as const },
         { label: "System Operations", to: routes.systemOperations, kind: "secondary" as const },
@@ -1181,9 +1181,9 @@ export default function TrustCommandCentrePage() {
             "Start in Identity Risk for overlap, clusters, or device pressure.",
         },
         {
-          title: "If you need unresolved loan oversight",
+          title: "If you need unresolved support oversight",
           detail:
-            "Start in Incomplete Loans for loans without a visible conclusion.",
+            "Start in Incomplete Support for support items without a visible conclusion.",
         }
       );
     }
@@ -1268,12 +1268,12 @@ export default function TrustCommandCentrePage() {
       return {
         title:
           urgentIncompleteCount === 1
-            ? "One incomplete loan is nearing auto-cancel"
-            : `${urgentIncompleteCount} incomplete loans are nearing auto-cancel`,
+            ? "One incomplete support item is nearing auto-cancel"
+            : `${urgentIncompleteCount} incomplete support items are nearing auto-cancel`,
         detail:
-          "The unresolved loan queue now has items running short on time. Review support progress and coverage before they fall out of the active path.",
+          "The unresolved support queue now has items running short on time. Review support progress and coverage before they fall out of the active path.",
         to: routes.incompleteLoans,
-        cta: "Open Incomplete Loans",
+        cta: "Open Incomplete Support",
       };
     }
 
@@ -1513,7 +1513,7 @@ export default function TrustCommandCentrePage() {
 
         <ExplainToggle
           label="What this executive reading does"
-          what="This gathers health, readiness, liquidity, exposure, risk, loans, and bank pressure."
+          what="This gathers health, readiness, liquidity, exposure, risk, support activity, and bank pressure."
           why="It saves you from opening several routes just to find the current state."
           next="Follow the next-action lane into the strongest current issue."
           tone="light"
@@ -1642,7 +1642,7 @@ export default function TrustCommandCentrePage() {
                     {formatNumber(liquidity?.lockedTotal || 0)} locked
                   </div>
                   <div style={commandStatDetailStyle()}>
-                    Active loans: {Number(liquidity?.activeLoansCount || 0)} | Support committed: {safeStr(liquidity?.pledgedTotal || "0")}
+                    Active support: {Number(liquidity?.activeLoansCount || 0)} | Support committed: {safeStr(liquidity?.pledgedTotal || "0")}
                   </div>
                 </div>
 
@@ -2267,7 +2267,7 @@ export default function TrustCommandCentrePage() {
             </div>
 
             <div style={statTile()}>
-              <div>{sectionLabelWithIcon("wallet", "Incomplete Loans")}</div>
+              <div>{sectionLabelWithIcon("wallet", "Incomplete Support")}</div>
               <div
                 style={{
                   marginTop: 8,
@@ -2284,7 +2284,7 @@ export default function TrustCommandCentrePage() {
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                 {selectedClanId > 0
                   ? `Ending soon: ${urgentIncompleteCount} | Community: ${communityLabel}`
-                  : "Choose a community to load the admin incomplete-loan queue."}
+                  : "Choose a community to load the admin incomplete-support queue."}
               </div>
             </div>
 

@@ -826,7 +826,7 @@ export default function SystemOperationsPage() {
     if (!selectedClanId) {
       return {
         detail:
-          "Choose the current community first so the admin queues can load the bank, pool, and incomplete-loan signals for the right place.",
+          "Choose the current community first so the admin queues can load the bank, pool, and incomplete-support signals for the right place.",
       };
     }
 
@@ -848,8 +848,8 @@ export default function SystemOperationsPage() {
       return {
         detail:
           urgentIncomplete === 1
-            ? "One incomplete loan is close to auto-cancel. Review approval progress and coverage now."
-            : `${urgentIncomplete} incomplete loans are close to auto-cancel. Review approval progress and coverage now.`,
+            ? "One incomplete support item is close to auto-cancel. Review support decisions and coverage now."
+            : `${urgentIncomplete} incomplete support items are close to auto-cancel. Review support decisions and coverage now.`,
       };
     }
 
@@ -944,7 +944,7 @@ export default function SystemOperationsPage() {
         makeSystemRow({
           id: `incomplete-loan-${row?.loan_id || index}`,
           kind: "loan.incomplete",
-          title: "Incomplete loan queue item",
+          title: "Incomplete support queue item",
           detail: [
             `Support decisions ${toNum(row?.approved_guarantors)}/${toNum(
               row?.guarantors_required
@@ -956,7 +956,7 @@ export default function SystemOperationsPage() {
             .join(" | "),
           createdAt: safeStr(row?.decision_at),
           ctaTo: routes.incompleteLoans,
-          ctaLabel: "Open Incomplete Loans",
+          ctaLabel: "Open Incomplete Support",
           level: remaining > 0 && remaining <= 60 ? "high" : "medium",
         })
       );
@@ -1296,7 +1296,7 @@ export default function SystemOperationsPage() {
             </div>
 
             <div style={statTile("#FFF5F5")}>
-              {sectionLabelWithIcon("document", "Incomplete loans", "red")}
+              {sectionLabelWithIcon("document", "Incomplete support", "red")}
               <div
                 style={{
                   marginTop: 8,
@@ -1932,7 +1932,7 @@ export default function SystemOperationsPage() {
                 Immediate queue
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Items that should not wait: bank matches, loan deadlines, identity review, or pool confirmation.
+                Items that should not wait: bank matches, support decision deadlines, identity review, or pool confirmation.
               </div>
 
               <div
@@ -1945,7 +1945,7 @@ export default function SystemOperationsPage() {
               >
                 {badgeWithIcon("wallet", <>Pending pool: {summary.pendingPool}</>, true)}
                 {badgeWithIcon("bank", <>Unmatched bank: {summary.unmatchedBank}</>)}
-                {badgeWithIcon("document", <>Incomplete loans: {summary.incompleteLoans}</>)}
+                {badgeWithIcon("document", <>Incomplete support: {summary.incompleteLoans}</>)}
               </div>
             </div>
 
@@ -2052,10 +2052,10 @@ export default function SystemOperationsPage() {
                   lineHeight: 1.3,
                 }}
               >
-                {actionLabel("document", "Incomplete Loans", "gold")}
+                {actionLabel("document", "Incomplete Support", "gold")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Check approval progress, locked cover, and auto-cancel timing.
+                Check support progress, locked cover, and auto-cancel timing.
               </div>
             </StableCtaLink>
 

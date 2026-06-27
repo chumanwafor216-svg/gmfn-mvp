@@ -666,13 +666,13 @@ assertContains(
 
 assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /Active loans: \{Number\(liquidity\?\.activeLoansCount \|\| 0\)\} \| Support committed: \{safeStr\(liquidity\?\.pledgedTotal \|\| "0"\)\}/,
+  /Active support: \{Number\(liquidity\?\.activeLoansCount \|\| 0\)\} \| Support committed: \{safeStr\(liquidity\?\.pledgedTotal \|\| "0"\)\}/,
   "Trust Command Centre liquidity detail must show committed support wording instead of pledged total wording."
 );
 
 assertNotContains(
   "src/pages/TrustCommandCentrePage.tsx",
-  /Confirm database and service health|Confirm community-admin exposure access|Review approval progress and coverage|Exposure totals could not be confirmed|Available: \$\{formatNumber\(exposureTotals\.available\)\}|exposed`|Pledged:/,
+  /Confirm database and service health|Confirm community-admin exposure access|Review approval progress and coverage|Active loans:|Exposure totals could not be confirmed|Available: \$\{formatNumber\(exposureTotals\.available\)\}|exposed`|Pledged:/,
   "Trust Command Centre must not use broad confirmation, approval, or exposure-identity wording for admin readings."
 );
 

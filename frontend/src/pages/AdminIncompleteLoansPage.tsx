@@ -248,7 +248,7 @@ export default function AdminIncompleteLoansPage() {
         setRows(Array.isArray(res?.items) ? res.items : []);
       } catch (e: any) {
         if (!alive) return;
-        setErr(String(e?.message || e || "Unable to load incomplete loans."));
+        setErr(String(e?.message || e || "Unable to load incomplete support items."));
       }
     })();
 
