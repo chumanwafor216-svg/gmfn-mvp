@@ -72320,6 +72320,49 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment state:
   - local only at this entry; not pushed or deployed yet.
 
+### Follow-up same day - Seeded PDF endpoint generation guard
+
+- Trigger:
+  - continued from the institutional proof/security-mark work;
+  - the remaining risk was that shared header/source tests did not prove real
+    customer-facing PDF endpoints could generate valid PDF artifacts with
+    seeded data.
+- Unabated truth:
+  - no local PDF raster renderer was available in this environment
+    (`pdftoppm`, `pdftocairo`, `mutool`, `gs`, and PDF-capable Pillow rendering
+    were unavailable);
+  - this pass therefore verifies generated PDF structure and route contracts,
+    not pixel-perfect rendered page appearance.
+- Changed:
+  - `gmfn_backend/tests/test_evidence_surface_permissions.py`
+    - added `_assert_generated_pdf_response()` to check generated PDF route
+      responses for:
+      - `application/pdf` content type;
+      - GSN-branded download filename;
+      - `%PDF-` header;
+      - `%%EOF` trailer;
+      - non-trivial content size;
+      - at least one PDF page marker;
+    - upgraded existing borrower-facing loan trust report and loan evidence
+      PDF checks to use this helper;
+    - added admin/community seeded checks for:
+      `/analytics/clans/1/evidence-pack.pdf`;
+      `/reports/clans/1/exposure.pdf`.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_evidence_surface_permissions.py`
+    with 8 checks.
+  - Passed `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+    with 19 checks.
+  - Passed `git diff --check`.
+- Remaining honest risk:
+  - real endpoint PDFs now generate structurally valid PDF artifacts under
+    seeded tests;
+  - full customer-facing visual acceptance still requires opening/rasterizing
+    representative PDFs and checking layout, watermark, strip placement, and
+    footer appearance page by page.
+- Deployment state:
+  - local only at this entry; not pushed or deployed yet.
+
 ### Follow-up same day - Institutional proof marks and screenshot security layer
 
 - Trigger:

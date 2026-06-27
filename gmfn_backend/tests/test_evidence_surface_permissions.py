@@ -9,6 +9,16 @@ from sqlalchemy import text
 from app.db.database import SessionLocal
 
 
+def _assert_generated_pdf_response(response, *, filename: str) -> None:
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == f'attachment; filename="{filename}"'
+    assert response.headers["content-type"].startswith("application/pdf")
+    assert response.content.startswith(b"%PDF-")
+    assert response.content.rstrip().endswith(b"%%EOF")
+    assert len(response.content) > 1800
+    assert response.content.count(b"/Type /Page") >= 1
+
+
 def _mark_membership_left(*, user_id: int, clan_id: int) -> None:
     with SessionLocal() as db:
         db.execute(
@@ -88,8 +98,7 @@ def test_borrower_gets_redacted_pdf_but_not_complete_loan_exports(
 
     response = client.get("/reports/loans/1/trust-report.pdf")
 
-    assert response.status_code == 200
-    assert response.headers["content-disposition"] == 'attachment; filename="gsn-loan-1-trust-report.pdf"'
+    _assert_generated_pdf_response(response, filename="gsn-loan-1-trust-report.pdf")
 
 
 def test_borrower_gets_redacted_analytics_loan_pdf_but_not_complete_copy(
@@ -100,12 +109,29 @@ def test_borrower_gets_redacted_analytics_loan_pdf_but_not_complete_copy(
 ):
     response = client.get("/analytics/loans/1/evidence-pack.pdf")
 
-    assert response.status_code == 200
-    assert response.headers["content-disposition"] == 'attachment; filename="gsn-loan-1-evidence-pack.pdf"'
+    _assert_generated_pdf_response(response, filename="gsn-loan-1-evidence-pack.pdf")
 
     response = client.get("/analytics/loans/1/evidence-pack.pdf?redact=false")
 
     assert response.status_code == 403
+
+
+def test_admin_generated_community_pdfs_are_real_gsn_pdf_artifacts(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    response = client.get("/analytics/clans/1/evidence-pack.pdf")
+    _assert_generated_pdf_response(
+        response,
+        filename="gsn-community-1-evidence-pack.pdf",
+    )
+
+    response = client.get("/reports/clans/1/exposure.pdf")
+    _assert_generated_pdf_response(
+        response,
+        filename="gsn-community-1-exposure.pdf",
+    )
 
 
 def test_loan_audit_share_links_route_stays_dormant_until_approved(
