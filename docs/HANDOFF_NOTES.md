@@ -1,3 +1,33 @@
+## 2026-06-27 - Shared guidance support-decision wording cleanup
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Local correction:
+- `frontend/src/lib/guidance.ts`
+  - shared Action Inbox guidance now says a borrower is waiting for a support
+    decision instead of a decision on a pledge.
+- `frontend/tools/audit-gsn-visible-language.mjs`
+  - now includes shared guidance in the visible-language audit and rejects the
+    old `decision on a pledge` wording.
+
+Verification state:
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- This is a frontend display/audit-only slice. It does not rename internal
+  guidance function names, debug ids, routes, or API fields that still carry
+  legacy `guarantor` / `pledge` terms for compatibility.
+- Pending publish/deploy evidence at the time this note was written.
+
 ## 2026-06-27 - Support amount wording cleanup
 
 Owner request:

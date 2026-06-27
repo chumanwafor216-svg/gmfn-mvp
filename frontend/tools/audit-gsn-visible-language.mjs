@@ -22,6 +22,7 @@ const files = [
   "frontend/src/components/TrustGraphSummaryCard.tsx",
   "frontend/src/components/LoanDecisionPanel.tsx",
   "frontend/src/pages/ShopGalleryPage.tsx",
+  "frontend/src/lib/guidance.ts",
   "gmfn_backend/app/api/routes/analytics_liquidity.py",
   "gmfn_backend/app/api/routes/auth.py",
   "gmfn_backend/app/api/routes/bank.py",
@@ -118,6 +119,7 @@ const forbidden = [
   "Loans & Support task",
   "This task is in focus",
   "main routes stay cleaner",
+  "decision on a pledge",
 ];
 
 const forbiddenByFile = [
@@ -191,6 +193,7 @@ const required = [
   ["frontend/src/components/TrustGraphSummaryCard.tsx", "Active communities"],
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
   ["frontend/src/pages/ShopGalleryPage.tsx", "GSN ID"],
+  ["frontend/src/lib/guidance.ts", "A borrower is waiting for your support decision on"],
 ];
 
 const findings = [];
