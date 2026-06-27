@@ -1,3 +1,41 @@
+## 2026-06-27 - TrustSlip PDF private member reference redacted
+
+Owner request:
+- Continue deepening customer-facing evidence and institutional paper cleanup.
+
+Correction completed locally:
+- `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+  - replaced the old fallback `TP-UNKNOWN` Evidence Pack ID with a GSN-branded
+    fallback reference: `GSN-PACK-TRUSTSLIP-{generated-time-token}`.
+  - stopped rendering raw `User ID` in the TrustSlip evidence PDF body.
+  - added a reader-safe row:
+    `Private member reference: redacted for TrustSlip evidence paper`.
+  - kept the internal `user_id` available only for finding the member's latest
+    repayment/support event inside the server-side PDF build.
+- `gmfn_backend/tests/test_institutional_pdf_surfaces.py`
+  - added source guards so the TrustSlip PDF cannot quietly return to
+    `TP-UNKNOWN` or `User ID` output.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - added matching proof-surface audit guards for the GSN fallback reference
+    and private member reference redaction.
+
+Verification:
+- `python -m compileall -q gmfn_backend\app\services\trust_slip_evidence_pdf_service.py`
+- `python -m pytest -q gmfn_backend\tests\test_institutional_pdf_surfaces.py`
+  - result: `18 passed`
+- `npm run audit:proof-surfaces` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only the usual LF-to-CRLF warning on
+  `frontend/tools/audit-institutional-proof-surfaces.mjs`.
+
+Truth / remaining risk:
+- This slice is local-only at the time of writing. It has not been pushed or
+  deployed.
+- The PDF still uses the TrustSlip evidence summary values such as GSN ID,
+  trust signals, support capacity, and redacted repayment context. That is
+  intentional for this evidence paper, but it remains a controlled evidence
+  snapshot rather than a complete private record.
+
 ## 2026-06-27 - Evidence verification tokens and legacy pack references hardened
 
 Owner request:

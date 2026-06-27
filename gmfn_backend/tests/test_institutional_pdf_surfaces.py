@@ -47,6 +47,10 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "Trust-limit signal" in text
     assert "Available support capacity" in text
     assert "Estimated support gap" in text
+    assert "GSN-PACK-TRUSTSLIP-" in text
+    assert '"Private member reference", "redacted for TrustSlip evidence paper"' in text
+    assert "TP-UNKNOWN" not in text
+    assert '"User ID", summary.get("user_id")' not in text
     assert "TrustSlip Limit" not in text
     assert "Available Guarantee Capacity" not in text
     assert "Estimated Guarantee Gap" not in text

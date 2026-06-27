@@ -98,11 +98,17 @@ def _paragraph(label: str, value: Any, styles: Any):
     return Paragraph(f"{escape(label)}: {_pdf_value(value)}", styles["Normal"])
 
 
+def _fallback_pack_id(generated_at: str) -> str:
+    token = "".join(ch for ch in safe_pdf_text(generated_at) if ch.isdigit())
+    suffix = token[:12] if token else "PENDING"
+    return f"GSN-PACK-TRUSTSLIP-{suffix}"
+
+
 def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Optional[Dict[str, Any]] = None) -> bytes:
-    pack_id = (pack_meta or {}).get("pack_id") or "TP-UNKNOWN"
     footer_text = (pack_meta or {}).get("footer") or "Confidential / Evidence Record"
     qr_url = (pack_meta or {}).get("merchant_verify_ui_url") or f"{_public_frontend_base_url()}/trust-slips/ping"
     generated_at = utc_generated_label()
+    pack_id = (pack_meta or {}).get("pack_id") or _fallback_pack_id(generated_at)
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -124,7 +130,7 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     elements.append(Paragraph(f"Generated at (UTC): {_pdf_value(generated_at)}", styles["Normal"]))
     elements.append(Spacer(1, 0.25 * inch))
 
-    elements.append(_paragraph("User ID", summary.get("user_id"), styles))
+    elements.append(_paragraph("Private member reference", "redacted for TrustSlip evidence paper", styles))
     elements.append(_paragraph("GSN ID", summary.get("gmfn_id"), styles))
     elements.append(_paragraph("Lifetime Trust", summary.get("lifetime_trust"), styles))
     elements.append(_paragraph("Standing Score", summary.get("standing_score"), styles))

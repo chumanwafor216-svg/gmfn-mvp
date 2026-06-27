@@ -204,6 +204,11 @@ assertContains(
 );
 assertContains(
   "trustSlipPdf",
+  /GSN-PACK-TRUSTSLIP-[\s\S]*?"Private member reference", "redacted for TrustSlip evidence paper"/,
+  "TrustSlip PDF fallback references and holder rows must avoid old TP references and raw internal member ids."
+);
+assertContains(
+  "trustSlipPdf",
   /Generated at \(UTC\)/,
   "TrustSlip PDF must show when it was generated."
 );
@@ -244,8 +249,8 @@ assertContains(
 );
 assertNotContains(
   "trustSlipPdf",
-  /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id|Payment reference|payment_reference/g,
-  "TrustSlip PDF must not expose older limit/guarantee/internal actor wording or repayment references."
+  /TrustSlip Limit|Available Guarantee Capacity|Estimated Guarantee Gap|Confirmed By \(Actor ID\)|Confirmed by record|confirmed_by = event\.actor_user_id|Payment reference|payment_reference|TP-UNKNOWN|"User ID", summary\.get\("user_id"\)/g,
+  "TrustSlip PDF must not expose older limit/guarantee/internal actor wording, old TP fallbacks, raw member ids, or repayment references."
 );
 assertContains(
   "trustTimelinePdf",
