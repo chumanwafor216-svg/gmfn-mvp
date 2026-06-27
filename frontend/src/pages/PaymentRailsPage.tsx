@@ -9,8 +9,9 @@ import {
   institutionalPageCard,
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
-import { getPaymentRails } from "../lib/api";
+import { getPaymentRails, safeCopy } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
 
 type RailItem = {
   key: string;
@@ -575,6 +576,7 @@ export default function PaymentRailsPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [showRaw, setShowRaw] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("");
   const activeCommunityId = useMemo(
     () => routeCommunityId(location.search),
     [location.search]
@@ -753,6 +755,78 @@ export default function PaymentRailsPage() {
   }, [loading, rails.length, activeInboundCount, activeOutboundCount]);
 
   const readingToneStyle = readingTone(reading.tone);
+  const railSummaryPaper = useMemo(() => {
+    const visibleRailLines = rails.slice(0, 10).map((rail, index) => {
+      const provider = safeStr(rail.provider) || "provider not shown";
+      const currencyLine = rail.currencies.length
+        ? `; currencies ${rail.currencies.join(", ")}`
+        : "";
+      return `${index + 1}. ${rail.direction} - ${rail.name} (${provider}); status ${safeStr(rail.status || "unknown")}${currencyLine}.`;
+    });
+
+    return buildGsnPaymentInstructionPackage({
+      title: "GSN Payment Rails Summary",
+      purpose:
+        "Keep the current read-only rail visibility picture together before choosing Money In or Money Out.",
+      reference: activeCommunityId ? `Community ${activeCommunityId}` : "Payment rails",
+      communityId: activeCommunityId ? String(activeCommunityId) : "",
+      routeName: "Payment Rails",
+      status: loading ? "Loading" : reading.title,
+      detailLines: [
+        `Total rails shown: ${loading ? "loading" : rails.length}`,
+        `Inbound rails shown: ${loading ? "loading" : inboundRails.length}`,
+        `Outbound rails shown: ${loading ? "loading" : outboundRails.length}`,
+        `Status-active rails: ${loading ? "loading" : activeCount}`,
+        `Supported currencies shown: ${
+          loading
+            ? "loading"
+            : supportedCurrencies.length
+              ? supportedCurrencies.join(", ")
+              : "Not shown"
+        }`,
+        `Active providers shown: ${
+          loading
+            ? "loading"
+            : activeProviders.length
+              ? activeProviders.join(", ")
+              : "Not shown"
+        }`,
+        `Current reading: ${reading.title}`,
+        reading.detail,
+        reading.nowLine,
+        reading.nextLine,
+        ...visibleRailLines,
+        "Reader boundary: this is rail visibility intelligence only. It is not payment approval, settlement confirmation, bank confirmation, payout approval, or proof that money moved.",
+      ],
+    });
+  }, [
+    activeCommunityId,
+    activeCount,
+    activeProviders,
+    inboundRails.length,
+    loading,
+    outboundRails.length,
+    rails,
+    reading.detail,
+    reading.nextLine,
+    reading.nowLine,
+    reading.title,
+    supportedCurrencies,
+  ]);
+
+  async function copyRailSummaryPaper() {
+    if (loading) {
+      setCopyStatus("Wait for the rail reading to finish before copying the paper.");
+      return;
+    }
+
+    const copied = await safeCopy(railSummaryPaper);
+    setCopyStatus(
+      copied
+        ? "GSN payment rails paper copied."
+        : "Clipboard copy was blocked. Use the rail summary shown here."
+    );
+  }
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 30 }}>
@@ -1083,6 +1157,15 @@ export default function PaymentRailsPage() {
               }}
             >
               <SubtleButton
+                onClick={() => void copyRailSummaryPaper()}
+                minWidth={128}
+                stableHeight={52}
+                debugId="payment-rails.copy-paper"
+                style={paymentRailsSoftButtonStyle()}
+              >
+                Copy paper
+              </SubtleButton>
+              <SubtleButton
                 onClick={() => setShowRaw((prev) => !prev)}
                 minWidth={112}
                 stableHeight={52}
@@ -1092,6 +1175,11 @@ export default function PaymentRailsPage() {
                 {showRaw ? "Hide raw" : "Show raw"}
               </SubtleButton>
             </div>
+            {copyStatus ? (
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                {copyStatus}
+              </div>
+            ) : null}
           </div>
         </div>
 

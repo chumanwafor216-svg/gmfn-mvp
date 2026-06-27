@@ -64,6 +64,7 @@ const files = {
   repayment: "frontend/src/pages/RepaymentPage.tsx",
   withdrawal: "frontend/src/pages/WithdrawalInstructionsPage.tsx",
   payoutDetails: "frontend/src/pages/PayoutDetailsPage.tsx",
+  paymentRails: "frontend/src/pages/PaymentRailsPage.tsx",
   subscriptionSpotlight: "frontend/src/pages/SubscriptionSpotlightPage.tsx",
   loanReadiness: "frontend/src/pages/LoanReadinessPage.tsx",
   loanSuggestions: "frontend/src/pages/LoanSuggestionsPage.tsx",
@@ -1110,6 +1111,11 @@ assertContains(
   "payoutDetails",
   /GsnSnapshotPaperCard[\s\S]*?payoutSummaryPaper[\s\S]*?safeCopy\(payoutSummaryPaper\)/,
   "Payout Details summaries must use the branded GSN payout details snapshot for both visible paper preview and copy."
+);
+assertContains(
+  "paymentRails",
+  /buildGsnPaymentInstructionPackage[\s\S]*?GSN Payment Rails Summary[\s\S]*?rail visibility intelligence only[\s\S]*?not payment approval[\s\S]*?settlement confirmation[\s\S]*?proof that money moved[\s\S]*?safeCopy\(railSummaryPaper\)[\s\S]*?debugId="payment-rails\.copy-paper"/,
+  "Payment Rails copied summaries must use a branded GSN finance-rail paper with a no-payment-approval/no-settlement boundary."
 );
 assertContains(
   "subscriptionSpotlight",
