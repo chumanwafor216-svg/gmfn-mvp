@@ -1,3 +1,42 @@
+## 2026-06-27 - Loan decision support summary wording
+
+Owner request:
+- Continue the supporter/support wording cleanup and keep Render updated
+  truthfully.
+
+Published correction:
+- `frontend/src/pages/LoanDecisionPage.tsx`
+  - the calm-reading helper now points users to `Support Summary` instead of
+    `Loan Summary`.
+  - the follow-up guidance now says to move into the workbench or support
+    summary, avoiding old loan-summary wording in visible copy.
+- `frontend/tools/audit-loans-actions.mjs`
+  - added a guard requiring the support-summary wording on Loan Decision.
+  - added a regression guard rejecting `Loan Summary` / `loan summary` on that
+    page.
+
+Verification state:
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-button-stability.mjs`
+- `node frontend\tools\audit-gsn-visible-language.mjs`
+- `npm exec -- tsc -b --pretty false` from `frontend/`
+- `npm run build` from `frontend/`
+- `git diff --check` passed with only Git line-ending warnings on touched
+  frontend files.
+
+Truth / remaining risk:
+- Committed and pushed `main` at
+  `ab7e0b1c3c80942bb305f09883c83414cf3a1c84`
+  (`Clarify loan decision support summary wording`).
+- Triggered GitHub Actions workflow `Trigger Render Deploy` run
+  `28285973322` with `deploy_api=false`.
+- Workflow succeeded, checked out the exact pushed commit, and the frontend
+  Render deploy hook accepted deploy id `dep-d8vpvkegvqtc738q8prg`.
+- Backend deploy was correctly skipped: `Backend deploy needed: false`.
+- Devil's advocate: this only fixes visible guidance on the Loan Decision
+  screen. The route/component names are still `LoanDecisionPage` and legacy
+  loan vocabulary remains in internal contracts where compatibility requires it.
+
 ## 2026-06-27 - Admin incomplete support action labels
 
 Owner request:
