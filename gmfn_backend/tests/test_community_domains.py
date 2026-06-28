@@ -749,6 +749,144 @@ def test_inactive_parent_node_blocks_descendant_writes(
         assert db.query(CommunityDomainActionReview).count() == 0
 
 
+def test_inactive_parent_node_blocks_pending_review_approval_and_apply(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    staff = _seed_user(2, "inactive-review-staff@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Closed Review Branch School",
+                "display_name": "Closed Review Branch School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Review Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        department = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "parent_node_id": branch_id,
+                "name": "Review Department",
+                "node_type": "department",
+                "node_kind": "academic_department",
+            },
+        )
+        assert department.status_code == 201, department.text
+        department_id = department.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": staff.id, "role": "staff"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: staff
+        review_to_apply_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "community_node_id": department_id,
+                "action_key": "node_member.upsert",
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Approved before closure",
+                },
+            },
+        )
+        assert review_to_apply_response.status_code == 201, review_to_apply_response.text
+        review_to_apply = review_to_apply_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        approved = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_to_apply['id']}/decision",
+            json={"decision": "approve", "decision_note": "Approved while open."},
+        )
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["action_review"]["status"] == "approved"
+
+        app.dependency_overrides[get_current_user] = lambda: staff
+        pending_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "community_node_id": department_id,
+                "action_key": "node_member.upsert",
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Pending during closure",
+                },
+            },
+        )
+        assert pending_review_response.status_code == 201, pending_review_response.text
+        pending_review = pending_review_response.json()["action_review"]
+
+        with SessionLocal() as db:
+            branch_row = (
+                db.query(CommunityNode)
+                .filter(CommunityNode.id == branch_id)
+                .filter(CommunityNode.community_domain_id == domain_id)
+                .one()
+            )
+            branch_row.status = "inactive"
+            db.add(branch_row)
+            db.commit()
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        blocked_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_to_apply['id']}/apply"
+        )
+        assert blocked_apply.status_code == 409, blocked_apply.text
+        assert blocked_apply.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_approval = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{pending_review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Trying after closure."},
+        )
+        assert blocked_approval.status_code == 409, blocked_approval.text
+        assert blocked_approval.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        rejected = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{pending_review['id']}/decision",
+            json={"decision": "reject", "decision_note": "Branch has closed."},
+        )
+        assert rejected.status_code == 200, rejected.text
+        assert rejected.json()["action_review"]["status"] == "rejected"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityNodeMembership).count() == 0
+        reviews = db.query(CommunityDomainActionReview).order_by(
+            CommunityDomainActionReview.id.asc()
+        ).all()
+        assert [row.status for row in reviews] == ["approved", "rejected"]
+        decisions = db.query(CommunityDomainActionReviewDecision).order_by(
+            CommunityDomainActionReviewDecision.id.asc()
+        ).all()
+        assert [row.decision for row in decisions] == ["approve", "reject"]
+
+
 def test_domain_admin_can_manage_structure_without_being_recorded_owner(
     client: TestClient,
 ):

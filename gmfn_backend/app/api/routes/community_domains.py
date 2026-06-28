@@ -3034,6 +3034,8 @@ def decide_community_domain_action_review(
                 "message": "This reviewer has already recorded a decision for this Community Domain action review.",
             },
         )
+    if decision == "approve" and node is not None:
+        _ensure_node_accepts_writes(db, domain=domain, node=node)
 
     decision_row = CommunityDomainActionReviewDecision(
         action_review_id=int(row.id),
@@ -3195,6 +3197,7 @@ def apply_community_domain_action_review(
                     "message": "This action must be scoped to a Community Domain node.",
                 },
             )
+        _ensure_node_accepts_writes(db, domain=domain, node=node)
         user_id = _payload_int(payload, "user_id")
         _get_user_or_404(db, user_id)
         requested_role = _clean_role(str(payload.get("role") or "member"))
