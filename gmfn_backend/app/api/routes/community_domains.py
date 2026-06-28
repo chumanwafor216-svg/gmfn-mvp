@@ -8524,6 +8524,339 @@ def _community_domain_node_communication_map_payload(
     }
 
 
+def _community_domain_node_vault_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    active_evidence = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .all()
+    )
+
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    for node in nodes:
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        policy_node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(policy_node_id, []).append(policy)
+
+    reviews_by_node: dict[Optional[int], int] = {}
+    review_node_by_id: dict[int, Optional[int]] = {}
+    for review in reviews:
+        review_id = int(review.id)
+        review_node_id = (
+            int(review.community_node_id)
+            if review.community_node_id is not None
+            else None
+        )
+        review_node_by_id[review_id] = review_node_id
+        reviews_by_node[review_node_id] = reviews_by_node.get(review_node_id, 0) + 1
+
+    evidence_by_node: dict[Optional[int], int] = {}
+    for evidence in active_evidence:
+        evidence_node_id = review_node_by_id.get(int(evidence.action_review_id))
+        evidence_by_node[evidence_node_id] = (
+            evidence_by_node.get(evidence_node_id, 0) + 1
+        )
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def vault_status_for(
+        node: CommunityNode,
+        *,
+        local_member_count: int,
+        local_steward_count: int,
+        local_policy_count: int,
+        signal_count: int,
+    ) -> tuple[str, str, bool]:
+        if node.parent_node_id is None:
+            return (
+                "domain_root",
+                "Root institution record; local vault readiness belongs to child operating units.",
+                False,
+            )
+        if _clean_role(node.status, "active") != "active":
+            return (
+                "inactive",
+                "Reactivate this operating unit before using it for local vault planning.",
+                False,
+            )
+
+        visibility = _clean_role(node.visibility_policy, "members")
+        if visibility in {"public", "network", "external"}:
+            return (
+                "public_vault_review_needed",
+                "Review public document exposure before letting this unit carry vault material.",
+                False,
+            )
+        if local_steward_count <= 0:
+            return (
+                "needs_vault_steward",
+                "Assign a local admin or vault steward before this unit carries documents.",
+                False,
+            )
+        if local_member_count <= local_steward_count:
+            return (
+                "needs_vault_audience",
+                "Place reachable members in this unit before relying on local document access.",
+                False,
+            )
+        if local_policy_count <= 0:
+            return (
+                "needs_vault_policy",
+                "Add a local document or vault policy before this unit carries controlled material.",
+                False,
+            )
+        if signal_count <= 0:
+            return (
+                "needs_document_signal",
+                "Record reviewed local document evidence before treating this unit as vault-ready.",
+                False,
+            )
+        return (
+            "local_vault_ready",
+            "This unit has steward, audience, policy, review, and evidence signals for future local vault use.",
+            True,
+        )
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        local_memberships = memberships_by_node.get(node_id, [])
+        local_steward_count = sum(
+            1
+            for row in local_memberships
+            if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+        )
+        local_policy_count = len(policies_by_node.get(node_id, []))
+        review_count = reviews_by_node.get(node_id, 0)
+        evidence_count = evidence_by_node.get(node_id, 0)
+        signal_count = review_count + evidence_count
+        vault_status, next_step, ready = vault_status_for(
+            node,
+            local_member_count=len(local_memberships),
+            local_steward_count=local_steward_count,
+            local_policy_count=local_policy_count,
+            signal_count=signal_count,
+        )
+        if vault_status == "public_vault_review_needed":
+            admin_route = "/record-privacy-map"
+        elif vault_status == "needs_vault_steward":
+            admin_route = "/roles"
+        elif vault_status == "needs_vault_audience":
+            admin_route = "/node-participation-map"
+        elif vault_status == "needs_vault_policy":
+            admin_route = "/policies"
+        elif vault_status == "needs_document_signal":
+            admin_route = "/evidence-map"
+        else:
+            admin_route = f"/nodes/{node_id}/operating-summary"
+
+        item = {
+            "node": _node_payload(node),
+            "vault_status": vault_status,
+            "ready_for_local_vault": ready,
+            "visibility_policy": _clean_role(node.visibility_policy, "members"),
+            "direct_child_count": len(child_nodes),
+            "local_member_count": admin_count(len(local_memberships)),
+            "local_steward_count": admin_count(local_steward_count),
+            "local_policy_count": admin_count(local_policy_count),
+            "review_record_count": admin_count(review_count),
+            "evidence_record_count": admin_count(evidence_count),
+            "signal_count": admin_count(signal_count),
+            "file_upload_status": "not_uploaded_in_this_slice",
+            "file_download_status": "not_downloaded_in_this_slice",
+            "vault_link_status": "not_created_in_this_slice",
+            "storage_key_status": "not_exposed_in_this_slice",
+            "member_list_status": "not_exposed_in_this_slice",
+            "external_reader_status": "not_connected_in_this_slice",
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "admin_action_route_hint": route_hint(admin_route, requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only local vault item. This does not upload files, download files, "
+                "create vault links, grant permissions, expose storage keys, expose "
+                "member lists, connect external readers, publish proof, issue TrustSlips, "
+                "write Trust Passport entries, create marketplace records, create finance "
+                "records, or expose private member activity."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    tree = [node_item(root) for root in children_by_parent.get(None, [])]
+    non_root_items = [
+        item for item in flat_nodes if item["node"]["parent_node_id"] is not None
+    ]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["vault_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if not non_root_items:
+        primary_next_action = {
+            "action_key": "map_operating_units_before_local_vault",
+            "label": "Map operating units before local vault planning",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("public_vault_review_needed", 0):
+        primary_next_action = {
+            "action_key": "review_public_vault_exposure",
+            "label": "Review public vault exposure",
+            "route_hint": route_hint("/record-privacy-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_vault_steward", 0):
+        primary_next_action = {
+            "action_key": "assign_local_vault_stewards",
+            "label": "Assign local vault stewards",
+            "route_hint": route_hint("/roles", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_vault_audience", 0):
+        primary_next_action = {
+            "action_key": "place_local_vault_audience",
+            "label": "Place reachable members before local document access",
+            "route_hint": route_hint("/node-participation-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_vault_policy", 0):
+        primary_next_action = {
+            "action_key": "add_local_vault_policy",
+            "label": "Add local vault policy",
+            "route_hint": route_hint("/policies", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_document_signal", 0):
+        primary_next_action = {
+            "action_key": "record_document_signal",
+            "label": "Record reviewed local document signal",
+            "route_hint": route_hint("/evidence-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_local_vault_readiness",
+            "label": "Review local vault readiness",
+            "route_hint": route_hint("/evidence-map"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_local_vault",
+            "label": "Ask a Community Domain admin to review local vault readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "active_node_memberships": admin_count(len(active_node_memberships)),
+            "active_policies": admin_count(len(active_policies)),
+            "review_records": admin_count(len(reviews)),
+            "active_evidence_records": admin_count(len(active_evidence)),
+            "local_vault_ready": status_counts.get("local_vault_ready", 0),
+            "public_vault_review_needed": status_counts.get(
+                "public_vault_review_needed", 0
+            ),
+            "needs_vault_steward": status_counts.get("needs_vault_steward", 0),
+            "needs_vault_audience": status_counts.get("needs_vault_audience", 0),
+            "needs_vault_policy": status_counts.get("needs_vault_policy", 0),
+            "needs_document_signal": status_counts.get("needs_document_signal", 0),
+            "inactive": status_counts.get("inactive", 0),
+            "files_uploaded": 0,
+            "files_downloaded": 0,
+            "vault_links_created": 0,
+            "storage_keys_exposed": 0,
+            "member_lists_exposed": 0,
+            "external_readers_connected": 0,
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain node vault map is read-only local vault planning. "
+            "It shows whether branches, departments, classes, committees, chapters, "
+            "lines, or other units have local steward, audience, policy, review, "
+            "and evidence signals for future controlled documents. It does not upload files, "
+            "download files, create vault links, grant permissions, expose storage keys, "
+            "expose member lists, connect external readers, publish proof, issue TrustSlips, "
+            "write Trust Passport entries, create marketplace records, create finance records, "
+            "or expose private member activity."
+        ),
+    }
+
+
 def _community_domain_governance_coverage_payload(
     db: Session,
     *,
@@ -14447,6 +14780,25 @@ def get_community_domain_node_communication_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "node_communication_map": _community_domain_node_communication_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/node-vault-map", response_model=dict[str, Any])
+def get_community_domain_node_vault_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node_vault_map": _community_domain_node_vault_map_payload(
             db,
             domain=domain,
             current_user=current_user,

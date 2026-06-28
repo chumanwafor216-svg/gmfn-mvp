@@ -5505,6 +5505,347 @@ def test_member_can_read_node_communication_map_but_admin_counts_are_hidden(
     assert "private member activity" in communication_map["boundary"]
 
 
+def test_node_vault_map_projects_local_document_readiness_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    ready_admin = _seed_user(2, "node-vault-ready-admin@example.com")
+    ready_member = _seed_user(3, "node-vault-ready-member@example.com")
+    public_admin = _seed_user(4, "node-vault-public-admin@example.com")
+    public_member = _seed_user(5, "node-vault-public-member@example.com")
+    no_admin_member = _seed_user(6, "node-vault-no-admin-member@example.com")
+    audience_admin = _seed_user(7, "node-vault-audience-admin@example.com")
+    policy_admin = _seed_user(8, "node-vault-policy-admin@example.com")
+    policy_member = _seed_user(9, "node-vault-policy-member@example.com")
+    signal_admin = _seed_user(10, "node-vault-signal-admin@example.com")
+    signal_member = _seed_user(11, "node-vault-signal-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Vault School",
+                "display_name": "Node Vault School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        node_specs = [
+            ("Records Vault", "department", "document_vault", "members"),
+            ("Public Archive Vault", "department", "public_document_vault", "public"),
+            ("Welfare Documents", "committee", "welfare_documents", "members"),
+            ("Emergency Documents", "department", "emergency_documents", "members"),
+            ("Class Documents", "department", "class_documents", "members"),
+            ("Alumni Documents", "department", "alumni_documents", "members"),
+        ]
+        node_ids: dict[str, int] = {}
+        for name, node_type, node_kind, visibility in node_specs:
+            node = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json={
+                    "name": name,
+                    "parent_node_id": root_node_id,
+                    "node_type": node_type,
+                    "node_kind": node_kind,
+                    "visibility_policy": visibility,
+                },
+            )
+            assert node.status_code == 201, node.text
+            node_ids[name] = node.json()["node"]["id"]
+
+        users = [
+            ready_admin,
+            ready_member,
+            public_admin,
+            public_member,
+            no_admin_member,
+            audience_admin,
+            policy_admin,
+            policy_member,
+            signal_admin,
+            signal_member,
+        ]
+        for user in users:
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (node_ids["Records Vault"], ready_admin.id, "department_admin"),
+            (node_ids["Records Vault"], ready_member.id, "member"),
+            (node_ids["Public Archive Vault"], public_admin.id, "department_admin"),
+            (node_ids["Public Archive Vault"], public_member.id, "member"),
+            (node_ids["Welfare Documents"], no_admin_member.id, "member"),
+            (node_ids["Emergency Documents"], audience_admin.id, "department_admin"),
+            (node_ids["Class Documents"], policy_admin.id, "department_admin"),
+            (node_ids["Class Documents"], policy_member.id, "member"),
+            (node_ids["Alumni Documents"], signal_admin.id, "department_admin"),
+            (node_ids["Alumni Documents"], signal_member.id, "member"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        for name, suffix in (
+            ("Records Vault", "ready"),
+            ("Public Archive Vault", "public"),
+            ("Alumni Documents", "signal"),
+        ):
+            policy = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json={
+                    "policy_key": f"node-vault-{suffix}-policy",
+                    "action_key": "vault.share",
+                    "community_node_id": node_ids[name],
+                    "scope_type": "node",
+                    "review_mode": "node_admin_review",
+                    "required_role": "department_admin",
+                },
+            )
+            assert policy.status_code == 201, policy.text
+
+        review_ids: dict[str, int] = {}
+        for name, suffix in (
+            ("Records Vault", "ready"),
+            ("Public Archive Vault", "public"),
+        ):
+            review = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "vault.share",
+                    "community_node_id": node_ids[name],
+                    "request_note": f"Review local document vault readiness for {suffix}.",
+                    "payload": {"claim": f"{suffix} document vault posture"},
+                },
+            )
+            assert review.status_code == 201, review.text
+            review_ids[name] = review.json()["action_review"]["id"]
+
+        for name, suffix in (
+            ("Records Vault", "ready"),
+            ("Public Archive Vault", "public"),
+        ):
+            evidence = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review_ids[name]}/evidence",
+                json={
+                    "evidence_type": "document",
+                    "title": f"Node vault {suffix} document extract",
+                    "file_name": f"node-vault-{suffix}.pdf",
+                    "storage_key": f"private/evidence/node-vault-{suffix}.pdf",
+                },
+            )
+            assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/node-vault-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    vault_map = payload["node_vault_map"]
+    assert vault_map["editable"] is False
+    assert vault_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert vault_map["counts"] == {
+        "nodes": 7,
+        "non_root_nodes": 6,
+        "active_node_memberships": 10,
+        "active_policies": 3,
+        "review_records": 2,
+        "active_evidence_records": 2,
+        "local_vault_ready": 1,
+        "public_vault_review_needed": 1,
+        "needs_vault_steward": 1,
+        "needs_vault_audience": 1,
+        "needs_vault_policy": 1,
+        "needs_document_signal": 1,
+        "inactive": 0,
+        "files_uploaded": 0,
+        "files_downloaded": 0,
+        "vault_links_created": 0,
+        "storage_keys_exposed": 0,
+        "member_lists_exposed": 0,
+        "external_readers_connected": 0,
+    }
+    assert vault_map["status_counts"] == {
+        "local_vault_ready": 1,
+        "public_vault_review_needed": 1,
+        "needs_vault_steward": 1,
+        "needs_vault_audience": 1,
+        "needs_vault_policy": 1,
+        "needs_document_signal": 1,
+    }
+    assert vault_map["primary_next_action"] == {
+        "action_key": "review_public_vault_exposure",
+        "label": "Review public vault exposure",
+        "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+        "requires_admin": True,
+    }
+    assert "read-only local vault planning" in vault_map["boundary"]
+    assert "upload files" in vault_map["boundary"]
+    assert "download files" in vault_map["boundary"]
+    assert "create vault links" in vault_map["boundary"]
+    assert "expose storage keys" in vault_map["boundary"]
+    assert "expose member lists" in vault_map["boundary"]
+    assert "Trust Passport entries" in vault_map["boundary"]
+    assert "private/evidence" not in str(vault_map)
+
+    flat = {item["node"]["name"]: item for item in vault_map["flat_nodes"]}
+    assert flat["Node Vault School"]["vault_status"] == "domain_root"
+    assert flat["Records Vault"]["vault_status"] == "local_vault_ready"
+    assert flat["Records Vault"]["ready_for_local_vault"] is True
+    assert flat["Records Vault"]["local_member_count"] == 2
+    assert flat["Records Vault"]["local_steward_count"] == 1
+    assert flat["Records Vault"]["local_policy_count"] == 1
+    assert flat["Records Vault"]["review_record_count"] == 1
+    assert flat["Records Vault"]["evidence_record_count"] == 1
+    assert flat["Records Vault"]["signal_count"] == 2
+    assert flat["Records Vault"]["file_upload_status"] == "not_uploaded_in_this_slice"
+    assert flat["Records Vault"]["file_download_status"] == (
+        "not_downloaded_in_this_slice"
+    )
+    assert flat["Records Vault"]["vault_link_status"] == "not_created_in_this_slice"
+    assert flat["Public Archive Vault"]["vault_status"] == (
+        "public_vault_review_needed"
+    )
+    assert flat["Public Archive Vault"]["admin_action_route_hint"].endswith(
+        "/record-privacy-map"
+    )
+    assert flat["Welfare Documents"]["vault_status"] == "needs_vault_steward"
+    assert flat["Emergency Documents"]["vault_status"] == "needs_vault_audience"
+    assert flat["Class Documents"]["vault_status"] == "needs_vault_policy"
+    assert flat["Alumni Documents"]["vault_status"] == "needs_document_signal"
+    assert flat["Alumni Documents"]["storage_key_status"] == (
+        "not_exposed_in_this_slice"
+    )
+    assert flat["Alumni Documents"]["member_list_status"] == (
+        "not_exposed_in_this_slice"
+    )
+    assert flat["Alumni Documents"]["external_reader_status"] == (
+        "not_connected_in_this_slice"
+    )
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_vault_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-vault-visible-member@example.com")
+    outsider = _seed_user(3, "node-vault-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Vault Member School",
+                "display_name": "Node Vault Member School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Vault",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "document_vault",
+                "visibility_policy": "members",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/node-vault-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(f"/community-domains/{domain_id}/node-vault-map")
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    vault_map = member_map.json()["node_vault_map"]
+    assert vault_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert vault_map["counts"]["nodes"] == 2
+    assert vault_map["counts"]["non_root_nodes"] == 1
+    assert vault_map["counts"]["active_node_memberships"] is None
+    assert vault_map["counts"]["active_policies"] is None
+    assert vault_map["counts"]["review_records"] is None
+    assert vault_map["counts"]["active_evidence_records"] is None
+    assert vault_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_local_vault",
+        "label": "Ask a Community Domain admin to review local vault readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in vault_map["flat_nodes"]}
+    assert flat["Primary Vault"]["vault_status"] == "needs_vault_steward"
+    assert flat["Primary Vault"]["local_member_count"] is None
+    assert flat["Primary Vault"]["local_steward_count"] is None
+    assert flat["Primary Vault"]["local_policy_count"] is None
+    assert flat["Primary Vault"]["review_record_count"] is None
+    assert flat["Primary Vault"]["evidence_record_count"] is None
+    assert flat["Primary Vault"]["signal_count"] is None
+    assert flat["Primary Vault"]["admin_action_route_hint"] is None
+    assert flat["Primary Vault"]["storage_key_status"] == "not_exposed_in_this_slice"
+    assert "download files" in vault_map["boundary"]
+    assert "create vault links" in vault_map["boundary"]
+    assert "private member activity" in vault_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):
