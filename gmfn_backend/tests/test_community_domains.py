@@ -6178,6 +6178,341 @@ def test_member_can_read_node_scheduled_activity_map_but_admin_counts_are_hidden
     assert "private member activity" in schedule_map["boundary"]
 
 
+def test_node_paid_activity_map_projects_local_payment_readiness_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    ready_admin = _seed_user(2, "node-paid-ready-admin@example.com")
+    ready_member = _seed_user(3, "node-paid-ready-member@example.com")
+    public_admin = _seed_user(4, "node-paid-public-admin@example.com")
+    public_member = _seed_user(5, "node-paid-public-member@example.com")
+    no_admin_member = _seed_user(6, "node-paid-no-admin-member@example.com")
+    audience_admin = _seed_user(7, "node-paid-audience-admin@example.com")
+    policy_admin = _seed_user(8, "node-paid-policy-admin@example.com")
+    policy_member = _seed_user(9, "node-paid-policy-member@example.com")
+    signal_admin = _seed_user(10, "node-paid-signal-admin@example.com")
+    signal_member = _seed_user(11, "node-paid-signal-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Paid Activity Union",
+                "display_name": "Node Paid Activity Union",
+                "domain_type": "union_professional_body",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        node_specs = [
+            ("Dues Desk", "department", "dues_department", "members"),
+            ("Public Fundraising Desk", "committee", "public_fundraising", "public"),
+            ("Welfare Contributions", "committee", "welfare_contributions", "members"),
+            ("Travel Fees", "department", "travel_fees", "members"),
+            ("Ticket Desk", "department", "ticket_desk", "members"),
+            ("ROSCA Contributions", "committee", "rosca_contributions", "members"),
+        ]
+        node_ids: dict[str, int] = {}
+        for name, node_type, node_kind, visibility in node_specs:
+            node = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json={
+                    "name": name,
+                    "parent_node_id": root_node_id,
+                    "node_type": node_type,
+                    "node_kind": node_kind,
+                    "visibility_policy": visibility,
+                },
+            )
+            assert node.status_code == 201, node.text
+            node_ids[name] = node.json()["node"]["id"]
+
+        users = [
+            ready_admin,
+            ready_member,
+            public_admin,
+            public_member,
+            no_admin_member,
+            audience_admin,
+            policy_admin,
+            policy_member,
+            signal_admin,
+            signal_member,
+        ]
+        for user in users:
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (node_ids["Dues Desk"], ready_admin.id, "department_admin"),
+            (node_ids["Dues Desk"], ready_member.id, "member"),
+            (node_ids["Public Fundraising Desk"], public_admin.id, "committee_admin"),
+            (node_ids["Public Fundraising Desk"], public_member.id, "member"),
+            (node_ids["Welfare Contributions"], no_admin_member.id, "member"),
+            (node_ids["Travel Fees"], audience_admin.id, "department_admin"),
+            (node_ids["Ticket Desk"], policy_admin.id, "department_admin"),
+            (node_ids["Ticket Desk"], policy_member.id, "member"),
+            (node_ids["ROSCA Contributions"], signal_admin.id, "committee_admin"),
+            (node_ids["ROSCA Contributions"], signal_member.id, "member"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        for name, suffix in (
+            ("Dues Desk", "ready"),
+            ("Public Fundraising Desk", "public"),
+            ("ROSCA Contributions", "signal"),
+        ):
+            policy = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json={
+                    "policy_key": f"node-paid-activity-{suffix}-policy",
+                    "action_key": "paid_activity.collect",
+                    "community_node_id": node_ids[name],
+                    "scope_type": "node",
+                    "review_mode": "node_admin_review",
+                    "required_role": "department_admin",
+                },
+            )
+            assert policy.status_code == 201, policy.text
+
+        for name, suffix in (
+            ("Dues Desk", "ready"),
+            ("Public Fundraising Desk", "public"),
+        ):
+            review = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "paid_activity.collect",
+                    "community_node_id": node_ids[name],
+                    "request_note": f"Review local paid activity readiness for {suffix}.",
+                    "payload": {"claim": f"{suffix} paid activity posture"},
+                },
+            )
+            assert review.status_code == 201, review.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/node-paid-activity-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    paid_map = payload["node_paid_activity_map"]
+    assert paid_map["editable"] is False
+    assert paid_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert paid_map["counts"] == {
+        "nodes": 7,
+        "non_root_nodes": 6,
+        "active_node_memberships": 10,
+        "active_policies": 3,
+        "review_records": 2,
+        "local_paid_activity_ready": 1,
+        "public_payment_review_needed": 1,
+        "needs_payment_steward": 1,
+        "needs_payer_audience": 1,
+        "needs_paid_activity_policy": 1,
+        "needs_finance_review_signal": 1,
+        "inactive": 0,
+        "dues_created": 0,
+        "levies_created": 0,
+        "tickets_created": 0,
+        "travel_fees_created": 0,
+        "contributions_created": 0,
+        "invoices_created": 0,
+        "payment_instructions_created": 0,
+        "receipts_recorded": 0,
+        "bank_matches_created": 0,
+        "ledger_entries_written": 0,
+    }
+    assert paid_map["status_counts"] == {
+        "local_paid_activity_ready": 1,
+        "public_payment_review_needed": 1,
+        "needs_payment_steward": 1,
+        "needs_payer_audience": 1,
+        "needs_paid_activity_policy": 1,
+        "needs_finance_review_signal": 1,
+    }
+    assert paid_map["primary_next_action"] == {
+        "action_key": "review_public_payment_exposure",
+        "label": "Review public payment exposure",
+        "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+        "requires_admin": True,
+    }
+    assert "read-only local payment readiness planning" in paid_map["boundary"]
+    assert "create dues" in paid_map["boundary"]
+    assert "create tickets" in paid_map["boundary"]
+    assert "create travel fees" in paid_map["boundary"]
+    assert "create contributions" in paid_map["boundary"]
+    assert "create payment instructions" in paid_map["boundary"]
+    assert "write ledger entries" in paid_map["boundary"]
+    assert "move money" in paid_map["boundary"]
+    assert "Trust Passport entries" in paid_map["boundary"]
+
+    flat = {item["node"]["name"]: item for item in paid_map["flat_nodes"]}
+    assert flat["Node Paid Activity Union"]["paid_activity_status"] == "domain_root"
+    assert flat["Dues Desk"]["paid_activity_status"] == "local_paid_activity_ready"
+    assert flat["Dues Desk"]["ready_for_local_paid_activity"] is True
+    assert flat["Dues Desk"]["local_member_count"] == 2
+    assert flat["Dues Desk"]["local_steward_count"] == 1
+    assert flat["Dues Desk"]["local_policy_count"] == 1
+    assert flat["Dues Desk"]["review_record_count"] == 1
+    assert flat["Dues Desk"]["dues_status"] == "not_created_in_this_slice"
+    assert flat["Dues Desk"]["payment_instruction_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert flat["Dues Desk"]["ledger_status"] == "not_written_in_this_slice"
+    assert flat["Public Fundraising Desk"]["paid_activity_status"] == (
+        "public_payment_review_needed"
+    )
+    assert flat["Public Fundraising Desk"]["admin_action_route_hint"].endswith(
+        "/record-privacy-map"
+    )
+    assert flat["Welfare Contributions"]["paid_activity_status"] == (
+        "needs_payment_steward"
+    )
+    assert flat["Travel Fees"]["paid_activity_status"] == "needs_payer_audience"
+    assert flat["Ticket Desk"]["paid_activity_status"] == (
+        "needs_paid_activity_policy"
+    )
+    assert flat["ROSCA Contributions"]["paid_activity_status"] == (
+        "needs_finance_review_signal"
+    )
+    assert flat["ROSCA Contributions"]["contribution_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert flat["ROSCA Contributions"]["bank_match_status"] == (
+        "not_connected_in_this_slice"
+    )
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_paid_activity_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-paid-visible-member@example.com")
+    outsider = _seed_user(3, "node-paid-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Paid Member Union",
+                "display_name": "Node Paid Member Union",
+                "domain_type": "union_professional_body",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Dues Desk",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "dues_department",
+                "visibility_policy": "members",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/node-paid-activity-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-paid-activity-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    paid_map = member_map.json()["node_paid_activity_map"]
+    assert paid_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert paid_map["counts"]["nodes"] == 2
+    assert paid_map["counts"]["non_root_nodes"] == 1
+    assert paid_map["counts"]["active_node_memberships"] is None
+    assert paid_map["counts"]["active_policies"] is None
+    assert paid_map["counts"]["review_records"] is None
+    assert paid_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_paid_activity",
+        "label": "Ask a Community Domain admin to review local paid activity",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in paid_map["flat_nodes"]}
+    assert flat["Primary Dues Desk"]["paid_activity_status"] == (
+        "needs_payment_steward"
+    )
+    assert flat["Primary Dues Desk"]["local_member_count"] is None
+    assert flat["Primary Dues Desk"]["local_steward_count"] is None
+    assert flat["Primary Dues Desk"]["local_policy_count"] is None
+    assert flat["Primary Dues Desk"]["review_record_count"] is None
+    assert flat["Primary Dues Desk"]["admin_action_route_hint"] is None
+    assert flat["Primary Dues Desk"]["payment_instruction_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert flat["Primary Dues Desk"]["receipt_status"] == (
+        "not_recorded_in_this_slice"
+    )
+    assert "create payment instructions" in paid_map["boundary"]
+    assert "write ledger entries" in paid_map["boundary"]
+    assert "private member activity" in paid_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):
