@@ -1260,6 +1260,138 @@ def test_child_node_can_opt_out_of_parent_policy_inheritance(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_inherited_policy_admin_can_view_child_review_lineage(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    branch_admin = _seed_user(2, "lineage-branch-admin@example.com")
+    requester = _seed_user(3, "lineage-requester@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Lineage Branch School",
+                "display_name": "Lineage Branch School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user in (branch_admin, requester):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "staff"},
+            )
+            assert added.status_code == 201, added.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Lagos Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        department = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Maths Department",
+                "node_type": "department",
+                "node_kind": "school_department",
+                "parent_node_id": branch_id,
+            },
+        )
+        assert department.status_code == 201, department.text
+        department_id = department.json()["node"]["id"]
+
+        assigned_admin = client.post(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/members",
+            json={"user_id": branch_admin.id, "role": "branch_admin"},
+        )
+        assert assigned_admin.status_code == 201, assigned_admin.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "lineage-branch-role-change",
+                "action_key": "node_member.role_change",
+                "community_node_id": branch_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "branch_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": department_id,
+                "target_type": "node_member",
+                "target_id": "maths-secretary",
+                "payload": {
+                    "user_id": requester.id,
+                    "role": "committee_member",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+        assert review["community_node_id"] == department_id
+        assert review["policy_id"] == policy.json()["policy"]["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Add the local department title.",
+            },
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        revision_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added the local title.",
+                "payload": {
+                    "user_id": requester.id,
+                    "role": "committee_member",
+                    "title": "Maths secretary",
+                },
+            },
+        )
+        assert revision_response.status_code == 201, revision_response.text
+        revision = revision_response.json()["action_review"]
+        assert revision["parent_review_id"] == review["id"]
+        assert revision["policy_id"] == policy.json()["policy"]["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+        lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/lineage"
+        )
+        assert lineage.status_code == 200, lineage.text
+        lineage_data = lineage.json()
+        assert lineage_data["root_review_id"] == review["id"]
+        assert lineage_data["latest_review_id"] == revision["id"]
+        assert [item["id"] for item in lineage_data["items"]] == [
+            review["id"],
+            revision["id"],
+        ]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_ordinary_member_cannot_create_policy_or_list_domain_reviews(
     client: TestClient,
 ):

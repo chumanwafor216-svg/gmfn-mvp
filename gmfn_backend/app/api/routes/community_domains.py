@@ -2544,33 +2544,17 @@ def get_community_domain_action_review_lineage(
         review_id=int(review_id),
     )
 
-    is_requester = int(row.requested_by_user_id) == int(current_user.id)
-    is_scoped_admin = False
-    try:
-        if row.community_node_id is not None:
-            node = _get_node_or_404(
-                db,
-                community_domain_id=int(domain.id),
-                community_node_id=int(row.community_node_id),
-            )
-            _require_node_or_domain_admin_scope(
-                db,
-                domain=domain,
-                node=node,
-                current_user=current_user,
-            )
-        else:
-            _require_domain_admin_scope(db, domain=domain, current_user=current_user)
-        is_scoped_admin = True
-    except HTTPException:
-        is_scoped_admin = False
-
-    if not is_requester and not is_scoped_admin:
+    if not _can_view_action_review(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    ):
         raise HTTPException(
             status_code=403,
             detail={
                 "code": "community_domain_review_lineage_not_visible",
-                "message": "Only the requester or a scoped admin can view this review lineage.",
+                "message": "Only users who can view this action review can view its lineage.",
             },
         )
 
