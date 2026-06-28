@@ -3785,6 +3785,122 @@ def test_requester_can_revise_needs_changes_action_review(
         assert rows[1].parent_review_id == rows[0].id
 
 
+def test_inactive_parent_node_blocks_needs_changes_review_revision(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    staff = _seed_user(2, "inactive-revision-staff@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Closed Revision Branch School",
+                "display_name": "Closed Revision Branch School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Revision Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        department = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "parent_node_id": branch_id,
+                "name": "Revision Department",
+                "node_type": "department",
+                "node_kind": "academic_department",
+            },
+        )
+        assert department.status_code == 201, department.text
+        department_id = department.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": staff.id, "role": "staff"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: staff
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "community_node_id": department_id,
+                "action_key": "node_member.upsert",
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "request_note": "Please place me in this department.",
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Needs department confirmation",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Add your class level before placement.",
+            },
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        with SessionLocal() as db:
+            branch_row = (
+                db.query(CommunityNode)
+                .filter(CommunityNode.id == branch_id)
+                .filter(CommunityNode.community_domain_id == domain_id)
+                .one()
+            )
+            branch_row.status = "inactive"
+            db.add(branch_row)
+            db.commit()
+
+        app.dependency_overrides[get_current_user] = lambda: staff
+        blocked_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added the class level.",
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Primary 4 teacher",
+                },
+            },
+        )
+        assert blocked_revision.status_code == 409, blocked_revision.text
+        assert (
+            blocked_revision.json()["detail"]["code"]
+            == "community_domain_node_inactive"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = db.query(CommunityDomainActionReview).all()
+        assert len(rows) == 1
+        assert rows[0].status == "needs_changes"
+        assert rows[0].parent_review_id is None
+
+
 def test_apply_review_keeps_unknown_actions_as_decision_records(
     client: TestClient,
 ):

@@ -2790,6 +2790,7 @@ def revise_community_domain_action_review(
             community_domain_id=int(domain.id),
             community_node_id=node_id,
         )
+        _ensure_node_accepts_writes(db, domain=domain, node=node)
 
     policy: Optional[CommunityDomainPolicy] = getattr(row, "policy", None)
     if policy is None:
