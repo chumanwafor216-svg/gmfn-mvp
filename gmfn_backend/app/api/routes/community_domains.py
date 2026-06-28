@@ -527,6 +527,7 @@ class CommunityNodeStatusUpdateIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     status: str = Field(..., max_length=24)
+    status_note: Optional[str] = Field(default=None, max_length=1200)
 
 
 class CommunityDomainMemberUpsertIn(BaseModel):
@@ -1585,9 +1586,38 @@ def update_community_domain_node_status(
     previous_status = _clean_role(node.status, "inactive")
     changed = previous_status != requested_status
     node.status = requested_status
+    lifecycle_record: Optional[CommunityDomainActionReview] = None
+    status_note = _clean_str(payload.status_note) or None
+    if changed:
+        now = datetime.now(timezone.utc)
+        lifecycle_record = CommunityDomainActionReview(
+            community_domain_id=int(domain.id),
+            community_node_id=int(node.id),
+            action_key="node.status.update",
+            requested_by_user_id=int(current_user.id),
+            applied_by_user_id=int(current_user.id),
+            target_type="community_node",
+            target_id=str(int(node.id)),
+            status="applied",
+            decision="applied",
+            request_note=status_note,
+            payload_json=_json_dump(
+                {
+                    "community_node_id": int(node.id),
+                    "previous_status": previous_status,
+                    "new_status": requested_status,
+                    "status_note": status_note,
+                }
+            ),
+            decided_at=now,
+            applied_at=now,
+        )
+        db.add(lifecycle_record)
     db.add(node)
     db.commit()
     db.refresh(node)
+    if lifecycle_record is not None:
+        db.refresh(lifecycle_record)
 
     descendant_count = max(
         len(
@@ -1609,11 +1639,17 @@ def update_community_domain_node_status(
         "previous_status": previous_status,
         "node": _node_payload(node),
         "descendant_count": descendant_count,
+        "lifecycle_record": (
+            _action_review_payload(lifecycle_record)
+            if lifecycle_record is not None
+            else None
+        ),
         "boundary": (
             "Node status controls whether new structure, policies, placements, "
             "and node-scoped reviews can be added here. It does not delete "
             "descendants, remove members, cancel pending reviews, or change the "
-            "Community Domain lifecycle."
+            "Community Domain lifecycle. Actual status changes create an applied "
+            "operational action record, but this is not an immutable audit ledger."
         ),
     }
 

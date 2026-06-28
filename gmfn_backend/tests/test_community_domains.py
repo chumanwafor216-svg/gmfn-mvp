@@ -826,7 +826,10 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
 
         closed = client.patch(
             f"/community-domains/{domain_id}/nodes/{branch_id}/status",
-            json={"status": "inactive"},
+            json={
+                "status": "inactive",
+                "status_note": "Branch paused after the term ended.",
+            },
         )
         assert closed.status_code == 200, closed.text
         closed_data = closed.json()
@@ -834,7 +837,29 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert closed_data["previous_status"] == "active"
         assert closed_data["node"]["status"] == "inactive"
         assert closed_data["descendant_count"] == 1
+        lifecycle_record = closed_data["lifecycle_record"]
+        assert lifecycle_record["action_key"] == "node.status.update"
+        assert lifecycle_record["status"] == "applied"
+        assert lifecycle_record["applied_by_user_id"] == owner.id
+        assert lifecycle_record["target_type"] == "community_node"
+        assert lifecycle_record["target_id"] == str(branch_id)
+        assert lifecycle_record["request_note"] == "Branch paused after the term ended."
+        assert lifecycle_record["payload"] == {
+            "community_node_id": branch_id,
+            "new_status": "inactive",
+            "previous_status": "active",
+            "status_note": "Branch paused after the term ended.",
+        }
         assert "does not delete descendants" in closed_data["boundary"]
+        assert "not an immutable audit ledger" in closed_data["boundary"]
+
+        repeated_close = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": "inactive", "status_note": "Repeat close."},
+        )
+        assert repeated_close.status_code == 200, repeated_close.text
+        assert repeated_close.json()["changed"] is False
+        assert repeated_close.json()["lifecycle_record"] is None
 
         listed_nodes = client.get(f"/community-domains/{domain_id}/nodes")
         assert listed_nodes.status_code == 200, listed_nodes.text
@@ -873,6 +898,21 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
             blocked_placement.json()["detail"]["code"]
             == "community_domain_node_inactive"
         )
+
+        activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/activity",
+            params={"community_node_id": branch_id, "event_type": "review_status_changed"},
+        )
+        assert activity.status_code == 200, activity.text
+        activity_data = activity.json()
+        assert activity_data["total"] == 1
+        activity_item = activity_data["items"][0]
+        assert activity_item["type"] == "review_status_changed"
+        assert activity_item["action_review_id"] == lifecycle_record["id"]
+        assert activity_item["actor_user_id"] == owner.id
+        assert activity_item["payload"]["action_review"]["action_key"] == (
+            "node.status.update"
+        )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -886,6 +926,10 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert nodes[branch_id] == "inactive"
         assert nodes[department_id] == "active"
         assert db.query(CommunityNodeMembership).count() == 0
+        records = db.query(CommunityDomainActionReview).all()
+        assert len(records) == 1
+        assert records[0].action_key == "node.status.update"
+        assert records[0].request_note == "Branch paused after the term ended."
 
 
 def test_inactive_parent_node_blocks_pending_review_approval_and_apply(
