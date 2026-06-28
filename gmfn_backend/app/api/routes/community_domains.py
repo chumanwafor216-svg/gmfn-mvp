@@ -3444,14 +3444,23 @@ def decide_community_domain_action_review(
                 "message": "This reviewer has already recorded a decision for this Community Domain action review.",
             },
         )
+    row_payload = _json_load(row.payload_json)
+    row_action_key = _clean_role(row.action_key)
     if decision == "approve" and node is not None:
         _ensure_node_accepts_action_review_request(
             db,
             domain=domain,
             node=node,
-            action_key=_clean_role(row.action_key),
-            payload=_json_load(row.payload_json),
+            action_key=row_action_key,
+            payload=row_payload,
         )
+        if row_action_key == "node.status.update":
+            _ensure_node_status_review_target_matches(
+                node=node,
+                target_type=row.target_type,
+                target_id=row.target_id,
+                review_payload=row_payload,
+            )
 
     decision_row = CommunityDomainActionReviewDecision(
         action_review_id=int(row.id),

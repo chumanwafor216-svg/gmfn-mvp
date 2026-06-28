@@ -3512,6 +3512,122 @@ def test_apply_rejects_legacy_node_status_review_target_mismatch(
         assert review_row.applied_at is None
 
 
+def test_decision_rejects_legacy_node_status_review_target_mismatch(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "legacy-decision-mismatch-requester@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Legacy Decision Guard Union",
+                "display_name": "Legacy Decision Guard Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        chapter = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Main Chapter",
+                "node_type": "chapter",
+                "node_kind": "union_chapter",
+            },
+        )
+        assert chapter.status_code == 201, chapter.text
+        node_id = chapter.json()["node"]["id"]
+
+        other_chapter = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Second Chapter",
+                "node_type": "chapter",
+                "node_kind": "union_chapter",
+            },
+        )
+        assert other_chapter.status_code == 201, other_chapter.text
+        other_node_id = other_chapter.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "legacy-decision-target",
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "target_type": "community_node",
+                "target_id": str(node_id),
+                "payload": {
+                    "status": "inactive",
+                    "status_note": "Chapter is pausing operations.",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            review_row.target_id = str(other_node_id)
+            db.commit()
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Trying to approve."},
+        )
+        assert decision.status_code == 409, decision.text
+        assert (
+            decision.json()["detail"]["code"]
+            == "community_domain_node_status_target_mismatch"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        review_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == review["id"])
+            .one()
+        )
+        decision_count = (
+            db.query(CommunityDomainActionReviewDecision)
+            .filter(CommunityDomainActionReviewDecision.action_review_id == review["id"])
+            .count()
+        )
+        node = db.query(CommunityNode).filter(CommunityNode.id == node_id).one()
+        assert review_row.status == "pending"
+        assert review_row.decision is None
+        assert decision_count == 0
+        assert node.status == "active"
+
+
 def test_reviewed_child_reopen_requires_active_parent(
     client: TestClient,
 ):
