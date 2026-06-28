@@ -684,6 +684,44 @@ def _ensure_node_accepts_writes(
     )
 
 
+def _requested_node_status(payload: dict[str, Any]) -> str:
+    return _clean_role(str(payload.get("new_status") or payload.get("status") or ""))
+
+
+def _ensure_node_accepts_action_review_request(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    node: CommunityNode,
+    action_key: str,
+    payload: dict[str, Any],
+) -> None:
+    if action_key == "node.status.update":
+        requested_status = _requested_node_status(payload)
+        if requested_status not in NODE_STATUS_VALUES:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "community_domain_node_status_invalid",
+                    "message": "Node status must be active, inactive, or archived.",
+                },
+            )
+        if (
+            requested_status == "active"
+            and _clean_role(node.status, "inactive") != "active"
+            and node.parent_node_id is not None
+        ):
+            parent_node = _get_node_or_404(
+                db,
+                community_domain_id=int(domain.id),
+                community_node_id=int(node.parent_node_id),
+            )
+            _ensure_node_accepts_writes(db, domain=domain, node=parent_node)
+            return
+
+    _ensure_node_accepts_writes(db, domain=domain, node=node)
+
+
 def _get_policy_or_404(
     db: Session,
     *,
@@ -2144,13 +2182,21 @@ def create_community_domain_action_review(
 
     node_id: Optional[int] = None
     node: Optional[CommunityNode] = None
+    action_key = _clean_role(payload.action_key)
+    review_payload = dict(payload.payload or {})
     if payload.community_node_id is not None:
         node = _get_node_or_404(
             db,
             community_domain_id=int(domain.id),
             community_node_id=int(payload.community_node_id),
         )
-        _ensure_node_accepts_writes(db, domain=domain, node=node)
+        _ensure_node_accepts_action_review_request(
+            db,
+            domain=domain,
+            node=node,
+            action_key=action_key,
+            payload=review_payload,
+        )
         node_id = int(node.id)
 
     if payload.subject_user_id is not None:
@@ -2171,7 +2217,6 @@ def create_community_domain_action_review(
             community_node_id=node_id,
         )
 
-    action_key = _clean_role(payload.action_key)
     if policy is not None:
         if _clean_role(policy.status, "inactive") != "active":
             raise HTTPException(
@@ -2203,7 +2248,6 @@ def create_community_domain_action_review(
                 },
             )
 
-    review_payload = dict(payload.payload or {})
     if action_key == "node.status.update":
         if node is None:
             raise HTTPException(
@@ -2222,7 +2266,7 @@ def create_community_domain_action_review(
                 },
             )
         requested_status = _clean_role(
-            str(review_payload.get("new_status") or review_payload.get("status") or "")
+            _requested_node_status(review_payload)
         )
         if requested_status not in NODE_STATUS_VALUES:
             raise HTTPException(
@@ -3290,7 +3334,13 @@ def decide_community_domain_action_review(
             },
         )
     if decision == "approve" and node is not None:
-        _ensure_node_accepts_writes(db, domain=domain, node=node)
+        _ensure_node_accepts_action_review_request(
+            db,
+            domain=domain,
+            node=node,
+            action_key=_clean_role(row.action_key),
+            payload=_json_load(row.payload_json),
+        )
 
     decision_row = CommunityDomainActionReviewDecision(
         action_review_id=int(row.id),
