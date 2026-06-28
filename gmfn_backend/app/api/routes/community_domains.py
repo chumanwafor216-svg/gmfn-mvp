@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -13,7 +14,9 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import (
     CommunityDomain,
+    CommunityDomainActionReview,
     CommunityDomainMembership,
+    CommunityDomainPolicy,
     CommunityNode,
     CommunityNodeMembership,
     User,
@@ -122,6 +125,22 @@ def _iso(value: Optional[datetime]) -> Optional[str]:
     return value.isoformat() if value is not None else None
 
 
+def _json_dump(value: Optional[dict[str, Any]]) -> Optional[str]:
+    if not value:
+        return None
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def _json_load(value: Optional[str]) -> dict[str, Any]:
+    if not value:
+        return {}
+    try:
+        data = json.loads(value)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
 def _node_payload(node: Optional[CommunityNode]) -> Optional[dict[str, Any]]:
     if node is None:
         return None
@@ -174,6 +193,55 @@ def _node_member_payload(row: CommunityNodeMembership) -> dict[str, Any]:
         "title": row.title,
         "created_at": _iso(row.created_at),
         "updated_at": _iso(row.updated_at),
+    }
+
+
+def _policy_payload(row: CommunityDomainPolicy) -> dict[str, Any]:
+    node = getattr(row, "community_node", None)
+    return {
+        "id": int(row.id),
+        "community_domain_id": int(row.community_domain_id),
+        "community_node_id": int(row.community_node_id) if row.community_node_id is not None else None,
+        "community_node_name": getattr(node, "name", None),
+        "policy_key": row.policy_key,
+        "action_key": row.action_key,
+        "scope_type": row.scope_type,
+        "review_mode": row.review_mode,
+        "required_role": row.required_role,
+        "status": row.status,
+        "policy_summary": row.policy_summary,
+        "config": _json_load(row.config_json),
+        "created_by_user_id": int(row.created_by_user_id),
+        "updated_by_user_id": int(row.updated_by_user_id) if row.updated_by_user_id is not None else None,
+        "created_at": _iso(row.created_at),
+        "updated_at": _iso(row.updated_at),
+    }
+
+
+def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
+    node = getattr(row, "community_node", None)
+    policy = getattr(row, "policy", None)
+    return {
+        "id": int(row.id),
+        "community_domain_id": int(row.community_domain_id),
+        "community_node_id": int(row.community_node_id) if row.community_node_id is not None else None,
+        "community_node_name": getattr(node, "name", None),
+        "policy_id": int(row.policy_id) if row.policy_id is not None else None,
+        "policy_key": getattr(policy, "policy_key", None),
+        "action_key": row.action_key,
+        "requested_by_user_id": int(row.requested_by_user_id),
+        "subject_user_id": int(row.subject_user_id) if row.subject_user_id is not None else None,
+        "decided_by_user_id": int(row.decided_by_user_id) if row.decided_by_user_id is not None else None,
+        "target_type": row.target_type,
+        "target_id": row.target_id,
+        "status": row.status,
+        "decision": row.decision,
+        "request_note": row.request_note,
+        "decision_note": row.decision_note,
+        "payload": _json_load(row.payload_json),
+        "created_at": _iso(row.created_at),
+        "updated_at": _iso(row.updated_at),
+        "decided_at": _iso(row.decided_at),
     }
 
 
@@ -249,6 +317,40 @@ class CommunityNodeMemberUpsertIn(BaseModel):
     title: Optional[str] = Field(default=None, max_length=120)
 
 
+class CommunityDomainPolicyUpsertIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    policy_key: str = Field(..., min_length=2, max_length=96)
+    action_key: str = Field(..., min_length=2, max_length=96)
+    community_node_id: Optional[int] = Field(default=None, ge=1)
+    scope_type: str = Field(default="domain", max_length=24)
+    review_mode: str = Field(default="domain_admin_review", max_length=48)
+    required_role: Optional[str] = Field(default=None, max_length=48)
+    status: str = Field(default="active", max_length=24)
+    policy_summary: Optional[str] = Field(default=None, max_length=1200)
+    config: Optional[dict[str, Any]] = None
+
+
+class CommunityDomainActionReviewCreateIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    action_key: str = Field(..., min_length=2, max_length=96)
+    community_node_id: Optional[int] = Field(default=None, ge=1)
+    policy_id: Optional[int] = Field(default=None, ge=1)
+    subject_user_id: Optional[int] = Field(default=None, ge=1)
+    target_type: Optional[str] = Field(default=None, max_length=64)
+    target_id: Optional[str] = Field(default=None, max_length=96)
+    request_note: Optional[str] = Field(default=None, max_length=1200)
+    payload: Optional[dict[str, Any]] = None
+
+
+class CommunityDomainActionReviewDecisionIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    decision: str = Field(..., pattern="^(approve|reject|needs_changes)$")
+    decision_note: Optional[str] = Field(default=None, max_length=1200)
+
+
 def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:
     domain = db.get(CommunityDomain, int(community_domain_id))
     if domain is None:
@@ -281,6 +383,40 @@ def _get_node_or_404(
             detail="Node was not found inside this Community Domain.",
         )
     return node
+
+
+def _get_policy_or_404(
+    db: Session,
+    *,
+    community_domain_id: int,
+    policy_id: int,
+) -> CommunityDomainPolicy:
+    policy = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.id == int(policy_id))
+        .filter(CommunityDomainPolicy.community_domain_id == int(community_domain_id))
+        .first()
+    )
+    if policy is None:
+        raise HTTPException(status_code=404, detail="Community Domain policy not found")
+    return policy
+
+
+def _get_action_review_or_404(
+    db: Session,
+    *,
+    community_domain_id: int,
+    review_id: int,
+) -> CommunityDomainActionReview:
+    row = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.id == int(review_id))
+        .filter(CommunityDomainActionReview.community_domain_id == int(community_domain_id))
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Community Domain action review not found")
+    return row
 
 
 def _domain_membership_for_user(
@@ -425,6 +561,34 @@ def _find_root_node(db: Session, community_domain_id: int) -> Optional[Community
         .filter(CommunityNode.community_domain_id == int(community_domain_id))
         .filter(CommunityNode.parent_node_id.is_(None))
         .order_by(CommunityNode.depth.asc(), CommunityNode.id.asc())
+        .first()
+    )
+
+
+def _matching_policy(
+    db: Session,
+    *,
+    community_domain_id: int,
+    action_key: str,
+    community_node_id: Optional[int],
+) -> Optional[CommunityDomainPolicy]:
+    query = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainPolicy.action_key == _clean_role(action_key))
+        .filter(CommunityDomainPolicy.status == "active")
+    )
+    if community_node_id is not None:
+        node_policy = (
+            query.filter(CommunityDomainPolicy.community_node_id == int(community_node_id))
+            .order_by(CommunityDomainPolicy.id.desc())
+            .first()
+        )
+        if node_policy is not None:
+            return node_policy
+    return (
+        query.filter(CommunityDomainPolicy.community_node_id.is_(None))
+        .order_by(CommunityDomainPolicy.id.desc())
         .first()
     )
 
@@ -859,5 +1023,312 @@ def upsert_community_node_member(
         "boundary": (
             "Node membership scopes belonging inside the institution. Governance "
             "powers still need a policy/action-review layer before delegation is complete."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/policies", response_model=dict[str, Any])
+def list_community_domain_policies(
+    community_domain_id: int,
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    if community_node_id is not None:
+        _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+
+    query = db.query(CommunityDomainPolicy).filter(
+        CommunityDomainPolicy.community_domain_id == int(domain.id)
+    )
+    if community_node_id is not None:
+        query = query.filter(CommunityDomainPolicy.community_node_id == int(community_node_id))
+
+    rows = query.order_by(
+        CommunityDomainPolicy.status.asc(),
+        CommunityDomainPolicy.scope_type.asc(),
+        CommunityDomainPolicy.action_key.asc(),
+        CommunityDomainPolicy.id.asc(),
+    ).all()
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "items": [_policy_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "Policies record how actions should be reviewed. They do not by "
+            "themselves approve payment, verify ownership, or override platform rules."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/policies", status_code=201, response_model=dict[str, Any])
+def upsert_community_domain_policy(
+    community_domain_id: int,
+    payload: CommunityDomainPolicyUpsertIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    node_id: Optional[int] = None
+    if payload.community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(payload.community_node_id),
+        )
+        node_id = int(node.id)
+
+    policy_key = _clean_role(payload.policy_key)
+    policy = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .filter(CommunityDomainPolicy.policy_key == policy_key)
+        .first()
+    )
+    created = policy is None
+    if policy is None:
+        policy = CommunityDomainPolicy(
+            community_domain_id=int(domain.id),
+            policy_key=policy_key,
+            created_by_user_id=int(current_user.id),
+        )
+        db.add(policy)
+
+    policy.community_node_id = node_id
+    policy.action_key = _clean_role(payload.action_key)
+    policy.scope_type = _clean_role(payload.scope_type, "domain")
+    policy.review_mode = _clean_role(payload.review_mode, "domain_admin_review")
+    policy.required_role = _clean_role(payload.required_role) if payload.required_role else None
+    policy.status = _clean_role(payload.status, "active")
+    policy.policy_summary = _clean_str(payload.policy_summary) or None
+    policy.config_json = _json_dump(payload.config)
+    policy.updated_by_user_id = int(current_user.id)
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_policy_exists",
+                "message": "A policy with this key already exists in this Community Domain.",
+            },
+        ) from exc
+
+    db.refresh(policy)
+    return {
+        "ok": True,
+        "created": created,
+        "community_domain_id": int(domain.id),
+        "policy": _policy_payload(policy),
+        "boundary": (
+            "Policy recorded. This creates a review rule record, not automatic "
+            "legal authority, payment approval, verification, or a vote result."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/action-reviews", response_model=dict[str, Any])
+def list_community_domain_action_reviews(
+    community_domain_id: int,
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    status: Optional[str] = Query(default=None, max_length=24),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    node: Optional[CommunityNode] = None
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=node,
+            current_user=current_user,
+        )
+    else:
+        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    query = db.query(CommunityDomainActionReview).filter(
+        CommunityDomainActionReview.community_domain_id == int(domain.id)
+    )
+    if node is not None:
+        query = query.filter(CommunityDomainActionReview.community_node_id == int(node.id))
+    if status:
+        query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
+
+    rows = query.order_by(
+        CommunityDomainActionReview.created_at.desc(),
+        CommunityDomainActionReview.id.desc(),
+    ).all()
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_node_id": int(node.id) if node is not None else None,
+        "items": [_action_review_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "Action reviews are decision records. They do not execute the requested "
+            "business action until a later endpoint applies that decision."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/action-reviews", status_code=201, response_model=dict[str, Any])
+def create_community_domain_action_review(
+    community_domain_id: int,
+    payload: CommunityDomainActionReviewCreateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+
+    node_id: Optional[int] = None
+    if payload.community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(payload.community_node_id),
+        )
+        node_id = int(node.id)
+
+    if payload.subject_user_id is not None:
+        _get_user_or_404(db, payload.subject_user_id)
+
+    policy: Optional[CommunityDomainPolicy] = None
+    if payload.policy_id is not None:
+        policy = _get_policy_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            policy_id=int(payload.policy_id),
+        )
+    else:
+        policy = _matching_policy(
+            db,
+            community_domain_id=int(domain.id),
+            action_key=payload.action_key,
+            community_node_id=node_id,
+        )
+
+    action_key = _clean_role(payload.action_key)
+    if policy is not None:
+        if _clean_role(policy.status, "inactive") != "active":
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_policy_inactive",
+                    "message": "This Community Domain policy is not active.",
+                },
+            )
+        if _clean_role(policy.action_key) != action_key:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_policy_action_mismatch",
+                    "message": "This policy does not govern the requested action.",
+                },
+            )
+        if policy.community_node_id is not None and int(policy.community_node_id) != int(node_id or 0):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_policy_node_mismatch",
+                    "message": "This policy belongs to a different Community Domain node.",
+                },
+            )
+
+    row = CommunityDomainActionReview(
+        community_domain_id=int(domain.id),
+        community_node_id=node_id,
+        policy_id=int(policy.id) if policy is not None else None,
+        action_key=action_key,
+        requested_by_user_id=int(current_user.id),
+        subject_user_id=int(payload.subject_user_id) if payload.subject_user_id is not None else None,
+        target_type=_clean_role(payload.target_type) if payload.target_type else None,
+        target_id=_clean_str(payload.target_id) or None,
+        status="pending",
+        request_note=_clean_str(payload.request_note) or None,
+        payload_json=_json_dump(payload.payload),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review": _action_review_payload(row),
+        "boundary": (
+            "Review requested. This records that an action needs decision; it does "
+            "not perform the action, move money, verify identity, or change membership by itself."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/action-reviews/{review_id}/decision", response_model=dict[str, Any])
+def decide_community_domain_action_review(
+    community_domain_id: int,
+    review_id: int,
+    payload: CommunityDomainActionReviewDecisionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+
+    if row.community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(row.community_node_id),
+        )
+        _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=node,
+            current_user=current_user,
+        )
+    else:
+        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    decision = _clean_role(payload.decision)
+    status_map = {
+        "approve": "approved",
+        "reject": "rejected",
+        "needs_changes": "needs_changes",
+    }
+    row.decision = decision
+    row.status = status_map[decision]
+    row.decision_note = _clean_str(payload.decision_note) or None
+    row.decided_by_user_id = int(current_user.id)
+    row.decided_at = datetime.now(timezone.utc)
+
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review": _action_review_payload(row),
+        "boundary": (
+            "Decision recorded. Applying the approved action still requires the "
+            "specific business route for that action."
         ),
     }

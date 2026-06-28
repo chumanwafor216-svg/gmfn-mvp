@@ -580,6 +580,169 @@ class CommunityNodeMembership(Base):
     user = relationship("User", foreign_keys=[user_id])
 
 
+class CommunityDomainPolicy(Base):
+    __tablename__ = "community_domain_policies"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "community_domain_id",
+            "policy_key",
+            name="uq_comm_domain_policies_domain_key",
+        ),
+        Index("ix_comm_domain_policies_domain_status", "community_domain_id", "status"),
+        Index("ix_comm_domain_policies_action", "community_domain_id", "action_key"),
+        Index("ix_comm_domain_policies_node", "community_node_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    community_domain_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domains.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_node_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_nodes.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    policy_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    action_key: Mapped[str] = mapped_column(String(96), nullable=False, index=True)
+    scope_type: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="domain",
+        server_default="domain",
+        index=True,
+    )
+    review_mode: Mapped[str] = mapped_column(
+        String(48),
+        nullable=False,
+        default="domain_admin_review",
+        server_default="domain_admin_review",
+        index=True,
+    )
+    required_role: Mapped[Optional[str]] = mapped_column(String(48), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    policy_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    config_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    updated_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
+    community_node = relationship("CommunityNode", foreign_keys=[community_node_id])
+    creator = relationship("User", foreign_keys=[created_by_user_id])
+    updater = relationship("User", foreign_keys=[updated_by_user_id])
+
+
+class CommunityDomainActionReview(Base):
+    __tablename__ = "community_domain_action_reviews"
+
+    __table_args__ = (
+        Index("ix_comm_action_reviews_domain_status", "community_domain_id", "status"),
+        Index("ix_comm_action_reviews_node_status", "community_node_id", "status"),
+        Index("ix_comm_action_reviews_policy_status", "policy_id", "status"),
+        Index("ix_comm_action_reviews_requester", "requested_by_user_id", "created_at"),
+        Index("ix_comm_action_reviews_action", "community_domain_id", "action_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    community_domain_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domains.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_node_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_nodes.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    policy_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_domain_policies.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    action_key: Mapped[str] = mapped_column(String(96), nullable=False, index=True)
+    requested_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    subject_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    decided_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    target_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    target_id: Mapped[Optional[str]] = mapped_column(String(96), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+        index=True,
+    )
+    decision: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
+    request_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    payload_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+    decided_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
+    community_node = relationship("CommunityNode", foreign_keys=[community_node_id])
+    policy = relationship("CommunityDomainPolicy", foreign_keys=[policy_id])
+    requester = relationship("User", foreign_keys=[requested_by_user_id])
+    subject = relationship("User", foreign_keys=[subject_user_id])
+    decider = relationship("User", foreign_keys=[decided_by_user_id])
+
+
 class CommunityMemberVerification(Base):
     __tablename__ = "community_member_verifications"
 

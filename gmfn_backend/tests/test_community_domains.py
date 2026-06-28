@@ -8,9 +8,11 @@ from app.db.models import (
     Clan,
     ClanMembership,
     CommunityDomain,
+    CommunityDomainActionReview,
     CommunityDomainMembership,
     CommunityNode,
     CommunityNodeMembership,
+    CommunityDomainPolicy,
     User,
 )
 from app.main import app
@@ -736,5 +738,260 @@ def test_ordinary_domain_member_can_view_but_not_manage_domain(
             json={"name": "New Local Chapter"},
         )
         assert cannot_create_node.status_code == 403, cannot_create_node.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_domain_admin_records_policy_and_decides_domain_action_review(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    domain_admin = _seed_user(2, "policy-admin@example.com")
+    member = _seed_user(3, "policy-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Dominion Teachers Trust",
+                "display_name": "Dominion Teachers Trust",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user, role in ((domain_admin, "domain_admin"), (member, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: domain_admin
+        policy_response = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "member-verification-approval",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "policy_summary": "Member verification approval needs domain admin review.",
+                "config": {"min_reviewers": 1},
+            },
+        )
+        assert policy_response.status_code == 201, policy_response.text
+        policy_data = policy_response.json()
+        assert policy_data["created"] is True
+        policy = policy_data["policy"]
+        assert policy["action_key"] == "member_verification.approve"
+        assert policy["community_node_id"] is None
+        assert policy["config"] == {"min_reviewers": 1}
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        listed_policies = client.get(f"/community-domains/{domain_id}/policies")
+        assert listed_policies.status_code == 200, listed_policies.text
+        assert listed_policies.json()["total"] == 1
+
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "member_verification.approve",
+                "subject_user_id": member.id,
+                "target_type": "member_verification",
+                "target_id": "verification-123",
+                "request_note": "Member submitted enough evidence.",
+                "payload": {"verification_id": 123},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+        assert review["policy_id"] == policy["id"]
+        assert review["status"] == "pending"
+        assert review["payload"] == {"verification_id": 123}
+
+        app.dependency_overrides[get_current_user] = lambda: domain_admin
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Evidence accepted."},
+        )
+        assert decision.status_code == 200, decision.text
+        decided = decision.json()["action_review"]
+        assert decided["status"] == "approved"
+        assert decided["decision"] == "approve"
+        assert decided["decided_by_user_id"] == domain_admin.id
+        assert "specific business route" in decision.json()["boundary"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainPolicy).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 1
+
+
+def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    branch_admin = _seed_user(2, "review-branch-admin@example.com")
+    teacher = _seed_user(3, "review-teacher@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Dominion Global School",
+                "display_name": "Dominion Global School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Abuja Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        for user in (branch_admin, teacher):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "staff"},
+            )
+            assert added.status_code == 201, added.text
+
+        assigned_admin = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": branch_admin.id, "role": "branch_admin"},
+        )
+        assert assigned_admin.status_code == 201, assigned_admin.text
+
+        assigned_teacher = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": teacher.id, "role": "teacher"},
+        )
+        assert assigned_teacher.status_code == 201, assigned_teacher.text
+
+        node_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "branch-role-change",
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "branch_admin",
+            },
+        )
+        assert node_policy.status_code == 201, node_policy.text
+
+        domain_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain-billing-change",
+                "action_key": "domain.billing.change",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+            },
+        )
+        assert domain_policy.status_code == 201, domain_policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: teacher
+        node_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "target_type": "node_member",
+                "target_id": str(teacher.id),
+            },
+        )
+        assert node_review_response.status_code == 201, node_review_response.text
+        node_review = node_review_response.json()["action_review"]
+        assert node_review["community_node_id"] == node_id
+        assert node_review["policy_id"] == node_policy.json()["policy"]["id"]
+
+        domain_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain.billing.change",
+                "target_type": "billing_setting",
+                "target_id": "plan",
+            },
+        )
+        assert domain_review_response.status_code == 201, domain_review_response.text
+        domain_review = domain_review_response.json()["action_review"]
+        assert domain_review["community_node_id"] is None
+        assert domain_review["policy_id"] == domain_policy.json()["policy"]["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+        node_reviews = client.get(
+            f"/community-domains/{domain_id}/action-reviews",
+            params={"community_node_id": node_id},
+        )
+        assert node_reviews.status_code == 200, node_reviews.text
+        assert node_reviews.json()["total"] == 1
+
+        node_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{node_review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert node_decision.status_code == 200, node_decision.text
+        assert node_decision.json()["action_review"]["status"] == "approved"
+
+        domain_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{domain_review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert domain_decision.status_code == 403, domain_decision.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_ordinary_member_cannot_create_policy_or_list_domain_reviews(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "policy-denied-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Aba Traders Domain",
+                "display_name": "Aba Traders Domain",
+                "domain_type": "market_association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        denied_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "market-levy-approval",
+                "action_key": "market_levy.approve",
+            },
+        )
+        assert denied_policy.status_code == 403, denied_policy.text
+
+        denied_reviews = client.get(f"/community-domains/{domain_id}/action-reviews")
+        assert denied_reviews.status_code == 403, denied_reviews.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
