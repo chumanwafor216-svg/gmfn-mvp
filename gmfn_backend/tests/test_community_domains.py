@@ -749,6 +749,140 @@ def test_inactive_parent_node_blocks_descendant_writes(
         assert db.query(CommunityDomainActionReview).count() == 0
 
 
+def test_archived_parent_node_blocks_descendant_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    staff = _seed_user(2, "archived-parent-staff@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Archived Parent School Domain",
+                "display_name": "Archived Parent School Domain",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Archived Owerri Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        department = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "parent_node_id": branch_id,
+                "name": "Archived Parent Department",
+                "node_type": "department",
+                "node_kind": "academic_department",
+            },
+        )
+        assert department.status_code == 201, department.text
+        department_id = department.json()["node"]["id"]
+
+        archived = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={
+                "status": "archived",
+                "status_note": "Branch absorbed into another campus.",
+            },
+        )
+        assert archived.status_code == 200, archived.text
+        assert archived.json()["node"]["status"] == "archived"
+
+        listed_nodes = client.get(f"/community-domains/{domain_id}/nodes")
+        assert listed_nodes.status_code == 200, listed_nodes.text
+        listed_items = {item["id"]: item for item in listed_nodes.json()["items"]}
+        assert listed_items[branch_id]["status"] == "archived"
+        assert listed_items[department_id]["status"] == "active"
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": staff.id, "role": "staff"},
+        )
+        assert added.status_code == 201, added.text
+
+        blocked_child = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "parent_node_id": department_id,
+                "name": "Archived Parent Class",
+                "node_type": "class",
+                "node_kind": "school_class",
+            },
+        )
+        assert blocked_child.status_code == 409, blocked_child.text
+        assert blocked_child.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "community_node_id": department_id,
+                "policy_key": "archived-parent-department-member-change",
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert blocked_policy.status_code == 409, blocked_policy.text
+        assert blocked_policy.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_placement = client.post(
+            f"/community-domains/{domain_id}/nodes/{department_id}/members",
+            json={"user_id": staff.id, "role": "teacher"},
+        )
+        assert blocked_placement.status_code == 409, blocked_placement.text
+        assert (
+            blocked_placement.json()["detail"]["code"]
+            == "community_domain_node_inactive"
+        )
+
+        blocked_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "community_node_id": department_id,
+                "action_key": "node_member.upsert",
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "payload": {"user_id": staff.id, "role": "teacher"},
+            },
+        )
+        assert blocked_review.status_code == 409, blocked_review.text
+        assert blocked_review.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_reopen_child = client.patch(
+            f"/community-domains/{domain_id}/nodes/{department_id}/status",
+            json={
+                "status": "active",
+                "status_note": "Trying to reopen child before parent.",
+            },
+        )
+        assert blocked_reopen_child.status_code == 409, blocked_reopen_child.text
+        assert (
+            blocked_reopen_child.json()["detail"]["code"]
+            == "community_domain_node_inactive"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityNodeMembership).count() == 0
+        assert db.query(CommunityDomainPolicy).count() == 0
+        records = db.query(CommunityDomainActionReview).all()
+        assert len(records) == 1
+        assert records[0].action_key == "node.status.update"
+
+
 def test_domain_admin_can_close_node_without_deleting_descendants(
     client: TestClient,
 ):
