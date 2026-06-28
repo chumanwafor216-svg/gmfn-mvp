@@ -2378,6 +2378,19 @@ export async function listCommunityDomainNodeTree(
   return httpJson(communityDomainPath(communityDomainId, "/nodes/tree"), "GET");
 }
 
+export async function getCommunityDomainNodeOperatingSummary(
+  communityDomainId: number | string,
+  communityNodeId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(
+      communityDomainId,
+      `/nodes/${encodeURIComponent(String(communityNodeId))}/operating-summary`
+    ),
+    "GET"
+  );
+}
+
 export async function createCommunityDomainNode(
   communityDomainId: number | string,
   payload: CommunityDomainNodePayload

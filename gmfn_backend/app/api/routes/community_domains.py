@@ -1806,6 +1806,256 @@ def _community_domain_node_tree_payload(
     return [attach_children(root) for root in roots]
 
 
+def _community_domain_node_operating_summary_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    node: CommunityNode,
+    can_admin: bool,
+) -> dict[str, Any]:
+    node_scope_ids = _descendant_node_ids(
+        db,
+        domain=domain,
+        node=node,
+        include_descendants=True,
+    )
+    impact_summary = _node_lifecycle_impact_summary(db, domain=domain, node=node)
+    direct_child_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == int(domain.id))
+        .filter(CommunityNode.parent_node_id == int(node.id))
+        .count()
+    )
+    direct_active_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
+        .filter(CommunityNodeMembership.community_node_id == int(node.id))
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_domain_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .filter(CommunityDomainPolicy.community_node_id.is_(None))
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    active_node_policy_count = int(impact_summary["active_policy_count"])
+
+    role_counts: dict[str, int] = {}
+    admin_assignment_count = 0
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
+        .filter(CommunityNodeMembership.community_node_id.in_(node_scope_ids))
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    for membership in active_node_memberships:
+        role_key = _clean_role(membership.role, "member")
+        role_counts[role_key] = role_counts.get(role_key, 0) + 1
+        if role_key in NODE_ADMIN_ROLES:
+            admin_assignment_count += 1
+
+    open_reviews_by_action: dict[str, int] = {}
+    open_review_rows = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReview.community_node_id.in_(node_scope_ids))
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .all()
+    )
+    for review in open_review_rows:
+        action_key = _clean_role(review.action_key, "unknown")
+        open_reviews_by_action[action_key] = open_reviews_by_action.get(action_key, 0) + 1
+
+    def lane(
+        lane_key: str,
+        label: str,
+        state: str,
+        count: int,
+        next_step: str,
+        *,
+        ready: bool,
+        route_suffix: str,
+        requires_admin: bool,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "state": state,
+            "ready": bool(ready),
+            "count": int(count),
+            "next_step": next_step,
+            "route_hint": (
+                f"/community-domains/{int(domain.id)}{route_suffix}"
+                if can_admin or not requires_admin
+                else None
+            ),
+            "requires_admin": bool(requires_admin),
+            "admin_visible": bool(can_admin),
+            "boundary": (
+                "Read-only node operating item. This does not create child "
+                "nodes, add members, assign roles, create policy, decide "
+                "reviews, activate billing, verify a branch, or expose private "
+                "review payloads."
+            ),
+        }
+
+    lanes = [
+        lane(
+            "structure",
+            "Local structure",
+            "has_child_units" if direct_child_count > 0 else "single_unit",
+            int(direct_child_count),
+            (
+                "Review child branches, departments, lines, or committees."
+                if direct_child_count > 0
+                else "Add child units only if this operating unit needs them."
+            ),
+            ready=True,
+            route_suffix="/nodes/tree",
+            requires_admin=False,
+        ),
+        lane(
+            "local_members",
+            "Local members",
+            "ready" if direct_active_member_count > 0 else "no_local_members",
+            int(direct_active_member_count),
+            (
+                "Review local member placement."
+                if direct_active_member_count > 0
+                else "Place active domain members into this unit."
+            ),
+            ready=direct_active_member_count > 0,
+            route_suffix=f"/nodes/{int(node.id)}/members",
+            requires_admin=True,
+        ),
+        lane(
+            "local_admins",
+            "Local admins",
+            "ready" if admin_assignment_count > 0 else "admin_needed",
+            int(admin_assignment_count),
+            (
+                "Review local admin coverage."
+                if admin_assignment_count > 0
+                else "Assign at least one trusted local admin when this unit needs autonomy."
+            ),
+            ready=admin_assignment_count > 0,
+            route_suffix=f"/nodes/{int(node.id)}/members",
+            requires_admin=True,
+        ),
+        lane(
+            "local_governance",
+            "Local governance",
+            "ready" if active_node_policy_count > 0 else "domain_policy_only",
+            int(active_node_policy_count),
+            (
+                "Review local policy coverage."
+                if active_node_policy_count > 0
+                else "Use domain policy or add local policy if this unit needs its own approvals."
+            ),
+            ready=active_node_policy_count > 0 or active_domain_policy_count > 0,
+            route_suffix=f"/policies?community_node_id={int(node.id)}",
+            requires_admin=True,
+        ),
+        lane(
+            "open_reviews",
+            "Open reviews",
+            "open" if impact_summary["open_action_review_count"] > 0 else "clear",
+            int(impact_summary["open_action_review_count"]),
+            (
+                "Review pending local decisions."
+                if impact_summary["open_action_review_count"] > 0
+                else "No open local governance reviews."
+            ),
+            ready=impact_summary["open_action_review_count"] == 0,
+            route_suffix=(
+                f"/action-reviews/reviewer-queue?community_node_id={int(node.id)}"
+            ),
+            requires_admin=True,
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_node_or_domain_admin",
+            "label": "Ask a Community Domain admin to manage this operating unit",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif impact_summary["open_action_review_count"] > 0:
+        primary_next_action = {
+            "action_key": "review_local_queue",
+            "label": "Review local governance queue",
+            "route_hint": (
+                f"/community-domains/{int(domain.id)}/action-reviews/reviewer-queue"
+                f"?community_node_id={int(node.id)}"
+            ),
+            "requires_admin": True,
+        }
+    elif direct_active_member_count == 0:
+        primary_next_action = {
+            "action_key": "place_local_members",
+            "label": "Place members into this operating unit",
+            "route_hint": f"/community-domains/{int(domain.id)}/nodes/{int(node.id)}/members",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_node_members",
+            "label": "Review local operating membership",
+            "route_hint": f"/community-domains/{int(domain.id)}/nodes/{int(node.id)}/members",
+            "requires_admin": True,
+        }
+
+    return {
+        "node": _node_payload(node),
+        "scope": {
+            "node_scope_ids": node_scope_ids,
+            "includes_descendants": True,
+            "descendant_node_count": int(impact_summary["descendant_node_count"]),
+        },
+        "counts": {
+            "direct_child_nodes": int(direct_child_count),
+            "subtree_nodes": len(node_scope_ids),
+            "direct_active_node_members": int(direct_active_member_count),
+            "subtree_active_node_members": int(
+                impact_summary["active_node_member_count"]
+            ),
+            "admin_assignments": int(admin_assignment_count),
+            "active_node_policies": int(active_node_policy_count),
+            "active_domain_policies": int(active_domain_policy_count),
+            "open_action_reviews": int(impact_summary["open_action_review_count"]),
+        },
+        "role_counts": {
+            "by_role": role_counts,
+            "admin_assignments": int(admin_assignment_count),
+        },
+        "review_counts": {
+            "open_by_status": impact_summary["open_action_reviews_by_status"],
+            "open_by_action": open_reviews_by_action,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "viewer": {"can_admin": bool(can_admin)},
+        "editable": False,
+        "boundary": (
+            "Node operating summary is a read-only projection for one branch, "
+            "department, line, chapter, class, committee, or unit. This endpoint "
+            "does not create child nodes, add members, assign roles, create "
+            "policy, decide reviews, activate billing, verify a branch, create a "
+            "separate Community Domain, or expose private review payloads."
+        ),
+    }
+
+
 def _community_domain_dashboard_payload(
     db: Session,
     *,
@@ -3383,6 +3633,43 @@ def list_community_domain_node_tree(
             "Read-only structure tree. This does not create nodes, change "
             "parentage, assign members, grant roles, activate billing, verify "
             "a branch, or create a separate Community Domain."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/nodes/{community_node_id}/operating-summary", response_model=dict[str, Any])
+def get_community_domain_node_operating_summary(
+    community_domain_id: int,
+    community_node_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    node = _get_node_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_id=int(community_node_id),
+    )
+    can_admin = _has_domain_admin_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+    ) or _has_node_admin_scope(
+        db,
+        domain=domain,
+        node=node,
+        current_user=current_user,
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_node_id": int(node.id),
+        "operating_summary": _community_domain_node_operating_summary_payload(
+            db,
+            domain=domain,
+            node=node,
+            can_admin=can_admin,
         ),
     }
 

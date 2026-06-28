@@ -1724,6 +1724,241 @@ def test_community_domain_node_tree_returns_nested_structure_without_writes(
         assert db.query(Clan).count() == 0
 
 
+def test_node_operating_summary_rolls_up_branch_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "operating-line-admin@example.com")
+    trader = _seed_user(3, "operating-trader@example.com")
+    technician = _seed_user(4, "operating-technician@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Operating Market Domain",
+                "display_name": "Operating Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain = created_domain.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Warranty Committee",
+                "parent_node_id": line_id,
+                "node_type": "committee",
+                "node_kind": "trade_committee",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+        committee_id = committee.json()["node"]["id"]
+
+        for user in (line_admin, trader, technician):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (line_id, line_admin, "line_admin"),
+            (line_id, trader, "trader"),
+            (committee_id, technician, "committee_member"),
+        ]
+        for node_id, user, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "operating-line-member-review",
+                "action_key": "node_member.role_change",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "line_admin",
+                "policy_summary": "Line admins review member role changes.",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": line_id,
+                "target_type": "node_member",
+                "target_id": str(trader.id),
+                "request_note": "Promote trader to committee support.",
+                "payload": {
+                    "user_id": trader.id,
+                    "role": "committee_member",
+                    "title": "Committee support",
+                },
+            },
+        )
+        assert review.status_code == 201, review.text
+
+        response = client.get(
+            f"/community-domains/{domain_id}/nodes/{line_id}/operating-summary"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    assert payload["community_node_id"] == line_id
+    summary = payload["operating_summary"]
+    assert summary["editable"] is False
+    assert summary["node"]["id"] == line_id
+    assert summary["scope"]["node_scope_ids"] == [line_id, committee_id]
+    assert summary["scope"]["descendant_node_count"] == 1
+    assert summary["counts"]["direct_child_nodes"] == 1
+    assert summary["counts"]["subtree_nodes"] == 2
+    assert summary["counts"]["direct_active_node_members"] == 2
+    assert summary["counts"]["subtree_active_node_members"] == 3
+    assert summary["counts"]["admin_assignments"] == 1
+    assert summary["counts"]["active_node_policies"] == 1
+    assert summary["counts"]["active_domain_policies"] == 0
+    assert summary["counts"]["open_action_reviews"] == 1
+    assert summary["role_counts"]["by_role"]["line_admin"] == 1
+    assert summary["role_counts"]["by_role"]["trader"] == 1
+    assert summary["role_counts"]["by_role"]["committee_member"] == 1
+    assert summary["review_counts"]["open_by_status"] == {"pending": 1}
+    assert summary["review_counts"]["open_by_action"] == {
+        "node_member.role_change": 1
+    }
+    assert summary["primary_next_action"]["action_key"] == "review_local_queue"
+    assert summary["primary_next_action"]["route_hint"].endswith(
+        f"/action-reviews/reviewer-queue?community_node_id={line_id}"
+    )
+    assert "does not create child nodes" in summary["boundary"]
+    assert "add members" in summary["boundary"]
+    assert "assign roles" in summary["boundary"]
+    assert "create policy" in summary["boundary"]
+    assert "decide reviews" in summary["boundary"]
+    assert "verify a branch" in summary["boundary"]
+    assert "separate Community Domain" in summary["boundary"]
+    assert "private review payloads" in summary["boundary"]
+
+    lanes = {item["lane_key"]: item for item in summary["lanes"]}
+    assert lanes["structure"]["state"] == "has_child_units"
+    assert lanes["local_members"]["state"] == "ready"
+    assert lanes["local_admins"]["state"] == "ready"
+    assert lanes["local_governance"]["state"] == "ready"
+    assert lanes["open_reviews"]["state"] == "open"
+    assert lanes["open_reviews"]["ready"] is False
+    assert "private review payloads" in lanes["open_reviews"]["boundary"]
+
+    with SessionLocal() as db:
+        domain_row = db.query(CommunityDomain).one()
+        assert domain_row.status == "draft"
+        assert domain_row.verification_status == "unverified"
+        assert db.query(CommunityNode).count() == 3
+        assert db.query(CommunityDomainMembership).count() == 4
+        assert db.query(CommunityNodeMembership).count() == 3
+        assert db.query(CommunityDomainPolicy).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 1
+        assert db.query(CommunityDomainActionReviewDecision).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_node_operating_summary_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "operating-member@example.com")
+    outsider = _seed_user(3, "operating-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Operating School Domain",
+                "display_name": "Operating School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Abuja Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_summary = client.get(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/operating-summary"
+        )
+        assert member_summary.status_code == 200, member_summary.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_summary = client.get(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/operating-summary"
+        )
+        assert outsider_summary.status_code == 403, outsider_summary.text
+        assert "active Community Domain members" in outsider_summary.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    summary = member_summary.json()["operating_summary"]
+    lanes = {item["lane_key"]: item for item in summary["lanes"]}
+    assert summary["viewer"] == {"can_admin": False}
+    assert summary["primary_next_action"] == {
+        "action_key": "ask_node_or_domain_admin",
+        "label": "Ask a Community Domain admin to manage this operating unit",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert lanes["structure"]["route_hint"].endswith("/nodes/tree")
+    assert lanes["local_members"]["route_hint"] is None
+    assert lanes["local_admins"]["route_hint"] is None
+    assert lanes["local_governance"]["route_hint"] is None
+    assert lanes["open_reviews"]["route_hint"] is None
+    assert summary["editable"] is False
+    assert "private review payloads" in summary["boundary"]
+
+
 def test_community_domain_node_create_rejects_duplicate_sibling_name(
     client: TestClient,
 ):
