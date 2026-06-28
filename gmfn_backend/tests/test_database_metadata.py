@@ -75,6 +75,10 @@ def test_member_witness_schema_identifiers_fit_postgres_limit():
         / "alembic"
         / "versions"
         / "20260628_add_community_domain_review_decisions.py",
+        backend_root
+        / "alembic"
+        / "versions"
+        / "20260628_add_community_domain_review_revisions.py",
         backend_root / "app" / "db" / "models.py",
     ]
     explicit_identifier = re.compile(r'"((?:ix|uq|fk)_[^"]+)"')

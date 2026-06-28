@@ -234,6 +234,9 @@ def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
         "community_node_id": int(row.community_node_id) if row.community_node_id is not None else None,
         "community_node_name": getattr(node, "name", None),
         "policy_id": int(row.policy_id) if row.policy_id is not None else None,
+        "parent_review_id": (
+            int(row.parent_review_id) if row.parent_review_id is not None else None
+        ),
         "policy_key": getattr(policy, "policy_key", None),
         "action_key": row.action_key,
         "requested_by_user_id": int(row.requested_by_user_id),
@@ -382,6 +385,16 @@ class CommunityDomainActionReviewCancelIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     cancel_note: Optional[str] = Field(default=None, max_length=1200)
+
+
+class CommunityDomainActionReviewRevisionIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    subject_user_id: Optional[int] = Field(default=None, ge=1)
+    target_type: Optional[str] = Field(default=None, max_length=64)
+    target_id: Optional[str] = Field(default=None, max_length=96)
+    request_note: Optional[str] = Field(default=None, max_length=1200)
+    payload: Optional[dict[str, Any]] = None
 
 
 def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:
@@ -1435,7 +1448,9 @@ def create_community_domain_action_review(
                     "message": "This policy does not govern the requested action.",
                 },
             )
-        if policy.community_node_id is not None and int(policy.community_node_id) != int(node_id or 0):
+        if policy.community_node_id is not None and int(policy.community_node_id) != int(
+            node_id or 0
+        ):
             raise HTTPException(
                 status_code=409,
                 detail={
@@ -1586,6 +1601,146 @@ def get_community_domain_action_review(
         "boundary": (
             "Action review detail is visible only to the requester, eligible "
             "reviewers, and scoped admins. It does not apply the requested action."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/action-reviews/{review_id}/revision",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def revise_community_domain_action_review(
+    community_domain_id: int,
+    review_id: int,
+    payload: CommunityDomainActionReviewRevisionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+
+    if int(row.requested_by_user_id) != int(current_user.id):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_revision_forbidden",
+                "message": "Only the original requester can revise this Community Domain action review.",
+            },
+        )
+
+    current_status = _clean_role(row.status)
+    if current_status not in {"cancelled", "rejected", "needs_changes"}:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_review_not_revisionable",
+                "message": "Only cancelled, rejected, or needs-changes reviews can be revised.",
+            },
+        )
+
+    node_id: Optional[int] = (
+        int(row.community_node_id) if row.community_node_id is not None else None
+    )
+    if node_id is not None:
+        _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=node_id,
+        )
+
+    policy: Optional[CommunityDomainPolicy] = getattr(row, "policy", None)
+    if policy is None:
+        policy = _matching_policy(
+            db,
+            community_domain_id=int(domain.id),
+            action_key=row.action_key,
+            community_node_id=node_id,
+        )
+    if policy is not None:
+        if _clean_role(policy.status, "inactive") != "active":
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_policy_inactive",
+                    "message": "This Community Domain policy is not active.",
+                },
+            )
+        if _clean_role(policy.action_key) != _clean_role(row.action_key):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_policy_action_mismatch",
+                    "message": "This policy does not govern the requested action.",
+                },
+            )
+        if policy.community_node_id is not None and int(policy.community_node_id) != int(node_id or 0):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_policy_node_mismatch",
+                    "message": "This policy belongs to a different Community Domain node.",
+                },
+            )
+
+    fields_set = payload.model_fields_set
+    subject_user_id = (
+        payload.subject_user_id
+        if "subject_user_id" in fields_set
+        else row.subject_user_id
+    )
+    if subject_user_id is not None:
+        _get_user_or_404(db, int(subject_user_id))
+
+    target_type = (
+        _clean_role(payload.target_type)
+        if "target_type" in fields_set and payload.target_type
+        else row.target_type
+    )
+    target_id = (
+        _clean_str(payload.target_id) or None
+        if "target_id" in fields_set
+        else row.target_id
+    )
+    request_note = (
+        _clean_str(payload.request_note) or None
+        if "request_note" in fields_set
+        else row.request_note
+    )
+    revision_payload = (
+        payload.payload if "payload" in fields_set else _json_load(row.payload_json)
+    )
+
+    revision = CommunityDomainActionReview(
+        community_domain_id=int(domain.id),
+        community_node_id=node_id,
+        policy_id=int(policy.id) if policy is not None else None,
+        parent_review_id=int(row.id),
+        action_key=_clean_role(row.action_key),
+        requested_by_user_id=int(current_user.id),
+        subject_user_id=int(subject_user_id) if subject_user_id is not None else None,
+        target_type=target_type,
+        target_id=target_id,
+        status="pending",
+        request_note=request_note,
+        payload_json=_json_dump(revision_payload),
+    )
+    db.add(revision)
+    db.commit()
+    db.refresh(revision)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "previous_action_review": _action_review_payload(row),
+        "action_review": _action_review_payload(revision),
+        "boundary": (
+            "Revision created as a new pending review. The previous review remains "
+            "unchanged for audit history; this does not apply the requested action."
         ),
     }
 

@@ -688,6 +688,11 @@ class CommunityDomainActionReview(Base):
         nullable=True,
         index=True,
     )
+    parent_review_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_domain_action_reviews.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     action_key: Mapped[str] = mapped_column(String(96), nullable=False, index=True)
     requested_by_user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -738,6 +743,11 @@ class CommunityDomainActionReview(Base):
     community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
     community_node = relationship("CommunityNode", foreign_keys=[community_node_id])
     policy = relationship("CommunityDomainPolicy", foreign_keys=[policy_id])
+    parent_review = relationship(
+        "CommunityDomainActionReview",
+        remote_side=[id],
+        foreign_keys=[parent_review_id],
+    )
     requester = relationship("User", foreign_keys=[requested_by_user_id])
     subject = relationship("User", foreign_keys=[subject_user_id])
     decider = relationship("User", foreign_keys=[decided_by_user_id])
