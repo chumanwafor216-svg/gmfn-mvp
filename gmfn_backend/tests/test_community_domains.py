@@ -1794,6 +1794,32 @@ def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
         assert blocked_apply.status_code == 409, blocked_apply.text
         assert blocked_apply.json()["detail"]["code"] == "community_domain_review_not_approved"
 
+        app.dependency_overrides[get_current_user] = lambda: owner
+        demoted_first_admin = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": first_admin.id, "role": "member"},
+        )
+        assert demoted_first_admin.status_code == 201, demoted_first_admin.text
+
+        app.dependency_overrides[get_current_user] = lambda: first_admin
+        decided_detail = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}"
+        )
+        assert decided_detail.status_code == 200, decided_detail.text
+        assert decided_detail.json()["action_review"]["status"] == "pending_review"
+
+        decided_activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/activity"
+        )
+        assert decided_activity.status_code == 200, decided_activity.text
+        assert "decision" in {item["type"] for item in decided_activity.json()["items"]}
+
+        decided_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/lineage"
+        )
+        assert decided_lineage.status_code == 200, decided_lineage.text
+        assert decided_lineage.json()["total"] == 1
+
         app.dependency_overrides[get_current_user] = lambda: second_admin
         second_decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",

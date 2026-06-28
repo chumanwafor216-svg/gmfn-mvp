@@ -1143,6 +1143,18 @@ def _can_view_action_review(
 ) -> bool:
     if int(row.requested_by_user_id) == int(current_user.id):
         return True
+    if _has_user_decision(row, int(current_user.id)):
+        return True
+    if (
+        row.decided_by_user_id is not None
+        and int(row.decided_by_user_id) == int(current_user.id)
+    ):
+        return True
+    if (
+        row.applied_by_user_id is not None
+        and int(row.applied_by_user_id) == int(current_user.id)
+    ):
+        return True
 
     try:
         _require_action_review_admin_scope(
