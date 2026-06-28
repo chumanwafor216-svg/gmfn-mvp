@@ -1726,6 +1726,228 @@ def test_member_can_read_rollout_plan_but_admin_actions_are_hidden(
     assert phases["capacity"]["admin_action_route_hint"].endswith("/capacity-plan")
 
 
+def test_rollout_tree_projects_recursive_units_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "rollout-tree-admin@example.com")
+    trader = _seed_user(3, "rollout-tree-trader@example.com")
+    section_member = _seed_user(4, "rollout-tree-section@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Rollout Tree Market Domain",
+                "display_name": "Rollout Tree Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        section = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Phone Accessories Section",
+                "parent_node_id": line_id,
+                "node_type": "section",
+                "node_kind": "market_section",
+            },
+        )
+        assert section.status_code == 201, section.text
+        section_id = section.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Welfare Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "market_committee",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+        committee_id = committee.json()["node"]["id"]
+
+        for user, role in (
+            (admin, "domain_admin"),
+            (trader, "member"),
+            (section_member, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (line_id, admin.id, "line_admin"),
+            (line_id, trader.id, "trader"),
+            (section_id, section_member.id, "trader"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/rollout-tree")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    rollout_tree = payload["rollout_tree"]
+    assert rollout_tree["editable"] is False
+    assert rollout_tree["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert rollout_tree["template"]["template_key"] == "market_cooperative"
+    assert rollout_tree["counts"] == {
+        "nodes": 4,
+        "non_root_nodes": 3,
+        "ready_for_pilot": 1,
+        "needs_local_admin": 2,
+        "needs_pilot_members": 0,
+        "inactive": 0,
+        "active_node_memberships": 3,
+        "active_policies": 0,
+    }
+    assert rollout_tree["status_counts"] == {
+        "ready_for_pilot": 1,
+        "needs_local_admin": 2,
+    }
+    assert rollout_tree["primary_next_action"] == {
+        "action_key": "assign_local_admins",
+        "label": "Assign local rollout admins",
+        "route_hint": f"/community-domains/{domain_id}/roles",
+        "requires_admin": True,
+    }
+    assert "does not create nodes" in rollout_tree["boundary"]
+    assert "invite members" in rollout_tree["boundary"]
+    assert "assign admins" in rollout_tree["boundary"]
+    assert "private evidence" in rollout_tree["boundary"]
+
+    flat = {item["node"]["name"]: item for item in rollout_tree["flat_nodes"]}
+    assert flat["Rollout Tree Market Domain"]["rollout_status"] == "root"
+    assert flat["Electronics Line"]["rollout_status"] == "ready_for_pilot"
+    assert flat["Electronics Line"]["direct_child_count"] == 1
+    assert flat["Electronics Line"]["subtree_node_count"] == 2
+    assert flat["Electronics Line"]["direct_member_count"] == 2
+    assert flat["Electronics Line"]["direct_admin_count"] == 1
+    assert flat["Electronics Line"]["subtree_member_count"] == 3
+    assert flat["Phone Accessories Section"]["rollout_status"] == "needs_local_admin"
+    assert flat["Phone Accessories Section"]["direct_member_count"] == 1
+    assert flat["Phone Accessories Section"]["direct_admin_count"] == 0
+    assert flat["Welfare Committee"]["rollout_status"] == "needs_local_admin"
+    assert flat["Welfare Committee"]["direct_member_count"] == 0
+    assert flat["Welfare Committee"]["direct_admin_count"] == 0
+    assert flat["Welfare Committee"]["admin_action_route_hint"].endswith("/roles")
+
+    tree = rollout_tree["tree"][0]
+    assert tree["node"]["parent_node_id"] is None
+    child_names = {child["node"]["name"] for child in tree["children"]}
+    assert child_names == {"Electronics Line", "Welfare Committee"}
+    electronics_tree = next(
+        child for child in tree["children"] if child["node"]["name"] == "Electronics Line"
+    )
+    assert electronics_tree["children"][0]["node"]["name"] == "Phone Accessories Section"
+    assert "does not create nodes" in flat["Welfare Committee"]["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_rollout_tree_but_admin_actions_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "rollout-tree-member@example.com")
+    outsider = _seed_user(3, "rollout-tree-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Rollout Tree School Domain",
+                "display_name": "Rollout Tree School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_tree = client.get(f"/community-domains/{domain_id}/rollout-tree")
+        assert member_tree.status_code == 200, member_tree.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_tree = client.get(f"/community-domains/{domain_id}/rollout-tree")
+        assert outsider_tree.status_code == 403, outsider_tree.text
+        assert "active Community Domain members" in outsider_tree.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    rollout_tree = member_tree.json()["rollout_tree"]
+    assert rollout_tree["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert rollout_tree["template"]["template_key"] == "school_multi_branch"
+    assert rollout_tree["counts"]["non_root_nodes"] == 0
+    assert rollout_tree["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_continue_rollout",
+        "label": "Ask a Community Domain admin to continue rollout",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert rollout_tree["tree"][0]["admin_action_route_hint"] is None
+    assert rollout_tree["flat_nodes"][0]["admin_action_route_hint"] is None
+    assert "private evidence" in rollout_tree["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

@@ -2363,6 +2363,12 @@ export async function getCommunityDomainRolloutPlan(
   return httpJson(communityDomainPath(communityDomainId, "/rollout-plan"), "GET");
 }
 
+export async function getCommunityDomainRolloutTree(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/rollout-tree"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

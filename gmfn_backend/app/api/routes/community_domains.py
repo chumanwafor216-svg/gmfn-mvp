@@ -4738,6 +4738,242 @@ def _community_domain_rollout_plan_payload(
     }
 
 
+def _community_domain_rollout_tree_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    for node in nodes:
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(node_id, []).append(policy)
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def descendant_ids(node_id: int) -> list[int]:
+        ids: list[int] = []
+        for child in children_by_parent.get(node_id, []):
+            child_id = int(child.id)
+            ids.append(child_id)
+            ids.extend(descendant_ids(child_id))
+        return ids
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def rollout_status_for(
+        node: CommunityNode,
+        *,
+        direct_member_count: int,
+        direct_admin_count: int,
+    ) -> tuple[str, str]:
+        if node.parent_node_id is None:
+            return (
+                "root",
+                "Root institution record. Use child operating units for rollout.",
+            )
+        if _clean_role(node.status, "inactive") != "active":
+            return (
+                "inactive",
+                "Reactivate or replace this node before using it for rollout.",
+            )
+        if direct_admin_count <= 0:
+            return (
+                "needs_local_admin",
+                "Assign a real local admin before wider rollout.",
+            )
+        if direct_member_count <= direct_admin_count:
+            return (
+                "needs_pilot_members",
+                "Place pilot members here before wider rollout.",
+            )
+        return (
+            "ready_for_pilot",
+            "This unit has a local admin and pilot members.",
+        )
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        node_member_rows = memberships_by_node.get(node_id, [])
+        direct_admin_count = sum(
+            1 for row in node_member_rows if _clean_role(row.role) in NODE_ADMIN_ROLES
+        )
+        direct_member_count = len(node_member_rows)
+        subtree_ids = [node_id, *descendant_ids(node_id)]
+        descendant_member_count = sum(
+            len(memberships_by_node.get(item_id, [])) for item_id in subtree_ids
+        )
+        subtree_policy_count = sum(
+            len(policies_by_node.get(item_id, [])) for item_id in subtree_ids
+        )
+        rollout_status, next_step = rollout_status_for(
+            node,
+            direct_member_count=direct_member_count,
+            direct_admin_count=direct_admin_count,
+        )
+        item = {
+            "node": _node_payload(node),
+            "rollout_status": rollout_status,
+            "ready_for_pilot": rollout_status == "ready_for_pilot",
+            "direct_child_count": len(child_nodes),
+            "subtree_node_count": len(subtree_ids),
+            "direct_member_count": int(direct_member_count),
+            "direct_admin_count": int(direct_admin_count),
+            "subtree_member_count": int(descendant_member_count),
+            "subtree_policy_count": int(subtree_policy_count),
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "admin_action_route_hint": route_hint("/roles", requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only recursive rollout item. This does not create nodes, "
+                "invite members, add members, assign admins, place members, "
+                "create policy, change node status, create marketplace activity, "
+                "or expose private evidence."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    roots = children_by_parent.get(None, [])
+    tree = [node_item(root) for root in roots]
+    non_root_items = [item for item in flat_nodes if item["node"]["parent_node_id"] is not None]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["rollout_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if not non_root_items:
+        action_key = "choose_rollout_units"
+        action_label = "Choose first Community Domain rollout units"
+        action_route = "/nodes/tree"
+        action_admin = True
+    elif status_counts.get("inactive", 0) > 0:
+        action_key = "review_inactive_rollout_units"
+        action_label = "Review inactive rollout units"
+        action_route = "/nodes/tree"
+        action_admin = True
+    elif status_counts.get("needs_local_admin", 0) > 0:
+        action_key = "assign_local_admins"
+        action_label = "Assign local rollout admins"
+        action_route = "/roles"
+        action_admin = True
+    elif status_counts.get("needs_pilot_members", 0) > 0:
+        action_key = "place_pilot_members"
+        action_label = "Place pilot members into rollout units"
+        action_route = "/nodes/tree"
+        action_admin = True
+    else:
+        action_key = "review_rollout_plan"
+        action_label = "Review Community Domain rollout plan"
+        action_route = "/rollout-plan"
+        action_admin = False
+
+    if action_admin and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_continue_rollout",
+            "label": "Ask a Community Domain admin to continue rollout",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": action_key,
+            "label": action_label,
+            "route_hint": route_hint(action_route),
+            "requires_admin": bool(action_admin),
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": _clean_role(template["marketplace_role"], "optional"),
+        },
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "ready_for_pilot": status_counts.get("ready_for_pilot", 0),
+            "needs_local_admin": status_counts.get("needs_local_admin", 0),
+            "needs_pilot_members": status_counts.get("needs_pilot_members", 0),
+            "inactive": status_counts.get("inactive", 0),
+            "active_node_memberships": len(active_node_memberships),
+            "active_policies": len(active_policies),
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Rollout tree is a read-only recursive view of Community Domain "
+            "rollout readiness. It does not create nodes, invite members, add "
+            "members, assign admins, place members, create policy, open reviews, "
+            "change node status, verify authority, activate billing, publish a "
+            "public page, create marketplace activity, create a social Community, "
+            "move money, or expose private evidence."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -6094,6 +6330,25 @@ def get_community_domain_rollout_plan(
         "ok": True,
         "community_domain_id": int(domain.id),
         "rollout_plan": _community_domain_rollout_plan_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/rollout-tree", response_model=dict[str, Any])
+def get_community_domain_rollout_tree(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "rollout_tree": _community_domain_rollout_tree_payload(
             db,
             domain=domain,
             current_user=current_user,
