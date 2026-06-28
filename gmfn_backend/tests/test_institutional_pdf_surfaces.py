@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,6 +106,39 @@ def test_shared_institutional_pdf_header_security_strip_has_safe_geometry():
     assert strip_height > 0
 
 
+def test_shared_institutional_pdf_footer_wraps_long_reader_boundary():
+    from app.services.institutional_pdf import draw_institutional_footer
+
+    width, _ = A4
+    canvas = _RecordingPdfCanvas()
+    footer_text = (
+        "GSN TrustSlip evidence paper - controlled community trust record, "
+        "not a bank guarantee, credit approval, payment instruction, or automatic debit authority."
+    )
+
+    draw_institutional_footer(canvas, width, footer_text)
+
+    footer_lines = [
+        row[3]
+        for row in canvas.draw_strings
+        if row[0] == "left" and "GSN TrustSlip evidence paper" in row[3]
+    ]
+    footer_lines += [
+        row[3]
+        for row in canvas.draw_strings
+        if row[0] == "left" and "automatic debit authority" in row[3]
+    ]
+
+    assert len(footer_lines) == 2
+    assert footer_lines[0].startswith("GSN TrustSlip evidence paper")
+    assert footer_lines[1].endswith("automatic debit authority.")
+    assert "Confidential / Evidence Record" not in "\n".join(footer_lines)
+
+    max_width = width - (44 * mm)
+    for line in footer_lines:
+        assert stringWidth(line, "Helvetica", 8) <= max_width
+
+
 def test_simple_evidence_pdfs_use_gsn_institutional_shell():
     for service in [
         "app/services/evidence_pack_pdf_service.py",
@@ -151,6 +186,8 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "Private support record" in text
     assert "Reconciliation reference" in text
     assert "private operational detail redacted" in text
+    assert "Confidential / Evidence Record" not in text
+    assert "GSN TrustSlip evidence paper - controlled community trust record" in text
     assert "Support record ID" not in text
     assert "loan_id = event.loan_id" not in text
     assert "Payment reference" not in text

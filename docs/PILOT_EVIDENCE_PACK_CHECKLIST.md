@@ -95,5 +95,8 @@ Each accepted item should record:
   language passes.
 - The evidence pack is still partial until accepted screenshots/PDFs are
   captured and reviewed.
-- Render/pipeline deployment should remain batch-first and push-last until the
-  product owner approves publishing.
+- Current owner override for active pilot testing: completed verified fixes are
+  pushed to `main` and a Render deploy is requested. Frontend deploy requests
+  can be accepted by the existing hook; backend-impacting fixes are not
+  Render-confirmed until `gmfn-api` is deployed manually or GitHub has
+  `RENDER_API_KEY` plus preferably `RENDER_API_SERVICE_ID`.
