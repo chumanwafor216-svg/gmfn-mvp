@@ -880,6 +880,16 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
             == "community_domain_root_node_status_immutable"
         )
 
+        missing_note = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": "inactive"},
+        )
+        assert missing_note.status_code == 422, missing_note.text
+        assert (
+            missing_note.json()["detail"]["code"]
+            == "community_domain_node_status_note_required"
+        )
+
         closed = client.patch(
             f"/community-domains/{domain_id}/nodes/{branch_id}/status",
             json={
@@ -918,6 +928,14 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert repeated_close.status_code == 200, repeated_close.text
         assert repeated_close.json()["changed"] is False
         assert repeated_close.json()["lifecycle_record"] is None
+
+        repeated_close_without_note = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": "inactive"},
+        )
+        assert repeated_close_without_note.status_code == 200, repeated_close_without_note.text
+        assert repeated_close_without_note.json()["changed"] is False
+        assert repeated_close_without_note.json()["lifecycle_record"] is None
 
         listed_nodes = client.get(f"/community-domains/{domain_id}/nodes")
         assert listed_nodes.status_code == 200, listed_nodes.text
