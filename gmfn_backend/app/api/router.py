@@ -7,6 +7,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.entry import router as entry_router
 from app.api.routes.entry_verification import router as entry_verification_router
 from app.api.routes.clans import router as clans_router
+from app.api.routes.community_domains import router as community_domains_router
 from app.api.routes.invites import router as invites_router
 from app.api.routes.loans import router as loans_router
 from app.api.routes.loan_suggestions import router as loan_suggestions_router
@@ -117,6 +118,7 @@ api_router.include_router(auth_router)
 api_router.include_router(entry_router)
 api_router.include_router(entry_verification_router)
 api_router.include_router(clans_router)
+api_router.include_router(community_domains_router)
 api_router.include_router(invites_router)
 api_router.include_router(loans_router)
 api_router.include_router(loan_suggestions_router)

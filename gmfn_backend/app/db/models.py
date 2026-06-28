@@ -291,6 +291,172 @@ class CommunityDomainAffiliation(Base):
     decider = relationship("User", foreign_keys=[decided_by_user_id])
 
 
+class CommunityDomain(Base):
+    __tablename__ = "community_domains"
+
+    __table_args__ = (
+        UniqueConstraint("domain_name", name="uq_community_domains_domain_name"),
+        Index("ix_community_domains_owner_status", "owner_user_id", "status"),
+        Index("ix_community_domains_type_status", "domain_type", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    domain_name: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    display_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    domain_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="generic_association",
+        server_default="generic_association",
+        index=True,
+    )
+    template_key: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="generic_association",
+        server_default="generic_association",
+    )
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="draft",
+        server_default="draft",
+        index=True,
+    )
+    verification_status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="unverified",
+        server_default="unverified",
+        index=True,
+    )
+    country: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    public_profile: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    owner = relationship("User", foreign_keys=[owner_user_id])
+    clan = relationship("Clan", foreign_keys=[clan_id])
+    nodes = relationship(
+        "CommunityNode",
+        back_populates="community_domain",
+        cascade="all, delete-orphan",
+    )
+
+
+class CommunityNode(Base):
+    __tablename__ = "community_nodes"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "community_domain_id",
+            "parent_node_id",
+            "name",
+            name="uq_comm_nodes_domain_parent_name",
+        ),
+        Index("ix_comm_nodes_domain_parent", "community_domain_id", "parent_node_id"),
+        Index("ix_comm_nodes_domain_kind", "community_domain_id", "node_kind"),
+        Index("ix_comm_nodes_domain_path", "community_domain_id", "path"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    community_domain_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domains.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    parent_node_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_nodes.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    node_type: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="root",
+        server_default="root",
+    )
+    node_kind: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="administrative",
+        server_default="administrative",
+        index=True,
+    )
+    path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    depth: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    visibility_policy: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="members",
+        server_default="members",
+    )
+    inherits_parent_policy: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=text("true"),
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    community_domain = relationship("CommunityDomain", back_populates="nodes")
+    parent = relationship("CommunityNode", remote_side=[id])
+
+
 class CommunityMemberVerification(Base):
     __tablename__ = "community_member_verifications"
 

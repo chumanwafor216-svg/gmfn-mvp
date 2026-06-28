@@ -23,6 +23,8 @@ def test_database_base_uses_canonical_metadata_for_dev_schema_creation():
     assert "protected_trade_records" in tables
     assert "protected_trade_events" in tables
     assert "community_followers" in tables
+    assert "community_domains" in tables
+    assert "community_nodes" in tables
 
 
 def test_member_witness_schema_identifiers_fit_postgres_limit():
@@ -52,6 +54,10 @@ def test_member_witness_schema_identifiers_fit_postgres_limit():
         / "alembic"
         / "versions"
         / "20260627_add_community_followers.py",
+        backend_root
+        / "alembic"
+        / "versions"
+        / "20260628_add_community_domain_skeleton.py",
         backend_root / "app" / "db" / "models.py",
     ]
     explicit_identifier = re.compile(r'"((?:ix|uq|fk)_[^"]+)"')
