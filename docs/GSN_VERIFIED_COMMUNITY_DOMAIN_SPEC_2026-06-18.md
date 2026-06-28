@@ -8,6 +8,10 @@ frontend, onboarding, pricing, and pilot work.
 
 Implementation checkpoints:
 
+- 2026-06-28: implementation plan added at
+  `docs/COMMUNITY_DOMAIN_IMPLEMENTATION_PLAN_2026-06-28.md`, separating the
+  lightweight Community path from the paid institutional Community Domain
+  package, data spine, lifecycle, route family, and MVP slice order.
 - 2026-06-18: backend parent-domain affiliation spine added through
   `CommunityDomainAffiliation`;
 - 2026-06-18: admin UI lane added on `CommunityConfirmationPolicyPage` for
