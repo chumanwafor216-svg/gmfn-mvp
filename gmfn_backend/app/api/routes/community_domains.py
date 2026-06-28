@@ -613,6 +613,48 @@ def _require_node_or_domain_admin_scope(
     )
 
 
+def _require_policy_reviewer_role(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    node: Optional[CommunityNode],
+    policy: Optional[CommunityDomainPolicy],
+    current_user: User,
+) -> None:
+    required_role = _clean_str(getattr(policy, "required_role", None)).lower().replace(" ", "_")
+    if not required_role:
+        return
+    if _clean_role(getattr(current_user, "role", "")) == "admin":
+        return
+    if int(domain.owner_user_id) == int(current_user.id) and required_role in {"owner", "domain_admin", "admin"}:
+        return
+
+    domain_membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(current_user.id),
+    )
+    if domain_membership is not None and _clean_role(domain_membership.role) == required_role:
+        return
+
+    if node is not None:
+        node_membership = _active_node_membership_for_user(
+            db,
+            community_node_id=int(node.id),
+            user_id=int(current_user.id),
+        )
+        if node_membership is not None and _clean_role(node_membership.role) == required_role:
+            return
+
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "community_domain_reviewer_role_required",
+            "message": f"This review requires a reviewer with the {required_role} role.",
+        },
+    )
+
+
 def _find_root_node(db: Session, community_domain_id: int) -> Optional[CommunityNode]:
     return (
         db.query(CommunityNode)
@@ -1351,6 +1393,7 @@ def decide_community_domain_action_review(
         review_id=int(review_id),
     )
 
+    node: Optional[CommunityNode] = None
     if row.community_node_id is not None:
         node = _get_node_or_404(
             db,
@@ -1365,6 +1408,14 @@ def decide_community_domain_action_review(
         )
     else:
         _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    _require_policy_reviewer_role(
+        db,
+        domain=domain,
+        node=node,
+        policy=getattr(row, "policy", None),
+        current_user=current_user,
+    )
 
     if _clean_role(row.status) == "applied":
         raise HTTPException(
