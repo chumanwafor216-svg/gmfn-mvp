@@ -2937,6 +2937,142 @@ def test_reviewed_inactive_node_can_reopen_when_parent_is_active(
         assert review_row.applied_by_user_id == owner.id
 
 
+def test_reviewed_archived_node_can_reopen_and_accept_new_structure(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "reviewed-archive-reopen-requester@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Reviewed Archive Market",
+                "display_name": "Reviewed Archive Market",
+                "domain_type": "market_association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Textile Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        node_id = line.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "archive-reopen-review",
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        archived = client.patch(
+            f"/community-domains/{domain_id}/nodes/{node_id}/status",
+            json={
+                "status": "archived",
+                "status_note": "Line archived after a long closure.",
+            },
+        )
+        assert archived.status_code == 200, archived.text
+        assert archived.json()["node"]["status"] == "archived"
+
+        blocked_child = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Tailors Desk",
+                "node_type": "desk",
+                "node_kind": "market_department",
+                "parent_node_id": node_id,
+            },
+        )
+        assert blocked_child.status_code == 409, blocked_child.text
+        assert (
+            blocked_child.json()["detail"]["code"]
+            == "community_domain_node_inactive"
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "target_type": "community_node",
+                "target_id": str(node_id),
+                "payload": {
+                    "status": "active",
+                    "status_note": "Textile line has been formally restored.",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+        assert review["payload"]["previous_status"] == "archived"
+        assert review["payload"]["new_status"] == "active"
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Restoration confirmed."},
+        )
+        assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        applied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert applied.status_code == 200, applied.text
+        data = applied.json()
+        assert data["action_review"]["status"] == "applied"
+        assert data["action_review"]["payload"]["previous_status"] == "archived"
+        assert data["action_review"]["payload"]["new_status"] == "active"
+        assert data["applied"]["node"]["status"] == "active"
+
+        child = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Tailors Desk",
+                "node_type": "desk",
+                "node_kind": "market_department",
+                "parent_node_id": node_id,
+            },
+        )
+        assert child.status_code == 201, child.text
+        assert child.json()["node"]["parent_node_id"] == node_id
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        node = db.query(CommunityNode).filter(CommunityNode.id == node_id).one()
+        assert node.status == "active"
+        review_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == review["id"])
+            .one()
+        )
+        assert review_row.status == "applied"
+        assert review_row.applied_by_user_id == owner.id
+
+
 def test_reviewed_child_reopen_requires_active_parent(
     client: TestClient,
 ):
