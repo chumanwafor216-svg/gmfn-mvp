@@ -64,6 +64,13 @@ NODE_LOCAL_ASSIGNABLE_ROLES = {
     "line_member",
 }
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
+COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
+    "included_nodes": 50,
+    "included_members": 500,
+    "included_admins": 10,
+    "included_shops": 100,
+    "included_storage_gb": 5,
+}
 COMMUNITY_DOMAIN_TEMPLATE_PRESETS: list[dict[str, Any]] = [
     {
         "template_key": "school_multi_branch",
@@ -575,6 +582,65 @@ def _domain_payload(
         "boundary": (
             "Draft only. This does not create a social Community, activate billing, "
             "verify ownership, or launch a public institutional domain."
+        ),
+    }
+
+
+def _community_domain_template_for_key(template_key: Optional[str]) -> dict[str, Any]:
+    key = _clean_str(template_key, "generic_association")
+    for preset in COMMUNITY_DOMAIN_TEMPLATE_PRESETS:
+        if preset["template_key"] == key or preset["domain_type"] == key:
+            return preset
+
+    for preset in COMMUNITY_DOMAIN_TEMPLATE_PRESETS:
+        if preset["template_key"] == "generic_association":
+            return preset
+
+    return COMMUNITY_DOMAIN_TEMPLATE_PRESETS[-1]
+
+
+def _community_domain_package_quote_payload(
+    domain: CommunityDomain,
+) -> dict[str, Any]:
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    included_modules = list(template["default_modules"])
+    optional_modules = [
+        module
+        for module in [
+            "shops",
+            "marketplace",
+            "spotlight",
+            "verification",
+            "analytics",
+            "vault",
+        ]
+        if module not in included_modules
+    ]
+
+    return {
+        "package_code": "community_domain_starter",
+        "package_name": "Community Domain Starter",
+        "quote_status": "draft_quote",
+        "pricing_status": "pilot_quote_required",
+        "billing_cycle": "manual_quote",
+        "price_amount": None,
+        "currency": None,
+        "template_key": template["template_key"],
+        "domain_type": template["domain_type"],
+        "included_modules": included_modules,
+        "optional_modules": optional_modules,
+        "limits": COMMUNITY_DOMAIN_PACKAGE_LIMITS,
+        "renewal_policy": {
+            "status": "not_configured",
+            "message": "Renewal period and price must be confirmed before payment instruction.",
+        },
+        "next_step": "Generate a payment instruction only after the owner accepts a confirmed quote.",
+        "boundary": (
+            "Quote preview only. This does not create a payment instruction, "
+            "confirm payment, activate billing, activate the Community Domain, "
+            "or verify ownership."
         ),
     }
 
@@ -1772,6 +1838,26 @@ def create_community_domain_draft(
     return {
         "ok": True,
         "community_domain": _domain_payload(domain, root_node=root_node),
+    }
+
+
+@router.post("/{community_domain_id}/package-quote", response_model=dict[str, Any])
+def create_community_domain_package_quote(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "quote": _community_domain_package_quote_payload(domain),
+        "boundary": (
+            "Package quote only. This route does not create a payment instruction, "
+            "record payment, activate billing, activate a Community Domain, or "
+            "verify ownership."
+        ),
     }
 
 

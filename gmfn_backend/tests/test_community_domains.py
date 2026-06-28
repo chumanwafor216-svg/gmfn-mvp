@@ -246,6 +246,101 @@ def test_community_domain_draft_defaults_template_to_domain_type(
         assert db.query(Clan).count() == 0
 
 
+def test_owner_can_preview_community_domain_package_quote_without_activation(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Dominion Schools Network",
+                "display_name": "Dominion Schools Network",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        response = client.post(f"/community-domains/{domain_id}/package-quote")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    assert "does not create a payment instruction" in payload["boundary"]
+    assert "activate a Community Domain" in payload["boundary"]
+    assert "verify ownership" in payload["boundary"]
+
+    quote = payload["quote"]
+    assert quote["package_code"] == "community_domain_starter"
+    assert quote["package_name"] == "Community Domain Starter"
+    assert quote["quote_status"] == "draft_quote"
+    assert quote["pricing_status"] == "pilot_quote_required"
+    assert quote["billing_cycle"] == "manual_quote"
+    assert quote["price_amount"] is None
+    assert quote["currency"] is None
+    assert quote["template_key"] == "school_multi_branch"
+    assert quote["domain_type"] == "school"
+    assert "governance" in quote["included_modules"]
+    assert "members" in quote["included_modules"]
+    assert quote["limits"]["included_nodes"] == 50
+    assert quote["limits"]["included_members"] == 500
+    assert quote["renewal_policy"]["status"] == "not_configured"
+    assert "does not create a payment instruction" in quote["boundary"]
+    assert "activate billing" in quote["boundary"]
+    assert "verify ownership" in quote["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 1
+        assert db.query(CommunityNode).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_outsider_cannot_preview_community_domain_package_quote(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    outsider = _seed_user(2, "quote-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Market Leaders Association",
+                "display_name": "Market Leaders Association",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        response = client.post(f"/community-domains/{domain_id}/package-quote")
+        assert response.status_code == 403, response.text
+        assert "owner or domain admin" in response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert db.query(CommunityDomainMembership).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
 def test_community_domain_draft_rejects_duplicate_domain_name(
     client: TestClient,
 ):

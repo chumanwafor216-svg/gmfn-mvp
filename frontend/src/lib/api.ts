@@ -2306,6 +2306,12 @@ export async function createCommunityDomainDraft(
   });
 }
 
+export async function createCommunityDomainPackageQuote(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/package-quote"), "POST");
+}
+
 export async function getCommunityDomain(
   communityDomainId: number | string
 ): Promise<any> {
