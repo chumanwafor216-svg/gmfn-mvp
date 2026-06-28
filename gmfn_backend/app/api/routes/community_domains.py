@@ -1701,12 +1701,21 @@ def decide_community_domain_action_review(
         current_user=current_user,
     )
 
-    if _clean_role(row.status) == "applied":
+    current_status = _clean_role(row.status)
+    if current_status == "applied":
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "community_domain_review_already_applied",
                 "message": "This Community Domain action review has already been applied.",
+            },
+        )
+    if current_status not in {"pending", "pending_review"}:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_review_not_decidable",
+                "message": "Only pending Community Domain action reviews can receive decisions.",
             },
         )
 

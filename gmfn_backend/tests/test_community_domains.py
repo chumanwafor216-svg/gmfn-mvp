@@ -2025,6 +2025,155 @@ def test_scoped_admin_can_cancel_pending_review_but_not_approved_review(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_cancelled_action_review_cannot_receive_late_decision(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "cancel-decision-requester@example.com")
+    new_member = _seed_user(3, "cancel-decision-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Cancelled Decision Association",
+                "display_name": "Cancelled Decision Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "cancelled-decision-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        cancelled = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": "Submitted twice."},
+        )
+        assert cancelled.status_code == 200, cancelled.text
+        assert cancelled.json()["action_review"]["status"] == "cancelled"
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        late_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert late_decision.status_code == 409, late_decision.text
+        assert late_decision.json()["detail"]["code"] == "community_domain_review_not_decidable"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        review_row = db.query(CommunityDomainActionReview).one()
+        assert review_row.status == "cancelled"
+        assert review_row.decision == "cancel"
+        assert db.query(CommunityDomainActionReviewDecision).count() == 0
+
+
+def test_approved_action_review_cannot_receive_late_decision(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "approved-decision-requester@example.com")
+    new_member = _seed_user(3, "approved-decision-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Approved Decision Association",
+                "display_name": "Approved Decision Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "approved-decision-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        approved = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Eligible."},
+        )
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["action_review"]["status"] == "approved"
+
+        late_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "reject", "decision_note": "Changed mind."},
+        )
+        assert late_decision.status_code == 409, late_decision.text
+        assert late_decision.json()["detail"]["code"] == "community_domain_review_not_decidable"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        review_row = db.query(CommunityDomainActionReview).one()
+        assert review_row.status == "approved"
+        assert review_row.decision == "approve"
+        assert review_row.decision_note == "Eligible."
+        decision_row = db.query(CommunityDomainActionReviewDecision).one()
+        assert decision_row.decision == "approve"
+        assert decision_row.decision_note == "Eligible."
+
+
 def test_apply_review_keeps_unknown_actions_as_decision_records(
     client: TestClient,
 ):
