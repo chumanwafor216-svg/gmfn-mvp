@@ -1857,6 +1857,174 @@ def test_action_review_detail_visibility_is_scoped(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_requester_can_cancel_pending_action_review(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "cancel-requester@example.com")
+    other_member = _seed_user(3, "cancel-other-member@example.com")
+    new_member = _seed_user(4, "cancel-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Cancel Request Association",
+                "display_name": "Cancel Request Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user in (requester, other_member):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "cancel-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: other_member
+        denied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": "Not mine."},
+        )
+        assert denied.status_code == 403, denied.text
+        assert denied.json()["detail"]["code"] == "community_domain_review_cancel_forbidden"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        cancelled = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": "Submitted by mistake."},
+        )
+        assert cancelled.status_code == 200, cancelled.text
+        data = cancelled.json()["action_review"]
+        assert data["status"] == "cancelled"
+        assert data["decision"] == "cancel"
+        assert data["decision_note"] == "Submitted by mistake."
+        assert data["decided_by_user_id"] == requester.id
+
+        second_cancel = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={},
+        )
+        assert second_cancel.status_code == 409, second_cancel.text
+        assert second_cancel.json()["detail"]["code"] == "community_domain_review_not_cancellable"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_scoped_admin_can_cancel_pending_review_but_not_approved_review(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "admin-cancel-requester@example.com")
+    new_member = _seed_user(3, "admin-cancel-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Admin Cancel Association",
+                "display_name": "Admin Cancel Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "admin-cancel-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        pending_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert pending_review_response.status_code == 201, pending_review_response.text
+        pending_review = pending_review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        admin_cancelled = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{pending_review['id']}/cancel",
+            json={"cancel_note": "Duplicate request."},
+        )
+        assert admin_cancelled.status_code == 200, admin_cancelled.text
+        assert admin_cancelled.json()["action_review"]["status"] == "cancelled"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        approved_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert approved_review_response.status_code == 201, approved_review_response.text
+        approved_review = approved_review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{approved_review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert decision.status_code == 200, decision.text
+
+        late_cancel = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{approved_review['id']}/cancel",
+            json={"cancel_note": "Too late."},
+        )
+        assert late_cancel.status_code == 409, late_cancel.text
+        assert late_cancel.json()["detail"]["code"] == "community_domain_review_not_cancellable"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_apply_review_keeps_unknown_actions_as_decision_records(
     client: TestClient,
 ):

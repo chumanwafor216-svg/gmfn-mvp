@@ -376,6 +376,12 @@ class CommunityDomainActionReviewDecisionIn(BaseModel):
     decision_note: Optional[str] = Field(default=None, max_length=1200)
 
 
+class CommunityDomainActionReviewCancelIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    cancel_note: Optional[str] = Field(default=None, max_length=1200)
+
+
 def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:
     domain = db.get(CommunityDomain, int(community_domain_id))
     if domain is None:
@@ -1576,6 +1582,82 @@ def get_community_domain_action_review(
         "boundary": (
             "Action review detail is visible only to the requester, eligible "
             "reviewers, and scoped admins. It does not apply the requested action."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/action-reviews/{review_id}/cancel", response_model=dict[str, Any])
+def cancel_community_domain_action_review(
+    community_domain_id: int,
+    review_id: int,
+    payload: CommunityDomainActionReviewCancelIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+
+    is_requester = int(row.requested_by_user_id) == int(current_user.id)
+    is_scoped_admin = False
+    if not is_requester:
+        try:
+            if row.community_node_id is not None:
+                node = _get_node_or_404(
+                    db,
+                    community_domain_id=int(domain.id),
+                    community_node_id=int(row.community_node_id),
+                )
+                _require_node_or_domain_admin_scope(
+                    db,
+                    domain=domain,
+                    node=node,
+                    current_user=current_user,
+                )
+            else:
+                _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+            is_scoped_admin = True
+        except HTTPException:
+            is_scoped_admin = False
+
+    if not is_requester and not is_scoped_admin:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_cancel_forbidden",
+                "message": "Only the requester or a scoped admin can cancel this action review.",
+            },
+        )
+
+    if _clean_role(row.status) not in {"pending", "pending_review"}:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_review_not_cancellable",
+                "message": "Only pending Community Domain action reviews can be cancelled.",
+            },
+        )
+
+    row.status = "cancelled"
+    row.decision = "cancel"
+    row.decision_note = _clean_str(payload.cancel_note) or None
+    row.decided_by_user_id = int(current_user.id)
+    row.decided_at = datetime.now(timezone.utc)
+
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review": _action_review_payload(row),
+        "boundary": (
+            "Action review cancelled before approval/application. This does not "
+            "delete the audit record or reverse any already-applied business action."
         ),
     }
 
