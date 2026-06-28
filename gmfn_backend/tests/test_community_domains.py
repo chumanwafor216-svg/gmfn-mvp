@@ -5957,6 +5957,24 @@ def test_requester_can_revise_needs_changes_action_review(
             == "community_domain_member_action_target_mismatch"
         )
 
+        rejected_type_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_type": "node_member",
+                "request_note": "Wrong member action family.",
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": "Branch welfare member",
+                },
+            },
+        )
+        assert rejected_type_revision.status_code == 409, rejected_type_revision.text
+        assert (
+            rejected_type_revision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
         revision_response = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
             json={
