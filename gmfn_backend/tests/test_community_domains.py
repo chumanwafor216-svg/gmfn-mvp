@@ -2235,6 +2235,295 @@ def test_member_can_read_node_autonomy_map_but_admin_counts_are_hidden(
     assert "does not grant local authority" in autonomy["boundary"]
 
 
+def test_node_economic_map_projects_local_unit_economy_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "node-economic-line-admin@example.com")
+    trader = _seed_user(3, "node-economic-trader@example.com")
+    section_admin = _seed_user(4, "node-economic-section-admin@example.com")
+    branch_admin = _seed_user(5, "node-economic-branch-admin@example.com")
+    branch_member = _seed_user(6, "node-economic-branch-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Economic Market Domain",
+                "display_name": "Node Economic Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        section = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Phone Accessories Section",
+                "parent_node_id": line_id,
+                "node_type": "section",
+                "node_kind": "market_section",
+            },
+        )
+        assert section.status_code == 201, section.text
+        section_id = section.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Welfare Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "market_committee",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+
+        independent = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Independent Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "market_branch",
+                "inherits_parent_policy": False,
+            },
+        )
+        assert independent.status_code == 201, independent.text
+        independent_id = independent.json()["node"]["id"]
+
+        for user in (line_admin, trader, section_admin, branch_admin, branch_member):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (line_id, line_admin.id, "line_admin"),
+            (line_id, trader.id, "trader"),
+            (section_id, section_admin.id, "line_admin"),
+            (independent_id, branch_admin.id, "branch_admin"),
+            (independent_id, branch_member.id, "trader"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        line_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-economic-line-review",
+                "action_key": "node_member.upsert",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert line_policy.status_code == 201, line_policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/node-economic-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    economic_map = payload["node_economic_map"]
+    assert economic_map["editable"] is False
+    assert economic_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert economic_map["template"]["marketplace_role"] == "core"
+    assert economic_map["counts"] == {
+        "nodes": 5,
+        "non_root_nodes": 4,
+        "active_node_memberships": 5,
+        "active_policies": 1,
+        "local_economy_ready": 1,
+        "needs_local_admin": 1,
+        "needs_participants": 1,
+        "governance_needed": 1,
+        "marketplace_optional": 0,
+        "inactive": 0,
+        "shops": 0,
+        "listings": 0,
+        "demands": 0,
+        "spotlights": 0,
+        "finance_records": 0,
+    }
+    assert economic_map["primary_next_action"] == {
+        "action_key": "assign_local_admins_for_economic_units",
+        "label": "Assign local admins before local economic activity",
+        "route_hint": f"/community-domains/{domain_id}/roles",
+        "requires_admin": True,
+    }
+    assert "read-only local economy planning" in economic_map["boundary"]
+    assert "does not create a marketplace" in economic_map["boundary"]
+    assert "payment instruction" in economic_map["boundary"]
+    assert "finance record" in economic_map["boundary"]
+    assert "private member activity" in economic_map["boundary"]
+
+    flat = {item["node"]["name"]: item for item in economic_map["flat_nodes"]}
+    assert flat["Node Economic Market Domain"]["economy_status"] == "domain_root"
+    assert flat["Electronics Line"]["economy_status"] == "local_economy_ready"
+    assert flat["Electronics Line"]["ready_for_local_economy"] is True
+    assert flat["Electronics Line"]["local_admin_count"] == 1
+    assert flat["Electronics Line"]["local_participant_count"] == 1
+    assert flat["Electronics Line"]["effective_policy_count"] == 1
+    assert flat["Phone Accessories Section"]["economy_status"] == "needs_participants"
+    assert flat["Phone Accessories Section"]["local_admin_count"] == 1
+    assert flat["Phone Accessories Section"]["local_participant_count"] == 0
+    assert flat["Phone Accessories Section"]["effective_policy_count"] == 1
+    assert flat["Welfare Committee"]["economy_status"] == "needs_local_admin"
+    assert flat["Welfare Committee"]["local_admin_count"] == 0
+    assert flat["Welfare Committee"]["effective_policy_count"] == 0
+    assert flat["Independent Branch"]["economy_status"] == "governance_needed"
+    assert flat["Independent Branch"]["local_participant_count"] == 1
+    assert flat["Independent Branch"]["effective_policy_count"] == 0
+    assert flat["Independent Branch"]["shops"] == 0
+    assert flat["Independent Branch"]["finance_records"] == 0
+    assert flat["Independent Branch"]["admin_action_route_hint"].endswith(
+        "/governance-coverage"
+    )
+
+    root_tree = economic_map["tree"][0]
+    electronics_tree = next(
+        child
+        for child in root_tree["children"]
+        if child["node"]["name"] == "Electronics Line"
+    )
+    assert electronics_tree["children"][0]["node"]["name"] == (
+        "Phone Accessories Section"
+    )
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_economic_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-economic-visible-member@example.com")
+    outsider = _seed_user(3, "node-economic-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Economic School Domain",
+                "display_name": "Node Economic School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert created_branch.status_code == 201, created_branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/node-economic-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-economic-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    economic_map = member_map.json()["node_economic_map"]
+    assert economic_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert economic_map["template"]["marketplace_role"] == "optional"
+    assert economic_map["counts"]["nodes"] == 2
+    assert economic_map["counts"]["non_root_nodes"] == 1
+    assert economic_map["counts"]["active_node_memberships"] is None
+    assert economic_map["counts"]["active_policies"] is None
+    assert economic_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_node_economy",
+        "label": "Ask a Community Domain admin to review local economy readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in economic_map["flat_nodes"]}
+    assert flat["Primary Branch"]["economy_status"] == "marketplace_optional"
+    assert flat["Primary Branch"]["local_member_count"] is None
+    assert flat["Primary Branch"]["local_admin_count"] is None
+    assert flat["Primary Branch"]["local_policy_count"] is None
+    assert flat["Primary Branch"]["effective_policy_count"] is None
+    assert flat["Primary Branch"]["shops"] == 0
+    assert flat["Primary Branch"]["finance_records"] == 0
+    assert flat["Primary Branch"]["route_hint"].endswith("/operating-summary")
+    assert flat["Primary Branch"]["admin_action_route_hint"] is None
+    assert "does not create a marketplace" in economic_map["boundary"]
+    assert "private member activity" in economic_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):
