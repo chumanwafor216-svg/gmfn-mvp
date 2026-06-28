@@ -1467,6 +1467,7 @@ def create_community_domain_node(
                 status_code=404,
                 detail="Parent node was not found inside this Community Domain.",
             )
+    _ensure_node_accepts_writes(parent_node)
 
     node = CommunityNode(
         community_domain_id=int(domain.id),
@@ -1796,6 +1797,7 @@ def upsert_community_domain_policy(
             community_domain_id=int(domain.id),
             community_node_id=int(payload.community_node_id),
         )
+        _ensure_node_accepts_writes(policy_node)
         node_id = int(policy_node.id)
 
     policy_key = _clean_role(payload.policy_key)

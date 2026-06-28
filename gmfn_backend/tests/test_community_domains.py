@@ -567,6 +567,30 @@ def test_inactive_node_rejects_new_placements_and_action_reviews(
         assert listed_nodes.status_code == 200, listed_nodes.text
         assert any(item["id"] == node_id for item in listed_nodes.json()["items"])
 
+        blocked_child = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "parent_node_id": node_id,
+                "name": "Closed Textile Sub-line",
+                "node_type": "stall_cluster",
+                "node_kind": "market_unit",
+            },
+        )
+        assert blocked_child.status_code == 409, blocked_child.text
+        assert blocked_child.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "community_node_id": node_id,
+                "policy_key": "closed-textile-member-change",
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert blocked_policy.status_code == 409, blocked_policy.text
+        assert blocked_policy.json()["detail"]["code"] == "community_domain_node_inactive"
+
         added = client.post(
             f"/community-domains/{domain_id}/members",
             json={"user_id": trader.id, "role": "trader"},
@@ -604,6 +628,7 @@ def test_inactive_node_rejects_new_placements_and_action_reviews(
     with SessionLocal() as db:
         assert db.query(CommunityNodeMembership).count() == 0
         assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(CommunityDomainPolicy).count() == 0
 
 
 def test_domain_admin_can_manage_structure_without_being_recorded_owner(
