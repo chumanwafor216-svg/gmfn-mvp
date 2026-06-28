@@ -4070,6 +4070,356 @@ def test_member_can_read_node_privacy_map_but_admin_counts_are_hidden(
     assert "private member activity" in privacy_map["boundary"]
 
 
+def test_node_analytics_map_projects_local_signals_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "node-analytics-line-admin@example.com")
+    line_member = _seed_user(3, "node-analytics-line-member@example.com")
+    section_admin = _seed_user(4, "node-analytics-section-admin@example.com")
+    section_member = _seed_user(5, "node-analytics-section-member@example.com")
+    committee_member = _seed_user(6, "node-analytics-committee-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Analytics Market Domain",
+                "display_name": "Node Analytics Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        section = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Phone Accessories Section",
+                "parent_node_id": line_id,
+                "node_type": "section",
+                "node_kind": "market_section",
+            },
+        )
+        assert section.status_code == 201, section.text
+        section_id = section.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Welfare Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "market_committee",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+        committee_id = committee.json()["node"]["id"]
+
+        empty_branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Empty Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "market_branch",
+            },
+        )
+        assert empty_branch.status_code == 201, empty_branch.text
+        empty_branch_id = empty_branch.json()["node"]["id"]
+
+        for user in (
+            line_admin,
+            line_member,
+            section_admin,
+            section_member,
+            committee_member,
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (line_id, line_admin.id, "line_admin"),
+            (line_id, line_member.id, "member"),
+            (section_id, section_admin.id, "node_admin"),
+            (section_id, section_member.id, "member"),
+            (committee_id, committee_member.id, "member"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-analytics-line-policy",
+                "action_key": "analytics.review",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "line_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "analytics.review",
+                "community_node_id": line_id,
+                "request_note": "Review local analytics evidence.",
+                "payload": {"claim": "analytics posture"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Analytics posture note",
+                "file_name": "node-analytics.pdf",
+                "storage_key": "private/evidence/node-analytics.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/node-analytics-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    analytics_map = payload["node_analytics_map"]
+    assert analytics_map["editable"] is False
+    assert analytics_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert analytics_map["counts"] == {
+        "nodes": 5,
+        "non_root_nodes": 4,
+        "active_node_memberships": 5,
+        "active_policies": 1,
+        "review_records": 1,
+        "active_evidence_records": 1,
+        "template_module_count": 7,
+        "local_analytics_ready": 1,
+        "needs_membership_signal": 1,
+        "needs_governance_signal": 1,
+        "needs_review_signal": 1,
+        "inactive": 0,
+        "exported_reports": 0,
+        "live_dashboards": 0,
+        "telemetry_events": 0,
+        "marketplace_metrics": 0,
+        "finance_metrics": 0,
+    }
+    assert analytics_map["status_counts"] == {
+        "local_analytics_ready": 1,
+        "needs_review_signal": 1,
+        "needs_governance_signal": 1,
+        "needs_membership_signal": 1,
+    }
+    assert analytics_map["primary_next_action"] == {
+        "action_key": "place_members_for_node_analytics",
+        "label": "Place members before local analytics",
+        "route_hint": f"/community-domains/{domain_id}/node-participation-map",
+        "requires_admin": True,
+    }
+    assert "read-only local analytics" in analytics_map["boundary"]
+    assert "does not create telemetry" in analytics_map["boundary"]
+    assert "export reports" in analytics_map["boundary"]
+    assert "live dashboards" in analytics_map["boundary"]
+    assert "marketplace metrics" in analytics_map["boundary"]
+    assert "finance metrics" in analytics_map["boundary"]
+    assert "Trust Passport entries" in analytics_map["boundary"]
+    assert "private/evidence/node-analytics.pdf" not in str(analytics_map)
+
+    flat = {item["node"]["name"]: item for item in analytics_map["flat_nodes"]}
+    assert flat["Node Analytics Market Domain"]["analytics_status"] == "domain_root"
+    assert flat["Electronics Line"]["analytics_status"] == "local_analytics_ready"
+    assert flat["Electronics Line"]["ready_for_local_analytics"] is True
+    assert flat["Electronics Line"]["local_member_count"] == 2
+    assert flat["Electronics Line"]["local_admin_count"] == 1
+    assert flat["Electronics Line"]["local_policy_count"] == 1
+    assert flat["Electronics Line"]["effective_policy_count"] == 1
+    assert flat["Electronics Line"]["review_record_count"] == 1
+    assert flat["Electronics Line"]["evidence_record_count"] == 1
+    assert flat["Electronics Line"]["signal_count"] == 2
+    assert flat["Phone Accessories Section"]["analytics_status"] == (
+        "needs_review_signal"
+    )
+    assert flat["Phone Accessories Section"]["effective_policy_count"] == 1
+    assert flat["Phone Accessories Section"]["review_record_count"] == 0
+    assert flat["Welfare Committee"]["analytics_status"] == (
+        "needs_governance_signal"
+    )
+    assert flat["Welfare Committee"]["effective_policy_count"] == 0
+    assert flat["Empty Branch"]["analytics_status"] == "needs_membership_signal"
+    assert flat["Empty Branch"]["local_member_count"] == 0
+    assert flat["Empty Branch"]["admin_action_route_hint"].endswith(
+        "/node-participation-map"
+    )
+    assert flat["Empty Branch"]["metric_export_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert flat["Empty Branch"]["live_dashboard_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert flat["Empty Branch"]["marketplace_metric_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert flat["Empty Branch"]["finance_metric_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert flat["Empty Branch"]["trust_passport_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert empty_branch_id == flat["Empty Branch"]["node"]["id"]
+
+    root_tree = analytics_map["tree"][0]
+    line_tree = next(
+        child
+        for child in root_tree["children"]
+        if child["node"]["name"] == "Electronics Line"
+    )
+    assert line_tree["children"][0]["node"]["name"] == "Phone Accessories Section"
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_analytics_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-analytics-visible-member@example.com")
+    outsider = _seed_user(3, "node-analytics-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Analytics School Domain",
+                "display_name": "Node Analytics School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/node-analytics-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(f"/community-domains/{domain_id}/node-analytics-map")
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    analytics_map = member_map.json()["node_analytics_map"]
+    assert analytics_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert analytics_map["counts"]["nodes"] == 2
+    assert analytics_map["counts"]["non_root_nodes"] == 1
+    assert analytics_map["counts"]["active_node_memberships"] is None
+    assert analytics_map["counts"]["active_policies"] is None
+    assert analytics_map["counts"]["review_records"] is None
+    assert analytics_map["counts"]["active_evidence_records"] is None
+    assert analytics_map["counts"]["template_module_count"] == 6
+    assert analytics_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_node_analytics",
+        "label": "Ask a Community Domain admin to review local analytics",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in analytics_map["flat_nodes"]}
+    assert flat["Primary Branch"]["analytics_status"] == "needs_membership_signal"
+    assert flat["Primary Branch"]["local_member_count"] is None
+    assert flat["Primary Branch"]["local_admin_count"] is None
+    assert flat["Primary Branch"]["local_policy_count"] is None
+    assert flat["Primary Branch"]["effective_policy_count"] is None
+    assert flat["Primary Branch"]["review_record_count"] is None
+    assert flat["Primary Branch"]["evidence_record_count"] is None
+    assert flat["Primary Branch"]["signal_count"] is None
+    assert flat["Primary Branch"]["admin_action_route_hint"] is None
+    assert flat["Primary Branch"]["metric_export_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert "does not create telemetry" in analytics_map["boundary"]
+    assert "export reports" in analytics_map["boundary"]
+    assert "private member activity" in analytics_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):

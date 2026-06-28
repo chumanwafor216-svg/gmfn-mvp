@@ -2432,6 +2432,15 @@ export async function getCommunityDomainNodePrivacyMap(
   );
 }
 
+export async function getCommunityDomainNodeAnalyticsMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/node-analytics-map"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainGovernanceCoverage(
   communityDomainId: number | string
 ): Promise<any> {
