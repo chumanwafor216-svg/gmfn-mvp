@@ -2442,6 +2442,19 @@ export async function listCommunityDomainMembers(
   return httpJson(communityDomainPath(communityDomainId, "/members"), "GET");
 }
 
+export async function getCommunityDomainMemberPlacementSummary(
+  communityDomainId: number | string,
+  userId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(
+      communityDomainId,
+      `/members/${encodeURIComponent(String(userId))}/placement-summary`
+    ),
+    "GET"
+  );
+}
+
 export async function upsertCommunityDomainMember(
   communityDomainId: number | string,
   payload: CommunityDomainMembershipPayload

@@ -2056,6 +2056,228 @@ def _community_domain_node_operating_summary_payload(
     }
 
 
+def _community_domain_member_placement_summary_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    membership: CommunityDomainMembership,
+    can_admin: bool,
+    self_view: bool,
+) -> dict[str, Any]:
+    user_id = int(membership.user_id)
+    node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
+        .filter(CommunityNodeMembership.user_id == user_id)
+        .order_by(
+            CommunityNodeMembership.status.asc(),
+            CommunityNodeMembership.role.asc(),
+            CommunityNodeMembership.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = [
+        item
+        for item in node_memberships
+        if _clean_role(item.status, "inactive") == "active"
+    ]
+    role_counts: dict[str, int] = {}
+    admin_assignment_count = 0
+    for item in active_node_memberships:
+        role_key = _clean_role(item.role, "member")
+        role_counts[role_key] = role_counts.get(role_key, 0) + 1
+        if role_key in NODE_ADMIN_ROLES:
+            admin_assignment_count += 1
+
+    open_reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(
+            (
+                CommunityDomainActionReview.subject_user_id == user_id
+            )
+            | (
+                (
+                    CommunityDomainActionReview.target_type.in_(
+                        ["domain_member", "member", "node_member"]
+                    )
+                )
+                & (CommunityDomainActionReview.target_id == str(user_id))
+            )
+        )
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .all()
+    )
+    reviews_by_status: dict[str, int] = {}
+    reviews_by_action: dict[str, int] = {}
+    for review in open_reviews:
+        status_key = _clean_role(review.status, "unknown")
+        action_key = _clean_role(review.action_key, "unknown")
+        reviews_by_status[status_key] = reviews_by_status.get(status_key, 0) + 1
+        reviews_by_action[action_key] = reviews_by_action.get(action_key, 0) + 1
+
+    def lane(
+        lane_key: str,
+        label: str,
+        state: str,
+        count: int,
+        next_step: str,
+        *,
+        ready: bool,
+        route_suffix: str,
+        requires_admin: bool,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "state": state,
+            "ready": bool(ready),
+            "count": int(count),
+            "next_step": next_step,
+            "route_hint": (
+                f"/community-domains/{int(domain.id)}{route_suffix}"
+                if can_admin or not requires_admin
+                else None
+            ),
+            "requires_admin": bool(requires_admin),
+            "admin_visible": bool(can_admin),
+            "boundary": (
+                "Read-only member placement item. This does not add the member, "
+                "place the member in a node, assign roles, grant permissions, "
+                "decide reviews, verify authority, activate billing, or expose "
+                "private review payloads."
+            ),
+        }
+
+    domain_role = _clean_role(membership.role, "member")
+    domain_active = _clean_role(membership.status, "inactive") == "active"
+    lanes = [
+        lane(
+            "domain_membership",
+            "Domain membership",
+            "active" if domain_active else _clean_role(membership.status, "inactive"),
+            1 if domain_active else 0,
+            (
+                "Review this member's domain role."
+                if domain_active
+                else "Restore active domain membership before node placement matters."
+            ),
+            ready=domain_active,
+            route_suffix="/members",
+            requires_admin=True,
+        ),
+        lane(
+            "node_placements",
+            "Node placements",
+            "placed" if active_node_memberships else "not_placed",
+            len(active_node_memberships),
+            (
+                "Review where this member belongs inside the institution."
+                if active_node_memberships
+                else "Place this member into a branch, line, department, class, or committee."
+            ),
+            ready=bool(active_node_memberships),
+            route_suffix="/nodes/tree",
+            requires_admin=True,
+        ),
+        lane(
+            "admin_assignments",
+            "Admin assignments",
+            "has_local_admin_role" if admin_assignment_count else "member_only",
+            int(admin_assignment_count),
+            (
+                "Review local admin responsibility."
+                if admin_assignment_count
+                else "No local admin responsibility is recorded for this member."
+            ),
+            ready=True,
+            route_suffix="/roles",
+            requires_admin=True,
+        ),
+        lane(
+            "open_reviews",
+            "Open reviews",
+            "open" if open_reviews else "clear",
+            len(open_reviews),
+            (
+                "Review pending decisions involving this member."
+                if open_reviews
+                else "No open placement or membership reviews for this member."
+            ),
+            ready=not open_reviews,
+            route_suffix="/action-reviews/reviewer-queue",
+            requires_admin=True,
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "review_own_placement",
+            "label": "Review your Community Domain placement",
+            "route_hint": None,
+            "requires_admin": False,
+        }
+    elif open_reviews:
+        primary_next_action = {
+            "action_key": "review_member_queue",
+            "label": "Review pending decisions involving this member",
+            "route_hint": f"/community-domains/{int(domain.id)}/action-reviews/reviewer-queue",
+            "requires_admin": True,
+        }
+    elif not active_node_memberships:
+        primary_next_action = {
+            "action_key": "place_member",
+            "label": "Place member into an operating unit",
+            "route_hint": f"/community-domains/{int(domain.id)}/nodes/tree",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_member_roles",
+            "label": "Review member roles and placements",
+            "route_hint": f"/community-domains/{int(domain.id)}/roles",
+            "requires_admin": True,
+        }
+
+    return {
+        "member": _domain_member_payload(membership),
+        "domain_role": domain_role,
+        "domain_status": _clean_role(membership.status, "inactive"),
+        "node_placements": [_node_member_payload(item) for item in node_memberships],
+        "counts": {
+            "node_placements": len(node_memberships),
+            "active_node_placements": len(active_node_memberships),
+            "admin_assignments": int(admin_assignment_count),
+            "open_reviews": len(open_reviews),
+        },
+        "role_counts": {
+            "by_role": role_counts,
+            "admin_assignments": int(admin_assignment_count),
+        },
+        "review_counts": {
+            "open_by_status": reviews_by_status,
+            "open_by_action": reviews_by_action,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "viewer": {"can_admin": bool(can_admin), "self": bool(self_view)},
+        "editable": False,
+        "boundary": (
+            "Member placement summary is a read-only projection of one person's "
+            "role and node placement inside this Community Domain. This endpoint "
+            "does not add the member, place the member in a node, assign roles, "
+            "grant permissions, decide reviews, verify authority, activate "
+            "billing, expose other domains, or expose private review payloads."
+        ),
+    }
+
+
 def _community_domain_dashboard_payload(
     db: Session,
     *,
@@ -3919,6 +4141,56 @@ def list_community_domain_members(
         "boundary": (
             "Institutional membership only. This does not create a social Community "
             "membership, payment right, loan approval, or verified legal authority."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/members/{user_id}/placement-summary", response_model=dict[str, Any])
+def get_community_domain_member_placement_summary(
+    community_domain_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    self_view = int(user_id) == int(current_user.id)
+    if not can_admin and not self_view:
+        raise HTTPException(
+            status_code=403,
+            detail="Only a Community Domain admin can view another member placement summary.",
+        )
+    if not can_admin:
+        _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    else:
+        _get_user_or_404(db, user_id)
+
+    membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(user_id),
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Community Domain member was not found.",
+        )
+    if _clean_role(membership.status, "inactive") != "active" and not can_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="Only active Community Domain members can view their placement summary.",
+        )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "user_id": int(user_id),
+        "placement_summary": _community_domain_member_placement_summary_payload(
+            db,
+            domain=domain,
+            membership=membership,
+            can_admin=can_admin,
+            self_view=self_view,
         ),
     }
 

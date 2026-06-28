@@ -2145,6 +2145,207 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
         assert db.query(ClanMembership).count() == 0
 
 
+def test_member_placement_summary_projects_roles_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    teacher = _seed_user(2, "placement-teacher@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Placement School Domain",
+                "display_name": "Placement School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Abuja Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        department = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Mathematics Department",
+                "parent_node_id": branch_id,
+                "node_type": "department",
+                "node_kind": "academic_department",
+            },
+        )
+        assert department.status_code == 201, department.text
+        department_id = department.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": teacher.id,
+                "role": "staff",
+                "title": "Mathematics teacher",
+            },
+        )
+        assert added.status_code == 201, added.text
+
+        for node_id, role in ((branch_id, "teacher"), (department_id, "committee_member")):
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": teacher.id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "subject_user_id": teacher.id,
+                "target_type": "domain_member",
+                "target_id": str(teacher.id),
+                "request_note": "Review teacher's updated placement.",
+                "payload": {
+                    "user_id": teacher.id,
+                    "role": "staff",
+                    "title": "Senior mathematics teacher",
+                },
+            },
+        )
+        assert review.status_code == 201, review.text
+
+        response = client.get(
+            f"/community-domains/{domain_id}/members/{teacher.id}/placement-summary"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    assert payload["user_id"] == teacher.id
+    summary = payload["placement_summary"]
+    assert summary["editable"] is False
+    assert summary["viewer"] == {"can_admin": True, "self": False}
+    assert summary["member"]["user_id"] == teacher.id
+    assert summary["domain_role"] == "staff"
+    assert summary["domain_status"] == "active"
+    assert summary["counts"]["node_placements"] == 2
+    assert summary["counts"]["active_node_placements"] == 2
+    assert summary["counts"]["admin_assignments"] == 0
+    assert summary["counts"]["open_reviews"] == 1
+    assert summary["role_counts"]["by_role"] == {
+        "teacher": 1,
+        "committee_member": 1,
+    }
+    assert summary["review_counts"]["open_by_status"] == {"pending": 1}
+    assert summary["review_counts"]["open_by_action"] == {"domain_member.upsert": 1}
+    assert {item["community_node_id"] for item in summary["node_placements"]} == {
+        branch_id,
+        department_id,
+    }
+    assert summary["primary_next_action"]["action_key"] == "review_member_queue"
+    assert "does not add the member" in summary["boundary"]
+    assert "place the member in a node" in summary["boundary"]
+    assert "assign roles" in summary["boundary"]
+    assert "decide reviews" in summary["boundary"]
+    assert "expose other domains" in summary["boundary"]
+    assert "private review payloads" in summary["boundary"]
+
+    lanes = {item["lane_key"]: item for item in summary["lanes"]}
+    assert lanes["domain_membership"]["state"] == "active"
+    assert lanes["node_placements"]["state"] == "placed"
+    assert lanes["admin_assignments"]["state"] == "member_only"
+    assert lanes["open_reviews"]["state"] == "open"
+    assert lanes["open_reviews"]["ready"] is False
+    assert "private review payloads" in lanes["open_reviews"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 2
+        assert db.query(CommunityNodeMembership).count() == 2
+        assert db.query(CommunityDomainActionReview).count() == 1
+        assert db.query(CommunityDomainActionReviewDecision).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_own_placement_summary_but_not_other_members(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    teacher = _seed_user(2, "placement-self@example.com")
+    other_member = _seed_user(3, "placement-other@example.com")
+    outsider = _seed_user(4, "placement-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Placement Privacy Domain",
+                "display_name": "Placement Privacy Domain",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user in (teacher, other_member):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: teacher
+        own_summary = client.get(
+            f"/community-domains/{domain_id}/members/{teacher.id}/placement-summary"
+        )
+        assert own_summary.status_code == 200, own_summary.text
+
+        other_summary = client.get(
+            f"/community-domains/{domain_id}/members/{other_member.id}/placement-summary"
+        )
+        assert other_summary.status_code == 403, other_summary.text
+        assert "view another member placement summary" in other_summary.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_summary = client.get(
+            f"/community-domains/{domain_id}/members/{outsider.id}/placement-summary"
+        )
+        assert outsider_summary.status_code == 403, outsider_summary.text
+        assert "active Community Domain members" in outsider_summary.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    summary = own_summary.json()["placement_summary"]
+    lanes = {item["lane_key"]: item for item in summary["lanes"]}
+    assert summary["viewer"] == {"can_admin": False, "self": True}
+    assert summary["primary_next_action"] == {
+        "action_key": "review_own_placement",
+        "label": "Review your Community Domain placement",
+        "route_hint": None,
+        "requires_admin": False,
+    }
+    assert lanes["domain_membership"]["route_hint"] is None
+    assert lanes["node_placements"]["route_hint"] is None
+    assert lanes["admin_assignments"]["route_hint"] is None
+    assert lanes["open_reviews"]["route_hint"] is None
+    assert summary["editable"] is False
+    assert "private review payloads" in summary["boundary"]
+
+
 def test_node_membership_requires_active_domain_membership(
     client: TestClient,
 ):
