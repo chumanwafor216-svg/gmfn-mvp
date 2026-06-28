@@ -1104,6 +1104,18 @@ def test_approved_node_review_can_apply_node_member_update_once(
         assert data["applied"]["membership"]["role"] == "committee_member"
         assert data["applied"]["membership"]["title"] == "Welfare committee"
 
+        activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/activity"
+        )
+        assert activity.status_code == 200, activity.text
+        status_items = [
+            item for item in activity.json()["items"]
+            if item["type"] == "review_status_changed"
+        ]
+        assert len(status_items) == 1
+        assert status_items[0]["actor_user_id"] is None
+        assert status_items[0]["payload"]["status"] == "applied"
+
         applied_again = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
         )
@@ -2339,6 +2351,19 @@ def test_requester_can_cancel_pending_action_review(
         assert data["decision"] == "cancel"
         assert data["decision_note"] == "Submitted by mistake."
         assert data["decided_by_user_id"] == requester.id
+
+        activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/activity"
+        )
+        assert activity.status_code == 200, activity.text
+        status_items = [
+            item for item in activity.json()["items"]
+            if item["type"] == "review_status_changed"
+        ]
+        assert len(status_items) == 1
+        assert status_items[0]["actor_user_id"] == requester.id
+        assert status_items[0]["payload"]["status"] == "cancelled"
+        assert status_items[0]["payload"]["decision"] == "cancel"
 
         second_cancel = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",

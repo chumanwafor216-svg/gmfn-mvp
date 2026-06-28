@@ -2020,6 +2020,35 @@ def get_community_domain_action_review_activity(
             }
         )
 
+    current_status = _clean_role(row.status)
+    if current_status in {"cancelled", "applied"}:
+        status_time = (
+            row.decided_at if current_status == "cancelled" else row.updated_at
+        )
+        activity_items.append(
+            {
+                "type": "review_status_changed",
+                "occurred_at": _iso(status_time),
+                "sort_at": _activity_time(status_time),
+                "sort_order": 4,
+                "sort_id": int(row.id),
+                "actor_user_id": (
+                    int(row.decided_by_user_id)
+                    if (
+                        current_status == "cancelled"
+                        and row.decided_by_user_id is not None
+                    )
+                    else None
+                ),
+                "payload": {
+                    "status": row.status,
+                    "decision": row.decision,
+                    "decision_note": row.decision_note,
+                    "action_review": _action_review_payload(row),
+                },
+            }
+        )
+
     activity_items.sort(
         key=lambda item: (item["sort_at"], item["sort_order"], item["sort_id"])
     )
@@ -2036,8 +2065,8 @@ def get_community_domain_action_review_activity(
         "total": len(activity_items),
         "boundary": (
             "Activity is a read-only merged view of review creation, decisions, "
-            "comments, and evidence metadata. It does not decide, revise, reopen, "
-            "cancel, upload, verify, or apply anything."
+            "comments, evidence metadata, and row-level terminal status changes. "
+            "It does not decide, revise, reopen, cancel, upload, verify, or apply anything."
         ),
     }
 
