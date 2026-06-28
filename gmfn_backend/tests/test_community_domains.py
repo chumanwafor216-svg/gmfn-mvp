@@ -5066,6 +5066,16 @@ def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
         assert first_data["action_review"]["status"] == "pending_review"
         assert len(first_data["action_review"]["decisions"]) == 1
 
+        duplicate_approval = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Trying to count twice."},
+        )
+        assert duplicate_approval.status_code == 409, duplicate_approval.text
+        assert (
+            duplicate_approval.json()["detail"]["code"]
+            == "community_domain_review_decision_already_recorded"
+        )
+
         changed_decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
             json={"decision": "reject", "decision_note": "Trying to overwrite."},
