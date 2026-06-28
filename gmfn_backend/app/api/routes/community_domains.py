@@ -17,6 +17,7 @@ from app.db.models import (
     CommunityDomainActionReview,
     CommunityDomainActionReviewComment,
     CommunityDomainActionReviewDecision,
+    CommunityDomainActionReviewEvidence,
     CommunityDomainMembership,
     CommunityDomainPolicy,
     CommunityNode,
@@ -295,6 +296,33 @@ def _action_review_comment_payload(
     }
 
 
+def _action_review_evidence_payload(
+    row: CommunityDomainActionReviewEvidence,
+) -> dict[str, Any]:
+    submitter = getattr(row, "submitter", None)
+    return {
+        "id": int(row.id),
+        "action_review_id": int(row.action_review_id),
+        "community_domain_id": int(row.community_domain_id),
+        "community_node_id": (
+            int(row.community_node_id) if row.community_node_id is not None else None
+        ),
+        "submitted_by_user_id": int(row.submitted_by_user_id),
+        "submitted_by_user_email": getattr(submitter, "email", None),
+        "evidence_type": row.evidence_type,
+        "title": row.title,
+        "description": row.description,
+        "file_name": row.file_name,
+        "content_type": row.content_type,
+        "storage_key": row.storage_key,
+        "external_reference": row.external_reference,
+        "checksum": row.checksum,
+        "status": row.status,
+        "created_at": _iso(row.created_at),
+        "updated_at": _iso(row.updated_at),
+    }
+
+
 def _domain_payload(
     domain: CommunityDomain,
     *,
@@ -421,6 +449,19 @@ class CommunityDomainActionReviewCommentIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     body: str = Field(..., min_length=1, max_length=4000)
+
+
+class CommunityDomainActionReviewEvidenceIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    evidence_type: str = Field(default="document", max_length=48)
+    title: str = Field(..., min_length=2, max_length=160)
+    description: Optional[str] = Field(default=None, max_length=1200)
+    file_name: Optional[str] = Field(default=None, max_length=255)
+    content_type: Optional[str] = Field(default=None, max_length=120)
+    storage_key: Optional[str] = Field(default=None, max_length=512)
+    external_reference: Optional[str] = Field(default=None, max_length=512)
+    checksum: Optional[str] = Field(default=None, max_length=128)
 
 
 def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:
@@ -1737,6 +1778,126 @@ def create_community_domain_action_review_comment(
         "boundary": (
             "Comment recorded. This does not decide, revise, reopen, cancel, "
             "or apply the action review."
+        ),
+    }
+
+
+@router.get(
+    "/{community_domain_id}/action-reviews/{review_id}/evidence",
+    response_model=dict[str, Any],
+)
+def list_community_domain_action_review_evidence(
+    community_domain_id: int,
+    review_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+    if not _can_view_action_review(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_evidence_not_visible",
+                "message": "Only users who can view this action review can view its evidence.",
+            },
+        )
+
+    evidence_items = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.action_review_id == int(row.id))
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .order_by(
+            CommunityDomainActionReviewEvidence.created_at.asc(),
+            CommunityDomainActionReviewEvidence.id.asc(),
+        )
+        .all()
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review_id": int(row.id),
+        "items": [_action_review_evidence_payload(item) for item in evidence_items],
+        "total": len(evidence_items),
+        "boundary": (
+            "Review evidence records metadata for documents or references supplied "
+            "with a Community Domain action review. This endpoint does not upload, "
+            "download, verify, or approve files."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/action-reviews/{review_id}/evidence",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def create_community_domain_action_review_evidence(
+    community_domain_id: int,
+    review_id: int,
+    payload: CommunityDomainActionReviewEvidenceIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+    if not _can_view_action_review(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_evidence_forbidden",
+                "message": "Only users who can view this action review can add evidence to it.",
+            },
+        )
+
+    evidence = CommunityDomainActionReviewEvidence(
+        action_review_id=int(row.id),
+        community_domain_id=int(domain.id),
+        community_node_id=(
+            int(row.community_node_id) if row.community_node_id is not None else None
+        ),
+        submitted_by_user_id=int(current_user.id),
+        evidence_type=_clean_role(payload.evidence_type, "document"),
+        title=_clean_str(payload.title),
+        description=_clean_str(payload.description) or None,
+        file_name=_clean_str(payload.file_name) or None,
+        content_type=_clean_str(payload.content_type) or None,
+        storage_key=_clean_str(payload.storage_key) or None,
+        external_reference=_clean_str(payload.external_reference) or None,
+        checksum=_clean_str(payload.checksum) or None,
+        status="active",
+    )
+    db.add(evidence)
+    db.commit()
+    db.refresh(evidence)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review_id": int(row.id),
+        "evidence": _action_review_evidence_payload(evidence),
+        "boundary": (
+            "Evidence metadata recorded. This does not upload, download, verify, "
+            "approve, revise, cancel, or apply the action review."
         ),
     }
 

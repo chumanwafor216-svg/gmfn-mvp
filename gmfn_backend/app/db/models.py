@@ -761,6 +761,11 @@ class CommunityDomainActionReview(Base):
         back_populates="action_review",
         cascade="all, delete-orphan",
     )
+    evidence_items = relationship(
+        "CommunityDomainActionReviewEvidence",
+        back_populates="action_review",
+        cascade="all, delete-orphan",
+    )
 
 
 class CommunityDomainActionReviewDecision(Base):
@@ -881,6 +886,78 @@ class CommunityDomainActionReviewComment(Base):
     community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
     community_node = relationship("CommunityNode", foreign_keys=[community_node_id])
     author = relationship("User", foreign_keys=[author_user_id])
+
+
+class CommunityDomainActionReviewEvidence(Base):
+    __tablename__ = "community_domain_action_review_evidence"
+
+    __table_args__ = (
+        Index("ix_comm_review_evidence_review", "action_review_id"),
+        Index("ix_comm_review_evidence_domain", "community_domain_id"),
+        Index("ix_comm_review_evidence_node", "community_node_id"),
+        Index("ix_comm_review_evidence_submitter", "submitted_by_user_id"),
+        Index("ix_comm_review_evidence_type", "evidence_type"),
+        Index("ix_comm_review_evidence_created", "action_review_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    action_review_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domain_action_reviews.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_domain_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domains.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_node_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_nodes.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    submitted_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    evidence_type: Mapped[str] = mapped_column(String(48), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    file_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    content_type: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    storage_key: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    external_reference: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    checksum: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    action_review = relationship(
+        "CommunityDomainActionReview",
+        foreign_keys=[action_review_id],
+        back_populates="evidence_items",
+    )
+    community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
+    community_node = relationship("CommunityNode", foreign_keys=[community_node_id])
+    submitter = relationship("User", foreign_keys=[submitted_by_user_id])
 
 
 class CommunityMemberVerification(Base):

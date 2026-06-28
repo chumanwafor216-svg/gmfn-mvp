@@ -11,6 +11,7 @@ from app.db.models import (
     CommunityDomainActionReview,
     CommunityDomainActionReviewComment,
     CommunityDomainActionReviewDecision,
+    CommunityDomainActionReviewEvidence,
     CommunityDomainMembership,
     CommunityNode,
     CommunityNodeMembership,
@@ -2094,6 +2095,138 @@ def test_action_review_comments_follow_review_visibility(
 
     with SessionLocal() as db:
         assert db.query(CommunityDomainActionReviewComment).count() == 2
+
+
+def test_action_review_evidence_records_metadata_without_file_upload(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    domain_admin = _seed_user(2, "evidence-domain-admin@example.com")
+    requester = _seed_user(3, "evidence-requester@example.com")
+    other_member = _seed_user(4, "evidence-other-member@example.com")
+    new_member = _seed_user(5, "evidence-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Evidence Review Association",
+                "display_name": "Evidence Review Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user, role in (
+            (domain_admin, "domain_admin"),
+            (requester, "member"),
+            (other_member, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "evidence-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        requester_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Branch register extract",
+                "description": "Register page showing the proposed member.",
+                "file_name": "branch-register.pdf",
+                "content_type": "application/pdf",
+                "storage_key": "pending/manual/branch-register.pdf",
+                "checksum": "abc123",
+            },
+        )
+        assert requester_evidence.status_code == 201, requester_evidence.text
+        requester_evidence_data = requester_evidence.json()["evidence"]
+        assert requester_evidence_data["submitted_by_user_id"] == requester.id
+        assert requester_evidence_data["title"] == "Branch register extract"
+        assert (
+            requester_evidence_data["storage_key"]
+            == "pending/manual/branch-register.pdf"
+        )
+        assert "does not upload" in requester_evidence.json()["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: domain_admin
+        admin_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={
+                "evidence_type": "reference",
+                "title": "Admin desk reference",
+                "external_reference": "paper-file:ADM-001",
+            },
+        )
+        assert admin_evidence.status_code == 201, admin_evidence.text
+        assert (
+            admin_evidence.json()["evidence"]["submitted_by_user_id"]
+            == domain_admin.id
+        )
+
+        evidence_list = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence"
+        )
+        assert evidence_list.status_code == 200, evidence_list.text
+        evidence_data = evidence_list.json()
+        assert evidence_data["total"] == 2
+        assert [item["title"] for item in evidence_data["items"]] == [
+            "Branch register extract",
+            "Admin desk reference",
+        ]
+        assert "does not upload" in evidence_data["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: other_member
+        hidden_evidence = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence"
+        )
+        assert hidden_evidence.status_code == 403, hidden_evidence.text
+        assert (
+            hidden_evidence.json()["detail"]["code"]
+            == "community_domain_review_evidence_not_visible"
+        )
+
+        denied_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={"title": "Not allowed"},
+        )
+        assert denied_evidence.status_code == 403, denied_evidence.text
+        assert (
+            denied_evidence.json()["detail"]["code"]
+            == "community_domain_review_evidence_forbidden"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainActionReviewEvidence).count() == 2
 
 
 def test_requester_can_cancel_pending_action_review(
