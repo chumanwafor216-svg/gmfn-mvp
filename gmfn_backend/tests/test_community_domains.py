@@ -3991,6 +3991,201 @@ def test_identity_context_rejects_outsider_and_does_not_issue_missing_gsn_id(
         assert db_member.gmfn_id is None
 
 
+def test_activity_map_projects_template_activity_without_paid_activity_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Activity Map Market Domain",
+                "display_name": "Activity Map Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        created_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert created_line.status_code == 201, created_line.text
+
+        created_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "activity-evidence-review",
+                "action_key": "evidence.verify",
+                "review_mode": "domain_admin_review",
+                "policy_summary": "Activity evidence needs domain admin review.",
+            },
+        )
+        assert created_policy.status_code == 201, created_policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/activity-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    activity_map = payload["activity_map"]
+    assert activity_map["editable"] is False
+    assert activity_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert activity_map["template"]["template_key"] == "market_cooperative"
+    assert activity_map["template"]["marketplace_role"] == "core"
+    assert "member shops" in activity_map["template"]["activity_lanes"]
+    assert "ROSCA/contributions" in activity_map["template"]["activity_lanes"]
+    assert activity_map["summary"] == {
+        "activity_lane_count": len(activity_map["template"]["activity_lanes"]),
+        "active_operating_unit_count": 1,
+        "active_member_count": 1,
+        "active_policy_count": 1,
+        "review_record_count": 0,
+        "open_review_count": 0,
+        "evidence_record_count": 0,
+        "paid_activity_status": "not_connected_in_this_slice",
+        "scheduled_activity_status": "not_connected_in_this_slice",
+        "marketplace_metering_status": "not_metered_in_this_slice",
+    }
+
+    lanes = {item["lane_key"]: item for item in activity_map["lanes"]}
+    assert lanes["template_activity_lanes"]["status"] == "mapped"
+    assert lanes["operating_unit_context"]["status"] == "mapped"
+    assert lanes["activity_governance"]["status"] == "policy_backed"
+    assert lanes["activity_evidence"]["status"] == "not_recorded"
+    assert lanes["reviewed_activity_records"]["status"] == "not_recorded"
+    assert lanes["marketplace_activity_boundary"]["status"] == "template_core"
+    assert lanes["paid_activity_boundary"]["status"] == "not_connected_in_this_slice"
+    assert lanes["scheduled_activity_boundary"]["status"] == "not_connected_in_this_slice"
+    assert activity_map["primary_next_action"] == {
+        "action_key": "review_activity_boundaries",
+        "label": "Review Community Domain activity boundaries",
+        "route_hint": f"/community-domains/{domain_id}/institutional-profile",
+        "requires_admin": True,
+    }
+    assert "dues" in activity_map["boundary"]
+    assert "travel fees" in activity_map["boundary"]
+    assert "payment instructions" in activity_map["boundary"]
+    assert "Trust Passport entries" in activity_map["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_activity_map_but_admin_activity_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "activity-map-member@example.com")
+    outsider = _seed_user(3, "activity-map-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Activity Map School Domain",
+                "display_name": "Activity Map School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "school-activity-review",
+                "action_key": "evidence.verify",
+                "review_mode": "domain_admin_review",
+                "policy_summary": "School activity evidence needs review.",
+            },
+        )
+        assert created_policy.status_code == 201, created_policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_activity = client.get(f"/community-domains/{domain_id}/activity-map")
+        assert member_activity.status_code == 200, member_activity.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_activity = client.get(f"/community-domains/{domain_id}/activity-map")
+        assert outsider_activity.status_code == 403, outsider_activity.text
+        assert "active Community Domain members" in outsider_activity.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    activity_map = member_activity.json()["activity_map"]
+    assert activity_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert activity_map["template"]["template_key"] == "school_multi_branch"
+    assert "PTA activity" in activity_map["template"]["activity_lanes"]
+    assert activity_map["summary"]["activity_lane_count"] == len(
+        activity_map["template"]["activity_lanes"]
+    )
+    assert activity_map["summary"]["active_member_count"] == 2
+    assert activity_map["summary"]["active_policy_count"] is None
+    assert activity_map["summary"]["review_record_count"] is None
+    assert activity_map["summary"]["evidence_record_count"] is None
+    assert activity_map["summary"]["paid_activity_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert activity_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_activity_map",
+        "label": "Ask a Community Domain admin to review the activity map",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in activity_map["lanes"]}
+    assert lanes["template_activity_lanes"]["route_hint"].endswith(
+        "/institutional-profile"
+    )
+    assert lanes["activity_governance"]["route_hint"] is None
+    assert lanes["activity_evidence"]["route_hint"] is None
+    assert lanes["reviewed_activity_records"]["route_hint"] is None
+    assert lanes["paid_activity_boundary"]["route_hint"] is None
+    assert lanes["scheduled_activity_boundary"]["route_hint"] is None
+    assert "private member/review/evidence/finance exposure" in activity_map["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

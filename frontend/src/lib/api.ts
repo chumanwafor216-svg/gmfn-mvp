@@ -2435,6 +2435,12 @@ export async function getCommunityDomainIdentityContext(
   return httpJson(communityDomainPath(communityDomainId, "/identity-context"), "GET");
 }
 
+export async function getCommunityDomainActivityMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/activity-map"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

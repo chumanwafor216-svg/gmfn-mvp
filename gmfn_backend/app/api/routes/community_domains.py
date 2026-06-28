@@ -7625,6 +7625,301 @@ def _community_domain_identity_context_payload(
     }
 
 
+def _community_domain_activity_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    blueprint = _community_domain_template_operating_blueprint_payload(
+        template=template
+    )
+    activity_lanes = list(blueprint.get("activity_lanes") or [])
+    marketplace_role = _clean_role(template.get("marketplace_role"), "optional")
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    active_operating_nodes = [
+        node
+        for node in nodes
+        if node.parent_node_id is not None
+        and _clean_role(node.status, "active") == "active"
+    ]
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .count()
+    )
+    open_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .count()
+    )
+    evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .count()
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: Optional[int],
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": count,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "template_activity_lanes",
+            "Template activity lanes",
+            "mapped" if activity_lanes else "missing",
+            bool(activity_lanes),
+            len(activity_lanes),
+            "Use the template lanes as planning language for the institution's real activities.",
+            route_suffix="/institutional-profile",
+            requires_admin=False,
+            boundary=(
+                "Template activity planning only. This does not create events, "
+                "programmes, meetings, dues, contributions, attendance, or "
+                "activity records."
+            ),
+        ),
+        lane(
+            "operating_unit_context",
+            "Operating unit context",
+            "mapped" if active_operating_nodes else "root_only",
+            bool(active_operating_nodes),
+            len(active_operating_nodes),
+            "Map branches, lines, departments, chapters, classes, or committees before relying on activity tracking.",
+            route_suffix="/rollout-tree",
+            requires_admin=False,
+            boundary=(
+                "Operating-unit context only. This does not create nodes, "
+                "branches, departments, classes, committees, or separate domains."
+            ),
+        ),
+        lane(
+            "activity_governance",
+            "Activity governance",
+            "policy_backed" if active_policy_count else "policy_needed",
+            bool(active_policy_count),
+            admin_count(active_policy_count),
+            "Add policies for the activities that need approval, witness, or local responsibility.",
+            route_suffix="/governance-coverage",
+            requires_admin=True,
+            boundary=(
+                "Activity governance projection only. This does not create "
+                "policy, assign reviewers, decide reviews, or grant authority."
+            ),
+        ),
+        lane(
+            "activity_evidence",
+            "Activity evidence",
+            "evidence_present" if evidence_count else "not_recorded",
+            bool(evidence_count),
+            admin_count(evidence_count),
+            "Use action-review evidence for serious institutional activity until a dedicated activity ledger exists.",
+            route_suffix="/evidence-map",
+            requires_admin=True,
+            boundary=(
+                "Activity evidence aggregate only. This does not upload files, "
+                "expose storage keys, publish proof, issue TrustSlips, or write "
+                "Trust Passport records."
+            ),
+        ),
+        lane(
+            "reviewed_activity_records",
+            "Reviewed activity records",
+            "records_present" if review_count else "not_recorded",
+            bool(review_count),
+            admin_count(review_count),
+            "Treat action reviews as governance records, not as a full activity ledger.",
+            route_suffix="/action-reviews/activity",
+            requires_admin=True,
+            boundary=(
+                "Reviewed activity aggregate only. This does not expose private "
+                "review payloads, comments, evidence, or decisions."
+            ),
+        ),
+        lane(
+            "marketplace_activity_boundary",
+            "Marketplace activity boundary",
+            f"template_{marketplace_role}",
+            marketplace_role in {"core", "supported", "optional", "limited"},
+            1,
+            "Keep market-facing activity in the existing Marketplace flow until a domain bridge is deliberately designed.",
+            route_suffix="/economic-participation",
+            requires_admin=False,
+            boundary=(
+                "Marketplace activity boundary only. This does not create shops, "
+                "listings, demand, Spotlight, vault links, marketplace records, "
+                "or finance records."
+            ),
+        ),
+        lane(
+            "paid_activity_boundary",
+            "Paid activity boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Do not treat dues, levies, paid events, travel fees, contributions, or subscriptions as live until payment rails exist.",
+            route_suffix="/subscription-lifecycle",
+            requires_admin=True,
+            boundary=(
+                "Paid activity boundary only. This does not create dues, levies, "
+                "tickets, contributions, invoices, payment instructions, receipts, "
+                "bank matches, ledger entries, payouts, or money movement."
+            ),
+        ),
+        lane(
+            "scheduled_activity_boundary",
+            "Scheduled activity boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Do not present meetings, services, classes, programmes, or events as scheduled until a dedicated activity/event flow exists.",
+            route_suffix="/service-settings",
+            requires_admin=True,
+            boundary=(
+                "Scheduled activity boundary only. This does not create events, "
+                "calendar entries, attendance, reminders, notifications, or "
+                "programme records."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_activity_map",
+            "label": "Ask a Community Domain admin to review the activity map",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not active_operating_nodes:
+        primary_next_action = {
+            "action_key": "map_operating_units_for_activity",
+            "label": "Map operating units before activity tracking",
+            "route_hint": f"/community-domains/{domain_id}/rollout-tree",
+            "requires_admin": True,
+        }
+    elif not active_policy_count:
+        primary_next_action = {
+            "action_key": "add_activity_governance_policy",
+            "label": "Add governance policy for important activities",
+            "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+            "requires_admin": True,
+        }
+    elif open_review_count:
+        primary_next_action = {
+            "action_key": "review_open_activity_related_decisions",
+            "label": "Review open activity-related governance decisions",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_activity_boundaries",
+            "label": "Review Community Domain activity boundaries",
+            "route_hint": f"/community-domains/{domain_id}/institutional-profile",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": marketplace_role,
+            "activity_lanes": activity_lanes,
+            "default_modules": list(template.get("default_modules") or []),
+        },
+        "summary": {
+            "activity_lane_count": len(activity_lanes),
+            "active_operating_unit_count": len(active_operating_nodes),
+            "active_member_count": int(active_member_count),
+            "active_policy_count": admin_count(active_policy_count),
+            "review_record_count": admin_count(review_count),
+            "open_review_count": admin_count(open_review_count),
+            "evidence_record_count": admin_count(evidence_count),
+            "paid_activity_status": "not_connected_in_this_slice",
+            "scheduled_activity_status": "not_connected_in_this_slice",
+            "marketplace_metering_status": "not_metered_in_this_slice",
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain activity map is read-only operating-activity "
+            "planning. This endpoint does not create activities, events, meetings, "
+            "classes, services, programmes, attendance, dues, levies, travel "
+            "fees, contributions, tickets, subscriptions, payment instructions, "
+            "invoices, receipts, bank matches, ledger entries, payouts, money "
+            "movement, marketplace records, shops, listings, demand, Spotlight, "
+            "notifications, TrustSlips, Trust Passport entries, public proof, or "
+            "private member/review/evidence/finance exposure."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -9197,6 +9492,27 @@ def get_community_domain_identity_context(
             domain=domain,
             current_user=current_user,
             membership=membership,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/activity-map", response_model=dict[str, Any])
+def get_community_domain_activity_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "activity_map": _community_domain_activity_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
         ),
     }
 
