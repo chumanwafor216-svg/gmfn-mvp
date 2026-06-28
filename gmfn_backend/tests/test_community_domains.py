@@ -531,6 +531,81 @@ def test_node_membership_requires_active_domain_membership(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_inactive_node_rejects_new_placements_and_action_reviews(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    trader = _seed_user(2, "inactive-node-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Inactive Line Market Domain",
+                "display_name": "Inactive Line Market Domain",
+                "domain_type": "market_association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        inactive_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Closed Textile Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+                "status": "inactive",
+            },
+        )
+        assert inactive_line.status_code == 201, inactive_line.text
+        node_id = inactive_line.json()["node"]["id"]
+        assert inactive_line.json()["node"]["status"] == "inactive"
+
+        listed_nodes = client.get(f"/community-domains/{domain_id}/nodes")
+        assert listed_nodes.status_code == 200, listed_nodes.text
+        assert any(item["id"] == node_id for item in listed_nodes.json()["items"])
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": trader.id, "role": "trader"},
+        )
+        assert added.status_code == 201, added.text
+
+        blocked_placement = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": trader.id, "role": "line_member"},
+        )
+        assert blocked_placement.status_code == 409, blocked_placement.text
+        assert (
+            blocked_placement.json()["detail"]["code"]
+            == "community_domain_node_inactive"
+        )
+
+        blocked_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "community_node_id": node_id,
+                "action_key": "node_member.upsert",
+                "target_type": "node_member",
+                "target_id": str(trader.id),
+                "payload": {"user_id": trader.id, "role": "line_member"},
+            },
+        )
+        assert blocked_review.status_code == 409, blocked_review.text
+        assert (
+            blocked_review.json()["detail"]["code"]
+            == "community_domain_node_inactive"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityNodeMembership).count() == 0
+        assert db.query(CommunityDomainActionReview).count() == 0
+
+
 def test_domain_admin_can_manage_structure_without_being_recorded_owner(
     client: TestClient,
 ):

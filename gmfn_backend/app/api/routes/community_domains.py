@@ -643,6 +643,18 @@ def _get_node_or_404(
     return node
 
 
+def _ensure_node_accepts_writes(node: CommunityNode) -> None:
+    if _clean_role(node.status, "inactive") == "active":
+        return
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "code": "community_domain_node_inactive",
+            "message": "This Community Domain node is not active, so new placements or action reviews cannot be added to it.",
+        },
+    )
+
+
 def _get_policy_or_404(
     db: Session,
     *,
@@ -1638,6 +1650,7 @@ def upsert_community_node_member(
         community_domain_id=int(domain.id),
         community_node_id=int(community_node_id),
     )
+    _ensure_node_accepts_writes(node)
     scope = _require_node_or_domain_admin_scope(
         db,
         domain=domain,
@@ -1899,6 +1912,7 @@ def create_community_domain_action_review(
             community_domain_id=int(domain.id),
             community_node_id=int(payload.community_node_id),
         )
+        _ensure_node_accepts_writes(node)
         node_id = int(node.id)
 
     if payload.subject_user_id is not None:
