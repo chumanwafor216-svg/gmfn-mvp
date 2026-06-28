@@ -758,6 +758,45 @@ def _community_domain_service_settings_payload(
     }
 
 
+def _community_domain_node_tree_payload(
+    nodes: list[CommunityNode],
+) -> list[dict[str, Any]]:
+    node_payloads = {int(node.id): _node_payload(node) for node in nodes}
+    children_by_parent: dict[Optional[int], list[dict[str, Any]]] = {}
+    for node in nodes:
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(
+            node_payloads[int(node.id)]
+        )
+
+    def attach_children(item: dict[str, Any]) -> dict[str, Any]:
+        node_id = int(item["id"])
+        children = children_by_parent.get(node_id, [])
+        return {
+            **item,
+            "children": [attach_children(child) for child in children],
+            "child_count": len(children),
+        }
+
+    roots = children_by_parent.get(None, [])
+    if not roots:
+        referenced_children = {
+            int(child["id"])
+            for child_group in children_by_parent.values()
+            for child in child_group
+        }
+        roots = [
+            payload
+            for node_id, payload in node_payloads.items()
+            if node_id in referenced_children
+            and payload.get("parent_node_id") not in node_payloads
+        ]
+
+    return [attach_children(root) for root in roots]
+
+
 def _community_domain_dashboard_payload(
     db: Session,
     *,
@@ -2204,6 +2243,38 @@ def list_community_domain_nodes(
         "boundary": (
             "Structure only. Nodes organize the institution but do not by "
             "themselves grant membership, payment rights, verification, or governance authority."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/nodes/tree", response_model=dict[str, Any])
+def list_community_domain_node_tree(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == int(domain.id))
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "items": _community_domain_node_tree_payload(nodes),
+        "total": len(nodes),
+        "boundary": (
+            "Read-only structure tree. This does not create nodes, change "
+            "parentage, assign members, grant roles, activate billing, verify "
+            "a branch, or create a separate Community Domain."
         ),
     }
 

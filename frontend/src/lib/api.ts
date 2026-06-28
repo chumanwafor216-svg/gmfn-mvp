@@ -2336,6 +2336,12 @@ export async function listCommunityDomainNodes(
   return httpJson(communityDomainPath(communityDomainId, "/nodes"), "GET");
 }
 
+export async function listCommunityDomainNodeTree(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/nodes/tree"), "GET");
+}
+
 export async function createCommunityDomainNode(
   communityDomainId: number | string,
   payload: CommunityDomainNodePayload

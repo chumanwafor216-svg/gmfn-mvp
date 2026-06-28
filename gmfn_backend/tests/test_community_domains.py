@@ -753,6 +753,123 @@ def test_owner_builds_nested_community_domain_nodes_for_large_institution(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_community_domain_node_tree_returns_nested_structure_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-tree-member@example.com")
+    outsider = _seed_user(3, "node-tree-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Tree Market Domain",
+                "display_name": "Tree Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain = created_domain.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+                "sort_order": 10,
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_node = line.json()["node"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Warranty Committee",
+                "parent_node_id": line_node["id"],
+                "node_type": "committee",
+                "node_kind": "trade_committee",
+                "sort_order": 2,
+            },
+        )
+        assert committee.status_code == 201, committee.text
+        committee_node = committee.json()["node"]
+
+        plumbing = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Plumbing Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+                "sort_order": 20,
+            },
+        )
+        assert plumbing.status_code == 201, plumbing.text
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Tree viewer",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        response = client.get(f"/community-domains/{domain_id}/nodes/tree")
+        assert response.status_code == 200, response.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_response = client.get(f"/community-domains/{domain_id}/nodes/tree")
+        assert outsider_response.status_code == 403, outsider_response.text
+        assert "active Community Domain members" in outsider_response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    assert payload["total"] == 4
+    assert "Read-only structure tree" in payload["boundary"]
+    assert "does not create nodes" in payload["boundary"]
+    assert "grant roles" in payload["boundary"]
+    assert "separate Community Domain" in payload["boundary"]
+
+    root = payload["items"][0]
+    assert root["id"] == root_node_id
+    assert root["name"] == "Tree Market Domain"
+    assert root["child_count"] == 2
+    assert [child["name"] for child in root["children"]] == [
+        "Electronics Line",
+        "Plumbing Line",
+    ]
+    electronics = root["children"][0]
+    assert electronics["id"] == line_node["id"]
+    assert electronics["child_count"] == 1
+    assert electronics["children"][0]["id"] == committee_node["id"]
+    assert electronics["children"][0]["name"] == "Warranty Committee"
+    assert electronics["children"][0]["children"] == []
+    assert electronics["children"][0]["child_count"] == 0
+
+    with SessionLocal() as db:
+        domain_row = db.query(CommunityDomain).one()
+        assert domain_row.status == "draft"
+        assert domain_row.verification_status == "unverified"
+        assert db.query(CommunityNode).count() == 4
+        assert db.query(CommunityDomainMembership).count() == 2
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
 def test_community_domain_node_create_rejects_duplicate_sibling_name(
     client: TestClient,
 ):
