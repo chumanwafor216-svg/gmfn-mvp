@@ -5,6 +5,7 @@ from typing import Any
 
 from reportlab.lib import colors
 from reportlab.lib.units import mm
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 
 GSN_NAVY = colors.HexColor("#061827")
@@ -122,18 +123,39 @@ def draw_institutional_header(
 
 def draw_institutional_footer(pdf_canvas: Any, width: float, footer_text: str) -> None:
     left = 22 * mm
+    right = width - left
+    max_width = right - left
+    text = safe_pdf_text(
+        footer_text
+        or "GSN evidence paper - controlled community trust record, not a bank guarantee."
+    )
+    font_name = "Helvetica"
+    font_size = 8
+
+    words = text.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if stringWidth(candidate, font_name, font_size) <= max_width:
+            current = candidate
+            continue
+        if current:
+            lines.append(current)
+        current = word
+    if current:
+        lines.append(current)
+
+    lines = lines[:2]
+
     pdf_canvas.saveState()
     pdf_canvas.setStrokeColor(GSN_BORDER)
     pdf_canvas.setLineWidth(0.7)
-    pdf_canvas.line(left, 13 * mm, width - left, 13 * mm)
+    pdf_canvas.line(left, 13 * mm, right, 13 * mm)
     pdf_canvas.setFillColor(GSN_MUTED)
-    pdf_canvas.setFont("Helvetica", 8)
-    pdf_canvas.drawString(
-        left,
-        8.5 * mm,
-        safe_pdf_text(
-            footer_text
-            or "GSN evidence paper - controlled community trust record, not a bank guarantee."
-        ),
-    )
+    pdf_canvas.setFont(font_name, font_size)
+    y = 8.7 * mm
+    for line in lines:
+        pdf_canvas.drawString(left, y, line)
+        y -= 3.2 * mm
     pdf_canvas.restoreState()

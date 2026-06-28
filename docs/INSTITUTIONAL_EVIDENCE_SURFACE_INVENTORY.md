@@ -142,9 +142,11 @@ default.
 
 ## Backend PDF Surfaces To Visually Open
 
-The backend already has a shared institutional PDF helper. The next truth check
-is visual: generate/open sample PDFs and confirm they look like official GSN
-headed papers, not just source-level compliant files.
+The backend already has a shared institutional PDF helper. Source-level footer
+polish now wraps long limitation text and the TrustSlip fallback footer uses
+GSN evidence wording instead of generic confidential wording. The next truth
+check is visual: generate/open sample PDFs and confirm they look like official
+GSN headed papers, not just source-level compliant files.
 
 | Backend service | Expected paper |
 | --- | --- |

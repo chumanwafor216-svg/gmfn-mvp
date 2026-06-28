@@ -105,7 +105,10 @@ def _fallback_pack_id(generated_at: str) -> str:
 
 
 def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Optional[Dict[str, Any]] = None) -> bytes:
-    footer_text = (pack_meta or {}).get("footer") or "Confidential / Evidence Record"
+    footer_text = (pack_meta or {}).get("footer") or (
+        "GSN TrustSlip evidence paper - controlled community trust record, "
+        "not a bank guarantee, credit approval, payment instruction, or automatic debit authority."
+    )
     qr_url = (pack_meta or {}).get("merchant_verify_ui_url") or f"{_public_frontend_base_url()}/trust-slips/ping"
     generated_at = utc_generated_label()
     pack_id = (pack_meta or {}).get("pack_id") or _fallback_pack_id(generated_at)

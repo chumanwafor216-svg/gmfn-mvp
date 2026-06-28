@@ -202,6 +202,11 @@ assertContains(
 );
 assertContains(
   "institutionalPdf",
+  /stringWidth[\s\S]*?lines = lines\[:2\][\s\S]*?for line in lines:/,
+  "Institutional PDF footer must wrap long limitation text instead of drawing one clipped line."
+);
+assertContains(
+  "institutionalPdf",
   /GLOBAL SUPPORT NETWORK[\s\S]*?Generated:[\s\S]*?Reference:/,
   "Institutional header must show GSN authority, generated time, and reference."
 );
@@ -252,6 +257,11 @@ assertContains(
   "trustSlipPdf",
   /not a bank guarantee, credit approval, payment instruction, or automatic debit authority/,
   "TrustSlip PDF must keep the reader-facing limitation language."
+);
+assertNotContains(
+  "trustSlipPdf",
+  /Confidential \/ Evidence Record/,
+  "TrustSlip PDF fallback footer must not regress to generic confidential wording."
 );
 assertContains(
   "trustSlipPdf",
