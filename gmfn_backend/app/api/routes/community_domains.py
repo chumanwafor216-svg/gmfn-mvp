@@ -914,6 +914,7 @@ def _ensure_member_action_review_target_matches(
     payload: dict[str, Any],
     target_type: Optional[str],
     target_id: Optional[str],
+    subject_user_id: Optional[int] = None,
 ) -> None:
     expected_target_type: Optional[str] = None
     if action_key == "domain_member.upsert":
@@ -936,6 +937,15 @@ def _ensure_member_action_review_target_matches(
 
     if payload.get("user_id") is None:
         return
+    payload_user_id = _payload_int(payload, "user_id")
+    if subject_user_id is not None and int(subject_user_id) != payload_user_id:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_member_action_target_mismatch",
+                "message": "Member action reviews must target the same member named in their payload.",
+            },
+        )
     clean_target_id = _clean_str(target_id)
     if not clean_target_id:
         return
@@ -943,7 +953,6 @@ def _ensure_member_action_review_target_matches(
         target_user_id = int(clean_target_id)
     except (TypeError, ValueError):
         return
-    payload_user_id = _payload_int(payload, "user_id")
     if target_user_id != payload_user_id:
         raise HTTPException(
             status_code=409,
@@ -2434,6 +2443,7 @@ def create_community_domain_action_review(
         payload=review_payload,
         target_type=payload.target_type,
         target_id=payload.target_id,
+        subject_user_id=payload.subject_user_id,
     )
 
     row = CommunityDomainActionReview(
@@ -3324,6 +3334,9 @@ def revise_community_domain_action_review(
         payload=revision_payload,
         target_type=target_type,
         target_id=target_id,
+        subject_user_id=(
+            int(subject_user_id) if subject_user_id is not None else None
+        ),
     )
 
     revision = CommunityDomainActionReview(
@@ -3525,6 +3538,9 @@ def decide_community_domain_action_review(
             payload=row_payload,
             target_type=row.target_type,
             target_id=row.target_id,
+            subject_user_id=(
+                int(row.subject_user_id) if row.subject_user_id is not None else None
+            ),
         )
 
     decision_row = CommunityDomainActionReviewDecision(
@@ -3641,6 +3657,9 @@ def apply_community_domain_action_review(
             payload=payload,
             target_type=row.target_type,
             target_id=row.target_id,
+            subject_user_id=(
+                int(row.subject_user_id) if row.subject_user_id is not None else None
+            ),
         )
         user_id = _payload_int(payload, "user_id")
         _get_user_or_404(db, user_id)
@@ -3699,6 +3718,9 @@ def apply_community_domain_action_review(
             payload=payload,
             target_type=row.target_type,
             target_id=row.target_id,
+            subject_user_id=(
+                int(row.subject_user_id) if row.subject_user_id is not None else None
+            ),
         )
         user_id = _payload_int(payload, "user_id")
         _get_user_or_404(db, user_id)
