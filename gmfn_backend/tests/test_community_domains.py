@@ -950,11 +950,48 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert node_decision.status_code == 200, node_decision.text
         assert node_decision.json()["action_review"]["status"] == "approved"
 
+        node_summary = client.get(
+            f"/community-domains/{domain_id}/action-reviews/summary",
+            params={"community_node_id": node_id},
+        )
+        assert node_summary.status_code == 200, node_summary.text
+        node_summary_data = node_summary.json()
+        assert node_summary_data["community_node_id"] == node_id
+        assert node_summary_data["total"] == 1
+        assert node_summary_data["ready_to_apply_total"] == 1
+        assert node_summary_data["attention_total"] == 0
+        assert node_summary_data["by_status"] == {"approved": 1}
+        assert node_summary_data["by_action"] == {"node_member.role_change": 1}
+        assert node_summary_data["by_node"][0]["community_node_id"] == node_id
+        assert "read-only dashboard count" in node_summary_data["boundary"]
+
+        unscoped_summary = client.get(
+            f"/community-domains/{domain_id}/action-reviews/summary"
+        )
+        assert unscoped_summary.status_code == 403, unscoped_summary.text
+
         domain_decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{domain_review['id']}/decision",
             json={"decision": "approve"},
         )
         assert domain_decision.status_code == 403, domain_decision.text
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        domain_summary = client.get(
+            f"/community-domains/{domain_id}/action-reviews/summary"
+        )
+        assert domain_summary.status_code == 200, domain_summary.text
+        domain_summary_data = domain_summary.json()
+        assert domain_summary_data["community_node_id"] is None
+        assert domain_summary_data["total"] == 2
+        assert domain_summary_data["attention_total"] == 1
+        assert domain_summary_data["ready_to_apply_total"] == 1
+        assert domain_summary_data["terminal_total"] == 0
+        assert domain_summary_data["by_status"] == {"approved": 1, "pending": 1}
+        assert domain_summary_data["by_action"] == {
+            "domain.billing.change": 1,
+            "node_member.role_change": 1,
+        }
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -996,6 +1033,11 @@ def test_ordinary_member_cannot_create_policy_or_list_domain_reviews(
 
         denied_reviews = client.get(f"/community-domains/{domain_id}/action-reviews")
         assert denied_reviews.status_code == 403, denied_reviews.text
+
+        denied_summary = client.get(
+            f"/community-domains/{domain_id}/action-reviews/summary"
+        )
+        assert denied_summary.status_code == 403, denied_summary.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

@@ -1854,6 +1854,109 @@ def list_community_domain_action_review_activity(
     }
 
 
+@router.get(
+    "/{community_domain_id}/action-reviews/summary",
+    response_model=dict[str, Any],
+)
+def get_community_domain_action_review_summary(
+    community_domain_id: int,
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    node: Optional[CommunityNode] = None
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=node,
+            current_user=current_user,
+        )
+    else:
+        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    query = db.query(CommunityDomainActionReview).filter(
+        CommunityDomainActionReview.community_domain_id == int(domain.id)
+    )
+    if node is not None:
+        query = query.filter(
+            CommunityDomainActionReview.community_node_id == int(node.id)
+        )
+
+    rows = query.all()
+    by_status: dict[str, int] = {}
+    by_action: dict[str, int] = {}
+    by_node: dict[str, dict[str, Any]] = {}
+    pending_statuses = {"pending", "pending_review"}
+    approved_statuses = {"approved"}
+    terminal_statuses = {"applied", "cancelled", "rejected"}
+
+    for row in rows:
+        status_key = _clean_role(row.status, "unknown")
+        action_key = _clean_role(row.action_key, "unknown")
+        by_status[status_key] = by_status.get(status_key, 0) + 1
+        by_action[action_key] = by_action.get(action_key, 0) + 1
+
+        node_key = (
+            str(row.community_node_id)
+            if row.community_node_id is not None
+            else "domain"
+        )
+        if node_key not in by_node:
+            row_node = getattr(row, "community_node", None)
+            by_node[node_key] = {
+                "community_node_id": (
+                    int(row.community_node_id)
+                    if row.community_node_id is not None
+                    else None
+                ),
+                "community_node_name": getattr(row_node, "name", None),
+                "total": 0,
+                "by_status": {},
+            }
+        node_bucket = by_node[node_key]
+        node_bucket["total"] += 1
+        node_bucket["by_status"][status_key] = (
+            node_bucket["by_status"].get(status_key, 0) + 1
+        )
+
+    attention_total = sum(by_status.get(status, 0) for status in pending_statuses)
+    ready_to_apply_total = sum(by_status.get(status, 0) for status in approved_statuses)
+    terminal_total = sum(by_status.get(status, 0) for status in terminal_statuses)
+    by_node_items = sorted(
+        by_node.values(),
+        key=lambda item: (
+            item["community_node_id"] is not None,
+            item["community_node_name"] or "",
+            item["community_node_id"] or 0,
+        ),
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_node_id": int(node.id) if node is not None else None,
+        "total": len(rows),
+        "attention_total": attention_total,
+        "ready_to_apply_total": ready_to_apply_total,
+        "terminal_total": terminal_total,
+        "by_status": by_status,
+        "by_action": by_action,
+        "by_node": by_node_items,
+        "boundary": (
+            "Action review summary is a read-only dashboard count for admins. "
+            "It does not decide, assign, notify, apply, verify evidence, or "
+            "replace the detailed review/activity records."
+        ),
+    }
+
+
 @router.get("/{community_domain_id}/action-reviews/{review_id}", response_model=dict[str, Any])
 def get_community_domain_action_review(
     community_domain_id: int,
