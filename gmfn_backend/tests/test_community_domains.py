@@ -1126,6 +1126,29 @@ def test_approved_node_review_can_apply_node_member_update_once(
             == status_items[0]["payload"]["action_review"]["applied_at"]
         )
 
+        node_feed = client.get(
+            f"/community-domains/{domain_id}/action-reviews/activity"
+            f"?community_node_id={node_id}"
+        )
+        assert node_feed.status_code == 200, node_feed.text
+        node_feed_data = node_feed.json()
+        assert node_feed_data["community_node_id"] == node_id
+        assert node_feed_data["total"] == 3
+        assert node_feed_data["items"][0]["type"] == "review_status_changed"
+        assert node_feed_data["items"][0]["action_review_id"] == review["id"]
+        assert node_feed_data["items"][0]["actor_user_id"] == branch_admin.id
+        assert {item["type"] for item in node_feed_data["items"]} == {
+            "review_created",
+            "decision",
+            "review_status_changed",
+        }
+        assert "read-only operational feed" in node_feed_data["boundary"]
+
+        unscoped_feed = client.get(
+            f"/community-domains/{domain_id}/action-reviews/activity"
+        )
+        assert unscoped_feed.status_code == 403, unscoped_feed.text
+
         applied_again = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
         )
@@ -2263,7 +2286,38 @@ def test_action_review_evidence_records_metadata_without_file_upload(
         }
         assert "read-only merged view" in activity_data["boundary"]
 
+        domain_feed = client.get(
+            f"/community-domains/{domain_id}/action-reviews/activity"
+        )
+        assert domain_feed.status_code == 200, domain_feed.text
+        domain_feed_data = domain_feed.json()
+        assert domain_feed_data["community_node_id"] is None
+        assert domain_feed_data["total"] == 5
+        assert domain_feed_data["items"][0]["type"] == "decision"
+        assert domain_feed_data["items"][0]["action_review_id"] == review["id"]
+        assert all(
+            item["action_review_id"] == review["id"]
+            for item in domain_feed_data["items"]
+        )
+        assert "read-only operational feed" in domain_feed_data["boundary"]
+
+        evidence_feed = client.get(
+            f"/community-domains/{domain_id}/action-reviews/activity?event_type=evidence"
+        )
+        assert evidence_feed.status_code == 200, evidence_feed.text
+        evidence_feed_data = evidence_feed.json()
+        assert evidence_feed_data["event_type"] == "evidence"
+        assert evidence_feed_data["total"] == 2
+        assert {item["type"] for item in evidence_feed_data["items"]} == {
+            "evidence"
+        }
+
         app.dependency_overrides[get_current_user] = lambda: other_member
+        hidden_domain_feed = client.get(
+            f"/community-domains/{domain_id}/action-reviews/activity"
+        )
+        assert hidden_domain_feed.status_code == 403, hidden_domain_feed.text
+
         hidden_evidence = client.get(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence"
         )

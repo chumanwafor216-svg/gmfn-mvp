@@ -333,6 +333,141 @@ def _activity_time(value: Optional[datetime]) -> datetime:
     return value
 
 
+def _action_review_activity_items(
+    db: Session,
+    row: CommunityDomainActionReview,
+) -> list[dict[str, Any]]:
+    base = {
+        "action_review_id": int(row.id),
+        "community_node_id": (
+            int(row.community_node_id) if row.community_node_id is not None else None
+        ),
+        "review_status": row.status,
+    }
+    activity_items: list[dict[str, Any]] = [
+        {
+            **base,
+            "type": "review_created",
+            "occurred_at": _iso(row.created_at),
+            "sort_at": _activity_time(row.created_at),
+            "sort_order": 0,
+            "sort_id": int(row.id),
+            "actor_user_id": int(row.requested_by_user_id),
+            "payload": _action_review_payload(row),
+        }
+    ]
+
+    decision_rows = (
+        db.query(CommunityDomainActionReviewDecision)
+        .filter(CommunityDomainActionReviewDecision.action_review_id == int(row.id))
+        .order_by(
+            CommunityDomainActionReviewDecision.created_at.asc(),
+            CommunityDomainActionReviewDecision.id.asc(),
+        )
+        .all()
+    )
+    for decision_row in decision_rows:
+        activity_items.append(
+            {
+                **base,
+                "type": "decision",
+                "occurred_at": _iso(decision_row.created_at),
+                "sort_at": _activity_time(decision_row.created_at),
+                "sort_order": 1,
+                "sort_id": int(decision_row.id),
+                "actor_user_id": int(decision_row.decided_by_user_id),
+                "payload": _action_review_decision_payload(decision_row),
+            }
+        )
+
+    comment_rows = (
+        db.query(CommunityDomainActionReviewComment)
+        .filter(CommunityDomainActionReviewComment.action_review_id == int(row.id))
+        .order_by(
+            CommunityDomainActionReviewComment.created_at.asc(),
+            CommunityDomainActionReviewComment.id.asc(),
+        )
+        .all()
+    )
+    for comment_row in comment_rows:
+        activity_items.append(
+            {
+                **base,
+                "type": "comment",
+                "occurred_at": _iso(comment_row.created_at),
+                "sort_at": _activity_time(comment_row.created_at),
+                "sort_order": 2,
+                "sort_id": int(comment_row.id),
+                "actor_user_id": int(comment_row.author_user_id),
+                "payload": _action_review_comment_payload(comment_row),
+            }
+        )
+
+    evidence_rows = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.action_review_id == int(row.id))
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .order_by(
+            CommunityDomainActionReviewEvidence.created_at.asc(),
+            CommunityDomainActionReviewEvidence.id.asc(),
+        )
+        .all()
+    )
+    for evidence_row in evidence_rows:
+        activity_items.append(
+            {
+                **base,
+                "type": "evidence",
+                "occurred_at": _iso(evidence_row.created_at),
+                "sort_at": _activity_time(evidence_row.created_at),
+                "sort_order": 3,
+                "sort_id": int(evidence_row.id),
+                "actor_user_id": int(evidence_row.submitted_by_user_id),
+                "payload": _action_review_evidence_payload(evidence_row),
+            }
+        )
+
+    current_status = _clean_role(row.status)
+    if current_status in {"cancelled", "applied"}:
+        status_time = (
+            row.decided_at
+            if current_status == "cancelled"
+            else row.applied_at or row.updated_at
+        )
+        status_actor_user_id = None
+        if current_status == "cancelled" and row.decided_by_user_id is not None:
+            status_actor_user_id = int(row.decided_by_user_id)
+        elif current_status == "applied" and row.applied_by_user_id is not None:
+            status_actor_user_id = int(row.applied_by_user_id)
+
+        activity_items.append(
+            {
+                **base,
+                "type": "review_status_changed",
+                "occurred_at": _iso(status_time),
+                "sort_at": _activity_time(status_time),
+                "sort_order": 4,
+                "sort_id": int(row.id),
+                "actor_user_id": status_actor_user_id,
+                "payload": {
+                    "status": row.status,
+                    "decision": row.decision,
+                    "decision_note": row.decision_note,
+                    "action_review": _action_review_payload(row),
+                },
+            }
+        )
+
+    return activity_items
+
+
+def _strip_activity_sort_fields(items: list[dict[str, Any]]) -> None:
+    for item in items:
+        item.pop("sort_at", None)
+        item.pop("sort_order", None)
+        item.pop("sort_id", None)
+
+
 def _domain_payload(
     domain: CommunityDomain,
     *,
@@ -1643,6 +1778,82 @@ def list_community_domain_reviewer_queue(
     }
 
 
+@router.get("/{community_domain_id}/action-reviews/activity", response_model=dict[str, Any])
+def list_community_domain_action_review_activity(
+    community_domain_id: int,
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    status: Optional[str] = Query(default=None, max_length=24),
+    event_type: Optional[str] = Query(default=None, max_length=48),
+    limit: int = Query(default=100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    node: Optional[CommunityNode] = None
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=node,
+            current_user=current_user,
+        )
+    else:
+        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    query = db.query(CommunityDomainActionReview).filter(
+        CommunityDomainActionReview.community_domain_id == int(domain.id)
+    )
+    if node is not None:
+        query = query.filter(CommunityDomainActionReview.community_node_id == int(node.id))
+    if status:
+        query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
+
+    rows = query.order_by(
+        CommunityDomainActionReview.updated_at.desc(),
+        CommunityDomainActionReview.id.desc(),
+    ).all()
+
+    requested_event_type = _clean_role(event_type) if event_type else None
+    activity_items: list[dict[str, Any]] = []
+    for row in rows:
+        for item in _action_review_activity_items(db, row):
+            if requested_event_type and _clean_role(item["type"]) != requested_event_type:
+                continue
+            activity_items.append(item)
+
+    activity_items.sort(
+        key=lambda item: (
+            item["sort_at"],
+            -int(item["sort_order"]),
+            int(item["sort_id"]),
+        ),
+        reverse=True,
+    )
+    activity_items = activity_items[: int(limit)]
+    _strip_activity_sort_fields(activity_items)
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_node_id": int(node.id) if node is not None else None,
+        "items": activity_items,
+        "total": len(activity_items),
+        "limit": int(limit),
+        "event_type": requested_event_type,
+        "boundary": (
+            "Domain activity is a read-only operational feed for admins. It merges "
+            "existing review creation, decisions, comments, evidence metadata, and "
+            "terminal row status changes; it is not an immutable audit ledger, "
+            "notification feed, TrustEvent stream, or action executor."
+        ),
+    }
+
+
 @router.get("/{community_domain_id}/action-reviews/{review_id}", response_model=dict[str, Any])
 def get_community_domain_action_review(
     community_domain_id: int,
@@ -1943,122 +2154,11 @@ def get_community_domain_action_review_activity(
             },
         )
 
-    activity_items: list[dict[str, Any]] = [
-        {
-            "type": "review_created",
-            "occurred_at": _iso(row.created_at),
-            "sort_at": _activity_time(row.created_at),
-            "sort_order": 0,
-            "sort_id": int(row.id),
-            "actor_user_id": int(row.requested_by_user_id),
-            "payload": _action_review_payload(row),
-        }
-    ]
-
-    decision_rows = (
-        db.query(CommunityDomainActionReviewDecision)
-        .filter(CommunityDomainActionReviewDecision.action_review_id == int(row.id))
-        .order_by(
-            CommunityDomainActionReviewDecision.created_at.asc(),
-            CommunityDomainActionReviewDecision.id.asc(),
-        )
-        .all()
-    )
-    for decision_row in decision_rows:
-        activity_items.append(
-            {
-                "type": "decision",
-                "occurred_at": _iso(decision_row.created_at),
-                "sort_at": _activity_time(decision_row.created_at),
-                "sort_order": 1,
-                "sort_id": int(decision_row.id),
-                "actor_user_id": int(decision_row.decided_by_user_id),
-                "payload": _action_review_decision_payload(decision_row),
-            }
-        )
-
-    comment_rows = (
-        db.query(CommunityDomainActionReviewComment)
-        .filter(CommunityDomainActionReviewComment.action_review_id == int(row.id))
-        .order_by(
-            CommunityDomainActionReviewComment.created_at.asc(),
-            CommunityDomainActionReviewComment.id.asc(),
-        )
-        .all()
-    )
-    for comment_row in comment_rows:
-        activity_items.append(
-            {
-                "type": "comment",
-                "occurred_at": _iso(comment_row.created_at),
-                "sort_at": _activity_time(comment_row.created_at),
-                "sort_order": 2,
-                "sort_id": int(comment_row.id),
-                "actor_user_id": int(comment_row.author_user_id),
-                "payload": _action_review_comment_payload(comment_row),
-            }
-        )
-
-    evidence_rows = (
-        db.query(CommunityDomainActionReviewEvidence)
-        .filter(CommunityDomainActionReviewEvidence.action_review_id == int(row.id))
-        .filter(CommunityDomainActionReviewEvidence.status == "active")
-        .order_by(
-            CommunityDomainActionReviewEvidence.created_at.asc(),
-            CommunityDomainActionReviewEvidence.id.asc(),
-        )
-        .all()
-    )
-    for evidence_row in evidence_rows:
-        activity_items.append(
-            {
-                "type": "evidence",
-                "occurred_at": _iso(evidence_row.created_at),
-                "sort_at": _activity_time(evidence_row.created_at),
-                "sort_order": 3,
-                "sort_id": int(evidence_row.id),
-                "actor_user_id": int(evidence_row.submitted_by_user_id),
-                "payload": _action_review_evidence_payload(evidence_row),
-            }
-        )
-
-    current_status = _clean_role(row.status)
-    if current_status in {"cancelled", "applied"}:
-        status_time = (
-            row.decided_at
-            if current_status == "cancelled"
-            else row.applied_at or row.updated_at
-        )
-        status_actor_user_id = None
-        if current_status == "cancelled" and row.decided_by_user_id is not None:
-            status_actor_user_id = int(row.decided_by_user_id)
-        elif current_status == "applied" and row.applied_by_user_id is not None:
-            status_actor_user_id = int(row.applied_by_user_id)
-
-        activity_items.append(
-            {
-                "type": "review_status_changed",
-                "occurred_at": _iso(status_time),
-                "sort_at": _activity_time(status_time),
-                "sort_order": 4,
-                "sort_id": int(row.id),
-                "actor_user_id": status_actor_user_id,
-                "payload": {
-                    "status": row.status,
-                    "decision": row.decision,
-                    "decision_note": row.decision_note,
-                    "action_review": _action_review_payload(row),
-                },
-            }
-        )
-
+    activity_items = _action_review_activity_items(db, row)
     activity_items.sort(
         key=lambda item: (item["sort_at"], item["sort_order"], item["sort_id"])
     )
-    for item in activity_items:
-        item.pop("sort_at", None)
-        item.pop("sort_order", None)
-        item.pop("sort_id", None)
+    _strip_activity_sort_fields(activity_items)
 
     return {
         "ok": True,
