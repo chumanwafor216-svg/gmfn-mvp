@@ -4160,6 +4160,183 @@ def test_domain_member_review_rejects_subject_user_mismatch(
         assert membership is None
 
 
+def test_node_member_review_rejects_subject_user_mismatch_with_label_target(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    branch_admin = _seed_user(2, "node-subject-admin@example.com")
+    teacher = _seed_user(3, "node-subject-teacher@example.com")
+    other_teacher = _seed_user(4, "node-subject-other@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Subject Guard School",
+                "display_name": "Node Subject Guard School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Main Campus",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        for user in (branch_admin, teacher, other_teacher):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "staff"},
+            )
+            assert added.status_code == 201, added.text
+
+        branch_admin_assignment = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": branch_admin.id, "role": "branch_admin"},
+        )
+        assert branch_admin_assignment.status_code == 201, branch_admin_assignment.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-member-subject-guard",
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: teacher
+        rejected_create = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "subject_user_id": other_teacher.id,
+                "target_type": "node_member",
+                "target_id": "maths-chair",
+                "payload": {
+                    "user_id": teacher.id,
+                    "role": "committee_member",
+                    "title": "Mathematics chair",
+                },
+            },
+        )
+        assert rejected_create.status_code == 409, rejected_create.text
+        assert (
+            rejected_create.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "subject_user_id": teacher.id,
+                "target_type": "node_member",
+                "target_id": "maths-chair",
+                "payload": {
+                    "user_id": teacher.id,
+                    "role": "committee_member",
+                    "title": "Mathematics chair",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+        assert review["target_id"] == "maths-chair"
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            review_row.subject_user_id = other_teacher.id
+            db.commit()
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+        rejected_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Wrong subject."},
+        )
+        assert rejected_decision.status_code == 409, rejected_decision.text
+        assert (
+            rejected_decision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            review_row.subject_user_id = teacher.id
+            db.commit()
+
+        approved = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Correct subject."},
+        )
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["action_review"]["status"] == "approved"
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            review_row.subject_user_id = other_teacher.id
+            db.commit()
+
+        rejected_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert rejected_apply.status_code == 409, rejected_apply.text
+        assert (
+            rejected_apply.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        review_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == review["id"])
+            .one()
+        )
+        decision_count = (
+            db.query(CommunityDomainActionReviewDecision)
+            .filter(CommunityDomainActionReviewDecision.action_review_id == review["id"])
+            .count()
+        )
+        node_membership = (
+            db.query(CommunityNodeMembership)
+            .filter(CommunityNodeMembership.community_node_id == node_id)
+            .filter(CommunityNodeMembership.user_id == teacher.id)
+            .first()
+        )
+        assert review_row.status == "approved"
+        assert review_row.applied_at is None
+        assert decision_count == 1
+        assert node_membership is None
+
+
 def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
     client: TestClient,
 ):
