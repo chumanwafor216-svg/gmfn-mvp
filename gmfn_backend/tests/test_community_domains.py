@@ -3073,7 +3073,7 @@ def test_reviewed_archived_node_can_reopen_and_accept_new_structure(
         assert review_row.applied_by_user_id == owner.id
 
 
-def test_status_review_request_rejects_root_and_invalid_status(
+def test_status_review_request_rejects_root_invalid_status_and_target_mismatch(
     client: TestClient,
 ):
     owner = _seed_owner()
@@ -3158,6 +3158,44 @@ def test_status_review_request_rejects_root_and_invalid_status(
             invalid_review.json()["detail"]["code"]
             == "community_domain_node_status_invalid"
         )
+
+        mismatched_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id,
+                "target_type": "community_node",
+                "target_id": str(branch_id + 999),
+                "payload": {
+                    "status": "active",
+                    "status_note": "Target id must match the scoped node.",
+                },
+            },
+        )
+        assert mismatched_review.status_code == 409, mismatched_review.text
+        assert (
+            mismatched_review.json()["detail"]["code"]
+            == "community_domain_node_status_target_mismatch"
+        )
+
+        wrong_type_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id,
+                "target_type": "node_member",
+                "target_id": str(branch_id),
+                "payload": {
+                    "status": "active",
+                    "status_note": "Target type must be a community node.",
+                },
+            },
+        )
+        assert wrong_type_review.status_code == 409, wrong_type_review.text
+        assert (
+            wrong_type_review.json()["detail"]["code"]
+            == "community_domain_node_status_target_mismatch"
+        )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -3168,6 +3206,165 @@ def test_status_review_request_rejects_root_and_invalid_status(
             .count()
         )
         assert requester_reviews == 0
+
+
+def test_needs_changes_reopen_review_can_be_revised_on_inactive_node(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "reopen-revision-requester@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Reopen Revision School",
+                "display_name": "Reopen Revision School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Owerri Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "staff"},
+        )
+        assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "branch-reopen-revision",
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        closed = client.patch(
+            f"/community-domains/{domain_id}/nodes/{node_id}/status",
+            json={
+                "status": "inactive",
+                "status_note": "Branch paused pending new leadership.",
+            },
+        )
+        assert closed.status_code == 200, closed.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "target_type": "community_node",
+                "target_id": str(node_id),
+                "payload": {
+                    "status": "active",
+                    "status_note": "Branch wants to reopen.",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Add the leadership readiness note.",
+            },
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        bad_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_type": "community_node",
+                "target_id": str(node_id + 123),
+                "request_note": "Wrong target should be rejected.",
+                "payload": {
+                    "status": "active",
+                    "status_note": "Leadership note added.",
+                },
+            },
+        )
+        assert bad_revision.status_code == 409, bad_revision.text
+        assert (
+            bad_revision.json()["detail"]["code"]
+            == "community_domain_node_status_target_mismatch"
+        )
+
+        revision_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_type": "community_node",
+                "target_id": str(node_id),
+                "request_note": "Leadership note added.",
+                "payload": {
+                    "status": "active",
+                    "status_note": "New leadership has signed the reopen plan.",
+                },
+            },
+        )
+        assert revision_response.status_code == 201, revision_response.text
+        revision = revision_response.json()["action_review"]
+        assert revision["parent_review_id"] == review["id"]
+        assert revision["status"] == "pending"
+        assert revision["payload"]["previous_status"] == "inactive"
+        assert revision["payload"]["new_status"] == "active"
+        assert (
+            revision["payload"]["status_note"]
+            == "New leadership has signed the reopen plan."
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        approved = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/decision",
+            json={"decision": "approve", "decision_note": "Ready to reopen."},
+        )
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["action_review"]["status"] == "approved"
+
+        applied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/apply"
+        )
+        assert applied.status_code == 200, applied.text
+        assert applied.json()["applied"]["node"]["status"] == "active"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        node = db.query(CommunityNode).filter(CommunityNode.id == node_id).one()
+        assert node.status == "active"
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.action_key == "node.status.update")
+            .filter(CommunityDomainActionReview.requested_by_user_id == requester.id)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert len(rows) == 2
+        assert rows[0].status == "needs_changes"
+        assert rows[1].status == "applied"
+        assert rows[1].parent_review_id == rows[0].id
 
 
 def test_reviewed_child_reopen_requires_active_parent(

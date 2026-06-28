@@ -722,6 +722,90 @@ def _ensure_node_accepts_action_review_request(
     _ensure_node_accepts_writes(db, domain=domain, node=node)
 
 
+def _normalize_node_status_review_payload(
+    *,
+    node: CommunityNode,
+    review_payload: dict[str, Any],
+    request_note: Optional[str],
+    target_type: Optional[str],
+    target_id: Optional[str],
+) -> dict[str, Any]:
+    clean_target_type = _clean_role(target_type or "")
+    if clean_target_type and clean_target_type != "community_node":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_node_status_target_mismatch",
+                "message": "Node status reviews must target the same Community Domain node as their review scope.",
+            },
+        )
+    clean_target_id = _clean_str(target_id)
+    if clean_target_id:
+        try:
+            target_node_id = int(clean_target_id)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_action_review_payload",
+                    "message": "Node status review target_id must be the Community Domain node id.",
+                },
+            ) from exc
+        if target_node_id != int(node.id):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_node_status_target_mismatch",
+                    "message": "Node status reviews must target the same Community Domain node as their review scope.",
+                },
+            )
+
+    if node.parent_node_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_root_node_status_immutable",
+                "message": "The root Community Domain node is controlled by the domain lifecycle, not node status reviews.",
+            },
+        )
+    requested_status = _requested_node_status(review_payload)
+    if requested_status not in NODE_STATUS_VALUES:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_node_status_invalid",
+                "message": "Node status must be active, inactive, or archived.",
+            },
+        )
+    previous_status = _clean_role(node.status, "inactive")
+    status_note = (
+        _clean_str(
+            str(review_payload.get("status_note") or review_payload.get("note") or "")
+        )
+        or _clean_str(request_note)
+        or None
+    )
+    if previous_status != requested_status and not status_note:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_node_status_note_required",
+                "message": "A status note is required when changing a Community Domain node status.",
+            },
+        )
+
+    normalized_payload = dict(review_payload)
+    normalized_payload.update(
+        {
+            "community_node_id": int(node.id),
+            "previous_status": previous_status,
+            "new_status": requested_status,
+            "status_note": status_note,
+        }
+    )
+    return normalized_payload
+
+
 def _get_policy_or_404(
     db: Session,
     *,
@@ -2257,48 +2341,12 @@ def create_community_domain_action_review(
                     "message": "This action must be scoped to a Community Domain node.",
                 },
             )
-        if node.parent_node_id is None:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "community_domain_root_node_status_immutable",
-                    "message": "The root Community Domain node is controlled by the domain lifecycle, not node status reviews.",
-                },
-            )
-        requested_status = _clean_role(
-            _requested_node_status(review_payload)
-        )
-        if requested_status not in NODE_STATUS_VALUES:
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "code": "community_domain_node_status_invalid",
-                    "message": "Node status must be active, inactive, or archived.",
-                },
-            )
-        previous_status = _clean_role(node.status, "inactive")
-        status_note = (
-            _clean_str(
-                str(review_payload.get("status_note") or review_payload.get("note") or "")
-            )
-            or _clean_str(payload.request_note)
-            or None
-        )
-        if previous_status != requested_status and not status_note:
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "code": "community_domain_node_status_note_required",
-                    "message": "A status note is required when changing a Community Domain node status.",
-                },
-            )
-        review_payload.update(
-            {
-                "community_node_id": int(node.id),
-                "previous_status": previous_status,
-                "new_status": requested_status,
-                "status_note": status_note,
-            }
+        review_payload = _normalize_node_status_review_payload(
+            node=node,
+            review_payload=review_payload,
+            request_note=payload.request_note,
+            target_type=payload.target_type,
+            target_id=payload.target_id,
         )
 
     row = CommunityDomainActionReview(
@@ -3078,6 +3126,14 @@ def revise_community_domain_action_review(
             },
         )
 
+    fields_set = payload.model_fields_set
+    action_key = _clean_role(row.action_key)
+    revision_payload = (
+        dict(payload.payload or {})
+        if "payload" in fields_set
+        else _json_load(row.payload_json)
+    )
+
     node_id: Optional[int] = (
         int(row.community_node_id) if row.community_node_id is not None else None
     )
@@ -3088,14 +3144,13 @@ def revise_community_domain_action_review(
             community_domain_id=int(domain.id),
             community_node_id=node_id,
         )
-        _ensure_node_accepts_writes(db, domain=domain, node=node)
 
     policy: Optional[CommunityDomainPolicy] = getattr(row, "policy", None)
     if policy is None:
         policy = _matching_policy(
             db,
             community_domain_id=int(domain.id),
-            action_key=row.action_key,
+            action_key=action_key,
             community_node_id=node_id,
         )
     if policy is not None:
@@ -3107,7 +3162,7 @@ def revise_community_domain_action_review(
                     "message": "This Community Domain policy is not active.",
                 },
             )
-        if _clean_role(policy.action_key) != _clean_role(row.action_key):
+        if _clean_role(policy.action_key) != action_key:
             raise HTTPException(
                 status_code=409,
                 detail={
@@ -3129,7 +3184,6 @@ def revise_community_domain_action_review(
                 },
             )
 
-    fields_set = payload.model_fields_set
     subject_user_id = (
         payload.subject_user_id
         if "subject_user_id" in fields_set
@@ -3153,16 +3207,38 @@ def revise_community_domain_action_review(
         if "request_note" in fields_set
         else row.request_note
     )
-    revision_payload = (
-        payload.payload if "payload" in fields_set else _json_load(row.payload_json)
-    )
+
+    if node_id is not None:
+        _ensure_node_accepts_action_review_request(
+            db,
+            domain=domain,
+            node=node,
+            action_key=action_key,
+            payload=revision_payload,
+        )
+    if action_key == "node.status.update":
+        if node is None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_review_node_required",
+                    "message": "This action must be scoped to a Community Domain node.",
+                },
+            )
+        revision_payload = _normalize_node_status_review_payload(
+            node=node,
+            review_payload=revision_payload,
+            request_note=request_note,
+            target_type=target_type,
+            target_id=target_id,
+        )
 
     revision = CommunityDomainActionReview(
         community_domain_id=int(domain.id),
         community_node_id=node_id,
         policy_id=int(policy.id) if policy is not None else None,
         parent_review_id=int(row.id),
-        action_key=_clean_role(row.action_key),
+        action_key=action_key,
         requested_by_user_id=int(current_user.id),
         subject_user_id=int(subject_user_id) if subject_user_id is not None else None,
         target_type=target_type,
