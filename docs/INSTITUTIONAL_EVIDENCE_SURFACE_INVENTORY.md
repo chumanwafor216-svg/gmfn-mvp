@@ -57,7 +57,7 @@ should be checked visually before rewriting:
 | TrustSlip page | `/app/trust-slip`, `TrustSlipPage.tsx` | Has copy, verify link, print, limitation, and shared GSN Snapshot builder. | Visual phone/print review, then adjust only gaps. |
 | Trust Passport page | `/app/trust`, `TrustScorePage.tsx` | Has copy snapshot, print, TrustSlip verify action, and shared GSN Snapshot builder. | Visual phone/print review, then adjust only gaps. |
 | Trust Timeline PDF | `/app/open-trust-reading`, `TrustTimelinePage.tsx`, backend `trust_timeline_pdf_service.py` | Backend PDF shell exists with institutional helper. | Open generated PDF visually; confirm watermark/header/footer. |
-| Evidence Pack PDF / ZIP panel | `EvidencePackPanel.tsx`, backend evidence pack services | Backend PDF shell exists; frontend panel still looks like a simple app block. | Upgrade panel and any redacted share copy wording to headed-paper preview language. |
+| Evidence Pack PDF / ZIP panel | `EvidencePackPanel.tsx`, backend evidence pack services | Source-level handled: reusable frontend panel now renders a shared GSN headed-paper preview, explains redacted-share-copy-first reader boundary, and keeps complete-record download framed for authorized private review only. | Wire into an active route if/when the product flow needs the panel, then run visual phone review. |
 
 ## Priority 1: User Or Visitor Evidence Papers
 

@@ -1447,6 +1447,34 @@ assertContains(
   "Evidence pack panel must use the shared 3D icon system."
 );
 assertContains(
+  "evidencePanel",
+  /buildGsnSnapshotPaper[\s\S]*?GsnSnapshotPaperCard[\s\S]*?paperText=\{paperPreview\}/,
+  "Evidence pack panel must render a visible GSN headed-paper preview, not only a plain app block."
+);
+assertContains(
+  "evidencePanel",
+  /Redacted share copy first[\s\S]*?Complete record[\s\S]*?Authorized private review only/,
+  "Evidence pack panel must make the redacted outside-review copy safer and clearer than the complete private record."
+);
+assertContains(
+  "evidencePanel",
+  /not a bank guarantee[\s\S]*?credit approval[\s\S]*?payment instruction[\s\S]*?automatic debit authority[\s\S]*?proof that money moved/,
+  "Evidence pack panel limitation must not imply bank, credit, payment, debit, or funds-movement authority."
+);
+assertOrdered(
+  "evidencePanel",
+  [
+    'debugId="evidence-pack.download-redacted"',
+    'debugId="evidence-pack.download-full"',
+  ],
+  "Evidence pack panel must present the redacted share copy before the complete private record action."
+);
+assertNotContains(
+  "evidencePanel",
+  /border: "1px solid #eee"/g,
+  "Evidence pack panel must not regress to the old plain bordered app block."
+);
+assertContains(
   "marketplace",
   /Title: GSN Trade Evidence Paper[\s\S]*?Limitation: Evidence for judgement only\. Not escrow, not automatic payout, not bank confirmation, not a bank guarantee, and not a delivery guarantee\./,
   "Marketplace trade evidence paper must keep the evidence-first title and explicit non-custodial limits."

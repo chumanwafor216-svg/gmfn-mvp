@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { GsnRealisticIcon } from "./GsnRealisticIcon";
-import { SecondaryButton } from "./StableButton";
+import GsnSnapshotPaperCard from "./GsnSnapshotPaperCard";
+import { PrimaryButton, SecondaryButton } from "./StableButton";
+import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 
 type Props = {
   title?: string;
@@ -17,58 +19,100 @@ export default function EvidencePackPanel({
   onDownloadRedacted,
   disabled = false,
 }: Props) {
+  const paperPreview = useMemo(
+    () =>
+      buildGsnSnapshotPaper({
+        title,
+        purpose: subtitle,
+        reference: "GSN evidence pack",
+        context: [
+          { label: "Package", value: "Trust and support records" },
+          { label: "Reader boundary", value: "Redacted share copy first" },
+          { label: "Complete record", value: "Authorized private review only" },
+        ],
+        bodyLines: [
+          "Includes trust snapshot and timeline.",
+          "Includes supporter summary and decisions where provided.",
+          "Includes repayment history, community context, and support context.",
+          "Share copy removes sensitive identifiers for outside review.",
+        ],
+        privacyNote:
+          "Privacy: the redacted share copy is the safer outside-review paper. Use the complete record only when the reviewer is allowed to see private member details.",
+        limitationNote:
+          "Limitation: GSN evidence papers support a trust decision. They are not a bank guarantee, credit approval, payment instruction, automatic debit authority, or proof that money moved.",
+      }),
+    [subtitle, title]
+  );
+
   return (
-    <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <div>
-          <b>{title}</b>
-          <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{subtitle}</div>
+    <section
+      aria-label={title}
+      style={{
+        display: "grid",
+        gap: 12,
+        minWidth: 0,
+        overflowAnchor: "none",
+      }}
+    >
+      <GsnSnapshotPaperCard
+        paperText={paperPreview}
+        compact
+        icon="document"
+        maxBodyLines={4}
+      />
+
+      <div
+        style={{
+          borderRadius: 18,
+          border: "1px solid rgba(212,175,55,0.20)",
+          background: "rgba(255,255,255,0.82)",
+          padding: 12,
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            color: "#24415C",
+            fontSize: 13,
+            fontWeight: 850,
+            lineHeight: 1.42,
+          }}
+        >
+          Start with the redacted share copy for outside review. Download the
+          complete record only for a reviewer who is allowed to see private
+          member evidence.
         </div>
+
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <PrimaryButton
+            onClick={onDownloadRedacted}
+            disabled={disabled}
+            stableHeight={52}
+            debugId="evidence-pack.download-redacted"
+            minWidth={178}
+            style={{ borderRadius: 14 }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <GsnRealisticIcon name="records-folder" size={28} decorative />
+              Share copy
+            </span>
+          </PrimaryButton>
           <SecondaryButton
             onClick={onDownloadFull}
             disabled={disabled}
             stableHeight={52}
             debugId="evidence-pack.download-full"
-            style={{ borderRadius: 10, border: "1px solid #ddd", background: "white" }}
+            minWidth={178}
+            style={{ borderRadius: 14, border: "1px solid rgba(11,45,74,0.14)", background: "white" }}
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
               <GsnRealisticIcon name="certificate-seal" size={28} decorative />
               Complete record
             </span>
           </SecondaryButton>
-          <SecondaryButton
-            onClick={onDownloadRedacted}
-            disabled={disabled}
-            stableHeight={52}
-            debugId="evidence-pack.download-redacted"
-            style={{ borderRadius: 10, border: "1px solid #ddd", background: "white" }}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <GsnRealisticIcon name="records-folder" size={28} decorative />
-              Share copy
-            </span>
-          </SecondaryButton>
         </div>
       </div>
-
-      <div style={{ marginTop: 10, display: "grid", gap: 6, fontSize: 13 }}>
-        <div><b>Includes</b></div>
-        <ul style={{ margin: 0, paddingLeft: 18, color: "#374151" }}>
-          <li>Trust snapshot and timeline</li>
-          <li>Supporter summary and decisions where provided</li>
-          <li>Repayments history</li>
-          <li>Community and loan context</li>
-        </ul>
-
-        <div style={{ marginTop: 8 }}>
-          <b>Share copy</b> removes sensitive identifiers for outside review.{" "}
-          <span style={{ color: "#6b7280" }}>Use the complete record only when the reviewer is allowed to see the private details.</span>
-        </div>
-        <div style={{ marginTop: 8, color: "#6b7280" }}>
-          GSN evidence papers support a trust decision. They are not a bank guarantee and do not start automatic debit.
-        </div>
-      </div>
-    </div>
+    </section>
   );
 }
