@@ -2339,6 +2339,15 @@ export async function getCommunityDomainEconomicParticipation(
   );
 }
 
+export async function getCommunityDomainNetworkPresence(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/network-presence"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainRoles(
   communityDomainId: number | string
 ): Promise<any> {

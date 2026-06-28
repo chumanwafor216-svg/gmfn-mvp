@@ -769,6 +769,141 @@ def test_member_can_read_economic_participation_but_admin_routes_are_hidden(
     assert "private member activity" in economic["boundary"]
 
 
+def test_network_presence_projects_public_readiness_without_publishing(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Network Market Domain",
+                "display_name": "Network Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "A market association coordinating trusted traders.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        response = client.get(f"/community-domains/{domain_id}/network-presence")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    presence = payload["network_presence"]
+    assert presence["editable"] is False
+    assert presence["identity"]["domain_name"] == "network-market-domain"
+    assert presence["identity"]["public_profile_present"] is True
+    assert presence["identity"]["public_profile"] == (
+        "A market association coordinating trusted traders."
+    )
+    assert presence["status"]["public_url_status"] == "open_product_decision"
+    assert presence["status"]["public_url"] is None
+    assert presence["status"]["verification_status"] == "unverified"
+    assert presence["status"]["marketplace_role"] == "core"
+    assert presence["primary_next_action"]["action_key"] == "prepare_verification"
+    assert "does not publish a public page" in presence["boundary"]
+    assert "/domains/:name" in presence["boundary"]
+    assert "/community-domains/:name" in presence["boundary"]
+    assert "create outward links" in presence["boundary"]
+    assert "verify the domain" in presence["boundary"]
+    assert "create marketplace exposure" in presence["boundary"]
+    assert "create vault links" in presence["boundary"]
+    assert "social Community bridge" in presence["boundary"]
+    assert "private member activity" in presence["boundary"]
+
+    lanes = {item["lane_key"]: item for item in presence["lanes"]}
+    assert lanes["public_identity"]["status"] == "ready"
+    assert lanes["public_identity"]["ready"] is True
+    assert lanes["verified_domain_badge"]["status"] == "unverified"
+    assert lanes["public_url"]["status"] == "open_product_decision"
+    assert lanes["public_url"]["ready"] is False
+    assert lanes["marketplace_exposure"]["status"] == "market_facing_template"
+    assert lanes["marketplace_exposure"]["ready"] is True
+    assert lanes["spotlight_exposure"]["status"] == "enabled_by_template"
+    assert lanes["vault_links"]["status"] == "not_created_in_this_slice"
+    assert lanes["social_community_bridge"]["status"] == "not_created_in_this_slice"
+    assert "finalize a public URL" in lanes["public_url"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert domain.clan_id is None
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_network_presence_but_admin_routes_and_profile_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "network-member@example.com")
+    outsider = _seed_user(3, "network-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Network School Domain",
+                "display_name": "Network School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+                "public_profile": "A school network with several branches.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_presence = client.get(
+            f"/community-domains/{domain_id}/network-presence"
+        )
+        assert member_presence.status_code == 200, member_presence.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_presence = client.get(
+            f"/community-domains/{domain_id}/network-presence"
+        )
+        assert outsider_presence.status_code == 403, outsider_presence.text
+        assert "active Community Domain members" in outsider_presence.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    presence = member_presence.json()["network_presence"]
+    lanes = {item["lane_key"]: item for item in presence["lanes"]}
+    assert presence["viewer"] == {"can_admin": False}
+    assert presence["identity"]["public_profile_present"] is True
+    assert presence["identity"]["public_profile"] is None
+    assert presence["primary_next_action"] == {
+        "action_key": "ask_domain_admin",
+        "label": "Ask a Community Domain admin to prepare public presence",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert lanes["public_identity"]["route_hint"] is None
+    assert lanes["verified_domain_badge"]["route_hint"] is None
+    assert lanes["public_url"]["route_hint"] is None
+    assert lanes["marketplace_exposure"]["route_hint"] is None
+    assert presence["status"]["public_url"] is None
+    assert presence["editable"] is False
+    assert "private member activity" in presence["boundary"]
+
+
 def test_roles_projection_counts_domain_and_node_roles_without_granting_permissions(
     client: TestClient,
 ):

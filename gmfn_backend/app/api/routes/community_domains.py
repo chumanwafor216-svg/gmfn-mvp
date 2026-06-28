@@ -415,6 +415,50 @@ COMMUNITY_DOMAIN_ECONOMIC_LANE_PRESETS: list[dict[str, Any]] = [
         "requires_admin": True,
     },
 ]
+COMMUNITY_DOMAIN_NETWORK_PRESENCE_LANE_PRESETS: list[dict[str, Any]] = [
+    {
+        "lane_key": "public_identity",
+        "label": "Public identity",
+        "summary": "Whether the domain has enough public-facing identity text to explain who it is.",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "verified_domain_badge",
+        "label": "Verified domain badge",
+        "summary": "Whether the institution can be presented as a verified Community Domain.",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "public_url",
+        "label": "Public URL",
+        "summary": "The final public route format for Community Domains is still an open product decision.",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "marketplace_exposure",
+        "label": "Marketplace exposure",
+        "summary": "Whether the institution is naturally market-facing inside GSN.",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "spotlight_exposure",
+        "label": "Spotlight exposure",
+        "summary": "Whether the template supports approved announcements or exposure.",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "vault_links",
+        "label": "Vault links",
+        "summary": "Whether controlled outward document links have been created for this domain.",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "social_community_bridge",
+        "label": "Social Community bridge",
+        "summary": "Whether this Community Domain has been deliberately linked to a lightweight social Community.",
+        "requires_admin": True,
+    },
+]
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
 COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_nodes": 50,
@@ -1273,6 +1317,148 @@ def _community_domain_economic_participation_payload(
             "finance records, verify trust evidence, activate billing, activate "
             "the Community Domain, create a social Community, or expose private "
             "member activity."
+        ),
+    }
+
+
+def _community_domain_network_presence_payload(
+    *,
+    domain: CommunityDomain,
+    can_admin: bool,
+) -> dict[str, Any]:
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    enabled_modules = set(template["default_modules"])
+    marketplace_role = _clean_role(template["marketplace_role"], "optional")
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    domain_status = _clean_role(domain.status, "draft")
+    public_profile_present = bool(_clean_str(domain.public_profile))
+    has_social_bridge = domain.clan_id is not None
+
+    status_by_lane = {
+        "public_identity": "ready" if public_profile_present else "profile_needed",
+        "verified_domain_badge": (
+            "verified" if verification_status == "verified" else verification_status
+        ),
+        "public_url": "open_product_decision",
+        "marketplace_exposure": (
+            "market_facing_template"
+            if marketplace_role in {"core", "supported"}
+            else f"{marketplace_role}_template"
+        ),
+        "spotlight_exposure": (
+            "enabled_by_template"
+            if "spotlight" in enabled_modules
+            else "available_optional"
+        ),
+        "vault_links": "not_created_in_this_slice",
+        "social_community_bridge": (
+            "linked" if has_social_bridge else "not_created_in_this_slice"
+        ),
+    }
+    ready_by_lane = {
+        "public_identity": public_profile_present,
+        "verified_domain_badge": verification_status == "verified",
+        "public_url": False,
+        "marketplace_exposure": marketplace_role in {"core", "supported"},
+        "spotlight_exposure": "spotlight" in enabled_modules,
+        "vault_links": False,
+        "social_community_bridge": has_social_bridge,
+    }
+
+    def route_hint_for(*, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{int(domain.id)}"
+
+    lanes = []
+    for preset in COMMUNITY_DOMAIN_NETWORK_PRESENCE_LANE_PRESETS:
+        lane_key = preset["lane_key"]
+        lanes.append(
+            {
+                "lane_key": lane_key,
+                "label": preset["label"],
+                "summary": preset["summary"],
+                "status": status_by_lane[lane_key],
+                "ready": bool(ready_by_lane[lane_key]),
+                "route_hint": route_hint_for(
+                    requires_admin=bool(preset["requires_admin"])
+                ),
+                "requires_admin": bool(preset["requires_admin"]),
+                "admin_visible": bool(can_admin),
+                "boundary": (
+                    "Read-only network presence lane. This does not publish a "
+                    "public page, finalize a public URL, create outward links, "
+                    "verify the domain, create marketplace exposure, create "
+                    "Spotlight placement, create vault links, create a social "
+                    "Community bridge, or expose private member activity."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin",
+            "label": "Ask a Community Domain admin to prepare public presence",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not public_profile_present:
+        primary_next_action = {
+            "action_key": "complete_public_profile",
+            "label": "Complete the Community Domain public profile",
+            "route_hint": f"/community-domains/{int(domain.id)}",
+            "requires_admin": True,
+        }
+    elif verification_status != "verified":
+        primary_next_action = {
+            "action_key": "prepare_verification",
+            "label": "Prepare Community Domain authority verification",
+            "route_hint": f"/community-domains/{int(domain.id)}/verification-requirements",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_public_presence",
+            "label": "Review Community Domain public presence",
+            "route_hint": f"/community-domains/{int(domain.id)}",
+            "requires_admin": True,
+        }
+
+    return {
+        "identity": {
+            "domain_name": domain.domain_name,
+            "display_name": domain.display_name,
+            "domain_type": domain.domain_type,
+            "template_key": template["template_key"],
+            "public_profile_present": public_profile_present,
+            "public_profile": domain.public_profile if can_admin else None,
+        },
+        "status": {
+            "domain_status": domain_status,
+            "verification_status": verification_status,
+            "marketplace_role": marketplace_role,
+            "public_url_status": "open_product_decision",
+            "public_url": None,
+            "social_community_bridge_status": (
+                "linked" if has_social_bridge else "not_created_in_this_slice"
+            ),
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "viewer": {"can_admin": bool(can_admin)},
+        "editable": False,
+        "boundary": (
+            "Network presence is read-only guidance in this MVP slice. This "
+            "endpoint does not publish a public page, finalize whether public "
+            "Community Domain URLs use /domains/:name or /community-domains/:name, "
+            "create outward links, verify the domain, create marketplace exposure, "
+            "create Spotlight placement, create vault links, create a social "
+            "Community bridge, activate billing, activate the Community Domain, "
+            "or expose private member activity."
         ),
     }
 
@@ -3929,6 +4115,25 @@ def get_community_domain_economic_participation(
         "community_domain_id": int(domain.id),
         "economic_participation": _community_domain_economic_participation_payload(
             db,
+            domain=domain,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/network-presence", response_model=dict[str, Any])
+def get_community_domain_network_presence(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "network_presence": _community_domain_network_presence_payload(
             domain=domain,
             can_admin=can_admin,
         ),
