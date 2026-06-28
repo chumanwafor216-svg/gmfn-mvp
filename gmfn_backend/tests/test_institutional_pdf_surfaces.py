@@ -1,8 +1,12 @@
 from pathlib import Path
+from decimal import Decimal
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +14,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def read_service(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
+
+
+def _session():
+    from app.db.base import Base as CoreBase
+
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        future=True,
+    )
+    CoreBase.metadata.create_all(bind=engine)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
+    return engine, SessionLocal()
+
+
+def _assert_pdf_bytes(pdf: bytes) -> None:
+    assert isinstance(pdf, bytes)
+    assert pdf.startswith(b"%PDF-")
+    assert len(pdf) > 1000
+    assert b"%%EOF" in pdf[-128:]
 
 
 def test_shared_institutional_pdf_helper_exists():
@@ -137,6 +162,206 @@ def test_shared_institutional_pdf_footer_wraps_long_reader_boundary():
     max_width = width - (44 * mm)
     for line in footer_lines:
         assert stringWidth(line, "Helvetica", 8) <= max_width
+
+
+def test_generated_simple_evidence_pack_pdfs_return_valid_pdf_bytes(monkeypatch):
+    from app.db.models import Clan, Loan, User
+    from app.services import evidence_pack_pdf_service
+    from app.services.loan_evidence_pack_pdf_service import build_loan_evidence_pack_pdf
+    from app.services.user_evidence_pack_pdf_service import build_user_evidence_pack_pdf
+
+    engine, db = _session()
+    try:
+        user = User(
+            id=1,
+            email="paper-smoke@example.com",
+            hashed_password="x",
+            role="user",
+            gmfn_id="GSN-U-PAPER-001",
+            trust_score=74,
+            trust_band="B",
+        )
+        clan = Clan(id=1, name="GSN Paper Smoke Community", community_code="GSN-C-PAPER-001")
+        loan = Loan(
+            id=1,
+            borrower_user_id=1,
+            clan_id=1,
+            amount=Decimal("25000.00"),
+            currency="NGN",
+            status="pending",
+        )
+        db.add_all([user, clan, loan])
+        db.commit()
+
+        monkeypatch.setattr(
+            evidence_pack_pdf_service,
+            "get_invite_analytics",
+            lambda db, clan_id, top_n=10: {
+                "summary": {
+                    "invites_created": 0,
+                    "joins_via_invite": 0,
+                    "invites_revoked": 0,
+                    "unique_invites_used": 0,
+                    "conversion_rate": 0,
+                },
+                "top_inviters": [],
+            },
+        )
+        monkeypatch.setattr(evidence_pack_pdf_service, "get_recent_invite_joins", lambda db, clan_id, limit=20: [])
+        monkeypatch.setattr(evidence_pack_pdf_service, "get_trust_events_timeline", lambda db, clan_id, limit=300: [])
+
+        _assert_pdf_bytes(evidence_pack_pdf_service.build_clan_evidence_pack_pdf(db, clan_id=1))
+        _assert_pdf_bytes(build_loan_evidence_pack_pdf(db, loan_id=1))
+        _assert_pdf_bytes(build_user_evidence_pack_pdf(db, user_id=1))
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_generated_trustslip_and_timeline_pdfs_return_valid_pdf_bytes(monkeypatch):
+    from app.db.models import User
+    from app.services.trust_slip_evidence_pdf_service import build_trust_slip_pdf
+    from app.services import trust_timeline_pdf_service
+
+    engine, db = _session()
+    try:
+        user = User(
+            id=2,
+            email="timeline-smoke@example.com",
+            hashed_password="x",
+            role="user",
+            gmfn_id="GSN-U-PAPER-002",
+            trust_score=81,
+            trust_band="A",
+        )
+        db.add(user)
+        db.commit()
+
+        trustslip_summary = {
+            "user_id": 2,
+            "gmfn_id": "GSN-U-PAPER-002",
+            "lifetime_trust": "1200.00",
+            "standing_score": "81",
+            "trust_slip_limit": "50000.00",
+            "cci_score": "78",
+            "cci_band": "B",
+            "sponsor_count": 3,
+            "evidence_summary": {
+                "capacity_context": {
+                    "available_guarantee_capacity": "100000.00",
+                    "current_locked_guarantees": "20000.00",
+                    "overexposure_ratio": "0.20",
+                    "risk_level": "controlled",
+                },
+                "readiness_context": {
+                    "recommendation": "review current context",
+                    "readiness_score": "76",
+                    "estimated_guarantee_gap": "10000.00",
+                    "capacity_ratio": "0.90",
+                },
+            },
+            "counts": {
+                "full_repayments": 4,
+                "guarantor_success": 2,
+                "missed_payments": 0,
+                "defaults": 0,
+                "fraud_flags": 0,
+            },
+        }
+
+        monkeypatch.setattr(
+            trust_timeline_pdf_service,
+            "get_trust_slip_payload",
+            lambda db, user_id: {
+                "gmfn_id": "GSN-U-PAPER-002",
+                "generated_at": "2026-06-28T07:00:00+00:00",
+                "phone_verified": True,
+                "trust_score": "81",
+                "cci_score": "78",
+                "cci_band": "B",
+                "code": "TS-GSN-PAPER-002",
+                "trust_limit": "50000.00",
+                "currency": "NGN",
+                "merchant_visibility_level": "standard",
+                "status": "active",
+                "expires_at": "2026-07-05T07:00:00+00:00",
+                "evidence_summary": trustslip_summary["evidence_summary"],
+                "sponsors": [],
+            },
+        )
+        monkeypatch.setattr(trust_timeline_pdf_service, "_load_events", lambda db, user_id, limit: [])
+
+        _assert_pdf_bytes(build_trust_slip_pdf(db, trustslip_summary, pack_meta={}))
+        _assert_pdf_bytes(trust_timeline_pdf_service.build_trust_timeline_pdf(db, user_id=2, limit=5))
+    finally:
+        db.close()
+        engine.dispose()
+
+
+def test_generated_report_pdfs_return_valid_pdf_bytes():
+    from app.db.models import Clan, Loan, User
+    from app.services.reports_service import build_clan_exposure_report_pdf, build_loan_trust_report_pdf
+
+    borrower = User(
+        id=3,
+        email="report-smoke@example.com",
+        hashed_password="x",
+        role="user",
+        gmfn_id="GSN-U-PAPER-003",
+    )
+    clan = Clan(id=3, name="GSN Report Smoke Community", community_code="GSN-C-PAPER-003")
+    loan = Loan(
+        id=3,
+        borrower_user_id=3,
+        clan_id=3,
+        amount=Decimal("30000.00"),
+        currency="NGN",
+        status="pending",
+        pool_used=Decimal("5000.00"),
+        guarantee_gap=Decimal("25000.00"),
+        guarantors_required=2,
+    )
+    exposure_rows = [
+        {
+            "user_id": 3,
+            "email": "report-smoke@example.com",
+            "gmfn_id": "GSN-U-PAPER-003",
+            "pool_balance": "5000.00",
+            "exposure": "0.00",
+            "available": "5000.00",
+        }
+    ]
+
+    _assert_pdf_bytes(
+        build_loan_trust_report_pdf(
+            loan=loan,
+            clan=clan,
+            borrower=borrower,
+            guarantors=[],
+            repayments=[],
+            trust_events=[],
+            user_email_by_id={3: "report-smoke@example.com"},
+            clan_exposure_rows=exposure_rows,
+            borrower_trust_score={
+                "band": "B",
+                "standing_score": "74",
+                "level_label": "Established",
+                "lifetime_trust": "1200.00",
+                "recency_factor": "1.00",
+                "counts": {},
+                "gains": {},
+                "penalties": {},
+            },
+            guarantor_trust_scores={},
+        )
+    )
+    _assert_pdf_bytes(
+        build_clan_exposure_report_pdf(
+            clan_id=3,
+            clan_name="GSN Report Smoke Community",
+            clan_exposure_rows=exposure_rows,
+        )
+    )
 
 
 def test_simple_evidence_pdfs_use_gsn_institutional_shell():
