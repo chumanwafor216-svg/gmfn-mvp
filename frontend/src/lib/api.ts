@@ -2468,6 +2468,15 @@ export async function getCommunityDomainRecordPrivacyMap(
   );
 }
 
+export async function getCommunityDomainConfigurationMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/configuration-map"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

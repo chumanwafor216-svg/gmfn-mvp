@@ -7350,6 +7350,327 @@ def _community_domain_record_privacy_map_payload(
     }
 
 
+def _community_domain_configuration_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    blueprint = _community_domain_template_operating_blueprint_payload(
+        template=template
+    )
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    public_profile_present = bool(_clean_str(domain.public_profile))
+    module_keys = list(template.get("default_modules") or [])
+    node_presets = list(blueprint.get("node_presets") or [])
+    role_presets = list(blueprint.get("role_presets") or [])
+    policy_presets = list(blueprint.get("policy_presets") or [])
+    activity_lanes = list(blueprint.get("activity_lanes") or [])
+
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    active_nodes = [
+        node for node in nodes if _clean_role(node.status, "active") == "active"
+    ]
+    active_non_root_nodes = [
+        node for node in active_nodes if node.parent_node_id is not None
+    ]
+    observed_node_kinds = sorted(
+        {
+            _clean_role(node.node_kind, "administrative")
+            for node in active_non_root_nodes
+        }
+    )
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .count()
+    )
+    active_evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .count()
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: Optional[int],
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": count,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "template_preset",
+            "Template preset",
+            "selected",
+            True,
+            1,
+            "Use the selected society-fit template as the configurable starting point.",
+            route_suffix="/institutional-profile",
+            requires_admin=False,
+            boundary=(
+                "Template preset signal only. This does not create a custom "
+                "schema, custom tenant, or separate product fork."
+            ),
+        ),
+        lane(
+            "identity_configuration",
+            "Identity configuration",
+            "profile_ready" if public_profile_present else "profile_needed",
+            public_profile_present,
+            1 if public_profile_present else 0,
+            "Keep name, public-safe profile, country, and region clear before wider rollout.",
+            route_suffix="/network-presence",
+            requires_admin=False,
+            boundary=(
+                "Identity configuration only. This does not verify authority, "
+                "publish a public page, or finalize public URL format."
+            ),
+        ),
+        lane(
+            "structure_configuration",
+            "Structure configuration",
+            "configured" if active_non_root_nodes else "root_only",
+            bool(active_non_root_nodes),
+            len(active_non_root_nodes),
+            "Adjust branches, lines, departments, classes, chapters, or committees using generic node records.",
+            route_suffix="/rollout-tree",
+            requires_admin=False,
+            boundary=(
+                "Structure configuration signal only. This does not create nodes, "
+                "custom tables, custom hierarchy schemas, or separate domains."
+            ),
+        ),
+        lane(
+            "role_configuration",
+            "Role configuration",
+            "configured" if active_node_member_count else "presets_only",
+            bool(active_node_member_count),
+            int(active_node_member_count),
+            "Use role presets and node placements before requesting new role language.",
+            route_suffix="/roles",
+            requires_admin=True,
+            boundary=(
+                "Role configuration signal only. This does not create roles, "
+                "assign roles, grant permissions, or customize auth."
+            ),
+        ),
+        lane(
+            "governance_configuration",
+            "Governance configuration",
+            "policy_backed" if active_policy_count else "policy_needed",
+            bool(active_policy_count),
+            admin_count(active_policy_count),
+            "Use policy presets for approvals, evidence, and local review before custom workflow work.",
+            route_suffix="/governance-coverage",
+            requires_admin=True,
+            boundary=(
+                "Governance configuration signal only. This does not create "
+                "policy, decide reviews, apply reviews, or generate workflows."
+            ),
+        ),
+        lane(
+            "module_configuration",
+            "Module configuration",
+            "template_modules",
+            bool(module_keys),
+            len(module_keys),
+            "Use template modules as package defaults; optional modules remain planning until activation is designed.",
+            route_suffix="/service-settings",
+            requires_admin=True,
+            boundary=(
+                "Module configuration signal only. This does not enable modules, "
+                "persist settings, activate billing, or grant permissions."
+            ),
+        ),
+        lane(
+            "evidence_configuration",
+            "Evidence configuration",
+            "evidence_present" if active_evidence_count else "not_recorded",
+            bool(active_evidence_count),
+            admin_count(active_evidence_count),
+            "Treat evidence as controlled metadata until evidence upload/release workflows are intentionally live.",
+            route_suffix="/evidence-map",
+            requires_admin=True,
+            boundary=(
+                "Evidence configuration signal only. This does not upload files, "
+                "expose storage keys, publish proof, issue TrustSlips, or write "
+                "Trust Passport records."
+            ),
+        ),
+        lane(
+            "package_allowance_configuration",
+            "Package allowance configuration",
+            "pilot_allowances",
+            True,
+            1,
+            "Use capacity planning for package allowances; live billing and entitlement enforcement are not connected here.",
+            route_suffix="/capacity-plan",
+            requires_admin=False,
+            boundary=(
+                "Package allowance signal only. This does not create custom "
+                "billing packages, meter live usage, enforce limits, invoice, "
+                "or activate subscriptions."
+            ),
+        ),
+        lane(
+            "custom_schema_boundary",
+            "Custom schema boundary",
+            "configuration_not_schema_fork",
+            False,
+            0,
+            "Represent institutional differences through templates, nodes, roles, policies, modules, and evidence metadata first.",
+            route_suffix="/institutional-profile",
+            requires_admin=True,
+            boundary=(
+                "Custom schema boundary only. This does not create custom "
+                "database tables, custom fields, custom tenants, per-client code, "
+                "custom billing, custom permissions, or schema forks."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_configuration",
+            "label": "Ask a Community Domain admin to review configuration",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not public_profile_present:
+        primary_next_action = {
+            "action_key": "configure_domain_identity",
+            "label": "Configure public-safe Community Domain identity",
+            "route_hint": f"/community-domains/{domain_id}/network-presence",
+            "requires_admin": True,
+        }
+    elif not active_non_root_nodes:
+        primary_next_action = {
+            "action_key": "configure_operating_structure",
+            "label": "Configure branches, departments, lines, or units",
+            "route_hint": f"/community-domains/{domain_id}/rollout-tree",
+            "requires_admin": True,
+        }
+    elif not active_policy_count:
+        primary_next_action = {
+            "action_key": "configure_governance_policy",
+            "label": "Configure governance policy for this institution",
+            "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_configuration_boundaries",
+            "label": "Review configuration boundaries",
+            "route_hint": f"/community-domains/{domain_id}/institutional-profile",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": _clean_role(template.get("marketplace_role"), "optional"),
+        },
+        "blueprint": {
+            "node_preset_count": len(node_presets),
+            "role_preset_count": len(role_presets),
+            "policy_preset_count": len(policy_presets),
+            "activity_lane_count": len(activity_lanes),
+            "default_modules": module_keys,
+        },
+        "summary": {
+            "configuration_mode": "template_preset_configuration",
+            "custom_schema_status": "not_connected_in_this_slice",
+            "custom_tenant_status": "not_connected_in_this_slice",
+            "custom_billing_status": "not_connected_in_this_slice",
+            "custom_permission_status": "not_connected_in_this_slice",
+            "public_profile_present": public_profile_present,
+            "active_node_count": len(active_nodes),
+            "active_operating_unit_count": len(active_non_root_nodes),
+            "observed_node_kinds": observed_node_kinds if can_admin else None,
+            "active_member_count": int(active_member_count),
+            "active_node_member_count": int(active_node_member_count),
+            "active_policy_count": admin_count(active_policy_count),
+            "review_record_count": admin_count(review_count),
+            "active_evidence_count": admin_count(active_evidence_count),
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain configuration map is read-only configuration "
+            "planning. This endpoint does not create a custom schema, custom "
+            "tenant, custom billing package, custom permission model, custom "
+            "database table, custom field, per-client code fork, nodes, members, "
+            "roles, policies, reviews, evidence, module settings, payments, "
+            "entitlements, marketplace records, social Community links, TrustSlips, "
+            "Trust Passport records, public proof, or private record exposure."
+        ),
+    }
+
+
 def _community_domain_institutional_profile_payload(
     db: Session,
     *,
@@ -10493,6 +10814,27 @@ def get_community_domain_record_privacy_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "record_privacy_map": _community_domain_record_privacy_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/configuration-map", response_model=dict[str, Any])
+def get_community_domain_configuration_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "configuration_map": _community_domain_configuration_map_payload(
             db,
             domain=domain,
             current_user=current_user,

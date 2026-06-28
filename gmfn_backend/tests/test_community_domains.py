@@ -4987,6 +4987,254 @@ def test_member_can_read_record_privacy_map_but_admin_record_counts_are_hidden(
     assert "member directories" in privacy_map["boundary"]
 
 
+def test_configuration_map_projects_template_adjustment_without_schema_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "configuration-map-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Configuration Market Domain",
+                "display_name": "Configuration Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "Public-safe configuration profile.",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "configuration-evidence-review",
+                "action_key": "evidence.verify",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "line_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "evidence.verify",
+                "community_node_id": line_id,
+                "request_note": "Review configuration evidence privately.",
+                "payload": {"claim": "configuration readiness"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Configuration readiness note",
+                "file_name": "configuration-readiness.pdf",
+                "storage_key": "private/evidence/configuration-readiness.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/configuration-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    configuration = payload["configuration_map"]
+    assert configuration["editable"] is False
+    assert configuration["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert configuration["template"]["template_key"] == "market_cooperative"
+    assert configuration["template"]["marketplace_role"] == "core"
+    assert configuration["summary"]["configuration_mode"] == (
+        "template_preset_configuration"
+    )
+    assert configuration["summary"]["custom_schema_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert configuration["summary"]["custom_billing_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert configuration["summary"]["public_profile_present"] is True
+    assert configuration["summary"]["active_node_count"] == 2
+    assert configuration["summary"]["active_operating_unit_count"] == 1
+    assert configuration["summary"]["observed_node_kinds"] == ["market_line"]
+    assert configuration["summary"]["active_member_count"] == 2
+    assert configuration["summary"]["active_node_member_count"] == 1
+    assert configuration["summary"]["active_policy_count"] == 1
+    assert configuration["summary"]["review_record_count"] == 1
+    assert configuration["summary"]["active_evidence_count"] == 1
+    assert configuration["blueprint"]["node_preset_count"] >= 1
+    assert "shops" in configuration["blueprint"]["default_modules"]
+
+    lanes = {item["lane_key"]: item for item in configuration["lanes"]}
+    assert lanes["template_preset"]["status"] == "selected"
+    assert lanes["identity_configuration"]["status"] == "profile_ready"
+    assert lanes["structure_configuration"]["status"] == "configured"
+    assert lanes["role_configuration"]["status"] == "configured"
+    assert lanes["governance_configuration"]["status"] == "policy_backed"
+    assert lanes["module_configuration"]["status"] == "template_modules"
+    assert lanes["evidence_configuration"]["status"] == "evidence_present"
+    assert lanes["package_allowance_configuration"]["status"] == "pilot_allowances"
+    assert lanes["custom_schema_boundary"]["status"] == "configuration_not_schema_fork"
+    assert configuration["primary_next_action"] == {
+        "action_key": "review_configuration_boundaries",
+        "label": "Review configuration boundaries",
+        "route_hint": f"/community-domains/{domain_id}/institutional-profile",
+        "requires_admin": True,
+    }
+    assert "custom schema" in configuration["boundary"]
+    assert "custom billing package" in configuration["boundary"]
+    assert "per-client code fork" in configuration["boundary"]
+    assert "custom permission model" in configuration["boundary"]
+    assert "private record exposure" in configuration["boundary"]
+    assert "private/evidence/configuration-readiness.pdf" not in str(configuration)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_configuration_map_but_admin_configuration_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "configuration-map-visible-member@example.com")
+    outsider = _seed_user(3, "configuration-map-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Configuration School Domain",
+                "display_name": "Configuration School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert created_branch.status_code == 201, created_branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/configuration-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/configuration-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    configuration = member_map.json()["configuration_map"]
+    assert configuration["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert configuration["template"]["template_key"] == "school_multi_branch"
+    assert configuration["summary"]["configuration_mode"] == (
+        "template_preset_configuration"
+    )
+    assert configuration["summary"]["public_profile_present"] is False
+    assert configuration["summary"]["active_node_count"] == 2
+    assert configuration["summary"]["active_operating_unit_count"] == 1
+    assert configuration["summary"]["observed_node_kinds"] is None
+    assert configuration["summary"]["active_member_count"] == 2
+    assert configuration["summary"]["active_policy_count"] is None
+    assert configuration["summary"]["review_record_count"] is None
+    assert configuration["summary"]["active_evidence_count"] is None
+    assert configuration["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_configuration",
+        "label": "Ask a Community Domain admin to review configuration",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in configuration["lanes"]}
+    assert lanes["template_preset"]["route_hint"].endswith("/institutional-profile")
+    assert lanes["identity_configuration"]["route_hint"].endswith("/network-presence")
+    assert lanes["structure_configuration"]["route_hint"].endswith("/rollout-tree")
+    assert lanes["role_configuration"]["route_hint"] is None
+    assert lanes["governance_configuration"]["route_hint"] is None
+    assert lanes["module_configuration"]["route_hint"] is None
+    assert lanes["evidence_configuration"]["route_hint"] is None
+    assert lanes["custom_schema_boundary"]["route_hint"] is None
+    assert "custom schema" in configuration["boundary"]
+    assert "schema forks" in lanes["custom_schema_boundary"]["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):
