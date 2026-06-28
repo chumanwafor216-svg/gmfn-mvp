@@ -5178,6 +5178,333 @@ def test_member_can_read_node_evidence_authority_map_but_admin_counts_are_hidden
     assert "private member activity" in evidence_map["boundary"]
 
 
+def test_node_communication_map_projects_local_notice_readiness_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    ready_admin = _seed_user(2, "node-communication-ready-admin@example.com")
+    ready_member = _seed_user(3, "node-communication-ready-member@example.com")
+    public_admin = _seed_user(4, "node-communication-public-admin@example.com")
+    public_member = _seed_user(5, "node-communication-public-member@example.com")
+    no_admin_member = _seed_user(6, "node-communication-no-admin-member@example.com")
+    audience_admin = _seed_user(7, "node-communication-audience-admin@example.com")
+    policy_admin = _seed_user(8, "node-communication-policy-admin@example.com")
+    policy_member = _seed_user(9, "node-communication-policy-member@example.com")
+    signal_admin = _seed_user(10, "node-communication-signal-admin@example.com")
+    signal_member = _seed_user(11, "node-communication-signal-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Communication School",
+                "display_name": "Node Communication School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        node_specs = [
+            ("Notice Desk", "department", "notice_department", "members"),
+            ("Public Notice Desk", "department", "public_notice_department", "public"),
+            ("Parent Notice Circle", "committee", "parent_notice_circle", "members"),
+            ("Emergency Desk", "department", "emergency_notice_department", "members"),
+            ("Class Notice Desk", "department", "class_notice_department", "members"),
+            ("Alumni Notice Desk", "department", "alumni_notice_department", "members"),
+        ]
+        node_ids: dict[str, int] = {}
+        for name, node_type, node_kind, visibility in node_specs:
+            node = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json={
+                    "name": name,
+                    "parent_node_id": root_node_id,
+                    "node_type": node_type,
+                    "node_kind": node_kind,
+                    "visibility_policy": visibility,
+                },
+            )
+            assert node.status_code == 201, node.text
+            node_ids[name] = node.json()["node"]["id"]
+
+        users = [
+            ready_admin,
+            ready_member,
+            public_admin,
+            public_member,
+            no_admin_member,
+            audience_admin,
+            policy_admin,
+            policy_member,
+            signal_admin,
+            signal_member,
+        ]
+        for user in users:
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (node_ids["Notice Desk"], ready_admin.id, "department_admin"),
+            (node_ids["Notice Desk"], ready_member.id, "member"),
+            (node_ids["Public Notice Desk"], public_admin.id, "department_admin"),
+            (node_ids["Public Notice Desk"], public_member.id, "member"),
+            (node_ids["Parent Notice Circle"], no_admin_member.id, "member"),
+            (node_ids["Emergency Desk"], audience_admin.id, "department_admin"),
+            (node_ids["Class Notice Desk"], policy_admin.id, "department_admin"),
+            (node_ids["Class Notice Desk"], policy_member.id, "member"),
+            (node_ids["Alumni Notice Desk"], signal_admin.id, "department_admin"),
+            (node_ids["Alumni Notice Desk"], signal_member.id, "member"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        for name, suffix in (
+            ("Notice Desk", "ready"),
+            ("Public Notice Desk", "public"),
+            ("Alumni Notice Desk", "signal"),
+        ):
+            policy = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json={
+                    "policy_key": f"node-communication-{suffix}-policy",
+                    "action_key": "notice.publish",
+                    "community_node_id": node_ids[name],
+                    "scope_type": "node",
+                    "review_mode": "node_admin_review",
+                    "required_role": "department_admin",
+                },
+            )
+            assert policy.status_code == 201, policy.text
+
+        for name, suffix in (
+            ("Notice Desk", "ready"),
+            ("Public Notice Desk", "public"),
+        ):
+            review = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "notice.publish",
+                    "community_node_id": node_ids[name],
+                    "request_note": f"Review local notice readiness for {suffix}.",
+                    "payload": {"claim": f"{suffix} notice posture"},
+                },
+            )
+            assert review.status_code == 201, review.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/node-communication-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    communication_map = payload["node_communication_map"]
+    assert communication_map["editable"] is False
+    assert communication_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert communication_map["counts"] == {
+        "nodes": 7,
+        "non_root_nodes": 6,
+        "active_node_memberships": 10,
+        "active_policies": 3,
+        "review_records": 2,
+        "local_communication_ready": 1,
+        "public_notice_review_needed": 1,
+        "needs_local_communicator": 1,
+        "needs_audience_signal": 1,
+        "needs_communication_policy": 1,
+        "needs_notice_review_signal": 1,
+        "inactive": 0,
+        "notices_created": 0,
+        "notifications_sent": 0,
+        "announcements_published": 0,
+        "emergency_notices_sent": 0,
+        "member_lists_exposed": 0,
+    }
+    assert communication_map["status_counts"] == {
+        "local_communication_ready": 1,
+        "public_notice_review_needed": 1,
+        "needs_local_communicator": 1,
+        "needs_audience_signal": 1,
+        "needs_communication_policy": 1,
+        "needs_notice_review_signal": 1,
+    }
+    assert communication_map["primary_next_action"] == {
+        "action_key": "review_public_notice_exposure",
+        "label": "Review public notice exposure",
+        "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+        "requires_admin": True,
+    }
+    assert "read-only local communication planning" in communication_map["boundary"]
+    assert "create notices" in communication_map["boundary"]
+    assert "send notifications" in communication_map["boundary"]
+    assert "publish announcements" in communication_map["boundary"]
+    assert "schedule meetings" in communication_map["boundary"]
+    assert "emergency notices" in communication_map["boundary"]
+    assert "expose member lists" in communication_map["boundary"]
+
+    flat = {item["node"]["name"]: item for item in communication_map["flat_nodes"]}
+    assert flat["Node Communication School"]["communication_status"] == "domain_root"
+    assert flat["Notice Desk"]["communication_status"] == "local_communication_ready"
+    assert flat["Notice Desk"]["ready_for_local_communication"] is True
+    assert flat["Notice Desk"]["local_member_count"] == 2
+    assert flat["Notice Desk"]["local_communicator_count"] == 1
+    assert flat["Notice Desk"]["local_policy_count"] == 1
+    assert flat["Notice Desk"]["review_record_count"] == 1
+    assert flat["Notice Desk"]["notice_status"] == "not_created_in_this_slice"
+    assert flat["Notice Desk"]["notification_status"] == "not_sent_in_this_slice"
+    assert flat["Notice Desk"]["announcement_status"] == (
+        "not_published_in_this_slice"
+    )
+    assert flat["Public Notice Desk"]["communication_status"] == (
+        "public_notice_review_needed"
+    )
+    assert flat["Public Notice Desk"]["admin_action_route_hint"].endswith(
+        "/record-privacy-map"
+    )
+    assert flat["Parent Notice Circle"]["communication_status"] == (
+        "needs_local_communicator"
+    )
+    assert flat["Emergency Desk"]["communication_status"] == "needs_audience_signal"
+    assert flat["Class Notice Desk"]["communication_status"] == (
+        "needs_communication_policy"
+    )
+    assert flat["Alumni Notice Desk"]["communication_status"] == (
+        "needs_notice_review_signal"
+    )
+    assert flat["Alumni Notice Desk"]["emergency_notice_status"] == (
+        "not_sent_in_this_slice"
+    )
+    assert flat["Alumni Notice Desk"]["member_list_status"] == (
+        "not_exposed_in_this_slice"
+    )
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_communication_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-communication-visible-member@example.com")
+    outsider = _seed_user(3, "node-communication-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Communication Member School",
+                "display_name": "Node Communication Member School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Notice Desk",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "notice_department",
+                "visibility_policy": "members",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/node-communication-map"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-communication-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    communication_map = member_map.json()["node_communication_map"]
+    assert communication_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert communication_map["counts"]["nodes"] == 2
+    assert communication_map["counts"]["non_root_nodes"] == 1
+    assert communication_map["counts"]["active_node_memberships"] is None
+    assert communication_map["counts"]["active_policies"] is None
+    assert communication_map["counts"]["review_records"] is None
+    assert communication_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_communication",
+        "label": "Ask a Community Domain admin to review local communication",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in communication_map["flat_nodes"]}
+    assert flat["Primary Notice Desk"]["communication_status"] == (
+        "needs_local_communicator"
+    )
+    assert flat["Primary Notice Desk"]["local_member_count"] is None
+    assert flat["Primary Notice Desk"]["local_communicator_count"] is None
+    assert flat["Primary Notice Desk"]["local_policy_count"] is None
+    assert flat["Primary Notice Desk"]["review_record_count"] is None
+    assert flat["Primary Notice Desk"]["admin_action_route_hint"] is None
+    assert flat["Primary Notice Desk"]["notification_status"] == (
+        "not_sent_in_this_slice"
+    )
+    assert "send notifications" in communication_map["boundary"]
+    assert "expose member lists" in communication_map["boundary"]
+    assert "private member activity" in communication_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):

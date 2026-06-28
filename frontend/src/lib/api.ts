@@ -2459,6 +2459,15 @@ export async function getCommunityDomainNodeEvidenceAuthorityMap(
   );
 }
 
+export async function getCommunityDomainNodeCommunicationMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/node-communication-map"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainGovernanceCoverage(
   communityDomainId: number | string
 ): Promise<any> {
