@@ -258,6 +258,16 @@ function routeTarget(
   }).to as string;
 }
 
+function isMerchantReleaseControlTarget(targetId: unknown): boolean {
+  const normalized = safeStr(targetId).replace(/^#/, "").toLowerCase();
+  return (
+    normalized === OWNER_SHOP_HASHES.merchantRelease ||
+    normalized.includes("merchant") ||
+    normalized.includes("verify") ||
+    normalized.includes("release")
+  );
+}
+
 const SHOP_CONTROL_SHORTCUT_ICONS: Record<ShopControlShortcutId, GsnIconName> = {
   "shop-billboard": "shop",
   "shop-diaries": "document",
@@ -947,6 +957,19 @@ export default function ShopControlPage() {
       hash: item.hash,
     }),
   }));
+  const merchantReleaseHashFocused = useMemo(() => {
+    const sectionParam = new URLSearchParams(location.search).get("section");
+    const rawTargetId =
+      safeStr(sectionParam) ||
+      String(location.hash || "").replace(/^#/, "").trim();
+    if (!rawTargetId) return false;
+
+    try {
+      return isMerchantReleaseControlTarget(decodeURIComponent(rawTargetId));
+    } catch {
+      return isMerchantReleaseControlTarget(rawTargetId);
+    }
+  }, [location.hash, location.search]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3412,11 +3435,14 @@ export default function ShopControlPage() {
         id="shop-control-unlocks"
         style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 55%, #EAF4FF 78%, #FFF7D8 100%)")}
       >
-        <div style={sectionLabel()}>Optional paid tools</div>
+        <div style={sectionLabel()}>
+          {merchantReleaseHashFocused ? "Merchant Release Rail" : "Optional paid tools"}
+        </div>
 
         <div style={{ marginTop: 10, ...helperText(), maxWidth: 900 }}>
-          These are optional. Use them only when you need private viewing,
-          public verification, or paid spotlight priority.
+          {merchantReleaseHashFocused
+            ? "This is a paid verification and release-evidence activity. Start here when a merchant or outside buyer needs a signed rail for the minimum trade packet."
+            : "These are optional. Use them only when you need private viewing, public verification, or paid spotlight priority."}
         </div>
 
         <div
@@ -3435,6 +3461,7 @@ export default function ShopControlPage() {
               ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF9E7 100%)"),
               border: "1px solid rgba(212,175,55,0.12)",
               boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
+              order: merchantReleaseHashFocused ? 2 : 0,
             }}
           >
             <div style={sectionLabel()}>{labelWithIcon("vault", "Vault Control")}</div>
@@ -3558,7 +3585,16 @@ export default function ShopControlPage() {
 
           <div
             id="shop-control-merchant-release-rail"
-            style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}
+            style={{
+              ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+              border: merchantReleaseHashFocused
+                ? "1px solid rgba(214,170,69,0.28)"
+                : "1px solid rgba(8,35,58,0.08)",
+              boxShadow: merchantReleaseHashFocused
+                ? "0 18px 38px rgba(6,24,39,0.14), inset 0 1px 0 rgba(255,255,255,0.9)"
+                : "0 16px 34px rgba(2,12,27,0.08)",
+              order: merchantReleaseHashFocused ? 1 : 0,
+            }}
           >
             <div style={sectionLabel()}>Verification</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>

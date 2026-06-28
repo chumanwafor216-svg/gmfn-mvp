@@ -349,6 +349,16 @@ assertOwnerShopHandlesContains(
 );
 
 assertShopContains(
+  /function isMerchantReleaseControlTarget[\s\S]*?OWNER_SHOP_HASHES\.merchantRelease[\s\S]*?normalized\.includes\("merchant"\)[\s\S]*?normalized\.includes\("verify"\)[\s\S]*?normalized\.includes\("release"\)[\s\S]*?const merchantReleaseHashFocused = useMemo[\s\S]*?isMerchantReleaseControlTarget\(decodeURIComponent\(rawTargetId\)\)/,
+  "Shop Control must detect Merchant Release hash focus from either hash or section query."
+);
+
+assertShopContains(
+  /merchantReleaseHashFocused \? "Merchant Release Rail" : "Optional paid tools"[\s\S]*?This is a paid verification and release-evidence activity[\s\S]*?order: merchantReleaseHashFocused \? 2 : 0[\s\S]*?id="shop-control-merchant-release-rail"[\s\S]*?order: merchantReleaseHashFocused \? 1 : 0/,
+  "Merchant Release hash focus must lead with the Merchant Release rail instead of only showing the generic optional paid tools page."
+);
+
+assertShopContains(
   /setActiveOwnerLayer\(ownerShopLayerForTarget\(targetId\)\)/,
   "Shop Control must use the shared ownerShopLayerForTarget hash router."
 );
