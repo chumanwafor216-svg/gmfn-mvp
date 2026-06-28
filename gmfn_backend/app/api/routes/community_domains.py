@@ -6924,6 +6924,290 @@ def _community_domain_node_service_map_payload(
     }
 
 
+def _community_domain_node_privacy_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    active_evidence = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .all()
+    )
+
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    for node in nodes:
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        policy_node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(policy_node_id, []).append(policy)
+
+    reviews_by_node: dict[Optional[int], int] = {}
+    for review in reviews:
+        review_node_id = (
+            int(review.community_node_id)
+            if review.community_node_id is not None
+            else None
+        )
+        reviews_by_node[review_node_id] = reviews_by_node.get(review_node_id, 0) + 1
+
+    evidence_by_node: dict[Optional[int], int] = {}
+    for evidence in active_evidence:
+        evidence_node_id = (
+            int(evidence.community_node_id)
+            if evidence.community_node_id is not None
+            else None
+        )
+        evidence_by_node[evidence_node_id] = evidence_by_node.get(evidence_node_id, 0) + 1
+
+    visibility_policy_counts: dict[str, int] = {}
+    for node in nodes:
+        policy_key = _clean_role(node.visibility_policy, "members")
+        visibility_policy_counts[policy_key] = visibility_policy_counts.get(policy_key, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def privacy_status_for(node: CommunityNode) -> tuple[str, str, bool]:
+        if node.parent_node_id is None:
+            return (
+                "domain_root",
+                "Root institution record; local visibility belongs to child operating units.",
+                False,
+            )
+        if _clean_role(node.status, "active") != "active":
+            return (
+                "inactive",
+                "Reactivate this operating unit before relying on its visibility boundary.",
+                False,
+            )
+        visibility = _clean_role(node.visibility_policy, "members")
+        if visibility == "admins":
+            return (
+                "admin_restricted",
+                "This unit is restricted to admins; keep rosters and records private unless policy changes.",
+                True,
+            )
+        if visibility == "node_members":
+            return (
+                "node_private",
+                "This unit is visible to its local members; avoid exposing its roster outside the unit.",
+                True,
+            )
+        if visibility == "members":
+            return (
+                "member_visible",
+                "This unit is visible to domain members, but its private records remain protected.",
+                True,
+            )
+        if visibility in {"public", "network", "external"}:
+            return (
+                "public_review_needed",
+                "Review public exposure before treating this unit as externally visible.",
+                False,
+            )
+        return (
+            "unknown_visibility",
+            "Review this unit's visibility policy before exposing local records.",
+            False,
+        )
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        local_memberships = memberships_by_node.get(node_id, [])
+        local_admin_count = sum(
+            1
+            for row in local_memberships
+            if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+        )
+        local_policy_count = len(policies_by_node.get(node_id, []))
+        node_review_count = reviews_by_node.get(node_id, 0)
+        node_evidence_count = evidence_by_node.get(node_id, 0)
+        privacy_status, next_step, safe_default = privacy_status_for(node)
+        if privacy_status in {"public_review_needed", "unknown_visibility"}:
+            admin_route = "/record-privacy-map"
+        elif privacy_status == "admin_restricted":
+            admin_route = f"/nodes/{node_id}/operating-summary"
+        else:
+            admin_route = "/nodes/tree"
+
+        item = {
+            "node": _node_payload(node),
+            "privacy_status": privacy_status,
+            "safe_default_visibility": safe_default,
+            "visibility_policy": _clean_role(node.visibility_policy, "members"),
+            "inherits_parent_policy": bool(node.inherits_parent_policy),
+            "direct_child_count": len(child_nodes),
+            "local_member_count": admin_count(len(local_memberships)),
+            "local_admin_count": admin_count(local_admin_count),
+            "local_policy_count": admin_count(local_policy_count),
+            "review_record_count": admin_count(node_review_count),
+            "evidence_record_count": admin_count(node_evidence_count),
+            "public_page_status": "not_published_in_this_slice",
+            "member_list_status": "not_exposed_in_this_slice",
+            "storage_key_status": "not_exposed_in_this_slice",
+            "cross_domain_sharing_status": "not_connected_in_this_slice",
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "admin_action_route_hint": route_hint(admin_route, requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only local privacy item. This does not change permissions, "
+                "publish hierarchy, expose member lists, expose node rosters, "
+                "expose storage keys, share records across institutions, create "
+                "a public page, or expose private member activity."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    tree = [node_item(root) for root in children_by_parent.get(None, [])]
+    non_root_items = [
+        item for item in flat_nodes if item["node"]["parent_node_id"] is not None
+    ]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["privacy_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if not non_root_items:
+        primary_next_action = {
+            "action_key": "map_operating_units_before_local_privacy",
+            "label": "Map operating units before local privacy planning",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("public_review_needed", 0):
+        primary_next_action = {
+            "action_key": "review_public_node_visibility",
+            "label": "Review public node visibility",
+            "route_hint": route_hint("/record-privacy-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("unknown_visibility", 0):
+        primary_next_action = {
+            "action_key": "review_unknown_node_visibility",
+            "label": "Review unknown node visibility policies",
+            "route_hint": route_hint("/nodes/tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_record_privacy_boundaries",
+            "label": "Review Community Domain privacy boundaries",
+            "route_hint": route_hint("/record-privacy-map"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_node_privacy",
+            "label": "Ask a Community Domain admin to review local privacy",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "visibility_policy_counts": visibility_policy_counts if can_admin else None,
+            "active_node_memberships": admin_count(len(active_node_memberships)),
+            "active_policies": admin_count(len(active_policies)),
+            "review_records": admin_count(len(reviews)),
+            "active_evidence_records": admin_count(len(active_evidence)),
+            "member_visible": status_counts.get("member_visible", 0),
+            "node_private": status_counts.get("node_private", 0),
+            "admin_restricted": status_counts.get("admin_restricted", 0),
+            "public_review_needed": status_counts.get("public_review_needed", 0),
+            "unknown_visibility": status_counts.get("unknown_visibility", 0),
+            "inactive": status_counts.get("inactive", 0),
+            "public_pages": 0,
+            "published_hierarchies": 0,
+            "exposed_member_lists": 0,
+            "cross_domain_shares": 0,
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain node privacy map is read-only local privacy "
+            "planning. It shows whether branches, lines, classes, departments, "
+            "committees, chapters, or other operating units are member-visible, "
+            "node-private, admin-restricted, or need public-exposure review. It "
+            "does not change permissions, publish hierarchy, expose member "
+            "lists, expose node rosters, expose review payloads, expose storage "
+            "keys, share records across institutions, create public pages, "
+            "create marketplace records, create finance records, issue "
+            "TrustSlips, write Trust Passport entries, or expose private member "
+            "activity."
+        ),
+    }
+
+
 def _community_domain_governance_coverage_payload(
     db: Session,
     *,
@@ -12752,6 +13036,25 @@ def get_community_domain_node_service_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "node_service_map": _community_domain_node_service_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/node-privacy-map", response_model=dict[str, Any])
+def get_community_domain_node_privacy_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node_privacy_map": _community_domain_node_privacy_map_payload(
             db,
             domain=domain,
             current_user=current_user,

@@ -3744,6 +3744,332 @@ def test_member_can_read_node_service_map_but_admin_counts_are_hidden(
     assert "private member activity" in service_map["boundary"]
 
 
+def test_node_privacy_map_projects_local_visibility_without_permission_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "node-privacy-line-admin@example.com")
+    line_member = _seed_user(3, "node-privacy-line-member@example.com")
+    section_member = _seed_user(4, "node-privacy-section-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Privacy Market Domain",
+                "display_name": "Node Privacy Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+                "visibility_policy": "members",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        section = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Phone Accessories Section",
+                "parent_node_id": line_id,
+                "node_type": "section",
+                "node_kind": "market_section",
+                "visibility_policy": "node_members",
+            },
+        )
+        assert section.status_code == 201, section.text
+        section_id = section.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Executive Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "governance_committee",
+                "visibility_policy": "admins",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+        committee_id = committee.json()["node"]["id"]
+
+        public_unit = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Public Showcase Unit",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "market_branch",
+                "visibility_policy": "public",
+            },
+        )
+        assert public_unit.status_code == 201, public_unit.text
+
+        for user in (line_admin, line_member, section_member):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (line_id, line_admin.id, "node_admin"),
+            (line_id, line_member.id, "member"),
+            (section_id, section_member.id, "member"),
+            (committee_id, line_admin.id, "node_admin"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-privacy-line-policy",
+                "action_key": "privacy.review",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "node_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "privacy.review",
+                "community_node_id": line_id,
+                "request_note": "Review local privacy evidence.",
+                "payload": {"claim": "privacy posture"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Privacy posture note",
+                "file_name": "node-privacy.pdf",
+                "storage_key": "private/evidence/node-privacy.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/node-privacy-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    privacy_map = payload["node_privacy_map"]
+    assert privacy_map["editable"] is False
+    assert privacy_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert privacy_map["counts"] == {
+        "nodes": 5,
+        "non_root_nodes": 4,
+        "visibility_policy_counts": {
+            "members": 2,
+            "node_members": 1,
+            "admins": 1,
+            "public": 1,
+        },
+        "active_node_memberships": 4,
+        "active_policies": 1,
+        "review_records": 1,
+        "active_evidence_records": 1,
+        "member_visible": 1,
+        "node_private": 1,
+        "admin_restricted": 1,
+        "public_review_needed": 1,
+        "unknown_visibility": 0,
+        "inactive": 0,
+        "public_pages": 0,
+        "published_hierarchies": 0,
+        "exposed_member_lists": 0,
+        "cross_domain_shares": 0,
+    }
+    assert privacy_map["primary_next_action"] == {
+        "action_key": "review_public_node_visibility",
+        "label": "Review public node visibility",
+        "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+        "requires_admin": True,
+    }
+    assert "read-only local privacy planning" in privacy_map["boundary"]
+    assert "does not change permissions" in privacy_map["boundary"]
+    assert "publish hierarchy" in privacy_map["boundary"]
+    assert "expose member lists" in privacy_map["boundary"]
+    assert "expose node rosters" in privacy_map["boundary"]
+    assert "expose storage keys" in privacy_map["boundary"]
+    assert "share records across institutions" in privacy_map["boundary"]
+    assert "Trust Passport entries" in privacy_map["boundary"]
+    assert "private/evidence/node-privacy.pdf" not in str(privacy_map)
+
+    flat = {item["node"]["name"]: item for item in privacy_map["flat_nodes"]}
+    assert flat["Node Privacy Market Domain"]["privacy_status"] == "domain_root"
+    assert flat["Electronics Line"]["privacy_status"] == "member_visible"
+    assert flat["Electronics Line"]["local_member_count"] == 2
+    assert flat["Electronics Line"]["local_admin_count"] == 1
+    assert flat["Electronics Line"]["local_policy_count"] == 1
+    assert flat["Electronics Line"]["review_record_count"] == 1
+    assert flat["Electronics Line"]["evidence_record_count"] == 1
+    assert flat["Phone Accessories Section"]["privacy_status"] == "node_private"
+    assert flat["Phone Accessories Section"]["visibility_policy"] == "node_members"
+    assert flat["Executive Committee"]["privacy_status"] == "admin_restricted"
+    assert flat["Executive Committee"]["visibility_policy"] == "admins"
+    assert flat["Public Showcase Unit"]["privacy_status"] == "public_review_needed"
+    assert flat["Public Showcase Unit"]["public_page_status"] == (
+        "not_published_in_this_slice"
+    )
+    assert flat["Public Showcase Unit"]["member_list_status"] == (
+        "not_exposed_in_this_slice"
+    )
+    assert flat["Public Showcase Unit"]["storage_key_status"] == (
+        "not_exposed_in_this_slice"
+    )
+    assert flat["Public Showcase Unit"]["admin_action_route_hint"].endswith(
+        "/record-privacy-map"
+    )
+
+    root_tree = privacy_map["tree"][0]
+    line_tree = next(
+        child
+        for child in root_tree["children"]
+        if child["node"]["name"] == "Electronics Line"
+    )
+    assert line_tree["children"][0]["node"]["name"] == "Phone Accessories Section"
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_privacy_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-privacy-visible-member@example.com")
+    outsider = _seed_user(3, "node-privacy-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Privacy School Domain",
+                "display_name": "Node Privacy School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "visibility_policy": "node_members",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/node-privacy-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(f"/community-domains/{domain_id}/node-privacy-map")
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    privacy_map = member_map.json()["node_privacy_map"]
+    assert privacy_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert privacy_map["counts"]["nodes"] == 2
+    assert privacy_map["counts"]["non_root_nodes"] == 1
+    assert privacy_map["counts"]["visibility_policy_counts"] is None
+    assert privacy_map["counts"]["active_node_memberships"] is None
+    assert privacy_map["counts"]["active_policies"] is None
+    assert privacy_map["counts"]["review_records"] is None
+    assert privacy_map["counts"]["active_evidence_records"] is None
+    assert privacy_map["primary_next_action"] == {
+        "action_key": "review_record_privacy_boundaries",
+        "label": "Review Community Domain privacy boundaries",
+        "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+        "requires_admin": False,
+    }
+
+    flat = {item["node"]["name"]: item for item in privacy_map["flat_nodes"]}
+    assert flat["Primary Branch"]["privacy_status"] == "node_private"
+    assert flat["Primary Branch"]["local_member_count"] is None
+    assert flat["Primary Branch"]["local_admin_count"] is None
+    assert flat["Primary Branch"]["local_policy_count"] is None
+    assert flat["Primary Branch"]["review_record_count"] is None
+    assert flat["Primary Branch"]["evidence_record_count"] is None
+    assert flat["Primary Branch"]["member_list_status"] == "not_exposed_in_this_slice"
+    assert flat["Primary Branch"]["storage_key_status"] == "not_exposed_in_this_slice"
+    assert flat["Primary Branch"]["admin_action_route_hint"] is None
+    assert "does not change permissions" in privacy_map["boundary"]
+    assert "expose member lists" in privacy_map["boundary"]
+    assert "private member activity" in privacy_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):
