@@ -864,6 +864,18 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert branch.status_code == 201, branch.text
         node_id = branch.json()["node"]["id"]
 
+        department = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Science Department",
+                "node_type": "department",
+                "node_kind": "school_department",
+                "parent_node_id": node_id,
+            },
+        )
+        assert department.status_code == 201, department.text
+        department_id = department.json()["node"]["id"]
+
         for user in (branch_admin, teacher):
             added = client.post(
                 f"/community-domains/{domain_id}/members",
@@ -882,6 +894,14 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
             json={"user_id": teacher.id, "role": "teacher"},
         )
         assert assigned_teacher.status_code == 201, assigned_teacher.text
+
+        assigned_department_teacher = client.post(
+            f"/community-domains/{domain_id}/nodes/{department_id}/members",
+            json={"user_id": teacher.id, "role": "teacher"},
+        )
+        assert assigned_department_teacher.status_code == 201, (
+            assigned_department_teacher.text
+        )
 
         node_policy = client.post(
             f"/community-domains/{domain_id}/policies",
@@ -935,6 +955,21 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert domain_review["community_node_id"] is None
         assert domain_review["policy_id"] == domain_policy.json()["policy"]["id"]
 
+        department_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": department_id,
+                "target_type": "node_member",
+                "target_id": str(teacher.id),
+            },
+        )
+        assert department_review_response.status_code == 201, (
+            department_review_response.text
+        )
+        department_review = department_review_response.json()["action_review"]
+        assert department_review["community_node_id"] == department_id
+
         app.dependency_overrides[get_current_user] = lambda: branch_admin
         node_reviews = client.get(
             f"/community-domains/{domain_id}/action-reviews",
@@ -942,6 +977,19 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         )
         assert node_reviews.status_code == 200, node_reviews.text
         assert node_reviews.json()["total"] == 1
+
+        descendant_reviews = client.get(
+            f"/community-domains/{domain_id}/action-reviews",
+            params={"community_node_id": node_id, "include_descendants": True},
+        )
+        assert descendant_reviews.status_code == 200, descendant_reviews.text
+        descendant_review_data = descendant_reviews.json()
+        assert descendant_review_data["total"] == 2
+        assert descendant_review_data["include_descendants"] is True
+        assert set(descendant_review_data["community_node_ids"]) == {
+            node_id,
+            department_id,
+        }
 
         node_decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{node_review['id']}/decision",
@@ -965,6 +1013,41 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert node_summary_data["by_node"][0]["community_node_id"] == node_id
         assert "read-only dashboard count" in node_summary_data["boundary"]
 
+        descendant_summary = client.get(
+            f"/community-domains/{domain_id}/action-reviews/summary",
+            params={"community_node_id": node_id, "include_descendants": True},
+        )
+        assert descendant_summary.status_code == 200, descendant_summary.text
+        descendant_summary_data = descendant_summary.json()
+        assert descendant_summary_data["total"] == 2
+        assert descendant_summary_data["attention_total"] == 1
+        assert descendant_summary_data["ready_to_apply_total"] == 1
+        assert descendant_summary_data["include_descendants"] is True
+        assert set(descendant_summary_data["community_node_ids"]) == {
+            node_id,
+            department_id,
+        }
+        assert descendant_summary_data["by_status"] == {
+            "approved": 1,
+            "pending": 1,
+        }
+
+        descendant_activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/activity",
+            params={
+                "community_node_id": node_id,
+                "include_descendants": True,
+                "event_type": "review_created",
+            },
+        )
+        assert descendant_activity.status_code == 200, descendant_activity.text
+        descendant_activity_data = descendant_activity.json()
+        assert descendant_activity_data["total"] == 2
+        assert descendant_activity_data["include_descendants"] is True
+        assert {
+            item["community_node_id"] for item in descendant_activity_data["items"]
+        } == {node_id, department_id}
+
         unscoped_summary = client.get(
             f"/community-domains/{domain_id}/action-reviews/summary"
         )
@@ -983,14 +1066,14 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert domain_summary.status_code == 200, domain_summary.text
         domain_summary_data = domain_summary.json()
         assert domain_summary_data["community_node_id"] is None
-        assert domain_summary_data["total"] == 2
-        assert domain_summary_data["attention_total"] == 1
+        assert domain_summary_data["total"] == 3
+        assert domain_summary_data["attention_total"] == 2
         assert domain_summary_data["ready_to_apply_total"] == 1
         assert domain_summary_data["terminal_total"] == 0
-        assert domain_summary_data["by_status"] == {"approved": 1, "pending": 1}
+        assert domain_summary_data["by_status"] == {"approved": 1, "pending": 2}
         assert domain_summary_data["by_action"] == {
             "domain.billing.change": 1,
-            "node_member.role_change": 1,
+            "node_member.role_change": 2,
         }
     finally:
         app.dependency_overrides.pop(get_current_user, None)

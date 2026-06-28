@@ -829,6 +829,37 @@ def _has_node_admin_scope(
     return membership is not None and _clean_role(membership.role) in NODE_ADMIN_ROLES
 
 
+def _descendant_node_ids(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    node: CommunityNode,
+    include_descendants: bool,
+) -> list[int]:
+    if not include_descendants:
+        return [int(node.id)]
+
+    path = _clean_str(node.path)
+    if not path:
+        return [int(node.id)]
+
+    rows = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == int(domain.id))
+        .filter(
+            (CommunityNode.id == int(node.id))
+            | (CommunityNode.path.like(f"{path}/%"))
+        )
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    return [int(item.id) for item in rows]
+
+
 def _require_node_or_domain_admin_scope(
     db: Session,
     *,
@@ -1559,12 +1590,14 @@ def upsert_community_domain_policy(
 def list_community_domain_action_reviews(
     community_domain_id: int,
     community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=False),
     status: Optional[str] = Query(default=None, max_length=24),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     node: Optional[CommunityNode] = None
+    node_scope_ids: list[int] = []
     if community_node_id is not None:
         node = _get_node_or_404(
             db,
@@ -1577,6 +1610,12 @@ def list_community_domain_action_reviews(
             node=node,
             current_user=current_user,
         )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
     else:
         _require_domain_admin_scope(db, domain=domain, current_user=current_user)
 
@@ -1584,7 +1623,7 @@ def list_community_domain_action_reviews(
         CommunityDomainActionReview.community_domain_id == int(domain.id)
     )
     if node is not None:
-        query = query.filter(CommunityDomainActionReview.community_node_id == int(node.id))
+        query = query.filter(CommunityDomainActionReview.community_node_id.in_(node_scope_ids))
     if status:
         query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
 
@@ -1596,6 +1635,8 @@ def list_community_domain_action_reviews(
         "ok": True,
         "community_domain_id": int(domain.id),
         "community_node_id": int(node.id) if node is not None else None,
+        "community_node_ids": node_scope_ids,
+        "include_descendants": bool(include_descendants),
         "items": [_action_review_payload(row) for row in rows],
         "total": len(rows),
         "boundary": (
@@ -1782,6 +1823,7 @@ def list_community_domain_reviewer_queue(
 def list_community_domain_action_review_activity(
     community_domain_id: int,
     community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=False),
     status: Optional[str] = Query(default=None, max_length=24),
     event_type: Optional[str] = Query(default=None, max_length=48),
     limit: int = Query(default=100, ge=1, le=500),
@@ -1790,6 +1832,7 @@ def list_community_domain_action_review_activity(
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     node: Optional[CommunityNode] = None
+    node_scope_ids: list[int] = []
     if community_node_id is not None:
         node = _get_node_or_404(
             db,
@@ -1802,6 +1845,12 @@ def list_community_domain_action_review_activity(
             node=node,
             current_user=current_user,
         )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
     else:
         _require_domain_admin_scope(db, domain=domain, current_user=current_user)
 
@@ -1809,7 +1858,7 @@ def list_community_domain_action_review_activity(
         CommunityDomainActionReview.community_domain_id == int(domain.id)
     )
     if node is not None:
-        query = query.filter(CommunityDomainActionReview.community_node_id == int(node.id))
+        query = query.filter(CommunityDomainActionReview.community_node_id.in_(node_scope_ids))
     if status:
         query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
 
@@ -1841,6 +1890,8 @@ def list_community_domain_action_review_activity(
         "ok": True,
         "community_domain_id": int(domain.id),
         "community_node_id": int(node.id) if node is not None else None,
+        "community_node_ids": node_scope_ids,
+        "include_descendants": bool(include_descendants),
         "items": activity_items,
         "total": len(activity_items),
         "limit": int(limit),
@@ -1861,11 +1912,13 @@ def list_community_domain_action_review_activity(
 def get_community_domain_action_review_summary(
     community_domain_id: int,
     community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     node: Optional[CommunityNode] = None
+    node_scope_ids: list[int] = []
     if community_node_id is not None:
         node = _get_node_or_404(
             db,
@@ -1878,6 +1931,12 @@ def get_community_domain_action_review_summary(
             node=node,
             current_user=current_user,
         )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
     else:
         _require_domain_admin_scope(db, domain=domain, current_user=current_user)
 
@@ -1886,7 +1945,7 @@ def get_community_domain_action_review_summary(
     )
     if node is not None:
         query = query.filter(
-            CommunityDomainActionReview.community_node_id == int(node.id)
+            CommunityDomainActionReview.community_node_id.in_(node_scope_ids)
         )
 
     rows = query.all()
@@ -1942,6 +2001,8 @@ def get_community_domain_action_review_summary(
         "ok": True,
         "community_domain_id": int(domain.id),
         "community_node_id": int(node.id) if node is not None else None,
+        "community_node_ids": node_scope_ids,
+        "include_descendants": bool(include_descendants),
         "total": len(rows),
         "attention_total": attention_total,
         "ready_to_apply_total": ready_to_apply_total,
