@@ -975,23 +975,59 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
             == "community_domain_node_inactive"
         )
 
+        missing_reopen_note = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": "active"},
+        )
+        assert missing_reopen_note.status_code == 422, missing_reopen_note.text
+        assert (
+            missing_reopen_note.json()["detail"]["code"]
+            == "community_domain_node_status_note_required"
+        )
+
+        reopened = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={
+                "status": "active",
+                "status_note": "Branch reopened for the new term.",
+            },
+        )
+        assert reopened.status_code == 200, reopened.text
+        reopened_data = reopened.json()
+        assert reopened_data["changed"] is True
+        assert reopened_data["previous_status"] == "inactive"
+        assert reopened_data["node"]["status"] == "active"
+        reopen_record = reopened_data["lifecycle_record"]
+        assert reopen_record["action_key"] == "node.status.update"
+        assert reopen_record["request_note"] == "Branch reopened for the new term."
+        assert reopen_record["payload"]["previous_status"] == "inactive"
+        assert reopen_record["payload"]["new_status"] == "active"
+
         activity = client.get(
             f"/community-domains/{domain_id}/action-reviews/activity",
             params={"community_node_id": branch_id, "event_type": "review_status_changed"},
         )
         assert activity.status_code == 200, activity.text
         activity_data = activity.json()
-        assert activity_data["total"] == 1
-        activity_item = activity_data["items"][0]
-        assert activity_item["type"] == "review_status_changed"
-        assert activity_item["action_review_id"] == lifecycle_record["id"]
-        assert activity_item["actor_user_id"] == owner.id
-        assert activity_item["payload"]["action_review"]["action_key"] == (
+        assert activity_data["total"] == 2
+        activity_items = {
+            item["action_review_id"]: item for item in activity_data["items"]
+        }
+        close_activity_item = activity_items[lifecycle_record["id"]]
+        assert close_activity_item["type"] == "review_status_changed"
+        assert close_activity_item["actor_user_id"] == owner.id
+        assert close_activity_item["payload"]["action_review"]["action_key"] == (
             "node.status.update"
         )
-        assert activity_item["payload"]["action_review"]["payload"][
+        assert close_activity_item["payload"]["action_review"]["payload"][
             "impact_summary"
         ] == closed_data["impact_summary"]
+        reopen_activity_item = activity_items[reopen_record["id"]]
+        assert reopen_activity_item["type"] == "review_status_changed"
+        assert reopen_activity_item["actor_user_id"] == owner.id
+        assert reopen_activity_item["payload"]["action_review"]["payload"][
+            "status_note"
+        ] == "Branch reopened for the new term."
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -1002,16 +1038,23 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
             .order_by(CommunityNode.id.asc())
             .all()
         }
-        assert nodes[branch_id] == "inactive"
+        assert nodes[branch_id] == "active"
         assert nodes[department_id] == "active"
         assert db.query(CommunityNodeMembership).count() == 1
         records = db.query(CommunityDomainActionReview).all()
-        assert len(records) == 2
-        records_by_action = {row.action_key: row for row in records}
-        assert records_by_action["node_member.role_change"].id == pending_review["id"]
-        assert records_by_action["node.status.update"].request_note == (
-            "Branch paused after the term ended."
-        )
+        assert len(records) == 3
+        node_status_records = [
+            row for row in records if row.action_key == "node.status.update"
+        ]
+        assert [row.request_note for row in node_status_records] == [
+            "Branch paused after the term ended.",
+            "Branch reopened for the new term.",
+        ]
+        review_records = [
+            row for row in records if row.action_key == "node_member.role_change"
+        ]
+        assert len(review_records) == 1
+        assert review_records[0].id == pending_review["id"]
 
 
 def test_inactive_parent_node_blocks_pending_review_approval_and_apply(

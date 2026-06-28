@@ -1665,12 +1665,12 @@ def update_community_domain_node_status(
     previous_status = _clean_role(node.status, "inactive")
     changed = previous_status != requested_status
     status_note = _clean_str(payload.status_note) or None
-    if changed and requested_status in {"inactive", "archived"} and not status_note:
+    if changed and not status_note:
         raise HTTPException(
             status_code=422,
             detail={
                 "code": "community_domain_node_status_note_required",
-                "message": "A status note is required when pausing or archiving a Community Domain node.",
+                "message": "A status note is required when changing a Community Domain node status.",
             },
         )
 
