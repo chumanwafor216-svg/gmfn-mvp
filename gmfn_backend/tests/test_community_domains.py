@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user
@@ -3365,6 +3367,149 @@ def test_needs_changes_reopen_review_can_be_revised_on_inactive_node(
         assert rows[0].status == "needs_changes"
         assert rows[1].status == "applied"
         assert rows[1].parent_review_id == rows[0].id
+
+
+def test_apply_rejects_legacy_node_status_review_target_mismatch(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "legacy-target-mismatch-requester@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Legacy Target Guard Market",
+                "display_name": "Legacy Target Guard Market",
+                "domain_type": "market_association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        first_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Food Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert first_line.status_code == 201, first_line.text
+        node_id = first_line.json()["node"]["id"]
+
+        second_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Tools Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert second_line.status_code == 201, second_line.text
+        other_node_id = second_line.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "legacy-target-status",
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "target_type": "community_node",
+                "target_id": str(node_id),
+                "payload": {
+                    "status": "inactive",
+                    "status_note": "Food line is closing for renovation.",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        approved = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Closure approved."},
+        )
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["action_review"]["status"] == "approved"
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            review_row.target_id = str(other_node_id)
+            db.commit()
+
+        mismatched_target_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert mismatched_target_apply.status_code == 409, mismatched_target_apply.text
+        assert (
+            mismatched_target_apply.json()["detail"]["code"]
+            == "community_domain_node_status_target_mismatch"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["community_node_id"] = other_node_id
+            review_row.target_id = str(node_id)
+            review_row.payload_json = json.dumps(payload)
+            db.commit()
+
+        mismatched_payload_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert mismatched_payload_apply.status_code == 409, (
+            mismatched_payload_apply.text
+        )
+        assert (
+            mismatched_payload_apply.json()["detail"]["code"]
+            == "community_domain_node_status_target_mismatch"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        node = db.query(CommunityNode).filter(CommunityNode.id == node_id).one()
+        other_node = (
+            db.query(CommunityNode).filter(CommunityNode.id == other_node_id).one()
+        )
+        review_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == review["id"])
+            .one()
+        )
+        assert node.status == "active"
+        assert other_node.status == "active"
+        assert review_row.status == "approved"
+        assert review_row.applied_at is None
 
 
 def test_reviewed_child_reopen_requires_active_parent(

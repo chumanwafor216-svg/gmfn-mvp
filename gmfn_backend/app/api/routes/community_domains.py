@@ -722,14 +722,13 @@ def _ensure_node_accepts_action_review_request(
     _ensure_node_accepts_writes(db, domain=domain, node=node)
 
 
-def _normalize_node_status_review_payload(
+def _ensure_node_status_review_target_matches(
     *,
     node: CommunityNode,
-    review_payload: dict[str, Any],
-    request_note: Optional[str],
     target_type: Optional[str],
     target_id: Optional[str],
-) -> dict[str, Any]:
+    review_payload: Optional[dict[str, Any]] = None,
+) -> None:
     clean_target_type = _clean_role(target_type or "")
     if clean_target_type and clean_target_type != "community_node":
         raise HTTPException(
@@ -759,6 +758,42 @@ def _normalize_node_status_review_payload(
                     "message": "Node status reviews must target the same Community Domain node as their review scope.",
                 },
             )
+
+    if review_payload is not None and review_payload.get("community_node_id") is not None:
+        try:
+            payload_node_id = int(review_payload.get("community_node_id") or 0)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_action_review_payload",
+                    "message": "Node status review payload community_node_id must be the scoped node id.",
+                },
+            ) from exc
+        if payload_node_id != int(node.id):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_node_status_target_mismatch",
+                    "message": "Node status reviews must target the same Community Domain node as their review scope.",
+                },
+            )
+
+
+def _normalize_node_status_review_payload(
+    *,
+    node: CommunityNode,
+    review_payload: dict[str, Any],
+    request_note: Optional[str],
+    target_type: Optional[str],
+    target_id: Optional[str],
+) -> dict[str, Any]:
+    _ensure_node_status_review_target_matches(
+        node=node,
+        target_type=target_type,
+        target_id=target_id,
+        review_payload=review_payload,
+    )
 
     if node.parent_node_id is None:
         raise HTTPException(
@@ -3657,6 +3692,12 @@ def apply_community_domain_action_review(
                     "message": "The root Community Domain node is controlled by the domain lifecycle, not node status reviews.",
                 },
             )
+        _ensure_node_status_review_target_matches(
+            node=node,
+            target_type=row.target_type,
+            target_id=row.target_id,
+            review_payload=payload,
+        )
 
         requested_status = _clean_role(
             str(payload.get("new_status") or payload.get("status") or "")
