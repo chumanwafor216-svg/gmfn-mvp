@@ -459,6 +459,71 @@ COMMUNITY_DOMAIN_NETWORK_PRESENCE_LANE_PRESETS: list[dict[str, Any]] = [
         "requires_admin": True,
     },
 ]
+COMMUNITY_DOMAIN_TRUST_MOBILITY_LANE_PRESETS: list[dict[str, Any]] = [
+    {
+        "lane_key": "identity_readiness",
+        "label": "Identity readiness",
+        "summary": "Whether the Community Domain has a public-safe identity anchor.",
+        "requires_admin": False,
+        "route_suffix": "/operating-map",
+    },
+    {
+        "lane_key": "authority_readiness",
+        "label": "Authority readiness",
+        "summary": "Whether the institution has reached verified Community Domain status.",
+        "requires_admin": True,
+        "route_suffix": "/verification-requirements",
+    },
+    {
+        "lane_key": "membership_trace",
+        "label": "Membership trace",
+        "summary": "Whether the domain has a membership base beyond the owner.",
+        "requires_admin": True,
+        "route_suffix": "/members",
+    },
+    {
+        "lane_key": "governance_trace",
+        "label": "Governance trace",
+        "summary": "Whether institutional decisions have active governance policy.",
+        "requires_admin": False,
+        "route_suffix": "/governance-coverage",
+    },
+    {
+        "lane_key": "evidence_trace",
+        "label": "Evidence trace",
+        "summary": "Whether action reviews contain evidence metadata.",
+        "requires_admin": True,
+        "route_suffix": "/evidence-map",
+    },
+    {
+        "lane_key": "public_presence",
+        "label": "Public presence",
+        "summary": "Whether a public-safe summary is ready without finalizing the public URL.",
+        "requires_admin": False,
+        "route_suffix": "/network-presence",
+    },
+    {
+        "lane_key": "trustslip_bridge",
+        "label": "TrustSlip bridge",
+        "summary": "Whether Community Domain evidence can issue or back a TrustSlip.",
+        "requires_admin": True,
+        "route_suffix": "/network-presence",
+    },
+    {
+        "lane_key": "trust_passport_bridge",
+        "label": "Trust Passport bridge",
+        "summary": "Whether Community Domain evidence can write into a Trust Passport.",
+        "requires_admin": True,
+        "route_suffix": "/network-presence",
+    },
+    {
+        "lane_key": "external_relay",
+        "label": "External trust relay",
+        "summary": "Whether Community Domain proof can be relayed outside GSN.",
+        "requires_admin": True,
+        "route_suffix": "/network-presence",
+    },
+]
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
 COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_nodes": 50,
@@ -5972,6 +6037,248 @@ def _community_domain_evidence_map_payload(
     }
 
 
+def _community_domain_trust_mobility_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    domain_status = _clean_role(domain.status, "draft")
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    public_profile_present = bool(_clean_str(domain.public_profile))
+
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    open_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .count()
+    )
+    review_evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .count()
+    )
+
+    readiness_by_lane = {
+        "identity_readiness": bool(_clean_str(domain.domain_name)),
+        "authority_readiness": verification_status == "verified",
+        "membership_trace": int(active_member_count) > 1,
+        "governance_trace": int(active_policy_count) > 0,
+        "evidence_trace": int(review_evidence_count) > 0,
+        "public_presence": public_profile_present,
+        "trustslip_bridge": False,
+        "trust_passport_bridge": False,
+        "external_relay": False,
+    }
+    status_by_lane = {
+        "identity_readiness": (
+            "present" if readiness_by_lane["identity_readiness"] else "missing"
+        ),
+        "authority_readiness": (
+            "verified" if readiness_by_lane["authority_readiness"] else verification_status
+        ),
+        "membership_trace": (
+            "member_base_present"
+            if readiness_by_lane["membership_trace"]
+            else "owner_only_or_empty"
+        ),
+        "governance_trace": (
+            "policy_present" if readiness_by_lane["governance_trace"] else "policy_needed"
+        ),
+        "evidence_trace": (
+            "metadata_present"
+            if readiness_by_lane["evidence_trace"]
+            else "not_recorded"
+        ),
+        "public_presence": (
+            "profile_present"
+            if readiness_by_lane["public_presence"]
+            else "profile_needed"
+        ),
+        "trustslip_bridge": "not_connected_in_this_slice",
+        "trust_passport_bridge": "not_connected_in_this_slice",
+        "external_relay": "not_connected_in_this_slice",
+    }
+    count_by_lane = {
+        "identity_readiness": 1 if readiness_by_lane["identity_readiness"] else 0,
+        "authority_readiness": 1 if readiness_by_lane["authority_readiness"] else 0,
+        "membership_trace": int(active_member_count),
+        "governance_trace": int(active_policy_count),
+        "evidence_trace": int(review_evidence_count),
+        "public_presence": 1 if readiness_by_lane["public_presence"] else 0,
+        "trustslip_bridge": 0,
+        "trust_passport_bridge": 0,
+        "external_relay": 0,
+    }
+    next_step_by_lane = {
+        "identity_readiness": "Review the Community Domain identity anchor.",
+        "authority_readiness": "Prepare authority verification before trust can travel.",
+        "membership_trace": "Build a real member base before relying on portable trust.",
+        "governance_trace": "Define governance policy before evidence can carry institutional weight.",
+        "evidence_trace": "Record evidence metadata only through real action reviews.",
+        "public_presence": "Prepare public-safe wording without publishing a page yet.",
+        "trustslip_bridge": "Do not issue Community Domain TrustSlips until a dedicated bridge exists.",
+        "trust_passport_bridge": "Do not write Community Domain evidence into Trust Passport until a dedicated bridge exists.",
+        "external_relay": "Do not relay Community Domain proof outside GSN until release controls exist.",
+    }
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    lanes = []
+    for preset in COMMUNITY_DOMAIN_TRUST_MOBILITY_LANE_PRESETS:
+        lane_key = preset["lane_key"]
+        lanes.append(
+            {
+                "lane_key": lane_key,
+                "label": preset["label"],
+                "summary": preset["summary"],
+                "status": status_by_lane[lane_key],
+                "ready": bool(readiness_by_lane[lane_key]),
+                "count": int(count_by_lane[lane_key]),
+                "route_hint": route_hint(
+                    str(preset["route_suffix"]),
+                    requires_admin=bool(preset["requires_admin"]),
+                ),
+                "requires_admin": bool(preset["requires_admin"]),
+                "next_step": next_step_by_lane[lane_key],
+                "boundary": (
+                    "Read-only trust mobility lane. This does not create "
+                    "TrustSlips, write Trust Passport entries, create credentials, "
+                    "create relay paths, release evidence, publish proof, verify "
+                    "authority, move money, or expose private member, finance, "
+                    "evidence, or review records."
+                ),
+            }
+        )
+
+    if verification_status != "verified":
+        primary_next_action = {
+            "action_key": "prepare_authority_verification",
+            "label": "Prepare authority verification before trust mobility",
+            "route_hint": route_hint("/verification-requirements", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not public_profile_present:
+        primary_next_action = {
+            "action_key": "complete_public_safe_summary",
+            "label": "Complete the public-safe Community Domain summary",
+            "route_hint": route_hint("", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif int(active_member_count) <= 1:
+        primary_next_action = {
+            "action_key": "add_membership_trace",
+            "label": "Add members before institutional trust can travel",
+            "route_hint": route_hint("/members", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif int(active_policy_count) == 0:
+        primary_next_action = {
+            "action_key": "define_governance_trace",
+            "label": "Define governance policy before trust mobility",
+            "route_hint": route_hint("/policies", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif int(review_evidence_count) == 0:
+        primary_next_action = {
+            "action_key": "record_review_evidence_metadata",
+            "label": "Record review evidence metadata before portability claims",
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_trust_mobility_boundaries",
+            "label": "Review trust mobility boundaries before any release design",
+            "route_hint": route_hint("/network-presence"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_prepare_trust_mobility",
+            "label": "Ask a Community Domain admin to prepare trust mobility",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": _clean_role(template["marketplace_role"], "optional"),
+        },
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "domain_status": domain_status,
+            "verification_status": verification_status,
+            "public_profile_present": public_profile_present,
+            "active_members": int(active_member_count),
+            "active_node_memberships": int(active_node_member_count),
+            "active_policies": int(active_policy_count),
+            "open_reviews": int(open_review_count),
+            "review_evidence_records": int(review_evidence_count),
+            "trust_slips": 0,
+            "trust_passport_entries": 0,
+            "relay_paths": 0,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain trust mobility is read-only portability planning. "
+            "This endpoint does not create TrustSlips, write Trust Passport "
+            "entries, create credentials, create trust relay paths, release "
+            "evidence, expose files, expose storage keys, verify legal or "
+            "institutional authority, publish proof, create outward links, move "
+            "money, activate billing, activate the Community Domain, create "
+            "marketplace activity, create a social Community, or expose private "
+            "member, finance, evidence, or review records."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -7404,6 +7711,25 @@ def get_community_domain_evidence_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "evidence_map": _community_domain_evidence_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/trust-mobility", response_model=dict[str, Any])
+def get_community_domain_trust_mobility(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "trust_mobility": _community_domain_trust_mobility_payload(
             db,
             domain=domain,
             current_user=current_user,

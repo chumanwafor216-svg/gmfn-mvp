@@ -19,6 +19,7 @@ from app.db.models import (
     CommunityNodeMembership,
     CommunityDomainPolicy,
     User,
+    TrustSlip,
 )
 from app.main import app
 
@@ -2695,6 +2696,247 @@ def test_member_can_read_evidence_map_but_admin_routes_are_hidden(
     assert lanes["node_membership_evidence"]["route_hint"].endswith("/rollout-tree")
     assert lanes["public_safe_summary"]["route_hint"].endswith("/network-presence")
     assert "private member" in evidence_map["boundary"]
+
+
+def test_trust_mobility_projects_portability_readiness_without_issuing_records(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "trust-mobility-admin@example.com")
+    member = _seed_user(3, "trust-mobility-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Trust Mobility Market Domain",
+                "display_name": "Trust Mobility Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "A public-safe profile for trusted market coordination.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        with SessionLocal() as db:
+            domain_row = db.get(CommunityDomain, domain_id)
+            assert domain_row is not None
+            domain_row.verification_status = "verified"
+            db.commit()
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Trusted Traders Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        for user, role in (
+            (admin, "domain_admin"),
+            (member, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "trust-mobility-evidence-review",
+                "action_key": "evidence.verify",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "evidence.verify",
+                "community_node_id": line_id,
+                "request_note": "Review trusted trader evidence.",
+                "payload": {"claim": "member is trusted by the market line"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "attestation",
+                "title": "Trader standing attestation",
+                "file_name": "trusted-trader-attestation.pdf",
+                "storage_key": "private/evidence/trusted-trader-attestation.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/trust-mobility")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    trust_mobility = payload["trust_mobility"]
+    assert trust_mobility["editable"] is False
+    assert trust_mobility["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert trust_mobility["template"]["template_key"] == "market_cooperative"
+    assert trust_mobility["summary"] == {
+        "domain_status": "draft",
+        "verification_status": "verified",
+        "public_profile_present": True,
+        "active_members": 3,
+        "active_node_memberships": 1,
+        "active_policies": 1,
+        "open_reviews": 1,
+        "review_evidence_records": 1,
+        "trust_slips": 0,
+        "trust_passport_entries": 0,
+        "relay_paths": 0,
+    }
+    assert trust_mobility["ready_total"] == 6
+    assert trust_mobility["blocked_lanes"] == [
+        "trustslip_bridge",
+        "trust_passport_bridge",
+        "external_relay",
+    ]
+    assert trust_mobility["primary_next_action"] == {
+        "action_key": "review_trust_mobility_boundaries",
+        "label": "Review trust mobility boundaries before any release design",
+        "route_hint": f"/community-domains/{domain_id}/network-presence",
+        "requires_admin": False,
+    }
+
+    lanes = {item["lane_key"]: item for item in trust_mobility["lanes"]}
+    assert lanes["identity_readiness"]["ready"] is True
+    assert lanes["authority_readiness"]["status"] == "verified"
+    assert lanes["membership_trace"]["count"] == 3
+    assert lanes["governance_trace"]["count"] == 1
+    assert lanes["evidence_trace"]["status"] == "metadata_present"
+    assert lanes["public_presence"]["status"] == "profile_present"
+    assert lanes["trustslip_bridge"]["status"] == "not_connected_in_this_slice"
+    assert lanes["trust_passport_bridge"]["ready"] is False
+    assert lanes["external_relay"]["count"] == 0
+    assert "does not create TrustSlips" in trust_mobility["boundary"]
+    assert "write Trust Passport entries" in trust_mobility["boundary"]
+    assert "expose files" in trust_mobility["boundary"]
+    assert "expose storage keys" in trust_mobility["boundary"]
+    assert "private member" in trust_mobility["boundary"]
+    assert "create a social Community" in trust_mobility["boundary"]
+    assert "trusted-trader-attestation.pdf" not in str(trust_mobility)
+    assert "private/evidence/trusted-trader-attestation.pdf" not in str(trust_mobility)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_trust_mobility_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "trust-mobility-member@example.com")
+    outsider = _seed_user(3, "trust-mobility-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Trust Mobility School Domain",
+                "display_name": "Trust Mobility School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+                "public_profile": "A public-safe school network profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_mobility = client.get(f"/community-domains/{domain_id}/trust-mobility")
+        assert member_mobility.status_code == 200, member_mobility.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_mobility = client.get(
+            f"/community-domains/{domain_id}/trust-mobility"
+        )
+        assert outsider_mobility.status_code == 403, outsider_mobility.text
+        assert "active Community Domain members" in outsider_mobility.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    trust_mobility = member_mobility.json()["trust_mobility"]
+    assert trust_mobility["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert trust_mobility["summary"]["verification_status"] == "unverified"
+    assert trust_mobility["summary"]["trust_slips"] == 0
+    assert trust_mobility["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_prepare_trust_mobility",
+        "label": "Ask a Community Domain admin to prepare trust mobility",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    lanes = {item["lane_key"]: item for item in trust_mobility["lanes"]}
+    assert lanes["identity_readiness"]["route_hint"].endswith("/operating-map")
+    assert lanes["authority_readiness"]["route_hint"] is None
+    assert lanes["membership_trace"]["route_hint"] is None
+    assert lanes["evidence_trace"]["route_hint"] is None
+    assert lanes["trustslip_bridge"]["route_hint"] is None
+    assert lanes["trust_passport_bridge"]["route_hint"] is None
+    assert lanes["external_relay"]["route_hint"] is None
+    assert lanes["governance_trace"]["route_hint"].endswith("/governance-coverage")
+    assert lanes["public_presence"]["route_hint"].endswith("/network-presence")
+    assert "private member" in trust_mobility["boundary"]
 
 
 def test_service_settings_are_template_projection_without_activation(

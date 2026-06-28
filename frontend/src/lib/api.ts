@@ -2390,6 +2390,15 @@ export async function getCommunityDomainEvidenceMap(
   return httpJson(communityDomainPath(communityDomainId, "/evidence-map"), "GET");
 }
 
+export async function getCommunityDomainTrustMobility(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/trust-mobility"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {
