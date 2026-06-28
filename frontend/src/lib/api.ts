@@ -2405,9 +2405,15 @@ export async function upsertCommunityDomainNodeMember(
 }
 
 export async function listCommunityDomainPolicies(
-  communityDomainId: number | string
+  communityDomainId: number | string,
+  params: { community_node_id?: number | string | null } = {}
 ): Promise<any> {
-  return httpJson(communityDomainPath(communityDomainId, "/policies"), "GET");
+  return httpJson(
+    `${communityDomainPath(communityDomainId, "/policies")}${buildQuery({
+      community_node_id: params.community_node_id || undefined,
+    })}`,
+    "GET"
+  );
 }
 
 export async function upsertCommunityDomainPolicy(
