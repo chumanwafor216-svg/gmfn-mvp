@@ -2650,6 +2650,23 @@ def test_action_review_comments_follow_review_visibility(
         ]
         assert "append-only discussion trail" in comments_data["boundary"]
 
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Comment trail reviewed."},
+        )
+        assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        late_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "Adding this after approval should not be allowed."},
+        )
+        assert late_comment.status_code == 409, late_comment.text
+        assert (
+            late_comment.json()["detail"]["code"]
+            == "community_domain_review_append_closed"
+        )
+
         app.dependency_overrides[get_current_user] = lambda: other_member
         hidden_comments = client.get(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments"
@@ -2793,6 +2810,17 @@ def test_action_review_evidence_records_metadata_without_file_upload(
             json={"decision": "approve", "decision_note": "Evidence checked."},
         )
         assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        late_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={"title": "Late evidence after approval"},
+        )
+        assert late_evidence.status_code == 409, late_evidence.text
+        assert (
+            late_evidence.json()["detail"]["code"]
+            == "community_domain_review_append_closed"
+        )
 
         activity = client.get(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/activity"

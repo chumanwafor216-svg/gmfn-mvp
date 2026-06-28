@@ -1200,6 +1200,18 @@ def _can_contribute_to_action_review(
         )
 
 
+def _ensure_action_review_accepts_append(row: CommunityDomainActionReview) -> None:
+    if _clean_role(row.status) in {"pending", "pending_review"}:
+        return
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "code": "community_domain_review_append_closed",
+            "message": "Comments and evidence can only be added while this Community Domain action review is pending.",
+        },
+    )
+
+
 def _find_root_node(db: Session, community_domain_id: int) -> Optional[CommunityNode]:
     return (
         db.query(CommunityNode)
@@ -2369,6 +2381,7 @@ def create_community_domain_action_review_comment(
                 "message": "Only the requester or a current scoped reviewer/admin can comment on this action review.",
             },
         )
+    _ensure_action_review_accepts_append(row)
 
     comment = CommunityDomainActionReviewComment(
         action_review_id=int(row.id),
@@ -2481,6 +2494,7 @@ def create_community_domain_action_review_evidence(
                 "message": "Only the requester or a current scoped reviewer/admin can add evidence to this action review.",
             },
         )
+    _ensure_action_review_accepts_append(row)
 
     evidence = CommunityDomainActionReviewEvidence(
         action_review_id=int(row.id),
