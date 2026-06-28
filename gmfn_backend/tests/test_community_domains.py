@@ -608,6 +608,167 @@ def test_member_can_read_service_settings_but_outsider_is_rejected(
     assert "private records" in settings["boundary"]
 
 
+def test_economic_participation_projects_market_fit_without_marketplace_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    trader = _seed_user(2, "economic-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Economic Market Domain",
+                "display_name": "Economic Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": trader.id, "role": "member"},
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": trader.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        response = client.get(
+            f"/community-domains/{domain_id}/economic-participation"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    economic = payload["economic_participation"]
+    assert economic["editable"] is False
+    assert economic["template"]["marketplace_role"] == "core"
+    assert economic["template"]["template_key"] == "market_cooperative"
+    assert economic["counts"]["nodes"] == 2
+    assert economic["counts"]["active_members"] == 2
+    assert economic["counts"]["active_node_memberships"] == 1
+    assert economic["counts"]["shops"] == 0
+    assert economic["counts"]["listings"] == 0
+    assert economic["counts"]["demands"] == 0
+    assert economic["counts"]["spotlights"] == 0
+    assert economic["counts"]["finance_records"] == 0
+    assert economic["primary_next_action"]["action_key"] == "review_market_operations"
+    assert "does not create a marketplace" in economic["boundary"]
+    assert "create a shop" in economic["boundary"]
+    assert "publish listings" in economic["boundary"]
+    assert "create demand" in economic["boundary"]
+    assert "move money" in economic["boundary"]
+    assert "payment instructions" in economic["boundary"]
+    assert "private member activity" in economic["boundary"]
+
+    lanes = {item["lane_key"]: item for item in economic["lanes"]}
+    assert lanes["marketplace"]["status"] == "core_template"
+    assert lanes["marketplace"]["ready"] is True
+    assert lanes["shops"]["status"] == "enabled_by_template"
+    assert lanes["shops"]["ready"] is True
+    assert lanes["spotlight"]["status"] == "enabled_by_template"
+    assert lanes["vault"]["status"] == "enabled_by_template"
+    assert lanes["demand"]["status"] == "available_optional"
+    assert lanes["demand"]["ready"] is False
+    assert lanes["finance_support"]["status"] == "not_connected_in_this_slice"
+    assert lanes["finance_support"]["ready"] is False
+    assert "does not create a marketplace" in lanes["marketplace"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 2
+        assert db.query(CommunityNodeMembership).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_economic_participation_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "economic-member@example.com")
+    outsider = _seed_user(3, "economic-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Economic School Domain",
+                "display_name": "Economic School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_economic = client.get(
+            f"/community-domains/{domain_id}/economic-participation"
+        )
+        assert member_economic.status_code == 200, member_economic.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_economic = client.get(
+            f"/community-domains/{domain_id}/economic-participation"
+        )
+        assert outsider_economic.status_code == 403, outsider_economic.text
+        assert "active Community Domain members" in outsider_economic.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    economic = member_economic.json()["economic_participation"]
+    lanes = {item["lane_key"]: item for item in economic["lanes"]}
+    assert economic["viewer"] == {"can_admin": False}
+    assert economic["template"]["marketplace_role"] == "optional"
+    assert economic["primary_next_action"] == {
+        "action_key": "ask_domain_admin",
+        "label": "Ask a Community Domain admin to configure economic participation",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert lanes["marketplace"]["route_hint"].endswith("/service-settings")
+    assert lanes["shops"]["route_hint"] is None
+    assert lanes["demand"]["route_hint"] is None
+    assert lanes["spotlight"]["route_hint"] is None
+    assert lanes["finance_support"]["route_hint"] is None
+    assert lanes["marketplace"]["status"] == "optional_template"
+    assert lanes["shops"]["status"] == "available_optional"
+    assert lanes["spotlight"]["status"] == "enabled_by_template"
+    assert economic["editable"] is False
+    assert "private member activity" in economic["boundary"]
+
+
 def test_roles_projection_counts_domain_and_node_roles_without_granting_permissions(
     client: TestClient,
 ):

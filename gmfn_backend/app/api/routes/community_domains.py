@@ -364,6 +364,57 @@ COMMUNITY_DOMAIN_ACTIVATION_REQUIREMENT_PRESETS: list[dict[str, Any]] = [
         "route_suffix": "/governance-model",
     },
 ]
+COMMUNITY_DOMAIN_ECONOMIC_LANE_PRESETS: list[dict[str, Any]] = [
+    {
+        "lane_key": "marketplace",
+        "label": "Marketplace fit",
+        "summary": "Whether this institution is naturally market-facing, supported, optional, or limited for trade activity.",
+        "module_key": "marketplace",
+        "requires_admin": False,
+    },
+    {
+        "lane_key": "shops",
+        "label": "Member shops",
+        "summary": "Whether member shops are part of the selected Community Domain template.",
+        "module_key": "shops",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "demand",
+        "label": "Demand and sourcing",
+        "summary": "Whether the domain is prepared for needs, requests, vendor demand, or group sourcing.",
+        "module_key": "demand",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "spotlight",
+        "label": "Spotlight",
+        "summary": "Whether the domain template supports approved announcements or promotional exposure.",
+        "module_key": "spotlight",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "vault",
+        "label": "Vault",
+        "summary": "Whether controlled documents, evidence files, and shared materials are part of the domain template.",
+        "module_key": "vault",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "trust_evidence",
+        "label": "Trust evidence",
+        "summary": "Whether the template supports verification or trust evidence around institutional activity.",
+        "module_key": "verification",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "finance_support",
+        "label": "Finance and support",
+        "summary": "Whether economic activity is already connected to finance, support, repayment, or payment rails.",
+        "module_key": None,
+        "requires_admin": True,
+    },
+]
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
 COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_nodes": 50,
@@ -1055,6 +1106,173 @@ def _community_domain_service_settings_payload(
             "This endpoint does not persist settings, enable or disable modules, "
             "activate billing, activate the Community Domain, grant permissions, "
             "or expose private records."
+        ),
+    }
+
+
+def _community_domain_economic_participation_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    can_admin: bool,
+) -> dict[str, Any]:
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    enabled_modules = set(template["default_modules"])
+    marketplace_role = _clean_role(template["marketplace_role"], "optional")
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    node_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == int(domain.id))
+        .count()
+    )
+
+    marketplace_ready = marketplace_role in {"core", "supported"}
+    marketplace_status_by_role = {
+        "core": "core_template",
+        "supported": "supported_template",
+        "optional": "optional_template",
+        "limited": "limited_template",
+    }
+
+    def module_status(module_key: Optional[str]) -> tuple[str, bool]:
+        if module_key is None:
+            return ("not_connected_in_this_slice", False)
+        if module_key in enabled_modules:
+            return ("enabled_by_template", True)
+        return ("available_optional", False)
+
+    def route_hint_for(*, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{int(domain.id)}/service-settings"
+
+    lanes = []
+    for preset in COMMUNITY_DOMAIN_ECONOMIC_LANE_PRESETS:
+        lane_key = preset["lane_key"]
+        module_key = preset["module_key"]
+        if lane_key == "marketplace":
+            status = marketplace_status_by_role.get(
+                marketplace_role, "optional_template"
+            )
+            ready = marketplace_ready
+            route_hint = f"/community-domains/{int(domain.id)}/service-settings"
+            next_step = (
+                "Prepare marketplace-facing operations for this institution."
+                if marketplace_ready
+                else "Keep marketplace activity optional unless the institution chooses it."
+            )
+        elif lane_key == "finance_support":
+            status = "not_connected_in_this_slice"
+            ready = False
+            route_hint = route_hint_for(requires_admin=bool(preset["requires_admin"]))
+            next_step = (
+                "Do not promise finance, payment, repayment, or support rails until a dedicated finance bridge exists."
+            )
+        else:
+            status, ready = module_status(str(module_key))
+            route_hint = route_hint_for(requires_admin=bool(preset["requires_admin"]))
+            next_step = (
+                "Review the included template module."
+                if ready
+                else "Treat this as optional until a domain admin enables or packages it later."
+            )
+
+        lanes.append(
+            {
+                "lane_key": lane_key,
+                "label": preset["label"],
+                "summary": preset["summary"],
+                "module_key": module_key,
+                "status": status,
+                "ready": bool(ready),
+                "route_hint": route_hint,
+                "requires_admin": bool(preset["requires_admin"]),
+                "admin_visible": bool(can_admin),
+                "next_step": next_step,
+                "boundary": (
+                    "Read-only economic participation lane. This does not create "
+                    "a marketplace, create a shop, publish listings, create demand, "
+                    "place spotlight, create vault links, move money, create payment "
+                    "instructions, create finance records, verify trust evidence, "
+                    "or expose private member activity."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin",
+            "label": "Ask a Community Domain admin to configure economic participation",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif marketplace_role == "core":
+        primary_next_action = {
+            "action_key": "review_market_operations",
+            "label": "Review market-facing modules",
+            "route_hint": f"/community-domains/{int(domain.id)}/service-settings",
+            "requires_admin": True,
+        }
+    elif marketplace_role in {"supported", "optional"}:
+        primary_next_action = {
+            "action_key": "choose_economic_lanes",
+            "label": "Choose which economic lanes this institution needs",
+            "route_hint": f"/community-domains/{int(domain.id)}/service-settings",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_limited_economic_fit",
+            "label": "Review limited economic participation",
+            "route_hint": f"/community-domains/{int(domain.id)}/service-settings",
+            "requires_admin": True,
+        }
+
+    return {
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": marketplace_role,
+            "default_modules": list(template["default_modules"]),
+        },
+        "counts": {
+            "nodes": int(node_count),
+            "active_members": int(active_member_count),
+            "active_node_memberships": int(active_node_member_count),
+            "shops": 0,
+            "listings": 0,
+            "demands": 0,
+            "spotlights": 0,
+            "finance_records": 0,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "viewer": {"can_admin": bool(can_admin)},
+        "editable": False,
+        "boundary": (
+            "Economic participation is read-only template and readiness guidance "
+            "in this MVP slice. This endpoint does not create a marketplace, "
+            "create a shop, publish listings, create demand, place spotlight, "
+            "create vault links, move money, create payment instructions, create "
+            "finance records, verify trust evidence, activate billing, activate "
+            "the Community Domain, create a social Community, or expose private "
+            "member activity."
         ),
     }
 
@@ -3692,6 +3910,26 @@ def list_community_domain_service_settings(
         "community_domain_id": int(domain.id),
         "service_settings": _community_domain_service_settings_payload(
             domain,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/economic-participation", response_model=dict[str, Any])
+def get_community_domain_economic_participation(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "economic_participation": _community_domain_economic_participation_payload(
+            db,
+            domain=domain,
             can_admin=can_admin,
         ),
     }
