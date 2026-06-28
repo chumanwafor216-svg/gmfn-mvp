@@ -1144,23 +1144,13 @@ def _can_view_action_review(
     if int(row.requested_by_user_id) == int(current_user.id):
         return True
 
-    node: Optional[CommunityNode] = None
     try:
-        if row.community_node_id is not None:
-            node = _get_node_or_404(
-                db,
-                community_domain_id=int(domain.id),
-                community_node_id=int(row.community_node_id),
-            )
-            _require_node_or_domain_admin_scope(
-                db,
-                domain=domain,
-                node=node,
-                current_user=current_user,
-            )
-            return True
-
-        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        _require_action_review_apply_scope(
+            db,
+            domain=domain,
+            row=row,
+            current_user=current_user,
+        )
         return True
     except HTTPException:
         return _can_decide_action_review(

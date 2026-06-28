@@ -1026,6 +1026,20 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert department_apply_data["applied"]["membership"]["role"] == "committee_member"
         assert department_apply_data["applied"]["membership"]["title"] == "Science committee"
 
+        inherited_detail = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{department_review['id']}"
+        )
+        assert inherited_detail.status_code == 200, inherited_detail.text
+        assert inherited_detail.json()["action_review"]["status"] == "applied"
+
+        inherited_activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{department_review['id']}/activity"
+        )
+        assert inherited_activity.status_code == 200, inherited_activity.text
+        assert "review_status_changed" in {
+            item["type"] for item in inherited_activity.json()["items"]
+        }
+
         node_summary = client.get(
             f"/community-domains/{domain_id}/action-reviews/summary",
             params={"community_node_id": node_id},
