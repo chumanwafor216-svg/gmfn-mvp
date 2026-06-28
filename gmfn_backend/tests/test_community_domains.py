@@ -1786,6 +1786,96 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
         assert db.query(CommunityDomainActionReview).count() == 1
 
 
+def test_policy_listing_can_be_scoped_to_one_community_node(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Onitsha Market Policy Scope",
+                "display_name": "Onitsha Market Policy Scope",
+                "domain_type": "market",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        electronics_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={"name": "Electronics Line", "node_kind": "economic"},
+        )
+        assert electronics_node.status_code == 201, electronics_node.text
+        electronics_node_id = electronics_node.json()["node"]["id"]
+
+        medical_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={"name": "Medical Line", "node_kind": "economic"},
+        )
+        assert medical_node.status_code == 201, medical_node.text
+        medical_node_id = medical_node.json()["node"]["id"]
+
+        domain_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain-member-review",
+                "action_key": "member.review",
+                "required_role": "domain_admin",
+            },
+        )
+        assert domain_policy.status_code == 201, domain_policy.text
+
+        electronics_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "electronics-shop-review",
+                "action_key": "shop.review",
+                "community_node_id": electronics_node_id,
+                "scope_type": "node",
+                "required_role": "node_admin",
+            },
+        )
+        assert electronics_policy.status_code == 201, electronics_policy.text
+        electronics_policy_id = electronics_policy.json()["policy"]["id"]
+
+        medical_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "medical-shop-review",
+                "action_key": "shop.review",
+                "community_node_id": medical_node_id,
+                "scope_type": "node",
+                "required_role": "node_admin",
+            },
+        )
+        assert medical_policy.status_code == 201, medical_policy.text
+
+        all_policies = client.get(f"/community-domains/{domain_id}/policies")
+        assert all_policies.status_code == 200, all_policies.text
+        assert all_policies.json()["total"] == 3
+
+        electronics_policies = client.get(
+            f"/community-domains/{domain_id}/policies",
+            params={"community_node_id": electronics_node_id},
+        )
+        assert electronics_policies.status_code == 200, electronics_policies.text
+        scoped_payload = electronics_policies.json()
+        assert scoped_payload["total"] == 1
+        assert scoped_payload["items"][0]["id"] == electronics_policy_id
+        assert scoped_payload["items"][0]["community_node_id"] == electronics_node_id
+
+        missing_node_policies = client.get(
+            f"/community-domains/{domain_id}/policies",
+            params={"community_node_id": 9999},
+        )
+        assert missing_node_policies.status_code == 404, missing_node_policies.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
     client: TestClient,
 ):
