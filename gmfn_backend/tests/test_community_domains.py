@@ -976,6 +976,28 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert department_review["community_node_id"] == department_id
         assert department_review["policy_id"] == node_policy.json()["policy"]["id"]
 
+        cancel_department_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": department_id,
+                "target_type": "node_member",
+                "target_id": "science-secretary",
+                "payload": {
+                    "user_id": teacher.id,
+                    "role": "committee_member",
+                    "title": "Science secretary",
+                },
+            },
+        )
+        assert cancel_department_review_response.status_code == 201, (
+            cancel_department_review_response.text
+        )
+        cancel_department_review = cancel_department_review_response.json()[
+            "action_review"
+        ]
+        assert cancel_department_review["policy_id"] == node_policy.json()["policy"]["id"]
+
         app.dependency_overrides[get_current_user] = lambda: branch_admin
         node_reviews = client.get(
             f"/community-domains/{domain_id}/action-reviews",
@@ -990,7 +1012,7 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         )
         assert descendant_reviews.status_code == 200, descendant_reviews.text
         descendant_review_data = descendant_reviews.json()
-        assert descendant_review_data["total"] == 2
+        assert descendant_review_data["total"] == 3
         assert descendant_review_data["include_descendants"] is True
         assert set(descendant_review_data["community_node_ids"]) == {
             node_id,
@@ -1013,6 +1035,17 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert (
             department_decision.json()["action_review"]["policy_id"]
             == node_policy.json()["policy"]["id"]
+        )
+
+        inherited_cancel = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{cancel_department_review['id']}/cancel",
+            json={"cancel_note": "Handled outside this review cycle."},
+        )
+        assert inherited_cancel.status_code == 200, inherited_cancel.text
+        assert inherited_cancel.json()["action_review"]["status"] == "cancelled"
+        assert (
+            inherited_cancel.json()["action_review"]["decided_by_user_id"]
+            == branch_admin.id
         )
 
         department_apply = client.post(
@@ -1061,10 +1094,10 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         )
         assert descendant_summary.status_code == 200, descendant_summary.text
         descendant_summary_data = descendant_summary.json()
-        assert descendant_summary_data["total"] == 2
+        assert descendant_summary_data["total"] == 3
         assert descendant_summary_data["attention_total"] == 0
         assert descendant_summary_data["ready_to_apply_total"] == 1
-        assert descendant_summary_data["terminal_total"] == 1
+        assert descendant_summary_data["terminal_total"] == 2
         assert descendant_summary_data["include_descendants"] is True
         assert set(descendant_summary_data["community_node_ids"]) == {
             node_id,
@@ -1073,6 +1106,7 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert descendant_summary_data["by_status"] == {
             "approved": 1,
             "applied": 1,
+            "cancelled": 1,
         }
 
         descendant_activity = client.get(
@@ -1085,7 +1119,7 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         )
         assert descendant_activity.status_code == 200, descendant_activity.text
         descendant_activity_data = descendant_activity.json()
-        assert descendant_activity_data["total"] == 2
+        assert descendant_activity_data["total"] == 3
         assert descendant_activity_data["include_descendants"] is True
         assert {
             item["community_node_id"] for item in descendant_activity_data["items"]
@@ -1109,18 +1143,19 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert domain_summary.status_code == 200, domain_summary.text
         domain_summary_data = domain_summary.json()
         assert domain_summary_data["community_node_id"] is None
-        assert domain_summary_data["total"] == 3
+        assert domain_summary_data["total"] == 4
         assert domain_summary_data["attention_total"] == 1
         assert domain_summary_data["ready_to_apply_total"] == 1
-        assert domain_summary_data["terminal_total"] == 1
+        assert domain_summary_data["terminal_total"] == 2
         assert domain_summary_data["by_status"] == {
             "applied": 1,
             "approved": 1,
+            "cancelled": 1,
             "pending": 1,
         }
         assert domain_summary_data["by_action"] == {
             "domain.billing.change": 1,
-            "node_member.role_change": 2,
+            "node_member.role_change": 3,
         }
     finally:
         app.dependency_overrides.pop(get_current_user, None)

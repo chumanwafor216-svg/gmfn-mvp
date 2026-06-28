@@ -1082,7 +1082,7 @@ def _require_action_review_decider_scope(
         return node
 
 
-def _require_action_review_apply_scope(
+def _require_action_review_admin_scope(
     db: Session,
     *,
     domain: CommunityDomain,
@@ -1145,7 +1145,7 @@ def _can_view_action_review(
         return True
 
     try:
-        _require_action_review_apply_scope(
+        _require_action_review_admin_scope(
             db,
             domain=domain,
             row=row,
@@ -2815,20 +2815,12 @@ def cancel_community_domain_action_review(
     is_scoped_admin = False
     if not is_requester:
         try:
-            if row.community_node_id is not None:
-                node = _get_node_or_404(
-                    db,
-                    community_domain_id=int(domain.id),
-                    community_node_id=int(row.community_node_id),
-                )
-                _require_node_or_domain_admin_scope(
-                    db,
-                    domain=domain,
-                    node=node,
-                    current_user=current_user,
-                )
-            else:
-                _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+            _require_action_review_admin_scope(
+                db,
+                domain=domain,
+                row=row,
+                current_user=current_user,
+            )
             is_scoped_admin = True
         except HTTPException:
             is_scoped_admin = False
@@ -3006,7 +2998,7 @@ def apply_community_domain_action_review(
         review_id=int(review_id),
     )
 
-    node, actor_scope = _require_action_review_apply_scope(
+    node, actor_scope = _require_action_review_admin_scope(
         db,
         domain=domain,
         row=row,
