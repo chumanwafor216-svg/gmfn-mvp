@@ -6846,6 +6846,27 @@ def test_requester_can_revise_needs_changes_action_review(
         assert needs_changes.status_code == 200, needs_changes.text
         assert needs_changes.json()["action_review"]["status"] == "needs_changes"
 
+        app.dependency_overrides[get_current_user] = lambda: requester
+        stale_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "Trying to add context without creating a revision."},
+        )
+        assert stale_comment.status_code == 409, stale_comment.text
+        assert (
+            stale_comment.json()["detail"]["code"]
+            == "community_domain_review_append_closed"
+        )
+
+        stale_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={"title": "Late evidence without revision"},
+        )
+        assert stale_evidence.status_code == 409, stale_evidence.text
+        assert (
+            stale_evidence.json()["detail"]["code"]
+            == "community_domain_review_append_closed"
+        )
+
         app.dependency_overrides[get_current_user] = lambda: owner
         forbidden = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
