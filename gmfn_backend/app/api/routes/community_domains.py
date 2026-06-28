@@ -860,6 +860,54 @@ def _descendant_node_ids(
     return [int(item.id) for item in rows]
 
 
+def _node_inherits_policy_from_node(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    node: CommunityNode,
+    ancestor_node_id: int,
+) -> bool:
+    if int(node.id) == int(ancestor_node_id):
+        return True
+
+    current = node
+    while current.parent_node_id is not None:
+        if not bool(current.inherits_parent_policy):
+            return False
+        if int(current.parent_node_id) == int(ancestor_node_id):
+            return True
+        parent = (
+            db.query(CommunityNode)
+            .filter(CommunityNode.community_domain_id == int(domain.id))
+            .filter(CommunityNode.id == int(current.parent_node_id))
+            .first()
+        )
+        if parent is None:
+            return False
+        current = parent
+
+    return False
+
+
+def _policy_can_govern_node(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    policy: CommunityDomainPolicy,
+    node: Optional[CommunityNode],
+) -> bool:
+    if policy.community_node_id is None:
+        return True
+    if node is None:
+        return False
+    return _node_inherits_policy_from_node(
+        db,
+        domain=domain,
+        node=node,
+        ancestor_node_id=int(policy.community_node_id),
+    )
+
+
 def _require_node_or_domain_admin_scope(
     db: Session,
     *,
@@ -909,6 +957,27 @@ def _require_policy_reviewer_role(
         )
         if node_membership is not None and _clean_role(node_membership.role) == required_role:
             return
+        if (
+            policy is not None
+            and policy.community_node_id is not None
+            and int(policy.community_node_id) != int(node.id)
+            and _policy_can_govern_node(
+                db,
+                domain=domain,
+                policy=policy,
+                node=node,
+            )
+        ):
+            policy_scope_membership = _active_node_membership_for_user(
+                db,
+                community_node_id=int(policy.community_node_id),
+                user_id=int(current_user.id),
+            )
+            if (
+                policy_scope_membership is not None
+                and _clean_role(policy_scope_membership.role) == required_role
+            ):
+                return
 
     raise HTTPException(
         status_code=403,
@@ -931,22 +1000,13 @@ def _can_decide_action_review(
     if int(row.requested_by_user_id) == int(current_user.id):
         return False
 
-    node: Optional[CommunityNode] = None
     try:
-        if row.community_node_id is not None:
-            node = _get_node_or_404(
-                db,
-                community_domain_id=int(domain.id),
-                community_node_id=int(row.community_node_id),
-            )
-            _require_node_or_domain_admin_scope(
-                db,
-                domain=domain,
-                node=node,
-                current_user=current_user,
-            )
-        else:
-            _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        node = _require_action_review_decider_scope(
+            db,
+            domain=domain,
+            row=row,
+            current_user=current_user,
+        )
         _require_policy_reviewer_role(
             db,
             domain=domain,
@@ -965,6 +1025,61 @@ def _has_user_decision(row: CommunityDomainActionReview, user_id: int) -> bool:
         int(decision.decided_by_user_id) == int(user_id)
         for decision in (getattr(row, "decisions", []) or [])
     )
+
+
+def _require_action_review_decider_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    row: CommunityDomainActionReview,
+    current_user: User,
+) -> Optional[CommunityNode]:
+    if row.community_node_id is None:
+        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        return None
+
+    node = _get_node_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_id=int(row.community_node_id),
+    )
+    if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
+        return node
+
+    try:
+        _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=node,
+            current_user=current_user,
+        )
+        return node
+    except HTTPException:
+        policy = getattr(row, "policy", None)
+        if (
+            policy is None
+            or policy.community_node_id is None
+            or not _policy_can_govern_node(
+                db,
+                domain=domain,
+                policy=policy,
+                node=node,
+            )
+        ):
+            raise
+
+        policy_node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(policy.community_node_id),
+        )
+        _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=policy_node,
+            current_user=current_user,
+        )
+        return node
 
 
 def _can_view_action_review(
@@ -1028,6 +1143,11 @@ def _matching_policy(
         .filter(CommunityDomainPolicy.status == "active")
     )
     if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(community_domain_id),
+            community_node_id=int(community_node_id),
+        )
         node_policy = (
             query.filter(CommunityDomainPolicy.community_node_id == int(community_node_id))
             .order_by(CommunityDomainPolicy.id.desc())
@@ -1035,6 +1155,28 @@ def _matching_policy(
         )
         if node_policy is not None:
             return node_policy
+
+        current = node
+        while current.parent_node_id is not None and bool(current.inherits_parent_policy):
+            parent_policy = (
+                query.filter(
+                    CommunityDomainPolicy.community_node_id == int(current.parent_node_id)
+                )
+                .order_by(CommunityDomainPolicy.id.desc())
+                .first()
+            )
+            if parent_policy is not None:
+                return parent_policy
+            parent = (
+                db.query(CommunityNode)
+                .filter(CommunityNode.community_domain_id == int(community_domain_id))
+                .filter(CommunityNode.id == int(current.parent_node_id))
+                .first()
+            )
+            if parent is None:
+                break
+            current = parent
+
     return (
         query.filter(CommunityDomainPolicy.community_node_id.is_(None))
         .order_by(CommunityDomainPolicy.id.desc())
@@ -1528,12 +1670,12 @@ def upsert_community_domain_policy(
 
     node_id: Optional[int] = None
     if payload.community_node_id is not None:
-        node = _get_node_or_404(
+        policy_node = _get_node_or_404(
             db,
             community_domain_id=int(domain.id),
             community_node_id=int(payload.community_node_id),
         )
-        node_id = int(node.id)
+        node_id = int(policy_node.id)
 
     policy_key = _clean_role(payload.policy_key)
     policy = (
@@ -1657,6 +1799,7 @@ def create_community_domain_action_review(
     _require_domain_member_scope(db, domain=domain, current_user=current_user)
 
     node_id: Optional[int] = None
+    node: Optional[CommunityNode] = None
     if payload.community_node_id is not None:
         node = _get_node_or_404(
             db,
@@ -1701,8 +1844,11 @@ def create_community_domain_action_review(
                     "message": "This policy does not govern the requested action.",
                 },
             )
-        if policy.community_node_id is not None and int(policy.community_node_id) != int(
-            node_id or 0
+        if not _policy_can_govern_node(
+            db,
+            domain=domain,
+            policy=policy,
+            node=node,
         ):
             raise HTTPException(
                 status_code=409,
@@ -2503,8 +2649,9 @@ def revise_community_domain_action_review(
     node_id: Optional[int] = (
         int(row.community_node_id) if row.community_node_id is not None else None
     )
+    node: Optional[CommunityNode] = None
     if node_id is not None:
-        _get_node_or_404(
+        node = _get_node_or_404(
             db,
             community_domain_id=int(domain.id),
             community_node_id=node_id,
@@ -2535,7 +2682,12 @@ def revise_community_domain_action_review(
                     "message": "This policy does not govern the requested action.",
                 },
             )
-        if policy.community_node_id is not None and int(policy.community_node_id) != int(node_id or 0):
+        if not _policy_can_govern_node(
+            db,
+            domain=domain,
+            policy=policy,
+            node=node,
+        ):
             raise HTTPException(
                 status_code=409,
                 detail={
@@ -2692,22 +2844,12 @@ def decide_community_domain_action_review(
         review_id=int(review_id),
     )
 
-    node: Optional[CommunityNode] = None
-    if row.community_node_id is not None:
-        node = _get_node_or_404(
-            db,
-            community_domain_id=int(domain.id),
-            community_node_id=int(row.community_node_id),
-        )
-        _require_node_or_domain_admin_scope(
-            db,
-            domain=domain,
-            node=node,
-            current_user=current_user,
-        )
-    else:
-        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
-
+    node = _require_action_review_decider_scope(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    )
     _require_policy_reviewer_role(
         db,
         domain=domain,
