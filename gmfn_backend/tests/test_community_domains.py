@@ -524,3 +524,217 @@ def test_node_membership_requires_active_domain_membership(
         assert still_blocked.json()["detail"]["code"] == "community_domain_membership_required"
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_domain_admin_can_manage_structure_without_being_recorded_owner(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    domain_admin = _seed_user(2, "domain-admin@example.com")
+    teacher = _seed_user(3, "teacher-admin-test@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Union of Skilled Teachers",
+                "display_name": "Union of Skilled Teachers",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        promoted = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": domain_admin.id,
+                "role": "domain_admin",
+                "title": "National administrator",
+            },
+        )
+        assert promoted.status_code == 201, promoted.text
+
+        app.dependency_overrides[get_current_user] = lambda: domain_admin
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Lagos Chapter",
+                "node_type": "chapter",
+                "node_kind": "professional_chapter",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        added_teacher = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": teacher.id,
+                "role": "member",
+                "title": "Registered teacher",
+            },
+        )
+        assert added_teacher.status_code == 201, added_teacher.text
+
+        owner_rewrite = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": owner.id, "role": "member"},
+        )
+        assert owner_rewrite.status_code == 403, owner_rewrite.text
+        assert "owner role cannot be reassigned" in owner_rewrite.text
+
+        illegal_owner = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": teacher.id, "role": "owner"},
+        )
+        assert illegal_owner.status_code == 403, illegal_owner.text
+        assert "recorded Community Domain owner" in illegal_owner.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_node_admin_can_manage_only_local_node_members(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    branch_admin = _seed_user(2, "branch-admin@example.com")
+    teacher = _seed_user(3, "local-teacher@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Dominion Multi Branch School",
+                "display_name": "Dominion Multi Branch School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Owerri Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        for user, role in ((branch_admin, "staff"), (teacher, "staff")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        branch_admin_assignment = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={
+                "user_id": branch_admin.id,
+                "role": "branch_admin",
+                "title": "Branch coordinator",
+            },
+        )
+        assert branch_admin_assignment.status_code == 201, branch_admin_assignment.text
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+
+        can_view_domain = client.get(f"/community-domains/{domain_id}")
+        assert can_view_domain.status_code == 200, can_view_domain.text
+
+        can_view_nodes = client.get(f"/community-domains/{domain_id}/nodes")
+        assert can_view_nodes.status_code == 200, can_view_nodes.text
+
+        cannot_list_domain_members = client.get(f"/community-domains/{domain_id}/members")
+        assert cannot_list_domain_members.status_code == 403, cannot_list_domain_members.text
+
+        cannot_create_sibling_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Aba Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert cannot_create_sibling_node.status_code == 403, cannot_create_sibling_node.text
+
+        can_list_local_members = client.get(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members"
+        )
+        assert can_list_local_members.status_code == 200, can_list_local_members.text
+
+        local_assignment = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={
+                "user_id": teacher.id,
+                "role": "teacher",
+                "title": "Primary 4 Teacher",
+            },
+        )
+        assert local_assignment.status_code == 201, local_assignment.text
+        assert local_assignment.json()["membership"]["role"] == "teacher"
+
+        cannot_promote_local_admin = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={
+                "user_id": teacher.id,
+                "role": "branch_admin",
+                "title": "Assistant branch admin",
+            },
+        )
+        assert cannot_promote_local_admin.status_code == 403, cannot_promote_local_admin.text
+        assert "local member roles only" in cannot_promote_local_admin.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_ordinary_domain_member_can_view_but_not_manage_domain(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "ordinary-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Onitsha Association Domain",
+                "display_name": "Onitsha Association Domain",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        can_view_domain = client.get(f"/community-domains/{domain_id}")
+        assert can_view_domain.status_code == 200, can_view_domain.text
+
+        can_view_nodes = client.get(f"/community-domains/{domain_id}/nodes")
+        assert can_view_nodes.status_code == 200, can_view_nodes.text
+
+        cannot_manage_members = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": owner.id, "role": "member"},
+        )
+        assert cannot_manage_members.status_code == 403, cannot_manage_members.text
+
+        cannot_create_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={"name": "New Local Chapter"},
+        )
+        assert cannot_create_node.status_code == 403, cannot_create_node.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

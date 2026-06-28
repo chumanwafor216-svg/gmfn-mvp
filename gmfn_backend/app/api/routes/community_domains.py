@@ -38,11 +38,34 @@ RESERVED_DOMAIN_NAMES = {
     "system",
     "trust",
 }
+DOMAIN_ADMIN_ROLES = {"owner", "admin", "domain_admin"}
+NODE_ADMIN_ROLES = {
+    "node_admin",
+    "branch_admin",
+    "line_admin",
+    "department_admin",
+    "committee_admin",
+    "chapter_admin",
+}
+NODE_LOCAL_ASSIGNABLE_ROLES = {
+    "member",
+    "staff",
+    "teacher",
+    "trader",
+    "student",
+    "parent",
+    "committee_member",
+    "line_member",
+}
 
 
 def _clean_str(value: Optional[str], default: str = "") -> str:
     text = str(value or "").strip()
     return text or default
+
+
+def _clean_role(value: Optional[str], default: str = "member") -> str:
+    return _clean_str(value, default).lower().replace(" ", "_")
 
 
 def normalize_domain_name(value: str) -> str:
@@ -260,21 +283,6 @@ def _get_node_or_404(
     return node
 
 
-def _require_domain_owner_or_admin(
-    domain: CommunityDomain,
-    current_user: User,
-) -> None:
-    is_platform_admin = _clean_str(getattr(current_user, "role", "")).lower() == "admin"
-    if is_platform_admin:
-        return
-    if int(domain.owner_user_id) == int(current_user.id):
-        return
-    raise HTTPException(
-        status_code=403,
-        detail="Only the Community Domain owner can manage this domain structure.",
-    )
-
-
 def _domain_membership_for_user(
     db: Session,
     *,
@@ -286,6 +294,128 @@ def _domain_membership_for_user(
         .filter(CommunityDomainMembership.community_domain_id == int(community_domain_id))
         .filter(CommunityDomainMembership.user_id == int(user_id))
         .first()
+    )
+
+
+def _active_domain_membership_for_user(
+    db: Session,
+    *,
+    community_domain_id: int,
+    user_id: int,
+) -> Optional[CommunityDomainMembership]:
+    membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(community_domain_id),
+        user_id=int(user_id),
+    )
+    if membership is None:
+        return None
+    if _clean_role(membership.status, "inactive") != "active":
+        return None
+    return membership
+
+
+def _has_domain_admin_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> bool:
+    if _clean_role(getattr(current_user, "role", "")) == "admin":
+        return True
+    if int(domain.owner_user_id) == int(current_user.id):
+        return True
+
+    membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(current_user.id),
+    )
+    return membership is not None and _clean_role(membership.role) in DOMAIN_ADMIN_ROLES
+
+
+def _require_domain_admin_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> None:
+    if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail="Only a Community Domain owner or domain admin can perform this action.",
+    )
+
+
+def _require_domain_member_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> None:
+    if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
+        return
+    membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(current_user.id),
+    )
+    if membership is not None:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail="Only active Community Domain members can view this domain.",
+    )
+
+
+def _active_node_membership_for_user(
+    db: Session,
+    *,
+    community_node_id: int,
+    user_id: int,
+) -> Optional[CommunityNodeMembership]:
+    membership = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_node_id == int(community_node_id))
+        .filter(CommunityNodeMembership.user_id == int(user_id))
+        .first()
+    )
+    if membership is None:
+        return None
+    if _clean_role(membership.status, "inactive") != "active":
+        return None
+    return membership
+
+
+def _has_node_admin_scope(
+    db: Session,
+    *,
+    node: CommunityNode,
+    current_user: User,
+) -> bool:
+    membership = _active_node_membership_for_user(
+        db,
+        community_node_id=int(node.id),
+        user_id=int(current_user.id),
+    )
+    return membership is not None and _clean_role(membership.role) in NODE_ADMIN_ROLES
+
+
+def _require_node_or_domain_admin_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    node: CommunityNode,
+    current_user: User,
+) -> str:
+    if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
+        return "domain_admin"
+    if _has_node_admin_scope(db, node=node, current_user=current_user):
+        return "node_admin"
+    raise HTTPException(
+        status_code=403,
+        detail="Only a domain admin or node admin can manage this node.",
     )
 
 
@@ -391,7 +521,7 @@ def get_community_domain(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_owner_or_admin(domain, current_user)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
     return {
         "ok": True,
         "community_domain": _domain_payload(
@@ -408,7 +538,7 @@ def list_community_domain_nodes(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_owner_or_admin(domain, current_user)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
 
     nodes = (
         db.query(CommunityNode)
@@ -440,7 +570,7 @@ def create_community_domain_node(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_owner_or_admin(domain, current_user)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
 
     parent_node: Optional[CommunityNode]
     if payload.parent_node_id is None:
@@ -513,7 +643,7 @@ def list_community_domain_members(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_owner_or_admin(domain, current_user)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
 
     rows = (
         db.query(CommunityDomainMembership)
@@ -545,8 +675,19 @@ def upsert_community_domain_member(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_owner_or_admin(domain, current_user)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
     _get_user_or_404(db, payload.user_id)
+    requested_role = _clean_role(payload.role, "member")
+    if requested_role == "owner" and int(payload.user_id) != int(domain.owner_user_id):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the recorded Community Domain owner can hold the owner role.",
+        )
+    if int(payload.user_id) == int(domain.owner_user_id) and requested_role != "owner":
+        raise HTTPException(
+            status_code=403,
+            detail="The recorded Community Domain owner role cannot be reassigned here.",
+        )
 
     membership = _domain_membership_for_user(
         db,
@@ -561,7 +702,7 @@ def upsert_community_domain_member(
         )
         db.add(membership)
 
-    membership.role = _clean_str(payload.role, "member")
+    membership.role = requested_role
     membership.status = _clean_str(payload.status, "active")
     membership.title = _clean_str(payload.title) or None
 
@@ -599,11 +740,16 @@ def list_community_node_members(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_owner_or_admin(domain, current_user)
     node = _get_node_or_404(
         db,
         community_domain_id=int(domain.id),
         community_node_id=int(community_node_id),
+    )
+    _require_node_or_domain_admin_scope(
+        db,
+        domain=domain,
+        node=node,
+        current_user=current_user,
     )
 
     rows = (
@@ -639,13 +785,24 @@ def upsert_community_node_member(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_owner_or_admin(domain, current_user)
     node = _get_node_or_404(
         db,
         community_domain_id=int(domain.id),
         community_node_id=int(community_node_id),
     )
+    scope = _require_node_or_domain_admin_scope(
+        db,
+        domain=domain,
+        node=node,
+        current_user=current_user,
+    )
     _get_user_or_404(db, payload.user_id)
+    requested_role = _clean_role(payload.role, "member")
+    if scope == "node_admin" and requested_role not in NODE_LOCAL_ASSIGNABLE_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail="Node admins can assign local member roles only.",
+        )
 
     domain_membership = _domain_membership_for_user(
         db,
@@ -676,7 +833,7 @@ def upsert_community_node_member(
         )
         db.add(membership)
 
-    membership.role = _clean_str(payload.role, "member")
+    membership.role = requested_role
     membership.status = _clean_str(payload.status, "active")
     membership.title = _clean_str(payload.title) or None
 
