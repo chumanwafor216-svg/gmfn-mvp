@@ -914,6 +914,55 @@ def _descendant_node_ids(
     return [int(item.id) for item in rows]
 
 
+def _node_lifecycle_impact_summary(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    node: CommunityNode,
+) -> dict[str, Any]:
+    node_scope_ids = _descendant_node_ids(
+        db,
+        domain=domain,
+        node=node,
+        include_descendants=True,
+    )
+    open_review_statuses = {"pending", "pending_review", "needs_changes", "approved"}
+    open_reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReview.community_node_id.in_(node_scope_ids))
+        .filter(CommunityDomainActionReview.status.in_(open_review_statuses))
+        .all()
+    )
+    reviews_by_status: dict[str, int] = {}
+    for review in open_reviews:
+        status_key = _clean_role(review.status, "unknown")
+        reviews_by_status[status_key] = reviews_by_status.get(status_key, 0) + 1
+
+    active_node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
+        .filter(CommunityNodeMembership.community_node_id.in_(node_scope_ids))
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .filter(CommunityDomainPolicy.community_node_id.in_(node_scope_ids))
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    return {
+        "node_scope_ids": node_scope_ids,
+        "descendant_node_count": max(len(node_scope_ids) - 1, 0),
+        "active_node_member_count": int(active_node_member_count),
+        "active_policy_count": int(active_policy_count),
+        "open_action_review_count": len(open_reviews),
+        "open_action_reviews_by_status": reviews_by_status,
+    }
+
+
 def _node_inherits_policy_from_node(
     db: Session,
     *,
@@ -1585,6 +1634,7 @@ def update_community_domain_node_status(
 
     previous_status = _clean_role(node.status, "inactive")
     changed = previous_status != requested_status
+    impact_summary = _node_lifecycle_impact_summary(db, domain=domain, node=node)
     node.status = requested_status
     lifecycle_record: Optional[CommunityDomainActionReview] = None
     status_note = _clean_str(payload.status_note) or None
@@ -1607,6 +1657,7 @@ def update_community_domain_node_status(
                     "previous_status": previous_status,
                     "new_status": requested_status,
                     "status_note": status_note,
+                    "impact_summary": impact_summary,
                 }
             ),
             decided_at=now,
@@ -1619,26 +1670,14 @@ def update_community_domain_node_status(
     if lifecycle_record is not None:
         db.refresh(lifecycle_record)
 
-    descendant_count = max(
-        len(
-            _descendant_node_ids(
-                db,
-                domain=domain,
-                node=node,
-                include_descendants=True,
-            )
-        )
-        - 1,
-        0,
-    )
-
     return {
         "ok": True,
         "changed": changed,
         "community_domain_id": int(domain.id),
         "previous_status": previous_status,
         "node": _node_payload(node),
-        "descendant_count": descendant_count,
+        "descendant_count": impact_summary["descendant_node_count"],
+        "impact_summary": impact_summary,
         "lifecycle_record": (
             _action_review_payload(lifecycle_record)
             if lifecycle_record is not None
@@ -1649,7 +1688,8 @@ def update_community_domain_node_status(
             "and node-scoped reviews can be added here. It does not delete "
             "descendants, remove members, cancel pending reviews, or change the "
             "Community Domain lifecycle. Actual status changes create an applied "
-            "operational action record, but this is not an immutable audit ledger."
+            "operational action record with an impact snapshot, but this is not "
+            "an immutable audit ledger."
         ),
     }
 

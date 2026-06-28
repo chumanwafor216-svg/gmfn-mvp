@@ -799,6 +799,38 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         )
         assert added.status_code == 201, added.text
 
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{department_id}/members",
+            json={"user_id": staff.id, "role": "teacher"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "community_node_id": department_id,
+                "policy_key": "visible-department-member-change",
+                "action_key": "node_member.role_change",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: staff
+        pending_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "community_node_id": department_id,
+                "action_key": "node_member.role_change",
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "request_note": "Move me into department operations.",
+                "payload": {"user_id": staff.id, "role": "department_operator"},
+            },
+        )
+        assert pending_review_response.status_code == 201, pending_review_response.text
+        pending_review = pending_review_response.json()["action_review"]
+
         app.dependency_overrides[get_current_user] = lambda: staff
         forbidden = client.patch(
             f"/community-domains/{domain_id}/nodes/{branch_id}/status",
@@ -837,6 +869,14 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert closed_data["previous_status"] == "active"
         assert closed_data["node"]["status"] == "inactive"
         assert closed_data["descendant_count"] == 1
+        assert closed_data["impact_summary"] == {
+            "node_scope_ids": [branch_id, department_id],
+            "descendant_node_count": 1,
+            "active_node_member_count": 1,
+            "active_policy_count": 1,
+            "open_action_review_count": 1,
+            "open_action_reviews_by_status": {"pending": 1},
+        }
         lifecycle_record = closed_data["lifecycle_record"]
         assert lifecycle_record["action_key"] == "node.status.update"
         assert lifecycle_record["status"] == "applied"
@@ -849,6 +889,7 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
             "new_status": "inactive",
             "previous_status": "active",
             "status_note": "Branch paused after the term ended.",
+            "impact_summary": closed_data["impact_summary"],
         }
         assert "does not delete descendants" in closed_data["boundary"]
         assert "not an immutable audit ledger" in closed_data["boundary"]
@@ -913,6 +954,9 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert activity_item["payload"]["action_review"]["action_key"] == (
             "node.status.update"
         )
+        assert activity_item["payload"]["action_review"]["payload"][
+            "impact_summary"
+        ] == closed_data["impact_summary"]
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -925,11 +969,14 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         }
         assert nodes[branch_id] == "inactive"
         assert nodes[department_id] == "active"
-        assert db.query(CommunityNodeMembership).count() == 0
+        assert db.query(CommunityNodeMembership).count() == 1
         records = db.query(CommunityDomainActionReview).all()
-        assert len(records) == 1
-        assert records[0].action_key == "node.status.update"
-        assert records[0].request_note == "Branch paused after the term ended."
+        assert len(records) == 2
+        records_by_action = {row.action_key: row for row in records}
+        assert records_by_action["node_member.role_change"].id == pending_review["id"]
+        assert records_by_action["node.status.update"].request_note == (
+            "Branch paused after the term ended."
+        )
 
 
 def test_inactive_parent_node_blocks_pending_review_approval_and_apply(
