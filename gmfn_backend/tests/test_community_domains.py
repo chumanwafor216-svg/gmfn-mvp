@@ -4186,6 +4186,264 @@ def test_member_can_read_activity_map_but_admin_activity_counts_are_hidden(
     assert "private member/review/evidence/finance exposure" in activity_map["boundary"]
 
 
+def test_member_verification_map_projects_institutional_readiness_without_credentials(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "member-verification-admin@example.com")
+    member = _seed_user(3, "member-verification-member@example.com")
+
+    with SessionLocal() as db:
+        for user_id, gmfn_id in [
+            (owner.id, "GMFN-U-MEMBER-VERIFY-OWNER"),
+            (admin.id, "GMFN-U-MEMBER-VERIFY-ADMIN"),
+            (member.id, "GMFN-U-MEMBER-VERIFY-MEMBER"),
+        ]:
+            db_user = db.get(User, user_id)
+            assert db_user is not None
+            db_user.gmfn_id = gmfn_id
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Member Verification Market Domain",
+                "display_name": "Member Verification Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_admin = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": admin.id, "role": "domain_admin"},
+        )
+        assert added_admin.status_code == 201, added_admin.text
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert created_line.status_code == 201, created_line.text
+        line_id = created_line.json()["node"]["id"]
+
+        for user_id, role in [
+            (owner.id, "line_admin"),
+            (admin.id, "branch_admin"),
+            (member.id, "trader"),
+        ]:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{line_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "member-verification-evidence-review",
+                "action_key": "member.verify",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "line_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "member.verify",
+                "community_node_id": line_id,
+                "subject_user_id": member.id,
+                "target_type": "domain_member",
+                "target_id": str(member.id),
+                "request_note": "Review member standing before public trust use.",
+                "payload": {"claim": "member standing readiness"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Member register extract",
+                "file_name": "member-register.pdf",
+                "storage_key": "private/evidence/member-register.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "users": db.query(User).count(),
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/member-verification-map"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    verification_map = payload["member_verification_map"]
+    assert verification_map["editable"] is False
+    assert verification_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert verification_map["summary"] == {
+        "verification_status": "unverified",
+        "active_member_count": 3,
+        "members_with_gsn_id": 3,
+        "members_without_unit_placement": 0,
+        "domain_admin_count": 2,
+        "node_admin_assignment_count": 2,
+        "active_node_membership_count": 3,
+        "active_policy_count": 1,
+        "member_review_count": 1,
+        "open_member_review_count": 1,
+        "review_evidence_record_count": 1,
+        "credential_issuance_status": "not_connected_in_this_slice",
+    }
+    assert verification_map["role_distribution"] == {
+        "domain_roles": {"owner": 1, "domain_admin": 1, "trader": 1},
+        "node_roles": {"line_admin": 1, "branch_admin": 1, "trader": 1},
+    }
+    lanes = {item["lane_key"]: item for item in verification_map["lanes"]}
+    assert lanes["membership_register"]["status"] == "present"
+    assert lanes["global_identity_anchors"]["status"] == "anchored"
+    assert lanes["operating_unit_placement"]["status"] == "placed"
+    assert lanes["role_appointments"]["status"] == "admin_roles_present"
+    assert lanes["governance_policy"]["status"] == "policy_backed"
+    assert lanes["member_review_evidence"]["status"] == "evidence_present"
+    assert lanes["credential_boundary"]["status"] == "not_connected_in_this_slice"
+    assert verification_map["primary_next_action"] == {
+        "action_key": "resolve_open_member_reviews",
+        "label": "Resolve open member verification-related reviews",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "requires_admin": True,
+    }
+    assert "does not perform KYC" in verification_map["boundary"]
+    assert "issue credentials" in verification_map["boundary"]
+    assert "Trust Passport entries" in verification_map["boundary"]
+    assert "private member/review/evidence records" in verification_map["boundary"]
+    assert "private/evidence/member-register.pdf" not in str(verification_map)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "users": db.query(User).count(),
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_member_verification_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "member-verification-map-member@example.com")
+    outsider = _seed_user(3, "member-verification-map-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Member Verification School Domain",
+                "display_name": "Member Verification School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/member-verification-map"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/member-verification-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    verification_map = member_map.json()["member_verification_map"]
+    assert verification_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert verification_map["summary"]["active_member_count"] == 2
+    assert verification_map["summary"]["members_with_gsn_id"] is None
+    assert verification_map["summary"]["members_without_unit_placement"] is None
+    assert verification_map["summary"]["domain_admin_count"] is None
+    assert verification_map["summary"]["node_admin_assignment_count"] is None
+    assert verification_map["summary"]["active_node_membership_count"] == 0
+    assert verification_map["summary"]["active_policy_count"] is None
+    assert verification_map["summary"]["member_review_count"] is None
+    assert verification_map["summary"]["review_evidence_record_count"] is None
+    assert verification_map["role_distribution"] == {
+        "domain_roles": None,
+        "node_roles": None,
+    }
+    assert verification_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_member_verification_map",
+        "label": "Ask a Community Domain admin to review member verification readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in verification_map["lanes"]}
+    assert lanes["membership_register"]["route_hint"] is None
+    assert lanes["global_identity_anchors"]["route_hint"] is None
+    assert lanes["operating_unit_placement"]["route_hint"].endswith("/rollout-tree")
+    assert lanes["role_appointments"]["route_hint"] is None
+    assert lanes["governance_policy"]["route_hint"] is None
+    assert lanes["member_review_evidence"]["route_hint"] is None
+    assert lanes["credential_boundary"]["route_hint"] is None
+    assert "private member/review/evidence records" in verification_map["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

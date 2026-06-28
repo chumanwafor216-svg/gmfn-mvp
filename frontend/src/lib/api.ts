@@ -2441,6 +2441,15 @@ export async function getCommunityDomainActivityMap(
   return httpJson(communityDomainPath(communityDomainId, "/activity-map"), "GET");
 }
 
+export async function getCommunityDomainMemberVerificationMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/member-verification-map"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

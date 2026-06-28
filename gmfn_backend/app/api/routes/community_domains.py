@@ -7920,6 +7920,317 @@ def _community_domain_activity_map_payload(
     }
 
 
+def _community_domain_member_verification_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    active_members = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    active_member_ids = {int(row.user_id) for row in active_members}
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    node_member_ids = {int(row.user_id) for row in active_node_memberships}
+
+    member_role_counts: dict[str, int] = {}
+    members_with_gsn_id = 0
+    for row in active_members:
+        role = _clean_role(row.role, "member")
+        member_role_counts[role] = member_role_counts.get(role, 0) + 1
+        if getattr(getattr(row, "user", None), "gmfn_id", None):
+            members_with_gsn_id += 1
+
+    node_role_counts: dict[str, int] = {}
+    node_admin_assignment_count = 0
+    for row in active_node_memberships:
+        role = _clean_role(row.role, "member")
+        node_role_counts[role] = node_role_counts.get(role, 0) + 1
+        if role in NODE_ADMIN_ROLES:
+            node_admin_assignment_count += 1
+
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    member_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            (
+                CommunityDomainActionReview.subject_user_id.isnot(None)
+            )
+            | (
+                CommunityDomainActionReview.target_type.in_(
+                    ["domain_member", "member", "node_member"]
+                )
+            )
+        )
+        .count()
+    )
+    open_member_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            (
+                CommunityDomainActionReview.subject_user_id.isnot(None)
+            )
+            | (
+                CommunityDomainActionReview.target_type.in_(
+                    ["domain_member", "member", "node_member"]
+                )
+            )
+        )
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .count()
+    )
+    active_evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .count()
+    )
+    domain_admin_count = sum(
+        1 for row in active_members if _clean_role(row.role, "member") in DOMAIN_ADMIN_ROLES
+    )
+    members_not_placed_count = max(len(active_member_ids - node_member_ids), 0)
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: Optional[int],
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": count,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "membership_register",
+            "Membership register",
+            "present" if active_members else "empty",
+            bool(active_members),
+            len(active_members),
+            "Keep the institutional membership register current before relying on verification signals.",
+            route_suffix="/members",
+            requires_admin=True,
+            boundary=(
+                "Membership register signal only. This does not invite, approve, "
+                "remove, suspend, or change any member."
+            ),
+        ),
+        lane(
+            "global_identity_anchors",
+            "Global identity anchors",
+            "anchored" if members_with_gsn_id == len(active_members) and active_members else "incomplete",
+            bool(active_members) and members_with_gsn_id == len(active_members),
+            admin_count(members_with_gsn_id),
+            "Confirm each institutional member carries one stable GSN/GMFN member ID.",
+            route_suffix="/identity-context",
+            requires_admin=True,
+            boundary=(
+                "Identity anchor aggregate only. This does not issue, repair, "
+                "merge, rename, or verify a member ID."
+            ),
+        ),
+        lane(
+            "operating_unit_placement",
+            "Operating unit placement",
+            "placed" if not members_not_placed_count and active_members else "needs_placement",
+            bool(active_members) and members_not_placed_count == 0,
+            len(node_member_ids),
+            "Place members into branches, lines, classes, departments, committees, or chapters where the institution needs local accountability.",
+            route_suffix="/rollout-tree",
+            requires_admin=False,
+            boundary=(
+                "Placement aggregate only. This does not place members, assign "
+                "roles, or expose local member lists."
+            ),
+        ),
+        lane(
+            "role_appointments",
+            "Role appointments",
+            "admin_roles_present" if domain_admin_count or node_admin_assignment_count else "needs_admin_roles",
+            bool(domain_admin_count or node_admin_assignment_count),
+            admin_count(domain_admin_count + node_admin_assignment_count),
+            "Record who can stand for the domain and who can stand for local units.",
+            route_suffix="/delegation-map",
+            requires_admin=True,
+            boundary=(
+                "Role appointment aggregate only. This does not appoint admins, "
+                "grant permissions, or prove legal authority."
+            ),
+        ),
+        lane(
+            "governance_policy",
+            "Governance policy",
+            "policy_backed" if active_policy_count else "policy_needed",
+            bool(active_policy_count),
+            admin_count(active_policy_count),
+            "Define what evidence or review is needed before a member claim becomes trusted.",
+            route_suffix="/governance-coverage",
+            requires_admin=True,
+            boundary=(
+                "Policy readiness only. This does not create policy, decide "
+                "reviews, apply reviews, or verify members."
+            ),
+        ),
+        lane(
+            "member_review_evidence",
+            "Member review evidence",
+            "evidence_present" if active_evidence_count else "not_recorded",
+            bool(active_evidence_count),
+            admin_count(active_evidence_count),
+            "Use action-review evidence as controlled metadata until a formal member credential flow exists.",
+            route_suffix="/evidence-map",
+            requires_admin=True,
+            boundary=(
+                "Evidence aggregate only. This does not upload files, expose "
+                "storage keys, publish credentials, issue TrustSlips, or write "
+                "Trust Passport entries."
+            ),
+        ),
+        lane(
+            "credential_boundary",
+            "Credential boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Do not present Community Domain membership as a formal credential until credential issuance is deliberately built.",
+            route_suffix="/trust-mobility",
+            requires_admin=True,
+            boundary=(
+                "Credential boundary only. This does not issue badges, public "
+                "credentials, certificates, TrustSlips, attestations, QR proof, "
+                "or Trust Passport records."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_member_verification_map",
+            "label": "Ask a Community Domain admin to review member verification readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not active_members:
+        primary_next_action = {
+            "action_key": "add_domain_members_before_verification",
+            "label": "Add members before verification readiness can be mapped",
+            "route_hint": f"/community-domains/{domain_id}/members",
+            "requires_admin": True,
+        }
+    elif members_not_placed_count:
+        primary_next_action = {
+            "action_key": "place_members_into_operating_units",
+            "label": "Place members into operating units",
+            "route_hint": f"/community-domains/{domain_id}/rollout-tree",
+            "requires_admin": True,
+        }
+    elif not active_policy_count:
+        primary_next_action = {
+            "action_key": "define_member_verification_policy",
+            "label": "Define policy for member evidence and review",
+            "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+            "requires_admin": True,
+        }
+    elif open_member_review_count:
+        primary_next_action = {
+            "action_key": "resolve_open_member_reviews",
+            "label": "Resolve open member verification-related reviews",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_member_verification_boundaries",
+            "label": "Review member verification boundaries",
+            "route_hint": f"/community-domains/{domain_id}/evidence-map",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "verification_status": domain.verification_status,
+            "active_member_count": len(active_members),
+            "members_with_gsn_id": admin_count(members_with_gsn_id),
+            "members_without_unit_placement": admin_count(members_not_placed_count),
+            "domain_admin_count": admin_count(domain_admin_count),
+            "node_admin_assignment_count": admin_count(node_admin_assignment_count),
+            "active_node_membership_count": len(active_node_memberships),
+            "active_policy_count": admin_count(active_policy_count),
+            "member_review_count": admin_count(member_review_count),
+            "open_member_review_count": admin_count(open_member_review_count),
+            "review_evidence_record_count": admin_count(active_evidence_count),
+            "credential_issuance_status": "not_connected_in_this_slice",
+        },
+        "role_distribution": {
+            "domain_roles": member_role_counts if can_admin else None,
+            "node_roles": node_role_counts if can_admin else None,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain member verification map is read-only readiness "
+            "planning. This endpoint does not perform KYC, issue credentials, "
+            "verify government identity, create or change members, place members "
+            "in units, assign roles, grant permissions, create policy, decide "
+            "reviews, upload evidence, expose storage keys, publish proof, issue "
+            "TrustSlips, write Trust Passport entries, move money, or expose "
+            "private member/review/evidence records."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -9509,6 +9820,27 @@ def get_community_domain_activity_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "activity_map": _community_domain_activity_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/member-verification-map", response_model=dict[str, Any])
+def get_community_domain_member_verification_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "member_verification_map": _community_domain_member_verification_map_payload(
             db,
             domain=domain,
             current_user=current_user,
