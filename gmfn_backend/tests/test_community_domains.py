@@ -127,19 +127,35 @@ def test_community_domain_draft_is_not_a_live_social_community(
 
     data = response.json()["community_domain"]
     assert data["domain_name"] == "dominion-college-abuja"
+    assert data["display_name"] == "Dominion College Abuja"
+    assert data["domain_type"] == "school"
+    assert data["template_key"] == "school_multi_branch"
     assert data["status"] == "draft"
     assert data["verification_status"] == "unverified"
+    assert data["country"] == "Nigeria"
+    assert data["state"] == "FCT"
+    assert data["public_profile"] == "Draft institutional domain for a school network."
     assert data["clan_id"] is None
     assert "does not create a social Community" in data["boundary"]
+    assert "activate billing" in data["boundary"]
+    assert "verify ownership" in data["boundary"]
 
     root_node = data["root_node"]
     assert root_node["name"] == "Dominion College Abuja"
     assert root_node["node_type"] == "root"
     assert root_node["node_kind"] == "institution"
+    assert root_node["path"] == f"/{data['id']}"
     assert root_node["depth"] == 0
 
     with SessionLocal() as db:
-        assert db.query(CommunityDomain).count() == 1
+        domain = db.query(CommunityDomain).one()
+        assert domain.domain_type == "school"
+        assert domain.template_key == "school_multi_branch"
+        assert domain.country == "Nigeria"
+        assert domain.state == "FCT"
+        assert domain.public_profile == "Draft institutional domain for a school network."
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
         domain_membership = db.query(CommunityDomainMembership).one()
         assert domain_membership.user_id == owner.id
         assert domain_membership.role == "owner"
@@ -147,6 +163,41 @@ def test_community_domain_draft_is_not_a_live_social_community(
         assert db.query(CommunityNode).count() == 1
         assert db.query(Clan).count() == 0
         assert db.query(ClanMembership).count() == 0
+
+
+def test_community_domain_draft_defaults_template_to_domain_type(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        response = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "National Teachers Union",
+                "display_name": "National Teachers Union",
+                "domain_type": "professional_union",
+            },
+        )
+        assert response.status_code == 201, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    data = response.json()["community_domain"]
+    assert data["domain_type"] == "professional_union"
+    assert data["template_key"] == "professional_union"
+    assert data["status"] == "draft"
+    assert data["verification_status"] == "unverified"
+    assert data["root_node"]["node_kind"] == "institution"
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.template_key == "professional_union"
+        assert domain.clan_id is None
+        assert db.query(CommunityDomainMembership).one().role == "owner"
+        assert db.query(CommunityNode).one().path == f"/{int(domain.id)}"
+        assert db.query(Clan).count() == 0
 
 
 def test_community_domain_draft_rejects_duplicate_domain_name(
