@@ -6502,6 +6502,133 @@ def test_approved_action_review_cannot_receive_late_decision(
         assert decision_row.decision_note == "Eligible."
 
 
+def test_rejected_action_review_cannot_receive_late_decision_or_apply_but_can_be_revised(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    second_admin = _seed_user(2, "rejected-decision-second-admin@example.com")
+    requester = _seed_user(3, "rejected-decision-requester@example.com")
+    new_member = _seed_user(4, "rejected-decision-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Rejected Decision Association",
+                "display_name": "Rejected Decision Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user, role in (
+            (second_admin, "domain_admin"),
+            (requester, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "rejected-decision-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "subject_user_id": new_member.id,
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        rejected = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "reject", "decision_note": "Not enough context."},
+        )
+        assert rejected.status_code == 200, rejected.text
+        assert rejected.json()["action_review"]["status"] == "rejected"
+
+        app.dependency_overrides[get_current_user] = lambda: second_admin
+        late_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Trying after rejection."},
+        )
+        assert late_decision.status_code == 409, late_decision.text
+        assert late_decision.json()["detail"]["code"] == "community_domain_review_not_decidable"
+
+        blocked_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert blocked_apply.status_code == 409, blocked_apply.text
+        assert blocked_apply.json()["detail"]["code"] == "community_domain_review_not_approved"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        revision_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added the missing context.",
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": "Verified welfare member",
+                },
+            },
+        )
+        assert revision_response.status_code == 201, revision_response.text
+        revision_data = revision_response.json()
+        assert revision_data["previous_action_review"]["status"] == "rejected"
+        revision = revision_data["action_review"]
+        assert revision["status"] == "pending"
+        assert revision["parent_review_id"] == review["id"]
+        assert revision["payload"]["title"] == "Verified welfare member"
+
+        duplicate_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={"request_note": "Do not fork the rejected request."},
+        )
+        assert duplicate_revision.status_code == 409, duplicate_revision.text
+        duplicate_data = duplicate_revision.json()["detail"]
+        assert duplicate_data["code"] == "community_domain_review_revision_exists"
+        assert duplicate_data["existing_action_review"]["id"] == revision["id"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == ["rejected", "pending"]
+        assert rows[1].parent_review_id == rows[0].id
+        decision_row = db.query(CommunityDomainActionReviewDecision).one()
+        assert decision_row.decision == "reject"
+        assert decision_row.decision_note == "Not enough context."
+        assert (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == new_member.id)
+            .first()
+            is None
+        )
+
+
 def test_requester_can_revise_needs_changes_action_review(
     client: TestClient,
 ):
