@@ -2203,6 +2203,60 @@ def create_community_domain_action_review(
                 },
             )
 
+    review_payload = dict(payload.payload or {})
+    if action_key == "node.status.update":
+        if node is None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_review_node_required",
+                    "message": "This action must be scoped to a Community Domain node.",
+                },
+            )
+        if node.parent_node_id is None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_root_node_status_immutable",
+                    "message": "The root Community Domain node is controlled by the domain lifecycle, not node status reviews.",
+                },
+            )
+        requested_status = _clean_role(
+            str(review_payload.get("new_status") or review_payload.get("status") or "")
+        )
+        if requested_status not in NODE_STATUS_VALUES:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "community_domain_node_status_invalid",
+                    "message": "Node status must be active, inactive, or archived.",
+                },
+            )
+        previous_status = _clean_role(node.status, "inactive")
+        status_note = (
+            _clean_str(
+                str(review_payload.get("status_note") or review_payload.get("note") or "")
+            )
+            or _clean_str(payload.request_note)
+            or None
+        )
+        if previous_status != requested_status and not status_note:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "community_domain_node_status_note_required",
+                    "message": "A status note is required when changing a Community Domain node status.",
+                },
+            )
+        review_payload.update(
+            {
+                "community_node_id": int(node.id),
+                "previous_status": previous_status,
+                "new_status": requested_status,
+                "status_note": status_note,
+            }
+        )
+
     row = CommunityDomainActionReview(
         community_domain_id=int(domain.id),
         community_node_id=node_id,
@@ -2214,7 +2268,7 @@ def create_community_domain_action_review(
         target_id=_clean_str(payload.target_id) or None,
         status="pending",
         request_note=_clean_str(payload.request_note) or None,
-        payload_json=_json_dump(payload.payload),
+        payload_json=_json_dump(review_payload),
     )
     db.add(row)
     db.commit()
@@ -3451,6 +3505,105 @@ def apply_community_domain_action_review(
             "type": "node_member",
             "created": created,
             "membership": _node_member_payload(membership),
+        }
+    elif action_key == "node.status.update":
+        if node is None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_review_node_required",
+                    "message": "This action must be scoped to a Community Domain node.",
+                },
+            )
+        if actor_scope != "domain_admin":
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "community_domain_node_status_apply_domain_admin_required",
+                    "message": "Only a Community Domain owner or domain admin can apply node status changes.",
+                },
+            )
+        if node.parent_node_id is None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_root_node_status_immutable",
+                    "message": "The root Community Domain node is controlled by the domain lifecycle, not node status reviews.",
+                },
+            )
+
+        requested_status = _clean_role(
+            str(payload.get("new_status") or payload.get("status") or "")
+        )
+        if requested_status not in NODE_STATUS_VALUES:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "community_domain_node_status_invalid",
+                    "message": "Node status must be active, inactive, or archived.",
+                },
+            )
+
+        parent_node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(node.parent_node_id),
+        )
+        if requested_status == "active":
+            _ensure_node_accepts_writes(db, domain=domain, node=parent_node)
+
+        previous_status = _clean_role(node.status, "inactive")
+        expected_previous_status = _clean_role(str(payload.get("previous_status") or ""))
+        if expected_previous_status and expected_previous_status != previous_status:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_node_status_stale",
+                    "message": "This node status review no longer matches the node's current status.",
+                },
+            )
+        changed = previous_status != requested_status
+        status_note = (
+            _clean_str(str(payload.get("status_note") or payload.get("note") or ""))
+            or _clean_str(row.request_note)
+            or None
+        )
+        if changed and not status_note:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "community_domain_node_status_note_required",
+                    "message": "A status note is required when changing a Community Domain node status.",
+                },
+            )
+
+        impact_summary = _node_lifecycle_impact_summary(db, domain=domain, node=node)
+        node.status = requested_status
+        row.status = "applied"
+        row.applied_by_user_id = int(current_user.id)
+        row.applied_at = datetime.now(timezone.utc)
+        row.payload_json = _json_dump(
+            {
+                **payload,
+                "community_node_id": int(node.id),
+                "previous_status": previous_status,
+                "new_status": requested_status,
+                "status_note": status_note,
+                "impact_summary": impact_summary,
+            }
+        )
+        db.add(node)
+        db.add(row)
+        db.commit()
+        db.refresh(node)
+        db.refresh(row)
+        applied = {
+            "type": "node_status",
+            "changed": changed,
+            "previous_status": previous_status,
+            "node": _node_payload(node),
+            "descendant_count": impact_summary["descendant_node_count"],
+            "impact_summary": impact_summary,
         }
     else:
         raise HTTPException(

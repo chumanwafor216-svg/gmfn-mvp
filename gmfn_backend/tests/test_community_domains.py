@@ -2571,6 +2571,261 @@ def test_approved_node_review_can_apply_node_member_update_once(
         assert review_row.applied_at is not None
 
 
+def test_domain_admin_can_apply_reviewed_node_status_update(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    branch_admin = _seed_user(2, "status-review-branch-admin@example.com")
+    requester = _seed_user(3, "status-review-requester@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Reviewed Status Market",
+                "display_name": "Reviewed Status Market",
+                "domain_type": "market_association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        for user in (branch_admin, requester):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        branch_admin_assignment = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": branch_admin.id, "role": "branch_admin"},
+        )
+        assert branch_admin_assignment.status_code == 201, branch_admin_assignment.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "line-status-change",
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "branch_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "target_type": "community_node",
+                "target_id": str(node_id),
+                "request_note": "The line is merging into a wider electronics council.",
+                "payload": {
+                    "status": "inactive",
+                    "status_note": "Merged into the wider electronics council.",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+        assert review["policy_id"] == policy.json()["policy"]["id"]
+        assert review["payload"]["previous_status"] == "active"
+        assert review["payload"]["new_status"] == "inactive"
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Local line confirms."},
+        )
+        assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        branch_admin_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert branch_admin_apply.status_code == 403, branch_admin_apply.text
+        assert (
+            branch_admin_apply.json()["detail"]["code"]
+            == "community_domain_node_status_apply_domain_admin_required"
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        applied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert applied.status_code == 200, applied.text
+        data = applied.json()
+        assert data["action_review"]["status"] == "applied"
+        assert data["action_review"]["applied_by_user_id"] == owner.id
+        assert data["action_review"]["payload"]["previous_status"] == "active"
+        assert data["action_review"]["payload"]["new_status"] == "inactive"
+        assert (
+            data["action_review"]["payload"]["status_note"]
+            == "Merged into the wider electronics council."
+        )
+        assert data["applied"]["type"] == "node_status"
+        assert data["applied"]["changed"] is True
+        assert data["applied"]["previous_status"] == "active"
+        assert data["applied"]["node"]["id"] == node_id
+        assert data["applied"]["node"]["status"] == "inactive"
+        assert data["applied"]["impact_summary"]["descendant_node_count"] == 0
+        assert data["applied"]["impact_summary"]["active_node_member_count"] == 1
+        assert data["applied"]["impact_summary"]["open_action_review_count"] == 1
+        assert data["applied"]["impact_summary"]["open_action_reviews_by_status"] == {
+            "approved": 1
+        }
+
+        node_detail = client.get(f"/community-domains/{domain_id}/nodes")
+        assert node_detail.status_code == 200, node_detail.text
+        line_node = [
+            item for item in node_detail.json()["items"] if item["id"] == node_id
+        ][0]
+        assert line_node["status"] == "inactive"
+
+        applied_again = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert applied_again.status_code == 409, applied_again.text
+        assert (
+            applied_again.json()["detail"]["code"]
+            == "community_domain_review_already_applied"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        node = db.query(CommunityNode).filter(CommunityNode.id == node_id).one()
+        assert node.status == "inactive"
+        review_row = db.query(CommunityDomainActionReview).one()
+        assert review_row.status == "applied"
+        assert review_row.applied_by_user_id == owner.id
+        assert review_row.applied_at is not None
+
+
+def test_stale_reviewed_node_status_update_cannot_apply(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "stale-status-requester@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Stale Status Association",
+                "display_name": "Stale Status Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Youth Wing",
+                "node_type": "wing",
+                "node_kind": "association_wing",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "wing-status-change",
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": node_id,
+                "target_type": "community_node",
+                "target_id": str(node_id),
+                "payload": {
+                    "status": "inactive",
+                    "status_note": "Youth wing has merged into the main council.",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+        assert review["payload"]["previous_status"] == "active"
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        direct_close = client.patch(
+            f"/community-domains/{domain_id}/nodes/{node_id}/status",
+            json={
+                "status": "inactive",
+                "status_note": "Closed directly before the reviewed change applied.",
+            },
+        )
+        assert direct_close.status_code == 200, direct_close.text
+        assert direct_close.json()["node"]["status"] == "inactive"
+
+        stale_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert stale_apply.status_code == 409, stale_apply.text
+        assert (
+            stale_apply.json()["detail"]["code"]
+            == "community_domain_node_status_stale"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        reviewed_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == review["id"])
+            .one()
+        )
+        assert reviewed_row.status == "approved"
+        assert reviewed_row.applied_at is None
+        node = db.query(CommunityNode).filter(CommunityNode.id == node_id).one()
+        assert node.status == "inactive"
+
+
 def test_domain_admin_can_apply_domain_member_upsert_review(
     client: TestClient,
 ):
