@@ -7671,6 +7671,283 @@ def _community_domain_configuration_map_payload(
     }
 
 
+def _community_domain_compliance_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    public_profile_present = bool(_clean_str(domain.public_profile))
+    verification_status = _clean_role(domain.verification_status, "unverified")
+
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_node_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .filter(CommunityNode.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .count()
+    )
+    open_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReview.status.in_(("pending", "needs_changes")))
+        .count()
+    )
+    active_evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .count()
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: Optional[int],
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": count,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "authority_verification",
+            "Authority verification",
+            "verified" if verification_status == "verified" else verification_status,
+            verification_status == "verified",
+            1 if verification_status == "verified" else 0,
+            "Confirm the institution's authority record before treating the domain as formally verified.",
+            route_suffix="/verification-requirements",
+            requires_admin=True,
+            boundary=(
+                "Authority verification signal only. This does not verify legal "
+                "authority, upload evidence, certify compliance, or create a "
+                "Verified Community Domain."
+            ),
+        ),
+        lane(
+            "governance_controls",
+            "Governance controls",
+            "policy_backed" if active_policy_count else "policy_needed",
+            bool(active_policy_count),
+            admin_count(active_policy_count),
+            "Keep approval, evidence, and decision policies visible before the institution relies on domain records.",
+            route_suffix="/governance-coverage",
+            requires_admin=True,
+            boundary=(
+                "Governance control signal only. This does not create policy, "
+                "decide reviews, certify compliance, or replace institutional bylaws."
+            ),
+        ),
+        lane(
+            "record_privacy_controls",
+            "Record privacy controls",
+            "mapped",
+            True,
+            1,
+            "Review which records stay public-safe, member-visible, admin-only, or unshared.",
+            route_suffix="/record-privacy-map",
+            requires_admin=False,
+            boundary=(
+                "Record privacy signal only. This does not change permissions, "
+                "expose member lists, expose storage keys, or share records "
+                "across institutions."
+            ),
+        ),
+        lane(
+            "billing_payment_boundary",
+            "Billing and payment boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Keep subscription planning separate from invoices, receipts, payment instructions, and money movement.",
+            route_suffix="/subscription-lifecycle",
+            requires_admin=True,
+            boundary=(
+                "Billing boundary only. This does not create payment instructions, "
+                "charge money, issue receipts, activate entitlements, or certify "
+                "tax/payment compliance."
+            ),
+        ),
+        lane(
+            "public_claims_boundary",
+            "Public claims boundary",
+            "profile_ready" if public_profile_present else "profile_needed",
+            public_profile_present,
+            1 if public_profile_present else 0,
+            "Keep public-facing identity claims small, clear, and safe until verification is complete.",
+            route_suffix="/network-presence",
+            requires_admin=False,
+            boundary=(
+                "Public claim signal only. This does not publish a legal notice, "
+                "certify compliance, verify authority, or create public proof."
+            ),
+        ),
+        lane(
+            "marketplace_finance_boundary",
+            "Marketplace and finance boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Treat economic participation as readiness planning until live marketplace, finance, and payment controls are intentionally connected.",
+            route_suffix="/economic-participation",
+            requires_admin=False,
+            boundary=(
+                "Marketplace finance boundary only. This does not create a "
+                "marketplace, shop, listing, loan, ledger entry, payment, "
+                "contribution, or financial compliance decision."
+            ),
+        ),
+        lane(
+            "cross_domain_sharing_boundary",
+            "Cross-domain sharing boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Keep outside-network movement separate until domain-to-domain exchange rules are deliberately built.",
+            route_suffix="/network-exchange-map",
+            requires_admin=True,
+            boundary=(
+                "Cross-domain boundary only. This does not create domain-to-domain "
+                "exchange, cross-silo discovery, shared directories, or share "
+                "records across institutions."
+            ),
+        ),
+        lane(
+            "audit_trail",
+            "Audit trail",
+            "records_present" if review_count or active_evidence_count else "not_recorded",
+            bool(review_count or active_evidence_count),
+            admin_count(review_count + active_evidence_count),
+            "Use review and evidence metadata as the current audit signal until a formal compliance engine exists.",
+            route_suffix="/evidence-map",
+            requires_admin=True,
+            boundary=(
+                "Audit trail signal only. This does not expose private evidence, "
+                "storage keys, member records, review payloads, legal advice, "
+                "or compliance decisions."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_compliance_posture",
+            "label": "Ask a Community Domain admin to review compliance posture",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif verification_status != "verified":
+        primary_next_action = {
+            "action_key": "review_authority_verification_requirements",
+            "label": "Review authority verification requirements",
+            "route_hint": f"/community-domains/{domain_id}/verification-requirements",
+            "requires_admin": True,
+        }
+    elif not active_policy_count:
+        primary_next_action = {
+            "action_key": "review_governance_controls",
+            "label": "Review governance controls",
+            "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+            "requires_admin": True,
+        }
+    elif open_review_count:
+        primary_next_action = {
+            "action_key": "resolve_open_governance_reviews",
+            "label": "Resolve open governance reviews",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_compliance_boundaries",
+            "label": "Review compliance and risk boundaries",
+            "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "domain_status": domain.status,
+            "verification_status": verification_status,
+            "public_profile_present": public_profile_present,
+            "active_member_count": int(active_member_count),
+            "active_node_count": int(active_node_count),
+            "active_policy_count": admin_count(active_policy_count),
+            "review_record_count": admin_count(review_count),
+            "open_review_count": admin_count(open_review_count),
+            "active_evidence_count": admin_count(active_evidence_count),
+            "compliance_engine_status": "not_connected_in_this_slice",
+            "legal_advice_status": "not_provided",
+            "payment_compliance_status": "not_connected_in_this_slice",
+            "cross_domain_record_sharing_status": "not_connected_in_this_slice",
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain compliance map is read-only compliance planning "
+            "and risk posture mapping, not legal advice. This endpoint does not certify compliance, "
+            "create a compliance decision, verify legal authority, upload "
+            "evidence, expose storage keys, expose member lists, create policy, "
+            "decide reviews, or create marketplace or finance records. It does not create payment instructions, "
+            "move money, create invoices, "
+            "activate subscriptions, share records across institutions, publish "
+            "public proof, issue TrustSlips, write Trust Passport records, or "
+            "expose private member/review/evidence/finance records."
+        ),
+    }
+
+
 def _community_domain_institutional_profile_payload(
     db: Session,
     *,
@@ -10835,6 +11112,27 @@ def get_community_domain_configuration_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "configuration_map": _community_domain_configuration_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/compliance-map", response_model=dict[str, Any])
+def get_community_domain_compliance_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "compliance_map": _community_domain_compliance_map_payload(
             db,
             domain=domain,
             current_user=current_user,

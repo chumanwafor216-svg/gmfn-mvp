@@ -5235,6 +5235,247 @@ def test_member_can_read_configuration_map_but_admin_configuration_counts_are_hi
     assert "schema forks" in lanes["custom_schema_boundary"]["boundary"]
 
 
+def test_compliance_map_projects_operational_risk_without_compliance_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "compliance-map-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Compliance Market Domain",
+                "display_name": "Compliance Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "Public-safe compliance profile.",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.verification_status = "verified"
+            db.commit()
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Medical Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "compliance-risk-review",
+                "action_key": "compliance.review",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "line_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "compliance.review",
+                "community_node_id": line_id,
+                "request_note": "Review compliance posture privately.",
+                "payload": {"claim": "compliance posture"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Compliance posture note",
+                "file_name": "compliance-posture.pdf",
+                "storage_key": "private/evidence/compliance-posture.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/compliance-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    compliance = payload["compliance_map"]
+    assert compliance["editable"] is False
+    assert compliance["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert compliance["summary"]["verification_status"] == "verified"
+    assert compliance["summary"]["public_profile_present"] is True
+    assert compliance["summary"]["active_member_count"] == 2
+    assert compliance["summary"]["active_node_count"] == 2
+    assert compliance["summary"]["active_policy_count"] == 1
+    assert compliance["summary"]["review_record_count"] == 1
+    assert compliance["summary"]["open_review_count"] == 1
+    assert compliance["summary"]["active_evidence_count"] == 1
+    assert compliance["summary"]["compliance_engine_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert compliance["summary"]["legal_advice_status"] == "not_provided"
+    assert compliance["summary"]["payment_compliance_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert compliance["summary"]["cross_domain_record_sharing_status"] == (
+        "not_connected_in_this_slice"
+    )
+
+    lanes = {item["lane_key"]: item for item in compliance["lanes"]}
+    assert lanes["authority_verification"]["status"] == "verified"
+    assert lanes["governance_controls"]["status"] == "policy_backed"
+    assert lanes["record_privacy_controls"]["status"] == "mapped"
+    assert lanes["billing_payment_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lanes["public_claims_boundary"]["status"] == "profile_ready"
+    assert lanes["marketplace_finance_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lanes["cross_domain_sharing_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lanes["audit_trail"]["status"] == "records_present"
+    assert compliance["primary_next_action"] == {
+        "action_key": "resolve_open_governance_reviews",
+        "label": "Resolve open governance reviews",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "requires_admin": True,
+    }
+    assert "not legal advice" in compliance["boundary"]
+    assert "does not certify compliance" in compliance["boundary"]
+    assert "does not create payment instructions" in compliance["boundary"]
+    assert "share records across institutions" in compliance["boundary"]
+    assert "private member/review/evidence/finance records" in compliance["boundary"]
+    assert "private/evidence/compliance-posture.pdf" not in str(compliance)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_compliance_map_but_admin_risk_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "compliance-map-visible-member@example.com")
+    outsider = _seed_user(3, "compliance-map-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Compliance School Domain",
+                "display_name": "Compliance School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/compliance-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(f"/community-domains/{domain_id}/compliance-map")
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    compliance = member_map.json()["compliance_map"]
+    assert compliance["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert compliance["summary"]["verification_status"] == "unverified"
+    assert compliance["summary"]["public_profile_present"] is False
+    assert compliance["summary"]["active_member_count"] == 2
+    assert compliance["summary"]["active_node_count"] == 1
+    assert compliance["summary"]["active_policy_count"] is None
+    assert compliance["summary"]["review_record_count"] is None
+    assert compliance["summary"]["open_review_count"] is None
+    assert compliance["summary"]["active_evidence_count"] is None
+    assert compliance["summary"]["compliance_engine_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert compliance["summary"]["legal_advice_status"] == "not_provided"
+    assert compliance["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_compliance_posture",
+        "label": "Ask a Community Domain admin to review compliance posture",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in compliance["lanes"]}
+    assert lanes["authority_verification"]["route_hint"] is None
+    assert lanes["governance_controls"]["route_hint"] is None
+    assert lanes["record_privacy_controls"]["route_hint"].endswith(
+        "/record-privacy-map"
+    )
+    assert lanes["billing_payment_boundary"]["route_hint"] is None
+    assert lanes["public_claims_boundary"]["route_hint"].endswith("/network-presence")
+    assert lanes["marketplace_finance_boundary"]["route_hint"].endswith(
+        "/economic-participation"
+    )
+    assert lanes["cross_domain_sharing_boundary"]["route_hint"] is None
+    assert lanes["audit_trail"]["route_hint"] is None
+    assert "not legal advice" in compliance["boundary"]
+    assert "does not certify compliance" in compliance["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

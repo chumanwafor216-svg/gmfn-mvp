@@ -2477,6 +2477,15 @@ export async function getCommunityDomainConfigurationMap(
   );
 }
 
+export async function getCommunityDomainComplianceMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/compliance-map"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {
