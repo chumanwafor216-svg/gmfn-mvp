@@ -2524,6 +2524,297 @@ def test_member_can_read_node_economic_map_but_admin_counts_are_hidden(
     assert "private member activity" in economic_map["boundary"]
 
 
+def test_node_activity_map_projects_local_unit_activity_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "node-activity-line-admin@example.com")
+    participant = _seed_user(3, "node-activity-participant@example.com")
+    section_admin = _seed_user(4, "node-activity-section-admin@example.com")
+    branch_admin = _seed_user(5, "node-activity-branch-admin@example.com")
+    branch_member = _seed_user(6, "node-activity-branch-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Activity School Domain",
+                "display_name": "Node Activity School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Main Campus",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        class_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Six Class",
+                "parent_node_id": branch_id,
+                "node_type": "class",
+                "node_kind": "school_class",
+            },
+        )
+        assert class_node.status_code == 201, class_node.text
+        class_id = class_node.json()["node"]["id"]
+
+        pta = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "PTA Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "school_association",
+            },
+        )
+        assert pta.status_code == 201, pta.text
+
+        independent = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Independent Annex",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "inherits_parent_policy": False,
+            },
+        )
+        assert independent.status_code == 201, independent.text
+        independent_id = independent.json()["node"]["id"]
+
+        for user in (line_admin, participant, section_admin, branch_admin, branch_member):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (branch_id, line_admin.id, "branch_admin"),
+            (branch_id, participant.id, "member"),
+            (class_id, section_admin.id, "node_admin"),
+            (independent_id, branch_admin.id, "branch_admin"),
+            (independent_id, branch_member.id, "member"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        branch_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-activity-branch-review",
+                "action_key": "activity.review",
+                "community_node_id": branch_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert branch_policy.status_code == 201, branch_policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/node-activity-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    activity_map = payload["node_activity_map"]
+    assert activity_map["editable"] is False
+    assert activity_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert activity_map["template"]["template_key"] == "school_multi_branch"
+    assert activity_map["template"]["activity_lanes"]
+    assert activity_map["counts"] == {
+        "nodes": 5,
+        "non_root_nodes": 4,
+        "active_node_memberships": 5,
+        "active_policies": 1,
+        "review_records": 0,
+        "local_activity_ready": 1,
+        "needs_local_admin": 1,
+        "needs_participants": 1,
+        "governance_needed": 1,
+        "inactive": 0,
+        "scheduled_activities": 0,
+        "paid_activities": 0,
+        "attendance_records": 0,
+    }
+    assert activity_map["primary_next_action"] == {
+        "action_key": "assign_local_admins_for_activity_units",
+        "label": "Assign local admins before local activity tracking",
+        "route_hint": f"/community-domains/{domain_id}/roles",
+        "requires_admin": True,
+    }
+    assert "read-only local activity planning" in activity_map["boundary"]
+    assert "travel activities" in activity_map["boundary"]
+    assert "paid activities" in activity_map["boundary"]
+    assert "payment instructions" in activity_map["boundary"]
+    assert "attendance" in activity_map["boundary"]
+    assert "private member activity" in activity_map["boundary"]
+
+    flat = {item["node"]["name"]: item for item in activity_map["flat_nodes"]}
+    assert flat["Node Activity School Domain"]["activity_status"] == "domain_root"
+    assert flat["Main Campus"]["activity_status"] == "local_activity_ready"
+    assert flat["Main Campus"]["ready_for_local_activity"] is True
+    assert flat["Main Campus"]["local_admin_count"] == 1
+    assert flat["Main Campus"]["local_participant_count"] == 1
+    assert flat["Main Campus"]["effective_policy_count"] == 1
+    assert flat["Primary Six Class"]["activity_status"] == "needs_participants"
+    assert flat["Primary Six Class"]["local_admin_count"] == 1
+    assert flat["Primary Six Class"]["local_participant_count"] == 0
+    assert flat["Primary Six Class"]["effective_policy_count"] == 1
+    assert flat["PTA Committee"]["activity_status"] == "needs_local_admin"
+    assert flat["PTA Committee"]["local_admin_count"] == 0
+    assert flat["PTA Committee"]["effective_policy_count"] == 0
+    assert flat["Independent Annex"]["activity_status"] == "governance_needed"
+    assert flat["Independent Annex"]["local_participant_count"] == 1
+    assert flat["Independent Annex"]["effective_policy_count"] == 0
+    assert flat["Independent Annex"]["paid_activity_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert flat["Independent Annex"]["attendance_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert flat["Independent Annex"]["admin_action_route_hint"].endswith(
+        "/governance-coverage"
+    )
+
+    root_tree = activity_map["tree"][0]
+    branch_tree = next(
+        child for child in root_tree["children"] if child["node"]["name"] == "Main Campus"
+    )
+    assert branch_tree["children"][0]["node"]["name"] == "Primary Six Class"
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_activity_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-activity-visible-member@example.com")
+    outsider = _seed_user(3, "node-activity-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Activity Union Domain",
+                "display_name": "Node Activity Union Domain",
+                "domain_type": "professional_union",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        chapter = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Lagos Chapter",
+                "parent_node_id": root_node_id,
+                "node_type": "chapter",
+                "node_kind": "union_chapter",
+            },
+        )
+        assert chapter.status_code == 201, chapter.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/node-activity-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-activity-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    activity_map = member_map.json()["node_activity_map"]
+    assert activity_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert activity_map["template"]["template_key"] == "union_professional_body"
+    assert activity_map["counts"]["nodes"] == 2
+    assert activity_map["counts"]["non_root_nodes"] == 1
+    assert activity_map["counts"]["active_node_memberships"] is None
+    assert activity_map["counts"]["active_policies"] is None
+    assert activity_map["counts"]["review_records"] is None
+    assert activity_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_node_activity",
+        "label": "Ask a Community Domain admin to review local activity readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in activity_map["flat_nodes"]}
+    assert flat["Lagos Chapter"]["activity_status"] == "needs_local_admin"
+    assert flat["Lagos Chapter"]["local_member_count"] is None
+    assert flat["Lagos Chapter"]["local_admin_count"] is None
+    assert flat["Lagos Chapter"]["local_policy_count"] is None
+    assert flat["Lagos Chapter"]["review_record_count"] is None
+    assert flat["Lagos Chapter"]["scheduled_activity_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert flat["Lagos Chapter"]["route_hint"].endswith("/operating-summary")
+    assert flat["Lagos Chapter"]["admin_action_route_hint"] is None
+    assert "payment instructions" in activity_map["boundary"]
+    assert "private member activity" in activity_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):

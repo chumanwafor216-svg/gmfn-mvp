@@ -5693,6 +5693,314 @@ def _community_domain_node_economic_map_payload(
     }
 
 
+def _community_domain_node_activity_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    blueprint = _community_domain_template_operating_blueprint_payload(
+        template=template
+    )
+    template_activity_lanes = list(blueprint.get("activity_lanes") or [])
+
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    nodes_by_id: dict[int, CommunityNode] = {}
+    for node in nodes:
+        node_id = int(node.id)
+        nodes_by_id[node_id] = node
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        policy_node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(policy_node_id, []).append(policy)
+
+    reviews_by_node: dict[Optional[int], int] = {}
+    for review in reviews:
+        review_node_id = (
+            int(review.community_node_id)
+            if review.community_node_id is not None
+            else None
+        )
+        reviews_by_node[review_node_id] = reviews_by_node.get(review_node_id, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def ancestor_nodes(node: CommunityNode) -> list[CommunityNode]:
+        ancestors: list[CommunityNode] = []
+        current = node
+        while current.parent_node_id is not None and bool(current.inherits_parent_policy):
+            parent = nodes_by_id.get(int(current.parent_node_id))
+            if parent is None:
+                break
+            ancestors.append(parent)
+            current = parent
+        return ancestors
+
+    def effective_policy_count(node: CommunityNode) -> int:
+        local_count = len(policies_by_node.get(int(node.id), []))
+        if node.parent_node_id is not None and not bool(node.inherits_parent_policy):
+            return local_count
+        inherited = len(policies_by_node.get(None, []))
+        for ancestor in ancestor_nodes(node):
+            inherited += len(policies_by_node.get(int(ancestor.id), []))
+        return local_count + inherited
+
+    def activity_status_for(
+        node: CommunityNode,
+        *,
+        local_admin_count: int,
+        local_participant_count: int,
+        effective_policy_total: int,
+    ) -> tuple[str, str, bool]:
+        if node.parent_node_id is None:
+            return (
+                "domain_root",
+                "Root institution record; local activity readiness belongs to child operating units.",
+                False,
+            )
+        if _clean_role(node.status, "active") != "active":
+            return (
+                "inactive",
+                "Reactivate this operating unit before planning local activities.",
+                False,
+            )
+        if local_admin_count <= 0:
+            return (
+                "needs_local_admin",
+                "Assign a local admin before this unit coordinates meetings, classes, services, or travel.",
+                False,
+            )
+        if local_participant_count <= 0:
+            return (
+                "needs_participants",
+                "Place participants into this unit before relying on local activity records.",
+                False,
+            )
+        if effective_policy_total <= 0:
+            return (
+                "governance_needed",
+                "Add local or inherited policy before this unit carries serious activities.",
+                False,
+            )
+        return (
+            "local_activity_ready",
+            "This unit has local admin, participants, and policy posture for future activity tracking.",
+            True,
+        )
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        local_memberships = memberships_by_node.get(node_id, [])
+        local_admin_count = sum(
+            1
+            for row in local_memberships
+            if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+        )
+        local_participant_count = max(0, len(local_memberships) - local_admin_count)
+        local_policy_count = len(policies_by_node.get(node_id, []))
+        effective_policy_total = effective_policy_count(node)
+        activity_status, next_step, ready = activity_status_for(
+            node,
+            local_admin_count=local_admin_count,
+            local_participant_count=local_participant_count,
+            effective_policy_total=effective_policy_total,
+        )
+        if activity_status == "needs_local_admin":
+            admin_route = "/roles"
+        elif activity_status == "needs_participants":
+            admin_route = "/nodes/tree"
+        elif activity_status == "governance_needed":
+            admin_route = "/governance-coverage"
+        else:
+            admin_route = f"/nodes/{node_id}/operating-summary"
+
+        item = {
+            "node": _node_payload(node),
+            "activity_status": activity_status,
+            "ready_for_local_activity": ready,
+            "direct_child_count": len(child_nodes),
+            "local_member_count": admin_count(len(local_memberships)),
+            "local_admin_count": admin_count(local_admin_count),
+            "local_participant_count": admin_count(local_participant_count),
+            "local_policy_count": admin_count(local_policy_count),
+            "effective_policy_count": admin_count(effective_policy_total),
+            "review_record_count": admin_count(reviews_by_node.get(node_id, 0)),
+            "scheduled_activity_status": "not_connected_in_this_slice",
+            "paid_activity_status": "not_connected_in_this_slice",
+            "attendance_status": "not_connected_in_this_slice",
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "admin_action_route_hint": route_hint(admin_route, requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only local activity readiness item. This does not create "
+                "events, meetings, classes, services, travel activities, dues, "
+                "levies, attendance, reminders, notifications, payment "
+                "instructions, receipts, evidence files, TrustSlips, Trust "
+                "Passport entries, or private member activity."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    tree = [node_item(root) for root in children_by_parent.get(None, [])]
+    non_root_items = [
+        item for item in flat_nodes if item["node"]["parent_node_id"] is not None
+    ]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["activity_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if not non_root_items:
+        primary_next_action = {
+            "action_key": "map_operating_units_before_local_activity",
+            "label": "Map operating units before local activity planning",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_local_admin", 0):
+        primary_next_action = {
+            "action_key": "assign_local_admins_for_activity_units",
+            "label": "Assign local admins before local activity tracking",
+            "route_hint": route_hint("/roles", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_participants", 0):
+        primary_next_action = {
+            "action_key": "place_participants_for_local_activity",
+            "label": "Place participants into local activity units",
+            "route_hint": route_hint("/nodes/tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("governance_needed", 0):
+        primary_next_action = {
+            "action_key": "add_governance_for_local_activity",
+            "label": "Add governance for local activity units",
+            "route_hint": route_hint("/governance-coverage", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_activity_boundaries",
+            "label": "Review activity tracking boundaries",
+            "route_hint": route_hint("/activity-map"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_node_activity",
+            "label": "Ask a Community Domain admin to review local activity readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "activity_lanes": template_activity_lanes,
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "active_node_memberships": admin_count(len(active_node_memberships)),
+            "active_policies": admin_count(len(active_policies)),
+            "review_records": admin_count(len(reviews)),
+            "local_activity_ready": status_counts.get("local_activity_ready", 0),
+            "needs_local_admin": status_counts.get("needs_local_admin", 0),
+            "needs_participants": status_counts.get("needs_participants", 0),
+            "governance_needed": status_counts.get("governance_needed", 0),
+            "inactive": status_counts.get("inactive", 0),
+            "scheduled_activities": 0,
+            "paid_activities": 0,
+            "attendance_records": 0,
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain node activity map is read-only local activity "
+            "planning. It shows whether branches, lines, classes, departments, "
+            "committees, chapters, or other operating units have enough local "
+            "admin, participant, and policy posture for future activity tracking. "
+            "It does not create events, meetings, classes, services, travel "
+            "activities, dues, levies, paid activities, attendance, reminders, "
+            "notifications, payment instructions, receipts, bank matches, "
+            "evidence files, public proof, TrustSlips, Trust Passport entries, "
+            "finance records, or private member activity."
+        ),
+    }
+
+
 def _community_domain_governance_coverage_payload(
     db: Session,
     *,
@@ -11445,6 +11753,25 @@ def get_community_domain_node_economic_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "node_economic_map": _community_domain_node_economic_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/node-activity-map", response_model=dict[str, Any])
+def get_community_domain_node_activity_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node_activity_map": _community_domain_node_activity_map_payload(
             db,
             domain=domain,
             current_user=current_user,

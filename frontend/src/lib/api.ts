@@ -2387,6 +2387,15 @@ export async function getCommunityDomainNodeEconomicMap(
   );
 }
 
+export async function getCommunityDomainNodeActivityMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/node-activity-map"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainGovernanceCoverage(
   communityDomainId: number | string
 ): Promise<any> {
