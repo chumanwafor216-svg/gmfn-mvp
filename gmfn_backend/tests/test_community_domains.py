@@ -769,6 +769,35 @@ def test_node_admin_can_manage_only_local_node_members(
         )
         assert cannot_promote_local_admin.status_code == 403, cannot_promote_local_admin.text
         assert "local member roles only" in cannot_promote_local_admin.text
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        suspended_branch_admin = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": branch_admin.id,
+                "role": "staff",
+                "status": "suspended",
+            },
+        )
+        assert suspended_branch_admin.status_code == 201, suspended_branch_admin.text
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+        cannot_manage_after_domain_suspension = client.get(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members"
+        )
+        assert cannot_manage_after_domain_suspension.status_code == 403
+        assert "domain admin or node admin" in cannot_manage_after_domain_suspension.text
+
+        cannot_assign_after_domain_suspension = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={
+                "user_id": teacher.id,
+                "role": "teacher",
+                "title": "Primary 4 cover teacher",
+            },
+        )
+        assert cannot_assign_after_domain_suspension.status_code == 403
+        assert "domain admin or node admin" in cannot_assign_after_domain_suspension.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

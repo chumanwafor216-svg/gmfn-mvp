@@ -811,11 +811,22 @@ def _require_domain_member_scope(
 def _active_node_membership_for_user(
     db: Session,
     *,
+    domain: CommunityDomain,
     community_node_id: int,
     user_id: int,
 ) -> Optional[CommunityNodeMembership]:
+    if (
+        _active_domain_membership_for_user(
+            db,
+            community_domain_id=int(domain.id),
+            user_id=int(user_id),
+        )
+        is None
+    ):
+        return None
     membership = (
         db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
         .filter(CommunityNodeMembership.community_node_id == int(community_node_id))
         .filter(CommunityNodeMembership.user_id == int(user_id))
         .first()
@@ -830,11 +841,13 @@ def _active_node_membership_for_user(
 def _has_node_admin_scope(
     db: Session,
     *,
+    domain: CommunityDomain,
     node: CommunityNode,
     current_user: User,
 ) -> bool:
     membership = _active_node_membership_for_user(
         db,
+        domain=domain,
         community_node_id=int(node.id),
         user_id=int(current_user.id),
     )
@@ -929,7 +942,7 @@ def _require_node_or_domain_admin_scope(
 ) -> str:
     if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
         return "domain_admin"
-    if _has_node_admin_scope(db, node=node, current_user=current_user):
+    if _has_node_admin_scope(db, domain=domain, node=node, current_user=current_user):
         return "node_admin"
     raise HTTPException(
         status_code=403,
@@ -964,6 +977,7 @@ def _require_policy_reviewer_role(
     if node is not None:
         node_membership = _active_node_membership_for_user(
             db,
+            domain=domain,
             community_node_id=int(node.id),
             user_id=int(current_user.id),
         )
@@ -982,6 +996,7 @@ def _require_policy_reviewer_role(
         ):
             policy_scope_membership = _active_node_membership_for_user(
                 db,
+                domain=domain,
                 community_node_id=int(policy.community_node_id),
                 user_id=int(current_user.id),
             )
