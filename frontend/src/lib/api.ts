@@ -2414,6 +2414,15 @@ export async function getCommunityDomainNodeParticipationMap(
   );
 }
 
+export async function getCommunityDomainNodeServiceMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/node-service-map"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainGovernanceCoverage(
   communityDomainId: number | string
 ): Promise<any> {
