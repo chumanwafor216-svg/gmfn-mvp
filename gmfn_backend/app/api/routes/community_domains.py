@@ -838,6 +838,185 @@ COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS: dict[str, dict[str, Any]] = {
             "line-level trust evidence",
         ],
     },
+    "family_town_union_diaspora": {
+        "node_presets": [
+            {
+                "node_type": "council",
+                "node_kind": "town_union_council",
+                "label": "Executive council",
+                "example": "Executive Council",
+                "scope": "Central leadership for the town union, family network, or diaspora body.",
+            },
+            {
+                "node_type": "branch",
+                "node_kind": "town_union_branch",
+                "label": "Home / diaspora branch",
+                "example": "London Branch",
+                "scope": "Local branch at home or in a diaspora city with its own officers.",
+            },
+            {
+                "node_type": "committee",
+                "node_kind": "town_union_committee",
+                "label": "Committee",
+                "example": "Project Committee",
+                "scope": "Welfare, project, finance, dispute, or event committee.",
+            },
+            {
+                "node_type": "grade",
+                "node_kind": "age_grade",
+                "label": "Age grade / family group",
+                "example": "Umuada Welfare Group",
+                "scope": "Family branch, age-grade, women/youth wing, or practice group.",
+            },
+        ],
+        "role_presets": [
+            {"role_key": "branch_admin", "label": "Branch admin", "scope": "node"},
+            {"role_key": "project_lead", "label": "Project lead", "scope": "node"},
+            {"role_key": "welfare_officer", "label": "Welfare officer", "scope": "node"},
+            {"role_key": "treasurer", "label": "Treasurer", "scope": "domain_or_node"},
+        ],
+        "policy_presets": [
+            {
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "summary": "Central admins review formal family or union membership.",
+            },
+            {
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "summary": "Branch officers review local branch or group placement.",
+            },
+            {
+                "action_key": "domain.settings_change",
+                "review_mode": "multi_reviewer_review",
+                "summary": "Project or contribution settings should require more than one reviewer.",
+            },
+        ],
+        "activity_lanes": [
+            "welfare support",
+            "project contributions",
+            "diaspora chapters",
+            "family evidence",
+            "member businesses",
+        ],
+    },
+    "hospital_health_body": {
+        "node_presets": [
+            {
+                "node_type": "facility",
+                "node_kind": "health_facility",
+                "label": "Facility / branch",
+                "example": "Main Clinic",
+                "scope": "Hospital, clinic, branch facility, or medical practice location.",
+            },
+            {
+                "node_type": "department",
+                "node_kind": "health_department",
+                "label": "Department",
+                "example": "Maternity Department",
+                "scope": "Clinical, pharmacy, laboratory, records, or administrative department.",
+            },
+            {
+                "node_type": "unit",
+                "node_kind": "clinical_unit",
+                "label": "Clinical unit",
+                "example": "Night Shift Nursing Unit",
+                "scope": "Controlled unit, role group, shift group, or care team.",
+            },
+        ],
+        "role_presets": [
+            {"role_key": "facility_admin", "label": "Facility admin", "scope": "node"},
+            {"role_key": "department_lead", "label": "Department lead", "scope": "node"},
+            {"role_key": "records_officer", "label": "Records officer", "scope": "node"},
+            {"role_key": "credential_verifier", "label": "Credential verifier", "scope": "domain_or_node"},
+        ],
+        "policy_presets": [
+            {
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "summary": "Facility or department admins review local staff placement.",
+            },
+            {
+                "action_key": "evidence.verify",
+                "review_mode": "required_role_review",
+                "summary": "Credential or record evidence requires a designated verifier.",
+            },
+            {
+                "action_key": "domain.settings_change",
+                "review_mode": "multi_reviewer_review",
+                "summary": "Health-domain settings should require careful multi-reviewer approval.",
+            },
+        ],
+        "activity_lanes": [
+            "staff credential evidence",
+            "controlled documents",
+            "department notices",
+            "approved suppliers",
+            "analytics",
+        ],
+    },
+    "ngo_project_network": {
+        "node_presets": [
+            {
+                "node_type": "office",
+                "node_kind": "ngo_field_office",
+                "label": "Field office",
+                "example": "North Region Field Office",
+                "scope": "Head office, field office, or regional project location.",
+            },
+            {
+                "node_type": "program",
+                "node_kind": "ngo_program",
+                "label": "Program",
+                "example": "Livelihood Program",
+                "scope": "Program, project stream, donor mandate, or intervention area.",
+            },
+            {
+                "node_type": "team",
+                "node_kind": "ngo_team",
+                "label": "Team",
+                "example": "Monitoring Team",
+                "scope": "Field team, evidence team, partner unit, or beneficiary group.",
+            },
+            {
+                "node_type": "committee",
+                "node_kind": "ngo_project_committee",
+                "label": "Project committee",
+                "example": "Procurement Committee",
+                "scope": "Committee responsible for approvals, evidence, procurement, or reports.",
+            },
+        ],
+        "role_presets": [
+            {"role_key": "field_admin", "label": "Field admin", "scope": "node"},
+            {"role_key": "program_lead", "label": "Program lead", "scope": "node"},
+            {"role_key": "evidence_officer", "label": "Evidence officer", "scope": "domain_or_node"},
+            {"role_key": "partner_admin", "label": "Partner admin", "scope": "node"},
+        ],
+        "policy_presets": [
+            {
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "summary": "Program or field-office admins review local placement.",
+            },
+            {
+                "action_key": "evidence.verify",
+                "review_mode": "required_role_review",
+                "summary": "Evidence and report records require an evidence officer or verifier.",
+            },
+            {
+                "action_key": "domain.settings_change",
+                "review_mode": "multi_reviewer_review",
+                "summary": "Project-wide settings should require more than one reviewer.",
+            },
+        ],
+        "activity_lanes": [
+            "field reports",
+            "beneficiary evidence",
+            "partner units",
+            "project suppliers",
+            "donor-ready analytics",
+        ],
+    },
     "generic_association": {
         "node_presets": [
             {
@@ -1342,10 +1521,12 @@ def _community_domain_template_operating_blueprint_payload(
     template: dict[str, Any],
 ) -> dict[str, Any]:
     template_key = str(template["template_key"])
-    blueprint = COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS.get(
-        template_key,
-        COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS["generic_association"],
-    )
+    blueprint = COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS.get(template_key)
+    uses_generic_fallback = blueprint is None
+    if blueprint is None:
+        blueprint = COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS[
+            "generic_association"
+        ]
     default_modules = list(template["default_modules"])
     marketplace_role = _clean_role(template["marketplace_role"], "optional")
     module_fit = [
@@ -1383,6 +1564,10 @@ def _community_domain_template_operating_blueprint_payload(
             "default_modules": default_modules,
             "marketplace_role": marketplace_role,
         },
+        "blueprint_source": (
+            "generic_association" if uses_generic_fallback else template_key
+        ),
+        "uses_generic_fallback": bool(uses_generic_fallback),
         "node_presets": blueprint["node_presets"],
         "role_presets": blueprint["role_presets"],
         "policy_presets": blueprint["policy_presets"],

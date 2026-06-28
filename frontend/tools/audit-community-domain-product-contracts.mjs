@@ -138,7 +138,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS[\s\S]*school_multi_branch[\s\S]*market_cooperative[\s\S]*def _community_domain_template_operating_blueprint_payload[\s\S]*does not create a Community Domain[\s\S]*separate schemas[\s\S]*@router\.get\("\/templates\/\{template_key\}\/operating-blueprint"/,
+  /COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS[\s\S]*school_multi_branch[\s\S]*market_cooperative[\s\S]*family_town_union_diaspora[\s\S]*hospital_health_body[\s\S]*ngo_project_network[\s\S]*uses_generic_fallback[\s\S]*does not create a Community Domain[\s\S]*separate schemas[\s\S]*@router\.get\("\/templates\/\{template_key\}\/operating-blueprint"/,
   "Backend route must expose public Community Domain template operating blueprints without creation, activation, verification, payment, marketplace, social Community, or schema-fork side effects."
 );
 
@@ -152,6 +152,12 @@ assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_template_operating_blueprint_distinguishes_school_and_rejects_unknown[\s\S]*school_multi_branch\/operating-blueprint[\s\S]*school\/operating-blueprint[\s\S]*does-not-exist\/operating-blueprint[\s\S]*school_association/,
   "Backend tests must prove template operating blueprints distinguish society types, support domain-type lookup, and reject unknown templates."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_all_public_templates_have_specific_operating_blueprints[\s\S]*family_town_union_diaspora[\s\S]*hospital_health_body[\s\S]*ngo_project_network[\s\S]*uses_generic_fallback"\] is False[\s\S]*db\.query\(CommunityDomainActionReview\)\.count\(\) == 0/,
+  "Backend tests must prove every public built-in Community Domain template has a specific operating blueprint and no creation side effects."
 );
 
 assertContains(

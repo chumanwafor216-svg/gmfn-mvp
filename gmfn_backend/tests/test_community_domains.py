@@ -162,6 +162,8 @@ def test_template_operating_blueprint_is_public_planning_not_creation(
     assert blueprint["editable"] is False
     assert blueprint["template"]["template_key"] == "market_cooperative"
     assert blueprint["template"]["marketplace_role"] == "core"
+    assert blueprint["blueprint_source"] == "market_cooperative"
+    assert blueprint["uses_generic_fallback"] is False
     assert blueprint["governance_shape"] == {
         "supports_nested_nodes": True,
         "supports_inherited_policy": True,
@@ -229,6 +231,8 @@ def test_template_operating_blueprint_distinguishes_school_and_rejects_unknown(
     role_presets = {item["role_key"]: item for item in blueprint["role_presets"]}
     policy_modes = {item["review_mode"] for item in blueprint["policy_presets"]}
     assert blueprint["template"]["template_key"] == "school_multi_branch"
+    assert blueprint["blueprint_source"] == "school_multi_branch"
+    assert blueprint["uses_generic_fallback"] is False
     assert by_domain_type.json()["operating_blueprint"]["template"]["template_key"] == (
         "school_multi_branch"
     )
@@ -250,6 +254,49 @@ def test_template_operating_blueprint_distinguishes_school_and_rejects_unknown(
         assert db.query(CommunityDomain).count() == 0
         assert db.query(CommunityNode).count() == 0
         assert db.query(CommunityDomainMembership).count() == 0
+
+
+def test_all_public_templates_have_specific_operating_blueprints(
+    client: TestClient,
+):
+    templates = client.get("/community-domains/templates")
+    assert templates.status_code == 200, templates.text
+
+    expected_node_kinds = {
+        "school_multi_branch": {"school_branch", "school_class"},
+        "church_religious_body": {"church_branch", "church_ministry"},
+        "union_professional_body": {"union_chapter", "union_committee"},
+        "market_cooperative": {"market_line", "market_committee"},
+        "family_town_union_diaspora": {"town_union_branch", "age_grade"},
+        "hospital_health_body": {"health_facility", "clinical_unit"},
+        "ngo_project_network": {"ngo_field_office", "ngo_program"},
+        "generic_association": {"association_branch", "association_committee"},
+    }
+
+    for item in templates.json()["items"]:
+        template_key = item["template_key"]
+        response = client.get(
+            f"/community-domains/templates/{template_key}/operating-blueprint"
+        )
+        assert response.status_code == 200, response.text
+        blueprint = response.json()["operating_blueprint"]
+        assert blueprint["template"]["template_key"] == template_key
+        assert blueprint["blueprint_source"] == template_key
+        assert blueprint["uses_generic_fallback"] is False
+        node_kinds = {preset["node_kind"] for preset in blueprint["node_presets"]}
+        assert expected_node_kinds[template_key].issubset(node_kinds)
+        assert blueprint["role_presets"]
+        assert blueprint["policy_presets"]
+        assert blueprint["activity_lanes"]
+        assert "separate schemas" in blueprint["boundary"]
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomain).count() == 0
+        assert db.query(CommunityNode).count() == 0
+        assert db.query(CommunityDomainMembership).count() == 0
+        assert db.query(CommunityDomainPolicy).count() == 0
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
 
 
 def test_community_domain_draft_is_not_a_live_social_community(
