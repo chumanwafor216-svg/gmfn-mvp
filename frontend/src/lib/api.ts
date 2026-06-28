@@ -2408,6 +2408,12 @@ export async function getCommunityDomainSubscriptionLifecycle(
   );
 }
 
+export async function getCommunityDomainSocialBridge(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/social-bridge"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

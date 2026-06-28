@@ -13,7 +13,10 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import (
+    Clan,
+    ClanMembership,
     CommunityDomain,
+    CommunityDomainAffiliation,
     CommunityDomainActionReview,
     CommunityDomainActionReviewComment,
     CommunityDomainActionReviewDecision,
@@ -6485,6 +6488,258 @@ def _community_domain_subscription_lifecycle_payload(
     }
 
 
+def _community_domain_social_bridge_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    linked_clan: Optional[Clan] = None
+    if domain.clan_id is not None:
+        linked_clan = db.get(Clan, int(domain.clan_id))
+
+    linked = linked_clan is not None
+    linked_clan_id = int(linked_clan.id) if linked_clan is not None else None
+    linked_member_count = 0
+    outbound_affiliation_count = 0
+    inbound_affiliation_count = 0
+    active_affiliation_count = 0
+    pending_affiliation_count = 0
+
+    if linked_clan_id is not None:
+        linked_member_count = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == linked_clan_id)
+            .count()
+        )
+        outbound_rows = (
+            db.query(CommunityDomainAffiliation)
+            .filter(CommunityDomainAffiliation.parent_clan_id == linked_clan_id)
+            .all()
+        )
+        inbound_rows = (
+            db.query(CommunityDomainAffiliation)
+            .filter(CommunityDomainAffiliation.affiliate_clan_id == linked_clan_id)
+            .all()
+        )
+        outbound_affiliation_count = len(outbound_rows)
+        inbound_affiliation_count = len(inbound_rows)
+        all_rows = [*outbound_rows, *inbound_rows]
+        active_affiliation_count = sum(
+            1 for row in all_rows if _clean_role(row.status, "pending") == "approved"
+        )
+        pending_affiliation_count = sum(
+            1 for row in all_rows if _clean_role(row.status, "pending") == "pending"
+        )
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: int,
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": int(count),
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "concept_separation",
+            "Community and Community Domain separation",
+            "separated",
+            True,
+            2,
+            "Keep free social Community and institutional Community Domain as separate product objects.",
+            route_suffix="/operating-map",
+            requires_admin=False,
+            boundary=(
+                "Concept separation only. This does not merge Community and "
+                "Community Domain records."
+            ),
+        ),
+        lane(
+            "linked_social_community",
+            "Linked social Community",
+            "linked" if linked else "not_linked",
+            linked,
+            1 if linked else 0,
+            (
+                "Review the existing social Community bridge."
+                if linked
+                else "Decide later whether this Community Domain should be linked to an existing social Community."
+            ),
+            route_suffix="/network-presence",
+            requires_admin=True,
+            boundary=(
+                "Social bridge status only. This does not create a social "
+                "Community, set clan_id, link records, or move members."
+            ),
+        ),
+        lane(
+            "upgrade_existing_community",
+            "Upgrade existing Community path",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Do not present upgrade as live until a dedicated upgrade flow exists.",
+            route_suffix="/subscription-lifecycle",
+            requires_admin=True,
+            boundary=(
+                "Upgrade path is not connected. This does not convert a Clan, "
+                "Community, or marketplace into a Community Domain."
+            ),
+        ),
+        lane(
+            "affiliation_spine",
+            "Affiliation spine",
+            (
+                "clan_affiliations_visible"
+                if linked and (outbound_affiliation_count or inbound_affiliation_count)
+                else "not_domain_linked"
+            ),
+            False,
+            outbound_affiliation_count + inbound_affiliation_count,
+            "Treat existing CommunityDomainAffiliation rows as clan-to-clan only until a domain affiliation bridge is designed.",
+            route_suffix="/network-presence",
+            requires_admin=True,
+            boundary=(
+                "Affiliation spine is read-only here. This does not create, "
+                "approve, reject, or apply CommunityDomainAffiliation rows."
+            ),
+        ),
+        lane(
+            "membership_alignment",
+            "Membership alignment",
+            "counted" if linked else "not_evaluated",
+            linked,
+            linked_member_count if can_admin else 0,
+            "Compare social Community membership with domain membership only after a dedicated alignment flow exists.",
+            route_suffix="/members",
+            requires_admin=True,
+            boundary=(
+                "Membership alignment is aggregate only. This does not copy, "
+                "invite, approve, remove, or expose member lists."
+            ),
+        ),
+        lane(
+            "marketplace_context",
+            "Marketplace context",
+            "not_created_in_this_slice",
+            False,
+            0,
+            "Keep marketplace entry under the existing Marketplace/community flow until a bridge is deliberately designed.",
+            route_suffix="/economic-participation",
+            requires_admin=False,
+            boundary=(
+                "Marketplace context is planning only. This does not create "
+                "marketplace activity or move existing marketplace records."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_social_bridge",
+            "label": "Ask a Community Domain admin to review the social Community bridge",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not linked:
+        primary_next_action = {
+            "action_key": "plan_social_bridge",
+            "label": "Decide whether this Community Domain needs a social Community bridge",
+            "route_hint": f"/community-domains/{domain_id}/network-presence",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_social_bridge_boundaries",
+            "label": "Review social Community bridge boundaries",
+            "route_hint": f"/community-domains/{domain_id}/network-presence",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "linked_community": {
+            "linked": bool(linked),
+            "id": linked_clan_id if can_admin else None,
+            "name": linked_clan.name if linked_clan is not None and can_admin else None,
+            "status": (
+                linked_clan.status
+                if linked_clan is not None and can_admin
+                else ("hidden_for_member" if linked else "not_linked")
+            ),
+            "community_code": (
+                linked_clan.community_code
+                if linked_clan is not None and can_admin
+                else None
+            ),
+            "member_count": int(linked_member_count) if can_admin and linked else None,
+        },
+        "summary": {
+            "bridge_status": "linked" if linked else "not_linked",
+            "domain_clan_id_present": bool(domain.clan_id is not None),
+            "upgrade_path_status": "not_connected_in_this_slice",
+            "affiliation_spine_status": "clan_to_clan_only",
+            "linked_member_count": int(linked_member_count) if can_admin and linked else None,
+            "outbound_affiliations": (
+                int(outbound_affiliation_count) if can_admin and linked else None
+            ),
+            "inbound_affiliations": (
+                int(inbound_affiliation_count) if can_admin and linked else None
+            ),
+            "active_affiliations": (
+                int(active_affiliation_count) if can_admin and linked else None
+            ),
+            "pending_affiliations": (
+                int(pending_affiliation_count) if can_admin and linked else None
+            ),
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain social bridge is read-only relationship planning. "
+            "This endpoint does not create a social Community, upgrade an "
+            "existing Community, set clan_id, create affiliations, decide "
+            "affiliations, copy members, invite members, move marketplace "
+            "activity, activate billing, verify authority, merge Community and "
+            "Community Domain records, or expose private member records."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -7956,6 +8211,27 @@ def get_community_domain_subscription_lifecycle(
         "ok": True,
         "community_domain_id": int(domain.id),
         "subscription_lifecycle": _community_domain_subscription_lifecycle_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/social-bridge", response_model=dict[str, Any])
+def get_community_domain_social_bridge(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "social_bridge": _community_domain_social_bridge_payload(
             db,
             domain=domain,
             current_user=current_user,

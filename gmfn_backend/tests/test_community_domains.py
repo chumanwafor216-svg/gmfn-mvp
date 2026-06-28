@@ -10,6 +10,7 @@ from app.db.models import (
     Clan,
     ClanMembership,
     CommunityDomain,
+    CommunityDomainAffiliation,
     CommunityDomainActionReview,
     CommunityDomainActionReviewComment,
     CommunityDomainActionReviewDecision,
@@ -3106,6 +3107,219 @@ def test_member_can_read_subscription_lifecycle_but_admin_routes_are_hidden(
     assert lanes["suspension_reactivation"]["route_hint"] is None
     assert subscription["summary"]["billing_status"] == "not_metered_in_this_slice"
     assert "private finance" in subscription["boundary"]
+
+
+def test_social_bridge_projects_linked_community_without_upgrade_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Social Bridge Market Domain",
+                "display_name": "Social Bridge Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        created_clan = client.post(
+            "/clans/",
+            json={
+                "name": "Social Bridge Market Circle",
+                "description": "The existing lightweight community circle.",
+            },
+        )
+        assert created_clan.status_code == 201, created_clan.text
+        clan_id = created_clan.json()["id"]
+
+        created_affiliate = client.post(
+            "/clans/",
+            json={
+                "name": "Social Bridge Affiliate Circle",
+                "description": "A related lightweight community circle.",
+            },
+        )
+        assert created_affiliate.status_code == 201, created_affiliate.text
+        affiliate_id = created_affiliate.json()["id"]
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.clan_id = clan_id
+            db.add(
+                CommunityDomainAffiliation(
+                    parent_clan_id=clan_id,
+                    affiliate_clan_id=affiliate_id,
+                    requested_by_user_id=owner.id,
+                    decided_by_user_id=owner.id,
+                    status="approved",
+                    request_note="Existing clan-to-clan relationship.",
+                    decision_note="Approved before Community Domain bridge projection.",
+                )
+            )
+            db.commit()
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "clans": db.query(Clan).count(),
+                "clan_members": db.query(ClanMembership).count(),
+                "affiliations": db.query(CommunityDomainAffiliation).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/social-bridge")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    social_bridge = payload["social_bridge"]
+    assert social_bridge["editable"] is False
+    assert social_bridge["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert social_bridge["linked_community"] == {
+        "linked": True,
+        "id": clan_id,
+        "name": "Social Bridge Market Circle",
+        "status": "active",
+        "community_code": None,
+        "member_count": 1,
+    }
+    assert social_bridge["summary"] == {
+        "bridge_status": "linked",
+        "domain_clan_id_present": True,
+        "upgrade_path_status": "not_connected_in_this_slice",
+        "affiliation_spine_status": "clan_to_clan_only",
+        "linked_member_count": 1,
+        "outbound_affiliations": 1,
+        "inbound_affiliations": 0,
+        "active_affiliations": 1,
+        "pending_affiliations": 0,
+    }
+    assert social_bridge["primary_next_action"] == {
+        "action_key": "review_social_bridge_boundaries",
+        "label": "Review social Community bridge boundaries",
+        "route_hint": f"/community-domains/{domain_id}/network-presence",
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in social_bridge["lanes"]}
+    assert lanes["concept_separation"]["status"] == "separated"
+    assert lanes["linked_social_community"]["status"] == "linked"
+    assert lanes["linked_social_community"]["ready"] is True
+    assert lanes["upgrade_existing_community"]["status"] == "not_connected_in_this_slice"
+    assert lanes["affiliation_spine"]["status"] == "clan_affiliations_visible"
+    assert lanes["affiliation_spine"]["count"] == 1
+    assert lanes["membership_alignment"]["count"] == 1
+    assert lanes["marketplace_context"]["status"] == "not_created_in_this_slice"
+    assert "does not create a social Community" in social_bridge["boundary"]
+    assert "upgrade an existing Community" in social_bridge["boundary"]
+    assert "set clan_id" in social_bridge["boundary"]
+    assert "create affiliations" in social_bridge["boundary"]
+    assert "copy members" in social_bridge["boundary"]
+    assert "private member records" in social_bridge["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "clans": db.query(Clan).count(),
+            "clan_members": db.query(ClanMembership).count(),
+            "affiliations": db.query(CommunityDomainAffiliation).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_social_bridge_but_linked_community_details_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "social-bridge-member@example.com")
+    outsider = _seed_user(3, "social-bridge-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Social Bridge School Domain",
+                "display_name": "Social Bridge School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        created_clan = client.post(
+            "/clans/",
+            json={
+                "name": "Social Bridge School Circle",
+                "description": "A private lightweight school circle.",
+            },
+        )
+        assert created_clan.status_code == 201, created_clan.text
+        clan_id = created_clan.json()["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.clan_id = clan_id
+            db.commit()
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_bridge = client.get(f"/community-domains/{domain_id}/social-bridge")
+        assert member_bridge.status_code == 200, member_bridge.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_bridge = client.get(f"/community-domains/{domain_id}/social-bridge")
+        assert outsider_bridge.status_code == 403, outsider_bridge.text
+        assert "active Community Domain members" in outsider_bridge.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    social_bridge = member_bridge.json()["social_bridge"]
+    assert social_bridge["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert social_bridge["linked_community"] == {
+        "linked": True,
+        "id": None,
+        "name": None,
+        "status": "hidden_for_member",
+        "community_code": None,
+        "member_count": None,
+    }
+    assert social_bridge["summary"]["bridge_status"] == "linked"
+    assert social_bridge["summary"]["linked_member_count"] is None
+    assert social_bridge["summary"]["outbound_affiliations"] is None
+    assert social_bridge["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_social_bridge",
+        "label": "Ask a Community Domain admin to review the social Community bridge",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    lanes = {item["lane_key"]: item for item in social_bridge["lanes"]}
+    assert lanes["concept_separation"]["route_hint"].endswith("/operating-map")
+    assert lanes["linked_social_community"]["route_hint"] is None
+    assert lanes["upgrade_existing_community"]["route_hint"] is None
+    assert lanes["affiliation_spine"]["route_hint"] is None
+    assert lanes["membership_alignment"]["route_hint"] is None
+    assert lanes["marketplace_context"]["route_hint"].endswith("/economic-participation")
+    assert "private member records" in social_bridge["boundary"]
 
 
 def test_service_settings_are_template_projection_without_activation(
