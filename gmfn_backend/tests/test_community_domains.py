@@ -1832,6 +1832,26 @@ def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
         assert decided_lineage.status_code == 200, decided_lineage.text
         assert decided_lineage.json()["total"] == 1
 
+        denied_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "I can still see this, but I should not add new notes."},
+        )
+        assert denied_comment.status_code == 403, denied_comment.text
+        assert (
+            denied_comment.json()["detail"]["code"]
+            == "community_domain_review_comment_forbidden"
+        )
+
+        denied_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={"title": "Late evidence after role change"},
+        )
+        assert denied_evidence.status_code == 403, denied_evidence.text
+        assert (
+            denied_evidence.json()["detail"]["code"]
+            == "community_domain_review_evidence_forbidden"
+        )
+
         app.dependency_overrides[get_current_user] = lambda: second_admin
         second_decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",

@@ -1173,6 +1173,33 @@ def _can_view_action_review(
         )
 
 
+def _can_contribute_to_action_review(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    row: CommunityDomainActionReview,
+    current_user: User,
+) -> bool:
+    if int(row.requested_by_user_id) == int(current_user.id):
+        return True
+
+    try:
+        _require_action_review_admin_scope(
+            db,
+            domain=domain,
+            row=row,
+            current_user=current_user,
+        )
+        return True
+    except HTTPException:
+        return _can_decide_action_review(
+            db,
+            domain=domain,
+            row=row,
+            current_user=current_user,
+        )
+
+
 def _find_root_node(db: Session, community_domain_id: int) -> Optional[CommunityNode]:
     return (
         db.query(CommunityNode)
@@ -2329,7 +2356,7 @@ def create_community_domain_action_review_comment(
         community_domain_id=int(domain.id),
         review_id=int(review_id),
     )
-    if not _can_view_action_review(
+    if not _can_contribute_to_action_review(
         db,
         domain=domain,
         row=row,
@@ -2339,7 +2366,7 @@ def create_community_domain_action_review_comment(
             status_code=403,
             detail={
                 "code": "community_domain_review_comment_forbidden",
-                "message": "Only users who can view this action review can comment on it.",
+                "message": "Only the requester or a current scoped reviewer/admin can comment on this action review.",
             },
         )
 
@@ -2441,7 +2468,7 @@ def create_community_domain_action_review_evidence(
         community_domain_id=int(domain.id),
         review_id=int(review_id),
     )
-    if not _can_view_action_review(
+    if not _can_contribute_to_action_review(
         db,
         domain=domain,
         row=row,
@@ -2451,7 +2478,7 @@ def create_community_domain_action_review_evidence(
             status_code=403,
             detail={
                 "code": "community_domain_review_evidence_forbidden",
-                "message": "Only users who can view this action review can add evidence to it.",
+                "message": "Only the requester or a current scoped reviewer/admin can add evidence to this action review.",
             },
         )
 
