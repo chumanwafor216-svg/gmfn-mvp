@@ -4785,6 +4785,399 @@ def test_member_can_read_node_domain_boundary_map_but_admin_counts_are_hidden(
     assert "private member activity" in boundary_map["boundary"]
 
 
+def test_node_evidence_authority_map_projects_local_evidence_authority_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    ready_admin = _seed_user(2, "node-evidence-ready-admin@example.com")
+    ready_member = _seed_user(3, "node-evidence-ready-member@example.com")
+    public_admin = _seed_user(4, "node-evidence-public-admin@example.com")
+    public_member = _seed_user(5, "node-evidence-public-member@example.com")
+    issuer_member = _seed_user(6, "node-evidence-issuer-member@example.com")
+    policy_admin = _seed_user(7, "node-evidence-policy-admin@example.com")
+    policy_member = _seed_user(8, "node-evidence-policy-member@example.com")
+    signal_admin = _seed_user(9, "node-evidence-signal-admin@example.com")
+    signal_member = _seed_user(10, "node-evidence-signal-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Evidence Authority School",
+                "display_name": "Node Evidence Authority School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        ready_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Verification Desk",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "evidence_department",
+                "visibility_policy": "members",
+            },
+        )
+        assert ready_node.status_code == 201, ready_node.text
+        ready_node_id = ready_node.json()["node"]["id"]
+
+        public_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Public Testimony Desk",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "public_evidence_department",
+                "visibility_policy": "public",
+            },
+        )
+        assert public_node.status_code == 201, public_node.text
+        public_node_id = public_node.json()["node"]["id"]
+
+        issuer_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Welfare Witness Circle",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "welfare_committee",
+                "visibility_policy": "members",
+            },
+        )
+        assert issuer_node.status_code == 201, issuer_node.text
+        issuer_node_id = issuer_node.json()["node"]["id"]
+
+        policy_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Science Department",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "school_department",
+                "visibility_policy": "members",
+            },
+        )
+        assert policy_node.status_code == 201, policy_node.text
+        policy_node_id = policy_node.json()["node"]["id"]
+
+        signal_node = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Alumni Evidence Desk",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "alumni_evidence_department",
+                "visibility_policy": "members",
+            },
+        )
+        assert signal_node.status_code == 201, signal_node.text
+        signal_node_id = signal_node.json()["node"]["id"]
+
+        users = [
+            ready_admin,
+            ready_member,
+            public_admin,
+            public_member,
+            issuer_member,
+            policy_admin,
+            policy_member,
+            signal_admin,
+            signal_member,
+        ]
+        for user in users:
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (ready_node_id, ready_admin.id, "department_admin"),
+            (ready_node_id, ready_member.id, "member"),
+            (public_node_id, public_admin.id, "department_admin"),
+            (public_node_id, public_member.id, "member"),
+            (issuer_node_id, issuer_member.id, "member"),
+            (policy_node_id, policy_admin.id, "department_admin"),
+            (policy_node_id, policy_member.id, "member"),
+            (signal_node_id, signal_admin.id, "department_admin"),
+            (signal_node_id, signal_member.id, "member"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        for node_id, suffix in (
+            (ready_node_id, "ready"),
+            (public_node_id, "public"),
+            (signal_node_id, "signal"),
+        ):
+            policy = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json={
+                    "policy_key": f"node-evidence-{suffix}-policy",
+                    "action_key": "evidence.verify",
+                    "community_node_id": node_id,
+                    "scope_type": "node",
+                    "review_mode": "node_admin_review",
+                    "required_role": "department_admin",
+                },
+            )
+            assert policy.status_code == 201, policy.text
+
+        for node_id, suffix in (
+            (ready_node_id, "ready"),
+            (public_node_id, "public"),
+        ):
+            review = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "evidence.verify",
+                    "community_node_id": node_id,
+                    "request_note": f"Review local evidence for {suffix}.",
+                    "payload": {"claim": f"{suffix} evidence posture"},
+                },
+            )
+            assert review.status_code == 201, review.text
+            review_id = review.json()["action_review"]["id"]
+
+            evidence = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+                json={
+                    "evidence_type": "document",
+                    "title": f"{suffix.title()} evidence note",
+                    "file_name": f"node-evidence-{suffix}.pdf",
+                    "storage_key": f"private/evidence/node-evidence-{suffix}.pdf",
+                },
+            )
+            assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/node-evidence-authority-map"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    evidence_map = payload["node_evidence_authority_map"]
+    assert evidence_map["editable"] is False
+    assert evidence_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert evidence_map["counts"] == {
+        "nodes": 6,
+        "non_root_nodes": 5,
+        "active_node_memberships": 9,
+        "active_policies": 3,
+        "review_records": 2,
+        "active_evidence_records": 2,
+        "local_evidence_authority_ready": 1,
+        "public_evidence_review_needed": 1,
+        "needs_local_evidence_issuer": 1,
+        "needs_evidence_policy": 1,
+        "needs_evidence_signal": 1,
+        "inactive": 0,
+        "public_evidence_published": 0,
+        "credentials_issued": 0,
+        "trust_passport_entries_written": 0,
+        "storage_keys_exposed": 0,
+        "legal_authority_verified": 0,
+    }
+    assert evidence_map["status_counts"] == {
+        "local_evidence_authority_ready": 1,
+        "public_evidence_review_needed": 1,
+        "needs_local_evidence_issuer": 1,
+        "needs_evidence_policy": 1,
+        "needs_evidence_signal": 1,
+    }
+    assert evidence_map["primary_next_action"] == {
+        "action_key": "review_public_evidence_exposure",
+        "label": "Review public evidence exposure",
+        "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+        "requires_admin": True,
+    }
+    assert "read-only local evidence authority planning" in evidence_map["boundary"]
+    assert "upload evidence" in evidence_map["boundary"]
+    assert "verify evidence" in evidence_map["boundary"]
+    assert "publish public evidence" in evidence_map["boundary"]
+    assert "expose storage keys" in evidence_map["boundary"]
+    assert "issue credentials" in evidence_map["boundary"]
+    assert "Trust Passport entries" in evidence_map["boundary"]
+    assert "private/evidence/node-evidence-ready.pdf" not in str(evidence_map)
+    assert "private/evidence/node-evidence-public.pdf" not in str(evidence_map)
+
+    flat = {item["node"]["name"]: item for item in evidence_map["flat_nodes"]}
+    assert flat["Node Evidence Authority School"]["evidence_authority_status"] == (
+        "domain_root"
+    )
+    assert flat["Verification Desk"]["evidence_authority_status"] == (
+        "local_evidence_authority_ready"
+    )
+    assert flat["Verification Desk"]["ready_for_local_evidence_authority"] is True
+    assert flat["Verification Desk"]["local_member_count"] == 2
+    assert flat["Verification Desk"]["local_issuer_count"] == 1
+    assert flat["Verification Desk"]["local_policy_count"] == 1
+    assert flat["Verification Desk"]["review_record_count"] == 1
+    assert flat["Verification Desk"]["evidence_record_count"] == 1
+    assert flat["Verification Desk"]["signal_count"] == 2
+    assert flat["Public Testimony Desk"]["evidence_authority_status"] == (
+        "public_evidence_review_needed"
+    )
+    assert flat["Public Testimony Desk"]["admin_action_route_hint"].endswith(
+        "/record-privacy-map"
+    )
+    assert flat["Public Testimony Desk"]["public_evidence_status"] == (
+        "not_published_in_this_slice"
+    )
+    assert flat["Welfare Witness Circle"]["evidence_authority_status"] == (
+        "needs_local_evidence_issuer"
+    )
+    assert flat["Science Department"]["evidence_authority_status"] == (
+        "needs_evidence_policy"
+    )
+    assert flat["Alumni Evidence Desk"]["evidence_authority_status"] == (
+        "needs_evidence_signal"
+    )
+    assert flat["Alumni Evidence Desk"]["credential_status"] == (
+        "not_issued_in_this_slice"
+    )
+    assert flat["Alumni Evidence Desk"]["trust_passport_status"] == (
+        "not_written_in_this_slice"
+    )
+    assert flat["Alumni Evidence Desk"]["storage_key_status"] == (
+        "not_exposed_in_this_slice"
+    )
+    assert flat["Alumni Evidence Desk"]["verification_status"] == (
+        "not_approved_in_this_slice"
+    )
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_evidence_authority_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-evidence-visible-member@example.com")
+    outsider = _seed_user(3, "node-evidence-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Evidence Member School",
+                "display_name": "Node Evidence Member School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Evidence Desk",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "evidence_department",
+                "visibility_policy": "members",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/node-evidence-authority-map"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-evidence-authority-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    evidence_map = member_map.json()["node_evidence_authority_map"]
+    assert evidence_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert evidence_map["counts"]["nodes"] == 2
+    assert evidence_map["counts"]["non_root_nodes"] == 1
+    assert evidence_map["counts"]["active_node_memberships"] is None
+    assert evidence_map["counts"]["active_policies"] is None
+    assert evidence_map["counts"]["review_records"] is None
+    assert evidence_map["counts"]["active_evidence_records"] is None
+    assert evidence_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_evidence_authority",
+        "label": "Ask a Community Domain admin to review evidence authority",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in evidence_map["flat_nodes"]}
+    assert flat["Primary Evidence Desk"]["evidence_authority_status"] == (
+        "needs_local_evidence_issuer"
+    )
+    assert flat["Primary Evidence Desk"]["local_member_count"] is None
+    assert flat["Primary Evidence Desk"]["local_issuer_count"] is None
+    assert flat["Primary Evidence Desk"]["local_policy_count"] is None
+    assert flat["Primary Evidence Desk"]["review_record_count"] is None
+    assert flat["Primary Evidence Desk"]["evidence_record_count"] is None
+    assert flat["Primary Evidence Desk"]["signal_count"] is None
+    assert flat["Primary Evidence Desk"]["admin_action_route_hint"] is None
+    assert flat["Primary Evidence Desk"]["storage_key_status"] == (
+        "not_exposed_in_this_slice"
+    )
+    assert "verify evidence" in evidence_map["boundary"]
+    assert "issue credentials" in evidence_map["boundary"]
+    assert "private member activity" in evidence_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):

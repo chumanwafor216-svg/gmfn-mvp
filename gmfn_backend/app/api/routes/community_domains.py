@@ -7883,6 +7883,325 @@ def _community_domain_node_domain_boundary_map_payload(
     }
 
 
+def _community_domain_node_evidence_authority_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    active_evidence = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .all()
+    )
+
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    for node in nodes:
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        policy_node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(policy_node_id, []).append(policy)
+
+    reviews_by_node: dict[Optional[int], int] = {}
+    for review in reviews:
+        review_node_id = (
+            int(review.community_node_id)
+            if review.community_node_id is not None
+            else None
+        )
+        reviews_by_node[review_node_id] = reviews_by_node.get(review_node_id, 0) + 1
+
+    evidence_by_node: dict[Optional[int], int] = {}
+    for evidence in active_evidence:
+        evidence_node_id = (
+            int(evidence.community_node_id)
+            if evidence.community_node_id is not None
+            else None
+        )
+        evidence_by_node[evidence_node_id] = evidence_by_node.get(evidence_node_id, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def evidence_authority_status_for(
+        node: CommunityNode,
+        *,
+        local_issuer_count: int,
+        local_policy_count: int,
+        signal_count: int,
+    ) -> tuple[str, str, bool]:
+        if node.parent_node_id is None:
+            return (
+                "domain_root",
+                "Root institution record; local evidence authority belongs to child operating units.",
+                False,
+            )
+        if _clean_role(node.status, "active") != "active":
+            return (
+                "inactive",
+                "Reactivate this operating unit before reading local evidence authority.",
+                False,
+            )
+
+        visibility = _clean_role(node.visibility_policy, "members")
+        if visibility in {"public", "network", "external"}:
+            return (
+                "public_evidence_review_needed",
+                "Review public evidence exposure before allowing this unit to carry outward proof.",
+                False,
+            )
+        if local_issuer_count <= 0:
+            return (
+                "needs_local_evidence_issuer",
+                "Assign a local admin or evidence issuer before this unit carries evidence.",
+                False,
+            )
+        if local_policy_count <= 0:
+            return (
+                "needs_evidence_policy",
+                "Add a local evidence or verification policy before this unit carries evidence.",
+                False,
+            )
+        if signal_count <= 0:
+            return (
+                "needs_evidence_signal",
+                "Record reviewed local evidence before treating this unit's evidence authority as ready.",
+                False,
+            )
+        return (
+            "local_evidence_authority_ready",
+            "This unit has a local issuer, policy, and reviewed evidence signals for future trust carrying.",
+            True,
+        )
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        local_memberships = memberships_by_node.get(node_id, [])
+        local_issuer_count = sum(
+            1
+            for row in local_memberships
+            if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+        )
+        local_policy_count = len(policies_by_node.get(node_id, []))
+        review_count = reviews_by_node.get(node_id, 0)
+        evidence_count = evidence_by_node.get(node_id, 0)
+        signal_count = review_count + evidence_count
+        evidence_status, next_step, ready = evidence_authority_status_for(
+            node,
+            local_issuer_count=local_issuer_count,
+            local_policy_count=local_policy_count,
+            signal_count=signal_count,
+        )
+        if evidence_status == "public_evidence_review_needed":
+            admin_route = "/record-privacy-map"
+        elif evidence_status == "needs_local_evidence_issuer":
+            admin_route = "/roles"
+        elif evidence_status == "needs_evidence_policy":
+            admin_route = "/policies"
+        elif evidence_status == "needs_evidence_signal":
+            admin_route = "/evidence-map"
+        else:
+            admin_route = f"/nodes/{node_id}/operating-summary"
+
+        item = {
+            "node": _node_payload(node),
+            "evidence_authority_status": evidence_status,
+            "ready_for_local_evidence_authority": ready,
+            "visibility_policy": _clean_role(node.visibility_policy, "members"),
+            "direct_child_count": len(child_nodes),
+            "local_member_count": admin_count(len(local_memberships)),
+            "local_issuer_count": admin_count(local_issuer_count),
+            "local_policy_count": admin_count(local_policy_count),
+            "review_record_count": admin_count(review_count),
+            "evidence_record_count": admin_count(evidence_count),
+            "signal_count": admin_count(signal_count),
+            "public_evidence_status": "not_published_in_this_slice",
+            "credential_status": "not_issued_in_this_slice",
+            "trust_passport_status": "not_written_in_this_slice",
+            "storage_key_status": "not_exposed_in_this_slice",
+            "verification_status": "not_approved_in_this_slice",
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "admin_action_route_hint": route_hint(admin_route, requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only local evidence authority item. This does not upload evidence, "
+                "verify evidence, publish public evidence, expose storage keys, "
+                "expose review payloads, issue credentials, issue "
+                "TrustSlips, write Trust Passport entries, create marketplace "
+                "records, create finance records, or expose private member "
+                "activity."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    tree = [node_item(root) for root in children_by_parent.get(None, [])]
+    non_root_items = [
+        item for item in flat_nodes if item["node"]["parent_node_id"] is not None
+    ]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["evidence_authority_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if not non_root_items:
+        primary_next_action = {
+            "action_key": "map_operating_units_before_evidence_authority",
+            "label": "Map operating units before evidence authority planning",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("public_evidence_review_needed", 0):
+        primary_next_action = {
+            "action_key": "review_public_evidence_exposure",
+            "label": "Review public evidence exposure",
+            "route_hint": route_hint("/record-privacy-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_local_evidence_issuer", 0):
+        primary_next_action = {
+            "action_key": "assign_local_evidence_issuers",
+            "label": "Assign local evidence issuers",
+            "route_hint": route_hint("/roles", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_evidence_policy", 0):
+        primary_next_action = {
+            "action_key": "add_local_evidence_policy",
+            "label": "Add local evidence policy",
+            "route_hint": route_hint("/policies", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_evidence_signal", 0):
+        primary_next_action = {
+            "action_key": "record_local_evidence_signals",
+            "label": "Record local evidence signals",
+            "route_hint": route_hint("/evidence-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_local_evidence_authority",
+            "label": "Review local evidence authority",
+            "route_hint": route_hint("/evidence-map"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_evidence_authority",
+            "label": "Ask a Community Domain admin to review evidence authority",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "active_node_memberships": admin_count(len(active_node_memberships)),
+            "active_policies": admin_count(len(active_policies)),
+            "review_records": admin_count(len(reviews)),
+            "active_evidence_records": admin_count(len(active_evidence)),
+            "local_evidence_authority_ready": status_counts.get(
+                "local_evidence_authority_ready", 0
+            ),
+            "public_evidence_review_needed": status_counts.get(
+                "public_evidence_review_needed", 0
+            ),
+            "needs_local_evidence_issuer": status_counts.get(
+                "needs_local_evidence_issuer", 0
+            ),
+            "needs_evidence_policy": status_counts.get("needs_evidence_policy", 0),
+            "needs_evidence_signal": status_counts.get("needs_evidence_signal", 0),
+            "inactive": status_counts.get("inactive", 0),
+            "public_evidence_published": 0,
+            "credentials_issued": 0,
+            "trust_passport_entries_written": 0,
+            "storage_keys_exposed": 0,
+            "legal_authority_verified": 0,
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain node evidence-authority map is read-only local evidence authority "
+            "planning. It shows which branches, lines, "
+            "classes, departments, committees, chapters, or other units appear "
+            "ready to carry evidence later and which still need local issuers, "
+            "policy, evidence signals, or public-exposure review. It does not "
+            "upload evidence, verify evidence, publish public evidence, expose storage keys, "
+            "expose review payloads, issue credentials, issue "
+            "TrustSlips, write Trust Passport entries, create marketplace "
+            "records, create finance records, verify legal authority, or expose "
+            "private member activity."
+        ),
+    }
+
+
 def _community_domain_governance_coverage_payload(
     db: Session,
     *,
@@ -13768,6 +14087,25 @@ def get_community_domain_node_domain_boundary_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "node_domain_boundary_map": _community_domain_node_domain_boundary_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/node-evidence-authority-map", response_model=dict[str, Any])
+def get_community_domain_node_evidence_authority_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node_evidence_authority_map": _community_domain_node_evidence_authority_map_payload(
             db,
             domain=domain,
             current_user=current_user,
