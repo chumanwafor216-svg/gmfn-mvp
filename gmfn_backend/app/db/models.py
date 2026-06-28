@@ -741,6 +741,74 @@ class CommunityDomainActionReview(Base):
     requester = relationship("User", foreign_keys=[requested_by_user_id])
     subject = relationship("User", foreign_keys=[subject_user_id])
     decider = relationship("User", foreign_keys=[decided_by_user_id])
+    decisions = relationship(
+        "CommunityDomainActionReviewDecision",
+        back_populates="action_review",
+        cascade="all, delete-orphan",
+    )
+
+
+class CommunityDomainActionReviewDecision(Base):
+    __tablename__ = "community_domain_action_review_decisions"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "action_review_id",
+            "decided_by_user_id",
+            name="uq_comm_review_decisions_review_user",
+        ),
+        Index("ix_comm_review_decisions_review", "action_review_id"),
+        Index("ix_comm_review_decisions_domain", "community_domain_id"),
+        Index("ix_comm_review_decisions_node", "community_node_id"),
+        Index("ix_comm_review_decisions_decider", "decided_by_user_id"),
+        Index("ix_comm_review_decisions_decision", "decision"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    action_review_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domain_action_reviews.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_domain_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domains.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_node_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_nodes.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    decided_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    decision: Mapped[str] = mapped_column(String(24), nullable=False, index=True)
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    action_review = relationship(
+        "CommunityDomainActionReview",
+        foreign_keys=[action_review_id],
+        back_populates="decisions",
+    )
+    community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
+    community_node = relationship("CommunityNode", foreign_keys=[community_node_id])
+    decider = relationship("User", foreign_keys=[decided_by_user_id])
 
 
 class CommunityMemberVerification(Base):

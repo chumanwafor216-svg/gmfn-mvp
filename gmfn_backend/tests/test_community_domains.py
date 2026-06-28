@@ -9,6 +9,7 @@ from app.db.models import (
     ClanMembership,
     CommunityDomain,
     CommunityDomainActionReview,
+    CommunityDomainActionReviewDecision,
     CommunityDomainMembership,
     CommunityNode,
     CommunityNodeMembership,
@@ -821,7 +822,7 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
         assert decided["status"] == "approved"
         assert decided["decision"] == "approve"
         assert decided["decided_by_user_id"] == domain_admin.id
-        assert "specific business route" in decision.json()["boundary"]
+        assert "required approval count" in decision.json()["boundary"]
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -1201,6 +1202,118 @@ def test_domain_admin_can_apply_domain_member_upsert_review(
         )
         assert membership.role == "member"
         assert membership.status == "active"
+
+
+def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    first_admin = _seed_user(2, "first-reviewer@example.com")
+    second_admin = _seed_user(3, "second-reviewer@example.com")
+    requester = _seed_user(4, "two-review-requester@example.com")
+    new_member = _seed_user(5, "two-review-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Two Reviewer Association",
+                "display_name": "Two Reviewer Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user, role in (
+            (first_admin, "domain_admin"),
+            (second_admin, "domain_admin"),
+            (requester, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "two-reviewer-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "config": {"min_reviewers": 2},
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": "Two-review approved member",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+        assert review["required_approvals"] == 2
+        assert review["approval_count"] == 0
+
+        app.dependency_overrides[get_current_user] = lambda: first_admin
+        first_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "First approval."},
+        )
+        assert first_decision.status_code == 200, first_decision.text
+        first_data = first_decision.json()
+        assert first_data["approval_count"] == 1
+        assert first_data["required_approvals"] == 2
+        assert first_data["action_review"]["status"] == "pending_review"
+        assert len(first_data["action_review"]["decisions"]) == 1
+
+        blocked_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert blocked_apply.status_code == 409, blocked_apply.text
+        assert blocked_apply.json()["detail"]["code"] == "community_domain_review_not_approved"
+
+        app.dependency_overrides[get_current_user] = lambda: second_admin
+        second_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Second approval."},
+        )
+        assert second_decision.status_code == 200, second_decision.text
+        second_data = second_decision.json()
+        assert second_data["approval_count"] == 2
+        assert second_data["required_approvals"] == 2
+        assert second_data["action_review"]["status"] == "approved"
+        assert len(second_data["action_review"]["decisions"]) == 2
+
+        applied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert applied.status_code == 200, applied.text
+        assert applied.json()["action_review"]["status"] == "applied"
+        assert applied.json()["applied"]["membership"]["user_id"] == new_member.id
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainActionReviewDecision).count() == 2
+        membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == new_member.id)
+            .one()
+        )
+        assert membership.title == "Two-review approved member"
 
 
 def test_apply_review_keeps_unknown_actions_as_decision_records(

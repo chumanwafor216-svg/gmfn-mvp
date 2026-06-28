@@ -15,6 +15,7 @@ from app.db.database import get_db
 from app.db.models import (
     CommunityDomain,
     CommunityDomainActionReview,
+    CommunityDomainActionReviewDecision,
     CommunityDomainMembership,
     CommunityDomainPolicy,
     CommunityNode,
@@ -221,6 +222,11 @@ def _policy_payload(row: CommunityDomainPolicy) -> dict[str, Any]:
 def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
     node = getattr(row, "community_node", None)
     policy = getattr(row, "policy", None)
+    decisions = sorted(
+        getattr(row, "decisions", []) or [],
+        key=lambda item: (item.created_at or datetime.min.replace(tzinfo=timezone.utc), int(item.id or 0)),
+    )
+    approval_count = sum(1 for item in decisions if _clean_role(item.decision) == "approve")
     return {
         "id": int(row.id),
         "community_domain_id": int(row.community_domain_id),
@@ -239,9 +245,28 @@ def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
         "request_note": row.request_note,
         "decision_note": row.decision_note,
         "payload": _json_load(row.payload_json),
+        "required_approvals": _required_review_approvals(row),
+        "approval_count": approval_count,
+        "decisions": [_action_review_decision_payload(item) for item in decisions],
         "created_at": _iso(row.created_at),
         "updated_at": _iso(row.updated_at),
         "decided_at": _iso(row.decided_at),
+    }
+
+
+def _action_review_decision_payload(row: CommunityDomainActionReviewDecision) -> dict[str, Any]:
+    decider = getattr(row, "decider", None)
+    return {
+        "id": int(row.id),
+        "action_review_id": int(row.action_review_id),
+        "community_domain_id": int(row.community_domain_id),
+        "community_node_id": int(row.community_node_id) if row.community_node_id is not None else None,
+        "decided_by_user_id": int(row.decided_by_user_id),
+        "decided_by_user_email": getattr(decider, "email", None),
+        "decision": row.decision,
+        "decision_note": row.decision_note,
+        "created_at": _iso(row.created_at),
+        "updated_at": _iso(row.updated_at),
     }
 
 
@@ -417,6 +442,17 @@ def _get_action_review_or_404(
     if row is None:
         raise HTTPException(status_code=404, detail="Community Domain action review not found")
     return row
+
+
+def _required_review_approvals(row: CommunityDomainActionReview) -> int:
+    policy = getattr(row, "policy", None)
+    config = _json_load(getattr(policy, "config_json", None))
+    raw_value = config.get("min_approvals", config.get("min_reviewers", 1))
+    try:
+        value = int(raw_value)
+    except (TypeError, ValueError):
+        value = 1
+    return max(1, min(value, 25))
 
 
 def _payload_int(payload: dict[str, Any], key: str) -> int:
@@ -1330,28 +1366,73 @@ def decide_community_domain_action_review(
     else:
         _require_domain_admin_scope(db, domain=domain, current_user=current_user)
 
+    if _clean_role(row.status) == "applied":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_review_already_applied",
+                "message": "This Community Domain action review has already been applied.",
+            },
+        )
+
     decision = _clean_role(payload.decision)
-    status_map = {
-        "approve": "approved",
-        "reject": "rejected",
-        "needs_changes": "needs_changes",
-    }
+    decision_row = (
+        db.query(CommunityDomainActionReviewDecision)
+        .filter(CommunityDomainActionReviewDecision.action_review_id == int(row.id))
+        .filter(CommunityDomainActionReviewDecision.decided_by_user_id == int(current_user.id))
+        .first()
+    )
+    if decision_row is None:
+        decision_row = CommunityDomainActionReviewDecision(
+            action_review_id=int(row.id),
+            community_domain_id=int(domain.id),
+            community_node_id=int(row.community_node_id) if row.community_node_id is not None else None,
+            decided_by_user_id=int(current_user.id),
+        )
+        db.add(decision_row)
+
+    decision_row.decision = decision
+    decision_row.decision_note = _clean_str(payload.decision_note) or None
+    db.flush()
+
+    decision_rows = (
+        db.query(CommunityDomainActionReviewDecision)
+        .filter(CommunityDomainActionReviewDecision.action_review_id == int(row.id))
+        .order_by(CommunityDomainActionReviewDecision.created_at.asc(), CommunityDomainActionReviewDecision.id.asc())
+        .all()
+    )
+    approval_count = sum(1 for item in decision_rows if _clean_role(item.decision) == "approve")
+    rejection_count = sum(1 for item in decision_rows if _clean_role(item.decision) == "reject")
+    needs_changes_count = sum(1 for item in decision_rows if _clean_role(item.decision) == "needs_changes")
+    required_approvals = _required_review_approvals(row)
+
     row.decision = decision
-    row.status = status_map[decision]
     row.decision_note = _clean_str(payload.decision_note) or None
     row.decided_by_user_id = int(current_user.id)
     row.decided_at = datetime.now(timezone.utc)
+    if rejection_count > 0:
+        row.status = "rejected"
+    elif needs_changes_count > 0:
+        row.status = "needs_changes"
+    elif approval_count >= required_approvals:
+        row.status = "approved"
+    else:
+        row.status = "pending_review"
 
     db.add(row)
     db.commit()
+    db.refresh(decision_row)
     db.refresh(row)
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
         "action_review": _action_review_payload(row),
+        "decision_record": _action_review_decision_payload(decision_row),
+        "approval_count": approval_count,
+        "required_approvals": required_approvals,
         "boundary": (
-            "Decision recorded. Applying the approved action still requires the "
-            "specific business route for that action."
+            "Decision recorded. The review becomes approved only when the policy's "
+            "required approval count is satisfied."
         ),
     }
 
