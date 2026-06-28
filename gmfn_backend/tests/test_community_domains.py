@@ -3899,6 +3899,17 @@ def test_domain_admin_can_apply_domain_member_upsert_review(
         assert data["applied"]["created"] is True
         assert data["applied"]["membership"]["user_id"] == new_member.id
         assert data["applied"]["membership"]["title"] == "Registered union member"
+
+        app.dependency_overrides[get_current_user] = lambda: domain_admin
+        applied_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={"request_note": "Trying to revise after application."},
+        )
+        assert applied_revision.status_code == 409, applied_revision.text
+        assert (
+            applied_revision.json()["detail"]["code"]
+            == "community_domain_review_not_revisionable"
+        )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -6613,6 +6624,17 @@ def test_approved_action_review_cannot_receive_late_decision(
         )
         assert late_decision.status_code == 409, late_decision.text
         assert late_decision.json()["detail"]["code"] == "community_domain_review_not_decidable"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        approved_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={"request_note": "Trying to revise after approval."},
+        )
+        assert approved_revision.status_code == 409, approved_revision.text
+        assert (
+            approved_revision.json()["detail"]["code"]
+            == "community_domain_review_not_revisionable"
+        )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
