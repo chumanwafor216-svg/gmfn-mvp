@@ -4239,6 +4239,27 @@ def test_node_member_review_rejects_subject_user_mismatch_with_label_target(
             == "community_domain_member_action_target_mismatch"
         )
 
+        rejected_target_create = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "subject_user_id": teacher.id,
+                "target_type": "node_member",
+                "target_id": str(other_teacher.id),
+                "payload": {
+                    "user_id": teacher.id,
+                    "role": "committee_member",
+                    "title": "Mathematics chair",
+                },
+            },
+        )
+        assert rejected_target_create.status_code == 409, rejected_target_create.text
+        assert (
+            rejected_target_create.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
         review_response = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -4285,6 +4306,27 @@ def test_node_member_review_rejects_subject_user_mismatch_with_label_target(
                 .one()
             )
             review_row.subject_user_id = teacher.id
+            review_row.target_id = str(other_teacher.id)
+            db.commit()
+
+        rejected_target_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Wrong target."},
+        )
+        assert rejected_target_decision.status_code == 409, rejected_target_decision.text
+        assert (
+            rejected_target_decision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            review_row.subject_user_id = teacher.id
+            review_row.target_id = "maths-chair"
             db.commit()
 
         approved = client.post(
@@ -4309,6 +4351,25 @@ def test_node_member_review_rejects_subject_user_mismatch_with_label_target(
         assert rejected_apply.status_code == 409, rejected_apply.text
         assert (
             rejected_apply.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            review_row.subject_user_id = teacher.id
+            review_row.target_id = str(other_teacher.id)
+            db.commit()
+
+        rejected_target_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert rejected_target_apply.status_code == 409, rejected_target_apply.text
+        assert (
+            rejected_target_apply.json()["detail"]["code"]
             == "community_domain_member_action_target_mismatch"
         )
     finally:
