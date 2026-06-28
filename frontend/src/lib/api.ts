@@ -2405,6 +2405,15 @@ export async function getCommunityDomainNodeTrustMap(
   );
 }
 
+export async function getCommunityDomainNodeParticipationMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/node-participation-map"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainGovernanceCoverage(
   communityDomainId: number | string
 ): Promise<any> {

@@ -3166,6 +3166,284 @@ def test_member_can_read_node_trust_map_but_admin_counts_are_hidden(
     assert "private member activity" in trust_map["boundary"]
 
 
+def test_node_participation_map_projects_member_placement_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "node-participation-line-admin@example.com")
+    line_member = _seed_user(3, "node-participation-line-member@example.com")
+    section_admin = _seed_user(4, "node-participation-section-admin@example.com")
+    committee_member = _seed_user(5, "node-participation-committee@example.com")
+    unplaced_member = _seed_user(6, "node-participation-unplaced@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Participation Market Domain",
+                "display_name": "Node Participation Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        section = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Phone Accessories Section",
+                "parent_node_id": line_id,
+                "node_type": "section",
+                "node_kind": "market_section",
+            },
+        )
+        assert section.status_code == 201, section.text
+        section_id = section.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Welfare Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "market_committee",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+        committee_id = committee.json()["node"]["id"]
+
+        empty_branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Empty Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "market_branch",
+            },
+        )
+        assert empty_branch.status_code == 201, empty_branch.text
+
+        for user in (
+            line_admin,
+            line_member,
+            section_admin,
+            committee_member,
+            unplaced_member,
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (line_id, line_admin.id, "node_admin"),
+            (line_id, line_member.id, "member"),
+            (section_id, section_admin.id, "node_admin"),
+            (committee_id, committee_member.id, "member"),
+            (section_id, line_admin.id, "node_admin"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/node-participation-map"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    participation = payload["node_participation_map"]
+    assert participation["editable"] is False
+    assert participation["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert participation["counts"] == {
+        "nodes": 5,
+        "non_root_nodes": 4,
+        "active_domain_members": 6,
+        "active_node_memberships": 5,
+        "unplaced_domain_members": 2,
+        "multi_node_members": 1,
+        "domain_admin_members": 1,
+        "ready_local_circle": 1,
+        "needs_local_admin": 1,
+        "admin_only": 1,
+        "empty_unit": 1,
+        "inactive": 0,
+    }
+    assert participation["primary_next_action"] == {
+        "action_key": "place_unassigned_members_into_units",
+        "label": "Place unassigned members into operating units",
+        "route_hint": f"/community-domains/{domain_id}/nodes/tree",
+        "requires_admin": True,
+    }
+    assert "read-only member placement planning" in participation["boundary"]
+    assert "invite members" in participation["boundary"]
+    assert "place members" in participation["boundary"]
+    assert "expose member lists" in participation["boundary"]
+    assert "private member activity" in participation["boundary"]
+    assert "issue TrustSlips" in participation["boundary"]
+
+    flat = {item["node"]["name"]: item for item in participation["flat_nodes"]}
+    assert flat["Node Participation Market Domain"]["participation_status"] == (
+        "domain_root"
+    )
+    assert flat["Electronics Line"]["participation_status"] == "ready_local_circle"
+    assert flat["Electronics Line"]["ready_for_local_participation"] is True
+    assert flat["Electronics Line"]["local_member_count"] == 2
+    assert flat["Electronics Line"]["local_admin_count"] == 1
+    assert flat["Electronics Line"]["local_participant_count"] == 1
+    assert flat["Electronics Line"]["local_multi_node_member_count"] == 1
+    assert flat["Phone Accessories Section"]["participation_status"] == "admin_only"
+    assert flat["Phone Accessories Section"]["local_member_count"] == 2
+    assert flat["Phone Accessories Section"]["local_admin_count"] == 2
+    assert flat["Phone Accessories Section"]["local_participant_count"] == 0
+    assert flat["Welfare Committee"]["participation_status"] == "needs_local_admin"
+    assert flat["Welfare Committee"]["local_member_count"] == 1
+    assert flat["Welfare Committee"]["local_admin_count"] == 0
+    assert flat["Empty Branch"]["participation_status"] == "empty_unit"
+    assert flat["Empty Branch"]["local_member_count"] == 0
+
+    root_tree = participation["tree"][0]
+    line_tree = next(
+        child
+        for child in root_tree["children"]
+        if child["node"]["name"] == "Electronics Line"
+    )
+    assert line_tree["children"][0]["node"]["name"] == "Phone Accessories Section"
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_participation_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-participation-visible-member@example.com")
+    outsider = _seed_user(3, "node-participation-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Participation Union Domain",
+                "display_name": "Node Participation Union Domain",
+                "domain_type": "professional_union",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        chapter = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Lagos Chapter",
+                "parent_node_id": root_node_id,
+                "node_type": "chapter",
+                "node_kind": "union_chapter",
+            },
+        )
+        assert chapter.status_code == 201, chapter.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/node-participation-map"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-participation-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    participation = member_map.json()["node_participation_map"]
+    assert participation["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert participation["counts"]["nodes"] == 2
+    assert participation["counts"]["non_root_nodes"] == 1
+    assert participation["counts"]["active_domain_members"] is None
+    assert participation["counts"]["active_node_memberships"] is None
+    assert participation["counts"]["unplaced_domain_members"] is None
+    assert participation["counts"]["multi_node_members"] is None
+    assert participation["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_node_participation",
+        "label": "Ask a Community Domain admin to review member placement",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in participation["flat_nodes"]}
+    assert flat["Lagos Chapter"]["participation_status"] == "empty_unit"
+    assert flat["Lagos Chapter"]["local_member_count"] is None
+    assert flat["Lagos Chapter"]["local_admin_count"] is None
+    assert flat["Lagos Chapter"]["local_participant_count"] is None
+    assert flat["Lagos Chapter"]["local_multi_node_member_count"] is None
+    assert flat["Lagos Chapter"]["route_hint"].endswith("/operating-summary")
+    assert flat["Lagos Chapter"]["admin_action_route_hint"] is None
+    assert "read-only member placement planning" in participation["boundary"]
+    assert "expose member lists" in participation["boundary"]
+    assert "private member activity" in participation["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):
