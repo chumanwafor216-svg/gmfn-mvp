@@ -6740,6 +6740,330 @@ def _community_domain_social_bridge_payload(
     }
 
 
+def _community_domain_network_exchange_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    marketplace_role = _clean_role(template.get("marketplace_role"), "optional")
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    public_profile_present = bool(_clean_str(domain.public_profile))
+
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_node_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .filter(CommunityNode.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    active_evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .count()
+    )
+
+    linked_clan: Optional[Clan] = None
+    if domain.clan_id is not None:
+        linked_clan = db.get(Clan, int(domain.clan_id))
+    linked_clan_id = int(linked_clan.id) if linked_clan is not None else None
+    linked_social_member_count = 0
+    outbound_affiliation_count = 0
+    inbound_affiliation_count = 0
+    active_affiliation_count = 0
+    pending_affiliation_count = 0
+
+    if linked_clan_id is not None:
+        linked_social_member_count = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == linked_clan_id)
+            .count()
+        )
+        outbound_affiliations = (
+            db.query(CommunityDomainAffiliation)
+            .filter(CommunityDomainAffiliation.parent_clan_id == linked_clan_id)
+            .all()
+        )
+        inbound_affiliations = (
+            db.query(CommunityDomainAffiliation)
+            .filter(CommunityDomainAffiliation.affiliate_clan_id == linked_clan_id)
+            .all()
+        )
+        outbound_affiliation_count = len(outbound_affiliations)
+        inbound_affiliation_count = len(inbound_affiliations)
+        all_affiliations = [*outbound_affiliations, *inbound_affiliations]
+        active_affiliation_count = sum(
+            1 for row in all_affiliations if _clean_role(row.status, "pending") == "approved"
+        )
+        pending_affiliation_count = sum(
+            1 for row in all_affiliations if _clean_role(row.status, "pending") == "pending"
+        )
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: Optional[int],
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": count,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "internal_domain_anchor",
+            "Internal domain anchor",
+            "anchored" if active_member_count and active_node_count else "incomplete",
+            bool(active_member_count and active_node_count),
+            active_member_count,
+            "Keep internal membership, branches, lines, departments, or committees clear before relating outward.",
+            route_suffix="/operating-map",
+            requires_admin=False,
+            boundary=(
+                "Internal anchor signal only. This does not create members, "
+                "nodes, roles, or operating records."
+            ),
+        ),
+        lane(
+            "social_bridge_exchange",
+            "Social Community bridge exchange",
+            "linked" if linked_clan_id is not None else "not_linked",
+            linked_clan_id is not None,
+            admin_count(linked_social_member_count),
+            "Use linked social Community context cautiously; it is not the same object as the paid Community Domain.",
+            route_suffix="/social-bridge",
+            requires_admin=True,
+            boundary=(
+                "Social bridge signal only. This does not create a social "
+                "Community, link clan_id, copy members, or merge records."
+            ),
+        ),
+        lane(
+            "affiliation_exchange",
+            "Affiliation exchange",
+            (
+                "clan_affiliations_visible"
+                if linked_clan_id is not None
+                and (outbound_affiliation_count or inbound_affiliation_count)
+                else "not_domain_linked"
+            ),
+            False,
+            admin_count(outbound_affiliation_count + inbound_affiliation_count),
+            "Treat existing affiliations as clan-to-clan context until a domain exchange rail exists.",
+            route_suffix="/social-bridge",
+            requires_admin=True,
+            boundary=(
+                "Affiliation exchange boundary only. This does not create, "
+                "approve, reject, apply, or expose affiliation records."
+            ),
+        ),
+        lane(
+            "marketplace_exchange_boundary",
+            "Marketplace exchange boundary",
+            f"template_{marketplace_role}",
+            marketplace_role in {"core", "supported"},
+            1 if marketplace_role in {"core", "supported"} else 0,
+            "Keep trade, shops, demand, Spotlight, and vault activity inside existing Marketplace rails until a domain exchange bridge is designed.",
+            route_suffix="/economic-participation",
+            requires_admin=False,
+            boundary=(
+                "Marketplace exchange boundary only. This does not create shops, "
+                "listings, demand, Spotlight, reposts, vault links, marketplace "
+                "records, or public exposure."
+            ),
+        ),
+        lane(
+            "trust_evidence_exchange",
+            "Trust evidence exchange",
+            "evidence_present" if active_evidence_count else "not_recorded",
+            bool(active_evidence_count),
+            admin_count(active_evidence_count),
+            "Use evidence as private governance metadata until public-safe proof release is deliberately built.",
+            route_suffix="/evidence-map",
+            requires_admin=True,
+            boundary=(
+                "Trust evidence exchange signal only. This does not expose files, "
+                "publish proof, issue credentials, issue TrustSlips, or write "
+                "Trust Passport records."
+            ),
+        ),
+        lane(
+            "public_network_presence",
+            "Public network presence",
+            "profile_ready" if public_profile_present else "profile_needed",
+            public_profile_present,
+            1 if public_profile_present else 0,
+            "Prepare public-safe institutional identity before outside network exposure.",
+            route_suffix="/network-presence",
+            requires_admin=False,
+            boundary=(
+                "Public presence signal only. This does not publish a public "
+                "page, finalize public URL format, verify the domain, or create "
+                "outward links."
+            ),
+        ),
+        lane(
+            "cross_domain_discovery_boundary",
+            "Cross-domain discovery boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Do not expose one institution's members or internal units to another domain until privacy and permission rules are designed.",
+            route_suffix="/network-presence",
+            requires_admin=True,
+            boundary=(
+                "Cross-domain discovery boundary only. This does not create "
+                "search, recommendations, public member directories, cross-silo "
+                "discovery, or private member exposure."
+            ),
+        ),
+        lane(
+            "external_finance_boundary",
+            "External finance boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Do not treat external support, contributions, settlement, dues, or payment rails as live.",
+            route_suffix="/subscription-lifecycle",
+            requires_admin=True,
+            boundary=(
+                "External finance boundary only. This does not create payment "
+                "instructions, invoices, receipts, dues, contributions, ledger "
+                "entries, payouts, loans, guarantees, or money movement."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_network_exchange",
+            "label": "Ask a Community Domain admin to review network exchange readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not public_profile_present:
+        primary_next_action = {
+            "action_key": "prepare_public_safe_identity",
+            "label": "Prepare public-safe identity before network exchange",
+            "route_hint": f"/community-domains/{domain_id}/network-presence",
+            "requires_admin": True,
+        }
+    elif verification_status != "verified":
+        primary_next_action = {
+            "action_key": "prepare_authority_verification_for_exchange",
+            "label": "Prepare authority verification before outside exchange",
+            "route_hint": f"/community-domains/{domain_id}/verification-requirements",
+            "requires_admin": True,
+        }
+    elif linked_clan_id is None:
+        primary_next_action = {
+            "action_key": "review_social_bridge_for_exchange",
+            "label": "Review whether this domain needs a social Community bridge",
+            "route_hint": f"/community-domains/{domain_id}/social-bridge",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_exchange_boundaries",
+            "label": "Review Community Domain network exchange boundaries",
+            "route_hint": f"/community-domains/{domain_id}/network-presence",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "domain_status": _clean_role(domain.status, "draft"),
+            "verification_status": verification_status,
+            "marketplace_role": marketplace_role,
+            "public_profile_present": public_profile_present,
+            "linked_social_community": bool(linked_clan_id is not None),
+            "linked_social_member_count": admin_count(linked_social_member_count),
+            "outbound_affiliations": admin_count(outbound_affiliation_count),
+            "inbound_affiliations": admin_count(inbound_affiliation_count),
+            "active_affiliations": admin_count(active_affiliation_count),
+            "pending_affiliations": admin_count(pending_affiliation_count),
+            "active_member_count": int(active_member_count),
+            "active_node_count": int(active_node_count),
+            "active_policy_count": admin_count(active_policy_count),
+            "active_evidence_count": admin_count(active_evidence_count),
+            "domain_exchange_status": "not_connected_in_this_slice",
+            "cross_domain_discovery_status": "not_connected_in_this_slice",
+            "external_finance_status": "not_connected_in_this_slice",
+        },
+        "linked_social_community": {
+            "id": linked_clan_id if can_admin else None,
+            "name": linked_clan.name if linked_clan is not None and can_admin else None,
+            "status": (
+                linked_clan.status
+                if linked_clan is not None and can_admin
+                else ("hidden_for_member" if linked_clan is not None else "not_linked")
+            ),
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain network exchange map is read-only outside-network "
+            "planning. This endpoint does not create domain-to-domain exchange, "
+            "cross-domain discovery, public member directories, public search, "
+            "social Community links, affiliation decisions, marketplace records, "
+            "shops, listings, demand, Spotlight, vault links, TrustSlips, Trust "
+            "Passport entries, public proof, payment instructions, finance "
+            "records, loans, guarantees, money movement, or private member, "
+            "review, evidence, marketplace, or finance exposure."
+        ),
+    }
+
+
 def _community_domain_institutional_profile_payload(
     db: Session,
     *,
@@ -9841,6 +10165,27 @@ def get_community_domain_member_verification_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "member_verification_map": _community_domain_member_verification_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/network-exchange-map", response_model=dict[str, Any])
+def get_community_domain_network_exchange_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "network_exchange_map": _community_domain_network_exchange_map_payload(
             db,
             domain=domain,
             current_user=current_user,

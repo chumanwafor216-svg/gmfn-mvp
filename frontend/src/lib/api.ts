@@ -2450,6 +2450,15 @@ export async function getCommunityDomainMemberVerificationMap(
   );
 }
 
+export async function getCommunityDomainNetworkExchangeMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/network-exchange-map"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

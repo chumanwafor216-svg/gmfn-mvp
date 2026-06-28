@@ -4444,6 +4444,298 @@ def test_member_can_read_member_verification_map_but_admin_counts_are_hidden(
     assert "private member/review/evidence records" in verification_map["boundary"]
 
 
+def test_network_exchange_map_projects_outward_readiness_without_exchange_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Network Exchange Market Domain",
+                "display_name": "Network Exchange Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "A public-safe market domain profile.",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        created_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert created_line.status_code == 201, created_line.text
+        line_id = created_line.json()["node"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "network-exchange-evidence-review",
+                "action_key": "evidence.verify",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "line_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "evidence.verify",
+                "community_node_id": line_id,
+                "request_note": "Review exchange evidence privately.",
+                "payload": {"claim": "outward exchange readiness"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Exchange readiness note",
+                "file_name": "exchange-readiness.pdf",
+                "storage_key": "private/evidence/exchange-readiness.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        created_clan = client.post(
+            "/clans/",
+            json={
+                "name": "Network Exchange Market Circle",
+                "description": "The linked lightweight Community.",
+            },
+        )
+        assert created_clan.status_code == 201, created_clan.text
+        clan_id = created_clan.json()["id"]
+
+        created_affiliate = client.post(
+            "/clans/",
+            json={
+                "name": "Network Exchange Affiliate Circle",
+                "description": "A related lightweight Community.",
+            },
+        )
+        assert created_affiliate.status_code == 201, created_affiliate.text
+        affiliate_id = created_affiliate.json()["id"]
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.clan_id = clan_id
+            domain.verification_status = "verified"
+            db.add(
+                CommunityDomainAffiliation(
+                    parent_clan_id=clan_id,
+                    affiliate_clan_id=affiliate_id,
+                    requested_by_user_id=owner.id,
+                    decided_by_user_id=owner.id,
+                    status="approved",
+                    request_note="Existing clan-to-clan relationship.",
+                    decision_note="Approved before network exchange map projection.",
+                )
+            )
+            db.commit()
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "clans": db.query(Clan).count(),
+                "clan_members": db.query(ClanMembership).count(),
+                "affiliations": db.query(CommunityDomainAffiliation).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/network-exchange-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    exchange_map = payload["network_exchange_map"]
+    assert exchange_map["editable"] is False
+    assert exchange_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert exchange_map["summary"] == {
+        "domain_status": "draft",
+        "verification_status": "verified",
+        "marketplace_role": "core",
+        "public_profile_present": True,
+        "linked_social_community": True,
+        "linked_social_member_count": 1,
+        "outbound_affiliations": 1,
+        "inbound_affiliations": 0,
+        "active_affiliations": 1,
+        "pending_affiliations": 0,
+        "active_member_count": 1,
+        "active_node_count": 2,
+        "active_policy_count": 1,
+        "active_evidence_count": 1,
+        "domain_exchange_status": "not_connected_in_this_slice",
+        "cross_domain_discovery_status": "not_connected_in_this_slice",
+        "external_finance_status": "not_connected_in_this_slice",
+    }
+    assert exchange_map["linked_social_community"] == {
+        "id": clan_id,
+        "name": "Network Exchange Market Circle",
+        "status": "active",
+    }
+    lanes = {item["lane_key"]: item for item in exchange_map["lanes"]}
+    assert lanes["internal_domain_anchor"]["status"] == "anchored"
+    assert lanes["social_bridge_exchange"]["status"] == "linked"
+    assert lanes["affiliation_exchange"]["status"] == "clan_affiliations_visible"
+    assert lanes["affiliation_exchange"]["ready"] is False
+    assert lanes["marketplace_exchange_boundary"]["status"] == "template_core"
+    assert lanes["trust_evidence_exchange"]["status"] == "evidence_present"
+    assert lanes["public_network_presence"]["status"] == "profile_ready"
+    assert lanes["cross_domain_discovery_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lanes["external_finance_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert exchange_map["primary_next_action"] == {
+        "action_key": "review_exchange_boundaries",
+        "label": "Review Community Domain network exchange boundaries",
+        "route_hint": f"/community-domains/{domain_id}/network-presence",
+        "requires_admin": True,
+    }
+    assert "does not create domain-to-domain exchange" in exchange_map["boundary"]
+    assert "cross-domain discovery" in exchange_map["boundary"]
+    assert "marketplace records" in exchange_map["boundary"]
+    assert "Trust Passport entries" in exchange_map["boundary"]
+    assert "payment instructions" in exchange_map["boundary"]
+    assert "private member" in exchange_map["boundary"]
+    assert "private/evidence/exchange-readiness.pdf" not in str(exchange_map)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "clans": db.query(Clan).count(),
+            "clan_members": db.query(ClanMembership).count(),
+            "affiliations": db.query(CommunityDomainAffiliation).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_network_exchange_map_but_exchange_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "network-exchange-member@example.com")
+    outsider = _seed_user(3, "network-exchange-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Network Exchange School Domain",
+                "display_name": "Network Exchange School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+                "public_profile": "A school network with public-safe identity.",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_clan = client.post(
+            "/clans/",
+            json={
+                "name": "Network Exchange School Circle",
+                "description": "A private lightweight school Community.",
+            },
+        )
+        assert created_clan.status_code == 201, created_clan.text
+        clan_id = created_clan.json()["id"]
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.clan_id = clan_id
+            db.commit()
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/network-exchange-map"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/network-exchange-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    exchange_map = member_map.json()["network_exchange_map"]
+    assert exchange_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert exchange_map["summary"]["linked_social_community"] is True
+    assert exchange_map["summary"]["linked_social_member_count"] is None
+    assert exchange_map["summary"]["outbound_affiliations"] is None
+    assert exchange_map["summary"]["inbound_affiliations"] is None
+    assert exchange_map["summary"]["active_policy_count"] is None
+    assert exchange_map["summary"]["active_evidence_count"] is None
+    assert exchange_map["summary"]["domain_exchange_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert exchange_map["linked_social_community"] == {
+        "id": None,
+        "name": None,
+        "status": "hidden_for_member",
+    }
+    assert exchange_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_network_exchange",
+        "label": "Ask a Community Domain admin to review network exchange readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in exchange_map["lanes"]}
+    assert lanes["internal_domain_anchor"]["route_hint"].endswith("/operating-map")
+    assert lanes["social_bridge_exchange"]["route_hint"] is None
+    assert lanes["affiliation_exchange"]["route_hint"] is None
+    assert lanes["marketplace_exchange_boundary"]["route_hint"].endswith(
+        "/economic-participation"
+    )
+    assert lanes["trust_evidence_exchange"]["route_hint"] is None
+    assert lanes["cross_domain_discovery_boundary"]["route_hint"] is None
+    assert lanes["external_finance_boundary"]["route_hint"] is None
+    assert "private member" in exchange_map["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):
