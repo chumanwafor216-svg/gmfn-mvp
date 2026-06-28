@@ -1486,6 +1486,246 @@ def test_member_can_read_capacity_plan_but_admin_routes_are_hidden(
     assert "private evidence" in capacity_plan["boundary"]
 
 
+def test_rollout_plan_projects_first_units_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "rollout-plan-admin@example.com")
+    trader = _seed_user(3, "rollout-plan-trader@example.com")
+    member = _seed_user(4, "rollout-plan-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Rollout Plan Market Domain",
+                "display_name": "Rollout Plan Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        electronics = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+                "sort_order": 1,
+            },
+        )
+        assert electronics.status_code == 201, electronics.text
+        electronics_id = electronics.json()["node"]["id"]
+
+        medical = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Medical Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+                "sort_order": 2,
+            },
+        )
+        assert medical.status_code == 201, medical.text
+        medical_id = medical.json()["node"]["id"]
+
+        for user, role in (
+            (admin, "domain_admin"),
+            (trader, "member"),
+            (member, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (electronics_id, admin.id, "line_admin"),
+            (electronics_id, trader.id, "trader"),
+            (medical_id, member.id, "trader"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "rollout-node-member-review",
+                "action_key": "node_member.upsert",
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/rollout-plan")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    rollout_plan = payload["rollout_plan"]
+    assert rollout_plan["editable"] is False
+    assert rollout_plan["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert rollout_plan["template"]["template_key"] == "market_cooperative"
+    assert rollout_plan["rollout_phase"] == "local_admins"
+    assert rollout_plan["counts"] == {
+        "first_level_units": 2,
+        "ready_units": 1,
+        "active_members": 4,
+        "active_node_memberships": 3,
+        "active_policies": 1,
+    }
+    assert rollout_plan["primary_next_action"] == {
+        "action_key": "assign_local_admins",
+        "label": "Assign local rollout admins",
+        "route_hint": f"/community-domains/{domain_id}/roles",
+        "requires_admin": True,
+    }
+    assert "does not create nodes" in rollout_plan["boundary"]
+    assert "invite members" in rollout_plan["boundary"]
+    assert "assign admins" in rollout_plan["boundary"]
+    assert "create marketplace activity" in rollout_plan["boundary"]
+    assert "create a social Community" in rollout_plan["boundary"]
+    assert "private evidence" in rollout_plan["boundary"]
+
+    phases = {item["phase_key"]: item for item in rollout_plan["phases"]}
+    assert phases["structure"]["completed"] is True
+    assert phases["structure"]["detail"] == {"first_level_units": 2}
+    assert phases["local_admins"]["completed"] is False
+    assert phases["local_admins"]["detail"] == {
+        "units_with_admin": 1,
+        "units_total": 2,
+    }
+    assert phases["pilot_members"]["completed"] is True
+    assert phases["pilot_members"]["detail"] == {
+        "ready_units": 1,
+        "active_members": 4,
+    }
+    assert phases["governance"]["completed"] is True
+    assert phases["capacity"]["completed"] is True
+    assert phases["capacity"]["detail"] == {
+        "near_limit_lanes": [],
+        "over_limit_lanes": [],
+    }
+    assert "does not create nodes" in phases["structure"]["boundary"]
+
+    units = {item["node"]["name"]: item for item in rollout_plan["rollout_units"]}
+    assert units["Electronics Line"]["status"] == "ready_for_pilot"
+    assert units["Electronics Line"]["ready_for_pilot"] is True
+    assert units["Electronics Line"]["member_count"] == 2
+    assert units["Electronics Line"]["admin_count"] == 1
+    assert units["Electronics Line"]["route_hint"].endswith(
+        f"/nodes/{electronics_id}/operating-summary"
+    )
+    assert units["Medical Line"]["status"] == "needs_local_admin"
+    assert units["Medical Line"]["ready_for_pilot"] is False
+    assert units["Medical Line"]["member_count"] == 1
+    assert units["Medical Line"]["admin_count"] == 0
+    assert units["Medical Line"]["admin_action_route_hint"].endswith("/roles")
+    assert "does not invite members" in units["Medical Line"]["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_rollout_plan_but_admin_actions_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "rollout-plan-member-reader@example.com")
+    outsider = _seed_user(3, "rollout-plan-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Rollout Plan School Domain",
+                "display_name": "Rollout Plan School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_plan = client.get(f"/community-domains/{domain_id}/rollout-plan")
+        assert member_plan.status_code == 200, member_plan.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_plan = client.get(f"/community-domains/{domain_id}/rollout-plan")
+        assert outsider_plan.status_code == 403, outsider_plan.text
+        assert "active Community Domain members" in outsider_plan.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    rollout_plan = member_plan.json()["rollout_plan"]
+    assert rollout_plan["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert rollout_plan["template"]["template_key"] == "school_multi_branch"
+    assert rollout_plan["rollout_phase"] == "structure"
+    assert rollout_plan["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_continue_rollout",
+        "label": "Ask a Community Domain admin to continue rollout",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert rollout_plan["rollout_units"] == []
+    assert rollout_plan["counts"]["first_level_units"] == 0
+    assert rollout_plan["editable"] is False
+    assert "private evidence" in rollout_plan["boundary"]
+
+    phases = {item["phase_key"]: item for item in rollout_plan["phases"]}
+    assert phases["structure"]["route_hint"].endswith("/nodes/tree")
+    assert phases["structure"]["admin_action_route_hint"] is None
+    assert phases["local_admins"]["admin_action_route_hint"] is None
+    assert phases["pilot_members"]["admin_action_route_hint"] is None
+    assert phases["governance"]["admin_action_route_hint"] is None
+    assert phases["capacity"]["route_hint"].endswith("/capacity-plan")
+    assert phases["capacity"]["admin_action_route_hint"].endswith("/capacity-plan")
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

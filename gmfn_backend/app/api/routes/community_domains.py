@@ -4429,6 +4429,315 @@ def _community_domain_capacity_plan_payload(
     }
 
 
+def _community_domain_rollout_plan_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    root_node_id = int(root_node.id) if root_node is not None else None
+    top_nodes = []
+    if root_node_id is not None:
+        top_nodes = (
+            db.query(CommunityNode)
+            .filter(CommunityNode.community_domain_id == domain_id)
+            .filter(CommunityNode.parent_node_id == root_node_id)
+            .order_by(
+                CommunityNode.sort_order.asc(),
+                CommunityNode.name.asc(),
+                CommunityNode.id.asc(),
+            )
+            .all()
+        )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    capacity_plan = _community_domain_capacity_plan_payload(
+        db,
+        domain=domain,
+        current_user=current_user,
+    )
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    rollout_units = []
+    for node in top_nodes:
+        node_id = int(node.id)
+        node_members = memberships_by_node.get(node_id, [])
+        admin_count = sum(
+            1 for row in node_members if _clean_role(row.role) in NODE_ADMIN_ROLES
+        )
+        member_count = len(node_members)
+        node_status = _clean_role(node.status, "inactive")
+        if node_status != "active":
+            rollout_status = "inactive"
+            next_step = "Reactivate or replace this unit before using it for rollout."
+        elif admin_count <= 0:
+            rollout_status = "needs_local_admin"
+            next_step = "Assign a real local admin before inviting wider participation."
+        elif member_count <= admin_count:
+            rollout_status = "needs_pilot_members"
+            next_step = "Place a small pilot group inside this unit before wider rollout."
+        else:
+            rollout_status = "ready_for_pilot"
+            next_step = "Use this unit as a pilot operating unit before scaling outward."
+        rollout_units.append(
+            {
+                "node": _node_payload(node),
+                "member_count": int(member_count),
+                "admin_count": int(admin_count),
+                "status": rollout_status,
+                "ready_for_pilot": rollout_status == "ready_for_pilot",
+                "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+                "admin_action_route_hint": route_hint("/roles", requires_admin=True),
+                "next_step": next_step,
+                "boundary": (
+                    "Read-only rollout unit. This does not invite members, assign "
+                    "admins, place members, change node status, create policy, "
+                    "activate billing, launch marketplace activity, or expose "
+                    "private evidence."
+                ),
+            }
+        )
+
+    has_structure = len(rollout_units) > 0
+    all_units_have_admin = has_structure and all(
+        unit["admin_count"] > 0 and unit["status"] != "inactive"
+        for unit in rollout_units
+    )
+    all_units_have_members = has_structure and all(
+        unit["member_count"] > unit["admin_count"] and unit["status"] != "inactive"
+        for unit in rollout_units
+    )
+    ready_unit_count = sum(1 for unit in rollout_units if unit["ready_for_pilot"])
+    has_governance = active_policy_count > 0
+    capacity_ok = not capacity_plan["over_limit_lanes"]
+
+    def phase(
+        phase_key: str,
+        label: str,
+        completed: bool,
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        detail: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        return {
+            "phase_key": phase_key,
+            "label": label,
+            "status": "complete" if completed else "open",
+            "completed": bool(completed),
+            "route_hint": route_hint(route_suffix),
+            "admin_action_route_hint": route_hint(
+                route_suffix, requires_admin=requires_admin
+            ),
+            "requires_admin": bool(requires_admin),
+            "admin_visible": bool(can_admin),
+            "next_step": next_step,
+            "detail": detail or {},
+            "boundary": (
+                "Read-only rollout phase. This does not create nodes, invite "
+                "members, assign roles, create policy, activate billing, verify "
+                "authority, publish public pages, create marketplace activity, "
+                "or move money."
+            ),
+        }
+
+    phases = [
+        phase(
+            "structure",
+            "Choose first rollout units",
+            has_structure,
+            (
+                "Review the first branches, lines, chapters, departments, or units."
+                if has_structure
+                else "Create the first real operating units before rollout."
+            ),
+            route_suffix="/nodes/tree",
+            requires_admin=True,
+            detail={"first_level_units": len(rollout_units)},
+        ),
+        phase(
+            "local_admins",
+            "Assign local admins",
+            all_units_have_admin,
+            (
+                "Review local admin coverage."
+                if all_units_have_admin
+                else "Assign trusted local admins to each rollout unit."
+            ),
+            route_suffix="/roles",
+            requires_admin=True,
+            detail={
+                "units_with_admin": sum(1 for unit in rollout_units if unit["admin_count"] > 0),
+                "units_total": len(rollout_units),
+            },
+        ),
+        phase(
+            "pilot_members",
+            "Place pilot members",
+            all_units_have_members,
+            (
+                "Review pilot member placement."
+                if all_units_have_members
+                else "Place a small pilot group inside each first rollout unit."
+            ),
+            route_suffix="/nodes/tree",
+            requires_admin=True,
+            detail={
+                "ready_units": int(ready_unit_count),
+                "active_members": int(active_member_count),
+            },
+        ),
+        phase(
+            "governance",
+            "Confirm rollout governance",
+            has_governance,
+            (
+                "Review the active governance policy coverage."
+                if has_governance
+                else "Add governance policy before wider institutional rollout."
+            ),
+            route_suffix="/policies",
+            requires_admin=True,
+            detail={"active_policies": int(active_policy_count)},
+        ),
+        phase(
+            "capacity",
+            "Review package capacity",
+            capacity_ok,
+            (
+                "Capacity is within the current package allowances."
+                if capacity_ok
+                else "Review capacity before onboarding more units or members."
+            ),
+            route_suffix="/capacity-plan",
+            requires_admin=False,
+            detail={
+                "near_limit_lanes": capacity_plan["near_limit_lanes"],
+                "over_limit_lanes": capacity_plan["over_limit_lanes"],
+            },
+        ),
+    ]
+
+    if not has_structure:
+        rollout_phase = "structure"
+        action_route = "/nodes/tree"
+        action_key = "choose_rollout_units"
+        action_label = "Choose first Community Domain rollout units"
+        action_admin = True
+    elif not all_units_have_admin:
+        rollout_phase = "local_admins"
+        action_route = "/roles"
+        action_key = "assign_local_admins"
+        action_label = "Assign local rollout admins"
+        action_admin = True
+    elif not all_units_have_members:
+        rollout_phase = "pilot_members"
+        action_route = "/nodes/tree"
+        action_key = "place_pilot_members"
+        action_label = "Place pilot members into rollout units"
+        action_admin = True
+    elif not has_governance:
+        rollout_phase = "governance"
+        action_route = "/policies"
+        action_key = "confirm_rollout_governance"
+        action_label = "Confirm rollout governance"
+        action_admin = True
+    elif not capacity_ok:
+        rollout_phase = "capacity"
+        action_route = "/capacity-plan"
+        action_key = "review_capacity_before_rollout"
+        action_label = "Review capacity before wider rollout"
+        action_admin = False
+    else:
+        rollout_phase = "pilot_ready"
+        action_route = "/operating-map"
+        action_key = "review_operating_map"
+        action_label = "Review Community Domain operating map"
+        action_admin = False
+
+    if action_admin and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_continue_rollout",
+            "label": "Ask a Community Domain admin to continue rollout",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": action_key,
+            "label": action_label,
+            "route_hint": route_hint(action_route),
+            "requires_admin": bool(action_admin),
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": _clean_role(template["marketplace_role"], "optional"),
+        },
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "rollout_phase": rollout_phase,
+        "phases": phases,
+        "rollout_units": rollout_units,
+        "counts": {
+            "first_level_units": len(rollout_units),
+            "ready_units": int(ready_unit_count),
+            "active_members": int(active_member_count),
+            "active_node_memberships": len(active_node_memberships),
+            "active_policies": int(active_policy_count),
+        },
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Rollout plan is read-only institutional onboarding guidance. It "
+            "does not create nodes, invite members, add members, assign admins, "
+            "place members, create policy, open reviews, verify authority, "
+            "activate billing, activate the Community Domain, publish a public "
+            "page, create marketplace activity, create a social Community, move "
+            "money, or expose private evidence."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -5766,6 +6075,25 @@ def get_community_domain_capacity_plan(
         "ok": True,
         "community_domain_id": int(domain.id),
         "capacity_plan": _community_domain_capacity_plan_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/rollout-plan", response_model=dict[str, Any])
+def get_community_domain_rollout_plan(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "rollout_plan": _community_domain_rollout_plan_payload(
             db,
             domain=domain,
             current_user=current_user,
