@@ -5846,6 +5846,338 @@ def test_member_can_read_node_vault_map_but_admin_counts_are_hidden(
     assert "private member activity" in vault_map["boundary"]
 
 
+def test_node_scheduled_activity_map_projects_local_schedule_readiness_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    ready_admin = _seed_user(2, "node-schedule-ready-admin@example.com")
+    ready_member = _seed_user(3, "node-schedule-ready-member@example.com")
+    public_admin = _seed_user(4, "node-schedule-public-admin@example.com")
+    public_member = _seed_user(5, "node-schedule-public-member@example.com")
+    no_admin_member = _seed_user(6, "node-schedule-no-admin-member@example.com")
+    audience_admin = _seed_user(7, "node-schedule-audience-admin@example.com")
+    policy_admin = _seed_user(8, "node-schedule-policy-admin@example.com")
+    policy_member = _seed_user(9, "node-schedule-policy-member@example.com")
+    signal_admin = _seed_user(10, "node-schedule-signal-admin@example.com")
+    signal_member = _seed_user(11, "node-schedule-signal-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Schedule School",
+                "display_name": "Node Schedule School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        node_specs = [
+            ("Meeting Desk", "department", "meeting_department", "members"),
+            ("Public Events Desk", "department", "public_events_department", "public"),
+            ("Welfare Meetings", "committee", "welfare_meeting_circle", "members"),
+            ("Emergency Schedule", "department", "emergency_schedule", "members"),
+            ("Class Schedule", "department", "class_schedule", "members"),
+            ("Alumni Calendar", "department", "alumni_calendar", "members"),
+        ]
+        node_ids: dict[str, int] = {}
+        for name, node_type, node_kind, visibility in node_specs:
+            node = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json={
+                    "name": name,
+                    "parent_node_id": root_node_id,
+                    "node_type": node_type,
+                    "node_kind": node_kind,
+                    "visibility_policy": visibility,
+                },
+            )
+            assert node.status_code == 201, node.text
+            node_ids[name] = node.json()["node"]["id"]
+
+        users = [
+            ready_admin,
+            ready_member,
+            public_admin,
+            public_member,
+            no_admin_member,
+            audience_admin,
+            policy_admin,
+            policy_member,
+            signal_admin,
+            signal_member,
+        ]
+        for user in users:
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (node_ids["Meeting Desk"], ready_admin.id, "department_admin"),
+            (node_ids["Meeting Desk"], ready_member.id, "member"),
+            (node_ids["Public Events Desk"], public_admin.id, "department_admin"),
+            (node_ids["Public Events Desk"], public_member.id, "member"),
+            (node_ids["Welfare Meetings"], no_admin_member.id, "member"),
+            (node_ids["Emergency Schedule"], audience_admin.id, "department_admin"),
+            (node_ids["Class Schedule"], policy_admin.id, "department_admin"),
+            (node_ids["Class Schedule"], policy_member.id, "member"),
+            (node_ids["Alumni Calendar"], signal_admin.id, "department_admin"),
+            (node_ids["Alumni Calendar"], signal_member.id, "member"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        for name, suffix in (
+            ("Meeting Desk", "ready"),
+            ("Public Events Desk", "public"),
+            ("Alumni Calendar", "signal"),
+        ):
+            policy = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json={
+                    "policy_key": f"node-schedule-{suffix}-policy",
+                    "action_key": "activity.schedule",
+                    "community_node_id": node_ids[name],
+                    "scope_type": "node",
+                    "review_mode": "node_admin_review",
+                    "required_role": "department_admin",
+                },
+            )
+            assert policy.status_code == 201, policy.text
+
+        for name, suffix in (
+            ("Meeting Desk", "ready"),
+            ("Public Events Desk", "public"),
+        ):
+            review = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "activity.schedule",
+                    "community_node_id": node_ids[name],
+                    "request_note": f"Review local schedule readiness for {suffix}.",
+                    "payload": {"claim": f"{suffix} schedule posture"},
+                },
+            )
+            assert review.status_code == 201, review.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/node-scheduled-activity-map"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    schedule_map = payload["node_scheduled_activity_map"]
+    assert schedule_map["editable"] is False
+    assert schedule_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert schedule_map["counts"] == {
+        "nodes": 7,
+        "non_root_nodes": 6,
+        "active_node_memberships": 10,
+        "active_policies": 3,
+        "review_records": 2,
+        "local_schedule_ready": 1,
+        "public_schedule_review_needed": 1,
+        "needs_activity_coordinator": 1,
+        "needs_schedule_audience": 1,
+        "needs_schedule_policy": 1,
+        "needs_attendance_signal": 1,
+        "inactive": 0,
+        "events_created": 0,
+        "meetings_created": 0,
+        "calendar_entries_created": 0,
+        "attendance_records": 0,
+        "reminders_sent": 0,
+        "notifications_sent": 0,
+        "payment_instructions_created": 0,
+    }
+    assert schedule_map["status_counts"] == {
+        "local_schedule_ready": 1,
+        "public_schedule_review_needed": 1,
+        "needs_activity_coordinator": 1,
+        "needs_schedule_audience": 1,
+        "needs_schedule_policy": 1,
+        "needs_attendance_signal": 1,
+    }
+    assert schedule_map["primary_next_action"] == {
+        "action_key": "review_public_schedule_exposure",
+        "label": "Review public schedule exposure",
+        "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+        "requires_admin": True,
+    }
+    assert "read-only local schedule planning" in schedule_map["boundary"]
+    assert "create events" in schedule_map["boundary"]
+    assert "create meetings" in schedule_map["boundary"]
+    assert "create calendar entries" in schedule_map["boundary"]
+    assert "record attendance" in schedule_map["boundary"]
+    assert "send reminders" in schedule_map["boundary"]
+    assert "payment instructions" in schedule_map["boundary"]
+    assert "Trust Passport entries" in schedule_map["boundary"]
+
+    flat = {
+        item["node"]["name"]: item for item in schedule_map["flat_nodes"]
+    }
+    assert flat["Node Schedule School"]["schedule_status"] == "domain_root"
+    assert flat["Meeting Desk"]["schedule_status"] == "local_schedule_ready"
+    assert flat["Meeting Desk"]["ready_for_local_schedule"] is True
+    assert flat["Meeting Desk"]["local_member_count"] == 2
+    assert flat["Meeting Desk"]["local_coordinator_count"] == 1
+    assert flat["Meeting Desk"]["local_policy_count"] == 1
+    assert flat["Meeting Desk"]["review_record_count"] == 1
+    assert flat["Meeting Desk"]["meeting_status"] == "not_created_in_this_slice"
+    assert flat["Meeting Desk"]["calendar_status"] == "not_created_in_this_slice"
+    assert flat["Meeting Desk"]["attendance_status"] == "not_recorded_in_this_slice"
+    assert flat["Public Events Desk"]["schedule_status"] == (
+        "public_schedule_review_needed"
+    )
+    assert flat["Public Events Desk"]["admin_action_route_hint"].endswith(
+        "/record-privacy-map"
+    )
+    assert flat["Welfare Meetings"]["schedule_status"] == (
+        "needs_activity_coordinator"
+    )
+    assert flat["Emergency Schedule"]["schedule_status"] == (
+        "needs_schedule_audience"
+    )
+    assert flat["Class Schedule"]["schedule_status"] == "needs_schedule_policy"
+    assert flat["Alumni Calendar"]["schedule_status"] == "needs_attendance_signal"
+    assert flat["Alumni Calendar"]["payment_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert flat["Alumni Calendar"]["notification_status"] == (
+        "not_sent_in_this_slice"
+    )
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_scheduled_activity_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-schedule-visible-member@example.com")
+    outsider = _seed_user(3, "node-schedule-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Schedule Member School",
+                "display_name": "Node Schedule Member School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Schedule Desk",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "meeting_department",
+                "visibility_policy": "members",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/node-scheduled-activity-map"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-scheduled-activity-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    schedule_map = member_map.json()["node_scheduled_activity_map"]
+    assert schedule_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert schedule_map["counts"]["nodes"] == 2
+    assert schedule_map["counts"]["non_root_nodes"] == 1
+    assert schedule_map["counts"]["active_node_memberships"] is None
+    assert schedule_map["counts"]["active_policies"] is None
+    assert schedule_map["counts"]["review_records"] is None
+    assert schedule_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_schedules",
+        "label": "Ask a Community Domain admin to review local scheduled activity",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {
+        item["node"]["name"]: item for item in schedule_map["flat_nodes"]
+    }
+    assert flat["Primary Schedule Desk"]["schedule_status"] == (
+        "needs_activity_coordinator"
+    )
+    assert flat["Primary Schedule Desk"]["local_member_count"] is None
+    assert flat["Primary Schedule Desk"]["local_coordinator_count"] is None
+    assert flat["Primary Schedule Desk"]["local_policy_count"] is None
+    assert flat["Primary Schedule Desk"]["review_record_count"] is None
+    assert flat["Primary Schedule Desk"]["admin_action_route_hint"] is None
+    assert flat["Primary Schedule Desk"]["attendance_status"] == (
+        "not_recorded_in_this_slice"
+    )
+    assert "create calendar entries" in schedule_map["boundary"]
+    assert "record attendance" in schedule_map["boundary"]
+    assert "private member activity" in schedule_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):

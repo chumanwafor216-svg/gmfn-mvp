@@ -8857,6 +8857,328 @@ def _community_domain_node_vault_map_payload(
     }
 
 
+def _community_domain_node_scheduled_activity_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    for node in nodes:
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        policy_node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(policy_node_id, []).append(policy)
+
+    reviews_by_node: dict[Optional[int], int] = {}
+    for review in reviews:
+        review_node_id = (
+            int(review.community_node_id)
+            if review.community_node_id is not None
+            else None
+        )
+        reviews_by_node[review_node_id] = reviews_by_node.get(review_node_id, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def scheduled_activity_status_for(
+        node: CommunityNode,
+        *,
+        local_member_count: int,
+        local_coordinator_count: int,
+        local_policy_count: int,
+        review_count: int,
+    ) -> tuple[str, str, bool]:
+        if node.parent_node_id is None:
+            return (
+                "domain_root",
+                "Root institution record; scheduled activity readiness belongs to child operating units.",
+                False,
+            )
+        if _clean_role(node.status, "active") != "active":
+            return (
+                "inactive",
+                "Reactivate this operating unit before using it for scheduled activity planning.",
+                False,
+            )
+
+        visibility = _clean_role(node.visibility_policy, "members")
+        if visibility in {"public", "network", "external"}:
+            return (
+                "public_schedule_review_needed",
+                "Review public meeting or event exposure before this unit carries outward schedules.",
+                False,
+            )
+        if local_coordinator_count <= 0:
+            return (
+                "needs_activity_coordinator",
+                "Assign a local admin or activity coordinator before this unit carries meetings or events.",
+                False,
+            )
+        if local_member_count <= local_coordinator_count:
+            return (
+                "needs_schedule_audience",
+                "Place reachable members in this unit before relying on local schedules.",
+                False,
+            )
+        if local_policy_count <= 0:
+            return (
+                "needs_schedule_policy",
+                "Add a local meeting, event, or attendance policy before this unit carries schedules.",
+                False,
+            )
+        if review_count <= 0:
+            return (
+                "needs_attendance_signal",
+                "Record a reviewed local meeting, event, or attendance signal before treating this unit as schedule-ready.",
+                False,
+            )
+        return (
+            "local_schedule_ready",
+            "This unit has coordinator, audience, policy, and reviewed attendance signals for future scheduled activities.",
+            True,
+        )
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        local_memberships = memberships_by_node.get(node_id, [])
+        local_coordinator_count = sum(
+            1
+            for row in local_memberships
+            if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+        )
+        local_policy_count = len(policies_by_node.get(node_id, []))
+        review_count = reviews_by_node.get(node_id, 0)
+        schedule_status, next_step, ready = scheduled_activity_status_for(
+            node,
+            local_member_count=len(local_memberships),
+            local_coordinator_count=local_coordinator_count,
+            local_policy_count=local_policy_count,
+            review_count=review_count,
+        )
+        if schedule_status == "public_schedule_review_needed":
+            admin_route = "/record-privacy-map"
+        elif schedule_status == "needs_activity_coordinator":
+            admin_route = "/roles"
+        elif schedule_status == "needs_schedule_audience":
+            admin_route = "/node-participation-map"
+        elif schedule_status == "needs_schedule_policy":
+            admin_route = "/policies"
+        elif schedule_status == "needs_attendance_signal":
+            admin_route = "/action-reviews/reviewer-queue"
+        else:
+            admin_route = f"/nodes/{node_id}/operating-summary"
+
+        item = {
+            "node": _node_payload(node),
+            "schedule_status": schedule_status,
+            "ready_for_local_schedule": ready,
+            "visibility_policy": _clean_role(node.visibility_policy, "members"),
+            "direct_child_count": len(child_nodes),
+            "local_member_count": admin_count(len(local_memberships)),
+            "local_coordinator_count": admin_count(local_coordinator_count),
+            "local_policy_count": admin_count(local_policy_count),
+            "review_record_count": admin_count(review_count),
+            "meeting_status": "not_created_in_this_slice",
+            "calendar_status": "not_created_in_this_slice",
+            "attendance_status": "not_recorded_in_this_slice",
+            "reminder_status": "not_sent_in_this_slice",
+            "notification_status": "not_sent_in_this_slice",
+            "payment_status": "not_connected_in_this_slice",
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "admin_action_route_hint": route_hint(admin_route, requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only local scheduled activity item. This does not create events, "
+                "create meetings, create calendar entries, record attendance, send reminders, "
+                "send notifications, create dues, create tickets, create payment instructions, "
+                "upload evidence files, issue TrustSlips, write Trust Passport entries, "
+                "or expose private member activity."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    tree = [node_item(root) for root in children_by_parent.get(None, [])]
+    non_root_items = [
+        item for item in flat_nodes if item["node"]["parent_node_id"] is not None
+    ]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["schedule_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if not non_root_items:
+        primary_next_action = {
+            "action_key": "map_operating_units_before_schedules",
+            "label": "Map operating units before scheduled activity planning",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("public_schedule_review_needed", 0):
+        primary_next_action = {
+            "action_key": "review_public_schedule_exposure",
+            "label": "Review public schedule exposure",
+            "route_hint": route_hint("/record-privacy-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_activity_coordinator", 0):
+        primary_next_action = {
+            "action_key": "assign_local_activity_coordinators",
+            "label": "Assign local activity coordinators",
+            "route_hint": route_hint("/roles", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_schedule_audience", 0):
+        primary_next_action = {
+            "action_key": "place_local_schedule_audience",
+            "label": "Place reachable members before local schedules",
+            "route_hint": route_hint("/node-participation-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_schedule_policy", 0):
+        primary_next_action = {
+            "action_key": "add_local_schedule_policy",
+            "label": "Add local schedule policy",
+            "route_hint": route_hint("/policies", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_attendance_signal", 0):
+        primary_next_action = {
+            "action_key": "record_attendance_signal",
+            "label": "Record reviewed meeting or attendance signal",
+            "route_hint": route_hint(
+                "/action-reviews/reviewer-queue", requires_admin=True
+            ),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_local_schedule_readiness",
+            "label": "Review local schedule readiness",
+            "route_hint": route_hint("/activity-map"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_schedules",
+            "label": "Ask a Community Domain admin to review local scheduled activity",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "active_node_memberships": admin_count(len(active_node_memberships)),
+            "active_policies": admin_count(len(active_policies)),
+            "review_records": admin_count(len(reviews)),
+            "local_schedule_ready": status_counts.get("local_schedule_ready", 0),
+            "public_schedule_review_needed": status_counts.get(
+                "public_schedule_review_needed", 0
+            ),
+            "needs_activity_coordinator": status_counts.get(
+                "needs_activity_coordinator", 0
+            ),
+            "needs_schedule_audience": status_counts.get(
+                "needs_schedule_audience", 0
+            ),
+            "needs_schedule_policy": status_counts.get("needs_schedule_policy", 0),
+            "needs_attendance_signal": status_counts.get(
+                "needs_attendance_signal", 0
+            ),
+            "inactive": status_counts.get("inactive", 0),
+            "events_created": 0,
+            "meetings_created": 0,
+            "calendar_entries_created": 0,
+            "attendance_records": 0,
+            "reminders_sent": 0,
+            "notifications_sent": 0,
+            "payment_instructions_created": 0,
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain node scheduled activity map is read-only local schedule "
+            "planning. It shows whether branches, departments, classes, committees, "
+            "chapters, lines, or other units have coordinator, audience, policy, and "
+            "reviewed meeting or attendance signals for future schedules. It does not "
+            "create events, create meetings, create calendar entries, record attendance, "
+            "send reminders, send notifications, create dues, create tickets, create "
+            "payment instructions, upload evidence files, issue TrustSlips, write "
+            "Trust Passport entries, create marketplace records, create finance records, "
+            "or expose private member activity."
+        ),
+    }
+
+
 def _community_domain_governance_coverage_payload(
     db: Session,
     *,
@@ -14799,6 +15121,25 @@ def get_community_domain_node_vault_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "node_vault_map": _community_domain_node_vault_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/node-scheduled-activity-map", response_model=dict[str, Any])
+def get_community_domain_node_scheduled_activity_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node_scheduled_activity_map": _community_domain_node_scheduled_activity_map_payload(
             db,
             domain=domain,
             current_user=current_user,

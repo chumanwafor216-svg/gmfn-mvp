@@ -2477,6 +2477,15 @@ export async function getCommunityDomainNodeVaultMap(
   );
 }
 
+export async function getCommunityDomainNodeScheduledActivityMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/node-scheduled-activity-map"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainGovernanceCoverage(
   communityDomainId: number | string
 ): Promise<any> {
