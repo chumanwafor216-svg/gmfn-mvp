@@ -498,6 +498,220 @@ def test_member_dashboard_hides_quote_and_outsider_is_rejected(
     assert "private member evidence" in dashboard["boundary"]
 
 
+def test_operating_map_aggregates_domain_package_without_side_effects(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "operating-map-admin@example.com")
+    trader = _seed_user(3, "operating-map-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Operating Map Market Domain",
+                "display_name": "Operating Map Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "A market domain coordinating trusted lines.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Building Materials Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        for user, role in ((admin, "domain_admin"), (trader, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={
+                "user_id": trader.id,
+                "role": "trader",
+                "title": "Building materials trader",
+            },
+        )
+        assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "operating-map-member-review",
+                "action_key": "domain_member.upsert",
+                "scope_type": "domain",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "policy_summary": "Domain admins review member changes.",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        response = client.get(f"/community-domains/{domain_id}/operating-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    operating_map = payload["operating_map"]
+    assert operating_map["editable"] is False
+    assert operating_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert operating_map["template"]["template_key"] == "market_cooperative"
+    assert operating_map["template"]["marketplace_role"] == "core"
+    assert operating_map["status"]["domain_status"] == "draft"
+    assert operating_map["status"]["verification_status"] == "unverified"
+    assert operating_map["status"]["activation_status"] == "not_active"
+    assert operating_map["status"]["billing_status"] == "quote_required"
+    assert operating_map["status"]["public_url_status"] == "open_product_decision"
+    assert operating_map["status"]["public_url"] is None
+    assert operating_map["counts"]["nodes"] == 2
+    assert operating_map["counts"]["active_members"] == 3
+    assert operating_map["counts"]["active_node_memberships"] == 1
+    assert operating_map["counts"]["active_policies"] == 1
+    assert operating_map["counts"]["open_reviews"] == 0
+    assert operating_map["counts"]["shops"] == 0
+    assert operating_map["counts"]["listings"] == 0
+    assert operating_map["counts"]["demands"] == 0
+    assert operating_map["counts"]["spotlights"] == 0
+    assert operating_map["counts"]["finance_records"] == 0
+    assert operating_map["primary_next_action"] == {
+        "action_key": "review_activation_requirements",
+        "label": "Review Community Domain activation requirements",
+        "route_hint": f"/community-domains/{domain_id}/activation-requirements",
+        "requires_admin": False,
+    }
+    assert "does not create a payment instruction" in operating_map["boundary"]
+    assert "activate billing" in operating_map["boundary"]
+    assert "verify authority" in operating_map["boundary"]
+    assert "/domains/:name" in operating_map["boundary"]
+    assert "/community-domains/:name" in operating_map["boundary"]
+    assert "create marketplace activity" in operating_map["boundary"]
+    assert "create a social Community" in operating_map["boundary"]
+    assert "move money" in operating_map["boundary"]
+    assert "private member evidence" in operating_map["boundary"]
+
+    lanes = {item["lane_key"]: item for item in operating_map["lanes"]}
+    assert lanes["identity"]["route_hint"] == f"/community-domains/{domain_id}"
+    assert lanes["structure"]["route_hint"].endswith("/nodes/tree")
+    assert lanes["members"]["route_hint"].endswith("/members")
+    assert lanes["roles"]["route_hint"].endswith("/roles")
+    assert lanes["governance"]["route_hint"].endswith("/governance-model")
+    assert lanes["readiness"]["route_hint"].endswith("/readiness")
+    assert lanes["verification"]["route_hint"].endswith("/verification-requirements")
+    assert lanes["activation"]["route_hint"].endswith("/activation-requirements")
+    assert lanes["service_settings"]["route_hint"].endswith("/service-settings")
+    assert lanes["economic_participation"]["route_hint"].endswith(
+        "/economic-participation"
+    )
+    assert lanes["network_presence"]["route_hint"].endswith("/network-presence")
+    assert lanes["structure"]["ready"] is True
+    assert lanes["members"]["ready"] is True
+    assert lanes["roles"]["ready"] is True
+    assert lanes["governance"]["ready"] is True
+    assert lanes["readiness"]["ready"] is False
+    assert lanes["verification"]["ready"] is False
+    assert lanes["activation"]["ready"] is False
+    assert lanes["economic_participation"]["status"] == "core_template"
+    assert lanes["network_presence"]["status"] == "profile_ready"
+    assert "does not create records" in lanes["identity"]["boundary"]
+
+    with SessionLocal() as db:
+        domain_row = db.query(CommunityDomain).one()
+        assert domain_row.status == "draft"
+        assert domain_row.verification_status == "unverified"
+        assert domain_row.clan_id is None
+        assert db.query(CommunityDomainMembership).count() == 3
+        assert db.query(CommunityNodeMembership).count() == 1
+        assert db.query(CommunityDomainPolicy).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_operating_map_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "operating-map-member@example.com")
+    outsider = _seed_user(3, "operating-map-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Operating Map School Domain",
+                "display_name": "Operating Map School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Parent teacher association member",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/operating-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(f"/community-domains/{domain_id}/operating-map")
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    operating_map = member_map.json()["operating_map"]
+    lanes = {item["lane_key"]: item for item in operating_map["lanes"]}
+    assert operating_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert operating_map["primary_next_action"] == {
+        "action_key": "view_structure",
+        "label": "View Community Domain structure",
+        "route_hint": f"/community-domains/{domain_id}/nodes/tree",
+        "requires_admin": False,
+    }
+    assert lanes["identity"]["route_hint"] == f"/community-domains/{domain_id}"
+    assert lanes["structure"]["route_hint"].endswith("/nodes/tree")
+    assert lanes["members"]["route_hint"] is None
+    assert lanes["verification"]["route_hint"] is None
+    assert lanes["activation"]["route_hint"].endswith("/activation-requirements")
+    assert lanes["economic_participation"]["route_hint"].endswith(
+        "/economic-participation"
+    )
+    assert lanes["network_presence"]["route_hint"].endswith("/network-presence")
+    assert lanes["members"]["requires_admin"] is True
+    assert lanes["verification"]["requires_admin"] is True
+    assert operating_map["editable"] is False
+    assert "private member evidence" in operating_map["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

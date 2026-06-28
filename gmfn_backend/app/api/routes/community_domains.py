@@ -2830,6 +2830,321 @@ def _community_domain_dashboard_payload(
     return dashboard
 
 
+def _community_domain_operating_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=int(domain.id))
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    domain_id = int(domain.id)
+    domain_status = _clean_role(domain.status, "draft")
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    marketplace_role = _clean_role(template["marketplace_role"], "optional")
+    public_profile_present = bool(_clean_str(domain.public_profile))
+    has_social_bridge = domain.clan_id is not None
+
+    node_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .count()
+    )
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    open_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes"]
+            )
+        )
+        .count()
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        count: int,
+        next_step: str,
+        *,
+        ready: bool,
+        route_suffix: str,
+        requires_admin: bool = False,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": int(count),
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "admin_visible": bool(can_admin),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only operating map lane. This does not create records, "
+                "change members, assign roles, create policy, decide reviews, "
+                "create payment instructions, activate billing, verify authority, "
+                "publish public presence, create marketplace activity, or expose "
+                "private member evidence."
+            ),
+        }
+
+    lanes = [
+        lane(
+            "identity",
+            "Community Domain identity",
+            "ready",
+            1,
+            "Keep the institutional identity, template, and root record accurate.",
+            ready=True,
+            route_suffix="",
+        ),
+        lane(
+            "structure",
+            "Institutional structure",
+            "ready" if node_count > 1 else "root_only",
+            int(node_count),
+            (
+                "Review branches, departments, lines, chapters, classes, or units."
+                if node_count > 1
+                else "Add the first operating units when the institution needs them."
+            ),
+            ready=node_count > 1,
+            route_suffix="/nodes/tree",
+        ),
+        lane(
+            "members",
+            "Members",
+            "ready" if active_member_count > 1 else "owner_only",
+            int(active_member_count),
+            (
+                "Review active Community Domain membership."
+                if active_member_count > 1
+                else "Add the first trusted admins or members."
+            ),
+            ready=active_member_count > 1,
+            route_suffix="/members",
+            requires_admin=True,
+        ),
+        lane(
+            "roles",
+            "Roles and placement",
+            "ready" if active_node_member_count > 0 else "domain_roles_only",
+            int(active_node_member_count),
+            (
+                "Review domain roles and local placement coverage."
+                if active_node_member_count > 0
+                else "Place members into the units where they actually operate."
+            ),
+            ready=active_node_member_count > 0,
+            route_suffix="/roles",
+        ),
+        lane(
+            "governance",
+            "Governance",
+            "ready" if active_policy_count > 0 else "policy_needed",
+            int(active_policy_count),
+            (
+                "Review policy and decision coverage."
+                if active_policy_count > 0
+                else "Add governance policy for important institutional actions."
+            ),
+            ready=active_policy_count > 0,
+            route_suffix="/governance-model",
+        ),
+        lane(
+            "readiness",
+            "Package readiness",
+            "active" if domain_status == "active" else "setup_open",
+            int(node_count + active_member_count + active_policy_count),
+            "Review setup blockers before treating this as ready for pilot use.",
+            ready=domain_status == "active",
+            route_suffix="/readiness",
+        ),
+        lane(
+            "verification",
+            "Authority verification",
+            verification_status,
+            1 if verification_status == "verified" else 0,
+            (
+                "Keep authority evidence current."
+                if verification_status == "verified"
+                else "Prepare legal or institutional authority evidence."
+            ),
+            ready=verification_status == "verified",
+            route_suffix="/verification-requirements",
+            requires_admin=True,
+        ),
+        lane(
+            "activation",
+            "Activation requirements",
+            "active" if domain_status == "active" else "not_active",
+            1 if domain_status == "active" else 0,
+            (
+                "Review active-domain launch posture."
+                if domain_status == "active"
+                else "Review what is still blocked before activation."
+            ),
+            ready=domain_status == "active",
+            route_suffix="/activation-requirements",
+        ),
+        lane(
+            "service_settings",
+            "Service settings",
+            "template_ready",
+            len(template["default_modules"]),
+            "Review modules included by the selected institutional template.",
+            ready=len(template["default_modules"]) > 0,
+            route_suffix="/service-settings",
+        ),
+        lane(
+            "economic_participation",
+            "Economic participation",
+            f"{marketplace_role}_template",
+            1 if marketplace_role in {"core", "supported"} else 0,
+            (
+                "Review marketplace, shops, spotlight, demand, vault, and finance fit."
+                if marketplace_role in {"core", "supported"}
+                else "Keep economic participation optional unless the institution needs it."
+            ),
+            ready=marketplace_role in {"core", "supported"},
+            route_suffix="/economic-participation",
+        ),
+        lane(
+            "network_presence",
+            "Network presence",
+            "profile_ready" if public_profile_present else "profile_needed",
+            1 if public_profile_present else 0,
+            "Review public identity, URL decision, verification badge, and outside-facing exposure.",
+            ready=public_profile_present,
+            route_suffix="/network-presence",
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "view_structure",
+            "label": "View Community Domain structure",
+            "route_hint": route_hint("/nodes/tree"),
+            "requires_admin": False,
+        }
+    elif domain_status != "active":
+        primary_next_action = {
+            "action_key": "review_activation_requirements",
+            "label": "Review Community Domain activation requirements",
+            "route_hint": route_hint("/activation-requirements"),
+            "requires_admin": False,
+        }
+    elif verification_status != "verified":
+        primary_next_action = {
+            "action_key": "prepare_verification",
+            "label": "Prepare Community Domain authority verification",
+            "route_hint": route_hint("/verification-requirements", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif open_review_count > 0:
+        primary_next_action = {
+            "action_key": "review_governance_queue",
+            "label": "Review pending Community Domain decisions",
+            "route_hint": route_hint(
+                "/action-reviews/reviewer-queue", requires_admin=True
+            ),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_dashboard",
+            "label": "Review Community Domain dashboard",
+            "route_hint": route_hint("/dashboard"),
+            "requires_admin": False,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "default_modules": list(template["default_modules"]),
+            "marketplace_role": marketplace_role,
+        },
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "status": {
+            "domain_status": domain_status,
+            "verification_status": verification_status,
+            "activation_status": "active" if domain_status == "active" else "not_active",
+            "billing_status": "active" if domain_status == "active" else "quote_required",
+            "marketplace_role": marketplace_role,
+            "public_profile_present": public_profile_present,
+            "public_url_status": "open_product_decision",
+            "public_url": None,
+            "social_community_bridge_status": (
+                "linked" if has_social_bridge else "not_created_in_this_slice"
+            ),
+        },
+        "counts": {
+            "nodes": int(node_count),
+            "active_members": int(active_member_count),
+            "active_node_memberships": int(active_node_member_count),
+            "active_policies": int(active_policy_count),
+            "open_reviews": int(open_review_count),
+            "default_modules": len(template["default_modules"]),
+            "shops": 0,
+            "listings": 0,
+            "demands": 0,
+            "spotlights": 0,
+            "finance_records": 0,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Operating map is a read-only Community Domain package map in this "
+            "MVP slice. This endpoint does not create a payment instruction, "
+            "record payment, activate billing, activate the Community Domain, "
+            "verify authority, create nodes, add members, assign roles, create "
+            "policy, decide reviews, publish a public page, finalize whether "
+            "public URLs use /domains/:name or /community-domains/:name, create "
+            "marketplace activity, create shops, create listings, create demand, "
+            "place Spotlight, create vault links, create a social Community, move "
+            "money, or expose private member evidence."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -4075,6 +4390,25 @@ def get_community_domain_dashboard(
         "ok": True,
         "community_domain_id": int(domain.id),
         "dashboard": _community_domain_dashboard_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/operating-map", response_model=dict[str, Any])
+def get_community_domain_operating_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "operating_map": _community_domain_operating_map_payload(
             db,
             domain=domain,
             current_user=current_user,
