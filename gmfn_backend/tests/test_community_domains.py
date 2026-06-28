@@ -4420,6 +4420,371 @@ def test_member_can_read_node_analytics_map_but_admin_counts_are_hidden(
     assert "private member activity" in analytics_map["boundary"]
 
 
+def test_node_domain_boundary_map_projects_child_domain_candidates_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    branch_admin = _seed_user(2, "node-boundary-branch-admin@example.com")
+    branch_member = _seed_user(3, "node-boundary-branch-member@example.com")
+    line_admin = _seed_user(4, "node-boundary-line-admin@example.com")
+    line_member = _seed_user(5, "node-boundary-line-member@example.com")
+    affiliate_admin = _seed_user(6, "node-boundary-affiliate-admin@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Boundary School Group",
+                "display_name": "Node Boundary School Group",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        child_candidate = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "London Campus",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "visibility_policy": "public",
+                "inherits_parent_policy": False,
+            },
+        )
+        assert child_candidate.status_code == 201, child_candidate.text
+        child_candidate_id = child_candidate.json()["node"]["id"]
+
+        affiliate_review = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Abuja Campus",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "visibility_policy": "public",
+            },
+        )
+        assert affiliate_review.status_code == 201, affiliate_review.text
+        affiliate_review_id = affiliate_review.json()["node"]["id"]
+
+        internal_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Science Department",
+                "parent_node_id": root_node_id,
+                "node_type": "department",
+                "node_kind": "school_department",
+                "visibility_policy": "members",
+            },
+        )
+        assert internal_line.status_code == 201, internal_line.text
+        internal_line_id = internal_line.json()["node"]["id"]
+
+        parent_unit = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Library Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "school_committee",
+                "visibility_policy": "members",
+            },
+        )
+        assert parent_unit.status_code == 201, parent_unit.text
+
+        for user in (
+            branch_admin,
+            branch_member,
+            line_admin,
+            line_member,
+            affiliate_admin,
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (child_candidate_id, branch_admin.id, "branch_admin"),
+            (child_candidate_id, branch_member.id, "member"),
+            (internal_line_id, line_admin.id, "department_admin"),
+            (internal_line_id, line_member.id, "member"),
+            (affiliate_review_id, affiliate_admin.id, "branch_admin"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-boundary-london-campus-policy",
+                "action_key": "domain_boundary.review",
+                "community_node_id": child_candidate_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "branch_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_boundary.review",
+                "community_node_id": child_candidate_id,
+                "request_note": "Review London Campus as a possible child domain.",
+                "payload": {"claim": "possible child domain"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Child domain boundary note",
+                "file_name": "node-domain-boundary.pdf",
+                "storage_key": "private/evidence/node-domain-boundary.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "affiliations": db.query(CommunityDomainAffiliation).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/node-domain-boundary-map"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    boundary_map = payload["node_domain_boundary_map"]
+    assert boundary_map["editable"] is False
+    assert boundary_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert boundary_map["counts"] == {
+        "nodes": 5,
+        "non_root_nodes": 4,
+        "active_node_memberships": 5,
+        "active_policies": 1,
+        "review_records": 1,
+        "active_evidence_records": 1,
+        "child_domain_candidate": 1,
+        "affiliate_review_needed": 1,
+        "internal_operating_unit": 1,
+        "parent_domain_unit": 1,
+        "inactive": 0,
+        "child_domains_created": 0,
+        "affiliate_links_created": 0,
+        "billing_changes": 0,
+        "public_urls_published": 0,
+        "members_transferred": 0,
+    }
+    assert boundary_map["status_counts"] == {
+        "child_domain_candidate": 1,
+        "affiliate_review_needed": 1,
+        "internal_operating_unit": 1,
+        "parent_domain_unit": 1,
+    }
+    assert boundary_map["primary_next_action"] == {
+        "action_key": "review_child_domain_candidates",
+        "label": "Review possible child Community Domains",
+        "route_hint": f"/community-domains/{domain_id}/institutional-profile",
+        "requires_admin": True,
+    }
+    assert "read-only child-domain planning" in boundary_map["boundary"]
+    assert "create child Community Domains" in boundary_map["boundary"]
+    assert "create affiliate links" in boundary_map["boundary"]
+    assert "publish public URLs" in boundary_map["boundary"]
+    assert "activate billing" in boundary_map["boundary"]
+    assert "split hierarchy" in boundary_map["boundary"]
+    assert "transfer members" in boundary_map["boundary"]
+    assert "private/evidence/node-domain-boundary.pdf" not in str(boundary_map)
+
+    flat = {item["node"]["name"]: item for item in boundary_map["flat_nodes"]}
+    assert flat["Node Boundary School Group"]["domain_boundary_status"] == (
+        "domain_root"
+    )
+    assert flat["London Campus"]["domain_boundary_status"] == (
+        "child_domain_candidate"
+    )
+    assert flat["London Campus"]["recommended_boundary"] == (
+        "review_possible_child_domain"
+    )
+    assert flat["London Campus"]["ready_for_child_domain_review"] is True
+    assert flat["London Campus"]["branch_like_unit"] is True
+    assert flat["London Campus"]["public_identity_signal"] is True
+    assert flat["London Campus"]["detached_policy_inheritance"] is True
+    assert flat["London Campus"]["local_member_count"] == 2
+    assert flat["London Campus"]["local_admin_count"] == 1
+    assert flat["London Campus"]["local_policy_count"] == 1
+    assert flat["London Campus"]["review_record_count"] == 1
+    assert flat["London Campus"]["evidence_record_count"] == 1
+    assert flat["London Campus"]["signal_count"] == 2
+    assert flat["London Campus"]["admin_action_route_hint"].endswith(
+        "/institutional-profile"
+    )
+    assert flat["London Campus"]["child_domain_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert flat["London Campus"]["affiliate_link_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert flat["London Campus"]["billing_status"] == "not_changed_in_this_slice"
+    assert flat["London Campus"]["public_url_status"] == (
+        "not_published_in_this_slice"
+    )
+    assert flat["London Campus"]["member_transfer_status"] == (
+        "not_moved_in_this_slice"
+    )
+    assert flat["Abuja Campus"]["domain_boundary_status"] == (
+        "affiliate_review_needed"
+    )
+    assert flat["Abuja Campus"]["admin_action_route_hint"].endswith("/social-bridge")
+    assert flat["Science Department"]["domain_boundary_status"] == (
+        "internal_operating_unit"
+    )
+    assert flat["Science Department"]["recommended_boundary"] == (
+        "keep_inside_parent_domain"
+    )
+    assert flat["Library Committee"]["domain_boundary_status"] == (
+        "parent_domain_unit"
+    )
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "affiliations": db.query(CommunityDomainAffiliation).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_domain_boundary_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-boundary-visible-member@example.com")
+    outsider = _seed_user(3, "node-boundary-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Boundary Member School",
+                "display_name": "Node Boundary Member School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "visibility_policy": "public",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/node-domain-boundary-map"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-domain-boundary-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    boundary_map = member_map.json()["node_domain_boundary_map"]
+    assert boundary_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert boundary_map["counts"]["nodes"] == 2
+    assert boundary_map["counts"]["non_root_nodes"] == 1
+    assert boundary_map["counts"]["active_node_memberships"] is None
+    assert boundary_map["counts"]["active_policies"] is None
+    assert boundary_map["counts"]["review_records"] is None
+    assert boundary_map["counts"]["active_evidence_records"] is None
+    assert boundary_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_domain_boundaries",
+        "label": "Ask a Community Domain admin to review domain boundaries",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in boundary_map["flat_nodes"]}
+    assert flat["Primary Branch"]["domain_boundary_status"] == (
+        "affiliate_review_needed"
+    )
+    assert flat["Primary Branch"]["recommended_boundary"] == (
+        "review_parent_affiliate_boundary"
+    )
+    assert flat["Primary Branch"]["local_member_count"] is None
+    assert flat["Primary Branch"]["local_admin_count"] is None
+    assert flat["Primary Branch"]["local_policy_count"] is None
+    assert flat["Primary Branch"]["review_record_count"] is None
+    assert flat["Primary Branch"]["evidence_record_count"] is None
+    assert flat["Primary Branch"]["signal_count"] is None
+    assert flat["Primary Branch"]["admin_action_route_hint"] is None
+    assert flat["Primary Branch"]["child_domain_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert "create child Community Domains" in boundary_map["boundary"]
+    assert "transfer members" in boundary_map["boundary"]
+    assert "private member activity" in boundary_map["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):

@@ -7538,6 +7538,351 @@ def _community_domain_node_analytics_map_payload(
     }
 
 
+def _community_domain_node_domain_boundary_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    active_evidence = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .all()
+    )
+
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    for node in nodes:
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        policy_node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(policy_node_id, []).append(policy)
+
+    reviews_by_node: dict[Optional[int], int] = {}
+    for review in reviews:
+        review_node_id = (
+            int(review.community_node_id)
+            if review.community_node_id is not None
+            else None
+        )
+        reviews_by_node[review_node_id] = reviews_by_node.get(review_node_id, 0) + 1
+
+    evidence_by_node: dict[Optional[int], int] = {}
+    for evidence in active_evidence:
+        evidence_node_id = (
+            int(evidence.community_node_id)
+            if evidence.community_node_id is not None
+            else None
+        )
+        evidence_by_node[evidence_node_id] = evidence_by_node.get(evidence_node_id, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def is_branch_like(node: CommunityNode) -> bool:
+        node_type = _clean_role(node.node_type, "")
+        node_kind = _clean_role(node.node_kind, "")
+        return node_type in {
+            "branch",
+            "campus",
+            "chapter",
+            "parish",
+            "region",
+            "state",
+            "affiliate",
+            "field_office",
+        } or any(
+            marker in node_kind
+            for marker in [
+                "branch",
+                "campus",
+                "chapter",
+                "parish",
+                "region",
+                "affiliate",
+                "field_office",
+            ]
+        )
+
+    def boundary_status_for(
+        node: CommunityNode,
+        *,
+        local_member_count: int,
+        local_admin_count: int,
+        local_policy_count: int,
+        signal_count: int,
+    ) -> tuple[str, str, str, bool]:
+        if node.parent_node_id is None:
+            return (
+                "domain_root",
+                "parent_domain",
+                "Root institution record; child-domain review belongs to operating units.",
+                False,
+            )
+        if _clean_role(node.status, "active") != "active":
+            return (
+                "inactive",
+                "keep_inside_parent_domain",
+                "Reactivate this operating unit before reviewing domain boundaries.",
+                False,
+            )
+
+        visibility = _clean_role(node.visibility_policy, "members")
+        public_visibility = visibility in {"public", "network", "external"}
+        branch_like = is_branch_like(node)
+        detached_inheritance = not bool(node.inherits_parent_policy)
+        has_public_identity_signals = public_visibility or (
+            branch_like and detached_inheritance
+        )
+
+        if (
+            branch_like
+            and public_visibility
+            and local_member_count > 0
+            and local_admin_count > 0
+            and local_policy_count > 0
+            and signal_count > 0
+        ):
+            return (
+                "child_domain_candidate",
+                "review_possible_child_domain",
+                "This unit has branch-like identity, public visibility, local admin, local members, policy, and reviewed signals.",
+                True,
+            )
+        if has_public_identity_signals:
+            return (
+                "affiliate_review_needed",
+                "review_parent_affiliate_boundary",
+                "Review whether this unit should remain under the parent or become an affiliate/child domain later.",
+                False,
+            )
+        if local_admin_count > 0 and local_member_count > 0:
+            return (
+                "internal_operating_unit",
+                "keep_inside_parent_domain",
+                "This unit can operate inside the parent Community Domain rules.",
+                False,
+            )
+        return (
+            "parent_domain_unit",
+            "keep_inside_parent_domain",
+            "This unit still depends mainly on the parent domain for identity, rules, and administration.",
+            False,
+        )
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        local_memberships = memberships_by_node.get(node_id, [])
+        local_admin_count = sum(
+            1
+            for row in local_memberships
+            if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+        )
+        local_policy_count = len(policies_by_node.get(node_id, []))
+        review_count = reviews_by_node.get(node_id, 0)
+        evidence_count = evidence_by_node.get(node_id, 0)
+        signal_count = review_count + evidence_count
+        boundary_status, recommended_boundary, next_step, review_ready = (
+            boundary_status_for(
+                node,
+                local_member_count=len(local_memberships),
+                local_admin_count=local_admin_count,
+                local_policy_count=local_policy_count,
+                signal_count=signal_count,
+            )
+        )
+        if boundary_status == "child_domain_candidate":
+            admin_route = "/institutional-profile"
+        elif boundary_status == "affiliate_review_needed":
+            admin_route = "/social-bridge"
+        else:
+            admin_route = "/nodes/tree"
+
+        visibility = _clean_role(node.visibility_policy, "members")
+        item = {
+            "node": _node_payload(node),
+            "domain_boundary_status": boundary_status,
+            "recommended_boundary": recommended_boundary,
+            "ready_for_child_domain_review": review_ready,
+            "branch_like_unit": is_branch_like(node),
+            "public_identity_signal": visibility in {"public", "network", "external"},
+            "detached_policy_inheritance": not bool(node.inherits_parent_policy),
+            "direct_child_count": len(child_nodes),
+            "local_member_count": admin_count(len(local_memberships)),
+            "local_admin_count": admin_count(local_admin_count),
+            "local_policy_count": admin_count(local_policy_count),
+            "review_record_count": admin_count(review_count),
+            "evidence_record_count": admin_count(evidence_count),
+            "signal_count": admin_count(signal_count),
+            "child_domain_status": "not_created_in_this_slice",
+            "affiliate_link_status": "not_created_in_this_slice",
+            "billing_status": "not_changed_in_this_slice",
+            "public_url_status": "not_published_in_this_slice",
+            "member_transfer_status": "not_moved_in_this_slice",
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "admin_action_route_hint": route_hint(admin_route, requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only node/domain boundary item. This does not create child "
+                "Community Domains, create affiliate links, publish public URLs, "
+                "activate billing, split hierarchy, transfer members, verify legal "
+                "identity, create marketplace records, create finance records, "
+                "issue TrustSlips, write Trust Passport entries, or expose private "
+                "member activity."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    tree = [node_item(root) for root in children_by_parent.get(None, [])]
+    non_root_items = [
+        item for item in flat_nodes if item["node"]["parent_node_id"] is not None
+    ]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["domain_boundary_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if not non_root_items:
+        primary_next_action = {
+            "action_key": "map_operating_units_before_domain_boundary_review",
+            "label": "Map operating units before domain-boundary review",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("child_domain_candidate", 0):
+        primary_next_action = {
+            "action_key": "review_child_domain_candidates",
+            "label": "Review possible child Community Domains",
+            "route_hint": route_hint("/institutional-profile", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("affiliate_review_needed", 0):
+        primary_next_action = {
+            "action_key": "review_affiliate_boundaries",
+            "label": "Review affiliate boundaries",
+            "route_hint": route_hint("/social-bridge", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_parent_domain_units",
+            "label": "Review parent-domain operating units",
+            "route_hint": route_hint("/node-autonomy-map"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_domain_boundaries",
+            "label": "Ask a Community Domain admin to review domain boundaries",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "active_node_memberships": admin_count(len(active_node_memberships)),
+            "active_policies": admin_count(len(active_policies)),
+            "review_records": admin_count(len(reviews)),
+            "active_evidence_records": admin_count(len(active_evidence)),
+            "child_domain_candidate": status_counts.get("child_domain_candidate", 0),
+            "affiliate_review_needed": status_counts.get(
+                "affiliate_review_needed", 0
+            ),
+            "internal_operating_unit": status_counts.get(
+                "internal_operating_unit", 0
+            ),
+            "parent_domain_unit": status_counts.get("parent_domain_unit", 0),
+            "inactive": status_counts.get("inactive", 0),
+            "child_domains_created": 0,
+            "affiliate_links_created": 0,
+            "billing_changes": 0,
+            "public_urls_published": 0,
+            "members_transferred": 0,
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain node domain-boundary map is read-only child-domain "
+            "planning. It helps decide whether branches, campuses, chapters, "
+            "parishes, market sections, departments, or other operating units "
+            "should stay as CommunityNodes under the parent, be reviewed as "
+            "affiliates, or later become child Community Domains. It does not "
+            "create child Community Domains, create affiliate links, publish public URLs, "
+            "activate billing, split hierarchy, transfer members, "
+            "verify legal identity, create marketplace records, create finance "
+            "records, issue TrustSlips, write Trust Passport entries, or expose "
+            "private member activity."
+        ),
+    }
+
+
 def _community_domain_governance_coverage_payload(
     db: Session,
     *,
@@ -13404,6 +13749,25 @@ def get_community_domain_node_analytics_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "node_analytics_map": _community_domain_node_analytics_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/node-domain-boundary-map", response_model=dict[str, Any])
+def get_community_domain_node_domain_boundary_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node_domain_boundary_map": _community_domain_node_domain_boundary_map_payload(
             db,
             domain=domain,
             current_user=current_user,
