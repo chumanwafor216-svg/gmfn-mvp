@@ -498,6 +498,116 @@ def test_member_dashboard_hides_quote_and_outsider_is_rejected(
     assert "private member evidence" in dashboard["boundary"]
 
 
+def test_service_settings_are_template_projection_without_activation(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Onitsha Service Settings Market",
+                "display_name": "Onitsha Service Settings Market",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        response = client.get(f"/community-domains/{domain_id}/service-settings")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    settings = payload["service_settings"]
+    assert settings["template_key"] == "market_cooperative"
+    assert settings["domain_type"] == "market_cooperative"
+    assert settings["editable"] is False
+    assert settings["enabled_total"] >= 7
+    assert "does not persist settings" in settings["boundary"]
+    assert "enable or disable modules" in settings["boundary"]
+    assert "activate billing" in settings["boundary"]
+    assert "grant permissions" in settings["boundary"]
+
+    by_key = {item["module_key"]: item for item in settings["items"]}
+    assert by_key["shops"]["enabled"] is True
+    assert by_key["shops"]["status"] == "enabled_by_template"
+    assert by_key["shops"]["source"] == "template_default"
+    assert by_key["shops"]["editable"] is False
+    assert by_key["shops"]["admin_visible"] is True
+    assert by_key["marketplace"]["enabled"] is False
+    assert by_key["marketplace"]["status"] == "available_optional"
+    assert by_key["marketplace"]["source"] == "module_catalog"
+    assert "does not enable" in by_key["shops"]["boundary"]
+    assert "grant permissions" in by_key["shops"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 1
+        assert db.query(CommunityNode).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_service_settings_but_outsider_is_rejected(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "service-settings-member@example.com")
+    outsider = _seed_user(3, "service-settings-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Church Service Settings Domain",
+                "display_name": "Church Service Settings Domain",
+                "domain_type": "religious_body",
+                "template_key": "church_religious_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Department member",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_settings = client.get(f"/community-domains/{domain_id}/service-settings")
+        assert member_settings.status_code == 200, member_settings.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_settings = client.get(f"/community-domains/{domain_id}/service-settings")
+        assert outsider_settings.status_code == 403, outsider_settings.text
+        assert "active Community Domain members" in outsider_settings.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    settings = member_settings.json()["service_settings"]
+    by_key = {item["module_key"]: item for item in settings["items"]}
+    assert by_key["governance"]["enabled"] is True
+    assert by_key["governance"]["admin_visible"] is False
+    assert by_key["verification"]["enabled"] is False
+    assert settings["editable"] is False
+    assert "private records" in settings["boundary"]
+
+
 def test_community_domain_draft_rejects_duplicate_domain_name(
     client: TestClient,
 ):

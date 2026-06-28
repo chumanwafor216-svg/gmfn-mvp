@@ -2324,6 +2324,12 @@ export async function getCommunityDomainDashboard(
   return httpJson(communityDomainPath(communityDomainId, "/dashboard"), "GET");
 }
 
+export async function listCommunityDomainServiceSettings(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/service-settings"), "GET");
+}
+
 export async function listCommunityDomainNodes(
   communityDomainId: number | string
 ): Promise<any> {

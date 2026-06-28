@@ -71,6 +71,64 @@ COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_shops": 100,
     "included_storage_gb": 5,
 }
+COMMUNITY_DOMAIN_MODULE_PRESETS: dict[str, dict[str, str]] = {
+    "governance": {
+        "label": "Governance",
+        "summary": "Policies, approvals, reviews, and institutional decision records.",
+    },
+    "members": {
+        "label": "Members",
+        "summary": "Domain membership, member status, role assignment, and member visibility.",
+    },
+    "departments": {
+        "label": "Departments",
+        "summary": "Branches, classes, committees, lines, units, and other domain nodes.",
+    },
+    "roles": {
+        "label": "Roles",
+        "summary": "Institutional role labels, role scope, and appointment context.",
+    },
+    "shops": {
+        "label": "Shops",
+        "summary": "Member shops and domain-aware visibility for trusted trade.",
+    },
+    "marketplace": {
+        "label": "Marketplace",
+        "summary": "Domain-scoped trusted trade, demand, services, vendors, and welfare sourcing.",
+    },
+    "spotlight": {
+        "label": "Spotlight",
+        "summary": "Approved domain announcements, visibility, and promotional exposure.",
+    },
+    "vault": {
+        "label": "Vault",
+        "summary": "Controlled documents, private records, evidence files, and shared materials.",
+    },
+    "verification": {
+        "label": "Verification",
+        "summary": "Membership, role, node, and evidence currentness checks.",
+    },
+    "trust_centre": {
+        "label": "Trust Centre",
+        "summary": "Domain-scoped trust evidence and public-safe institutional signals.",
+    },
+    "events": {
+        "label": "Events",
+        "summary": "Meetings, activities, programmes, services, and attendance evidence.",
+    },
+    "demand": {
+        "label": "Demand",
+        "summary": "Domain-scoped requests, needs, supplier demand, and group sourcing.",
+    },
+    "notifications": {
+        "label": "Notifications",
+        "summary": "Domain, node, role, and invite-scoped messages and alerts.",
+    },
+    "analytics": {
+        "label": "Analytics",
+        "summary": "Membership, structure, activity, evidence, and module-readiness summaries.",
+    },
+}
 COMMUNITY_DOMAIN_TEMPLATE_PRESETS: list[dict[str, Any]] = [
     {
         "template_key": "school_multi_branch",
@@ -641,6 +699,61 @@ def _community_domain_package_quote_payload(
             "Quote preview only. This does not create a payment instruction, "
             "confirm payment, activate billing, activate the Community Domain, "
             "or verify ownership."
+        ),
+    }
+
+
+def _community_domain_service_settings_payload(
+    domain: CommunityDomain,
+    *,
+    can_admin: bool,
+) -> dict[str, Any]:
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    enabled_modules = set(template["default_modules"])
+    ordered_module_keys = list(
+        dict.fromkeys([*template["default_modules"], *COMMUNITY_DOMAIN_MODULE_PRESETS.keys()])
+    )
+    items = []
+    for module_key in ordered_module_keys:
+        preset = COMMUNITY_DOMAIN_MODULE_PRESETS.get(
+            module_key,
+            {
+                "label": module_key.replace("_", " ").title(),
+                "summary": "Template-defined Community Domain module.",
+            },
+        )
+        enabled_by_template = module_key in enabled_modules
+        items.append(
+            {
+                "module_key": module_key,
+                "label": preset["label"],
+                "summary": preset["summary"],
+                "enabled": enabled_by_template,
+                "status": "enabled_by_template" if enabled_by_template else "available_optional",
+                "source": "template_default" if enabled_by_template else "module_catalog",
+                "editable": False,
+                "admin_visible": bool(can_admin),
+                "boundary": (
+                    "Read-only template projection. This setting does not enable, "
+                    "disable, bill, activate, or grant permissions for the module."
+                ),
+            }
+        )
+
+    return {
+        "template_key": template["template_key"],
+        "domain_type": template["domain_type"],
+        "items": items,
+        "enabled_total": sum(1 for item in items if item["enabled"]),
+        "optional_total": sum(1 for item in items if not item["enabled"]),
+        "editable": False,
+        "boundary": (
+            "Service settings are read-only template defaults in this MVP slice. "
+            "This endpoint does not persist settings, enable or disable modules, "
+            "activate billing, activate the Community Domain, grant permissions, "
+            "or expose private records."
         ),
     }
 
@@ -2041,6 +2154,25 @@ def get_community_domain_dashboard(
             db,
             domain=domain,
             current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/service-settings", response_model=dict[str, Any])
+def list_community_domain_service_settings(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "service_settings": _community_domain_service_settings_payload(
+            domain,
+            can_admin=can_admin,
         ),
     }
 
