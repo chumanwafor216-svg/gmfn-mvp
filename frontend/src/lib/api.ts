@@ -2399,6 +2399,15 @@ export async function getCommunityDomainTrustMobility(
   );
 }
 
+export async function getCommunityDomainSubscriptionLifecycle(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/subscription-lifecycle"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

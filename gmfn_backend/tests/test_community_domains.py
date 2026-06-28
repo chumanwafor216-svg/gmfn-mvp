@@ -2939,6 +2939,175 @@ def test_member_can_read_trust_mobility_but_admin_routes_are_hidden(
     assert "private member" in trust_mobility["boundary"]
 
 
+def test_subscription_lifecycle_projects_billing_plan_without_payment_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Subscription Lifecycle Market",
+                "display_name": "Subscription Lifecycle Market",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/subscription-lifecycle"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    subscription = payload["subscription_lifecycle"]
+    assert subscription["editable"] is False
+    assert subscription["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert subscription["package"]["package_code"] == "community_domain_starter"
+    assert subscription["package"]["pricing_status"] == "pilot_quote_required"
+    assert subscription["package"]["billing_cycle"] == "manual_quote"
+    assert subscription["package"]["price_amount"] is None
+    assert subscription["summary"] == {
+        "domain_status": "draft",
+        "verification_status": "unverified",
+        "billing_status": "not_metered_in_this_slice",
+        "subscription_status": "not_configured",
+        "payment_instruction_status": "not_created_in_this_slice",
+        "payment_confirmation_status": "not_recorded_in_this_slice",
+        "renewal_status": "not_configured",
+        "next_billing_at": None,
+        "subscription_started_at": None,
+        "subscription_expires_at": None,
+        "grace_period_days": None,
+    }
+    assert subscription["ready_total"] == 1
+    assert subscription["blocked_lanes"] == [
+        "pricing_confirmation",
+        "payment_instruction",
+        "payment_confirmation",
+        "billing_activation",
+        "subscription_period",
+        "renewal_policy",
+        "suspension_reactivation",
+    ]
+    assert subscription["primary_next_action"] == {
+        "action_key": "review_manual_quote",
+        "label": "Review manual Community Domain package quote",
+        "route_hint": f"/community-domains/{domain_id}/package-quote",
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in subscription["lanes"]}
+    assert lanes["quote_preview"]["status"] == "draft_quote"
+    assert lanes["quote_preview"]["ready"] is True
+    assert lanes["pricing_confirmation"]["status"] == "pilot_quote_required"
+    assert lanes["payment_instruction"]["status"] == "not_created_in_this_slice"
+    assert lanes["payment_confirmation"]["status"] == "not_recorded_in_this_slice"
+    assert lanes["billing_activation"]["status"] == "not_active"
+    assert lanes["subscription_period"]["status"] == "not_configured"
+    assert lanes["renewal_policy"]["status"] == "not_configured"
+    assert lanes["suspension_reactivation"]["status"] == "not_enforced_in_this_slice"
+    assert "does not create a quote acceptance" in subscription["boundary"]
+    assert "create a payment instruction" in subscription["boundary"]
+    assert "record payment" in subscription["boundary"]
+    assert "activate billing" in subscription["boundary"]
+    assert "renew a domain" in subscription["boundary"]
+    assert "private finance" in subscription["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_subscription_lifecycle_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "subscription-lifecycle-member@example.com")
+    outsider = _seed_user(3, "subscription-lifecycle-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Subscription School Domain",
+                "display_name": "Subscription School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_lifecycle = client.get(
+            f"/community-domains/{domain_id}/subscription-lifecycle"
+        )
+        assert member_lifecycle.status_code == 200, member_lifecycle.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_lifecycle = client.get(
+            f"/community-domains/{domain_id}/subscription-lifecycle"
+        )
+        assert outsider_lifecycle.status_code == 403, outsider_lifecycle.text
+        assert "active Community Domain members" in outsider_lifecycle.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    subscription = member_lifecycle.json()["subscription_lifecycle"]
+    assert subscription["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert subscription["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_subscription",
+        "label": "Ask a Community Domain admin to review subscription setup",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    lanes = {item["lane_key"]: item for item in subscription["lanes"]}
+    assert lanes["quote_preview"]["route_hint"] is None
+    assert lanes["pricing_confirmation"]["route_hint"] is None
+    assert lanes["payment_instruction"]["route_hint"] is None
+    assert lanes["payment_confirmation"]["route_hint"] is None
+    assert lanes["billing_activation"]["route_hint"] is None
+    assert lanes["subscription_period"]["route_hint"] is None
+    assert lanes["renewal_policy"]["route_hint"] is None
+    assert lanes["suspension_reactivation"]["route_hint"] is None
+    assert subscription["summary"]["billing_status"] == "not_metered_in_this_slice"
+    assert "private finance" in subscription["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

@@ -364,6 +364,64 @@ COMMUNITY_DOMAIN_ACTIVATION_REQUIREMENT_PRESETS: list[dict[str, Any]] = [
         "route_suffix": "/governance-model",
     },
 ]
+COMMUNITY_DOMAIN_SUBSCRIPTION_LIFECYCLE_PRESETS: list[dict[str, Any]] = [
+    {
+        "lane_key": "quote_preview",
+        "label": "Quote preview",
+        "summary": "A manual pilot quote can be previewed before any payment instruction exists.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "lane_key": "pricing_confirmation",
+        "label": "Pricing confirmation",
+        "summary": "Final price, currency, cycle, and renewal terms are not configured in this MVP slice.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "lane_key": "payment_instruction",
+        "label": "Payment instruction",
+        "summary": "A Community Domain payment instruction is not created by this projection.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "lane_key": "payment_confirmation",
+        "label": "Payment confirmation",
+        "summary": "No bank match, receipt, or manual payment confirmation is recorded here.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "lane_key": "billing_activation",
+        "label": "Billing activation",
+        "summary": "Billing activation requires a future dedicated billing flow.",
+        "requires_admin": True,
+        "route_suffix": "/activation-requirements",
+    },
+    {
+        "lane_key": "subscription_period",
+        "label": "Subscription period",
+        "summary": "Start date, expiry date, grace period, and seat/module entitlements are not configured here.",
+        "requires_admin": True,
+        "route_suffix": "/capacity-plan",
+    },
+    {
+        "lane_key": "renewal_policy",
+        "label": "Renewal policy",
+        "summary": "Renewal reminders, renewal price, and renewal approval are not configured here.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "lane_key": "suspension_reactivation",
+        "label": "Suspension and reactivation",
+        "summary": "Expired, suspended, grace-period, and reactivation rules are not enforced here.",
+        "requires_admin": True,
+        "route_suffix": "/activation-requirements",
+    },
+]
 COMMUNITY_DOMAIN_ECONOMIC_LANE_PRESETS: list[dict[str, Any]] = [
     {
         "lane_key": "marketplace",
@@ -6279,6 +6337,154 @@ def _community_domain_trust_mobility_payload(
     }
 
 
+def _community_domain_subscription_lifecycle_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    domain_status = _clean_role(domain.status, "draft")
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    quote = _community_domain_package_quote_payload(domain)
+
+    status_by_lane = {
+        "quote_preview": quote["quote_status"],
+        "pricing_confirmation": quote["pricing_status"],
+        "payment_instruction": "not_created_in_this_slice",
+        "payment_confirmation": "not_recorded_in_this_slice",
+        "billing_activation": (
+            "domain_marked_active_but_billing_not_metered"
+            if domain_status == "active"
+            else "not_active"
+        ),
+        "subscription_period": "not_configured",
+        "renewal_policy": quote["renewal_policy"]["status"],
+        "suspension_reactivation": "not_enforced_in_this_slice",
+    }
+    ready_by_lane = {
+        "quote_preview": True,
+        "pricing_confirmation": False,
+        "payment_instruction": False,
+        "payment_confirmation": False,
+        "billing_activation": False,
+        "subscription_period": False,
+        "renewal_policy": False,
+        "suspension_reactivation": False,
+    }
+    next_step_by_lane = {
+        "quote_preview": "Review the manual pilot quote with the Community Domain owner.",
+        "pricing_confirmation": "Confirm final price, currency, billing cycle, and renewal terms before payment instruction.",
+        "payment_instruction": "Create payment instructions only through a dedicated future billing flow.",
+        "payment_confirmation": "Record payment only after a real bank match, receipt, or approved finance review exists.",
+        "billing_activation": "Activate billing only after pricing and payment confirmation are real.",
+        "subscription_period": "Define start date, expiry date, grace period, and entitlement scope before renewal logic.",
+        "renewal_policy": "Define renewal notice, approval, price, grace, and expiry rules before relying on renewal.",
+        "suspension_reactivation": "Define suspension and reactivation rules before enforcing domain lifecycle restrictions.",
+    }
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    lanes = []
+    for preset in COMMUNITY_DOMAIN_SUBSCRIPTION_LIFECYCLE_PRESETS:
+        lane_key = preset["lane_key"]
+        lanes.append(
+            {
+                "lane_key": lane_key,
+                "label": preset["label"],
+                "summary": preset["summary"],
+                "status": status_by_lane[lane_key],
+                "ready": bool(ready_by_lane[lane_key]),
+                "route_hint": route_hint(
+                    str(preset["route_suffix"]),
+                    requires_admin=bool(preset["requires_admin"]),
+                ),
+                "requires_admin": bool(preset["requires_admin"]),
+                "next_step": next_step_by_lane[lane_key],
+                "boundary": (
+                    "Read-only subscription lifecycle lane. This does not create "
+                    "a quote acceptance, payment instruction, expected payment, "
+                    "invoice, receipt, billing account, entitlement, renewal, "
+                    "suspension, reactivation, or payment confirmation."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_subscription",
+            "label": "Ask a Community Domain admin to review subscription setup",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif quote["pricing_status"] != "confirmed":
+        primary_next_action = {
+            "action_key": "review_manual_quote",
+            "label": "Review manual Community Domain package quote",
+            "route_hint": f"/community-domains/{domain_id}/package-quote",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_activation_requirements",
+            "label": "Review activation requirements before billing",
+            "route_hint": f"/community-domains/{domain_id}/activation-requirements",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "package": {
+            "package_code": quote["package_code"],
+            "package_name": quote["package_name"],
+            "quote_status": quote["quote_status"],
+            "pricing_status": quote["pricing_status"],
+            "billing_cycle": quote["billing_cycle"],
+            "price_amount": quote["price_amount"],
+            "currency": quote["currency"],
+            "limits": quote["limits"],
+        },
+        "summary": {
+            "domain_status": domain_status,
+            "verification_status": verification_status,
+            "billing_status": "not_metered_in_this_slice",
+            "subscription_status": "not_configured",
+            "payment_instruction_status": status_by_lane["payment_instruction"],
+            "payment_confirmation_status": status_by_lane["payment_confirmation"],
+            "renewal_status": status_by_lane["renewal_policy"],
+            "next_billing_at": None,
+            "subscription_started_at": None,
+            "subscription_expires_at": None,
+            "grace_period_days": None,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain subscription lifecycle is read-only billing planning. "
+            "This endpoint does not create a quote acceptance, create a payment "
+            "instruction, create an expected payment, record payment, confirm "
+            "payment, create an invoice, create a receipt, activate billing, "
+            "activate the Community Domain, create entitlements, renew a domain, "
+            "suspend a domain, reactivate a domain, verify authority, move money, "
+            "or expose private finance, member, evidence, or review records."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -7733,6 +7939,27 @@ def get_community_domain_trust_mobility(
             db,
             domain=domain,
             current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/subscription-lifecycle", response_model=dict[str, Any])
+def get_community_domain_subscription_lifecycle(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "subscription_lifecycle": _community_domain_subscription_lifecycle_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
         ),
     }
 
