@@ -4,7 +4,15 @@ from fastapi.testclient import TestClient
 
 from app.core.auth import get_current_user
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, CommunityDomain, CommunityNode, User
+from app.db.models import (
+    Clan,
+    ClanMembership,
+    CommunityDomain,
+    CommunityDomainMembership,
+    CommunityNode,
+    CommunityNodeMembership,
+    User,
+)
 from app.main import app
 
 
@@ -125,6 +133,10 @@ def test_community_domain_draft_is_not_a_live_social_community(
 
     with SessionLocal() as db:
         assert db.query(CommunityDomain).count() == 1
+        domain_membership = db.query(CommunityDomainMembership).one()
+        assert domain_membership.user_id == owner.id
+        assert domain_membership.role == "owner"
+        assert domain_membership.status == "active"
         assert db.query(CommunityNode).count() == 1
         assert db.query(Clan).count() == 0
         assert db.query(ClanMembership).count() == 0
@@ -342,6 +354,15 @@ def test_only_owner_or_platform_admin_can_manage_community_domain_nodes(
         )
         assert outsider_create.status_code == 403, outsider_create.text
 
+        outsider_members = client.get(f"/community-domains/{domain_id}/members")
+        assert outsider_members.status_code == 403, outsider_members.text
+
+        outsider_member_create = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": outsider.id},
+        )
+        assert outsider_member_create.status_code == 403, outsider_member_create.text
+
         app.dependency_overrides[get_current_user] = lambda: platform_admin
         admin_create = client.post(
             f"/community-domains/{domain_id}/nodes",
@@ -355,5 +376,151 @@ def test_only_owner_or_platform_admin_can_manage_community_domain_nodes(
 
         admin_get = client.get(f"/community-domains/{domain_id}")
         assert admin_get.status_code == 200, admin_get.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_owner_adds_domain_member_and_places_member_inside_node(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    teacher = _seed_user(2, "teacher@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Dominion College Network",
+                "display_name": "Dominion College Network",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Abuja Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": teacher.id,
+                "role": "staff",
+                "title": "Mathematics Teacher",
+            },
+        )
+        assert added.status_code == 201, added.text
+        added_member = added.json()["membership"]
+        assert added_member["user_id"] == teacher.id
+        assert added_member["role"] == "staff"
+        assert added_member["title"] == "Mathematics Teacher"
+        assert added.json()["created"] is True
+        assert "does not create a social Community membership" in added.json()["boundary"]
+
+        listed_members = client.get(f"/community-domains/{domain_id}/members")
+        assert listed_members.status_code == 200, listed_members.text
+        member_items = listed_members.json()["items"]
+        assert [item["role"] for item in member_items] == ["owner", "staff"]
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={
+                "user_id": teacher.id,
+                "role": "teacher",
+                "title": "JSS2 Mathematics",
+            },
+        )
+        assert placed.status_code == 201, placed.text
+        node_member = placed.json()["membership"]
+        assert node_member["community_node_id"] == node_id
+        assert node_member["user_id"] == teacher.id
+        assert node_member["role"] == "teacher"
+        assert node_member["title"] == "JSS2 Mathematics"
+        assert "Governance powers still need" in placed.json()["boundary"]
+
+        listed_node_members = client.get(f"/community-domains/{domain_id}/nodes/{node_id}/members")
+        assert listed_node_members.status_code == 200, listed_node_members.text
+        assert listed_node_members.json()["total"] == 1
+        assert listed_node_members.json()["items"][0]["user_email"] == "teacher@example.com"
+
+        updated = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={
+                "user_id": teacher.id,
+                "role": "branch_admin",
+                "title": "Academic coordinator",
+            },
+        )
+        assert updated.status_code == 201, updated.text
+        assert updated.json()["created"] is False
+        assert updated.json()["membership"]["role"] == "branch_admin"
+
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainMembership).count() == 2
+        assert db.query(CommunityNodeMembership).count() == 1
+        assert db.query(ClanMembership).count() == 0
+
+
+def test_node_membership_requires_active_domain_membership(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    outsider = _seed_user(2, "not-yet-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Onitsha Traders Domain",
+                "display_name": "Onitsha Traders Domain",
+                "domain_type": "market_association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Medical Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        blocked = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": outsider.id, "role": "line_member"},
+        )
+        assert blocked.status_code == 409, blocked.text
+        assert blocked.json()["detail"]["code"] == "community_domain_membership_required"
+
+        inactive = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": outsider.id, "role": "trader", "status": "suspended"},
+        )
+        assert inactive.status_code == 201, inactive.text
+
+        still_blocked = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": outsider.id, "role": "line_member"},
+        )
+        assert still_blocked.status_code == 409, still_blocked.text
+        assert still_blocked.json()["detail"]["code"] == "community_domain_membership_required"
     finally:
         app.dependency_overrides.pop(get_current_user, None)

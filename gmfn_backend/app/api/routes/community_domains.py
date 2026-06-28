@@ -11,7 +11,13 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import CommunityDomain, CommunityNode, User
+from app.db.models import (
+    CommunityDomain,
+    CommunityDomainMembership,
+    CommunityNode,
+    CommunityNodeMembership,
+    User,
+)
 
 
 router = APIRouter(prefix="/community-domains", tags=["community-domains"])
@@ -113,6 +119,41 @@ def _node_payload(node: Optional[CommunityNode]) -> Optional[dict[str, Any]]:
     }
 
 
+def _domain_member_payload(row: CommunityDomainMembership) -> dict[str, Any]:
+    user = getattr(row, "user", None)
+    return {
+        "id": int(row.id),
+        "community_domain_id": int(row.community_domain_id),
+        "user_id": int(row.user_id),
+        "user_email": getattr(user, "email", None),
+        "user_display_name": getattr(user, "display_name", None),
+        "role": row.role,
+        "status": row.status,
+        "title": row.title,
+        "created_at": _iso(row.created_at),
+        "updated_at": _iso(row.updated_at),
+    }
+
+
+def _node_member_payload(row: CommunityNodeMembership) -> dict[str, Any]:
+    user = getattr(row, "user", None)
+    node = getattr(row, "community_node", None)
+    return {
+        "id": int(row.id),
+        "community_domain_id": int(row.community_domain_id),
+        "community_node_id": int(row.community_node_id),
+        "community_node_name": getattr(node, "name", None),
+        "user_id": int(row.user_id),
+        "user_email": getattr(user, "email", None),
+        "user_display_name": getattr(user, "display_name", None),
+        "role": row.role,
+        "status": row.status,
+        "title": row.title,
+        "created_at": _iso(row.created_at),
+        "updated_at": _iso(row.updated_at),
+    }
+
+
 def _domain_payload(
     domain: CommunityDomain,
     *,
@@ -167,11 +208,56 @@ class CommunityNodeCreateIn(BaseModel):
     status: str = Field(default="active", max_length=24)
 
 
+class CommunityDomainMemberUpsertIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    user_id: int = Field(..., ge=1)
+    role: str = Field(default="member", max_length=32)
+    status: str = Field(default="active", max_length=24)
+    title: Optional[str] = Field(default=None, max_length=120)
+
+
+class CommunityNodeMemberUpsertIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    user_id: int = Field(..., ge=1)
+    role: str = Field(default="member", max_length=32)
+    status: str = Field(default="active", max_length=24)
+    title: Optional[str] = Field(default=None, max_length=120)
+
+
 def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:
     domain = db.get(CommunityDomain, int(community_domain_id))
     if domain is None:
         raise HTTPException(status_code=404, detail="Community Domain not found")
     return domain
+
+
+def _get_user_or_404(db: Session, user_id: int) -> User:
+    user = db.get(User, int(user_id))
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+def _get_node_or_404(
+    db: Session,
+    *,
+    community_domain_id: int,
+    community_node_id: int,
+) -> CommunityNode:
+    node = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.id == int(community_node_id))
+        .filter(CommunityNode.community_domain_id == int(community_domain_id))
+        .first()
+    )
+    if node is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Node was not found inside this Community Domain.",
+        )
+    return node
 
 
 def _require_domain_owner_or_admin(
@@ -186,6 +272,20 @@ def _require_domain_owner_or_admin(
     raise HTTPException(
         status_code=403,
         detail="Only the Community Domain owner can manage this domain structure.",
+    )
+
+
+def _domain_membership_for_user(
+    db: Session,
+    *,
+    community_domain_id: int,
+    user_id: int,
+) -> Optional[CommunityDomainMembership]:
+    return (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainMembership.user_id == int(user_id))
+        .first()
     )
 
 
@@ -255,6 +355,15 @@ def create_community_domain_draft(
             status="active",
         )
         db.add(root_node)
+        db.add(
+            CommunityDomainMembership(
+                community_domain_id=int(domain.id),
+                user_id=int(current_user.id),
+                role="owner",
+                status="active",
+                title="Domain owner",
+            )
+        )
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -393,5 +502,205 @@ def create_community_domain_node(
         "boundary": (
             "Structure only. This node does not create a separate Community Domain, "
             "social Community, billing account, or verified branch."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/members", response_model=dict[str, Any])
+def list_community_domain_members(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_owner_or_admin(domain, current_user)
+
+    rows = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .order_by(
+            CommunityDomainMembership.status.asc(),
+            CommunityDomainMembership.role.asc(),
+            CommunityDomainMembership.id.asc(),
+        )
+        .all()
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "items": [_domain_member_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "Institutional membership only. This does not create a social Community "
+            "membership, payment right, loan approval, or verified legal authority."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/members", status_code=201, response_model=dict[str, Any])
+def upsert_community_domain_member(
+    community_domain_id: int,
+    payload: CommunityDomainMemberUpsertIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_owner_or_admin(domain, current_user)
+    _get_user_or_404(db, payload.user_id)
+
+    membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(payload.user_id),
+    )
+    created = membership is None
+    if membership is None:
+        membership = CommunityDomainMembership(
+            community_domain_id=int(domain.id),
+            user_id=int(payload.user_id),
+        )
+        db.add(membership)
+
+    membership.role = _clean_str(payload.role, "member")
+    membership.status = _clean_str(payload.status, "active")
+    membership.title = _clean_str(payload.title) or None
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_member_exists",
+                "message": "This user is already a member of the Community Domain.",
+            },
+        ) from exc
+
+    db.refresh(membership)
+    return {
+        "ok": True,
+        "created": created,
+        "community_domain_id": int(domain.id),
+        "membership": _domain_member_payload(membership),
+        "boundary": (
+            "Institutional membership only. This does not create a social Community "
+            "membership. Node placement, governance authority, billing authority, "
+            "and verification require their own scoped records."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/nodes/{community_node_id}/members", response_model=dict[str, Any])
+def list_community_node_members(
+    community_domain_id: int,
+    community_node_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_owner_or_admin(domain, current_user)
+    node = _get_node_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_id=int(community_node_id),
+    )
+
+    rows = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
+        .filter(CommunityNodeMembership.community_node_id == int(node.id))
+        .order_by(
+            CommunityNodeMembership.status.asc(),
+            CommunityNodeMembership.role.asc(),
+            CommunityNodeMembership.id.asc(),
+        )
+        .all()
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_node_id": int(node.id),
+        "items": [_node_member_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "Node membership says where a domain member belongs. It does not by "
+            "itself grant governance authority, payment authority, or verification."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/nodes/{community_node_id}/members", status_code=201, response_model=dict[str, Any])
+def upsert_community_node_member(
+    community_domain_id: int,
+    community_node_id: int,
+    payload: CommunityNodeMemberUpsertIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_owner_or_admin(domain, current_user)
+    node = _get_node_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_id=int(community_node_id),
+    )
+    _get_user_or_404(db, payload.user_id)
+
+    domain_membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(payload.user_id),
+    )
+    if domain_membership is None or _clean_str(domain_membership.status).lower() != "active":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_membership_required",
+                "message": "Add this user as an active Community Domain member before placing them in a node.",
+            },
+        )
+
+    membership = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_node_id == int(node.id))
+        .filter(CommunityNodeMembership.user_id == int(payload.user_id))
+        .first()
+    )
+    created = membership is None
+    if membership is None:
+        membership = CommunityNodeMembership(
+            community_domain_id=int(domain.id),
+            community_node_id=int(node.id),
+            user_id=int(payload.user_id),
+        )
+        db.add(membership)
+
+    membership.role = _clean_str(payload.role, "member")
+    membership.status = _clean_str(payload.status, "active")
+    membership.title = _clean_str(payload.title) or None
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_node_member_exists",
+                "message": "This user is already assigned to this Community Domain node.",
+            },
+        ) from exc
+
+    db.refresh(membership)
+    return {
+        "ok": True,
+        "created": created,
+        "community_domain_id": int(domain.id),
+        "community_node_id": int(node.id),
+        "membership": _node_member_payload(membership),
+        "boundary": (
+            "Node membership scopes belonging inside the institution. Governance "
+            "powers still need a policy/action-review layer before delegation is complete."
         ),
     }

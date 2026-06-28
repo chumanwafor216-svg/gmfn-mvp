@@ -457,6 +457,129 @@ class CommunityNode(Base):
     parent = relationship("CommunityNode", remote_side=[id])
 
 
+class CommunityDomainMembership(Base):
+    __tablename__ = "community_domain_memberships"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "community_domain_id",
+            "user_id",
+            name="uq_comm_domain_members_domain_user",
+        ),
+        Index("ix_comm_domain_members_domain_status", "community_domain_id", "status"),
+        Index("ix_comm_domain_members_user_status", "user_id", "status"),
+        Index("ix_comm_domain_members_domain_role", "community_domain_id", "role"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    community_domain_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domains.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="member",
+        server_default="member",
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    title: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class CommunityNodeMembership(Base):
+    __tablename__ = "community_node_memberships"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "community_node_id",
+            "user_id",
+            name="uq_comm_node_members_node_user",
+        ),
+        Index("ix_comm_node_members_domain_status", "community_domain_id", "status"),
+        Index("ix_comm_node_members_node_status", "community_node_id", "status"),
+        Index("ix_comm_node_members_user_status", "user_id", "status"),
+        Index("ix_comm_node_members_node_role", "community_node_id", "role"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    community_domain_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domains.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_node_id: Mapped[int] = mapped_column(
+        ForeignKey("community_nodes.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="member",
+        server_default="member",
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    title: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+    community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
+    community_node = relationship("CommunityNode", foreign_keys=[community_node_id])
+    user = relationship("User", foreign_keys=[user_id])
+
+
 class CommunityMemberVerification(Base):
     __tablename__ = "community_member_verifications"
 
