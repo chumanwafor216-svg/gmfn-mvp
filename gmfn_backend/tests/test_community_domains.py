@@ -4755,6 +4755,185 @@ def test_node_member_upsert_review_rejects_member_target_mismatch(
         assert node_membership is None
 
 
+def test_node_member_upsert_revision_rejects_member_target_mismatch(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    staff = _seed_user(2, "node-upsert-revision-staff@example.com")
+    other_staff = _seed_user(3, "node-upsert-revision-other@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Upsert Revision Guard School",
+                "display_name": "Node Upsert Revision Guard School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Revision Placement Campus",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        for user in (staff, other_staff):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "staff"},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-upsert-revision-guard",
+                "action_key": "node_member.upsert",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: staff
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.upsert",
+                "community_node_id": node_id,
+                "subject_user_id": staff.id,
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "request_note": "Please place me in this branch.",
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Needs class assignment",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Add the exact class before placement.",
+            },
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: staff
+        rejected_subject_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "subject_user_id": other_staff.id,
+                "request_note": "Wrong subject in revision.",
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Primary 1 teacher",
+                },
+            },
+        )
+        assert rejected_subject_revision.status_code == 409, rejected_subject_revision.text
+        assert (
+            rejected_subject_revision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        rejected_target_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_id": str(other_staff.id),
+                "request_note": "Wrong target in revision.",
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Primary 1 teacher",
+                },
+            },
+        )
+        assert rejected_target_revision.status_code == 409, rejected_target_revision.text
+        assert (
+            rejected_target_revision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        rejected_type_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_type": "domain_member",
+                "request_note": "Wrong target family in revision.",
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Primary 1 teacher",
+                },
+            },
+        )
+        assert rejected_type_revision.status_code == 409, rejected_type_revision.text
+        assert (
+            rejected_type_revision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        revision_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added the exact class.",
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "title": "Primary 1 teacher",
+                },
+            },
+        )
+        assert revision_response.status_code == 201, revision_response.text
+        revision_data = revision_response.json()
+        revision = revision_data["action_review"]
+        assert revision_data["previous_action_review"]["status"] == "needs_changes"
+        assert revision["status"] == "pending"
+        assert revision["parent_review_id"] == review["id"]
+        assert revision["subject_user_id"] == staff.id
+        assert revision["target_type"] == "node_member"
+        assert revision["target_id"] == str(staff.id)
+        assert revision["payload"]["title"] == "Primary 1 teacher"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        node_membership = (
+            db.query(CommunityNodeMembership)
+            .filter(CommunityNodeMembership.community_node_id == node_id)
+            .filter(CommunityNodeMembership.user_id == staff.id)
+            .first()
+        )
+        assert len(rows) == 2
+        assert rows[0].status == "needs_changes"
+        assert rows[1].status == "pending"
+        assert rows[1].parent_review_id == rows[0].id
+        assert node_membership is None
+
+
 def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
     client: TestClient,
 ):
