@@ -2378,6 +2378,12 @@ export async function getCommunityDomainGovernanceCoverage(
   );
 }
 
+export async function getCommunityDomainAnalytics(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/analytics"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

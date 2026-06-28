@@ -5260,6 +5260,353 @@ def _community_domain_governance_coverage_payload(
     }
 
 
+def _community_domain_analytics_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    domain_memberships = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .all()
+    )
+    node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .all()
+    )
+    policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+
+    active_nodes = [
+        node for node in nodes if _clean_role(node.status, "active") == "active"
+    ]
+    non_root_nodes = [node for node in nodes if node.parent_node_id is not None]
+    active_domain_memberships = [
+        row
+        for row in domain_memberships
+        if _clean_role(row.status, "active") == "active"
+    ]
+    active_node_memberships = [
+        row
+        for row in node_memberships
+        if _clean_role(row.status, "active") == "active"
+    ]
+    active_policies = [
+        row for row in policies if _clean_role(row.status, "active") == "active"
+    ]
+    open_reviews = [
+        row
+        for row in reviews
+        if _clean_role(row.status, "pending")
+        in {"pending", "pending_review", "needs_changes", "approved"}
+    ]
+    applied_reviews = [
+        row for row in reviews if _clean_role(row.status, "pending") == "applied"
+    ]
+
+    node_kind_counts: dict[str, int] = {}
+    node_status_counts: dict[str, int] = {}
+    child_parent_ids: set[int] = set()
+    max_depth = 0
+    for node in nodes:
+        kind = _clean_role(node.node_kind, "administrative")
+        status = _clean_role(node.status, "active")
+        node_kind_counts[kind] = node_kind_counts.get(kind, 0) + 1
+        node_status_counts[status] = node_status_counts.get(status, 0) + 1
+        max_depth = max(max_depth, int(node.depth or 0))
+        if node.parent_node_id is not None:
+            child_parent_ids.add(int(node.parent_node_id))
+
+    role_counts: dict[str, int] = {}
+    active_admin_count = 0
+    for membership in active_domain_memberships:
+        role = _clean_role(membership.role, "member")
+        role_counts[role] = role_counts.get(role, 0) + 1
+        if role in DOMAIN_ADMIN_ROLES:
+            active_admin_count += 1
+
+    node_role_counts: dict[str, int] = {}
+    node_admin_count = 0
+    nodes_with_member_ids: set[int] = set()
+    nodes_with_admin_ids: set[int] = set()
+    for membership in active_node_memberships:
+        role = _clean_role(membership.role, "member")
+        node_id = int(membership.community_node_id)
+        node_role_counts[role] = node_role_counts.get(role, 0) + 1
+        nodes_with_member_ids.add(node_id)
+        if role in NODE_ADMIN_ROLES:
+            node_admin_count += 1
+            nodes_with_admin_ids.add(node_id)
+
+    policy_scope_counts: dict[str, int] = {}
+    policy_action_counts: dict[str, int] = {}
+    node_policy_ids: set[int] = set()
+    for policy in active_policies:
+        scope = _clean_role(policy.scope_type, "domain")
+        action = _clean_role(policy.action_key, "unknown")
+        policy_scope_counts[scope] = policy_scope_counts.get(scope, 0) + 1
+        policy_action_counts[action] = policy_action_counts.get(action, 0) + 1
+        if policy.community_node_id is not None:
+            node_policy_ids.add(int(policy.community_node_id))
+
+    review_status_counts: dict[str, int] = {}
+    review_action_counts: dict[str, int] = {}
+    for review in reviews:
+        status = _clean_role(review.status, "pending")
+        action = _clean_role(review.action_key, "unknown")
+        review_status_counts[status] = review_status_counts.get(status, 0) + 1
+        review_action_counts[action] = review_action_counts.get(action, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    leaf_nodes = [
+        node
+        for node in non_root_nodes
+        if int(node.id) not in child_parent_ids
+    ]
+    nodes_missing_admin = [
+        node
+        for node in non_root_nodes
+        if _clean_role(node.status, "active") == "active"
+        and int(node.id) not in nodes_with_admin_ids
+    ]
+    nodes_without_member_placement = [
+        node
+        for node in non_root_nodes
+        if _clean_role(node.status, "active") == "active"
+        and int(node.id) not in nodes_with_member_ids
+    ]
+    nodes_without_local_policy = [
+        node
+        for node in non_root_nodes
+        if _clean_role(node.status, "active") == "active"
+        and int(node.id) not in node_policy_ids
+    ]
+
+    analytics_lanes = [
+        {
+            "lane_key": "structure",
+            "label": "Structure",
+            "count": len(active_nodes),
+            "state": "mapped" if len(non_root_nodes) > 0 else "root_only",
+            "route_hint": route_hint("/rollout-tree"),
+            "requires_admin": False,
+            "boundary": (
+                "Aggregate structure analytics only. This does not create nodes "
+                "or expose private unit records."
+            ),
+        },
+        {
+            "lane_key": "membership",
+            "label": "Membership",
+            "count": len(active_domain_memberships),
+            "state": "active_members_present" if active_domain_memberships else "empty",
+            "route_hint": route_hint("/members", requires_admin=True),
+            "requires_admin": True,
+            "boundary": (
+                "Aggregate membership analytics only. This does not expose member "
+                "lists, private profiles, node placement details, or invite data."
+            ),
+        },
+        {
+            "lane_key": "local_admins",
+            "label": "Local admins",
+            "count": node_admin_count,
+            "state": (
+                "coverage_gap" if nodes_missing_admin else "covered"
+            ),
+            "route_hint": route_hint("/governance-coverage", requires_admin=True),
+            "requires_admin": True,
+            "boundary": (
+                "Aggregate local-admin analytics only. This does not assign roles "
+                "or grant governance authority."
+            ),
+        },
+        {
+            "lane_key": "governance",
+            "label": "Governance",
+            "count": len(active_policies),
+            "state": "policy_present" if active_policies else "policy_needed",
+            "route_hint": route_hint("/governance-coverage"),
+            "requires_admin": False,
+            "boundary": (
+                "Aggregate governance analytics only. This does not create policy, "
+                "decide reviews, or verify institutional authority."
+            ),
+        },
+        {
+            "lane_key": "reviews",
+            "label": "Action reviews",
+            "count": len(open_reviews),
+            "state": "open" if open_reviews else "clear",
+            "route_hint": route_hint("/action-reviews/reviewer-queue", requires_admin=True),
+            "requires_admin": True,
+            "boundary": (
+                "Aggregate review analytics only. This does not expose private "
+                "review payloads, comments, evidence, or decisions."
+            ),
+        },
+        {
+            "lane_key": "modules",
+            "label": "Modules",
+            "count": len(template["default_modules"]),
+            "state": "template_projection",
+            "route_hint": route_hint("/service-settings"),
+            "requires_admin": False,
+            "boundary": (
+                "Template-module analytics only. This does not enable modules, "
+                "activate billing, or persist service settings."
+            ),
+        },
+        {
+            "lane_key": "economic",
+            "label": "Economic participation",
+            "count": 0,
+            "state": "not_metered_in_this_slice",
+            "route_hint": route_hint("/economic-participation"),
+            "requires_admin": False,
+            "boundary": (
+                "Economic analytics are not wired to live marketplace, shop, "
+                "finance, demand, or spotlight tables in this slice."
+            ),
+        },
+    ]
+
+    if not active_domain_memberships:
+        primary_next_action = {
+            "action_key": "add_domain_members",
+            "label": "Add Community Domain members before analytics can mean much",
+            "route_hint": route_hint("/members", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif len(non_root_nodes) == 0:
+        primary_next_action = {
+            "action_key": "map_operating_structure",
+            "label": "Map branches, lines, departments, or committees",
+            "route_hint": route_hint("/nodes/tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif nodes_missing_admin:
+        primary_next_action = {
+            "action_key": "assign_local_admins",
+            "label": "Assign local admins where coverage is missing",
+            "route_hint": route_hint("/roles", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not active_policies:
+        primary_next_action = {
+            "action_key": "create_governance_policy",
+            "label": "Create governance policy before relying on analytics",
+            "route_hint": route_hint("/policies", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif open_reviews:
+        primary_next_action = {
+            "action_key": "review_open_governance_decisions",
+            "label": "Review open governance decisions",
+            "route_hint": route_hint(
+                "/action-reviews/reviewer-queue", requires_admin=True
+            ),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_operating_map",
+            "label": "Review Community Domain operating map",
+            "route_hint": route_hint("/operating-map"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_analytics",
+            "label": "Ask a Community Domain admin to review analytics gaps",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": _clean_role(template["marketplace_role"], "optional"),
+        },
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "nodes": len(nodes),
+            "active_nodes": len(active_nodes),
+            "non_root_nodes": len(non_root_nodes),
+            "leaf_nodes": len(leaf_nodes),
+            "max_depth": int(max_depth),
+            "active_members": len(active_domain_memberships),
+            "active_domain_admins": int(active_admin_count),
+            "active_node_memberships": len(active_node_memberships),
+            "active_node_admins": int(node_admin_count),
+            "active_policies": len(active_policies),
+            "open_reviews": len(open_reviews),
+            "applied_reviews": len(applied_reviews),
+            "enabled_module_templates": len(template["default_modules"]),
+        },
+        "distribution": {
+            "nodes_by_kind": node_kind_counts,
+            "nodes_by_status": node_status_counts,
+            "domain_members_by_role": role_counts,
+            "node_members_by_role": node_role_counts,
+            "policies_by_scope": policy_scope_counts,
+            "policies_by_action": policy_action_counts,
+            "reviews_by_status": review_status_counts,
+            "reviews_by_action": review_action_counts,
+        },
+        "coverage_gaps": {
+            "nodes_missing_local_admin": len(nodes_missing_admin),
+            "nodes_without_member_placement": len(nodes_without_member_placement),
+            "nodes_without_local_policy": len(nodes_without_local_policy),
+        },
+        "lanes": analytics_lanes,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain analytics is a read-only aggregate snapshot. It "
+            "does not create nodes, add members, assign roles, create policy, "
+            "decide reviews, apply reviews, verify legal or institutional "
+            "authority, activate billing, meter live marketplace/shop/finance "
+            "usage, publish a public page, create a social Community, move money, "
+            "or expose private member, finance, evidence, or review records."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -6654,6 +7001,25 @@ def get_community_domain_governance_coverage(
         "ok": True,
         "community_domain_id": int(domain.id),
         "governance_coverage": _community_domain_governance_coverage_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/analytics", response_model=dict[str, Any])
+def get_community_domain_analytics(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "analytics": _community_domain_analytics_payload(
             db,
             domain=domain,
             current_user=current_user,
