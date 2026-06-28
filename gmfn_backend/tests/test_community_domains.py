@@ -863,6 +863,228 @@ def test_member_can_read_operating_map_but_admin_routes_are_hidden(
     assert "private member evidence" in operating_map["boundary"]
 
 
+def test_template_fit_compares_actual_domain_to_blueprint_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "template-fit-admin@example.com")
+    trader = _seed_user(3, "template-fit-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Template Fit Market Domain",
+                "display_name": "Template Fit Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Welfare Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "market_committee",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+
+        for user, role in ((admin, "domain_admin"), (trader, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": trader.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "template-fit-node-member-review",
+                "action_key": "node_member.upsert",
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "policy_summary": "Line leaders review trader placement.",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/template-fit")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    template_fit = payload["template_fit"]
+    assert template_fit["editable"] is False
+    assert template_fit["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert template_fit["template"]["template_key"] == "market_cooperative"
+    assert template_fit["blueprint_source"] == "market_cooperative"
+    assert template_fit["uses_generic_fallback"] is False
+    assert template_fit["counts"]["nodes"] == 3
+    assert template_fit["counts"]["matched_node_presets"] == 2
+    assert template_fit["counts"]["missing_node_presets"] == 2
+    assert template_fit["counts"]["active_members"] == 3
+    assert template_fit["counts"]["active_node_memberships"] == 1
+    assert template_fit["counts"]["matched_role_presets"] == 1
+    assert template_fit["counts"]["missing_role_presets"] == 3
+    assert template_fit["counts"]["active_policies"] == 1
+    assert template_fit["counts"]["matched_policy_presets"] == 1
+    assert template_fit["counts"]["missing_policy_presets"] == 2
+    assert template_fit["missing_sections"] == {
+        "nodes": ["market_section", "market_activity_group"],
+        "roles": ["line_admin", "section_leader", "verifier"],
+        "policies": ["evidence.verify", "domain.settings_change"],
+    }
+    assert template_fit["primary_next_action"] == {
+        "action_key": "review_structure_fit",
+        "label": "Review Community Domain structure fit",
+        "route_hint": f"/community-domains/{domain_id}/nodes/tree",
+        "requires_admin": False,
+    }
+    assert "does not create nodes" in template_fit["boundary"]
+    assert "assign roles" in template_fit["boundary"]
+    assert "create policy" in template_fit["boundary"]
+    assert "create marketplace activity" in template_fit["boundary"]
+    assert "create a social Community" in template_fit["boundary"]
+    assert "move money" in template_fit["boundary"]
+    assert "private evidence" in template_fit["boundary"]
+
+    node_fit = {item["node_kind"]: item for item in template_fit["node_fit"]}
+    assert node_fit["market_line"]["present"] is True
+    assert node_fit["market_line"]["observed_count"] == 1
+    assert node_fit["market_line"]["route_hint"].endswith("/nodes/tree")
+    assert node_fit["market_committee"]["present"] is True
+    assert node_fit["market_section"]["present"] is False
+    assert node_fit["market_activity_group"]["present"] is False
+    assert "does not create a node" in node_fit["market_section"]["boundary"]
+
+    role_fit = {item["role_key"]: item for item in template_fit["role_fit"]}
+    assert role_fit["trader"]["present"] is True
+    assert role_fit["trader"]["active_assignments"] == 1
+    assert role_fit["line_admin"]["present"] is False
+    assert role_fit["line_admin"]["route_hint"].endswith("/roles")
+    assert "does not create roles" in role_fit["line_admin"]["boundary"]
+
+    policy_fit = {
+        (item["action_key"], item["review_mode"]): item
+        for item in template_fit["policy_fit"]
+    }
+    node_member_policy = policy_fit[("node_member.upsert", "node_admin_review")]
+    evidence_policy = policy_fit[("evidence.verify", "required_role_review")]
+    assert node_member_policy["present"] is True
+    assert node_member_policy["active_policies"] == 1
+    assert node_member_policy["route_hint"].endswith("/policies")
+    assert evidence_policy["present"] is False
+    assert evidence_policy["admin_action_required"] is True
+    assert "does not create policy" in evidence_policy["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_template_fit_but_admin_next_action_is_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "template-fit-member@example.com")
+    outsider = _seed_user(3, "template-fit-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Template Fit School Domain",
+                "display_name": "Template Fit School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_fit = client.get(f"/community-domains/{domain_id}/template-fit")
+        assert member_fit.status_code == 200, member_fit.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_fit = client.get(f"/community-domains/{domain_id}/template-fit")
+        assert outsider_fit.status_code == 403, outsider_fit.text
+        assert "active Community Domain members" in outsider_fit.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    template_fit = member_fit.json()["template_fit"]
+    assert template_fit["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert template_fit["template"]["template_key"] == "school_multi_branch"
+    assert template_fit["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_template_fit",
+        "label": "Ask a Community Domain admin to review template fit",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert template_fit["missing_total"] > 0
+    assert template_fit["community_domain"]["public_profile"] is None
+    assert "private evidence" in template_fit["boundary"]
+    assert all(item["route_hint"].endswith("/nodes/tree") for item in template_fit["node_fit"])
+    assert all(item["route_hint"].endswith("/roles") for item in template_fit["role_fit"])
+    assert all(item["route_hint"].endswith("/policies") for item in template_fit["policy_fit"])
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

@@ -2339,6 +2339,12 @@ export async function getCommunityDomainOperatingMap(
   return httpJson(communityDomainPath(communityDomainId, "/operating-map"), "GET");
 }
 
+export async function getCommunityDomainTemplateFit(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/template-fit"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

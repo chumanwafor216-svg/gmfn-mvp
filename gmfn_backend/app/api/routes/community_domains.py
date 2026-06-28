@@ -3684,6 +3684,256 @@ def _community_domain_operating_map_payload(
     }
 
 
+def _community_domain_template_fit_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    domain_id = int(domain.id)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    blueprint = _community_domain_template_operating_blueprint_payload(
+        template=template
+    )
+
+    def count_values(values: list[str]) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for value in values:
+            key = _clean_role(value, "unknown")
+            counts[key] = counts.get(key, 0) + 1
+        return counts
+
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    active_domain_memberships = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+
+    node_counts = count_values([str(node.node_kind) for node in nodes])
+    role_counts = count_values(
+        [str(row.role) for row in active_domain_memberships]
+        + [str(row.role) for row in active_node_memberships]
+    )
+    policy_counts: dict[tuple[str, str], int] = {}
+    for policy in active_policies:
+        policy_key = (
+            _clean_role(policy.action_key, "unknown"),
+            _clean_role(policy.review_mode, "domain_admin_review"),
+        )
+        policy_counts[policy_key] = policy_counts.get(policy_key, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    node_fit = []
+    for preset in blueprint["node_presets"]:
+        node_kind = _clean_role(preset["node_kind"], "unknown")
+        observed_count = node_counts.get(node_kind, 0)
+        present = observed_count > 0
+        node_fit.append(
+            {
+                **preset,
+                "present": present,
+                "observed_count": int(observed_count),
+                "route_hint": route_hint("/nodes/tree"),
+                "requires_admin": False,
+                "next_step": (
+                    "Review the matching operating unit already present."
+                    if present
+                    else "Add this operating unit when the institution really uses it."
+                ),
+                "boundary": (
+                    "Read-only template fit item. This does not create a node, "
+                    "rename a node, change hierarchy, assign members, or verify "
+                    "institutional structure."
+                ),
+            }
+        )
+
+    role_fit = []
+    for preset in blueprint["role_presets"]:
+        role_key = _clean_role(preset["role_key"], "member")
+        active_assignments = role_counts.get(role_key, 0)
+        present = active_assignments > 0
+        role_fit.append(
+            {
+                **preset,
+                "present": present,
+                "active_assignments": int(active_assignments),
+                "route_hint": route_hint("/roles"),
+                "requires_admin": False,
+                "next_step": (
+                    "Review current role coverage."
+                    if present
+                    else (
+                        "Ask a domain admin to assign this role if the institution uses it."
+                        if not can_admin
+                        else "Assign this role only to people who already hold the real-world responsibility."
+                    )
+                ),
+                "boundary": (
+                    "Read-only template fit item. This does not create roles, "
+                    "assign roles, grant permissions, add members, or verify "
+                    "real-world authority."
+                ),
+            }
+        )
+
+    policy_fit = []
+    for preset in blueprint["policy_presets"]:
+        action_key = _clean_role(preset["action_key"], "unknown")
+        review_mode = _clean_role(preset["review_mode"], "domain_admin_review")
+        active_policy_count = policy_counts.get((action_key, review_mode), 0)
+        present = active_policy_count > 0
+        policy_fit.append(
+            {
+                **preset,
+                "present": present,
+                "active_policies": int(active_policy_count),
+                "route_hint": route_hint("/policies"),
+                "requires_admin": False,
+                "admin_action_required": not present,
+                "next_step": (
+                    "Review the active policy already covering this action."
+                    if present
+                    else (
+                        "Ask a domain admin to review this governance gap."
+                        if not can_admin
+                        else "Create or adjust policy only after the real governance rule is confirmed."
+                    )
+                ),
+                "boundary": (
+                    "Read-only template fit item. This does not create policy, "
+                    "open reviews, decide reviews, apply actions, upload "
+                    "evidence, or expose private review payloads."
+                ),
+            }
+        )
+
+    missing_nodes = [item["node_kind"] for item in node_fit if not item["present"]]
+    missing_roles = [item["role_key"] for item in role_fit if not item["present"]]
+    missing_policies = [
+        item["action_key"] for item in policy_fit if not item["present"]
+    ]
+    matched_node_count = len(node_fit) - len(missing_nodes)
+    matched_role_count = len(role_fit) - len(missing_roles)
+    matched_policy_count = len(policy_fit) - len(missing_policies)
+
+    if missing_nodes and can_admin:
+        primary_next_action = {
+            "action_key": "review_structure_fit",
+            "label": "Review Community Domain structure fit",
+            "route_hint": route_hint("/nodes/tree"),
+            "requires_admin": False,
+        }
+    elif missing_roles and can_admin:
+        primary_next_action = {
+            "action_key": "review_role_fit",
+            "label": "Review Community Domain role fit",
+            "route_hint": route_hint("/roles"),
+            "requires_admin": False,
+        }
+    elif missing_policies and can_admin:
+        primary_next_action = {
+            "action_key": "review_policy_fit",
+            "label": "Review Community Domain policy fit",
+            "route_hint": route_hint("/policies"),
+            "requires_admin": False,
+        }
+    elif missing_nodes or missing_roles or missing_policies:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_template_fit",
+            "label": "Ask a Community Domain admin to review template fit",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_operating_map",
+            "label": "Review Community Domain operating map",
+            "route_hint": route_hint("/operating-map"),
+            "requires_admin": False,
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": _clean_role(template["marketplace_role"], "optional"),
+        },
+        "blueprint_source": blueprint["blueprint_source"],
+        "uses_generic_fallback": blueprint["uses_generic_fallback"],
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "counts": {
+            "nodes": len(nodes),
+            "matched_node_presets": int(matched_node_count),
+            "missing_node_presets": len(missing_nodes),
+            "active_members": len(active_domain_memberships),
+            "active_node_memberships": len(active_node_memberships),
+            "matched_role_presets": int(matched_role_count),
+            "missing_role_presets": len(missing_roles),
+            "active_policies": len(active_policies),
+            "matched_policy_presets": int(matched_policy_count),
+            "missing_policy_presets": len(missing_policies),
+        },
+        "node_fit": node_fit,
+        "role_fit": role_fit,
+        "policy_fit": policy_fit,
+        "matched_total": int(
+            matched_node_count + matched_role_count + matched_policy_count
+        ),
+        "missing_total": int(
+            len(missing_nodes) + len(missing_roles) + len(missing_policies)
+        ),
+        "missing_sections": {
+            "nodes": missing_nodes,
+            "roles": missing_roles,
+            "policies": missing_policies,
+        },
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Template fit is a read-only comparison between this Community "
+            "Domain's actual setup and its selected template blueprint. It does "
+            "not create nodes, add members, assign roles, create policy, create "
+            "action reviews, approve or apply reviews, activate billing, verify "
+            "authority, create marketplace activity, create a social Community, "
+            "move money, publish a public page, or expose private evidence."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -4964,6 +5214,25 @@ def get_community_domain_operating_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "operating_map": _community_domain_operating_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/template-fit", response_model=dict[str, Any])
+def get_community_domain_template_fit(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "template_fit": _community_domain_template_fit_payload(
             db,
             domain=domain,
             current_user=current_user,
