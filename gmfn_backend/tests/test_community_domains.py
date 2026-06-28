@@ -2463,6 +2463,240 @@ def test_member_can_read_analytics_but_admin_routes_are_hidden(
     assert "private member" in analytics["boundary"]
 
 
+def test_evidence_map_projects_safe_evidence_readiness_without_private_records(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "evidence-map-admin@example.com")
+    trader = _seed_user(3, "evidence-map-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Evidence Map Market Domain",
+                "display_name": "Evidence Map Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "Public-safe market profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        for user, role in (
+            (admin, "domain_admin"),
+            (trader, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (line_id, admin.id, "line_admin"),
+            (line_id, trader.id, "trader"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "evidence-map-line-evidence-review",
+                "action_key": "evidence.verify",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "line_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "evidence.verify",
+                "community_node_id": line_id,
+                "request_note": "Review line evidence before it is used.",
+                "payload": {"claim": "line evidence readiness"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Branch register extract",
+                "file_name": "branch-register.pdf",
+                "storage_key": "private/evidence/branch-register.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/evidence-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    evidence_map = payload["evidence_map"]
+    assert evidence_map["editable"] is False
+    assert evidence_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert evidence_map["template"]["template_key"] == "market_cooperative"
+    assert evidence_map["summary"] == {
+        "verification_status": "unverified",
+        "identity_anchor_present": True,
+        "public_profile_present": True,
+        "active_members": 3,
+        "active_node_memberships": 2,
+        "domain_admin_appointments": 2,
+        "node_admin_appointments": 1,
+        "active_policies": 1,
+        "action_reviews": 1,
+        "open_reviews": 1,
+        "review_evidence_records": 1,
+        "evidence_submitters": 1,
+    }
+    assert evidence_map["distribution"] == {
+        "evidence_by_type": {"document": 1},
+        "evidence_by_scope": {"domain": 0, "node": 1},
+    }
+    assert evidence_map["coverage"] == {
+        "nodes_with_member_evidence": 1,
+        "nodes_with_admin_evidence": 1,
+        "nodes_with_policy_evidence": 1,
+        "active_non_root_nodes": 1,
+    }
+    assert evidence_map["primary_next_action"] == {
+        "action_key": "prepare_authority_evidence",
+        "label": "Prepare Community Domain authority evidence",
+        "route_hint": f"/community-domains/{domain_id}/verification-requirements",
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in evidence_map["lanes"]}
+    assert lanes["authority_evidence"]["state"] == "unverified"
+    assert lanes["membership_evidence"]["count"] == 3
+    assert lanes["node_membership_evidence"]["route_hint"].endswith("/rollout-tree")
+    assert lanes["role_appointment_evidence"]["count"] == 3
+    assert lanes["governance_evidence"]["route_hint"].endswith("/governance-coverage")
+    assert lanes["review_evidence"]["count"] == 1
+    assert lanes["public_safe_summary"]["state"] == "profile_present"
+    assert lanes["trust_mobility"]["state"] == "not_connected_in_this_slice"
+    assert "does not expose files" in evidence_map["boundary"]
+    assert "storage keys" in evidence_map["boundary"]
+    assert "create TrustSlips" in evidence_map["boundary"]
+    assert "private member" in evidence_map["boundary"]
+    assert "branch-register.pdf" not in str(evidence_map)
+    assert "private/evidence/branch-register.pdf" not in str(evidence_map)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_evidence_map_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "evidence-map-member@example.com")
+    outsider = _seed_user(3, "evidence-map-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Evidence Map School Domain",
+                "display_name": "Evidence Map School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/evidence-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(f"/community-domains/{domain_id}/evidence-map")
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    evidence_map = member_map.json()["evidence_map"]
+    assert evidence_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert evidence_map["summary"]["active_members"] == 2
+    assert evidence_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_evidence",
+        "label": "Ask a Community Domain admin to review evidence readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    lanes = {item["lane_key"]: item for item in evidence_map["lanes"]}
+    assert lanes["authority_evidence"]["route_hint"] is None
+    assert lanes["membership_evidence"]["route_hint"] is None
+    assert lanes["role_appointment_evidence"]["route_hint"] is None
+    assert lanes["review_evidence"]["route_hint"] is None
+    assert lanes["node_membership_evidence"]["route_hint"].endswith("/rollout-tree")
+    assert lanes["public_safe_summary"]["route_hint"].endswith("/network-presence")
+    assert "private member" in evidence_map["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

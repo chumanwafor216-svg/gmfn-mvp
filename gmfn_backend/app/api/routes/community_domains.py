@@ -5607,6 +5607,371 @@ def _community_domain_analytics_payload(
     }
 
 
+def _community_domain_evidence_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    domain_memberships = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .all()
+    )
+    node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .all()
+    )
+    policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    evidence_rows = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .all()
+    )
+
+    active_domain_memberships = [
+        row
+        for row in domain_memberships
+        if _clean_role(row.status, "active") == "active"
+    ]
+    active_node_memberships = [
+        row
+        for row in node_memberships
+        if _clean_role(row.status, "active") == "active"
+    ]
+    active_policies = [
+        row for row in policies if _clean_role(row.status, "active") == "active"
+    ]
+    active_evidence_rows = [
+        row for row in evidence_rows if _clean_role(row.status, "active") == "active"
+    ]
+    open_reviews = [
+        row
+        for row in reviews
+        if _clean_role(row.status, "pending")
+        in {"pending", "pending_review", "needs_changes", "approved"}
+    ]
+
+    evidence_types: dict[str, int] = {}
+    evidence_scope_counts = {"domain": 0, "node": 0}
+    evidence_submitter_ids: set[int] = set()
+    for evidence in active_evidence_rows:
+        evidence_type = _clean_role(evidence.evidence_type, "document")
+        evidence_types[evidence_type] = evidence_types.get(evidence_type, 0) + 1
+        evidence_submitter_ids.add(int(evidence.submitted_by_user_id))
+        if evidence.community_node_id is None:
+            evidence_scope_counts["domain"] += 1
+        else:
+            evidence_scope_counts["node"] += 1
+
+    domain_admin_count = sum(
+        1
+        for row in active_domain_memberships
+        if _clean_role(row.role, "member") in DOMAIN_ADMIN_ROLES
+    )
+    node_admin_count = sum(
+        1
+        for row in active_node_memberships
+        if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+    )
+    node_ids_with_members = {
+        int(row.community_node_id) for row in active_node_memberships
+    }
+    node_ids_with_admins = {
+        int(row.community_node_id)
+        for row in active_node_memberships
+        if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+    }
+    node_ids_with_policy = {
+        int(row.community_node_id)
+        for row in active_policies
+        if row.community_node_id is not None
+    }
+    active_non_root_nodes = [
+        node
+        for node in nodes
+        if node.parent_node_id is not None
+        and _clean_role(node.status, "active") == "active"
+    ]
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def lane(
+        lane_key: str,
+        label: str,
+        state: str,
+        count: int,
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "state": state,
+            "count": int(count),
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "identity_anchor",
+            "Identity anchor",
+            "present" if _clean_str(domain.domain_name) else "missing",
+            1 if _clean_str(domain.domain_name) else 0,
+            "Review the Community Domain identity and public-safe naming.",
+            route_suffix="/operating-map",
+            requires_admin=False,
+            boundary=(
+                "Identity evidence is an internal domain anchor. It does not prove "
+                "legal ownership, leadership, or external registration."
+            ),
+        ),
+        lane(
+            "authority_evidence",
+            "Authority evidence",
+            "verified" if verification_status == "verified" else verification_status,
+            1 if verification_status == "verified" else 0,
+            (
+                "Keep authority evidence current."
+                if verification_status == "verified"
+                else "Prepare legal, representative, or institutional authority evidence."
+            ),
+            route_suffix="/verification-requirements",
+            requires_admin=True,
+            boundary=(
+                "Authority evidence status is a readiness signal. This does not "
+                "upload, accept, reject, verify, or publish authority evidence."
+            ),
+        ),
+        lane(
+            "membership_evidence",
+            "Membership evidence",
+            "present" if active_domain_memberships else "empty",
+            len(active_domain_memberships),
+            "Review active domain membership counts and placement coverage.",
+            route_suffix="/members",
+            requires_admin=True,
+            boundary=(
+                "Membership evidence is aggregate only. This does not expose member "
+                "lists, private profiles, invite records, or individual evidence."
+            ),
+        ),
+        lane(
+            "node_membership_evidence",
+            "Node membership evidence",
+            "present" if active_node_memberships else "not_placed",
+            len(active_node_memberships),
+            "Review which branches, lines, departments, or committees have placements.",
+            route_suffix="/rollout-tree",
+            requires_admin=False,
+            boundary=(
+                "Node membership evidence is aggregate only. This does not expose "
+                "private member placement rows."
+            ),
+        ),
+        lane(
+            "role_appointment_evidence",
+            "Role appointment evidence",
+            "present" if domain_admin_count or node_admin_count else "missing",
+            domain_admin_count + node_admin_count,
+            "Review domain and local role appointment coverage.",
+            route_suffix="/roles",
+            requires_admin=True,
+            boundary=(
+                "Role appointment evidence is aggregate only. This does not assign "
+                "roles or grant governance authority."
+            ),
+        ),
+        lane(
+            "governance_evidence",
+            "Governance evidence",
+            "present" if active_policies else "policy_needed",
+            len(active_policies),
+            "Review policy and action-review coverage before public claims rely on it.",
+            route_suffix="/governance-coverage",
+            requires_admin=False,
+            boundary=(
+                "Governance evidence is aggregate only. This does not create policy, "
+                "decide reviews, or expose private review payloads."
+            ),
+        ),
+        lane(
+            "review_evidence",
+            "Review evidence",
+            "present" if active_evidence_rows else "not_recorded",
+            len(active_evidence_rows),
+            "Attach evidence metadata to action reviews only when a real review needs it.",
+            route_suffix="/action-reviews",
+            requires_admin=True,
+            boundary=(
+                "Review evidence is counted as metadata only. This does not expose "
+                "files, storage keys, comments, private evidence, or review payloads."
+            ),
+        ),
+        lane(
+            "public_safe_summary",
+            "Public-safe summary",
+            "profile_present" if _clean_str(domain.public_profile) else "not_ready",
+            1 if _clean_str(domain.public_profile) else 0,
+            "Review network presence before exposing public-safe domain evidence.",
+            route_suffix="/network-presence",
+            requires_admin=False,
+            boundary=(
+                "Public-safe summary is a readiness signal only. This does not "
+                "publish a public page or finalize the public URL."
+            ),
+        ),
+        lane(
+            "trust_mobility",
+            "Trust mobility",
+            "not_connected_in_this_slice",
+            0,
+            "Domain-scoped Trust Passport, TrustSlip, and trust relay links are not wired here yet.",
+            route_suffix="/network-presence",
+            requires_admin=False,
+            boundary=(
+                "Trust mobility is not connected in this slice. This does not create "
+                "TrustSlip, Trust Passport, credential, relay, or external proof records."
+            ),
+        ),
+    ]
+
+    if verification_status != "verified":
+        primary_next_action = {
+            "action_key": "prepare_authority_evidence",
+            "label": "Prepare Community Domain authority evidence",
+            "route_hint": route_hint("/verification-requirements", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not active_domain_memberships:
+        primary_next_action = {
+            "action_key": "add_membership_evidence",
+            "label": "Add members before evidence can represent the institution",
+            "route_hint": route_hint("/members", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif active_non_root_nodes and not active_node_memberships:
+        primary_next_action = {
+            "action_key": "place_node_members",
+            "label": "Place members into operating units",
+            "route_hint": route_hint("/nodes/tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not active_policies:
+        primary_next_action = {
+            "action_key": "define_evidence_policy",
+            "label": "Define governance policy for evidence actions",
+            "route_hint": route_hint("/policies", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not active_evidence_rows:
+        primary_next_action = {
+            "action_key": "record_review_evidence_when_needed",
+            "label": "Record evidence metadata only when a real review needs it",
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_network_presence",
+            "label": "Review public-safe Community Domain evidence summary",
+            "route_hint": route_hint("/network-presence"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_evidence",
+            "label": "Ask a Community Domain admin to review evidence readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "evidence_presets": template.get("evidence_presets", []),
+        },
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "verification_status": verification_status,
+            "identity_anchor_present": bool(_clean_str(domain.domain_name)),
+            "public_profile_present": bool(_clean_str(domain.public_profile)),
+            "active_members": len(active_domain_memberships),
+            "active_node_memberships": len(active_node_memberships),
+            "domain_admin_appointments": int(domain_admin_count),
+            "node_admin_appointments": int(node_admin_count),
+            "active_policies": len(active_policies),
+            "action_reviews": len(reviews),
+            "open_reviews": len(open_reviews),
+            "review_evidence_records": len(active_evidence_rows),
+            "evidence_submitters": len(evidence_submitter_ids),
+        },
+        "distribution": {
+            "evidence_by_type": evidence_types,
+            "evidence_by_scope": evidence_scope_counts,
+        },
+        "coverage": {
+            "nodes_with_member_evidence": len(node_ids_with_members),
+            "nodes_with_admin_evidence": len(node_ids_with_admins),
+            "nodes_with_policy_evidence": len(node_ids_with_policy),
+            "active_non_root_nodes": len(active_non_root_nodes),
+        },
+        "lanes": lanes,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain evidence map is a read-only evidence readiness "
+            "projection. It does not upload evidence, does not store files, "
+            "does not expose files, does not expose storage keys, create member "
+            "credentials, create TrustSlips, create Trust Passport entries, create "
+            "trust relay paths, verify legal or institutional authority, publish a "
+            "public page, move money, activate billing, create marketplace activity, "
+            "create a social Community, or expose private member, finance, evidence, "
+            "or review records."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -7020,6 +7385,25 @@ def get_community_domain_analytics(
         "ok": True,
         "community_domain_id": int(domain.id),
         "analytics": _community_domain_analytics_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/evidence-map", response_model=dict[str, Any])
+def get_community_domain_evidence_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "evidence_map": _community_domain_evidence_map_payload(
             db,
             domain=domain,
             current_user=current_user,

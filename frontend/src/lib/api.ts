@@ -2384,6 +2384,12 @@ export async function getCommunityDomainAnalytics(
   return httpJson(communityDomainPath(communityDomainId, "/analytics"), "GET");
 }
 
+export async function getCommunityDomainEvidenceMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/evidence-map"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {
