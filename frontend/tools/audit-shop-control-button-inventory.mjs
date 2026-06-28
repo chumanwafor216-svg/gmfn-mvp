@@ -343,6 +343,11 @@ assertOwnerShopHandlesContains(
   "Shop Control hash routing must open gallery/diary links on the products layer and package links on the paid-tools package layer."
 );
 
+assertOwnerShopHandlesContains(
+  /normalized\.includes\("merchant"\)[\s\S]*?normalized\.includes\("verify"\)[\s\S]*?normalized\.includes\("release"\)[\s\S]*?return "paid-tools";[\s\S]*?normalized\.includes\("spotlight"\)/,
+  "Shop Control hash routing must open Merchant Release hashes on the paid-tools layer where the rail is rendered."
+);
+
 assertShopContains(
   /setActiveOwnerLayer\(ownerShopLayerForTarget\(targetId\)\)/,
   "Shop Control must use the shared ownerShopLayerForTarget hash router."

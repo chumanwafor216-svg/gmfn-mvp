@@ -140,10 +140,10 @@ export function ownerShopLayerForTarget(targetId: string):
   ) {
     return "products";
   }
-  if (normalized.includes("spotlight")) return "spotlight";
   if (normalized.includes("merchant") || normalized.includes("verify") || normalized.includes("release")) {
-    return "shop-details";
+    return "paid-tools";
   }
+  if (normalized.includes("spotlight")) return "spotlight";
   if (normalized.includes("face")) return "overview";
   if (normalized.includes("details")) return "shop-details";
   if (normalized.includes("vault")) return "vault";
