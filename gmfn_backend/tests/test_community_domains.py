@@ -9,6 +9,7 @@ from app.db.models import (
     ClanMembership,
     CommunityDomain,
     CommunityDomainActionReview,
+    CommunityDomainActionReviewComment,
     CommunityDomainActionReviewDecision,
     CommunityDomainMembership,
     CommunityNode,
@@ -1981,6 +1982,118 @@ def test_action_review_detail_visibility_is_scoped(
         assert outsider_detail.status_code == 403, outsider_detail.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_action_review_comments_follow_review_visibility(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    domain_admin = _seed_user(2, "comment-domain-admin@example.com")
+    requester = _seed_user(3, "comment-requester@example.com")
+    other_member = _seed_user(4, "comment-other-member@example.com")
+    new_member = _seed_user(5, "comment-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Comment Review Association",
+                "display_name": "Comment Review Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user, role in (
+            (domain_admin, "domain_admin"),
+            (requester, "member"),
+            (other_member, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "comment-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        requester_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "Please review this with the attached office records."},
+        )
+        assert requester_comment.status_code == 201, requester_comment.text
+        requester_comment_data = requester_comment.json()["comment"]
+        assert requester_comment_data["author_user_id"] == requester.id
+        assert "office records" in requester_comment_data["body"]
+
+        app.dependency_overrides[get_current_user] = lambda: domain_admin
+        admin_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "Received. I will check the branch list."},
+        )
+        assert admin_comment.status_code == 201, admin_comment.text
+        assert admin_comment.json()["comment"]["author_user_id"] == domain_admin.id
+
+        comments = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments"
+        )
+        assert comments.status_code == 200, comments.text
+        comments_data = comments.json()
+        assert comments_data["total"] == 2
+        assert [item["author_user_id"] for item in comments_data["items"]] == [
+            requester.id,
+            domain_admin.id,
+        ]
+        assert "append-only discussion trail" in comments_data["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: other_member
+        hidden_comments = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments"
+        )
+        assert hidden_comments.status_code == 403, hidden_comments.text
+        assert (
+            hidden_comments.json()["detail"]["code"]
+            == "community_domain_review_comments_not_visible"
+        )
+
+        denied_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "I should not be in this thread."},
+        )
+        assert denied_comment.status_code == 403, denied_comment.text
+        assert (
+            denied_comment.json()["detail"]["code"]
+            == "community_domain_review_comment_forbidden"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainActionReviewComment).count() == 2
 
 
 def test_requester_can_cancel_pending_action_review(

@@ -30,6 +30,7 @@ def test_database_base_uses_canonical_metadata_for_dev_schema_creation():
     assert "community_domain_policies" in tables
     assert "community_domain_action_reviews" in tables
     assert "community_domain_action_review_decisions" in tables
+    assert "community_domain_action_review_comments" in tables
 
 
 def test_member_witness_schema_identifiers_fit_postgres_limit():
@@ -79,6 +80,10 @@ def test_member_witness_schema_identifiers_fit_postgres_limit():
         / "alembic"
         / "versions"
         / "20260628_add_community_domain_review_revisions.py",
+        backend_root
+        / "alembic"
+        / "versions"
+        / "20260628_add_community_domain_review_comments.py",
         backend_root / "app" / "db" / "models.py",
     ]
     explicit_identifier = re.compile(r'"((?:ix|uq|fk)_[^"]+)"')

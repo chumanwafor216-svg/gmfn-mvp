@@ -15,6 +15,7 @@ from app.db.database import get_db
 from app.db.models import (
     CommunityDomain,
     CommunityDomainActionReview,
+    CommunityDomainActionReviewComment,
     CommunityDomainActionReviewDecision,
     CommunityDomainMembership,
     CommunityDomainPolicy,
@@ -275,6 +276,25 @@ def _action_review_decision_payload(row: CommunityDomainActionReviewDecision) ->
     }
 
 
+def _action_review_comment_payload(
+    row: CommunityDomainActionReviewComment,
+) -> dict[str, Any]:
+    author = getattr(row, "author", None)
+    return {
+        "id": int(row.id),
+        "action_review_id": int(row.action_review_id),
+        "community_domain_id": int(row.community_domain_id),
+        "community_node_id": (
+            int(row.community_node_id) if row.community_node_id is not None else None
+        ),
+        "author_user_id": int(row.author_user_id),
+        "author_user_email": getattr(author, "email", None),
+        "body": row.body,
+        "created_at": _iso(row.created_at),
+        "updated_at": _iso(row.updated_at),
+    }
+
+
 def _domain_payload(
     domain: CommunityDomain,
     *,
@@ -395,6 +415,12 @@ class CommunityDomainActionReviewRevisionIn(BaseModel):
     target_id: Optional[str] = Field(default=None, max_length=96)
     request_note: Optional[str] = Field(default=None, max_length=1200)
     payload: Optional[dict[str, Any]] = None
+
+
+class CommunityDomainActionReviewCommentIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    body: str = Field(..., min_length=1, max_length=4000)
 
 
 def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:
@@ -1601,6 +1627,116 @@ def get_community_domain_action_review(
         "boundary": (
             "Action review detail is visible only to the requester, eligible "
             "reviewers, and scoped admins. It does not apply the requested action."
+        ),
+    }
+
+
+@router.get(
+    "/{community_domain_id}/action-reviews/{review_id}/comments",
+    response_model=dict[str, Any],
+)
+def list_community_domain_action_review_comments(
+    community_domain_id: int,
+    review_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+    if not _can_view_action_review(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_comments_not_visible",
+                "message": "Only users who can view this action review can view its comments.",
+            },
+        )
+
+    comments = (
+        db.query(CommunityDomainActionReviewComment)
+        .filter(CommunityDomainActionReviewComment.action_review_id == int(row.id))
+        .order_by(
+            CommunityDomainActionReviewComment.created_at.asc(),
+            CommunityDomainActionReviewComment.id.asc(),
+        )
+        .all()
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review_id": int(row.id),
+        "items": [_action_review_comment_payload(comment) for comment in comments],
+        "total": len(comments),
+        "boundary": (
+            "Review comments are an append-only discussion trail. They do not "
+            "decide, revise, reopen, cancel, or apply the action review."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/action-reviews/{review_id}/comments",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def create_community_domain_action_review_comment(
+    community_domain_id: int,
+    review_id: int,
+    payload: CommunityDomainActionReviewCommentIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+    if not _can_view_action_review(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_comment_forbidden",
+                "message": "Only users who can view this action review can comment on it.",
+            },
+        )
+
+    comment = CommunityDomainActionReviewComment(
+        action_review_id=int(row.id),
+        community_domain_id=int(domain.id),
+        community_node_id=(
+            int(row.community_node_id) if row.community_node_id is not None else None
+        ),
+        author_user_id=int(current_user.id),
+        body=_clean_str(payload.body),
+    )
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review_id": int(row.id),
+        "comment": _action_review_comment_payload(comment),
+        "boundary": (
+            "Comment recorded. This does not decide, revise, reopen, cancel, "
+            "or apply the action review."
         ),
     }
 
