@@ -148,6 +148,110 @@ def test_community_domain_templates_are_public_presets_not_activation(
         assert db.query(Clan).count() == 0
 
 
+def test_template_operating_blueprint_is_public_planning_not_creation(
+    client: TestClient,
+):
+    response = client.get(
+        "/community-domains/templates/market_cooperative/operating-blueprint"
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    blueprint = payload["operating_blueprint"]
+    assert blueprint["editable"] is False
+    assert blueprint["template"]["template_key"] == "market_cooperative"
+    assert blueprint["template"]["marketplace_role"] == "core"
+    assert blueprint["governance_shape"] == {
+        "supports_nested_nodes": True,
+        "supports_inherited_policy": True,
+        "supports_local_policy_override": True,
+        "supports_role_scoped_review": True,
+        "supports_multi_reviewer_review": True,
+    }
+    assert "does not create a Community Domain" in blueprint["boundary"]
+    assert "create nodes" in blueprint["boundary"]
+    assert "create policy" in blueprint["boundary"]
+    assert "activate billing" in blueprint["boundary"]
+    assert "verify authority" in blueprint["boundary"]
+    assert "create marketplace activity" in blueprint["boundary"]
+    assert "move money" in blueprint["boundary"]
+    assert "separate schemas" in blueprint["boundary"]
+
+    node_presets = {item["node_kind"]: item for item in blueprint["node_presets"]}
+    assert "market_line" in node_presets
+    assert "market_section" in node_presets
+    assert "market_committee" in node_presets
+    assert node_presets["market_line"]["node_type"] == "line"
+    assert node_presets["market_line"]["example"] == "Electronics Line"
+
+    role_presets = {item["role_key"]: item for item in blueprint["role_presets"]}
+    assert role_presets["line_admin"]["scope"] == "node"
+    assert role_presets["trader"]["label"] == "Trader"
+
+    policy_actions = {item["action_key"] for item in blueprint["policy_presets"]}
+    assert {"node_member.upsert", "evidence.verify", "domain.settings_change"}.issubset(
+        policy_actions
+    )
+    assert "member shops" in blueprint["activity_lanes"]
+    assert "market demand" in blueprint["activity_lanes"]
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomain).count() == 0
+        assert db.query(CommunityNode).count() == 0
+        assert db.query(CommunityDomainMembership).count() == 0
+        assert db.query(CommunityDomainPolicy).count() == 0
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_template_operating_blueprint_distinguishes_school_and_rejects_unknown(
+    client: TestClient,
+):
+    school = client.get(
+        "/community-domains/templates/school_multi_branch/operating-blueprint"
+    )
+    assert school.status_code == 200, school.text
+
+    by_domain_type = client.get(
+        "/community-domains/templates/school/operating-blueprint"
+    )
+    assert by_domain_type.status_code == 200, by_domain_type.text
+
+    unknown = client.get(
+        "/community-domains/templates/does-not-exist/operating-blueprint"
+    )
+    assert unknown.status_code == 404, unknown.text
+    assert "template not found" in unknown.text
+
+    blueprint = school.json()["operating_blueprint"]
+    node_presets = {item["node_kind"]: item for item in blueprint["node_presets"]}
+    role_presets = {item["role_key"]: item for item in blueprint["role_presets"]}
+    policy_modes = {item["review_mode"] for item in blueprint["policy_presets"]}
+    assert blueprint["template"]["template_key"] == "school_multi_branch"
+    assert by_domain_type.json()["operating_blueprint"]["template"]["template_key"] == (
+        "school_multi_branch"
+    )
+    assert "school_branch" in node_presets
+    assert "school_class" in node_presets
+    assert "school_association" in node_presets
+    assert node_presets["school_association"]["example"] == (
+        "Parent Teacher Association"
+    )
+    assert role_presets["teacher"]["scope"] == "node"
+    assert role_presets["pta_officer"]["label"] == "PTA officer"
+    assert {"domain_admin_review", "node_admin_review", "required_role_review"}.issubset(
+        policy_modes
+    )
+    assert "PTA activity" in blueprint["activity_lanes"]
+    assert "approved vendors" in blueprint["activity_lanes"]
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomain).count() == 0
+        assert db.query(CommunityNode).count() == 0
+        assert db.query(CommunityDomainMembership).count() == 0
+
+
 def test_community_domain_draft_is_not_a_live_social_community(
     client: TestClient,
 ):

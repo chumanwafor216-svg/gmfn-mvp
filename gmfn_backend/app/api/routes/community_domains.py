@@ -608,6 +608,280 @@ COMMUNITY_DOMAIN_TEMPLATE_PRESETS: list[dict[str, Any]] = [
     },
 ]
 
+COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS: dict[str, dict[str, Any]] = {
+    "school_multi_branch": {
+        "node_presets": [
+            {
+                "node_type": "campus",
+                "node_kind": "school_branch",
+                "label": "Campus / branch",
+                "example": "Lagos Campus",
+                "scope": "A full school branch with local staff, parents, classes, and notices.",
+            },
+            {
+                "node_type": "department",
+                "node_kind": "school_department",
+                "label": "Department",
+                "example": "Science Department",
+                "scope": "Academic or administrative department inside one campus or the whole school.",
+            },
+            {
+                "node_type": "class",
+                "node_kind": "school_class",
+                "label": "Class / level",
+                "example": "Primary 4",
+                "scope": "Class-level operating group for teachers, pupils, parents, or records.",
+            },
+            {
+                "node_type": "association",
+                "node_kind": "school_association",
+                "label": "PTA / staff / alumni group",
+                "example": "Parent Teacher Association",
+                "scope": "Practice group that may run meetings, welfare, contributions, or evidence.",
+            },
+        ],
+        "role_presets": [
+            {"role_key": "branch_admin", "label": "Branch admin", "scope": "node"},
+            {"role_key": "teacher", "label": "Teacher", "scope": "node"},
+            {"role_key": "pta_officer", "label": "PTA officer", "scope": "node"},
+            {"role_key": "verifier", "label": "School verifier", "scope": "domain_or_node"},
+        ],
+        "policy_presets": [
+            {
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "summary": "Owner or central admins review domain-level member changes.",
+            },
+            {
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "summary": "Campus, class, or department admins review local placement.",
+            },
+            {
+                "action_key": "evidence.verify",
+                "review_mode": "required_role_review",
+                "summary": "Only assigned school verifiers should witness official records.",
+            },
+        ],
+        "activity_lanes": [
+            "branch notices",
+            "PTA activity",
+            "teacher association",
+            "approved vendors",
+            "school evidence",
+        ],
+    },
+    "church_religious_body": {
+        "node_presets": [
+            {
+                "node_type": "branch",
+                "node_kind": "church_branch",
+                "label": "Branch / parish",
+                "example": "Enugu Branch",
+                "scope": "A worship branch with local leaders, departments, and members.",
+            },
+            {
+                "node_type": "ministry",
+                "node_kind": "church_ministry",
+                "label": "Ministry",
+                "example": "Youth Ministry",
+                "scope": "Ministry, wing, or fellowship group with its own leaders and activity.",
+            },
+            {
+                "node_type": "department",
+                "node_kind": "church_department",
+                "label": "Department",
+                "example": "Welfare Department",
+                "scope": "Operational department such as choir, ushering, welfare, or media.",
+            },
+        ],
+        "role_presets": [
+            {"role_key": "branch_admin", "label": "Branch admin", "scope": "node"},
+            {"role_key": "department_leader", "label": "Department leader", "scope": "node"},
+            {"role_key": "welfare_officer", "label": "Welfare officer", "scope": "node"},
+            {"role_key": "verifier", "label": "Evidence verifier", "scope": "domain_or_node"},
+        ],
+        "policy_presets": [
+            {
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "summary": "Branch or department leaders review local placement.",
+            },
+            {
+                "action_key": "evidence.verify",
+                "review_mode": "required_role_review",
+                "summary": "Evidence should be witnessed by assigned leaders or verifiers.",
+            },
+        ],
+        "activity_lanes": [
+            "branch activity",
+            "department activity",
+            "welfare evidence",
+            "member businesses",
+            "announcements",
+        ],
+    },
+    "union_professional_body": {
+        "node_presets": [
+            {
+                "node_type": "chapter",
+                "node_kind": "union_chapter",
+                "label": "Chapter",
+                "example": "Abuja Chapter",
+                "scope": "State, city, workplace, or diaspora chapter with local officers.",
+            },
+            {
+                "node_type": "committee",
+                "node_kind": "union_committee",
+                "label": "Committee",
+                "example": "Welfare Committee",
+                "scope": "Committee handling welfare, discipline, verification, or events.",
+            },
+            {
+                "node_type": "grade",
+                "node_kind": "professional_grade",
+                "label": "Professional grade",
+                "example": "Senior Teachers Forum",
+                "scope": "Professional class, credential group, or occupational grade.",
+            },
+        ],
+        "role_presets": [
+            {"role_key": "chapter_admin", "label": "Chapter admin", "scope": "node"},
+            {"role_key": "committee_lead", "label": "Committee lead", "scope": "node"},
+            {"role_key": "credential_verifier", "label": "Credential verifier", "scope": "domain_or_node"},
+            {"role_key": "treasurer", "label": "Treasurer", "scope": "domain_or_node"},
+        ],
+        "policy_presets": [
+            {
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "summary": "Central admins review formal member intake.",
+            },
+            {
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "summary": "Chapter officers review local chapter placement.",
+            },
+            {
+                "action_key": "evidence.verify",
+                "review_mode": "required_role_review",
+                "summary": "Credential or membership evidence requires a verifier role.",
+            },
+        ],
+        "activity_lanes": [
+            "chapter meetings",
+            "credential evidence",
+            "welfare committee",
+            "member services",
+            "trusted vendors",
+        ],
+    },
+    "market_cooperative": {
+        "node_presets": [
+            {
+                "node_type": "line",
+                "node_kind": "market_line",
+                "label": "Trade line",
+                "example": "Electronics Line",
+                "scope": "Major trade line or product category with local leaders and traders.",
+            },
+            {
+                "node_type": "section",
+                "node_kind": "market_section",
+                "label": "Section",
+                "example": "Phone Accessories Section",
+                "scope": "Subsection or cluster inside one trade line.",
+            },
+            {
+                "node_type": "committee",
+                "node_kind": "market_committee",
+                "label": "Market committee",
+                "example": "Welfare Committee",
+                "scope": "Executive, welfare, dispute, finance, or verification committee.",
+            },
+            {
+                "node_type": "group",
+                "node_kind": "market_activity_group",
+                "label": "Activity group",
+                "example": "Electronics ROSCA Circle",
+                "scope": "Practice group for contributions, demand, support, or shared activity.",
+            },
+        ],
+        "role_presets": [
+            {"role_key": "line_admin", "label": "Line admin", "scope": "node"},
+            {"role_key": "section_leader", "label": "Section leader", "scope": "node"},
+            {"role_key": "trader", "label": "Trader", "scope": "node"},
+            {"role_key": "verifier", "label": "Market verifier", "scope": "domain_or_node"},
+        ],
+        "policy_presets": [
+            {
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "summary": "Line or section leaders review local trader placement.",
+            },
+            {
+                "action_key": "evidence.verify",
+                "review_mode": "required_role_review",
+                "summary": "Line-level trust evidence should name who witnessed it.",
+            },
+            {
+                "action_key": "domain.settings_change",
+                "review_mode": "multi_reviewer_review",
+                "summary": "Market-wide settings should require more than one reviewer.",
+            },
+        ],
+        "activity_lanes": [
+            "member shops",
+            "market demand",
+            "spotlight",
+            "ROSCA/contributions",
+            "line-level trust evidence",
+        ],
+    },
+    "generic_association": {
+        "node_presets": [
+            {
+                "node_type": "branch",
+                "node_kind": "association_branch",
+                "label": "Branch",
+                "example": "Main Branch",
+                "scope": "Local branch, regional office, or chapter.",
+            },
+            {
+                "node_type": "committee",
+                "node_kind": "association_committee",
+                "label": "Committee",
+                "example": "Membership Committee",
+                "scope": "Committee or desk with delegated responsibilities.",
+            },
+        ],
+        "role_presets": [
+            {"role_key": "branch_admin", "label": "Branch admin", "scope": "node"},
+            {"role_key": "committee_lead", "label": "Committee lead", "scope": "node"},
+            {"role_key": "verifier", "label": "Verifier", "scope": "domain_or_node"},
+        ],
+        "policy_presets": [
+            {
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "summary": "Domain admins review formal membership changes.",
+            },
+            {
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "summary": "Local admins review node placement.",
+            },
+        ],
+        "activity_lanes": [
+            "branch activity",
+            "committee activity",
+            "member evidence",
+            "announcements",
+            "optional marketplace",
+        ],
+    },
+}
+
 
 def _clean_str(value: Optional[str], default: str = "") -> str:
     text = str(value or "").strip()
@@ -1051,6 +1325,86 @@ def _community_domain_template_for_key(template_key: Optional[str]) -> dict[str,
             return preset
 
     return COMMUNITY_DOMAIN_TEMPLATE_PRESETS[-1]
+
+
+def _community_domain_template_for_key_or_none(
+    template_key: str,
+) -> Optional[dict[str, Any]]:
+    key = _clean_str(template_key)
+    for preset in COMMUNITY_DOMAIN_TEMPLATE_PRESETS:
+        if preset["template_key"] == key or preset["domain_type"] == key:
+            return preset
+    return None
+
+
+def _community_domain_template_operating_blueprint_payload(
+    *,
+    template: dict[str, Any],
+) -> dict[str, Any]:
+    template_key = str(template["template_key"])
+    blueprint = COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS.get(
+        template_key,
+        COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS["generic_association"],
+    )
+    default_modules = list(template["default_modules"])
+    marketplace_role = _clean_role(template["marketplace_role"], "optional")
+    module_fit = [
+        {
+            "module_key": module_key,
+            "status": "enabled_by_template",
+            "summary": COMMUNITY_DOMAIN_MODULE_PRESETS.get(
+                module_key,
+                {
+                    "summary": "Template-defined Community Domain module.",
+                },
+            )["summary"],
+        }
+        for module_key in default_modules
+    ]
+    if "marketplace" not in default_modules and "shops" not in default_modules:
+        module_fit.append(
+            {
+                "module_key": "marketplace",
+                "status": f"{marketplace_role}_template",
+                "summary": (
+                    "Marketplace activity is optional unless the institution's "
+                    "real work needs trusted shops, demand, vendors, or member trade."
+                ),
+            }
+        )
+
+    return {
+        "template": {
+            "template_key": template_key,
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "summary": template["summary"],
+            "typical_nodes": list(template["typical_nodes"]),
+            "default_modules": default_modules,
+            "marketplace_role": marketplace_role,
+        },
+        "node_presets": blueprint["node_presets"],
+        "role_presets": blueprint["role_presets"],
+        "policy_presets": blueprint["policy_presets"],
+        "activity_lanes": blueprint["activity_lanes"],
+        "module_fit": module_fit,
+        "governance_shape": {
+            "supports_nested_nodes": True,
+            "supports_inherited_policy": True,
+            "supports_local_policy_override": True,
+            "supports_role_scoped_review": True,
+            "supports_multi_reviewer_review": True,
+        },
+        "editable": False,
+        "boundary": (
+            "Template operating blueprint is public read-only planning guidance. "
+            "It does not create a Community Domain, create nodes, create members, "
+            "assign roles, create policy, create action reviews, activate billing, "
+            "verify authority, create marketplace activity, create social "
+            "Communities, move money, or create separate schemas for each society "
+            "type."
+        ),
+    }
 
 
 def _community_domain_package_quote_payload(
@@ -4260,6 +4614,22 @@ def list_community_domain_templates():
             "Templates are public presets for structure and module planning only. "
             "They do not create a Community Domain, activate billing, verify ownership, "
             "or create separate schemas for each society type."
+        ),
+    }
+
+
+@router.get("/templates/{template_key}/operating-blueprint", response_model=dict[str, Any])
+def get_community_domain_template_operating_blueprint(template_key: str):
+    template = _community_domain_template_for_key_or_none(template_key)
+    if template is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Community Domain template not found",
+        )
+    return {
+        "ok": True,
+        "operating_blueprint": _community_domain_template_operating_blueprint_payload(
+            template=template,
         ),
     }
 

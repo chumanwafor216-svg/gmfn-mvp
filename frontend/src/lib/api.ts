@@ -2292,6 +2292,15 @@ export async function listCommunityDomainTemplates(): Promise<any> {
   return httpJson("/community-domains/templates", "GET");
 }
 
+export async function getCommunityDomainTemplateOperatingBlueprint(
+  templateKey: string
+): Promise<any> {
+  return httpJson(
+    `/community-domains/templates/${encodeURIComponent(templateKey)}/operating-blueprint`,
+    "GET"
+  );
+}
+
 export async function createCommunityDomainDraft(
   payload: CommunityDomainDraftPayload
 ): Promise<any> {
