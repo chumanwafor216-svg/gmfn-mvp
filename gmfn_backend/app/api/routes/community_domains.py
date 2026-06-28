@@ -643,14 +643,35 @@ def _get_node_or_404(
     return node
 
 
-def _ensure_node_accepts_writes(node: CommunityNode) -> None:
-    if _clean_role(node.status, "inactive") == "active":
-        return
+def _ensure_node_accepts_writes(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    node: CommunityNode,
+) -> None:
+    current: Optional[CommunityNode] = node
+    while current is not None:
+        if _clean_role(current.status, "inactive") != "active":
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_node_inactive",
+                    "message": "This Community Domain node or one of its parent nodes is not active, so new structure, policies, placements, or action reviews cannot be added to it.",
+                },
+            )
+        if current.parent_node_id is None:
+            return
+        current = (
+            db.query(CommunityNode)
+            .filter(CommunityNode.community_domain_id == int(domain.id))
+            .filter(CommunityNode.id == int(current.parent_node_id))
+            .first()
+        )
     raise HTTPException(
-        status_code=409,
+        status_code=404,
         detail={
-            "code": "community_domain_node_inactive",
-            "message": "This Community Domain node is not active, so new placements or action reviews cannot be added to it.",
+            "code": "community_domain_node_parent_missing",
+            "message": "This Community Domain node points to a missing parent node.",
         },
     )
 
@@ -1467,7 +1488,7 @@ def create_community_domain_node(
                 status_code=404,
                 detail="Parent node was not found inside this Community Domain.",
             )
-    _ensure_node_accepts_writes(parent_node)
+    _ensure_node_accepts_writes(db, domain=domain, node=parent_node)
 
     node = CommunityNode(
         community_domain_id=int(domain.id),
@@ -1666,7 +1687,7 @@ def upsert_community_node_member(
         community_domain_id=int(domain.id),
         community_node_id=int(community_node_id),
     )
-    _ensure_node_accepts_writes(node)
+    _ensure_node_accepts_writes(db, domain=domain, node=node)
     scope = _require_node_or_domain_admin_scope(
         db,
         domain=domain,
@@ -1797,7 +1818,7 @@ def upsert_community_domain_policy(
             community_domain_id=int(domain.id),
             community_node_id=int(payload.community_node_id),
         )
-        _ensure_node_accepts_writes(policy_node)
+        _ensure_node_accepts_writes(db, domain=domain, node=policy_node)
         node_id = int(policy_node.id)
 
     policy_key = _clean_role(payload.policy_key)
@@ -1929,7 +1950,7 @@ def create_community_domain_action_review(
             community_domain_id=int(domain.id),
             community_node_id=int(payload.community_node_id),
         )
-        _ensure_node_accepts_writes(node)
+        _ensure_node_accepts_writes(db, domain=domain, node=node)
         node_id = int(node.id)
 
     if payload.subject_user_id is not None:

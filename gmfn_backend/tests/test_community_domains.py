@@ -631,6 +631,124 @@ def test_inactive_node_rejects_new_placements_and_action_reviews(
         assert db.query(CommunityDomainPolicy).count() == 0
 
 
+def test_inactive_parent_node_blocks_descendant_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    staff = _seed_user(2, "inactive-parent-staff@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Parent Closed School Domain",
+                "display_name": "Parent Closed School Domain",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Closed Enugu Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        department = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "parent_node_id": branch_id,
+                "name": "Primary Department",
+                "node_type": "department",
+                "node_kind": "academic_department",
+            },
+        )
+        assert department.status_code == 201, department.text
+        department_id = department.json()["node"]["id"]
+
+        with SessionLocal() as db:
+            branch_row = (
+                db.query(CommunityNode)
+                .filter(CommunityNode.id == branch_id)
+                .filter(CommunityNode.community_domain_id == domain_id)
+                .one()
+            )
+            branch_row.status = "inactive"
+            db.add(branch_row)
+            db.commit()
+
+        listed_nodes = client.get(f"/community-domains/{domain_id}/nodes")
+        assert listed_nodes.status_code == 200, listed_nodes.text
+        department_item = next(
+            item for item in listed_nodes.json()["items"] if item["id"] == department_id
+        )
+        assert department_item["status"] == "active"
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": staff.id, "role": "staff"},
+        )
+        assert added.status_code == 201, added.text
+
+        blocked_child = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "parent_node_id": department_id,
+                "name": "Primary 1 Class",
+                "node_type": "class",
+                "node_kind": "school_class",
+            },
+        )
+        assert blocked_child.status_code == 409, blocked_child.text
+        assert blocked_child.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "community_node_id": department_id,
+                "policy_key": "closed-parent-department-member-change",
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert blocked_policy.status_code == 409, blocked_policy.text
+        assert blocked_policy.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_placement = client.post(
+            f"/community-domains/{domain_id}/nodes/{department_id}/members",
+            json={"user_id": staff.id, "role": "teacher"},
+        )
+        assert blocked_placement.status_code == 409, blocked_placement.text
+        assert blocked_placement.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "community_node_id": department_id,
+                "action_key": "node_member.upsert",
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "payload": {"user_id": staff.id, "role": "teacher"},
+            },
+        )
+        assert blocked_review.status_code == 409, blocked_review.text
+        assert blocked_review.json()["detail"]["code"] == "community_domain_node_inactive"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityNodeMembership).count() == 0
+        assert db.query(CommunityDomainPolicy).count() == 0
+        assert db.query(CommunityDomainActionReview).count() == 0
+
+
 def test_domain_admin_can_manage_structure_without_being_recorded_owner(
     client: TestClient,
 ):
