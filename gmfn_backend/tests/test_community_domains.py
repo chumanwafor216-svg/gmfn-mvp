@@ -5883,6 +5883,7 @@ def test_requester_can_revise_needs_changes_action_review(
                 "action_key": "domain_member.upsert",
                 "target_type": "domain_member",
                 "target_id": str(new_member.id),
+                "subject_user_id": new_member.id,
                 "request_note": "Please add this person.",
                 "payload": {"user_id": new_member.id, "role": "member"},
             },
@@ -5920,6 +5921,24 @@ def test_requester_can_revise_needs_changes_action_review(
         )
 
         app.dependency_overrides[get_current_user] = lambda: requester
+        rejected_subject_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "subject_user_id": other_member.id,
+                "request_note": "Wrong person in the subject.",
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": "Branch welfare member",
+                },
+            },
+        )
+        assert rejected_subject_revision.status_code == 409, rejected_subject_revision.text
+        assert (
+            rejected_subject_revision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
         revision_response = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
             json={
