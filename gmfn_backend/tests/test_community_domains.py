@@ -1165,6 +1165,8 @@ def test_child_node_can_opt_out_of_parent_policy_inheritance(
     client: TestClient,
 ):
     owner = _seed_owner()
+    branch_admin = _seed_user(2, "opt-out-branch-admin@example.com")
+    requester = _seed_user(3, "opt-out-requester@example.com")
 
     try:
         app.dependency_overrides[get_current_user] = lambda: owner
@@ -1178,6 +1180,13 @@ def test_child_node_can_opt_out_of_parent_policy_inheritance(
         )
         assert created_domain.status_code == 201, created_domain.text
         domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user in (branch_admin, requester):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
 
         branch = client.post(
             f"/community-domains/{domain_id}/nodes",
@@ -1203,6 +1212,12 @@ def test_child_node_can_opt_out_of_parent_policy_inheritance(
         assert department.status_code == 201, department.text
         department_id = department.json()["node"]["id"]
 
+        assigned_admin = client.post(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/members",
+            json={"user_id": branch_admin.id, "role": "branch_admin"},
+        )
+        assert assigned_admin.status_code == 201, assigned_admin.text
+
         policy = client.post(
             f"/community-domains/{domain_id}/policies",
             json={
@@ -1216,6 +1231,7 @@ def test_child_node_can_opt_out_of_parent_policy_inheritance(
         )
         assert policy.status_code == 201, policy.text
 
+        app.dependency_overrides[get_current_user] = lambda: requester
         review_response = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -1229,6 +1245,17 @@ def test_child_node_can_opt_out_of_parent_policy_inheritance(
         review = review_response.json()["action_review"]
         assert review["community_node_id"] == department_id
         assert review["policy_id"] is None
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+        denied_cancel = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": "Branch override."},
+        )
+        assert denied_cancel.status_code == 403, denied_cancel.text
+        assert (
+            denied_cancel.json()["detail"]["code"]
+            == "community_domain_review_cancel_forbidden"
+        )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
