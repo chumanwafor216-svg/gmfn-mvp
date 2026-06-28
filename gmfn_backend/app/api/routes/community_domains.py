@@ -1424,6 +1424,40 @@ def create_community_domain_action_review(
     }
 
 
+@router.get("/{community_domain_id}/action-reviews/my-requests", response_model=dict[str, Any])
+def list_my_community_domain_action_reviews(
+    community_domain_id: int,
+    status: Optional[str] = Query(default=None, max_length=24),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+
+    query = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReview.requested_by_user_id == int(current_user.id))
+    )
+    if status:
+        query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
+
+    rows = query.order_by(
+        CommunityDomainActionReview.created_at.desc(),
+        CommunityDomainActionReview.id.desc(),
+    ).all()
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "items": [_action_review_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "My requests only shows action reviews submitted by the current user. "
+            "It does not expose the wider governance queue or admin review list."
+        ),
+    }
+
+
 @router.get("/{community_domain_id}/action-reviews/reviewer-queue", response_model=dict[str, Any])
 def list_community_domain_reviewer_queue(
     community_domain_id: int,

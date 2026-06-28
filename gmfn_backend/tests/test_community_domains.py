@@ -1670,6 +1670,91 @@ def test_reviewer_queue_filters_node_reviews_by_required_node_role(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_member_can_track_only_their_own_action_review_requests(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "my-review-requester@example.com")
+    other_member = _seed_user(3, "my-review-other-member@example.com")
+    new_member = _seed_user(4, "my-review-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "My Requests Association",
+                "display_name": "My Requests Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user in (requester, other_member):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "my-requests-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        my_requests = client.get(
+            f"/community-domains/{domain_id}/action-reviews/my-requests"
+        )
+        assert my_requests.status_code == 200, my_requests.text
+        assert my_requests.json()["total"] == 1
+        assert my_requests.json()["items"][0]["id"] == review["id"]
+        assert "does not expose" in my_requests.json()["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert decision.status_code == 200, decision.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        approved_requests = client.get(
+            f"/community-domains/{domain_id}/action-reviews/my-requests",
+            params={"status": "approved"},
+        )
+        assert approved_requests.status_code == 200, approved_requests.text
+        assert approved_requests.json()["total"] == 1
+        assert approved_requests.json()["items"][0]["status"] == "approved"
+
+        app.dependency_overrides[get_current_user] = lambda: other_member
+        other_requests = client.get(
+            f"/community-domains/{domain_id}/action-reviews/my-requests"
+        )
+        assert other_requests.status_code == 200, other_requests.text
+        assert other_requests.json()["total"] == 0
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_apply_review_keeps_unknown_actions_as_decision_records(
     client: TestClient,
 ):
