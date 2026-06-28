@@ -2459,6 +2459,15 @@ export async function getCommunityDomainNetworkExchangeMap(
   );
 }
 
+export async function getCommunityDomainRecordPrivacyMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/record-privacy-map"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

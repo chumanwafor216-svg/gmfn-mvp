@@ -7064,6 +7064,292 @@ def _community_domain_network_exchange_map_payload(
     }
 
 
+def _community_domain_record_privacy_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    public_profile_present = bool(_clean_str(domain.public_profile))
+
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    active_nodes = [
+        node for node in nodes if _clean_role(node.status, "active") == "active"
+    ]
+    visibility_policy_counts: dict[str, int] = {}
+    for node in active_nodes:
+        policy_key = _clean_role(node.visibility_policy, "members")
+        visibility_policy_counts[policy_key] = (
+            visibility_policy_counts.get(policy_key, 0) + 1
+        )
+
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .count()
+    )
+    open_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .count()
+    )
+    active_evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .count()
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: Optional[int],
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": count,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "public_identity_boundary",
+            "Public identity boundary",
+            "profile_ready" if public_profile_present else "profile_needed",
+            public_profile_present,
+            1 if public_profile_present else 0,
+            "Keep public-facing identity separate from private member and evidence records.",
+            route_suffix="/network-presence",
+            requires_admin=False,
+            boundary=(
+                "Public identity boundary only. This does not publish a public "
+                "page, finalize public URLs, verify authority, or expose private "
+                "records."
+            ),
+        ),
+        lane(
+            "member_register_boundary",
+            "Member register boundary",
+            "members_present" if active_member_count else "empty",
+            bool(active_member_count),
+            admin_count(active_member_count),
+            "Treat member lists as admin-controlled institutional records, not public directory data.",
+            route_suffix="/members",
+            requires_admin=True,
+            boundary=(
+                "Member register boundary only. This does not create, invite, "
+                "approve, remove, expose, export, or publish member records."
+            ),
+        ),
+        lane(
+            "operating_unit_visibility",
+            "Operating unit visibility",
+            "policies_present" if active_nodes else "empty",
+            bool(active_nodes),
+            len(active_nodes),
+            "Review node visibility policies before relying on branch, line, department, class, or committee records.",
+            route_suffix="/rollout-tree",
+            requires_admin=False,
+            boundary=(
+                "Operating-unit visibility signal only. This does not change "
+                "node visibility, expose private node rosters, or publish the "
+                "institutional hierarchy."
+            ),
+        ),
+        lane(
+            "governance_record_boundary",
+            "Governance record boundary",
+            "policy_backed" if active_policy_count else "policy_needed",
+            bool(active_policy_count),
+            admin_count(active_policy_count),
+            "Use governance policy to decide which records need review before they become trusted.",
+            route_suffix="/governance-coverage",
+            requires_admin=True,
+            boundary=(
+                "Governance boundary only. This does not create policies, decide "
+                "reviews, apply reviews, or expose private review payloads."
+            ),
+        ),
+        lane(
+            "review_payload_boundary",
+            "Review payload boundary",
+            "open_reviews" if open_review_count else "quiet",
+            not bool(open_review_count),
+            admin_count(review_count),
+            "Keep action review notes, payloads, decisions, and comments private to authorized review flows.",
+            route_suffix="/action-reviews",
+            requires_admin=True,
+            boundary=(
+                "Review payload boundary only. This does not expose review "
+                "payloads, comments, decisions, request notes, or reviewer data."
+            ),
+        ),
+        lane(
+            "evidence_storage_boundary",
+            "Evidence storage boundary",
+            "evidence_present" if active_evidence_count else "not_recorded",
+            bool(active_evidence_count),
+            admin_count(active_evidence_count),
+            "Keep evidence files and storage metadata private until a public-safe proof release is built.",
+            route_suffix="/evidence-map",
+            requires_admin=True,
+            boundary=(
+                "Evidence storage boundary only. This does not upload evidence, "
+                "download files, expose storage keys, publish proof, issue "
+                "TrustSlips, or write Trust Passport records."
+            ),
+        ),
+        lane(
+            "marketplace_finance_boundary",
+            "Marketplace and finance boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Keep marketplace activity and finance records outside this privacy map until those bridges are deliberately built.",
+            route_suffix="/economic-participation",
+            requires_admin=True,
+            boundary=(
+                "Marketplace and finance boundary only. This does not expose "
+                "shops, listings, demand, Spotlight, vaults, loans, guarantees, "
+                "payments, ledgers, payouts, or private finance records."
+            ),
+        ),
+        lane(
+            "cross_domain_privacy_boundary",
+            "Cross-domain privacy boundary",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Do not let one institution inspect another institution's private members, records, evidence, or finance data.",
+            route_suffix="/network-exchange-map",
+            requires_admin=True,
+            boundary=(
+                "Cross-domain privacy boundary only. This does not create "
+                "cross-domain discovery, public search, member directories, "
+                "record sharing, or cross-silo exposure."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_record_privacy",
+            "label": "Ask a Community Domain admin to review record privacy",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not public_profile_present:
+        primary_next_action = {
+            "action_key": "prepare_public_safe_identity",
+            "label": "Prepare public-safe identity before exposing domain context",
+            "route_hint": f"/community-domains/{domain_id}/network-presence",
+            "requires_admin": True,
+        }
+    elif not active_policy_count:
+        primary_next_action = {
+            "action_key": "define_record_governance_policy",
+            "label": "Define governance policy for sensitive records",
+            "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+            "requires_admin": True,
+        }
+    elif open_review_count:
+        primary_next_action = {
+            "action_key": "review_open_private_record_decisions",
+            "label": "Review open private-record decisions",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_record_privacy_boundaries",
+            "label": "Review Community Domain record privacy boundaries",
+            "route_hint": f"/community-domains/{domain_id}/evidence-map",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "public_profile_present": public_profile_present,
+            "public_url_status": "open_product_decision",
+            "active_node_count": int(len(active_nodes)),
+            "visibility_policy_counts": visibility_policy_counts if can_admin else None,
+            "active_member_count": admin_count(active_member_count),
+            "active_policy_count": admin_count(active_policy_count),
+            "review_record_count": admin_count(review_count),
+            "open_review_count": admin_count(open_review_count),
+            "active_evidence_count": admin_count(active_evidence_count),
+            "marketplace_private_record_status": "not_exposed_in_this_slice",
+            "finance_private_record_status": "not_connected_in_this_slice",
+            "cross_domain_record_sharing_status": "not_connected_in_this_slice",
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain record privacy map is read-only privacy planning. "
+            "This endpoint does not change permissions, create access-control "
+            "rules, create members, expose member lists, expose node rosters, "
+            "publish hierarchies, expose review payloads, expose evidence files, "
+            "expose storage keys, publish proof, issue TrustSlips, write Trust "
+            "Passport records, expose marketplace activity, expose finance "
+            "records, create cross-domain discovery, create public search, create "
+            "member directories, share records across institutions, or move money."
+        ),
+    }
+
+
 def _community_domain_institutional_profile_payload(
     db: Session,
     *,
@@ -10186,6 +10472,27 @@ def get_community_domain_network_exchange_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "network_exchange_map": _community_domain_network_exchange_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/record-privacy-map", response_model=dict[str, Any])
+def get_community_domain_record_privacy_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "record_privacy_map": _community_domain_record_privacy_map_payload(
             db,
             domain=domain,
             current_user=current_user,

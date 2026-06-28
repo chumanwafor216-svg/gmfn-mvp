@@ -4736,6 +4736,257 @@ def test_member_can_read_network_exchange_map_but_exchange_counts_are_hidden(
     assert "private member" in exchange_map["boundary"]
 
 
+def test_record_privacy_map_projects_record_boundaries_without_permission_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "record-privacy-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Record Privacy Market Domain",
+                "display_name": "Record Privacy Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "Public-safe privacy profile for a market domain.",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+                "visibility_policy": "node_members",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        department = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Executive Committee",
+                "parent_node_id": line_id,
+                "node_type": "committee",
+                "node_kind": "governance_committee",
+                "visibility_policy": "admins",
+            },
+        )
+        assert department.status_code == 201, department.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "record-privacy-review",
+                "action_key": "record.review",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "line_admin",
+                "policy_summary": "Private record evidence needs review.",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "record.review",
+                "community_node_id": line_id,
+                "subject_user_id": member.id,
+                "target_type": "domain_member",
+                "target_id": str(member.id),
+                "request_note": "Review private record handling.",
+                "payload": {"record_type": "member standing note"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Private standing note",
+                "file_name": "private-standing-note.pdf",
+                "storage_key": "private/evidence/private-standing-note.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/record-privacy-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    privacy_map = payload["record_privacy_map"]
+    assert privacy_map["editable"] is False
+    assert privacy_map["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert privacy_map["summary"] == {
+        "public_profile_present": True,
+        "public_url_status": "open_product_decision",
+        "active_node_count": 3,
+        "visibility_policy_counts": {"members": 1, "node_members": 1, "admins": 1},
+        "active_member_count": 2,
+        "active_policy_count": 1,
+        "review_record_count": 1,
+        "open_review_count": 1,
+        "active_evidence_count": 1,
+        "marketplace_private_record_status": "not_exposed_in_this_slice",
+        "finance_private_record_status": "not_connected_in_this_slice",
+        "cross_domain_record_sharing_status": "not_connected_in_this_slice",
+    }
+    lanes = {item["lane_key"]: item for item in privacy_map["lanes"]}
+    assert lanes["public_identity_boundary"]["status"] == "profile_ready"
+    assert lanes["member_register_boundary"]["status"] == "members_present"
+    assert lanes["operating_unit_visibility"]["status"] == "policies_present"
+    assert lanes["governance_record_boundary"]["status"] == "policy_backed"
+    assert lanes["review_payload_boundary"]["status"] == "open_reviews"
+    assert lanes["evidence_storage_boundary"]["status"] == "evidence_present"
+    assert lanes["marketplace_finance_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lanes["cross_domain_privacy_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert privacy_map["primary_next_action"] == {
+        "action_key": "review_open_private_record_decisions",
+        "label": "Review open private-record decisions",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "requires_admin": True,
+    }
+    assert "does not change permissions" in privacy_map["boundary"]
+    assert "expose member lists" in privacy_map["boundary"]
+    assert "expose storage keys" in privacy_map["boundary"]
+    assert "share records across institutions" in privacy_map["boundary"]
+    assert "private/evidence/private-standing-note.pdf" not in str(privacy_map)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_record_privacy_map_but_admin_record_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "record-privacy-map-member@example.com")
+    outsider = _seed_user(3, "record-privacy-map-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Record Privacy School Domain",
+                "display_name": "Record Privacy School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+                "public_profile": "Public-safe school privacy profile.",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "visibility_policy": "node_members",
+            },
+        )
+        assert created_branch.status_code == 201, created_branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/record-privacy-map"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/record-privacy-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    privacy_map = member_map.json()["record_privacy_map"]
+    assert privacy_map["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert privacy_map["summary"]["public_profile_present"] is True
+    assert privacy_map["summary"]["active_node_count"] == 2
+    assert privacy_map["summary"]["visibility_policy_counts"] is None
+    assert privacy_map["summary"]["active_member_count"] is None
+    assert privacy_map["summary"]["active_policy_count"] is None
+    assert privacy_map["summary"]["review_record_count"] is None
+    assert privacy_map["summary"]["active_evidence_count"] is None
+    assert privacy_map["summary"]["cross_domain_record_sharing_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert privacy_map["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_record_privacy",
+        "label": "Ask a Community Domain admin to review record privacy",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in privacy_map["lanes"]}
+    assert lanes["public_identity_boundary"]["route_hint"].endswith(
+        "/network-presence"
+    )
+    assert lanes["member_register_boundary"]["route_hint"] is None
+    assert lanes["operating_unit_visibility"]["route_hint"].endswith("/rollout-tree")
+    assert lanes["governance_record_boundary"]["route_hint"] is None
+    assert lanes["review_payload_boundary"]["route_hint"] is None
+    assert lanes["evidence_storage_boundary"]["route_hint"] is None
+    assert lanes["marketplace_finance_boundary"]["route_hint"] is None
+    assert lanes["cross_domain_privacy_boundary"]["route_hint"] is None
+    assert "member directories" in privacy_map["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):
