@@ -1057,6 +1057,130 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert review_records[0].id == pending_review["id"]
 
 
+def test_archived_node_requires_reason_and_rejects_new_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "archived-node-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Archived Line Market Domain",
+                "display_name": "Archived Line Market Domain",
+                "domain_type": "market_association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Old Spare Parts Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert added.status_code == 201, added.text
+
+        missing_note = client.patch(
+            f"/community-domains/{domain_id}/nodes/{line_id}/status",
+            json={"status": "archived"},
+        )
+        assert missing_note.status_code == 422, missing_note.text
+        assert (
+            missing_note.json()["detail"]["code"]
+            == "community_domain_node_status_note_required"
+        )
+
+        archived = client.patch(
+            f"/community-domains/{domain_id}/nodes/{line_id}/status",
+            json={
+                "status": "archived",
+                "status_note": "Line merged into the central spare parts union.",
+            },
+        )
+        assert archived.status_code == 200, archived.text
+        archived_data = archived.json()
+        assert archived_data["changed"] is True
+        assert archived_data["previous_status"] == "active"
+        assert archived_data["node"]["status"] == "archived"
+        assert archived_data["lifecycle_record"]["payload"]["new_status"] == "archived"
+
+        preview = client.get(
+            f"/community-domains/{domain_id}/nodes/{line_id}/status-impact"
+        )
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["current_status"] == "archived"
+
+        blocked_child = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "parent_node_id": line_id,
+                "name": "Archived Child Line",
+                "node_type": "stall_cluster",
+                "node_kind": "market_unit",
+            },
+        )
+        assert blocked_child.status_code == 409, blocked_child.text
+        assert blocked_child.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "community_node_id": line_id,
+                "policy_key": "archived-line-member-change",
+                "action_key": "node_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert blocked_policy.status_code == 409, blocked_policy.text
+        assert blocked_policy.json()["detail"]["code"] == "community_domain_node_inactive"
+
+        blocked_placement = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": member.id, "role": "line_member"},
+        )
+        assert blocked_placement.status_code == 409, blocked_placement.text
+        assert (
+            blocked_placement.json()["detail"]["code"]
+            == "community_domain_node_inactive"
+        )
+
+        blocked_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "community_node_id": line_id,
+                "action_key": "node_member.upsert",
+                "target_type": "node_member",
+                "target_id": str(member.id),
+                "payload": {"user_id": member.id, "role": "line_member"},
+            },
+        )
+        assert blocked_review.status_code == 409, blocked_review.text
+        assert blocked_review.json()["detail"]["code"] == "community_domain_node_inactive"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        node = db.query(CommunityNode).filter(CommunityNode.id == line_id).one()
+        assert node.status == "archived"
+        assert db.query(CommunityNodeMembership).count() == 0
+        records = db.query(CommunityDomainActionReview).all()
+        assert len(records) == 1
+        assert records[0].action_key == "node.status.update"
+
+
 def test_inactive_parent_node_blocks_pending_review_approval_and_apply(
     client: TestClient,
 ):
