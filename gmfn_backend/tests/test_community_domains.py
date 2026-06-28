@@ -2090,6 +2090,16 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert domain_decision.status_code == 403, domain_decision.text
 
         app.dependency_overrides[get_current_user] = lambda: owner
+        domain_needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{domain_review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Billing committee must add the mandate note.",
+            },
+        )
+        assert domain_needs_changes.status_code == 200, domain_needs_changes.text
+        assert domain_needs_changes.json()["action_review"]["status"] == "needs_changes"
+
         domain_summary = client.get(
             f"/community-domains/{domain_id}/action-reviews/summary"
         )
@@ -2097,14 +2107,14 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         domain_summary_data = domain_summary.json()
         assert domain_summary_data["community_node_id"] is None
         assert domain_summary_data["total"] == 4
-        assert domain_summary_data["attention_total"] == 1
+        assert domain_summary_data["attention_total"] == 0
         assert domain_summary_data["ready_to_apply_total"] == 1
         assert domain_summary_data["terminal_total"] == 2
         assert domain_summary_data["by_status"] == {
             "applied": 1,
             "approved": 1,
             "cancelled": 1,
-            "pending": 1,
+            "needs_changes": 1,
         }
         assert domain_summary_data["by_action"] == {
             "domain.billing.change": 1,
