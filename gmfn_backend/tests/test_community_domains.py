@@ -2313,6 +2313,60 @@ def test_inherited_policy_admin_can_view_child_review_lineage(
         assert needs_changes.json()["action_review"]["status"] == "needs_changes"
 
         app.dependency_overrides[get_current_user] = lambda: requester
+        rejected_subject_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "subject_user_id": branch_admin.id,
+                "request_note": "Wrong subject for the role change.",
+                "payload": {
+                    "user_id": requester.id,
+                    "role": "committee_member",
+                    "title": "Maths secretary",
+                },
+            },
+        )
+        assert rejected_subject_revision.status_code == 409, rejected_subject_revision.text
+        assert (
+            rejected_subject_revision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        rejected_target_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_id": str(branch_admin.id),
+                "request_note": "Wrong target for the role change.",
+                "payload": {
+                    "user_id": requester.id,
+                    "role": "committee_member",
+                    "title": "Maths secretary",
+                },
+            },
+        )
+        assert rejected_target_revision.status_code == 409, rejected_target_revision.text
+        assert (
+            rejected_target_revision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
+        rejected_type_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_type": "domain_member",
+                "request_note": "Wrong target family for the role change.",
+                "payload": {
+                    "user_id": requester.id,
+                    "role": "committee_member",
+                    "title": "Maths secretary",
+                },
+            },
+        )
+        assert rejected_type_revision.status_code == 409, rejected_type_revision.text
+        assert (
+            rejected_type_revision.json()["detail"]["code"]
+            == "community_domain_member_action_target_mismatch"
+        )
+
         revision_response = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
             json={
@@ -2328,6 +2382,9 @@ def test_inherited_policy_admin_can_view_child_review_lineage(
         revision = revision_response.json()["action_review"]
         assert revision["parent_review_id"] == review["id"]
         assert revision["policy_id"] == policy.json()["policy"]["id"]
+        assert revision["target_type"] == "node_member"
+        assert revision["target_id"] == "maths-secretary"
+        assert revision["payload"]["user_id"] == requester.id
 
         app.dependency_overrides[get_current_user] = lambda: owner
         demoted_branch_admin = client.post(
