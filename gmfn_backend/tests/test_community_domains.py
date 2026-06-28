@@ -962,6 +962,11 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
                 "community_node_id": department_id,
                 "target_type": "node_member",
                 "target_id": str(teacher.id),
+                "payload": {
+                    "user_id": teacher.id,
+                    "role": "committee_member",
+                    "title": "Science committee",
+                },
             },
         )
         assert department_review_response.status_code == 201, (
@@ -1010,6 +1015,17 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
             == node_policy.json()["policy"]["id"]
         )
 
+        department_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{department_review['id']}/apply"
+        )
+        assert department_apply.status_code == 200, department_apply.text
+        department_apply_data = department_apply.json()
+        assert department_apply_data["action_review"]["status"] == "applied"
+        assert department_apply_data["action_review"]["applied_by_user_id"] == branch_admin.id
+        assert department_apply_data["applied"]["membership"]["community_node_id"] == department_id
+        assert department_apply_data["applied"]["membership"]["role"] == "committee_member"
+        assert department_apply_data["applied"]["membership"]["title"] == "Science committee"
+
         node_summary = client.get(
             f"/community-domains/{domain_id}/action-reviews/summary",
             params={"community_node_id": node_id},
@@ -1033,13 +1049,17 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         descendant_summary_data = descendant_summary.json()
         assert descendant_summary_data["total"] == 2
         assert descendant_summary_data["attention_total"] == 0
-        assert descendant_summary_data["ready_to_apply_total"] == 2
+        assert descendant_summary_data["ready_to_apply_total"] == 1
+        assert descendant_summary_data["terminal_total"] == 1
         assert descendant_summary_data["include_descendants"] is True
         assert set(descendant_summary_data["community_node_ids"]) == {
             node_id,
             department_id,
         }
-        assert descendant_summary_data["by_status"] == {"approved": 2}
+        assert descendant_summary_data["by_status"] == {
+            "approved": 1,
+            "applied": 1,
+        }
 
         descendant_activity = client.get(
             f"/community-domains/{domain_id}/action-reviews/activity",
@@ -1077,9 +1097,13 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert domain_summary_data["community_node_id"] is None
         assert domain_summary_data["total"] == 3
         assert domain_summary_data["attention_total"] == 1
-        assert domain_summary_data["ready_to_apply_total"] == 2
-        assert domain_summary_data["terminal_total"] == 0
-        assert domain_summary_data["by_status"] == {"approved": 2, "pending": 1}
+        assert domain_summary_data["ready_to_apply_total"] == 1
+        assert domain_summary_data["terminal_total"] == 1
+        assert domain_summary_data["by_status"] == {
+            "applied": 1,
+            "approved": 1,
+            "pending": 1,
+        }
         assert domain_summary_data["by_action"] == {
             "domain.billing.change": 1,
             "node_member.role_change": 2,

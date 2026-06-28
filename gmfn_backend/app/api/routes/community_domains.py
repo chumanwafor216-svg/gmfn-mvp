@@ -1082,6 +1082,58 @@ def _require_action_review_decider_scope(
         return node
 
 
+def _require_action_review_apply_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    row: CommunityDomainActionReview,
+    current_user: User,
+) -> tuple[Optional[CommunityNode], str]:
+    if row.community_node_id is None:
+        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        return None, "domain_admin"
+
+    node = _get_node_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_id=int(row.community_node_id),
+    )
+    try:
+        actor_scope = _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=node,
+            current_user=current_user,
+        )
+        return node, actor_scope
+    except HTTPException:
+        policy = getattr(row, "policy", None)
+        if (
+            policy is None
+            or policy.community_node_id is None
+            or not _policy_can_govern_node(
+                db,
+                domain=domain,
+                policy=policy,
+                node=node,
+            )
+        ):
+            raise
+
+        policy_node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(policy.community_node_id),
+        )
+        _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=policy_node,
+            current_user=current_user,
+        )
+        return node, "node_admin"
+
+
 def _can_view_action_review(
     db: Session,
     *,
@@ -2964,22 +3016,12 @@ def apply_community_domain_action_review(
         review_id=int(review_id),
     )
 
-    node: Optional[CommunityNode] = None
-    actor_scope = "domain_admin"
-    if row.community_node_id is not None:
-        node = _get_node_or_404(
-            db,
-            community_domain_id=int(domain.id),
-            community_node_id=int(row.community_node_id),
-        )
-        actor_scope = _require_node_or_domain_admin_scope(
-            db,
-            domain=domain,
-            node=node,
-            current_user=current_user,
-        )
-    else:
-        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    node, actor_scope = _require_action_review_apply_scope(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    )
 
     if _clean_role(row.status) == "applied":
         raise HTTPException(
