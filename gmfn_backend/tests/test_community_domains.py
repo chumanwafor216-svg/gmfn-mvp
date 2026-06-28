@@ -1085,6 +1085,210 @@ def test_member_can_read_template_fit_but_admin_next_action_is_hidden(
     assert all(item["route_hint"].endswith("/policies") for item in template_fit["policy_fit"])
 
 
+def test_setup_plan_orders_template_fit_gaps_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    trader = _seed_user(2, "setup-plan-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Setup Plan Market Domain",
+                "display_name": "Setup Plan Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Food Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": trader.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": trader.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/setup-plan")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    setup_plan = payload["setup_plan"]
+    assert setup_plan["editable"] is False
+    assert setup_plan["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert setup_plan["template"]["template_key"] == "market_cooperative"
+    assert setup_plan["setup_phase"] == "structure"
+    assert setup_plan["completed_steps"] == 1
+    assert setup_plan["open_steps"] == [
+        "structure",
+        "roles",
+        "governance",
+        "verification",
+        "activation",
+    ]
+    assert setup_plan["primary_next_action"] == {
+        "action_key": "review_structure_fit",
+        "label": "Review Community Domain structure fit",
+        "route_hint": f"/community-domains/{domain_id}/nodes/tree",
+        "requires_admin": True,
+    }
+    assert "does not create nodes" in setup_plan["boundary"]
+    assert "assign roles" in setup_plan["boundary"]
+    assert "create policy" in setup_plan["boundary"]
+    assert "activate billing" in setup_plan["boundary"]
+    assert "create marketplace activity" in setup_plan["boundary"]
+    assert "create a social Community" in setup_plan["boundary"]
+    assert "move money" in setup_plan["boundary"]
+    assert "private evidence" in setup_plan["boundary"]
+
+    steps = {item["step_key"]: item for item in setup_plan["steps"]}
+    assert steps["identity"]["completed"] is True
+    assert steps["identity"]["admin_action_route_hint"] == f"/community-domains/{domain_id}"
+    assert steps["structure"]["completed"] is False
+    assert steps["structure"]["missing_items"] == [
+        "market_section",
+        "market_committee",
+        "market_activity_group",
+    ]
+    assert steps["structure"]["detail"] == {"matched": 1, "missing": 3}
+    assert steps["structure"]["route_hint"].endswith("/nodes/tree")
+    assert steps["roles"]["missing_items"] == [
+        "line_admin",
+        "section_leader",
+        "verifier",
+    ]
+    assert steps["roles"]["detail"] == {"matched": 1, "missing": 3}
+    assert steps["governance"]["missing_items"] == [
+        "node_member.upsert",
+        "evidence.verify",
+        "domain.settings_change",
+    ]
+    assert steps["verification"]["missing_items"] == ["authority_evidence"]
+    assert steps["activation"]["missing_items"] == ["activation"]
+    assert "does not create nodes" in steps["structure"]["boundary"]
+
+    summary = setup_plan["template_fit_summary"]
+    assert summary["matched_total"] == 2
+    assert summary["missing_total"] == 9
+    assert summary["missing_sections"]["nodes"] == [
+        "market_section",
+        "market_committee",
+        "market_activity_group",
+    ]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_setup_plan_but_admin_actions_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "setup-plan-member@example.com")
+    outsider = _seed_user(3, "setup-plan-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Setup Plan School Domain",
+                "display_name": "Setup Plan School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_plan = client.get(f"/community-domains/{domain_id}/setup-plan")
+        assert member_plan.status_code == 200, member_plan.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_plan = client.get(f"/community-domains/{domain_id}/setup-plan")
+        assert outsider_plan.status_code == 403, outsider_plan.text
+        assert "active Community Domain members" in outsider_plan.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    setup_plan = member_plan.json()["setup_plan"]
+    assert setup_plan["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert setup_plan["template"]["template_key"] == "school_multi_branch"
+    assert setup_plan["setup_phase"] == "structure"
+    assert setup_plan["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_continue_setup",
+        "label": "Ask a Community Domain admin to continue setup",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert setup_plan["editable"] is False
+    assert "private evidence" in setup_plan["boundary"]
+
+    steps = {item["step_key"]: item for item in setup_plan["steps"]}
+    assert steps["identity"]["route_hint"] == f"/community-domains/{domain_id}"
+    assert steps["identity"]["admin_action_route_hint"] is None
+    assert steps["structure"]["route_hint"].endswith("/nodes/tree")
+    assert steps["structure"]["admin_action_route_hint"] is None
+    assert steps["roles"]["admin_action_route_hint"] is None
+    assert steps["governance"]["admin_action_route_hint"] is None
+    assert steps["verification"]["admin_action_route_hint"] is None
+    assert steps["activation"]["admin_action_route_hint"] is None
+    assert all(item["requires_admin"] is True for item in setup_plan["steps"])
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

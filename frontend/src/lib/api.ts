@@ -2345,6 +2345,12 @@ export async function getCommunityDomainTemplateFit(
   return httpJson(communityDomainPath(communityDomainId, "/template-fit"), "GET");
 }
 
+export async function getCommunityDomainSetupPlan(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/setup-plan"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

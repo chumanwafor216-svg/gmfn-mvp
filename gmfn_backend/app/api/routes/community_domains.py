@@ -3934,6 +3934,258 @@ def _community_domain_template_fit_payload(
     }
 
 
+def _community_domain_setup_plan_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    template_fit = _community_domain_template_fit_payload(
+        db,
+        domain=domain,
+        current_user=current_user,
+    )
+    domain_status = _clean_role(domain.status, "draft")
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    identity_ready = bool(
+        root_node is not None
+        and _clean_str(domain.domain_name)
+        and _clean_str(domain.display_name)
+    )
+    missing_sections = template_fit["missing_sections"]
+
+    def route_hint(suffix: str, *, admin_action: bool = False) -> Optional[str]:
+        if admin_action and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def setup_step(
+        step_key: str,
+        label: str,
+        completed: bool,
+        next_step: str,
+        *,
+        route_suffix: str,
+        admin_action: bool,
+        missing_items: Optional[list[str]] = None,
+        detail: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        return {
+            "step_key": step_key,
+            "label": label,
+            "status": "complete" if completed else "open",
+            "completed": bool(completed),
+            "route_hint": route_hint(route_suffix),
+            "admin_action_route_hint": route_hint(
+                route_suffix, admin_action=admin_action
+            ),
+            "requires_admin": bool(admin_action),
+            "admin_visible": bool(can_admin),
+            "missing_items": missing_items or [],
+            "next_step": next_step,
+            "detail": detail or {},
+            "boundary": (
+                "Read-only setup plan step. This does not create nodes, add "
+                "members, assign roles, create policy, open reviews, approve "
+                "reviews, verify authority, activate billing, activate the "
+                "Community Domain, create marketplace activity, create a social "
+                "Community, move money, or expose private evidence."
+            ),
+        }
+
+    steps = [
+        setup_step(
+            "identity",
+            "Confirm Community Domain identity",
+            identity_ready,
+            "Keep the domain name, display name, and root identity accurate.",
+            route_suffix="",
+            admin_action=True,
+            detail={
+                "domain_name": domain.domain_name,
+                "display_name": domain.display_name,
+                "root_node_present": bool(root_node is not None),
+            },
+        ),
+        setup_step(
+            "structure",
+            "Model real branches, departments, lines, or units",
+            template_fit["counts"]["missing_node_presets"] == 0,
+            (
+                "Review the structure against the selected template."
+                if can_admin
+                else "Ask a Community Domain admin to review the real structure."
+            ),
+            route_suffix="/nodes/tree",
+            admin_action=True,
+            missing_items=list(missing_sections["nodes"]),
+            detail={
+                "matched": template_fit["counts"]["matched_node_presets"],
+                "missing": template_fit["counts"]["missing_node_presets"],
+            },
+        ),
+        setup_step(
+            "roles",
+            "Place responsible people into the right roles",
+            template_fit["counts"]["missing_role_presets"] == 0,
+            (
+                "Review role coverage before relying on local administration."
+                if can_admin
+                else "Ask a Community Domain admin to review role coverage."
+            ),
+            route_suffix="/roles",
+            admin_action=True,
+            missing_items=list(missing_sections["roles"]),
+            detail={
+                "matched": template_fit["counts"]["matched_role_presets"],
+                "missing": template_fit["counts"]["missing_role_presets"],
+            },
+        ),
+        setup_step(
+            "governance",
+            "Confirm governance policies for important actions",
+            template_fit["counts"]["missing_policy_presets"] == 0,
+            (
+                "Review policy coverage before relying on action approvals."
+                if can_admin
+                else "Ask a Community Domain admin to review governance coverage."
+            ),
+            route_suffix="/policies",
+            admin_action=True,
+            missing_items=list(missing_sections["policies"]),
+            detail={
+                "matched": template_fit["counts"]["matched_policy_presets"],
+                "missing": template_fit["counts"]["missing_policy_presets"],
+            },
+        ),
+        setup_step(
+            "verification",
+            "Prepare authority verification",
+            verification_status == "verified",
+            (
+                "Prepare legal, representative, and structure authority evidence."
+                if verification_status != "verified"
+                else "Keep authority evidence current."
+            ),
+            route_suffix="/verification-requirements",
+            admin_action=True,
+            missing_items=[] if verification_status == "verified" else ["authority_evidence"],
+            detail={"verification_status": verification_status},
+        ),
+        setup_step(
+            "activation",
+            "Review activation and package readiness",
+            domain_status == "active",
+            (
+                "Review activation requirements before treating the domain as live."
+                if domain_status != "active"
+                else "Review the live Community Domain dashboard."
+            ),
+            route_suffix="/activation-requirements",
+            admin_action=True,
+            missing_items=[] if domain_status == "active" else ["activation"],
+            detail={
+                "domain_status": domain_status,
+                "billing_status": (
+                    "active" if domain_status == "active" else "quote_required"
+                ),
+            },
+        ),
+    ]
+
+    if missing_sections["nodes"]:
+        setup_phase = "structure"
+    elif missing_sections["roles"]:
+        setup_phase = "roles"
+    elif missing_sections["policies"]:
+        setup_phase = "governance"
+    elif verification_status != "verified":
+        setup_phase = "verification"
+    elif domain_status != "active":
+        setup_phase = "activation"
+    else:
+        setup_phase = "ready"
+
+    if not can_admin and setup_phase != "ready":
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_continue_setup",
+            "label": "Ask a Community Domain admin to continue setup",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif setup_phase == "structure":
+        primary_next_action = {
+            "action_key": "review_structure_fit",
+            "label": "Review Community Domain structure fit",
+            "route_hint": route_hint("/nodes/tree"),
+            "requires_admin": True,
+        }
+    elif setup_phase == "roles":
+        primary_next_action = {
+            "action_key": "review_role_fit",
+            "label": "Review Community Domain role fit",
+            "route_hint": route_hint("/roles"),
+            "requires_admin": True,
+        }
+    elif setup_phase == "governance":
+        primary_next_action = {
+            "action_key": "review_policy_fit",
+            "label": "Review Community Domain policy fit",
+            "route_hint": route_hint("/policies"),
+            "requires_admin": True,
+        }
+    elif setup_phase == "verification":
+        primary_next_action = {
+            "action_key": "prepare_verification",
+            "label": "Prepare Community Domain authority verification",
+            "route_hint": route_hint("/verification-requirements"),
+            "requires_admin": True,
+        }
+    elif setup_phase == "activation":
+        primary_next_action = {
+            "action_key": "review_activation_requirements",
+            "label": "Review Community Domain activation requirements",
+            "route_hint": route_hint("/activation-requirements"),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_dashboard",
+            "label": "Review Community Domain dashboard",
+            "route_hint": route_hint("/dashboard"),
+            "requires_admin": False,
+        }
+
+    return {
+        "community_domain": template_fit["community_domain"],
+        "template": template_fit["template"],
+        "viewer": template_fit["viewer"],
+        "setup_phase": setup_phase,
+        "steps": steps,
+        "completed_steps": sum(1 for step in steps if step["completed"]),
+        "open_steps": [step["step_key"] for step in steps if not step["completed"]],
+        "template_fit_summary": {
+            "matched_total": template_fit["matched_total"],
+            "missing_total": template_fit["missing_total"],
+            "missing_sections": missing_sections,
+        },
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Setup plan is read-only ordering guidance for a Community Domain. "
+            "It turns template-fit gaps into a practical admin sequence, but it "
+            "does not create nodes, add members, assign roles, create policy, "
+            "open or decide reviews, verify authority, activate billing, "
+            "activate the Community Domain, create marketplace activity, create "
+            "a social Community, move money, publish a public page, or expose "
+            "private evidence."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -5233,6 +5485,25 @@ def get_community_domain_template_fit(
         "ok": True,
         "community_domain_id": int(domain.id),
         "template_fit": _community_domain_template_fit_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/setup-plan", response_model=dict[str, Any])
+def get_community_domain_setup_plan(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "setup_plan": _community_domain_setup_plan_payload(
             db,
             domain=domain,
             current_user=current_user,
