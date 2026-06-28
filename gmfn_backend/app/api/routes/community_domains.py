@@ -323,6 +323,14 @@ def _action_review_evidence_payload(
     }
 
 
+def _activity_time(value: Optional[datetime]) -> datetime:
+    if value is None:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
 def _domain_payload(
     domain: CommunityDomain,
     *,
@@ -1898,6 +1906,138 @@ def create_community_domain_action_review_evidence(
         "boundary": (
             "Evidence metadata recorded. This does not upload, download, verify, "
             "approve, revise, cancel, or apply the action review."
+        ),
+    }
+
+
+@router.get(
+    "/{community_domain_id}/action-reviews/{review_id}/activity",
+    response_model=dict[str, Any],
+)
+def get_community_domain_action_review_activity(
+    community_domain_id: int,
+    review_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+    if not _can_view_action_review(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_activity_not_visible",
+                "message": "Only users who can view this action review can view its activity.",
+            },
+        )
+
+    activity_items: list[dict[str, Any]] = [
+        {
+            "type": "review_created",
+            "occurred_at": _iso(row.created_at),
+            "sort_at": _activity_time(row.created_at),
+            "sort_order": 0,
+            "sort_id": int(row.id),
+            "actor_user_id": int(row.requested_by_user_id),
+            "payload": _action_review_payload(row),
+        }
+    ]
+
+    decision_rows = (
+        db.query(CommunityDomainActionReviewDecision)
+        .filter(CommunityDomainActionReviewDecision.action_review_id == int(row.id))
+        .order_by(
+            CommunityDomainActionReviewDecision.created_at.asc(),
+            CommunityDomainActionReviewDecision.id.asc(),
+        )
+        .all()
+    )
+    for decision_row in decision_rows:
+        activity_items.append(
+            {
+                "type": "decision",
+                "occurred_at": _iso(decision_row.created_at),
+                "sort_at": _activity_time(decision_row.created_at),
+                "sort_order": 1,
+                "sort_id": int(decision_row.id),
+                "actor_user_id": int(decision_row.decided_by_user_id),
+                "payload": _action_review_decision_payload(decision_row),
+            }
+        )
+
+    comment_rows = (
+        db.query(CommunityDomainActionReviewComment)
+        .filter(CommunityDomainActionReviewComment.action_review_id == int(row.id))
+        .order_by(
+            CommunityDomainActionReviewComment.created_at.asc(),
+            CommunityDomainActionReviewComment.id.asc(),
+        )
+        .all()
+    )
+    for comment_row in comment_rows:
+        activity_items.append(
+            {
+                "type": "comment",
+                "occurred_at": _iso(comment_row.created_at),
+                "sort_at": _activity_time(comment_row.created_at),
+                "sort_order": 2,
+                "sort_id": int(comment_row.id),
+                "actor_user_id": int(comment_row.author_user_id),
+                "payload": _action_review_comment_payload(comment_row),
+            }
+        )
+
+    evidence_rows = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.action_review_id == int(row.id))
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .order_by(
+            CommunityDomainActionReviewEvidence.created_at.asc(),
+            CommunityDomainActionReviewEvidence.id.asc(),
+        )
+        .all()
+    )
+    for evidence_row in evidence_rows:
+        activity_items.append(
+            {
+                "type": "evidence",
+                "occurred_at": _iso(evidence_row.created_at),
+                "sort_at": _activity_time(evidence_row.created_at),
+                "sort_order": 3,
+                "sort_id": int(evidence_row.id),
+                "actor_user_id": int(evidence_row.submitted_by_user_id),
+                "payload": _action_review_evidence_payload(evidence_row),
+            }
+        )
+
+    activity_items.sort(
+        key=lambda item: (item["sort_at"], item["sort_order"], item["sort_id"])
+    )
+    for item in activity_items:
+        item.pop("sort_at", None)
+        item.pop("sort_order", None)
+        item.pop("sort_id", None)
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review_id": int(row.id),
+        "items": activity_items,
+        "total": len(activity_items),
+        "boundary": (
+            "Activity is a read-only merged view of review creation, decisions, "
+            "comments, and evidence metadata. It does not decide, revise, reopen, "
+            "cancel, upload, verify, or apply anything."
         ),
     }
 

@@ -2154,6 +2154,12 @@ def test_action_review_evidence_records_metadata_without_file_upload(
         assert review_response.status_code == 201, review_response.text
         review = review_response.json()["action_review"]
 
+        requester_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "I added the branch register extract."},
+        )
+        assert requester_comment.status_code == 201, requester_comment.text
+
         requester_evidence = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
             json={
@@ -2203,6 +2209,31 @@ def test_action_review_evidence_records_metadata_without_file_upload(
         ]
         assert "does not upload" in evidence_data["boundary"]
 
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Evidence checked."},
+        )
+        assert decision.status_code == 200, decision.text
+
+        activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/activity"
+        )
+        assert activity.status_code == 200, activity.text
+        activity_data = activity.json()
+        assert activity_data["total"] == 5
+        assert activity_data["items"][0]["type"] == "review_created"
+        assert (
+            [item["type"] for item in activity_data["items"]].count("evidence")
+            == 2
+        )
+        assert {item["type"] for item in activity_data["items"]} == {
+            "review_created",
+            "comment",
+            "evidence",
+            "decision",
+        }
+        assert "read-only merged view" in activity_data["boundary"]
+
         app.dependency_overrides[get_current_user] = lambda: other_member
         hidden_evidence = client.get(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence"
@@ -2221,6 +2252,15 @@ def test_action_review_evidence_records_metadata_without_file_upload(
         assert (
             denied_evidence.json()["detail"]["code"]
             == "community_domain_review_evidence_forbidden"
+        )
+
+        hidden_activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/activity"
+        )
+        assert hidden_activity.status_code == 403, hidden_activity.text
+        assert (
+            hidden_activity.json()["detail"]["code"]
+            == "community_domain_review_activity_not_visible"
         )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
