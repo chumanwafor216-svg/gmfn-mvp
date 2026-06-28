@@ -2336,6 +2336,12 @@ export async function listCommunityDomainRoles(
   return httpJson(communityDomainPath(communityDomainId, "/roles"), "GET");
 }
 
+export async function getCommunityDomainGovernanceModel(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/governance-model"), "GET");
+}
+
 export async function listCommunityDomainNodes(
   communityDomainId: number | string
 ): Promise<any> {

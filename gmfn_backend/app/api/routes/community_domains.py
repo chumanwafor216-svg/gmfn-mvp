@@ -193,6 +193,33 @@ COMMUNITY_DOMAIN_ROLE_PRESETS: list[dict[str, Any]] = [
         "summary": "A member of a market line, trade line, chapter, branch, or local unit.",
     },
 ]
+COMMUNITY_DOMAIN_GOVERNANCE_MODEL_PRESETS: list[dict[str, str]] = [
+    {
+        "model_key": "domain_admin_review",
+        "label": "Domain admin review",
+        "summary": "Central domain administrators review actions that affect the whole institution.",
+    },
+    {
+        "model_key": "node_admin_review",
+        "label": "Node admin review",
+        "summary": "Branch, department, chapter, line, or unit administrators review local actions.",
+    },
+    {
+        "model_key": "required_role_review",
+        "label": "Required role review",
+        "summary": "A policy can require a specific institutional role before a reviewer may decide.",
+    },
+    {
+        "model_key": "multi_reviewer_review",
+        "label": "Multi-reviewer approval",
+        "summary": "A policy can require more than one approval before an action becomes approved.",
+    },
+    {
+        "model_key": "action_review_record",
+        "label": "Action review record",
+        "summary": "Requests, decisions, comments, evidence, revisions, and applied actions are kept as governance records.",
+    },
+]
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
 COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_nodes": 50,
@@ -978,6 +1005,127 @@ def _community_domain_role_projection_payload(
             "institutional presets in this MVP slice. This endpoint does not "
             "create roles, assign roles, grant permissions, change membership, "
             "activate billing, verify authority, or expose private member evidence."
+        ),
+    }
+
+
+def _community_domain_governance_model_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    can_admin: bool,
+) -> dict[str, Any]:
+    policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .all()
+    )
+
+    policies_by_status: dict[str, int] = {}
+    policies_by_scope: dict[str, int] = {}
+    policies_by_review_mode: dict[str, int] = {}
+    active_policy_count = 0
+    node_scoped_policy_count = 0
+    required_role_policy_count = 0
+    multi_reviewer_policy_count = 0
+
+    for policy in policies:
+        status_key = _clean_role(policy.status, "active")
+        scope_key = _clean_role(policy.scope_type, "domain")
+        review_mode = _clean_role(policy.review_mode, "domain_admin_review")
+        config = _json_load(policy.config_json)
+        policies_by_status[status_key] = policies_by_status.get(status_key, 0) + 1
+        policies_by_scope[scope_key] = policies_by_scope.get(scope_key, 0) + 1
+        policies_by_review_mode[review_mode] = (
+            policies_by_review_mode.get(review_mode, 0) + 1
+        )
+        if status_key == "active":
+            active_policy_count += 1
+        if policy.community_node_id is not None:
+            node_scoped_policy_count += 1
+        if _clean_str(policy.required_role):
+            required_role_policy_count += 1
+        try:
+            min_reviewers = int(config.get("min_reviewers") or 1)
+        except (TypeError, ValueError):
+            min_reviewers = 1
+        if min_reviewers > 1:
+            multi_reviewer_policy_count += 1
+
+    reviews_by_status: dict[str, int] = {}
+    reviews_by_action: dict[str, int] = {}
+    open_statuses = {"pending", "pending_review", "needs_changes", "approved"}
+    open_review_count = 0
+    applied_review_count = 0
+    for review in reviews:
+        status_key = _clean_role(review.status, "pending")
+        action_key = _clean_role(review.action_key, "unknown")
+        reviews_by_status[status_key] = reviews_by_status.get(status_key, 0) + 1
+        reviews_by_action[action_key] = reviews_by_action.get(action_key, 0) + 1
+        if status_key in open_statuses:
+            open_review_count += 1
+        if status_key == "applied":
+            applied_review_count += 1
+
+    pattern_counts = {
+        "domain_admin_review": policies_by_review_mode.get("domain_admin_review", 0),
+        "node_admin_review": policies_by_review_mode.get("node_admin_review", 0),
+        "required_role_review": required_role_policy_count,
+        "multi_reviewer_review": multi_reviewer_policy_count,
+        "action_review_record": len(reviews),
+    }
+    pattern_boundary = (
+        "Read-only governance projection. This does not create policy, create "
+        "action reviews, decide reviews, apply reviews, grant authority, verify "
+        "ownership, move money, or activate billing."
+    )
+    patterns = [
+        {
+            **preset,
+            "configured": pattern_counts[preset["model_key"]] > 0,
+            "count": int(pattern_counts[preset["model_key"]]),
+            "editable": False,
+            "admin_visible": bool(can_admin),
+            "boundary": pattern_boundary,
+        }
+        for preset in COMMUNITY_DOMAIN_GOVERNANCE_MODEL_PRESETS
+    ]
+
+    return {
+        "items": patterns,
+        "total": len(patterns),
+        "configured_total": sum(1 for item in patterns if item["configured"]),
+        "policy_counts": {
+            "total": len(policies),
+            "active": int(active_policy_count),
+            "node_scoped": int(node_scoped_policy_count),
+            "domain_scoped": int(len(policies) - node_scoped_policy_count),
+            "required_role": int(required_role_policy_count),
+            "multi_reviewer": int(multi_reviewer_policy_count),
+            "by_status": policies_by_status,
+            "by_scope": policies_by_scope,
+            "by_review_mode": policies_by_review_mode,
+        },
+        "review_counts": {
+            "total": len(reviews),
+            "open": int(open_review_count),
+            "applied": int(applied_review_count),
+            "by_status": reviews_by_status,
+            "by_action": reviews_by_action,
+        },
+        "viewer": {"can_admin": bool(can_admin)},
+        "editable": False,
+        "boundary": (
+            "Governance model is a read-only summary of existing policies and "
+            "action-review records in this MVP slice. This endpoint does not "
+            "create policy, create action reviews, decide reviews, apply reviews, "
+            "grant authority, verify ownership, move money, activate billing, or "
+            "expose private review payloads."
         ),
     }
 
@@ -2453,6 +2601,26 @@ def list_community_domain_roles(
         "ok": True,
         "community_domain_id": int(domain.id),
         "roles": _community_domain_role_projection_payload(
+            db,
+            domain=domain,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/governance-model", response_model=dict[str, Any])
+def get_community_domain_governance_model(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "governance_model": _community_domain_governance_model_payload(
             db,
             domain=domain,
             can_admin=can_admin,

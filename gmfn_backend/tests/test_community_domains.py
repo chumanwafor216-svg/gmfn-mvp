@@ -762,6 +762,215 @@ def test_member_can_read_roles_projection_but_outsider_is_rejected(
     assert "private member evidence" in roles["boundary"]
 
 
+def test_governance_model_projects_policy_and_review_shape_without_deciding(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    domain_admin = _seed_user(2, "governance-domain-admin@example.com")
+    branch_admin = _seed_user(3, "governance-branch-admin@example.com")
+    requester = _seed_user(4, "governance-requester@example.com")
+    new_member = _seed_user(5, "governance-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Governance Model Market",
+                "display_name": "Governance Model Market",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Medical Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        for user, role in (
+            (domain_admin, "domain_admin"),
+            (branch_admin, "branch_admin"),
+            (requester, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={
+                "user_id": branch_admin.id,
+                "role": "branch_admin",
+                "title": "Medical line chair",
+            },
+        )
+        assert placed.status_code == 201, placed.text
+
+        central_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "central-member-add-review",
+                "action_key": "domain_member.upsert",
+                "scope_type": "domain",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "config": {"min_reviewers": 2},
+                "policy_summary": "Domain admins review new member approvals.",
+            },
+        )
+        assert central_policy.status_code == 201, central_policy.text
+
+        node_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "line-placement-review",
+                "action_key": "node_member.upsert",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "required_role": "branch_admin",
+                "policy_summary": "Line admins review line placements.",
+            },
+        )
+        assert node_policy.status_code == 201, node_policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": "Pending verified member",
+                },
+            },
+        )
+        assert review.status_code == 201, review.text
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        response = client.get(f"/community-domains/{domain_id}/governance-model")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    model = payload["governance_model"]
+    assert model["editable"] is False
+    assert "does not create policy" in model["boundary"]
+    assert "decide reviews" in model["boundary"]
+    assert "apply reviews" in model["boundary"]
+    assert "grant authority" in model["boundary"]
+    assert "activate billing" in model["boundary"]
+    assert "private review payloads" in model["boundary"]
+
+    assert model["policy_counts"]["total"] == 2
+    assert model["policy_counts"]["active"] == 2
+    assert model["policy_counts"]["domain_scoped"] == 1
+    assert model["policy_counts"]["node_scoped"] == 1
+    assert model["policy_counts"]["required_role"] == 2
+    assert model["policy_counts"]["multi_reviewer"] == 1
+    assert model["policy_counts"]["by_review_mode"]["domain_admin_review"] == 1
+    assert model["policy_counts"]["by_review_mode"]["node_admin_review"] == 1
+    assert model["review_counts"]["total"] == 1
+    assert model["review_counts"]["open"] == 1
+    assert model["review_counts"]["by_status"]["pending"] == 1
+    assert model["review_counts"]["by_action"]["domain_member.upsert"] == 1
+
+    by_key = {item["model_key"]: item for item in model["items"]}
+    assert by_key["domain_admin_review"]["configured"] is True
+    assert by_key["node_admin_review"]["configured"] is True
+    assert by_key["required_role_review"]["count"] == 2
+    assert by_key["multi_reviewer_review"]["count"] == 1
+    assert by_key["action_review_record"]["count"] == 1
+    assert by_key["domain_admin_review"]["editable"] is False
+    assert by_key["domain_admin_review"]["admin_visible"] is True
+    assert "move money" in by_key["domain_admin_review"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainPolicy).count() == 2
+        assert db.query(CommunityDomainActionReview).count() == 1
+        assert db.query(CommunityDomainActionReviewDecision).count() == 0
+        assert (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == new_member.id)
+            .first()
+            is None
+        )
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_governance_model_but_outsider_is_rejected(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "governance-member@example.com")
+    outsider = _seed_user(3, "governance-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "School Governance Model",
+                "display_name": "School Governance Model",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Parent teacher association member",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_model = client.get(f"/community-domains/{domain_id}/governance-model")
+        assert member_model.status_code == 200, member_model.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_model = client.get(f"/community-domains/{domain_id}/governance-model")
+        assert outsider_model.status_code == 403, outsider_model.text
+        assert "active Community Domain members" in outsider_model.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    model = member_model.json()["governance_model"]
+    by_key = {item["model_key"]: item for item in model["items"]}
+    assert model["viewer"] == {"can_admin": False}
+    assert model["policy_counts"]["total"] == 0
+    assert model["review_counts"]["total"] == 0
+    assert by_key["domain_admin_review"]["admin_visible"] is False
+    assert by_key["action_review_record"]["configured"] is False
+    assert model["editable"] is False
+    assert "private review payloads" in model["boundary"]
+
+
 def test_community_domain_draft_rejects_duplicate_domain_name(
     client: TestClient,
 ):
