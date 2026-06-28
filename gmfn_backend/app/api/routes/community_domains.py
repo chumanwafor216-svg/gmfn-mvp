@@ -1590,6 +1590,36 @@ def create_community_domain_node(
     }
 
 
+@router.get("/{community_domain_id}/nodes/{community_node_id}/status-impact", response_model=dict[str, Any])
+def get_community_domain_node_status_impact(
+    community_domain_id: int,
+    community_node_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    node = _get_node_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_id=int(community_node_id),
+    )
+    impact_summary = _node_lifecycle_impact_summary(db, domain=domain, node=node)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node": _node_payload(node),
+        "current_status": _clean_role(node.status, "inactive"),
+        "status_mutable": node.parent_node_id is not None,
+        "impact_summary": impact_summary,
+        "boundary": (
+            "Read-only preview of the records currently sitting inside this "
+            "node tree. It does not close, reopen, archive, notify, cancel "
+            "reviews, remove members, or create a lifecycle record."
+        ),
+    }
+
+
 @router.patch("/{community_domain_id}/nodes/{community_node_id}/status", response_model=dict[str, Any])
 def update_community_domain_node_status(
     community_domain_id: int,

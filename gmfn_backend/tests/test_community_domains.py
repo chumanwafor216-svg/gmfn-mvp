@@ -830,8 +830,21 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         )
         assert pending_review_response.status_code == 201, pending_review_response.text
         pending_review = pending_review_response.json()["action_review"]
+        expected_impact_summary = {
+            "node_scope_ids": [branch_id, department_id],
+            "descendant_node_count": 1,
+            "active_node_member_count": 1,
+            "active_policy_count": 1,
+            "open_action_review_count": 1,
+            "open_action_reviews_by_status": {"pending": 1},
+        }
 
         app.dependency_overrides[get_current_user] = lambda: staff
+        forbidden_preview = client.get(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status-impact"
+        )
+        assert forbidden_preview.status_code == 403, forbidden_preview.text
+
         forbidden = client.patch(
             f"/community-domains/{domain_id}/nodes/{branch_id}/status",
             json={"status": "inactive"},
@@ -839,6 +852,17 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert forbidden.status_code == 403, forbidden.text
 
         app.dependency_overrides[get_current_user] = lambda: owner
+        preview = client.get(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status-impact"
+        )
+        assert preview.status_code == 200, preview.text
+        preview_data = preview.json()
+        assert preview_data["current_status"] == "active"
+        assert preview_data["status_mutable"] is True
+        assert preview_data["node"]["id"] == branch_id
+        assert preview_data["impact_summary"] == expected_impact_summary
+        assert "Read-only preview" in preview_data["boundary"]
+
         invalid = client.patch(
             f"/community-domains/{domain_id}/nodes/{branch_id}/status",
             json={"status": "closed"},
@@ -869,14 +893,7 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert closed_data["previous_status"] == "active"
         assert closed_data["node"]["status"] == "inactive"
         assert closed_data["descendant_count"] == 1
-        assert closed_data["impact_summary"] == {
-            "node_scope_ids": [branch_id, department_id],
-            "descendant_node_count": 1,
-            "active_node_member_count": 1,
-            "active_policy_count": 1,
-            "open_action_review_count": 1,
-            "open_action_reviews_by_status": {"pending": 1},
-        }
+        assert closed_data["impact_summary"] == expected_impact_summary
         lifecycle_record = closed_data["lifecycle_record"]
         assert lifecycle_record["action_key"] == "node.status.update"
         assert lifecycle_record["status"] == "applied"
