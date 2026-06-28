@@ -2401,6 +2401,19 @@ def test_requester_can_revise_needs_changes_action_review(
         assert revision["request_note"] == "Added the title."
         assert revision["payload"]["title"] == "Branch welfare member"
         assert "previous review remains unchanged" in revision_data["boundary"]
+
+        duplicate_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={"request_note": "Do not fork this request."},
+        )
+        assert duplicate_revision.status_code == 409, duplicate_revision.text
+        duplicate_data = duplicate_revision.json()["detail"]
+        assert duplicate_data["code"] == "community_domain_review_revision_exists"
+        assert duplicate_data["existing_action_review"]["id"] == revision["id"]
+        assert (
+            duplicate_data["existing_action_review"]["parent_review_id"]
+            == review["id"]
+        )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

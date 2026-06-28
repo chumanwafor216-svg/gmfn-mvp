@@ -1644,6 +1644,29 @@ def revise_community_domain_action_review(
             },
         )
 
+    existing_revision = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReview.parent_review_id == int(row.id))
+        .order_by(
+            CommunityDomainActionReview.created_at.desc(),
+            CommunityDomainActionReview.id.desc(),
+        )
+        .first()
+    )
+    if existing_revision is not None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_review_revision_exists",
+                "message": (
+                    "This Community Domain action review already has a revision. "
+                    "Continue from the existing revision instead of creating a fork."
+                ),
+                "existing_action_review": _action_review_payload(existing_revision),
+            },
+        )
+
     node_id: Optional[int] = (
         int(row.community_node_id) if row.community_node_id is not None else None
     )
