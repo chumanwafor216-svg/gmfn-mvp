@@ -908,6 +908,52 @@ def _payload_int(payload: dict[str, Any], key: str) -> int:
     return value
 
 
+def _ensure_member_action_review_target_matches(
+    *,
+    action_key: str,
+    payload: dict[str, Any],
+    target_type: Optional[str],
+    target_id: Optional[str],
+) -> None:
+    expected_target_type: Optional[str] = None
+    if action_key == "domain_member.upsert":
+        expected_target_type = "domain_member"
+    elif action_key in {"node_member.upsert", "node_member.role_change"}:
+        expected_target_type = "node_member"
+
+    if expected_target_type is None:
+        return
+
+    clean_target_type = _clean_role(target_type or "")
+    if clean_target_type and clean_target_type != expected_target_type:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_member_action_target_mismatch",
+                "message": "Member action reviews must target the same member named in their payload.",
+            },
+        )
+
+    if payload.get("user_id") is None:
+        return
+    clean_target_id = _clean_str(target_id)
+    if not clean_target_id:
+        return
+    try:
+        target_user_id = int(clean_target_id)
+    except (TypeError, ValueError):
+        return
+    payload_user_id = _payload_int(payload, "user_id")
+    if target_user_id != payload_user_id:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_member_action_target_mismatch",
+                "message": "Member action reviews must target the same member named in their payload.",
+            },
+        )
+
+
 def _domain_membership_for_user(
     db: Session,
     *,
@@ -2383,6 +2429,12 @@ def create_community_domain_action_review(
             target_type=payload.target_type,
             target_id=payload.target_id,
         )
+    _ensure_member_action_review_target_matches(
+        action_key=action_key,
+        payload=review_payload,
+        target_type=payload.target_type,
+        target_id=payload.target_id,
+    )
 
     row = CommunityDomainActionReview(
         community_domain_id=int(domain.id),
@@ -3267,6 +3319,12 @@ def revise_community_domain_action_review(
             target_type=target_type,
             target_id=target_id,
         )
+    _ensure_member_action_review_target_matches(
+        action_key=action_key,
+        payload=revision_payload,
+        target_type=target_type,
+        target_id=target_id,
+    )
 
     revision = CommunityDomainActionReview(
         community_domain_id=int(domain.id),
@@ -3461,6 +3519,13 @@ def decide_community_domain_action_review(
                 target_id=row.target_id,
                 review_payload=row_payload,
             )
+    if decision == "approve":
+        _ensure_member_action_review_target_matches(
+            action_key=row_action_key,
+            payload=row_payload,
+            target_type=row.target_type,
+            target_id=row.target_id,
+        )
 
     decision_row = CommunityDomainActionReviewDecision(
         action_review_id=int(row.id),
@@ -3571,6 +3636,12 @@ def apply_community_domain_action_review(
     applied: dict[str, Any]
 
     if action_key == "domain_member.upsert":
+        _ensure_member_action_review_target_matches(
+            action_key=action_key,
+            payload=payload,
+            target_type=row.target_type,
+            target_id=row.target_id,
+        )
         user_id = _payload_int(payload, "user_id")
         _get_user_or_404(db, user_id)
         requested_role = _clean_role(str(payload.get("role") or "member"))
@@ -3623,6 +3694,12 @@ def apply_community_domain_action_review(
                 },
             )
         _ensure_node_accepts_writes(db, domain=domain, node=node)
+        _ensure_member_action_review_target_matches(
+            action_key=action_key,
+            payload=payload,
+            target_type=row.target_type,
+            target_id=row.target_id,
+        )
         user_id = _payload_int(payload, "user_id")
         _get_user_or_404(db, user_id)
         requested_role = _clean_role(str(payload.get("role") or "member"))
