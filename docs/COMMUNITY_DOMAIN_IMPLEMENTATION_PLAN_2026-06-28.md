@@ -34,6 +34,15 @@ Sources:
     CSCW 2025: `https://arxiv.org/abs/2509.06557`
   - W3C Verifiable Credentials Data Model v2.0, Recommendation, 2025:
     `https://www.w3.org/TR/vc-data-model-2.0/`
+  - NIST Role Based Access Control project, including hierarchical roles and
+    the INCITS RBAC standard background:
+    `https://csrc.nist.gov/projects/role-based-access-control`
+  - NIST SP 800-162, "Guide to Attribute Based Access Control (ABAC)
+    Definition and Considerations":
+    `https://doi.org/10.6028/NIST.SP.800-162`
+  - Jhaver, Frey, and Zhang, "Decentralizing Platform Power: A Design Space of
+    Multi-level Governance in Online Social Platforms":
+    `https://arxiv.org/abs/2108.12529`
 
 ## 0. PDF Review Truth
 
@@ -247,6 +256,38 @@ Implementation implication:
 - GSN must continue saying that evidence supports judgement; it is not legal
   certification, loan approval, payment instruction, or authority to release
   goods or money.
+
+### Large Institutions Need Nested Enterprises
+
+Ostrom's design principles explicitly point to nested enterprises for larger
+systems. Multi-level governance research also shows that authority often
+exists both vertically and horizontally: central authority, middle/local units,
+parallel communities, and end users.
+
+Implementation implication:
+
+- the engine must support an umbrella domain with many semi-autonomous local
+  units under it;
+- local units must inherit parent rules where required but still hold local
+  membership, roles, meetings, ROSCA/contribution groups, shops, vaults,
+  evidence, and analytics;
+- the system must support overlapping membership, because one person may be a
+  teacher, PTA member, union officer, ROSCA participant, shop owner, and alumni
+  member at the same time.
+
+### Roles Alone Are Not Enough
+
+NIST RBAC shows why roles and role hierarchies are useful for large
+organizations. NIST ABAC adds another important layer: access can depend on
+attributes of the subject, object, action, and environment.
+
+Implementation implication:
+
+- use RBAC for recognizable authority: owner, branch admin, line leader,
+  teacher, treasurer, verifier, moderator;
+- use ABAC-like attributes for scope: this branch, this class, this market
+  line, this committee, this document type, this module, this expiry state;
+- large domains need inherited roles plus scoped local overrides.
 
 ## 3. Community Domain Package Lifecycle
 
@@ -670,6 +711,266 @@ Devil's advocate:
 - The clean middle path is a Community Domain layer that references the current
   community/member/payment/trust spines while adding the institutional
   lifecycle and hierarchy they currently lack.
+
+## 4.2 Nested Enterprise Model for Big Organizations
+
+This is the core answer for large markets, schools with many branches, churches
+with parishes/departments, unions with state chapters, and professional bodies
+with local units.
+
+GSN should model large institutions as:
+
+```text
+CommunityDomain
+  DomainUnit / Node tree
+    Branch / campus / parish / market section / state chapter
+      Department / line / class / committee / welfare group
+        Team / ROSCA circle / meeting group / shop cluster / project group
+```
+
+The engine must not assume there is only one hierarchy. A real institution
+often has several overlapping structures:
+
+1. Administrative structure
+   - umbrella, branch, department, line, class, chapter.
+
+2. Practice structure
+   - teachers association, traders association, youth group, welfare group,
+     professional committee.
+
+3. Economic structure
+   - shop clusters, ROSCA circles, contribution groups, approved vendors,
+     marketplace lanes.
+
+4. Evidence structure
+   - who can issue evidence, who can witness, who can verify, who can publish
+     externally.
+
+5. Communication structure
+   - announcements, meetings, events, member notices, emergency notices.
+
+Therefore, `CommunityNode` should be a generic scoped unit, and
+`CommunityNodeMembership` must allow one user to belong to many nodes.
+
+### Node Versus Child Domain
+
+Not every branch should become a separate paid domain. GSN needs a clear rule.
+
+Use a `CommunityNode` when:
+
+- the unit is part of one legal/administrative owner;
+- billing is central;
+- public identity is mainly under the parent;
+- local admins operate inside parent rules.
+
+Use a child `CommunityDomain` when:
+
+- the branch has its own strong public identity;
+- it needs separate billing or renewal;
+- it has separate administrators with high autonomy;
+- it wants its own public domain page;
+- it may affiliate to the parent but operate as a semi-independent institution.
+
+Example:
+
+```text
+ABC Schools Group                  -> CommunityDomain
+  Lagos Campus                     -> CommunityNode
+  Abuja Campus                     -> CommunityNode
+  London Campus                    -> Child CommunityDomain if separately run
+```
+
+The parent/child relationship should reuse and eventually extend
+`CommunityDomainAffiliation`.
+
+### Scoped Governance
+
+Every important action should be evaluated with:
+
+- actor: who is trying to act;
+- role: what authority they hold;
+- scope: which branch/line/class/node the action belongs to;
+- policy: what approval procedure applies;
+- object: member, shop, vault item, spotlight, meeting, evidence record;
+- state: active, pending, expired, suspended, disputed.
+
+Examples:
+
+- a market electronics-line leader can approve members into Electronics Line,
+  but not Medical Line;
+- a school branch admin can approve a class teacher inside that branch, but not
+  alter parent-domain billing;
+- a church welfare leader can record welfare evidence, but not publish a
+  public verification statement for the whole church;
+- a teachers union branch can run a ROSCA circle locally, while the national
+  union sees aggregate activity without private member details.
+
+### Policy Inheritance
+
+Parent rules should flow downward, but local units need controlled autonomy.
+
+Policy levels:
+
+1. Platform policy
+   - GSN-wide legal/safety/payment/privacy boundaries.
+
+2. Domain policy
+   - rules set by the Community Domain owner or governing board.
+
+3. Unit policy
+   - branch/department/line/class rules that fit local operation.
+
+4. Activity policy
+   - rules for a specific ROSCA circle, meeting, vault, shop lane, evidence
+     packet, or spotlight.
+
+Inheritance rule:
+
+- lower levels can be stricter than higher levels;
+- lower levels cannot override GSN safety, privacy, payment, or evidence-truth
+  boundaries;
+- domain owners can decide which policies local units may customize.
+
+### Module Scope
+
+Every module must know where it is operating.
+
+Required scope fields for domain-aware modules:
+
+- `community_domain_id`
+- `node_id` nullable for whole-domain actions
+- `activity_group_id` nullable for ROSCA/meeting/project groups
+- `visibility_policy`
+- `created_by_user_id`
+- `approved_by_user_id`
+- `status`
+
+Module behavior:
+
+- Marketplace: shops/products can be visible to whole domain, one branch, one
+  line, selected nodes, or external permitted domains.
+- ROSCA/contributions: circles can belong to a branch, department, teachers
+  group, traders line, family branch, or union chapter.
+- Meetings: meetings can be whole-domain, branch-only, committee-only, or
+  activity-group-specific.
+- Vault: documents can be shared with role, node, member list, or external
+  trusted reader.
+- Spotlight: posts can publish inside the current node, the whole domain, or
+  through trust relay to another permitted domain.
+- Verification: evidence must show whether it came from parent domain, branch,
+  department, line, member witness, or external attachment.
+
+### Economic Activity Inside Institutional Domains
+
+Community Domain is not marketplace-first, but economic activity is part of
+real community life.
+
+The framework should support:
+
+- members selling to members;
+- approved vendors serving the institution;
+- ROSCA/contribution groups inside departments/branches;
+- welfare funds and support activities;
+- trusted procurement;
+- paid spotlight or external reach;
+- demand/request matching inside the domain;
+- trust evidence travelling outward when a member trades outside the domain.
+
+This lets a school, union, market, or church use GSN for community activity
+first, while still using marketplace/trust/economic rails where those rails
+match real life.
+
+### GSN Carries Existing Trust
+
+GSN should not claim to produce trust from nowhere. It should carry, structure,
+and make visible the trust that already exists inside the society.
+
+Implementation meaning:
+
+- evidence should record who in the institution stood behind the claim;
+- public surfaces should show scope and currentness;
+- Trust Passport/TrustSlip should say which community/domain context the
+  evidence comes from;
+- trust relay should show the path: source domain, bridge member, destination
+  domain, and content/action.
+
+### Example: Large Market Domain
+
+```text
+Onitsha Main Market                -> CommunityDomain
+  Electronics Line                 -> Node
+    Phone Accessories              -> Node
+    Repair Technicians             -> Node
+    Electronics ROSCA Circle A     -> Activity group
+  Medical Line                     -> Node
+    Wholesale Medicines            -> Node
+    Equipment Suppliers            -> Node
+  Plumbing Line                    -> Node
+  Market Welfare Committee         -> Node
+  Market Executive Council         -> Governance node
+```
+
+What GSN must support:
+
+- market executive owns the domain;
+- line leaders manage their line memberships;
+- traders own one global shop that can appear in selected lines;
+- ROSCA groups run inside lines;
+- spotlight can stay inside the line or relay outside through trusted members;
+- evidence can say "verified by Electronics Line admin" without claiming the
+  whole market verified the trader;
+- analytics can aggregate at market level while preserving line/member privacy.
+
+### Example: Multi-Branch School Domain
+
+```text
+Dominion Schools                   -> CommunityDomain
+  Lagos Branch                     -> Node or child domain
+    Primary School                 -> Node
+    Secondary School               -> Node
+    PTA                            -> Node
+    Teachers Association           -> Node
+      Teachers ROSCA Group         -> Activity group
+  Abuja Branch                     -> Node or child domain
+  Alumni Network                   -> Node
+  Board / Owner Office             -> Governance node
+```
+
+What GSN must support:
+
+- owner/admin controls the whole school identity;
+- branch admins control local branch operations;
+- class teachers and PTA officers have scoped permissions;
+- teachers can run ROSCA/contribution groups;
+- parents can receive controlled notices or event evidence;
+- school-approved vendors can sell uniforms/books/services;
+- Trust Passport can show a teacher's school membership/current witness
+  evidence without exposing every school record.
+
+### Practical Data Additions
+
+To support this properly, add these fields/models before heavy UI:
+
+- `CommunityNode.path` or materialized ancestor path for fast tree reads;
+- `CommunityNode.depth`;
+- `CommunityNode.node_kind` for administrative/practice/economic/evidence/
+  communication/governance;
+- `CommunityNode.visibility_policy`;
+- `CommunityNode.inherits_parent_policy`;
+- `CommunityNodeMembership.scope_role_key`;
+- `CommunityDomainPolicy.scope_level`;
+- `CommunityDomainPolicy.inherited_from_policy_id`;
+- `CommunityDomainModuleScope` or equivalent join table for module availability
+  by node;
+- `CommunityActivityGroup` for ROSCA circles, meetings, project groups, welfare
+  committees, and other small units that should not be full nodes;
+- `CommunityTrustRelayPath.node_id` and `destination_node_id` for line/branch
+  level trust movement.
+
+Do not store everything in JSON. JSON can hold template defaults and flexible
+settings, but membership, node scope, roles, policy reviews, evidence, and
+relay paths need relational rows so permissions, analytics, and audits are
+reliable.
 
 ## 5. API Shape
 
