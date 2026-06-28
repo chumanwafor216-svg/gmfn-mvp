@@ -1333,6 +1333,115 @@ def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
         assert membership.title == "Two-review approved member"
 
 
+def test_policy_reviewer_can_recuse_without_approving_review(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    first_admin = _seed_user(2, "recuse-first-reviewer@example.com")
+    second_admin = _seed_user(3, "recuse-second-reviewer@example.com")
+    requester = _seed_user(4, "recuse-requester@example.com")
+    new_member = _seed_user(5, "recuse-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Recusal Review Association",
+                "display_name": "Recusal Review Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user, role in (
+            (first_admin, "domain_admin"),
+            (second_admin, "domain_admin"),
+            (requester, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "recusal-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "config": {"min_reviewers": 2},
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: first_admin
+        recused = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "recuse", "decision_note": "Related to requester."},
+        )
+        assert recused.status_code == 200, recused.text
+        recused_data = recused.json()
+        assert recused_data["approval_count"] == 0
+        assert recused_data["recusal_count"] == 1
+        assert recused_data["action_review"]["status"] == "pending_review"
+        assert recused_data["action_review"]["recusal_count"] == 1
+        assert recused_data["decision_record"]["decision"] == "recuse"
+
+        first_queue = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        assert first_queue.status_code == 200, first_queue.text
+        assert first_queue.json()["total"] == 0
+
+        app.dependency_overrides[get_current_user] = lambda: second_admin
+        approved = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Looks valid."},
+        )
+        assert approved.status_code == 200, approved.text
+        approved_data = approved.json()
+        assert approved_data["approval_count"] == 1
+        assert approved_data["recusal_count"] == 1
+        assert approved_data["required_approvals"] == 2
+        assert approved_data["action_review"]["status"] == "pending_review"
+
+        blocked_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert blocked_apply.status_code == 409, blocked_apply.text
+        assert blocked_apply.json()["detail"]["code"] == "community_domain_review_not_approved"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainActionReviewDecision).count() == 2
+        review_row = db.query(CommunityDomainActionReview).one()
+        assert review_row.status == "pending_review"
+        assert review_row.decision == "approve"
+        assert (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == new_member.id)
+            .first()
+            is None
+        )
+
+
 def test_policy_required_domain_role_blocks_wrong_reviewer_role(
     client: TestClient,
 ):

@@ -227,6 +227,7 @@ def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
         key=lambda item: (item.created_at or datetime.min.replace(tzinfo=timezone.utc), int(item.id or 0)),
     )
     approval_count = sum(1 for item in decisions if _clean_role(item.decision) == "approve")
+    recusal_count = sum(1 for item in decisions if _clean_role(item.decision) == "recuse")
     return {
         "id": int(row.id),
         "community_domain_id": int(row.community_domain_id),
@@ -247,6 +248,7 @@ def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
         "payload": _json_load(row.payload_json),
         "required_approvals": _required_review_approvals(row),
         "approval_count": approval_count,
+        "recusal_count": recusal_count,
         "decisions": [_action_review_decision_payload(item) for item in decisions],
         "created_at": _iso(row.created_at),
         "updated_at": _iso(row.updated_at),
@@ -372,7 +374,7 @@ class CommunityDomainActionReviewCreateIn(BaseModel):
 class CommunityDomainActionReviewDecisionIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    decision: str = Field(..., pattern="^(approve|reject|needs_changes)$")
+    decision: str = Field(..., pattern="^(approve|reject|needs_changes|recuse)$")
     decision_note: Optional[str] = Field(default=None, max_length=1200)
 
 
@@ -1759,6 +1761,7 @@ def decide_community_domain_action_review(
     approval_count = sum(1 for item in decision_rows if _clean_role(item.decision) == "approve")
     rejection_count = sum(1 for item in decision_rows if _clean_role(item.decision) == "reject")
     needs_changes_count = sum(1 for item in decision_rows if _clean_role(item.decision) == "needs_changes")
+    recusal_count = sum(1 for item in decision_rows if _clean_role(item.decision) == "recuse")
     required_approvals = _required_review_approvals(row)
 
     row.decision = decision
@@ -1784,10 +1787,12 @@ def decide_community_domain_action_review(
         "action_review": _action_review_payload(row),
         "decision_record": _action_review_decision_payload(decision_row),
         "approval_count": approval_count,
+        "recusal_count": recusal_count,
         "required_approvals": required_approvals,
         "boundary": (
             "Decision recorded. The review becomes approved only when the policy's "
-            "required approval count is satisfied."
+            "required approval count is satisfied. A recusal records a reviewer "
+            "stepping aside; it does not approve, reject, or apply the action."
         ),
     }
 
