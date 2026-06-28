@@ -2952,6 +2952,14 @@ def decide_community_domain_action_review(
         .filter(CommunityDomainActionReviewDecision.decided_by_user_id == int(current_user.id))
         .first()
     )
+    if decision_row is not None and _clean_role(decision_row.decision) == "recuse":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_review_recusal_final",
+                "message": "This reviewer has already recused from this Community Domain action review.",
+            },
+        )
     if decision_row is None:
         decision_row = CommunityDomainActionReviewDecision(
             action_review_id=int(row.id),

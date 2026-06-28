@@ -1970,6 +1970,16 @@ def test_policy_reviewer_can_recuse_without_approving_review(
         assert first_queue.status_code == 200, first_queue.text
         assert first_queue.json()["total"] == 0
 
+        late_recusal_change = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Trying to step back in."},
+        )
+        assert late_recusal_change.status_code == 409, late_recusal_change.text
+        assert (
+            late_recusal_change.json()["detail"]["code"]
+            == "community_domain_review_recusal_final"
+        )
+
         app.dependency_overrides[get_current_user] = lambda: second_admin
         approved = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
