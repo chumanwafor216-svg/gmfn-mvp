@@ -2342,6 +2342,12 @@ export async function getCommunityDomainGovernanceModel(
   return httpJson(communityDomainPath(communityDomainId, "/governance-model"), "GET");
 }
 
+export async function getCommunityDomainReadiness(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/readiness"), "GET");
+}
+
 export async function listCommunityDomainNodes(
   communityDomainId: number | string
 ): Promise<any> {

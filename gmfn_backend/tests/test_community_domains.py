@@ -971,6 +971,180 @@ def test_member_can_read_governance_model_but_outsider_is_rejected(
     assert "private review payloads" in model["boundary"]
 
 
+def test_readiness_projection_guides_package_setup_without_activation(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "readiness-admin@example.com")
+    trader = _seed_user(3, "readiness-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Readiness Market Domain",
+                "display_name": "Readiness Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Food Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        for user, role in ((admin, "domain_admin"), (trader, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={
+                "user_id": trader.id,
+                "role": "trader",
+                "title": "Food line trader",
+            },
+        )
+        assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "readiness-member-add-review",
+                "action_key": "domain_member.upsert",
+                "scope_type": "domain",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "policy_summary": "Domain admins review member changes.",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        response = client.get(f"/community-domains/{domain_id}/readiness")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    readiness = payload["readiness"]
+    assert readiness["editable"] is False
+    assert readiness["ready_total"] == 6
+    assert readiness["blocked_total"] == 2
+    assert readiness["blocked_lanes"] == ["billing", "verification"]
+    assert readiness["primary_next_action"]["action_key"] == "package_quote"
+    assert readiness["primary_next_action"]["requires_admin"] is True
+    assert readiness["counts"]["nodes"] == 2
+    assert readiness["counts"]["active_members"] == 3
+    assert readiness["counts"]["active_node_memberships"] == 1
+    assert readiness["counts"]["active_policies"] == 1
+    assert readiness["counts"]["open_reviews"] == 0
+    assert readiness["status"]["domain_status"] == "draft"
+    assert readiness["status"]["verification_status"] == "unverified"
+    assert "does not create nodes" in readiness["boundary"]
+    assert "create a payment instruction" in readiness["boundary"]
+    assert "activate billing" in readiness["boundary"]
+    assert "verify authority" in readiness["boundary"]
+    assert "private evidence" in readiness["boundary"]
+
+    by_key = {item["lane_key"]: item for item in readiness["items"]}
+    assert by_key["identity"]["ready"] is True
+    assert by_key["structure"]["state"] == "ready"
+    assert by_key["members"]["state"] == "ready"
+    assert by_key["roles"]["state"] == "ready"
+    assert by_key["governance"]["state"] == "ready"
+    assert by_key["modules"]["state"] == "template_ready"
+    assert by_key["billing"]["state"] == "quote_required"
+    assert by_key["billing"]["ready"] is False
+    assert by_key["verification"]["state"] == "unverified"
+    assert by_key["verification"]["ready"] is False
+    assert by_key["billing"]["route_hint"].endswith("/package-quote")
+    assert "grant permissions" in by_key["roles"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 3
+        assert db.query(CommunityNodeMembership).count() == 1
+        assert db.query(CommunityDomainPolicy).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_readiness_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "readiness-member@example.com")
+    outsider = _seed_user(3, "readiness-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Readiness School Domain",
+                "display_name": "Readiness School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Parent teacher association member",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_readiness = client.get(f"/community-domains/{domain_id}/readiness")
+        assert member_readiness.status_code == 200, member_readiness.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_readiness = client.get(f"/community-domains/{domain_id}/readiness")
+        assert outsider_readiness.status_code == 403, outsider_readiness.text
+        assert "active Community Domain members" in outsider_readiness.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_readiness.json()["readiness"]
+    by_key = {item["lane_key"]: item for item in readiness["items"]}
+    assert readiness["viewer"] == {"can_admin": False}
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin",
+        "label": "Ask a Community Domain admin to continue setup",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert by_key["members"]["route_hint"] is None
+    assert by_key["billing"]["route_hint"] is None
+    assert by_key["verification"]["route_hint"] is None
+    assert by_key["modules"]["route_hint"].endswith("/service-settings")
+    assert readiness["editable"] is False
+    assert "private evidence" in readiness["boundary"]
+
+
 def test_community_domain_draft_rejects_duplicate_domain_name(
     client: TestClient,
 ):
