@@ -71,6 +71,7 @@
     "audit:mobile-visual-sweep": "node tools/audit-mobile-visual-sweep.mjs",
     "audit:entry-flow-polish": "node tools/audit-entry-flow-polish.mjs",
     "audit:entry-copy-response": "node tools/audit-entry-copy-response.mjs",
+    "audit:community-domain-product-contracts": "node tools/audit-community-domain-product-contracts.mjs",
     "audit:existing-community-invite-line": "node tools/audit-existing-community-invite-line.mjs",
     "audit:share-tag-actions": "node tools/audit-share-tag-actions.mjs",
     "audit:action-response-protocol": "node tools/audit-action-response-protocol.mjs",
