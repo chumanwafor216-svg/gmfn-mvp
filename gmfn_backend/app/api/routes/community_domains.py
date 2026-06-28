@@ -63,6 +63,7 @@ NODE_LOCAL_ASSIGNABLE_ROLES = {
     "committee_member",
     "line_member",
 }
+NODE_STATUS_VALUES = {"active", "inactive", "archived"}
 
 
 def _clean_str(value: Optional[str], default: str = "") -> str:
@@ -520,6 +521,12 @@ class CommunityNodeCreateIn(BaseModel):
     visibility_policy: str = Field(default="members", max_length=32)
     inherits_parent_policy: bool = True
     status: str = Field(default="active", max_length=24)
+
+
+class CommunityNodeStatusUpdateIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    status: str = Field(..., max_length=24)
 
 
 class CommunityDomainMemberUpsertIn(BaseModel):
@@ -1529,6 +1536,84 @@ def create_community_domain_node(
         "boundary": (
             "Structure only. This node does not create a separate Community Domain, "
             "social Community, billing account, or verified branch."
+        ),
+    }
+
+
+@router.patch("/{community_domain_id}/nodes/{community_node_id}/status", response_model=dict[str, Any])
+def update_community_domain_node_status(
+    community_domain_id: int,
+    community_node_id: int,
+    payload: CommunityNodeStatusUpdateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    node = _get_node_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_id=int(community_node_id),
+    )
+    if node.parent_node_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_root_node_status_immutable",
+                "message": "The root Community Domain node is controlled by the domain lifecycle, not the node status endpoint.",
+            },
+        )
+
+    requested_status = _clean_role(payload.status, "active")
+    if requested_status not in NODE_STATUS_VALUES:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_node_status_invalid",
+                "message": "Node status must be active, inactive, or archived.",
+            },
+        )
+
+    parent_node = _get_node_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_id=int(node.parent_node_id),
+    )
+    if requested_status == "active":
+        _ensure_node_accepts_writes(db, domain=domain, node=parent_node)
+
+    previous_status = _clean_role(node.status, "inactive")
+    changed = previous_status != requested_status
+    node.status = requested_status
+    db.add(node)
+    db.commit()
+    db.refresh(node)
+
+    descendant_count = max(
+        len(
+            _descendant_node_ids(
+                db,
+                domain=domain,
+                node=node,
+                include_descendants=True,
+            )
+        )
+        - 1,
+        0,
+    )
+
+    return {
+        "ok": True,
+        "changed": changed,
+        "community_domain_id": int(domain.id),
+        "previous_status": previous_status,
+        "node": _node_payload(node),
+        "descendant_count": descendant_count,
+        "boundary": (
+            "Node status controls whether new structure, policies, placements, "
+            "and node-scoped reviews can be added here. It does not delete "
+            "descendants, remove members, cancel pending reviews, or change the "
+            "Community Domain lifecycle."
         ),
     }
 
