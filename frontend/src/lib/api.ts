@@ -2330,6 +2330,12 @@ export async function listCommunityDomainServiceSettings(
   return httpJson(communityDomainPath(communityDomainId, "/service-settings"), "GET");
 }
 
+export async function listCommunityDomainRoles(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/roles"), "GET");
+}
+
 export async function listCommunityDomainNodes(
   communityDomainId: number | string
 ): Promise<any> {

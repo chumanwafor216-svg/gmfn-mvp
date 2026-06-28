@@ -608,6 +608,160 @@ def test_member_can_read_service_settings_but_outsider_is_rejected(
     assert "private records" in settings["boundary"]
 
 
+def test_roles_projection_counts_domain_and_node_roles_without_granting_permissions(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "roles-admin@example.com")
+    trader = _seed_user(3, "roles-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Onitsha Roles Market",
+                "display_name": "Onitsha Roles Market",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        admin_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": admin.id,
+                "role": "domain_admin",
+                "title": "Market domain administrator",
+            },
+        )
+        assert admin_member.status_code == 201, admin_member.text
+
+        trader_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": trader.id,
+                "role": "member",
+                "title": "Electronics trader",
+            },
+        )
+        assert trader_member.status_code == 201, trader_member.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={
+                "user_id": trader.id,
+                "role": "trader",
+                "title": "Phone accessories trader",
+            },
+        )
+        assert placed.status_code == 201, placed.text
+
+        response = client.get(f"/community-domains/{domain_id}/roles")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    roles = payload["roles"]
+    assert roles["editable"] is False
+    assert "does not create roles" in roles["boundary"]
+    assert "assign roles" in roles["boundary"]
+    assert "grant permissions" in roles["boundary"]
+    assert "verify authority" in roles["boundary"]
+
+    by_key = {item["role_key"]: item for item in roles["items"]}
+    assert by_key["owner"]["admin_role"] is True
+    assert by_key["owner"]["assignable"] is False
+    assert by_key["owner"]["active_domain_members"] == 1
+    assert by_key["domain_admin"]["admin_role"] is True
+    assert by_key["domain_admin"]["active_domain_members"] == 1
+    assert by_key["trader"]["admin_role"] is False
+    assert by_key["trader"]["active_domain_members"] == 0
+    assert by_key["trader"]["active_node_memberships"] == 1
+    assert by_key["trader"]["total_active_assignments"] == 1
+    assert by_key["line_admin"]["scope"] == "node"
+    assert by_key["line_member"]["scope"] == "node"
+    assert by_key["trader"]["editable"] is False
+    assert by_key["trader"]["admin_visible"] is True
+    assert "grant permissions" in by_key["trader"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 3
+        assert db.query(CommunityNodeMembership).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_roles_projection_but_outsider_is_rejected(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "roles-member@example.com")
+    outsider = _seed_user(3, "roles-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Church Roles Domain",
+                "display_name": "Church Roles Domain",
+                "domain_type": "religious_body",
+                "template_key": "church_religious_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Department member",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_roles = client.get(f"/community-domains/{domain_id}/roles")
+        assert member_roles.status_code == 200, member_roles.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_roles = client.get(f"/community-domains/{domain_id}/roles")
+        assert outsider_roles.status_code == 403, outsider_roles.text
+        assert "active Community Domain members" in outsider_roles.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    roles = member_roles.json()["roles"]
+    by_key = {item["role_key"]: item for item in roles["items"]}
+    assert by_key["member"]["active_domain_members"] == 1
+    assert by_key["domain_admin"]["admin_visible"] is False
+    assert by_key["member"]["admin_visible"] is False
+    assert roles["editable"] is False
+    assert "private member evidence" in roles["boundary"]
+
+
 def test_community_domain_draft_rejects_duplicate_domain_name(
     client: TestClient,
 ):

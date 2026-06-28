@@ -99,8 +99,8 @@ assertContains(
 
 assertContains(
   "src/lib/api.ts",
-  /checkCommunityDomainAvailability[\s\S]*listCommunityDomainTemplates[\s\S]*createCommunityDomainDraft[\s\S]*createCommunityDomainPackageQuote[\s\S]*getCommunityDomain[\s\S]*getCommunityDomainDashboard[\s\S]*listCommunityDomainServiceSettings[\s\S]*listCommunityDomainNodes[\s\S]*listCommunityDomainNodeTree[\s\S]*listCommunityDomainPolicies[\s\S]*community_node_id: params\.community_node_id/,
-  "Frontend API layer must expose template, draft, quote, dashboard, service settings, hierarchy tree, and node-scoped policy helpers.",
+  /checkCommunityDomainAvailability[\s\S]*listCommunityDomainTemplates[\s\S]*createCommunityDomainDraft[\s\S]*createCommunityDomainPackageQuote[\s\S]*getCommunityDomain[\s\S]*getCommunityDomainDashboard[\s\S]*listCommunityDomainServiceSettings[\s\S]*listCommunityDomainRoles[\s\S]*listCommunityDomainNodes[\s\S]*listCommunityDomainNodeTree[\s\S]*listCommunityDomainPolicies[\s\S]*community_node_id: params\.community_node_id/,
+  "Frontend API layer must expose template, draft, quote, dashboard, service settings, roles, hierarchy tree, and node-scoped policy helpers.",
   { frontend: true }
 );
 
@@ -181,6 +181,24 @@ assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_member_can_read_service_settings_but_outsider_is_rejected[\s\S]*\/service-settings[\s\S]*outsider_settings\.status_code == 403[\s\S]*admin_visible"\] is False/,
   "Backend tests must prove members can read service settings while outsiders are rejected and admin visibility is separated."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_role_projection_payload[\s\S]*does not create roles[\s\S]*grant permissions[\s\S]*@router\.get\("\/\{community_domain_id\}\/roles"[\s\S]*def list_community_domain_roles[\s\S]*_require_domain_member_scope/,
+  "Backend route must expose scoped read-only Community Domain roles without role creation, assignment, permission, membership, billing, verification, or privacy side effects."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_roles_projection_counts_domain_and_node_roles_without_granting_permissions[\s\S]*\/roles[\s\S]*domain_admin[\s\S]*trader[\s\S]*CommunityDomainActionReview[\s\S]*count\(\) == 0/,
+  "Backend tests must prove role projection counts domain and node roles without governance side effects."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_member_can_read_roles_projection_but_outsider_is_rejected[\s\S]*\/roles[\s\S]*outsider_roles\.status_code == 403[\s\S]*admin_visible"\] is False/,
+  "Backend tests must prove members can read role projection while outsiders are rejected and admin visibility is separated."
 );
 
 assertContains(

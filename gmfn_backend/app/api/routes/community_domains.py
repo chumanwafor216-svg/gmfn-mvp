@@ -63,6 +63,136 @@ NODE_LOCAL_ASSIGNABLE_ROLES = {
     "committee_member",
     "line_member",
 }
+COMMUNITY_DOMAIN_ROLE_PRESETS: list[dict[str, Any]] = [
+    {
+        "role_key": "owner",
+        "label": "Owner",
+        "scope": "domain",
+        "admin_role": True,
+        "assignable": False,
+        "summary": "The legally responsible Community Domain holder or founding authority.",
+    },
+    {
+        "role_key": "domain_admin",
+        "label": "Domain admin",
+        "scope": "domain",
+        "admin_role": True,
+        "assignable": True,
+        "summary": "A domain-wide administrator who helps manage the institutional domain.",
+    },
+    {
+        "role_key": "node_admin",
+        "label": "Node admin",
+        "scope": "node",
+        "admin_role": True,
+        "assignable": True,
+        "summary": "An administrator for one branch, department, line, chapter, or unit.",
+    },
+    {
+        "role_key": "branch_admin",
+        "label": "Branch admin",
+        "scope": "node",
+        "admin_role": True,
+        "assignable": True,
+        "summary": "A local administrator for a school branch, market branch, church branch, or regional office.",
+    },
+    {
+        "role_key": "department_admin",
+        "label": "Department admin",
+        "scope": "node",
+        "admin_role": True,
+        "assignable": True,
+        "summary": "A leader for a department, ministry, faculty, committee, or functional unit.",
+    },
+    {
+        "role_key": "committee_admin",
+        "label": "Committee admin",
+        "scope": "node",
+        "admin_role": True,
+        "assignable": True,
+        "summary": "A leader for a committee, line council, working group, or appointed task group.",
+    },
+    {
+        "role_key": "line_admin",
+        "label": "Line admin",
+        "scope": "node",
+        "admin_role": True,
+        "assignable": True,
+        "summary": "A leader for a market line, trade line, specialist line, or local operating line.",
+    },
+    {
+        "role_key": "chapter_admin",
+        "label": "Chapter admin",
+        "scope": "node",
+        "admin_role": True,
+        "assignable": True,
+        "summary": "A leader for a union chapter, diaspora chapter, local chapter, or regional chapter.",
+    },
+    {
+        "role_key": "member",
+        "label": "Member",
+        "scope": "domain_or_node",
+        "admin_role": False,
+        "assignable": True,
+        "summary": "A recognized member of the institution or one of its internal units.",
+    },
+    {
+        "role_key": "staff",
+        "label": "Staff",
+        "scope": "domain_or_node",
+        "admin_role": False,
+        "assignable": True,
+        "summary": "A staff member, worker, officer, or support person in the institution.",
+    },
+    {
+        "role_key": "teacher",
+        "label": "Teacher",
+        "scope": "domain_or_node",
+        "admin_role": False,
+        "assignable": True,
+        "summary": "A teacher, instructor, trainer, or academic worker.",
+    },
+    {
+        "role_key": "trader",
+        "label": "Trader",
+        "scope": "domain_or_node",
+        "admin_role": False,
+        "assignable": True,
+        "summary": "A trader, shop owner, vendor, artisan, or merchant participant.",
+    },
+    {
+        "role_key": "student",
+        "label": "Student",
+        "scope": "domain_or_node",
+        "admin_role": False,
+        "assignable": True,
+        "summary": "A student, learner, apprentice, or class participant.",
+    },
+    {
+        "role_key": "parent",
+        "label": "Parent",
+        "scope": "domain_or_node",
+        "admin_role": False,
+        "assignable": True,
+        "summary": "A parent, guardian, family representative, or PTA participant.",
+    },
+    {
+        "role_key": "committee_member",
+        "label": "Committee member",
+        "scope": "node",
+        "admin_role": False,
+        "assignable": True,
+        "summary": "A participant appointed to a committee, ministry, group, or working unit.",
+    },
+    {
+        "role_key": "line_member",
+        "label": "Line member",
+        "scope": "node",
+        "admin_role": False,
+        "assignable": True,
+        "summary": "A member of a market line, trade line, chapter, branch, or local unit.",
+    },
+]
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
 COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_nodes": 50,
@@ -754,6 +884,100 @@ def _community_domain_service_settings_payload(
             "This endpoint does not persist settings, enable or disable modules, "
             "activate billing, activate the Community Domain, grant permissions, "
             "or expose private records."
+        ),
+    }
+
+
+def _community_domain_role_projection_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_counts: dict[str, int] = {}
+    for membership in (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    ):
+        role_key = _clean_role(membership.role, "member")
+        domain_counts[role_key] = domain_counts.get(role_key, 0) + 1
+
+    node_counts: dict[str, int] = {}
+    for membership in (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    ):
+        role_key = _clean_role(membership.role, "member")
+        node_counts[role_key] = node_counts.get(role_key, 0) + 1
+
+    preset_keys = {preset["role_key"] for preset in COMMUNITY_DOMAIN_ROLE_PRESETS}
+    observed_keys = sorted((set(domain_counts) | set(node_counts)) - preset_keys)
+    role_boundary = (
+        "Read-only role projection. This does not create roles, assign roles, "
+        "grant permissions, change membership, activate billing, verify authority, "
+        "or create a role table."
+    )
+
+    def item_for_preset(preset: dict[str, Any], *, source: str) -> dict[str, Any]:
+        role_key = str(preset["role_key"])
+        domain_total = int(domain_counts.get(role_key, 0))
+        node_total = int(node_counts.get(role_key, 0))
+        return {
+            "role_key": role_key,
+            "label": preset["label"],
+            "scope": preset["scope"],
+            "summary": preset["summary"],
+            "source": source,
+            "admin_role": bool(preset["admin_role"]),
+            "assignable": bool(preset["assignable"]),
+            "active_domain_members": domain_total,
+            "active_node_memberships": node_total,
+            "total_active_assignments": domain_total + node_total,
+            "editable": False,
+            "admin_visible": bool(can_admin),
+            "boundary": role_boundary,
+        }
+
+    items = [
+        item_for_preset(preset, source="role_preset")
+        for preset in COMMUNITY_DOMAIN_ROLE_PRESETS
+    ]
+    for role_key in observed_keys:
+        admin_role = role_key in DOMAIN_ADMIN_ROLES or role_key in NODE_ADMIN_ROLES
+        scope = "domain_or_node"
+        if role_key in NODE_ADMIN_ROLES or role_key in NODE_LOCAL_ASSIGNABLE_ROLES:
+            scope = "node"
+        elif role_key in DOMAIN_ADMIN_ROLES:
+            scope = "domain"
+        items.append(
+            item_for_preset(
+                {
+                    "role_key": role_key,
+                    "label": role_key.replace("_", " ").title(),
+                    "scope": scope,
+                    "summary": "Observed active Community Domain role assignment.",
+                    "admin_role": admin_role,
+                    "assignable": False,
+                },
+                source="observed_assignment",
+            )
+        )
+
+    return {
+        "items": items,
+        "total": len(items),
+        "admin_role_total": sum(1 for item in items if item["admin_role"]),
+        "member_role_total": sum(1 for item in items if not item["admin_role"]),
+        "editable": False,
+        "boundary": (
+            "Roles are a read-only projection from current memberships and "
+            "institutional presets in this MVP slice. This endpoint does not "
+            "create roles, assign roles, grant permissions, change membership, "
+            "activate billing, verify authority, or expose private member evidence."
         ),
     }
 
@@ -2211,6 +2435,26 @@ def list_community_domain_service_settings(
         "community_domain_id": int(domain.id),
         "service_settings": _community_domain_service_settings_payload(
             domain,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/roles", response_model=dict[str, Any])
+def list_community_domain_roles(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "roles": _community_domain_role_projection_payload(
+            db,
+            domain=domain,
             can_admin=can_admin,
         ),
     }
