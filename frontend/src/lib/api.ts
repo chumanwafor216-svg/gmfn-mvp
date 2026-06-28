@@ -2167,6 +2167,499 @@ export async function requestPublicCommunityVerificationConfirmation(
   );
 }
 
+export type CommunityDomainDraftPayload = {
+  domain_name: string;
+  display_name: string;
+  domain_type?: string | null;
+  template_key?: string | null;
+  country?: string | null;
+  state?: string | null;
+  public_profile?: string | null;
+};
+
+export type CommunityDomainNodePayload = {
+  parent_node_id?: number | string | null;
+  name: string;
+  node_type?: string | null;
+  node_kind?: string | null;
+  description?: string | null;
+  sort_order?: number | string | null;
+  visibility_policy?: string | null;
+  inherits_parent_policy?: boolean | null;
+  status?: string | null;
+};
+
+export type CommunityDomainMembershipPayload = {
+  user_id: number | string;
+  role?: string | null;
+  title?: string | null;
+  status?: string | null;
+};
+
+export type CommunityDomainPolicyPayload = {
+  policy_key: string;
+  action_key: string;
+  community_node_id?: number | string | null;
+  scope_type?: string | null;
+  review_mode?: string | null;
+  required_role?: string | null;
+  status?: string | null;
+  policy_summary?: string | null;
+  config?: Record<string, any> | null;
+};
+
+export type CommunityDomainActionReviewPayload = {
+  policy_id?: number | string | null;
+  community_node_id?: number | string | null;
+  action_key: string;
+  subject_user_id?: number | string | null;
+  target_type?: string | null;
+  target_id?: string | number | null;
+  request_note?: string | null;
+  payload?: Record<string, any> | null;
+};
+
+export type CommunityDomainActionReviewRevisionPayload = {
+  subject_user_id?: number | string | null;
+  target_type?: string | null;
+  target_id?: string | number | null;
+  request_note?: string | null;
+  payload?: Record<string, any> | null;
+};
+
+export type CommunityDomainReviewDecision =
+  | "approve"
+  | "reject"
+  | "needs_changes"
+  | "recuse";
+
+export type CommunityDomainReviewDecisionPayload = {
+  decision: CommunityDomainReviewDecision;
+  decision_note?: string | null;
+};
+
+export type CommunityDomainReviewEvidencePayload = {
+  evidence_type?: string | null;
+  title: string;
+  description?: string | null;
+  file_name?: string | null;
+  content_type?: string | null;
+  storage_key?: string | null;
+  external_reference?: string | null;
+  checksum?: string | null;
+};
+
+function communityDomainPath(
+  communityDomainId: number | string,
+  suffix: string = ""
+): string {
+  const base = `/community-domains/${encodeURIComponent(String(communityDomainId))}`;
+  return suffix ? `${base}${suffix}` : base;
+}
+
+function communityDomainNodePath(
+  communityDomainId: number | string,
+  communityNodeId: number | string,
+  suffix: string = ""
+): string {
+  return `${communityDomainPath(
+    communityDomainId,
+    `/nodes/${encodeURIComponent(String(communityNodeId))}`
+  )}${suffix}`;
+}
+
+function communityDomainReviewPath(
+  communityDomainId: number | string,
+  reviewId: number | string,
+  suffix: string = ""
+): string {
+  return `${communityDomainPath(
+    communityDomainId,
+    `/action-reviews/${encodeURIComponent(String(reviewId))}`
+  )}${suffix}`;
+}
+
+export async function checkCommunityDomainAvailability(
+  domainName: string
+): Promise<any> {
+  return httpJson(
+    `/community-domains/availability${buildQuery({ domain_name: domainName })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityDomainDraft(
+  payload: CommunityDomainDraftPayload
+): Promise<any> {
+  return httpJson("/community-domains/drafts", "POST", {
+    domain_name: payload.domain_name,
+    display_name: payload.display_name,
+    domain_type: payload.domain_type || undefined,
+    template_key: payload.template_key || undefined,
+    country: payload.country || undefined,
+    state: payload.state || undefined,
+    public_profile: payload.public_profile || undefined,
+  });
+}
+
+export async function getCommunityDomain(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId), "GET");
+}
+
+export async function listCommunityDomainNodes(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/nodes"), "GET");
+}
+
+export async function createCommunityDomainNode(
+  communityDomainId: number | string,
+  payload: CommunityDomainNodePayload
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/nodes"), "POST", {
+    parent_node_id: payload.parent_node_id || undefined,
+    name: payload.name,
+    node_type: payload.node_type || undefined,
+    node_kind: payload.node_kind || undefined,
+    description: payload.description || undefined,
+    sort_order: payload.sort_order ?? undefined,
+    visibility_policy: payload.visibility_policy || undefined,
+    inherits_parent_policy:
+      payload.inherits_parent_policy == null
+        ? undefined
+        : Boolean(payload.inherits_parent_policy),
+    status: payload.status || undefined,
+  });
+}
+
+export async function getCommunityDomainNodeStatusImpact(
+  communityDomainId: number | string,
+  communityNodeId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainNodePath(communityDomainId, communityNodeId, "/status-impact"),
+    "GET"
+  );
+}
+
+export async function updateCommunityDomainNodeStatus(
+  communityDomainId: number | string,
+  communityNodeId: number | string,
+  payload: { status: string; status_note?: string | null }
+): Promise<any> {
+  return httpJson(
+    communityDomainNodePath(communityDomainId, communityNodeId, "/status"),
+    "PATCH",
+    {
+      status: payload.status,
+      status_note: payload.status_note || undefined,
+    }
+  );
+}
+
+export async function listCommunityDomainMembers(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/members"), "GET");
+}
+
+export async function upsertCommunityDomainMember(
+  communityDomainId: number | string,
+  payload: CommunityDomainMembershipPayload
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/members"), "POST", {
+    user_id: Number(payload.user_id),
+    role: payload.role || undefined,
+    title: payload.title || undefined,
+    status: payload.status || undefined,
+  });
+}
+
+export async function listCommunityDomainNodeMembers(
+  communityDomainId: number | string,
+  communityNodeId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainNodePath(communityDomainId, communityNodeId, "/members"),
+    "GET"
+  );
+}
+
+export async function upsertCommunityDomainNodeMember(
+  communityDomainId: number | string,
+  communityNodeId: number | string,
+  payload: CommunityDomainMembershipPayload
+): Promise<any> {
+  return httpJson(
+    communityDomainNodePath(communityDomainId, communityNodeId, "/members"),
+    "POST",
+    {
+      user_id: Number(payload.user_id),
+      role: payload.role || undefined,
+      title: payload.title || undefined,
+      status: payload.status || undefined,
+    }
+  );
+}
+
+export async function listCommunityDomainPolicies(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/policies"), "GET");
+}
+
+export async function upsertCommunityDomainPolicy(
+  communityDomainId: number | string,
+  payload: CommunityDomainPolicyPayload
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/policies"), "POST", {
+    policy_key: payload.policy_key,
+    action_key: payload.action_key,
+    community_node_id: payload.community_node_id || undefined,
+    scope_type: payload.scope_type || undefined,
+    review_mode: payload.review_mode || undefined,
+    required_role: payload.required_role || undefined,
+    status: payload.status || undefined,
+    policy_summary: payload.policy_summary || undefined,
+    config: payload.config || undefined,
+  });
+}
+
+export async function listCommunityDomainActionReviews(
+  communityDomainId: number | string,
+  params: {
+    community_node_id?: number | string | null;
+    include_descendants?: boolean | null;
+    status?: string | null;
+  } = {}
+): Promise<any> {
+  return httpJson(
+    `${communityDomainPath(communityDomainId, "/action-reviews")}${buildQuery({
+      community_node_id: params.community_node_id || undefined,
+      include_descendants: params.include_descendants ? true : undefined,
+      status: params.status || undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityDomainActionReview(
+  communityDomainId: number | string,
+  payload: CommunityDomainActionReviewPayload
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/action-reviews"), "POST", {
+    policy_id: payload.policy_id || undefined,
+    community_node_id: payload.community_node_id || undefined,
+    action_key: payload.action_key,
+    subject_user_id: payload.subject_user_id || undefined,
+    target_type: payload.target_type || undefined,
+    target_id: payload.target_id == null ? undefined : String(payload.target_id),
+    request_note: payload.request_note || undefined,
+    payload: payload.payload || undefined,
+  });
+}
+
+export async function listMyCommunityDomainActionReviews(
+  communityDomainId: number | string,
+  params: { status?: string | null } = {}
+): Promise<any> {
+  return httpJson(
+    `${communityDomainPath(communityDomainId, "/action-reviews/my-requests")}${buildQuery({
+      status: params.status || undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getCommunityDomainReviewerQueue(
+  communityDomainId: number | string,
+  params: { include_decided?: boolean | null } = {}
+): Promise<any> {
+  return httpJson(
+    `${communityDomainPath(communityDomainId, "/action-reviews/reviewer-queue")}${buildQuery({
+      include_decided: params.include_decided ? true : undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getCommunityDomainActionReviewSummary(
+  communityDomainId: number | string,
+  params: {
+    community_node_id?: number | string | null;
+    include_descendants?: boolean | null;
+  } = {}
+): Promise<any> {
+  return httpJson(
+    `${communityDomainPath(communityDomainId, "/action-reviews/summary")}${buildQuery({
+      community_node_id: params.community_node_id || undefined,
+      include_descendants: params.include_descendants ? true : undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function listCommunityDomainActionReviewActivity(
+  communityDomainId: number | string,
+  params: {
+    community_node_id?: number | string | null;
+    include_descendants?: boolean | null;
+    status?: string | null;
+    event_type?: string | null;
+    limit?: number | string | null;
+  } = {}
+): Promise<any> {
+  return httpJson(
+    `${communityDomainPath(communityDomainId, "/action-reviews/activity")}${buildQuery({
+      community_node_id: params.community_node_id || undefined,
+      include_descendants: params.include_descendants ? true : undefined,
+      status: params.status || undefined,
+      event_type: params.event_type || undefined,
+      limit: params.limit || undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getCommunityDomainActionReview(
+  communityDomainId: number | string,
+  reviewId: number | string
+): Promise<any> {
+  return httpJson(communityDomainReviewPath(communityDomainId, reviewId), "GET");
+}
+
+export async function decideCommunityDomainActionReview(
+  communityDomainId: number | string,
+  reviewId: number | string,
+  payload: CommunityDomainReviewDecisionPayload
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/decision"),
+    "POST",
+    {
+      decision: payload.decision,
+      decision_note: payload.decision_note || undefined,
+    }
+  );
+}
+
+export async function cancelCommunityDomainActionReview(
+  communityDomainId: number | string,
+  reviewId: number | string,
+  payload: { cancel_note?: string | null } = {}
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/cancel"),
+    "POST",
+    {
+      cancel_note: payload.cancel_note || undefined,
+    }
+  );
+}
+
+export async function reviseCommunityDomainActionReview(
+  communityDomainId: number | string,
+  reviewId: number | string,
+  payload: CommunityDomainActionReviewRevisionPayload
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/revision"),
+    "POST",
+    {
+      subject_user_id: payload.subject_user_id || undefined,
+      target_type: payload.target_type || undefined,
+      target_id: payload.target_id == null ? undefined : String(payload.target_id),
+      request_note: payload.request_note || undefined,
+      payload: payload.payload || undefined,
+    }
+  );
+}
+
+export async function applyCommunityDomainActionReview(
+  communityDomainId: number | string,
+  reviewId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/apply"),
+    "POST"
+  );
+}
+
+export async function getCommunityDomainActionReviewLineage(
+  communityDomainId: number | string,
+  reviewId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/lineage"),
+    "GET"
+  );
+}
+
+export async function getCommunityDomainActionReviewActivity(
+  communityDomainId: number | string,
+  reviewId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/activity"),
+    "GET"
+  );
+}
+
+export async function listCommunityDomainActionReviewComments(
+  communityDomainId: number | string,
+  reviewId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/comments"),
+    "GET"
+  );
+}
+
+export async function addCommunityDomainActionReviewComment(
+  communityDomainId: number | string,
+  reviewId: number | string,
+  payload: { body: string }
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/comments"),
+    "POST",
+    { body: payload.body }
+  );
+}
+
+export async function listCommunityDomainActionReviewEvidence(
+  communityDomainId: number | string,
+  reviewId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/evidence"),
+    "GET"
+  );
+}
+
+export async function addCommunityDomainActionReviewEvidence(
+  communityDomainId: number | string,
+  reviewId: number | string,
+  payload: CommunityDomainReviewEvidencePayload
+): Promise<any> {
+  return httpJson(
+    communityDomainReviewPath(communityDomainId, reviewId, "/evidence"),
+    "POST",
+    {
+      evidence_type: payload.evidence_type || undefined,
+      title: payload.title,
+      description: payload.description || undefined,
+      file_name: payload.file_name || undefined,
+      content_type: payload.content_type || undefined,
+      storage_key: payload.storage_key || undefined,
+      external_reference: payload.external_reference || undefined,
+      checksum: payload.checksum || undefined,
+    }
+  );
+}
+
 export async function getCommunityDomainAffiliations(
   communityId: number | string
 ): Promise<any> {
