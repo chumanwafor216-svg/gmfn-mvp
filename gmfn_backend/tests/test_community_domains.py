@@ -3073,6 +3073,103 @@ def test_reviewed_archived_node_can_reopen_and_accept_new_structure(
         assert review_row.applied_by_user_id == owner.id
 
 
+def test_status_review_request_rejects_root_and_invalid_status(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "status-review-invalid-requester@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Status Review Guard Association",
+                "display_name": "Status Review Guard Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_data = created_domain.json()["community_domain"]
+        domain_id = domain_data["id"]
+        root_node_id = domain_data["root_node"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Operations Branch",
+                "node_type": "branch",
+                "node_kind": "association_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": requester.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        closed = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={
+                "status": "inactive",
+                "status_note": "Branch paused before invalid review request.",
+            },
+        )
+        assert closed.status_code == 200, closed.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        root_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": root_node_id,
+                "target_type": "community_node",
+                "target_id": str(root_node_id),
+                "payload": {
+                    "status": "inactive",
+                    "status_note": "Trying to close the root node.",
+                },
+            },
+        )
+        assert root_review.status_code == 409, root_review.text
+        assert (
+            root_review.json()["detail"]["code"]
+            == "community_domain_root_node_status_immutable"
+        )
+
+        invalid_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id,
+                "target_type": "community_node",
+                "target_id": str(branch_id),
+                "payload": {
+                    "status": "sleeping",
+                    "status_note": "Invalid status should not be hidden.",
+                },
+            },
+        )
+        assert invalid_review.status_code == 422, invalid_review.text
+        assert (
+            invalid_review.json()["detail"]["code"]
+            == "community_domain_node_status_invalid"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        requester_reviews = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.requested_by_user_id == requester.id)
+            .count()
+        )
+        assert requester_reviews == 0
+
+
 def test_reviewed_child_reopen_requires_active_parent(
     client: TestClient,
 ):
