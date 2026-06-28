@@ -2369,6 +2369,15 @@ export async function getCommunityDomainRolloutTree(
   return httpJson(communityDomainPath(communityDomainId, "/rollout-tree"), "GET");
 }
 
+export async function getCommunityDomainNodeAutonomyMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/node-autonomy-map"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainGovernanceCoverage(
   communityDomainId: number | string
 ): Promise<any> {

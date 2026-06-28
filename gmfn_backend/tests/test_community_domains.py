@@ -1950,6 +1950,291 @@ def test_member_can_read_rollout_tree_but_admin_actions_are_hidden(
     assert "private evidence" in rollout_tree["boundary"]
 
 
+def test_node_autonomy_map_projects_local_unit_autonomy_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "node-autonomy-line-admin@example.com")
+    section_admin = _seed_user(3, "node-autonomy-section-admin@example.com")
+    branch_admin = _seed_user(4, "node-autonomy-branch-admin@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Autonomy Market Domain",
+                "display_name": "Node Autonomy Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        section = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Phone Accessories Section",
+                "parent_node_id": line_id,
+                "node_type": "section",
+                "node_kind": "market_section",
+            },
+        )
+        assert section.status_code == 201, section.text
+        section_id = section.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Welfare Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "market_committee",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+
+        independent = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Independent Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "market_branch",
+                "inherits_parent_policy": False,
+            },
+        )
+        assert independent.status_code == 201, independent.text
+        independent_id = independent.json()["node"]["id"]
+
+        for user in (line_admin, section_admin, branch_admin):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        for node_id, user_id, role in (
+            (line_id, line_admin.id, "line_admin"),
+            (section_id, section_admin.id, "line_admin"),
+            (independent_id, branch_admin.id, "branch_admin"),
+        ):
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        domain_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-autonomy-domain-review",
+                "action_key": "domain_member.upsert",
+                "scope_type": "domain",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert domain_policy.status_code == 201, domain_policy.text
+
+        line_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "node-autonomy-line-review",
+                "action_key": "node_member.upsert",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert line_policy.status_code == 201, line_policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/node-autonomy-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    autonomy = payload["node_autonomy_map"]
+    assert autonomy["editable"] is False
+    assert autonomy["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert autonomy["counts"] == {
+        "nodes": 5,
+        "non_root_nodes": 4,
+        "domain_admin_count": 1,
+        "active_node_memberships": 3,
+        "active_policies": 2,
+        "locally_governed": 1,
+        "locally_administered": 1,
+        "parent_controlled": 1,
+        "needs_local_governance": 1,
+        "inactive": 0,
+    }
+    assert autonomy["primary_next_action"] == {
+        "action_key": "add_local_governance_to_autonomous_units",
+        "label": "Add local governance where units do not inherit policy",
+        "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+        "requires_admin": True,
+    }
+    assert "read-only local autonomy projection" in autonomy["boundary"]
+    assert "does not grant local authority" in autonomy["boundary"]
+    assert "change inheritance" in autonomy["boundary"]
+    assert "create separate Community Domains" in autonomy["boundary"]
+
+    flat = {item["node"]["name"]: item for item in autonomy["flat_nodes"]}
+    assert flat["Node Autonomy Market Domain"]["autonomy_status"] == "domain_root"
+    assert flat["Electronics Line"]["autonomy_status"] == "locally_governed"
+    assert flat["Electronics Line"]["locally_operable"] is True
+    assert flat["Electronics Line"]["local_admin_count"] == 1
+    assert flat["Electronics Line"]["local_policy_count"] == 1
+    assert flat["Electronics Line"]["inherited_policy_count"] == 1
+    assert flat["Phone Accessories Section"]["autonomy_status"] == (
+        "locally_administered"
+    )
+    assert flat["Phone Accessories Section"]["local_admin_count"] == 1
+    assert flat["Phone Accessories Section"]["local_policy_count"] == 0
+    assert flat["Phone Accessories Section"]["inherited_policy_count"] == 2
+    assert flat["Welfare Committee"]["autonomy_status"] == "parent_controlled"
+    assert flat["Welfare Committee"]["local_admin_count"] == 0
+    assert flat["Welfare Committee"]["inherited_policy_count"] == 1
+    assert flat["Independent Branch"]["autonomy_status"] == "needs_local_governance"
+    assert flat["Independent Branch"]["inherits_parent_policy"] is False
+    assert flat["Independent Branch"]["inherited_policy_count"] == 0
+    assert flat["Independent Branch"]["admin_action_route_hint"].endswith(
+        "/governance-coverage"
+    )
+
+    root_tree = autonomy["tree"][0]
+    electronics_tree = next(
+        child
+        for child in root_tree["children"]
+        if child["node"]["name"] == "Electronics Line"
+    )
+    assert electronics_tree["children"][0]["node"]["name"] == (
+        "Phone Accessories Section"
+    )
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_node_autonomy_map_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "node-autonomy-visible-member@example.com")
+    outsider = _seed_user(3, "node-autonomy-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Autonomy School Domain",
+                "display_name": "Node Autonomy School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert created_branch.status_code == 201, created_branch.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/node-autonomy-map")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/node-autonomy-map"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    autonomy = member_map.json()["node_autonomy_map"]
+    assert autonomy["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert autonomy["counts"]["nodes"] == 2
+    assert autonomy["counts"]["non_root_nodes"] == 1
+    assert autonomy["counts"]["domain_admin_count"] is None
+    assert autonomy["counts"]["active_node_memberships"] is None
+    assert autonomy["counts"]["active_policies"] is None
+    assert autonomy["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_node_autonomy",
+        "label": "Ask a Community Domain admin to review local autonomy",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    flat = {item["node"]["name"]: item for item in autonomy["flat_nodes"]}
+    assert flat["Primary Branch"]["autonomy_status"] == "needs_local_governance"
+    assert flat["Primary Branch"]["direct_member_count"] is None
+    assert flat["Primary Branch"]["local_admin_count"] is None
+    assert flat["Primary Branch"]["local_policy_count"] is None
+    assert flat["Primary Branch"]["inherited_policy_count"] is None
+    assert flat["Primary Branch"]["route_hint"].endswith("/operating-summary")
+    assert flat["Primary Branch"]["admin_action_route_hint"] is None
+    assert "does not grant local authority" in autonomy["boundary"]
+
+
 def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     client: TestClient,
 ):

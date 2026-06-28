@@ -5100,6 +5100,291 @@ def _community_domain_rollout_tree_payload(
     }
 
 
+def _community_domain_node_autonomy_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_domain_memberships = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    nodes_by_id: dict[int, CommunityNode] = {}
+    for node in nodes:
+        node_id = int(node.id)
+        nodes_by_id[node_id] = node
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        policy_node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(policy_node_id, []).append(policy)
+
+    domain_admin_count = sum(
+        1
+        for membership in active_domain_memberships
+        if _clean_role(membership.role, "member") in DOMAIN_ADMIN_ROLES
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def ancestor_nodes(node: CommunityNode) -> list[CommunityNode]:
+        ancestors: list[CommunityNode] = []
+        current = node
+        while current.parent_node_id is not None and bool(current.inherits_parent_policy):
+            parent = nodes_by_id.get(int(current.parent_node_id))
+            if parent is None:
+                break
+            ancestors.append(parent)
+            current = parent
+        return ancestors
+
+    def inherited_policy_count(node: CommunityNode) -> int:
+        if node.parent_node_id is not None and not bool(node.inherits_parent_policy):
+            return 0
+        inherited = len(policies_by_node.get(None, []))
+        for ancestor in ancestor_nodes(node):
+            inherited += len(policies_by_node.get(int(ancestor.id), []))
+        return inherited
+
+    def autonomy_status_for(
+        node: CommunityNode,
+        *,
+        local_admin_count: int,
+        local_policy_count: int,
+        inherited_count: int,
+    ) -> tuple[str, str, bool]:
+        if node.parent_node_id is None:
+            return (
+                "domain_root",
+                "Root institution record; local autonomy belongs to child operating units.",
+                False,
+            )
+        if _clean_role(node.status, "active") != "active":
+            return (
+                "inactive",
+                "Reactivate this operating unit before relying on it as a local unit.",
+                False,
+            )
+        if local_admin_count > 0 and local_policy_count > 0:
+            return (
+                "locally_governed",
+                "This unit has local admins and local policy, so it can operate as a governed mini-unit.",
+                True,
+            )
+        if local_admin_count > 0 and inherited_count > 0:
+            return (
+                "locally_administered",
+                "This unit has local admins but still depends on inherited policy.",
+                True,
+            )
+        if local_admin_count == 0 and inherited_count > 0:
+            return (
+                "parent_controlled",
+                "This unit is still controlled from the parent or domain level.",
+                False,
+            )
+        return (
+            "needs_local_governance",
+            "Add local admin coverage and policy before this unit can stand as its own operating unit.",
+            False,
+        )
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        local_memberships = memberships_by_node.get(node_id, [])
+        local_admin_count = sum(
+            1
+            for row in local_memberships
+            if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+        )
+        direct_member_count = len(local_memberships)
+        local_policy_count = len(policies_by_node.get(node_id, []))
+        inherited_count = inherited_policy_count(node)
+        autonomy_status, next_step, locally_operable = autonomy_status_for(
+            node,
+            local_admin_count=local_admin_count,
+            local_policy_count=local_policy_count,
+            inherited_count=inherited_count,
+        )
+        if autonomy_status == "needs_local_governance":
+            admin_route = "/governance-coverage"
+        elif autonomy_status == "parent_controlled":
+            admin_route = "/roles"
+        elif autonomy_status == "locally_administered":
+            admin_route = "/policies"
+        elif autonomy_status == "inactive":
+            admin_route = f"/nodes/{node_id}/operating-summary"
+        else:
+            admin_route = f"/nodes/{node_id}/operating-summary"
+
+        item = {
+            "node": _node_payload(node),
+            "autonomy_status": autonomy_status,
+            "locally_operable": locally_operable,
+            "inherits_parent_policy": bool(node.inherits_parent_policy),
+            "direct_child_count": len(child_nodes),
+            "direct_member_count": admin_count(direct_member_count),
+            "local_admin_count": admin_count(local_admin_count),
+            "local_policy_count": admin_count(local_policy_count),
+            "inherited_policy_count": admin_count(inherited_count),
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "admin_action_route_hint": route_hint(admin_route, requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only local autonomy item. This does not grant local "
+                "authority, assign roles, create policy, change inheritance, "
+                "create or split nodes, create separate Community Domains, or "
+                "expose private member/review/evidence records."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    tree = [node_item(root) for root in children_by_parent.get(None, [])]
+    non_root_items = [
+        item for item in flat_nodes if item["node"]["parent_node_id"] is not None
+    ]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["autonomy_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if not non_root_items:
+        primary_next_action = {
+            "action_key": "map_operating_units_before_autonomy",
+            "label": "Map branches, lines, classes, departments, or committees",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_local_governance", 0):
+        primary_next_action = {
+            "action_key": "add_local_governance_to_autonomous_units",
+            "label": "Add local governance where units do not inherit policy",
+            "route_hint": route_hint("/governance-coverage", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("parent_controlled", 0):
+        primary_next_action = {
+            "action_key": "assign_local_admins_for_parent_controlled_units",
+            "label": "Assign local admins where units are still parent-controlled",
+            "route_hint": route_hint("/roles", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("locally_administered", 0):
+        primary_next_action = {
+            "action_key": "add_local_policy_to_administered_units",
+            "label": "Add local policy where units already have local admins",
+            "route_hint": route_hint("/policies", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_node_operating_summaries",
+            "label": "Review local unit operating summaries",
+            "route_hint": route_hint("/nodes/tree"),
+            "requires_admin": False,
+        }
+
+    if primary_next_action["requires_admin"] and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_node_autonomy",
+            "label": "Ask a Community Domain admin to review local autonomy",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "domain_admin_count": admin_count(domain_admin_count),
+            "active_node_memberships": admin_count(len(active_node_memberships)),
+            "active_policies": admin_count(len(active_policies)),
+            "locally_governed": status_counts.get("locally_governed", 0),
+            "locally_administered": status_counts.get("locally_administered", 0),
+            "parent_controlled": status_counts.get("parent_controlled", 0),
+            "needs_local_governance": status_counts.get("needs_local_governance", 0),
+            "inactive": status_counts.get("inactive", 0),
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain node autonomy map is a read-only local autonomy projection. "
+            "It shows whether branches, lines, classes, departments, "
+            "committees, chapters, or other operating units are locally governed, "
+            "locally administered, parent-controlled, or still missing local "
+            "governance. It does not grant local authority, assign roles, create "
+            "policy, change inheritance, create or split nodes, create separate Community Domains, "
+            "verify institutional authority, activate billing, "
+            "create marketplace or finance records, move money, publish proof, or "
+            "expose private member/review/evidence records."
+        ),
+    }
+
+
 def _community_domain_governance_coverage_payload(
     db: Session,
     *,
@@ -10814,6 +11099,25 @@ def get_community_domain_rollout_tree(
         "ok": True,
         "community_domain_id": int(domain.id),
         "rollout_tree": _community_domain_rollout_tree_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/node-autonomy-map", response_model=dict[str, Any])
+def get_community_domain_node_autonomy_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node_autonomy_map": _community_domain_node_autonomy_map_payload(
             db,
             domain=domain,
             current_user=current_user,
