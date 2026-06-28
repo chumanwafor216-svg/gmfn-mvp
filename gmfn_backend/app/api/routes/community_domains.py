@@ -419,6 +419,28 @@ def _get_action_review_or_404(
     return row
 
 
+def _payload_int(payload: dict[str, Any], key: str) -> int:
+    try:
+        value = int(payload.get(key) or 0)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_action_review_payload",
+                "message": f"Action review payload must include a valid {key}.",
+            },
+        ) from exc
+    if value <= 0:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_action_review_payload",
+                "message": f"Action review payload must include a valid {key}.",
+            },
+        )
+    return value
+
+
 def _domain_membership_for_user(
     db: Session,
     *,
@@ -1330,5 +1352,179 @@ def decide_community_domain_action_review(
         "boundary": (
             "Decision recorded. Applying the approved action still requires the "
             "specific business route for that action."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/action-reviews/{review_id}/apply", response_model=dict[str, Any])
+def apply_community_domain_action_review(
+    community_domain_id: int,
+    review_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+
+    node: Optional[CommunityNode] = None
+    actor_scope = "domain_admin"
+    if row.community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(row.community_node_id),
+        )
+        actor_scope = _require_node_or_domain_admin_scope(
+            db,
+            domain=domain,
+            node=node,
+            current_user=current_user,
+        )
+    else:
+        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    if _clean_role(row.status) == "applied":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_review_already_applied",
+                "message": "This Community Domain action review has already been applied.",
+            },
+        )
+    if _clean_role(row.status) != "approved" or _clean_role(row.decision or "") != "approve":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_review_not_approved",
+                "message": "Only approved Community Domain action reviews can be applied.",
+            },
+        )
+
+    action_key = _clean_role(row.action_key)
+    payload = _json_load(row.payload_json)
+    applied: dict[str, Any]
+
+    if action_key == "domain_member.upsert":
+        user_id = _payload_int(payload, "user_id")
+        _get_user_or_404(db, user_id)
+        requested_role = _clean_role(str(payload.get("role") or "member"))
+        if requested_role == "owner" and int(user_id) != int(domain.owner_user_id):
+            raise HTTPException(
+                status_code=403,
+                detail="Only the recorded Community Domain owner can hold the owner role.",
+            )
+        if int(user_id) == int(domain.owner_user_id) and requested_role != "owner":
+            raise HTTPException(
+                status_code=403,
+                detail="The recorded Community Domain owner role cannot be reassigned here.",
+            )
+
+        membership = _domain_membership_for_user(
+            db,
+            community_domain_id=int(domain.id),
+            user_id=int(user_id),
+        )
+        created = membership is None
+        if membership is None:
+            membership = CommunityDomainMembership(
+                community_domain_id=int(domain.id),
+                user_id=int(user_id),
+            )
+            db.add(membership)
+
+        membership.role = requested_role
+        membership.status = _clean_str(str(payload.get("status") or "active"), "active")
+        membership.title = _clean_str(str(payload.get("title") or "")) or None
+        row.status = "applied"
+        db.add(row)
+        db.commit()
+        db.refresh(membership)
+        db.refresh(row)
+        applied = {
+            "type": "domain_member",
+            "created": created,
+            "membership": _domain_member_payload(membership),
+        }
+    elif action_key in {"node_member.upsert", "node_member.role_change"}:
+        if node is None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_review_node_required",
+                    "message": "This action must be scoped to a Community Domain node.",
+                },
+            )
+        user_id = _payload_int(payload, "user_id")
+        _get_user_or_404(db, user_id)
+        requested_role = _clean_role(str(payload.get("role") or "member"))
+        if actor_scope == "node_admin" and requested_role not in NODE_LOCAL_ASSIGNABLE_ROLES:
+            raise HTTPException(
+                status_code=403,
+                detail="Node admins can apply local member roles only.",
+            )
+
+        domain_membership = _domain_membership_for_user(
+            db,
+            community_domain_id=int(domain.id),
+            user_id=int(user_id),
+        )
+        if domain_membership is None or _clean_role(domain_membership.status, "inactive") != "active":
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_membership_required",
+                    "message": "Add this user as an active Community Domain member before placing them in a node.",
+                },
+            )
+
+        membership = (
+            db.query(CommunityNodeMembership)
+            .filter(CommunityNodeMembership.community_node_id == int(node.id))
+            .filter(CommunityNodeMembership.user_id == int(user_id))
+            .first()
+        )
+        created = membership is None
+        if membership is None:
+            membership = CommunityNodeMembership(
+                community_domain_id=int(domain.id),
+                community_node_id=int(node.id),
+                user_id=int(user_id),
+            )
+            db.add(membership)
+
+        membership.role = requested_role
+        membership.status = _clean_str(str(payload.get("status") or "active"), "active")
+        membership.title = _clean_str(str(payload.get("title") or "")) or None
+        row.status = "applied"
+        db.add(row)
+        db.commit()
+        db.refresh(membership)
+        db.refresh(row)
+        applied = {
+            "type": "node_member",
+            "created": created,
+            "membership": _node_member_payload(membership),
+        }
+    else:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_action_not_applicable",
+                "message": "This action review records a decision but is not yet wired to an apply handler.",
+            },
+        )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review": _action_review_payload(row),
+        "applied": applied,
+        "boundary": (
+            "Approved review applied for this limited Community Domain action. "
+            "Payment, verification, billing, Marketplace, and external legal effects are not applied here."
         ),
     }
