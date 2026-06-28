@@ -5077,6 +5077,29 @@ def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
         assert first_data["action_review"]["status"] == "pending_review"
         assert len(first_data["action_review"]["decisions"]) == 1
 
+        first_queue_after_decision = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        assert first_queue_after_decision.status_code == 200, first_queue_after_decision.text
+        assert first_queue_after_decision.json()["total"] == 0
+
+        first_queue_with_decided = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            params={"include_decided": True},
+        )
+        assert first_queue_with_decided.status_code == 200, first_queue_with_decided.text
+        assert first_queue_with_decided.json()["total"] == 1
+        assert first_queue_with_decided.json()["items"][0]["id"] == review["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: second_admin
+        second_queue_before_decision = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        assert second_queue_before_decision.status_code == 200, second_queue_before_decision.text
+        assert second_queue_before_decision.json()["total"] == 1
+        assert second_queue_before_decision.json()["items"][0]["id"] == review["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: first_admin
         duplicate_approval = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
             json={"decision": "approve", "decision_note": "Trying to count twice."},
