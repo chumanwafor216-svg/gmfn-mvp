@@ -2952,22 +2952,30 @@ def decide_community_domain_action_review(
         .filter(CommunityDomainActionReviewDecision.decided_by_user_id == int(current_user.id))
         .first()
     )
-    if decision_row is not None and _clean_role(decision_row.decision) == "recuse":
+    if decision_row is not None:
+        if _clean_role(decision_row.decision) == "recuse":
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_review_recusal_final",
+                    "message": "This reviewer has already recused from this Community Domain action review.",
+                },
+            )
         raise HTTPException(
             status_code=409,
             detail={
-                "code": "community_domain_review_recusal_final",
-                "message": "This reviewer has already recused from this Community Domain action review.",
+                "code": "community_domain_review_decision_already_recorded",
+                "message": "This reviewer has already recorded a decision for this Community Domain action review.",
             },
         )
-    if decision_row is None:
-        decision_row = CommunityDomainActionReviewDecision(
-            action_review_id=int(row.id),
-            community_domain_id=int(domain.id),
-            community_node_id=int(row.community_node_id) if row.community_node_id is not None else None,
-            decided_by_user_id=int(current_user.id),
-        )
-        db.add(decision_row)
+
+    decision_row = CommunityDomainActionReviewDecision(
+        action_review_id=int(row.id),
+        community_domain_id=int(domain.id),
+        community_node_id=int(row.community_node_id) if row.community_node_id is not None else None,
+        decided_by_user_id=int(current_user.id),
+    )
+    db.add(decision_row)
 
     decision_row.decision = decision
     decision_row.decision_note = _clean_str(payload.decision_note) or None
