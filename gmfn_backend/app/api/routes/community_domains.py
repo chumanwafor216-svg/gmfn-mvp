@@ -244,6 +244,7 @@ def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
         "requested_by_user_id": int(row.requested_by_user_id),
         "subject_user_id": int(row.subject_user_id) if row.subject_user_id is not None else None,
         "decided_by_user_id": int(row.decided_by_user_id) if row.decided_by_user_id is not None else None,
+        "applied_by_user_id": int(row.applied_by_user_id) if row.applied_by_user_id is not None else None,
         "target_type": row.target_type,
         "target_id": row.target_id,
         "status": row.status,
@@ -258,6 +259,7 @@ def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
         "created_at": _iso(row.created_at),
         "updated_at": _iso(row.updated_at),
         "decided_at": _iso(row.decided_at),
+        "applied_at": _iso(row.applied_at),
     }
 
 
@@ -2023,8 +2025,16 @@ def get_community_domain_action_review_activity(
     current_status = _clean_role(row.status)
     if current_status in {"cancelled", "applied"}:
         status_time = (
-            row.decided_at if current_status == "cancelled" else row.updated_at
+            row.decided_at
+            if current_status == "cancelled"
+            else row.applied_at or row.updated_at
         )
+        status_actor_user_id = None
+        if current_status == "cancelled" and row.decided_by_user_id is not None:
+            status_actor_user_id = int(row.decided_by_user_id)
+        elif current_status == "applied" and row.applied_by_user_id is not None:
+            status_actor_user_id = int(row.applied_by_user_id)
+
         activity_items.append(
             {
                 "type": "review_status_changed",
@@ -2032,14 +2042,7 @@ def get_community_domain_action_review_activity(
                 "sort_at": _activity_time(status_time),
                 "sort_order": 4,
                 "sort_id": int(row.id),
-                "actor_user_id": (
-                    int(row.decided_by_user_id)
-                    if (
-                        current_status == "cancelled"
-                        and row.decided_by_user_id is not None
-                    )
-                    else None
-                ),
+                "actor_user_id": status_actor_user_id,
                 "payload": {
                     "status": row.status,
                     "decision": row.decision,
@@ -2625,6 +2628,8 @@ def apply_community_domain_action_review(
         membership.status = _clean_str(str(payload.get("status") or "active"), "active")
         membership.title = _clean_str(str(payload.get("title") or "")) or None
         row.status = "applied"
+        row.applied_by_user_id = int(current_user.id)
+        row.applied_at = datetime.now(timezone.utc)
         db.add(row)
         db.commit()
         db.refresh(membership)
@@ -2685,6 +2690,8 @@ def apply_community_domain_action_review(
         membership.status = _clean_str(str(payload.get("status") or "active"), "active")
         membership.title = _clean_str(str(payload.get("title") or "")) or None
         row.status = "applied"
+        row.applied_by_user_id = int(current_user.id)
+        row.applied_at = datetime.now(timezone.utc)
         db.add(row)
         db.commit()
         db.refresh(membership)

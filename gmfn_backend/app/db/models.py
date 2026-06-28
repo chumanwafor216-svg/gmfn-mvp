@@ -709,6 +709,11 @@ class CommunityDomainActionReview(Base):
         nullable=True,
         index=True,
     )
+    applied_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     target_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     target_id: Mapped[Optional[str]] = mapped_column(String(96), nullable=True)
     status: Mapped[str] = mapped_column(
@@ -739,6 +744,10 @@ class CommunityDomainActionReview(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    applied_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
     community_node = relationship("CommunityNode", foreign_keys=[community_node_id])
@@ -751,6 +760,7 @@ class CommunityDomainActionReview(Base):
     requester = relationship("User", foreign_keys=[requested_by_user_id])
     subject = relationship("User", foreign_keys=[subject_user_id])
     decider = relationship("User", foreign_keys=[decided_by_user_id])
+    applier = relationship("User", foreign_keys=[applied_by_user_id])
     decisions = relationship(
         "CommunityDomainActionReviewDecision",
         back_populates="action_review",

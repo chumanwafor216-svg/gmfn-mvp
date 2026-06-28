@@ -1098,6 +1098,8 @@ def test_approved_node_review_can_apply_node_member_update_once(
         assert applied.status_code == 200, applied.text
         data = applied.json()
         assert data["action_review"]["status"] == "applied"
+        assert data["action_review"]["applied_by_user_id"] == branch_admin.id
+        assert data["action_review"]["applied_at"]
         assert data["applied"]["type"] == "node_member"
         assert data["applied"]["created"] is True
         assert data["applied"]["membership"]["user_id"] == teacher.id
@@ -1113,8 +1115,16 @@ def test_approved_node_review_can_apply_node_member_update_once(
             if item["type"] == "review_status_changed"
         ]
         assert len(status_items) == 1
-        assert status_items[0]["actor_user_id"] is None
+        assert status_items[0]["actor_user_id"] == branch_admin.id
         assert status_items[0]["payload"]["status"] == "applied"
+        assert (
+            status_items[0]["payload"]["action_review"]["applied_by_user_id"]
+            == branch_admin.id
+        )
+        assert (
+            status_items[0]["occurred_at"]
+            == status_items[0]["payload"]["action_review"]["applied_at"]
+        )
 
         applied_again = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
@@ -1133,6 +1143,8 @@ def test_approved_node_review_can_apply_node_member_update_once(
         assert membership.role == "committee_member"
         review_row = db.query(CommunityDomainActionReview).one()
         assert review_row.status == "applied"
+        assert review_row.applied_by_user_id == branch_admin.id
+        assert review_row.applied_at is not None
 
 
 def test_domain_admin_can_apply_domain_member_upsert_review(
@@ -1218,6 +1230,8 @@ def test_domain_admin_can_apply_domain_member_upsert_review(
         assert applied.status_code == 200, applied.text
         data = applied.json()
         assert data["action_review"]["status"] == "applied"
+        assert data["action_review"]["applied_by_user_id"] == owner.id
+        assert data["action_review"]["applied_at"]
         assert data["applied"]["type"] == "domain_member"
         assert data["applied"]["created"] is True
         assert data["applied"]["membership"]["user_id"] == new_member.id
@@ -1233,6 +1247,9 @@ def test_domain_admin_can_apply_domain_member_upsert_review(
         )
         assert membership.role == "member"
         assert membership.status == "active"
+        review_row = db.query(CommunityDomainActionReview).one()
+        assert review_row.applied_by_user_id == owner.id
+        assert review_row.applied_at is not None
 
 
 def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
