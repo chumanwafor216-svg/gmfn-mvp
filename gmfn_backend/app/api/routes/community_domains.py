@@ -105,6 +105,10 @@ def _node_payload(node: Optional[CommunityNode]) -> Optional[dict[str, Any]]:
         "node_kind": node.node_kind,
         "path": node.path,
         "depth": int(node.depth or 0),
+        "description": node.description,
+        "sort_order": int(node.sort_order or 0),
+        "visibility_policy": node.visibility_policy,
+        "inherits_parent_policy": bool(node.inherits_parent_policy),
         "status": node.status,
     }
 
@@ -147,6 +151,52 @@ class CommunityDomainDraftIn(BaseModel):
     country: Optional[str] = Field(default=None, max_length=80)
     state: Optional[str] = Field(default=None, max_length=120)
     public_profile: Optional[str] = Field(default=None, max_length=1200)
+
+
+class CommunityNodeCreateIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(..., min_length=2, max_length=160)
+    parent_node_id: Optional[int] = Field(default=None, ge=1)
+    node_type: str = Field(default="unit", max_length=64)
+    node_kind: str = Field(default="administrative", max_length=64)
+    description: Optional[str] = Field(default=None, max_length=1000)
+    sort_order: int = Field(default=0, ge=0, le=100000)
+    visibility_policy: str = Field(default="members", max_length=32)
+    inherits_parent_policy: bool = True
+    status: str = Field(default="active", max_length=24)
+
+
+def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:
+    domain = db.get(CommunityDomain, int(community_domain_id))
+    if domain is None:
+        raise HTTPException(status_code=404, detail="Community Domain not found")
+    return domain
+
+
+def _require_domain_owner_or_admin(
+    domain: CommunityDomain,
+    current_user: User,
+) -> None:
+    is_platform_admin = _clean_str(getattr(current_user, "role", "")).lower() == "admin"
+    if is_platform_admin:
+        return
+    if int(domain.owner_user_id) == int(current_user.id):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail="Only the Community Domain owner can manage this domain structure.",
+    )
+
+
+def _find_root_node(db: Session, community_domain_id: int) -> Optional[CommunityNode]:
+    return (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == int(community_domain_id))
+        .filter(CommunityNode.parent_node_id.is_(None))
+        .order_by(CommunityNode.depth.asc(), CommunityNode.id.asc())
+        .first()
+    )
 
 
 @router.get("/availability", response_model=dict[str, Any])
@@ -222,4 +272,126 @@ def create_community_domain_draft(
     return {
         "ok": True,
         "community_domain": _domain_payload(domain, root_node=root_node),
+    }
+
+
+@router.get("/{community_domain_id}", response_model=dict[str, Any])
+def get_community_domain(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_owner_or_admin(domain, current_user)
+    return {
+        "ok": True,
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=int(domain.id)),
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/nodes", response_model=dict[str, Any])
+def list_community_domain_nodes(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_owner_or_admin(domain, current_user)
+
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == int(domain.id))
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "items": [_node_payload(node) for node in nodes],
+        "total": len(nodes),
+        "boundary": (
+            "Structure only. Nodes organize the institution but do not by "
+            "themselves grant membership, payment rights, verification, or governance authority."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/nodes", status_code=201, response_model=dict[str, Any])
+def create_community_domain_node(
+    community_domain_id: int,
+    payload: CommunityNodeCreateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_owner_or_admin(domain, current_user)
+
+    parent_node: Optional[CommunityNode]
+    if payload.parent_node_id is None:
+        parent_node = _find_root_node(db, community_domain_id=int(domain.id))
+        if parent_node is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Community Domain does not have a root node yet.",
+            )
+    else:
+        parent_node = (
+            db.query(CommunityNode)
+            .filter(CommunityNode.id == int(payload.parent_node_id))
+            .filter(CommunityNode.community_domain_id == int(domain.id))
+            .first()
+        )
+        if parent_node is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Parent node was not found inside this Community Domain.",
+            )
+
+    node = CommunityNode(
+        community_domain_id=int(domain.id),
+        parent_node_id=int(parent_node.id),
+        name=_clean_str(payload.name),
+        node_type=_clean_str(payload.node_type, "unit"),
+        node_kind=_clean_str(payload.node_kind, "administrative"),
+        depth=int(parent_node.depth or 0) + 1,
+        description=_clean_str(payload.description) or None,
+        sort_order=int(payload.sort_order or 0),
+        visibility_policy=_clean_str(payload.visibility_policy, "members"),
+        inherits_parent_policy=bool(payload.inherits_parent_policy),
+        status=_clean_str(payload.status, "active"),
+    )
+    db.add(node)
+
+    try:
+        db.flush()
+        parent_path = _clean_str(parent_node.path, f"/{int(domain.id)}")
+        node.path = f"{parent_path}/{int(node.id)}"
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_node_name_exists",
+                "message": "A node with this name already exists under the same parent.",
+            },
+        ) from exc
+
+    db.refresh(node)
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "node": _node_payload(node),
+        "boundary": (
+            "Structure only. This node does not create a separate Community Domain, "
+            "social Community, billing account, or verified branch."
+        ),
     }
