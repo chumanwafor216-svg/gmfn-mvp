@@ -100,3 +100,8 @@ Each accepted item should record:
   can be accepted by the existing hook; backend-impacting fixes are not
   Render-confirmed until `gmfn-api` is deployed manually or GitHub has
   `RENDER_API_KEY` plus preferably `RENDER_API_SERVICE_ID`.
+- PDF footer/source-generation slice: owner provided Render dashboard evidence
+  that deploy `dep-d90ct20jo6nc73cha64g` for service
+  `srv-d7h2c8ugvqtc73eshtd0` is live on commit `68df9e3` as of 2026-06-28
+  08:36. Treat the PDF footer runtime source fix as deployed for that service,
+  while keeping generated PDF visual review as not yet accepted.
