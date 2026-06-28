@@ -655,6 +655,52 @@ def _require_policy_reviewer_role(
     )
 
 
+def _can_decide_action_review(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    row: CommunityDomainActionReview,
+    current_user: User,
+) -> bool:
+    if _clean_role(row.status) not in {"pending", "pending_review"}:
+        return False
+
+    node: Optional[CommunityNode] = None
+    try:
+        if row.community_node_id is not None:
+            node = _get_node_or_404(
+                db,
+                community_domain_id=int(domain.id),
+                community_node_id=int(row.community_node_id),
+            )
+            _require_node_or_domain_admin_scope(
+                db,
+                domain=domain,
+                node=node,
+                current_user=current_user,
+            )
+        else:
+            _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        _require_policy_reviewer_role(
+            db,
+            domain=domain,
+            node=node,
+            policy=getattr(row, "policy", None),
+            current_user=current_user,
+        )
+    except HTTPException:
+        return False
+
+    return True
+
+
+def _has_user_decision(row: CommunityDomainActionReview, user_id: int) -> bool:
+    return any(
+        int(decision.decided_by_user_id) == int(user_id)
+        for decision in (getattr(row, "decisions", []) or [])
+    )
+
+
 def _find_root_node(db: Session, community_domain_id: int) -> Optional[CommunityNode]:
     return (
         db.query(CommunityNode)
@@ -1374,6 +1420,52 @@ def create_community_domain_action_review(
         "boundary": (
             "Review requested. This records that an action needs decision; it does "
             "not perform the action, move money, verify identity, or change membership by itself."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/action-reviews/reviewer-queue", response_model=dict[str, Any])
+def list_community_domain_reviewer_queue(
+    community_domain_id: int,
+    include_decided: bool = Query(default=False),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+
+    candidate_rows = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReview.status.in_(["pending", "pending_review"]))
+        .order_by(
+            CommunityDomainActionReview.created_at.asc(),
+            CommunityDomainActionReview.id.asc(),
+        )
+        .all()
+    )
+
+    rows = []
+    for row in candidate_rows:
+        if not include_decided and _has_user_decision(row, int(current_user.id)):
+            continue
+        if _can_decide_action_review(
+            db,
+            domain=domain,
+            row=row,
+            current_user=current_user,
+        ):
+            rows.append(row)
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "items": [_action_review_payload(row) for row in rows],
+        "total": len(rows),
+        "include_decided": bool(include_decided),
+        "boundary": (
+            "Reviewer queue only lists pending reviews this user is currently "
+            "allowed to decide. It does not assign reviewers or send notifications."
         ),
     }
 
