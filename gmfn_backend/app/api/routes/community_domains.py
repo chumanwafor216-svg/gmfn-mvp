@@ -701,6 +701,43 @@ def _has_user_decision(row: CommunityDomainActionReview, user_id: int) -> bool:
     )
 
 
+def _can_view_action_review(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    row: CommunityDomainActionReview,
+    current_user: User,
+) -> bool:
+    if int(row.requested_by_user_id) == int(current_user.id):
+        return True
+
+    node: Optional[CommunityNode] = None
+    try:
+        if row.community_node_id is not None:
+            node = _get_node_or_404(
+                db,
+                community_domain_id=int(domain.id),
+                community_node_id=int(row.community_node_id),
+            )
+            _require_node_or_domain_admin_scope(
+                db,
+                domain=domain,
+                node=node,
+                current_user=current_user,
+            )
+            return True
+
+        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        return True
+    except HTTPException:
+        return _can_decide_action_review(
+            db,
+            domain=domain,
+            row=row,
+            current_user=current_user,
+        )
+
+
 def _find_root_node(db: Session, community_domain_id: int) -> Optional[CommunityNode]:
     return (
         db.query(CommunityNode)
@@ -1500,6 +1537,45 @@ def list_community_domain_reviewer_queue(
         "boundary": (
             "Reviewer queue only lists pending reviews this user is currently "
             "allowed to decide. It does not assign reviewers or send notifications."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/action-reviews/{review_id}", response_model=dict[str, Any])
+def get_community_domain_action_review(
+    community_domain_id: int,
+    review_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+    if not _can_view_action_review(
+        db,
+        domain=domain,
+        row=row,
+        current_user=current_user,
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_action_review_not_visible",
+                "message": "This action review is not visible to the current user.",
+            },
+        )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review": _action_review_payload(row),
+        "boundary": (
+            "Action review detail is visible only to the requester, eligible "
+            "reviewers, and scoped admins. It does not apply the requested action."
         ),
     }
 

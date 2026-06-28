@@ -1755,6 +1755,108 @@ def test_member_can_track_only_their_own_action_review_requests(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_action_review_detail_visibility_is_scoped(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    domain_admin = _seed_user(2, "detail-domain-admin@example.com")
+    requester = _seed_user(3, "detail-requester@example.com")
+    other_member = _seed_user(4, "detail-other-member@example.com")
+    outsider = _seed_user(5, "detail-outsider@example.com")
+    new_member = _seed_user(6, "detail-new-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Detail Review Association",
+                "display_name": "Detail Review Association",
+                "domain_type": "association",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        for user, role in (
+            (domain_admin, "domain_admin"),
+            (requester, "member"),
+            (other_member, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "detail-member-add",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {"user_id": new_member.id, "role": "member"},
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        requester_detail = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}"
+        )
+        assert requester_detail.status_code == 200, requester_detail.text
+        assert requester_detail.json()["action_review"]["id"] == review["id"]
+        assert "visible only" in requester_detail.json()["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: domain_admin
+        admin_detail = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}"
+        )
+        assert admin_detail.status_code == 200, admin_detail.text
+
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Looks correct."},
+        )
+        assert decision.status_code == 200, decision.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requester_after_decision = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}"
+        )
+        assert requester_after_decision.status_code == 200, requester_after_decision.text
+        decided_review = requester_after_decision.json()["action_review"]
+        assert decided_review["status"] == "approved"
+        assert len(decided_review["decisions"]) == 1
+
+        app.dependency_overrides[get_current_user] = lambda: other_member
+        hidden_detail = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}"
+        )
+        assert hidden_detail.status_code == 403, hidden_detail.text
+        assert hidden_detail.json()["detail"]["code"] == "community_domain_action_review_not_visible"
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_detail = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}"
+        )
+        assert outsider_detail.status_code == 403, outsider_detail.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_apply_review_keeps_unknown_actions_as_decision_records(
     client: TestClient,
 ):
