@@ -4974,6 +4974,292 @@ def _community_domain_rollout_tree_payload(
     }
 
 
+def _community_domain_governance_coverage_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    open_reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .all()
+    )
+
+    children_by_parent: dict[Optional[int], list[CommunityNode]] = {}
+    nodes_by_id: dict[int, CommunityNode] = {}
+    for node in nodes:
+        node_id = int(node.id)
+        nodes_by_id[node_id] = node
+        parent_id = (
+            int(node.parent_node_id) if node.parent_node_id is not None else None
+        )
+        children_by_parent.setdefault(parent_id, []).append(node)
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(node_id, []).append(policy)
+
+    node_admin_counts: dict[int, int] = {}
+    for membership in active_node_memberships:
+        if _clean_role(membership.role) in NODE_ADMIN_ROLES:
+            node_id = int(membership.community_node_id)
+            node_admin_counts[node_id] = node_admin_counts.get(node_id, 0) + 1
+
+    open_review_counts_by_node: dict[Optional[int], int] = {}
+    for review in open_reviews:
+        node_id = (
+            int(review.community_node_id)
+            if review.community_node_id is not None
+            else None
+        )
+        open_review_counts_by_node[node_id] = (
+            open_review_counts_by_node.get(node_id, 0) + 1
+        )
+
+    domain_policy_count = len(policies_by_node.get(None, []))
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def inherited_policy_count(node: CommunityNode) -> int:
+        if node.parent_node_id is None or not bool(node.inherits_parent_policy):
+            return 0
+        total = domain_policy_count
+        parent_id = int(node.parent_node_id)
+        while parent_id in nodes_by_id:
+            total += len(policies_by_node.get(parent_id, []))
+            parent = nodes_by_id[parent_id]
+            if parent.parent_node_id is None:
+                break
+            parent_id = int(parent.parent_node_id)
+        return total
+
+    def governance_status_for(
+        node: CommunityNode,
+        *,
+        local_policy_count: int,
+        inherited_count: int,
+        local_admin_count: int,
+    ) -> tuple[str, str, str]:
+        if _clean_role(node.status, "inactive") != "active":
+            return (
+                "inactive",
+                "Inactive operating unit. Reactivate or replace it before relying on governance here.",
+                "/nodes/tree",
+            )
+        if node.parent_node_id is None:
+            if local_policy_count > 0:
+                return (
+                    "domain_policy_present",
+                    "Central domain governance policy is present.",
+                    "/governance-model",
+                )
+            return (
+                "needs_domain_policy",
+                "Create at least one central governance policy before rollout depends on this domain.",
+                "/policies",
+            )
+        if local_admin_count <= 0:
+            return (
+                "needs_local_admin",
+                "Assign a local admin before delegated governance is reliable here.",
+                "/roles",
+            )
+        if local_policy_count > 0:
+            return (
+                "governed_locally",
+                "This unit has local admin coverage and its own active policy.",
+                "/policies",
+            )
+        if inherited_count > 0:
+            return (
+                "governed_by_inheritance",
+                "This unit has local admin coverage and inherits active parent/domain policy.",
+                "/policies",
+            )
+        return (
+            "needs_policy",
+            "Add a local policy or allow policy inheritance before relying on this unit.",
+            "/policies",
+        )
+
+    flat_nodes: list[dict[str, Any]] = []
+
+    def node_item(node: CommunityNode) -> dict[str, Any]:
+        node_id = int(node.id)
+        child_nodes = children_by_parent.get(node_id, [])
+        local_policy_count = (
+            domain_policy_count
+            if node.parent_node_id is None
+            else len(policies_by_node.get(node_id, []))
+        )
+        inherited_count = inherited_policy_count(node)
+        local_admin_count = node_admin_counts.get(node_id, 0)
+        effective_policy_count = local_policy_count + inherited_count
+        open_review_count = open_review_counts_by_node.get(node_id, 0)
+        governance_status, next_step, admin_suffix = governance_status_for(
+            node,
+            local_policy_count=local_policy_count,
+            inherited_count=inherited_count,
+            local_admin_count=local_admin_count,
+        )
+        policy_route_suffix = (
+            "/policies"
+            if node.parent_node_id is None
+            else f"/policies?community_node_id={node_id}"
+        )
+        item = {
+            "node": _node_payload(node),
+            "governance_status": governance_status,
+            "ready_for_delegation": governance_status
+            in {"domain_policy_present", "governed_locally", "governed_by_inheritance"},
+            "local_policy_count": int(local_policy_count),
+            "inherited_policy_count": int(inherited_count),
+            "effective_policy_count": int(effective_policy_count),
+            "inherits_parent_policy": bool(node.inherits_parent_policy),
+            "local_admin_count": int(local_admin_count),
+            "open_review_count": int(open_review_count),
+            "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+            "policy_route_hint": route_hint(policy_route_suffix),
+            "admin_action_route_hint": route_hint(admin_suffix, requires_admin=True),
+            "next_step": next_step,
+            "boundary": (
+                "Read-only governance coverage item. This does not create policy, "
+                "assign roles, create reviews, decide reviews, apply reviews, "
+                "verify authority, move money, activate billing, publish a page, "
+                "or expose private review payloads."
+            ),
+            "children": [node_item(child) for child in child_nodes],
+        }
+        flat_nodes.append({**item, "children": []})
+        return item
+
+    roots = children_by_parent.get(None, [])
+    tree = [node_item(root) for root in roots]
+    non_root_items = [item for item in flat_nodes if item["node"]["parent_node_id"] is not None]
+    status_counts: dict[str, int] = {}
+    for item in non_root_items:
+        status = str(item["governance_status"])
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    if domain_policy_count <= 0:
+        action_key = "create_domain_governance_policy"
+        action_label = "Create central Community Domain governance policy"
+        action_route = "/policies"
+        action_admin = True
+    elif status_counts.get("needs_local_admin", 0) > 0:
+        action_key = "assign_local_governance_admins"
+        action_label = "Assign local governance admins"
+        action_route = "/roles"
+        action_admin = True
+    elif status_counts.get("needs_policy", 0) > 0:
+        action_key = "add_local_governance_policy"
+        action_label = "Add local governance policy where inheritance is not enough"
+        action_route = "/policies"
+        action_admin = True
+    elif len(open_reviews) > 0:
+        action_key = "review_governance_queue"
+        action_label = "Review open Community Domain governance decisions"
+        action_route = "/action-reviews/reviewer-queue"
+        action_admin = True
+    else:
+        action_key = "review_governance_model"
+        action_label = "Review Community Domain governance model"
+        action_route = "/governance-model"
+        action_admin = False
+
+    if action_admin and not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_complete_governance_coverage",
+            "label": "Ask a Community Domain admin to complete governance coverage",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": action_key,
+            "label": action_label,
+            "route_hint": route_hint(action_route),
+            "requires_admin": bool(action_admin),
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "tree": tree,
+        "flat_nodes": flat_nodes,
+        "counts": {
+            "nodes": len(nodes),
+            "non_root_nodes": len(non_root_items),
+            "active_policies": len(active_policies),
+            "domain_policies": int(domain_policy_count),
+            "node_scoped_policies": int(len(active_policies) - domain_policy_count),
+            "open_reviews": len(open_reviews),
+            "governed_locally": status_counts.get("governed_locally", 0),
+            "governed_by_inheritance": status_counts.get(
+                "governed_by_inheritance", 0
+            ),
+            "needs_local_admin": status_counts.get("needs_local_admin", 0),
+            "needs_policy": status_counts.get("needs_policy", 0),
+            "inactive": status_counts.get("inactive", 0),
+        },
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Governance coverage is a read-only hierarchy projection. It does "
+            "not create policy, assign roles, create reviews, decide reviews, "
+            "apply reviews, verify legal or institutional authority, move money, "
+            "activate billing, publish a public page, create marketplace activity, "
+            "create a social Community, or expose private review payloads."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -6349,6 +6635,25 @@ def get_community_domain_rollout_tree(
         "ok": True,
         "community_domain_id": int(domain.id),
         "rollout_tree": _community_domain_rollout_tree_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/governance-coverage", response_model=dict[str, Any])
+def get_community_domain_governance_coverage(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "governance_coverage": _community_domain_governance_coverage_payload(
             db,
             domain=domain,
             current_user=current_user,

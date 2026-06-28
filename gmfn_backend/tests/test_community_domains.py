@@ -1948,6 +1948,276 @@ def test_member_can_read_rollout_tree_but_admin_actions_are_hidden(
     assert "private evidence" in rollout_tree["boundary"]
 
 
+def test_governance_coverage_projects_recursive_policy_fit_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "governance-line-admin@example.com")
+    section_admin = _seed_user(3, "governance-section-admin@example.com")
+    branch_admin = _seed_user(4, "governance-branch-admin@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Governance Coverage Market Domain",
+                "display_name": "Governance Coverage Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        section = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Phone Accessories Section",
+                "parent_node_id": line_id,
+                "node_type": "section",
+                "node_kind": "market_section",
+            },
+        )
+        assert section.status_code == 201, section.text
+        section_id = section.json()["node"]["id"]
+
+        committee = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Welfare Committee",
+                "parent_node_id": root_node_id,
+                "node_type": "committee",
+                "node_kind": "market_committee",
+            },
+        )
+        assert committee.status_code == 201, committee.text
+
+        independent = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Independent Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "market_branch",
+                "inherits_parent_policy": False,
+            },
+        )
+        assert independent.status_code == 201, independent.text
+        independent_id = independent.json()["node"]["id"]
+
+        for user, role in (
+            (line_admin, "domain_admin"),
+            (section_admin, "member"),
+            (branch_admin, "member"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (line_id, line_admin.id, "line_admin"),
+            (section_id, section_admin.id, "line_admin"),
+            (independent_id, branch_admin.id, "branch_admin"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        domain_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "governance-domain-member-review",
+                "action_key": "domain_member.upsert",
+                "scope_type": "domain",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert domain_policy.status_code == 201, domain_policy.text
+
+        line_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "governance-line-member-review",
+                "action_key": "node_member.upsert",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert line_policy.status_code == 201, line_policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/governance-coverage")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    coverage = payload["governance_coverage"]
+    assert coverage["editable"] is False
+    assert coverage["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert coverage["counts"] == {
+        "nodes": 5,
+        "non_root_nodes": 4,
+        "active_policies": 2,
+        "domain_policies": 1,
+        "node_scoped_policies": 1,
+        "open_reviews": 0,
+        "governed_locally": 1,
+        "governed_by_inheritance": 1,
+        "needs_local_admin": 1,
+        "needs_policy": 1,
+        "inactive": 0,
+    }
+    assert coverage["status_counts"] == {
+        "governed_locally": 1,
+        "governed_by_inheritance": 1,
+        "needs_local_admin": 1,
+        "needs_policy": 1,
+    }
+    assert coverage["primary_next_action"] == {
+        "action_key": "assign_local_governance_admins",
+        "label": "Assign local governance admins",
+        "route_hint": f"/community-domains/{domain_id}/roles",
+        "requires_admin": True,
+    }
+    assert "does not create policy" in coverage["boundary"]
+    assert "assign roles" in coverage["boundary"]
+    assert "verify legal or institutional authority" in coverage["boundary"]
+    assert "private review payloads" in coverage["boundary"]
+
+    flat = {item["node"]["name"]: item for item in coverage["flat_nodes"]}
+    assert flat["Governance Coverage Market Domain"]["governance_status"] == (
+        "domain_policy_present"
+    )
+    assert flat["Governance Coverage Market Domain"]["local_policy_count"] == 1
+    assert flat["Electronics Line"]["governance_status"] == "governed_locally"
+    assert flat["Electronics Line"]["local_policy_count"] == 1
+    assert flat["Electronics Line"]["inherited_policy_count"] == 1
+    assert flat["Electronics Line"]["local_admin_count"] == 1
+    assert flat["Phone Accessories Section"]["governance_status"] == (
+        "governed_by_inheritance"
+    )
+    assert flat["Phone Accessories Section"]["local_policy_count"] == 0
+    assert flat["Phone Accessories Section"]["inherited_policy_count"] == 2
+    assert flat["Phone Accessories Section"]["local_admin_count"] == 1
+    assert flat["Welfare Committee"]["governance_status"] == "needs_local_admin"
+    assert flat["Welfare Committee"]["local_admin_count"] == 0
+    assert flat["Welfare Committee"]["effective_policy_count"] == 1
+    assert flat["Independent Branch"]["governance_status"] == "needs_policy"
+    assert flat["Independent Branch"]["inherits_parent_policy"] is False
+    assert flat["Independent Branch"]["inherited_policy_count"] == 0
+    assert flat["Independent Branch"]["local_admin_count"] == 1
+    assert flat["Independent Branch"]["admin_action_route_hint"].endswith("/policies")
+
+    tree = coverage["tree"][0]
+    assert tree["node"]["parent_node_id"] is None
+    electronics_tree = next(
+        child for child in tree["children"] if child["node"]["name"] == "Electronics Line"
+    )
+    assert electronics_tree["children"][0]["node"]["name"] == "Phone Accessories Section"
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_governance_coverage_but_admin_actions_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "governance-coverage-member@example.com")
+    outsider = _seed_user(3, "governance-coverage-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Governance Coverage School Domain",
+                "display_name": "Governance Coverage School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_coverage = client.get(
+            f"/community-domains/{domain_id}/governance-coverage"
+        )
+        assert member_coverage.status_code == 200, member_coverage.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_coverage = client.get(
+            f"/community-domains/{domain_id}/governance-coverage"
+        )
+        assert outsider_coverage.status_code == 403, outsider_coverage.text
+        assert "active Community Domain members" in outsider_coverage.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    coverage = member_coverage.json()["governance_coverage"]
+    assert coverage["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert coverage["counts"]["domain_policies"] == 0
+    assert coverage["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_complete_governance_coverage",
+        "label": "Ask a Community Domain admin to complete governance coverage",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert coverage["tree"][0]["governance_status"] == "needs_domain_policy"
+    assert coverage["tree"][0]["admin_action_route_hint"] is None
+    assert coverage["flat_nodes"][0]["admin_action_route_hint"] is None
+    assert "private review payloads" in coverage["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):
