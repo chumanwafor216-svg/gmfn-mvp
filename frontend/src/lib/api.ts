@@ -2357,6 +2357,15 @@ export async function getCommunityDomainVerificationRequirements(
   );
 }
 
+export async function getCommunityDomainActivationRequirements(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/activation-requirements"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainNodes(
   communityDomainId: number | string
 ): Promise<any> {

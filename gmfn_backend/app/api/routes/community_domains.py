@@ -306,6 +306,64 @@ COMMUNITY_DOMAIN_VERIFICATION_REQUIREMENT_PRESETS: list[dict[str, Any]] = [
         "required": True,
     },
 ]
+COMMUNITY_DOMAIN_ACTIVATION_REQUIREMENT_PRESETS: list[dict[str, Any]] = [
+    {
+        "requirement_key": "package_quote",
+        "label": "Package quote",
+        "summary": "A manual pilot package quote must be reviewed before payment instruction or activation.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "requirement_key": "pricing_confirmation",
+        "label": "Pricing confirmation",
+        "summary": "The final subscription package, allowances, and renewal terms still need explicit confirmation.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "requirement_key": "payment_instruction",
+        "label": "Payment instruction",
+        "summary": "No payment instruction is created by this MVP projection.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "requirement_key": "billing_activation",
+        "label": "Billing activation",
+        "summary": "Billing is not active until the Community Domain is deliberately activated by a future billing flow.",
+        "requires_admin": True,
+        "route_suffix": "/package-quote",
+    },
+    {
+        "requirement_key": "authority_verification",
+        "label": "Authority verification",
+        "summary": "The institution must be verified before it can be presented as a verified Community Domain.",
+        "requires_admin": True,
+        "route_suffix": "/verification",
+    },
+    {
+        "requirement_key": "structure_ready",
+        "label": "Structure ready",
+        "summary": "The domain should have more than the root institution before institutional launch.",
+        "requires_admin": False,
+        "route_suffix": "/nodes/tree",
+    },
+    {
+        "requirement_key": "member_base_ready",
+        "label": "Member base ready",
+        "summary": "The domain should have at least one active member or admin beyond the owner.",
+        "requires_admin": True,
+        "route_suffix": "/members",
+    },
+    {
+        "requirement_key": "governance_ready",
+        "label": "Governance ready",
+        "summary": "The domain should have at least one active policy for important institutional decisions.",
+        "requires_admin": True,
+        "route_suffix": "/governance-model",
+    },
+]
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
 COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_nodes": 50,
@@ -1552,6 +1610,159 @@ def _community_domain_verification_requirements_payload(
             "This endpoint does not upload evidence, store evidence, accept evidence, "
             "reject evidence, verify authority, activate billing, activate the "
             "Community Domain, create a public claim, or expose private evidence."
+        ),
+    }
+
+
+def _community_domain_activation_requirements_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    can_admin: bool,
+) -> dict[str, Any]:
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    domain_status = _clean_role(domain.status, "draft")
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    node_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == int(domain.id))
+        .count()
+    )
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+
+    ready_by_key = {
+        "package_quote": domain_status == "active",
+        "pricing_confirmation": domain_status == "active",
+        "payment_instruction": domain_status == "active",
+        "billing_activation": domain_status == "active",
+        "authority_verification": verification_status == "verified",
+        "structure_ready": node_count > 1,
+        "member_base_ready": active_member_count > 1,
+        "governance_ready": active_policy_count > 0,
+    }
+    status_by_key = {
+        "package_quote": (
+            "accepted_for_active_domain"
+            if domain_status == "active"
+            else "manual_quote_required"
+        ),
+        "pricing_confirmation": (
+            "confirmed_for_active_domain"
+            if domain_status == "active"
+            else "pilot_quote_required"
+        ),
+        "payment_instruction": (
+            "outside_this_slice" if domain_status == "active" else "not_created"
+        ),
+        "billing_activation": "active" if domain_status == "active" else "inactive",
+        "authority_verification": (
+            "verified" if verification_status == "verified" else verification_status
+        ),
+        "structure_ready": "ready" if node_count > 1 else "root_only",
+        "member_base_ready": "ready" if active_member_count > 1 else "owner_only",
+        "governance_ready": "ready" if active_policy_count > 0 else "policy_needed",
+    }
+
+    def route_hint_for(requirement: dict[str, Any]) -> Optional[str]:
+        if requirement["requires_admin"] and not can_admin:
+            return None
+        return f"/community-domains/{int(domain.id)}{requirement['route_suffix']}"
+
+    items = []
+    for preset in COMMUNITY_DOMAIN_ACTIVATION_REQUIREMENT_PRESETS:
+        requirement_key = preset["requirement_key"]
+        items.append(
+            {
+                "requirement_key": requirement_key,
+                "label": preset["label"],
+                "summary": preset["summary"],
+                "status": status_by_key[requirement_key],
+                "ready": bool(ready_by_key[requirement_key]),
+                "route_hint": route_hint_for(preset),
+                "requires_admin": bool(preset["requires_admin"]),
+                "admin_visible": bool(can_admin),
+                "boundary": (
+                    "Read-only activation requirement. This does not create a "
+                    "payment instruction, record payment, activate billing, "
+                    "activate the Community Domain, verify authority, change "
+                    "members, create policy, or expose private evidence."
+                ),
+            }
+        )
+
+    blocked_requirements = [
+        item["requirement_key"] for item in items if not item["ready"]
+    ]
+    ready_total = sum(1 for item in items if item["ready"])
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin",
+            "label": "Ask a Community Domain admin to complete activation preparation",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif domain_status != "active":
+        primary_next_action = {
+            "action_key": "package_quote",
+            "label": "Review Community Domain package quote",
+            "route_hint": f"/community-domains/{int(domain.id)}/package-quote",
+            "requires_admin": True,
+        }
+    elif verification_status != "verified":
+        primary_next_action = {
+            "action_key": "verify_authority",
+            "label": "Verify Community Domain authority",
+            "route_hint": f"/community-domains/{int(domain.id)}/verification",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_dashboard",
+            "label": "Review Community Domain dashboard",
+            "route_hint": f"/community-domains/{int(domain.id)}/dashboard",
+            "requires_admin": False,
+        }
+
+    return {
+        "items": items,
+        "total": len(items),
+        "ready_total": int(ready_total),
+        "blocked_total": int(len(items) - ready_total),
+        "blocked_requirements": blocked_requirements,
+        "status": {
+            "domain_status": domain_status,
+            "verification_status": verification_status,
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+        },
+        "counts": {
+            "nodes": int(node_count),
+            "active_members": int(active_member_count),
+            "active_policies": int(active_policy_count),
+        },
+        "primary_next_action": primary_next_action,
+        "viewer": {"can_admin": bool(can_admin)},
+        "editable": False,
+        "boundary": (
+            "Activation requirements are read-only launch guidance in this MVP "
+            "slice. This endpoint does not create a payment instruction, record "
+            "payment, create an invoice, activate billing, activate the Community "
+            "Domain, verify authority, change members, create policy, or expose "
+            "private evidence."
         ),
     }
 
@@ -3087,6 +3298,26 @@ def get_community_domain_verification_requirements(
         "ok": True,
         "community_domain_id": int(domain.id),
         "verification_requirements": _community_domain_verification_requirements_payload(
+            domain=domain,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/activation-requirements", response_model=dict[str, Any])
+def get_community_domain_activation_requirements(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "activation_requirements": _community_domain_activation_requirements_payload(
+            db,
             domain=domain,
             can_admin=can_admin,
         ),

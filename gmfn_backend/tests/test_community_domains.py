@@ -1278,6 +1278,190 @@ def test_member_can_read_verification_requirements_but_admin_routes_are_hidden(
     assert "private evidence" in requirements["boundary"]
 
 
+def test_activation_requirements_project_setup_blockers_without_activation(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "activation-admin@example.com")
+    trader = _seed_user(3, "activation-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Activation Market Domain",
+                "display_name": "Activation Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+
+        for user, role in ((admin, "domain_admin"), (trader, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "activation-member-add-review",
+                "action_key": "domain_member.upsert",
+                "scope_type": "domain",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "policy_summary": "Domain admins review activation-sensitive member changes.",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        response = client.get(
+            f"/community-domains/{domain_id}/activation-requirements"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    requirements = payload["activation_requirements"]
+    assert requirements["editable"] is False
+    assert requirements["ready_total"] == 3
+    assert requirements["blocked_total"] == 5
+    assert requirements["blocked_requirements"] == [
+        "package_quote",
+        "pricing_confirmation",
+        "payment_instruction",
+        "billing_activation",
+        "authority_verification",
+    ]
+    assert requirements["primary_next_action"] == {
+        "action_key": "package_quote",
+        "label": "Review Community Domain package quote",
+        "route_hint": f"/community-domains/{domain_id}/package-quote",
+        "requires_admin": True,
+    }
+    assert requirements["status"] == {
+        "domain_status": "draft",
+        "verification_status": "unverified",
+        "template_key": "market_cooperative",
+        "domain_type": "market_cooperative",
+    }
+    assert requirements["counts"]["nodes"] == 2
+    assert requirements["counts"]["active_members"] == 3
+    assert requirements["counts"]["active_policies"] == 1
+    assert "create a payment instruction" in requirements["boundary"]
+    assert "record payment" in requirements["boundary"]
+    assert "create an invoice" in requirements["boundary"]
+    assert "activate billing" in requirements["boundary"]
+    assert "activate the Community Domain" in requirements["boundary"]
+    assert "verify authority" in requirements["boundary"]
+    assert "private evidence" in requirements["boundary"]
+
+    by_key = {item["requirement_key"]: item for item in requirements["items"]}
+    assert by_key["package_quote"]["status"] == "manual_quote_required"
+    assert by_key["pricing_confirmation"]["status"] == "pilot_quote_required"
+    assert by_key["payment_instruction"]["status"] == "not_created"
+    assert by_key["billing_activation"]["status"] == "inactive"
+    assert by_key["authority_verification"]["status"] == "unverified"
+    assert by_key["structure_ready"]["status"] == "ready"
+    assert by_key["member_base_ready"]["status"] == "ready"
+    assert by_key["governance_ready"]["status"] == "ready"
+    assert by_key["billing_activation"]["route_hint"].endswith("/package-quote")
+    assert "activate the Community Domain" in by_key["billing_activation"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 3
+        assert db.query(CommunityNode).count() == 2
+        assert db.query(CommunityDomainPolicy).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_activation_requirements_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "activation-member@example.com")
+    outsider = _seed_user(3, "activation-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Activation School Domain",
+                "display_name": "Activation School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Parent teacher association member",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_requirements = client.get(
+            f"/community-domains/{domain_id}/activation-requirements"
+        )
+        assert member_requirements.status_code == 200, member_requirements.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_requirements = client.get(
+            f"/community-domains/{domain_id}/activation-requirements"
+        )
+        assert outsider_requirements.status_code == 403, outsider_requirements.text
+        assert "active Community Domain members" in outsider_requirements.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    requirements = member_requirements.json()["activation_requirements"]
+    by_key = {item["requirement_key"]: item for item in requirements["items"]}
+    assert requirements["viewer"] == {"can_admin": False}
+    assert requirements["primary_next_action"] == {
+        "action_key": "ask_domain_admin",
+        "label": "Ask a Community Domain admin to complete activation preparation",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert by_key["package_quote"]["route_hint"] is None
+    assert by_key["pricing_confirmation"]["route_hint"] is None
+    assert by_key["payment_instruction"]["route_hint"] is None
+    assert by_key["billing_activation"]["route_hint"] is None
+    assert by_key["authority_verification"]["route_hint"] is None
+    assert by_key["structure_ready"]["route_hint"].endswith("/nodes/tree")
+    assert by_key["payment_instruction"]["admin_visible"] is False
+    assert requirements["editable"] is False
+    assert "private evidence" in requirements["boundary"]
+
+
 def test_community_domain_draft_rejects_duplicate_domain_name(
     client: TestClient,
 ):
