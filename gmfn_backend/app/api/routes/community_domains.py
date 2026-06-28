@@ -670,6 +670,8 @@ def _can_decide_action_review(
 ) -> bool:
     if _clean_role(row.status) not in {"pending", "pending_review"}:
         return False
+    if int(row.requested_by_user_id) == int(current_user.id):
+        return False
 
     node: Optional[CommunityNode] = None
     try:
@@ -1700,6 +1702,15 @@ def decide_community_domain_action_review(
         policy=getattr(row, "policy", None),
         current_user=current_user,
     )
+
+    if int(row.requested_by_user_id) == int(current_user.id):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_self_decision_forbidden",
+                "message": "The requester cannot decide their own Community Domain action review.",
+            },
+        )
 
     current_status = _clean_role(row.status)
     if current_status == "applied":

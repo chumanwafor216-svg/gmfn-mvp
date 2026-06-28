@@ -1175,6 +1175,23 @@ def test_domain_admin_can_apply_domain_member_upsert_review(
         assert review_response.status_code == 201, review_response.text
         review = review_response.json()["action_review"]
 
+        self_queue = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        assert self_queue.status_code == 200, self_queue.text
+        assert self_queue.json()["total"] == 0
+
+        self_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert self_decision.status_code == 403, self_decision.text
+        assert (
+            self_decision.json()["detail"]["code"]
+            == "community_domain_review_self_decision_forbidden"
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: owner
         decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
             json={"decision": "approve"},
