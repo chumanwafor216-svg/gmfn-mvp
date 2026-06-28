@@ -645,6 +645,154 @@ def _community_domain_package_quote_payload(
     }
 
 
+def _community_domain_dashboard_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    root_node = _find_root_node(db, community_domain_id=int(domain.id))
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    node_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == int(domain.id))
+        .count()
+    )
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == int(domain.id))
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    open_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes"]
+            )
+        )
+        .count()
+    )
+
+    status = _clean_role(domain.status, "draft")
+    if can_admin and status == "draft":
+        primary_next_action = {
+            "action_key": "package_quote",
+            "label": "Review Community Domain package quote",
+            "route_hint": f"/community-domains/{int(domain.id)}/package-quote",
+            "requires_admin": True,
+        }
+    elif can_admin and open_review_count > 0:
+        primary_next_action = {
+            "action_key": "review_governance_queue",
+            "label": "Review pending Community Domain decisions",
+            "route_hint": f"/community-domains/{int(domain.id)}/action-reviews/reviewer-queue",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "view_structure",
+            "label": "View Community Domain structure",
+            "route_hint": f"/community-domains/{int(domain.id)}/nodes",
+            "requires_admin": False,
+        }
+
+    lanes = [
+        {
+            "lane_key": "identity",
+            "label": "Identity",
+            "status": status,
+            "count": 1,
+        },
+        {
+            "lane_key": "structure",
+            "label": "Structure",
+            "status": "ready" if node_count > 0 else "empty",
+            "count": int(node_count),
+        },
+        {
+            "lane_key": "members",
+            "label": "Members",
+            "status": "ready" if active_member_count > 0 else "empty",
+            "count": int(active_member_count),
+        },
+        {
+            "lane_key": "governance",
+            "label": "Governance",
+            "status": "attention" if open_review_count > 0 else "quiet",
+            "count": int(open_review_count),
+        },
+        {
+            "lane_key": "modules",
+            "label": "Modules",
+            "status": "preset",
+            "count": len(template["default_modules"]),
+        },
+        {
+            "lane_key": "billing",
+            "label": "Billing",
+            "status": "quote_required",
+            "count": 0,
+        },
+    ]
+
+    dashboard = {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "default_modules": list(template["default_modules"]),
+            "marketplace_role": template["marketplace_role"],
+        },
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "status": {
+            "domain_status": status,
+            "verification_status": _clean_role(
+                domain.verification_status, "unverified"
+            ),
+            "billing_status": "quote_required",
+            "activation_status": "not_active" if status == "draft" else status,
+        },
+        "counts": {
+            "nodes": int(node_count),
+            "active_members": int(active_member_count),
+            "active_node_memberships": int(node_member_count),
+            "active_policies": int(active_policy_count),
+            "open_reviews": int(open_review_count),
+        },
+        "primary_next_action": primary_next_action,
+        "lanes": lanes,
+        "boundary": (
+            "Dashboard summary only. This does not create a payment instruction, "
+            "activate billing, activate the Community Domain, verify ownership, "
+            "expose private finance records, or expose private member evidence."
+        ),
+    }
+    if can_admin:
+        dashboard["package_quote"] = _community_domain_package_quote_payload(domain)
+    return dashboard
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -1874,6 +2022,25 @@ def get_community_domain(
         "community_domain": _domain_payload(
             domain,
             root_node=_find_root_node(db, community_domain_id=int(domain.id)),
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/dashboard", response_model=dict[str, Any])
+def get_community_domain_dashboard(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "dashboard": _community_domain_dashboard_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
         ),
     }
 

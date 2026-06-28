@@ -341,6 +341,163 @@ def test_outsider_cannot_preview_community_domain_package_quote(
         assert db.query(Clan).count() == 0
 
 
+def test_domain_admin_dashboard_summary_guides_next_action_without_activation(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "domain-dashboard-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Dominion Dashboard Schools",
+                "display_name": "Dominion Dashboard Schools",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Abuja Campus",
+                "parent_node_id": root_node_id,
+                "node_type": "campus",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Parent representative",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "member-intake",
+                "action_key": "member.add",
+                "scope_type": "domain",
+                "review_mode": "domain_admin_review",
+                "policy_summary": "Domain admins review new members.",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        response = client.get(f"/community-domains/{domain_id}/dashboard")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    dashboard = payload["dashboard"]
+    assert dashboard["community_domain"]["status"] == "draft"
+    assert dashboard["community_domain"]["verification_status"] == "unverified"
+    assert dashboard["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert dashboard["template"]["template_key"] == "school_multi_branch"
+    assert dashboard["status"] == {
+        "domain_status": "draft",
+        "verification_status": "unverified",
+        "billing_status": "quote_required",
+        "activation_status": "not_active",
+    }
+    assert dashboard["counts"]["nodes"] == 2
+    assert dashboard["counts"]["active_members"] == 2
+    assert dashboard["counts"]["active_policies"] == 1
+    assert dashboard["counts"]["open_reviews"] == 0
+    assert dashboard["primary_next_action"]["action_key"] == "package_quote"
+    assert dashboard["primary_next_action"]["requires_admin"] is True
+    assert "package_quote" in dashboard
+    assert dashboard["package_quote"]["pricing_status"] == "pilot_quote_required"
+    assert dashboard["package_quote"]["price_amount"] is None
+    lanes = {lane["lane_key"]: lane for lane in dashboard["lanes"]}
+    assert lanes["identity"]["status"] == "draft"
+    assert lanes["structure"]["count"] == 2
+    assert lanes["members"]["count"] == 2
+    assert lanes["governance"]["count"] == 0
+    assert lanes["billing"]["status"] == "quote_required"
+    assert "does not create a payment instruction" in dashboard["boundary"]
+    assert "activate billing" in dashboard["boundary"]
+    assert "verify ownership" in dashboard["boundary"]
+    assert "private finance records" in dashboard["boundary"]
+
+    with SessionLocal() as db:
+        domain_row = db.query(CommunityDomain).one()
+        assert domain_row.status == "draft"
+        assert domain_row.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 2
+        assert db.query(CommunityNode).count() == 2
+        assert db.query(CommunityDomainPolicy).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_dashboard_hides_quote_and_outsider_is_rejected(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "domain-member-dashboard@example.com")
+    outsider = _seed_user(3, "domain-dashboard-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Union Dashboard Domain",
+                "display_name": "Union Dashboard Domain",
+                "domain_type": "professional_union",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Union member",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_dashboard = client.get(f"/community-domains/{domain_id}/dashboard")
+        assert member_dashboard.status_code == 200, member_dashboard.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_dashboard = client.get(f"/community-domains/{domain_id}/dashboard")
+        assert outsider_dashboard.status_code == 403, outsider_dashboard.text
+        assert "active Community Domain members" in outsider_dashboard.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    dashboard = member_dashboard.json()["dashboard"]
+    assert dashboard["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert "package_quote" not in dashboard
+    assert dashboard["primary_next_action"]["action_key"] == "view_structure"
+    assert dashboard["primary_next_action"]["requires_admin"] is False
+    assert dashboard["counts"]["active_members"] == 2
+    assert dashboard["status"]["verification_status"] == "unverified"
+    assert "private member evidence" in dashboard["boundary"]
+
+
 def test_community_domain_draft_rejects_duplicate_domain_name(
     client: TestClient,
 ):
