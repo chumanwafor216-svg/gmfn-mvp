@@ -3534,6 +3534,250 @@ def test_member_can_read_institutional_profile_but_admin_counts_are_hidden(
     assert "private member/review/evidence exposure" in institutional_profile["boundary"]
 
 
+def test_delegation_map_projects_authority_without_permission_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    line_admin = _seed_user(2, "delegation-line-admin@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Delegation Market Domain",
+                "display_name": "Delegation Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": line_admin.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert created_line.status_code == 201, created_line.text
+        line_id = created_line.json()["node"]["id"]
+
+        created_section = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Phone Accessories Section",
+                "parent_node_id": line_id,
+                "node_type": "section",
+                "node_kind": "market_section",
+            },
+        )
+        assert created_section.status_code == 201, created_section.text
+        section_id = created_section.json()["node"]["id"]
+
+        for node_id in (line_id, section_id):
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": line_admin.id, "role": "line_admin"},
+            )
+            assert placed.status_code == 201, placed.text
+
+        central_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain-settings-review",
+                "action_key": "domain.settings_change",
+                "review_mode": "multi_reviewer_review",
+                "policy_summary": "Market-wide settings need central review.",
+                "config": {"min_reviewers": 2},
+            },
+        )
+        assert central_policy.status_code == 201, central_policy.text
+
+        node_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "line-member-review",
+                "action_key": "node_member.upsert",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+                "policy_summary": "Line admins review local trader placement.",
+            },
+        )
+        assert node_policy.status_code == 201, node_policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/delegation-map")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    delegation = payload["delegation_map"]
+    assert delegation["editable"] is False
+    assert delegation["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert delegation["summary"] == {
+        "active_node_count": 3,
+        "active_operating_unit_count": 2,
+        "central_authority_count": 1,
+        "local_admin_assignment_count": 2,
+        "operating_units_with_local_admin": 2,
+        "operating_units_missing_local_admin": 0,
+        "active_policy_count": 2,
+        "central_policy_count": 1,
+        "local_policy_count": 1,
+        "operating_units_using_inherited_policy": 1,
+        "operating_units_missing_policy": 0,
+        "open_review_count": 0,
+        "verification_status": "unverified",
+    }
+    assert delegation["delegation_shape"]["supports_domain_policy"] is True
+    assert delegation["delegation_shape"]["supports_node_policy"] is True
+    assert delegation["delegation_shape"]["supports_inherited_policy"] is True
+    assert "line_admin" in delegation["delegation_shape"]["local_authority_roles"]
+
+    lanes = {item["lane_key"]: item for item in delegation["lanes"]}
+    assert lanes["central_authority"]["status"] == "covered"
+    assert lanes["local_delegation"]["status"] == "covered"
+    assert lanes["policy_delegation"]["status"] == "covered_by_domain_or_local_policy"
+    assert lanes["inheritance_model"]["status"] == "inheriting"
+    assert lanes["review_queue"]["status"] == "clear"
+    assert lanes["authority_boundary"]["status"] == "unverified"
+    assert delegation["primary_next_action"] == {
+        "action_key": "review_governance_coverage",
+        "label": "Review Community Domain governance coverage",
+        "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+        "requires_admin": True,
+    }
+    assert "does not assign roles" in delegation["boundary"]
+    assert "create node memberships" in delegation["boundary"]
+    assert "change inheritance" in delegation["boundary"]
+    assert "private member/review/evidence records" in delegation["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_delegation_map_but_admin_details_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "delegation-member@example.com")
+    outsider = _seed_user(3, "delegation-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Delegation School Domain",
+                "display_name": "Delegation School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        created_branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Abuja Campus",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert created_branch.status_code == 201, created_branch.text
+
+        created_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "school-member-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "policy_summary": "Domain admins review school member changes.",
+            },
+        )
+        assert created_policy.status_code == 201, created_policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_delegation = client.get(f"/community-domains/{domain_id}/delegation-map")
+        assert member_delegation.status_code == 200, member_delegation.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_delegation = client.get(
+            f"/community-domains/{domain_id}/delegation-map"
+        )
+        assert outsider_delegation.status_code == 403, outsider_delegation.text
+        assert "active Community Domain members" in outsider_delegation.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    delegation = member_delegation.json()["delegation_map"]
+    assert delegation["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert delegation["summary"]["active_node_count"] == 2
+    assert delegation["summary"]["active_operating_unit_count"] == 1
+    assert delegation["summary"]["central_authority_count"] is None
+    assert delegation["summary"]["local_admin_assignment_count"] is None
+    assert delegation["summary"]["operating_units_with_local_admin"] is None
+    assert delegation["summary"]["active_policy_count"] is None
+    assert delegation["summary"]["central_policy_count"] is None
+    assert delegation["summary"]["open_review_count"] is None
+    assert delegation["summary"]["operating_units_using_inherited_policy"] == 1
+    assert delegation["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_delegation",
+        "label": "Ask a Community Domain admin to review delegation",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in delegation["lanes"]}
+    assert lanes["central_authority"]["route_hint"] is None
+    assert lanes["local_delegation"]["route_hint"] is None
+    assert lanes["policy_delegation"]["route_hint"] is None
+    assert lanes["inheritance_model"]["route_hint"].endswith("/rollout-tree")
+    assert lanes["review_queue"]["route_hint"] is None
+    assert lanes["authority_boundary"]["route_hint"] is None
+    assert "private member/review/evidence records" in delegation["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

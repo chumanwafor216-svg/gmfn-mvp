@@ -7027,6 +7027,340 @@ def _community_domain_institutional_profile_payload(
     }
 
 
+def _community_domain_delegation_map_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    domain_memberships = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    open_reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .all()
+    )
+
+    active_nodes = [
+        node for node in nodes if _clean_role(node.status, "active") == "active"
+    ]
+    active_operating_nodes = [
+        node for node in active_nodes if node.parent_node_id is not None
+    ]
+    domain_admin_count = sum(
+        1
+        for membership in domain_memberships
+        if _clean_role(membership.role, "member") in DOMAIN_ADMIN_ROLES
+    )
+    node_admin_memberships = [
+        membership
+        for membership in node_memberships
+        if _clean_role(membership.role, "member") in NODE_ADMIN_ROLES
+    ]
+    nodes_with_admin_ids = {
+        int(membership.community_node_id) for membership in node_admin_memberships
+    }
+    domain_policy_count = sum(1 for policy in policies if policy.community_node_id is None)
+    node_policy_ids = {
+        int(policy.community_node_id)
+        for policy in policies
+        if policy.community_node_id is not None
+    }
+    inherited_nodes = [
+        node
+        for node in active_operating_nodes
+        if bool(node.inherits_parent_policy)
+    ]
+    nodes_missing_admin = [
+        node for node in active_operating_nodes if int(node.id) not in nodes_with_admin_ids
+    ]
+    nodes_missing_policy = [
+        node
+        for node in active_operating_nodes
+        if int(node.id) not in node_policy_ids and not bool(node.inherits_parent_policy)
+    ]
+    nodes_using_inherited_policy = [
+        node
+        for node in active_operating_nodes
+        if int(node.id) not in node_policy_ids and bool(node.inherits_parent_policy)
+    ]
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def safe_admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: Optional[int],
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": count,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    local_status = "not_needed_yet"
+    local_ready = False
+    if active_operating_nodes:
+        if not nodes_missing_admin:
+            local_status = "covered"
+            local_ready = True
+        elif len(nodes_missing_admin) < len(active_operating_nodes):
+            local_status = "partial"
+        else:
+            local_status = "missing"
+
+    policy_status = "missing"
+    policy_ready = False
+    if domain_policy_count > 0 and not nodes_missing_policy:
+        policy_status = "covered_by_domain_or_local_policy"
+        policy_ready = True
+    elif domain_policy_count > 0:
+        policy_status = "central_policy_with_local_gaps"
+    elif node_policy_ids:
+        policy_status = "local_policy_without_central_policy"
+
+    lanes = [
+        lane(
+            "central_authority",
+            "Central authority",
+            "covered" if domain_admin_count > 0 else "missing",
+            domain_admin_count > 0,
+            safe_admin_count(domain_admin_count),
+            "Keep at least one active owner or domain admin responsible for the whole institution.",
+            route_suffix="/roles",
+            requires_admin=True,
+            boundary=(
+                "Central authority count only. This does not assign owners, "
+                "grant domain admin rights, verify legal authority, or expose "
+                "private member records."
+            ),
+        ),
+        lane(
+            "local_delegation",
+            "Local delegation",
+            local_status,
+            local_ready,
+            safe_admin_count(len(nodes_with_admin_ids)),
+            "Assign branch, line, department, chapter, or committee admins only through the existing membership tools.",
+            route_suffix="/governance-coverage",
+            requires_admin=True,
+            boundary=(
+                "Local delegation projection only. This does not assign local "
+                "admins, create node memberships, grant permissions, or change "
+                "node authority."
+            ),
+        ),
+        lane(
+            "policy_delegation",
+            "Policy delegation",
+            policy_status,
+            policy_ready,
+            safe_admin_count(len(policies)),
+            "Use central policies, inherited policies, and local policies to match how decisions really move.",
+            route_suffix="/policies",
+            requires_admin=True,
+            boundary=(
+                "Policy delegation projection only. This does not create "
+                "policies, apply reviews, decide reviews, or override platform "
+                "rules."
+            ),
+        ),
+        lane(
+            "inheritance_model",
+            "Policy inheritance model",
+            "inheriting" if inherited_nodes else "local_only_or_root_only",
+            bool(inherited_nodes or not active_operating_nodes),
+            int(len(inherited_nodes)),
+            "Use inherited policy for simple units and local policy where the unit has its own authority.",
+            route_suffix="/rollout-tree",
+            requires_admin=False,
+            boundary=(
+                "Inheritance model only. This does not change inheritance flags, "
+                "create local override policies, or change node status."
+            ),
+        ),
+        lane(
+            "review_queue",
+            "Delegated review queue",
+            "open" if open_reviews else "clear",
+            not bool(open_reviews),
+            safe_admin_count(len(open_reviews)),
+            "Review open governance requests before treating delegation as stable.",
+            route_suffix="/action-reviews/reviewer-queue",
+            requires_admin=True,
+            boundary=(
+                "Review queue projection only. This does not expose private "
+                "review payloads, create decisions, apply decisions, or cancel "
+                "reviews."
+            ),
+        ),
+        lane(
+            "authority_boundary",
+            "Authority boundary",
+            _clean_role(domain.verification_status, "unverified"),
+            _clean_role(domain.verification_status, "unverified")
+            in {"verified", "protected", "approved"},
+            1
+            if _clean_role(domain.verification_status, "unverified")
+            in {"verified", "protected", "approved"}
+            else 0,
+            "Do not present internal delegation as verified institutional authority until authority evidence is approved.",
+            route_suffix="/verification-requirements",
+            requires_admin=True,
+            boundary=(
+                "Authority boundary only. This does not verify the institution, "
+                "issue credentials, publish proof, or create legal standing."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_delegation",
+            "label": "Ask a Community Domain admin to review delegation",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif domain_admin_count <= 0:
+        primary_next_action = {
+            "action_key": "assign_central_authority",
+            "label": "Assign central Community Domain authority",
+            "route_hint": f"/community-domains/{domain_id}/roles",
+            "requires_admin": True,
+        }
+    elif active_operating_nodes and nodes_missing_admin:
+        primary_next_action = {
+            "action_key": "assign_local_admins",
+            "label": "Assign local admins for operating units",
+            "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+            "requires_admin": True,
+        }
+    elif not policy_ready:
+        primary_next_action = {
+            "action_key": "complete_policy_delegation",
+            "label": "Complete central and local governance policy",
+            "route_hint": f"/community-domains/{domain_id}/policies",
+            "requires_admin": True,
+        }
+    elif open_reviews:
+        primary_next_action = {
+            "action_key": "review_open_delegated_decisions",
+            "label": "Review open delegated decisions",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_governance_coverage",
+            "label": "Review Community Domain governance coverage",
+            "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "active_node_count": int(len(active_nodes)),
+            "active_operating_unit_count": int(len(active_operating_nodes)),
+            "central_authority_count": safe_admin_count(domain_admin_count),
+            "local_admin_assignment_count": safe_admin_count(
+                len(node_admin_memberships)
+            ),
+            "operating_units_with_local_admin": safe_admin_count(
+                len(nodes_with_admin_ids)
+            ),
+            "operating_units_missing_local_admin": safe_admin_count(
+                len(nodes_missing_admin)
+            ),
+            "active_policy_count": safe_admin_count(len(policies)),
+            "central_policy_count": safe_admin_count(domain_policy_count),
+            "local_policy_count": safe_admin_count(len(node_policy_ids)),
+            "operating_units_using_inherited_policy": int(
+                len(nodes_using_inherited_policy)
+            ),
+            "operating_units_missing_policy": safe_admin_count(
+                len(nodes_missing_policy)
+            ),
+            "open_review_count": safe_admin_count(len(open_reviews)),
+            "verification_status": domain.verification_status,
+        },
+        "delegation_shape": {
+            "central_authority_roles": sorted(DOMAIN_ADMIN_ROLES),
+            "local_authority_roles": sorted(NODE_ADMIN_ROLES),
+            "supports_domain_policy": True,
+            "supports_node_policy": True,
+            "supports_inherited_policy": True,
+            "supports_required_role_review": True,
+            "supports_multi_reviewer_review": True,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain delegation map is a read-only authority projection. "
+            "This endpoint does not assign roles, create node memberships, create "
+            "policies, create action reviews, decide reviews, apply reviews, "
+            "change inheritance, verify legal or institutional authority, activate "
+            "billing, create marketplace activity, create a social Community, "
+            "publish proof, or expose private member/review/evidence records."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -8540,6 +8874,27 @@ def get_community_domain_institutional_profile(
         "ok": True,
         "community_domain_id": int(domain.id),
         "institutional_profile": _community_domain_institutional_profile_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/delegation-map", response_model=dict[str, Any])
+def get_community_domain_delegation_map(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "delegation_map": _community_domain_delegation_map_payload(
             db,
             domain=domain,
             current_user=current_user,

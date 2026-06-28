@@ -2423,6 +2423,12 @@ export async function getCommunityDomainInstitutionalProfile(
   );
 }
 
+export async function getCommunityDomainDelegationMap(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/delegation-map"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {
