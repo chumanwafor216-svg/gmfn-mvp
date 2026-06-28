@@ -2556,20 +2556,6 @@ def get_community_domain_action_review_lineage(
         review_id=int(review_id),
     )
 
-    if not _can_view_action_review(
-        db,
-        domain=domain,
-        row=row,
-        current_user=current_user,
-    ):
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "community_domain_review_lineage_not_visible",
-                "message": "Only users who can view this action review can view its lineage.",
-            },
-        )
-
     ancestors: list[CommunityDomainActionReview] = []
     current = row
     seen_ids = {int(row.id)}
@@ -2603,6 +2589,23 @@ def get_community_domain_action_review_lineage(
         lineage.append(child)
         seen_ids.add(int(child.id))
         current = child
+
+    if not any(
+        _can_view_action_review(
+            db,
+            domain=domain,
+            row=item,
+            current_user=current_user,
+        )
+        for item in lineage
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_lineage_not_visible",
+                "message": "Only users who can view a review in this chain can view its lineage.",
+            },
+        )
 
     root_review = lineage[0]
     latest_review = lineage[-1]

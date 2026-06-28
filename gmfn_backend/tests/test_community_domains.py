@@ -1376,7 +1376,19 @@ def test_inherited_policy_admin_can_view_child_review_lineage(
         assert revision["parent_review_id"] == review["id"]
         assert revision["policy_id"] == policy.json()["policy"]["id"]
 
+        app.dependency_overrides[get_current_user] = lambda: owner
+        demoted_branch_admin = client.post(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/members",
+            json={"user_id": branch_admin.id, "role": "member"},
+        )
+        assert demoted_branch_admin.status_code == 201, demoted_branch_admin.text
+
         app.dependency_overrides[get_current_user] = lambda: branch_admin
+        revision_detail = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}"
+        )
+        assert revision_detail.status_code == 403, revision_detail.text
+
         lineage = client.get(
             f"/community-domains/{domain_id}/action-reviews/{revision['id']}/lineage"
         )
