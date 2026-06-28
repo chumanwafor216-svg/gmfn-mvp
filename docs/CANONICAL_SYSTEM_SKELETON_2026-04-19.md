@@ -41,6 +41,27 @@ Every community has:
 The surface name may vary by context, but the global community ID is the stable
 system identity.
 
+Terminology update:
+
+- a lightweight `Community` is the ordinary social/invite relationship unit;
+- a `Community Domain` is the institutional/paid domain unit for a real
+  organization, branch network, association, school, church, union, or similar
+  body;
+- `Verified Community Domain` is a protected/verified state of that domain, not
+  the default state of every community record;
+- `Community Package` may describe a paid bundle or allowance, but it is not the
+  identity of the institutional object being created or owned.
+
+Future route language should therefore separate:
+
+```text
+Create Community
+Purchase Community Domain
+```
+
+This keeps the free social entry path separate from the institutional SaaS
+entry path.
+
 ### 2. Member identity
 Each individual has:
 

@@ -293,6 +293,113 @@ move toward. It does not mean the current MVP already implements every status,
 fee, renewal rule, verifier limit, affiliation workflow, or audit surface below.
 Treat it as the product contract to build toward in small, reversible steps.
 
+## 0. Terminology Decision - Community Domain
+
+GSN must separate two product concepts.
+
+### Type 1 - Community
+
+`Community` means the lightweight social relationship layer.
+
+It is for:
+
+- ordinary Create Community flows;
+- invite friends;
+- join a community;
+- early small groups;
+- no default purchase requirement;
+- no default institutional governance requirement.
+
+This layer is relationship-first. It may later mature into stronger evidence,
+but it is not automatically an institutional domain.
+
+### Type 2 - Community Domain
+
+`Community Domain` means the institutional/paid domain layer.
+
+It is for real-world organized bodies that may need:
+
+- legal identity or recorded external registration evidence;
+- administration;
+- departments;
+- branches;
+- classes, levels, lines, units, or committees;
+- governance;
+- parent-domain and affiliate control;
+- domain ownership;
+- recurring subscription;
+- verification and renewal;
+- trust infrastructure;
+- community analytics;
+- institutional evidence surfaces.
+
+Examples include churches with branches and departments, schools with teachers,
+classes, parents, alumni, and PTA structures, unions with branches, market
+associations with lines, cooperatives, diaspora associations, town unions, and
+other organized bodies.
+
+The preferred product language is:
+
+```text
+Create Community
+Purchase Community Domain
+```
+
+or where purchase is not the immediate step:
+
+```text
+Create Community Domain
+```
+
+Do not make the user decode this as a `Community Package`. A package is the
+commercial bundle, allowance, or subscription sold around a domain. The thing
+being established is the `Community Domain`.
+
+### Community Domain Engine
+
+The institutional operating engine should be named from the domain:
+
+```text
+Community Domain Engine
+```
+
+not merely:
+
+```text
+Community Engine
+```
+
+The reason is practical: the heavier engine starts when a Community Domain
+exists. It is the layer that can own governance, billing, departments,
+hierarchy, verification, analytics, and institutional trust records.
+
+### Product Object Boundary
+
+Coders should treat the future target model like this:
+
+```text
+Community
+  - social
+  - lightweight
+  - invite-based
+  - no default purchase
+  - no default institutional governance
+
+Community Domain
+  - institutional
+  - owned or claimed
+  - may be paid/subscribed
+  - governance-aware
+  - hierarchy-aware
+  - verification-aware
+  - analytics-aware
+```
+
+Unabated truth: the current repo already has community-domain affiliation and
+verification spines, but it does not yet mean the full paid `CommunityDomain`
+object, billing lifecycle, or dashboard exists as a complete database and route
+family. Do not fake that implementation by renaming ordinary community records.
+
 ## 1. Core Discovery
 
 The missing product architecture is not another generic "community" feature.

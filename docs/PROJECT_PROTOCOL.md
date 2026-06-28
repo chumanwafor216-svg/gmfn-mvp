@@ -264,6 +264,48 @@ A community likely has:
 Community is not a decorative concept.
 It is a structural domain that influences access, actions, and navigation.
 
+### 5.2.1 Community versus Community Domain
+The product now separates two concepts that must not be collapsed.
+
+**Community** means the lightweight social/community relationship layer:
+
+- created through ordinary `Create Community` flows;
+- invite-based;
+- suitable for friends, small groups, informal circles, and early local groups;
+- no purchase required by default;
+- no institutional governance required by default;
+- implemented today through the existing community/clan/community-membership
+  spine unless later migrations change the names.
+
+**Community Domain** means the institutional/paid domain layer:
+
+- owned, claimed, or purchased by a real organization or recognized body;
+- may carry legal identity, administration, departments, branches, governance,
+  domain ownership, billing, renewals, verification, analytics, and trust
+  infrastructure;
+- suitable for churches, schools, unions, associations, cooperatives, markets,
+  town unions, parent-teacher structures, branches, departments, class levels,
+  and similar organized bodies;
+- should have a separate implementation plan before becoming a database object,
+  route family, pricing flow, or dashboard.
+
+Product language rule:
+
+- Use `Create Community` for the free/social path.
+- Use `Purchase Community Domain` or `Create Community Domain` for the
+  institutional path, depending on whether payment is part of the current step.
+- Do not call the institutional object a `Community Package`. A package is a
+  commercial bundle or allowance. The owned institutional object is the
+  `Community Domain`.
+- `Verified Community Domain` is a stronger state of a Community Domain after
+  the required ownership, governance, affiliation, or verification checks are
+  satisfied. Do not present every Community Domain as verified by default.
+
+Unabated truth: coders should eventually treat `Community` and
+`CommunityDomain` as different product concepts, and likely as different data
+objects. That migration is not authorized merely by this terminology decision;
+it needs schema, route, permission, billing, and UI planning.
+
 ### 5.3 Invite
 An invite is a controlled access mechanism.
 An invite should not be treated as a generic link without rules.
