@@ -2306,6 +2306,7 @@ def test_requester_can_revise_needs_changes_action_review(
     owner = _seed_owner()
     requester = _seed_user(2, "revision-requester@example.com")
     new_member = _seed_user(3, "revision-new-member@example.com")
+    other_member = _seed_user(4, "revision-other-member@example.com")
 
     try:
         app.dependency_overrides[get_current_user] = lambda: owner
@@ -2320,11 +2321,12 @@ def test_requester_can_revise_needs_changes_action_review(
         assert created_domain.status_code == 201, created_domain.text
         domain_id = created_domain.json()["community_domain"]["id"]
 
-        added = client.post(
-            f"/community-domains/{domain_id}/members",
-            json={"user_id": requester.id, "role": "member"},
-        )
-        assert added.status_code == 201, added.text
+        for user in (requester, other_member):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
 
         policy = client.post(
             f"/community-domains/{domain_id}/policies",
@@ -2413,6 +2415,38 @@ def test_requester_can_revise_needs_changes_action_review(
         assert (
             duplicate_data["existing_action_review"]["parent_review_id"]
             == review["id"]
+        )
+
+        lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/lineage"
+        )
+        assert lineage.status_code == 200, lineage.text
+        lineage_data = lineage.json()
+        assert lineage_data["root_review_id"] == review["id"]
+        assert lineage_data["latest_review_id"] == revision["id"]
+        assert lineage_data["total"] == 2
+        assert [item["id"] for item in lineage_data["items"]] == [
+            review["id"],
+            revision["id"],
+        ]
+        assert "read-only history view" in lineage_data["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        admin_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/lineage"
+        )
+        assert admin_lineage.status_code == 200, admin_lineage.text
+        assert admin_lineage.json()["requested_review_id"] == revision["id"]
+        assert admin_lineage.json()["root_review_id"] == review["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: other_member
+        hidden_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/lineage"
+        )
+        assert hidden_lineage.status_code == 403, hidden_lineage.text
+        assert (
+            hidden_lineage.json()["detail"]["code"]
+            == "community_domain_review_lineage_not_visible"
         )
     finally:
         app.dependency_overrides.pop(get_current_user, None)

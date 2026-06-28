@@ -1605,6 +1605,106 @@ def get_community_domain_action_review(
     }
 
 
+@router.get(
+    "/{community_domain_id}/action-reviews/{review_id}/lineage",
+    response_model=dict[str, Any],
+)
+def get_community_domain_action_review_lineage(
+    community_domain_id: int,
+    review_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    row = _get_action_review_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        review_id=int(review_id),
+    )
+
+    is_requester = int(row.requested_by_user_id) == int(current_user.id)
+    is_scoped_admin = False
+    try:
+        if row.community_node_id is not None:
+            node = _get_node_or_404(
+                db,
+                community_domain_id=int(domain.id),
+                community_node_id=int(row.community_node_id),
+            )
+            _require_node_or_domain_admin_scope(
+                db,
+                domain=domain,
+                node=node,
+                current_user=current_user,
+            )
+        else:
+            _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        is_scoped_admin = True
+    except HTTPException:
+        is_scoped_admin = False
+
+    if not is_requester and not is_scoped_admin:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_lineage_not_visible",
+                "message": "Only the requester or a scoped admin can view this review lineage.",
+            },
+        )
+
+    ancestors: list[CommunityDomainActionReview] = []
+    current = row
+    seen_ids = {int(row.id)}
+    while current.parent_review_id is not None and len(seen_ids) < 50:
+        parent = _get_action_review_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            review_id=int(current.parent_review_id),
+        )
+        if int(parent.id) in seen_ids:
+            break
+        ancestors.append(parent)
+        seen_ids.add(int(parent.id))
+        current = parent
+
+    lineage = list(reversed(ancestors)) + [row]
+    current = row
+    while len(seen_ids) < 50:
+        child = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+            .filter(CommunityDomainActionReview.parent_review_id == int(current.id))
+            .order_by(
+                CommunityDomainActionReview.created_at.asc(),
+                CommunityDomainActionReview.id.asc(),
+            )
+            .first()
+        )
+        if child is None or int(child.id) in seen_ids:
+            break
+        lineage.append(child)
+        seen_ids.add(int(child.id))
+        current = child
+
+    root_review = lineage[0]
+    latest_review = lineage[-1]
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "root_review_id": int(root_review.id),
+        "latest_review_id": int(latest_review.id),
+        "requested_review_id": int(row.id),
+        "items": [_action_review_payload(item) for item in lineage],
+        "total": len(lineage),
+        "boundary": (
+            "Lineage shows linked revisions for one Community Domain action "
+            "review. It is a read-only history view and does not reopen, decide, "
+            "or apply any review."
+        ),
+    }
+
+
 @router.post(
     "/{community_domain_id}/action-reviews/{review_id}/revision",
     status_code=201,
