@@ -99,8 +99,8 @@ assertContains(
 
 assertContains(
   "src/lib/api.ts",
-  /checkCommunityDomainAvailability[\s\S]*createCommunityDomainDraft[\s\S]*listCommunityDomainNodes[\s\S]*listCommunityDomainPolicies[\s\S]*community_node_id: params\.community_node_id/,
-  "Frontend API layer must expose draft, hierarchy, and node-scoped policy helpers.",
+  /checkCommunityDomainAvailability[\s\S]*listCommunityDomainTemplates[\s\S]*createCommunityDomainDraft[\s\S]*listCommunityDomainNodes[\s\S]*listCommunityDomainPolicies[\s\S]*community_node_id: params\.community_node_id/,
+  "Frontend API layer must expose template, draft, hierarchy, and node-scoped policy helpers.",
   { frontend: true }
 );
 
@@ -115,6 +115,18 @@ assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_policy_listing_can_be_scoped_to_one_community_node[\s\S]*community_node_id[\s\S]*assert scoped_payload\["total"\] == 1[\s\S]*assert missing_node_policies\.status_code == 404/,
   "Backend tests must prove node-scoped policy filtering for institutional hierarchy."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /@router\.get\("\/templates"[\s\S]*def list_community_domain_templates[\s\S]*COMMUNITY_DOMAIN_TEMPLATE_PRESETS[\s\S]*do not create a Community Domain[\s\S]*separate schemas/,
+  "Backend route must expose public Community Domain template presets without creation, activation, verification, or schema forks."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_community_domain_templates_are_public_presets_not_activation[\s\S]*\/community-domains\/templates[\s\S]*school_multi_branch[\s\S]*market_cooperative[\s\S]*db\.query\(CommunityDomain\)\.count\(\) == 0/,
+  "Backend tests must prove template catalog presets are public and do not create records."
 );
 
 assertNotContains(

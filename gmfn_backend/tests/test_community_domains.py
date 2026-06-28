@@ -102,6 +102,52 @@ def test_community_domain_availability_reports_available_and_taken(
     assert taken.json()["reason"] == "domain_name_taken"
 
 
+def test_community_domain_templates_are_public_presets_not_activation(
+    client: TestClient,
+):
+    response = client.get("/community-domains/templates")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["total"] >= 8
+    assert "public presets" in payload["boundary"]
+    assert "do not create a Community Domain" in payload["boundary"]
+    assert "activate billing" in payload["boundary"]
+    assert "verify ownership" in payload["boundary"]
+    assert "separate schemas" in payload["boundary"]
+
+    items = payload["items"]
+    template_keys = {item["template_key"] for item in items}
+    assert {
+        "school_multi_branch",
+        "church_religious_body",
+        "union_professional_body",
+        "market_cooperative",
+        "generic_association",
+    }.issubset(template_keys)
+
+    for item in items:
+        assert item["template_key"]
+        assert item["domain_type"]
+        assert item["label"]
+        assert item["summary"]
+        assert isinstance(item["typical_nodes"], list)
+        assert item["typical_nodes"]
+        assert isinstance(item["default_modules"], list)
+        assert item["default_modules"]
+        assert "does not create" in item["boundary"]
+        assert "activate" in item["boundary"]
+        assert "verify" in item["boundary"]
+        assert "bill" in item["boundary"]
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomain).count() == 0
+        assert db.query(CommunityNode).count() == 0
+        assert db.query(CommunityDomainMembership).count() == 0
+        assert db.query(Clan).count() == 0
+
+
 def test_community_domain_draft_is_not_a_live_social_community(
     client: TestClient,
 ):

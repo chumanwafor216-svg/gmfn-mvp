@@ -2288,6 +2288,10 @@ export async function checkCommunityDomainAvailability(
   );
 }
 
+export async function listCommunityDomainTemplates(): Promise<any> {
+  return httpJson("/community-domains/templates", "GET");
+}
+
 export async function createCommunityDomainDraft(
   payload: CommunityDomainDraftPayload
 ): Promise<any> {

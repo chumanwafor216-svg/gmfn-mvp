@@ -64,6 +64,88 @@ NODE_LOCAL_ASSIGNABLE_ROLES = {
     "line_member",
 }
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
+COMMUNITY_DOMAIN_TEMPLATE_PRESETS: list[dict[str, Any]] = [
+    {
+        "template_key": "school_multi_branch",
+        "domain_type": "school",
+        "label": "School",
+        "summary": "A school, academy, or learning network with branches, classes, staff, parents, and student groups.",
+        "typical_nodes": ["Main campus", "Branches", "Departments", "Classes", "Parent teacher association"],
+        "default_modules": ["governance", "members", "departments", "vault", "spotlight", "analytics"],
+        "marketplace_role": "optional",
+        "boundary": "A preset for structure and modules only. It does not create, activate, verify, or bill a Community Domain.",
+    },
+    {
+        "template_key": "church_religious_body",
+        "domain_type": "religious_body",
+        "label": "Church / religious body",
+        "summary": "A faith institution with branches, ministries, departments, leaders, members, programs, and evidence records.",
+        "typical_nodes": ["Headquarters", "Branches", "Ministries", "Departments", "Fellowship groups"],
+        "default_modules": ["governance", "members", "departments", "vault", "spotlight", "analytics"],
+        "marketplace_role": "optional",
+        "boundary": "A preset for structure and modules only. It does not create, activate, verify, or bill a Community Domain.",
+    },
+    {
+        "template_key": "union_professional_body",
+        "domain_type": "professional_union",
+        "label": "Union / professional body",
+        "summary": "A worker union, trade group, alumni body, or professional association with chapters and committees.",
+        "typical_nodes": ["National office", "State chapters", "Local chapters", "Committees", "Professional groups"],
+        "default_modules": ["governance", "members", "departments", "vault", "verification", "analytics"],
+        "marketplace_role": "supported",
+        "boundary": "A preset for structure and modules only. It does not create, activate, verify, or bill a Community Domain.",
+    },
+    {
+        "template_key": "market_cooperative",
+        "domain_type": "market_cooperative",
+        "label": "Market / cooperative",
+        "summary": "A market, cooperative, trade line, or merchant association with sections, lines, shops, and trust records.",
+        "typical_nodes": ["Market authority", "Trade lines", "Sections", "Shop clusters", "Committees"],
+        "default_modules": ["governance", "members", "shops", "spotlight", "vault", "verification", "analytics"],
+        "marketplace_role": "core",
+        "boundary": "A preset for structure and modules only. It does not create, activate, verify, or bill a Community Domain.",
+    },
+    {
+        "template_key": "family_town_union_diaspora",
+        "domain_type": "town_union",
+        "label": "Family / town union / diaspora",
+        "summary": "A family network, town union, age grade, hometown association, or diaspora body with chapters and projects.",
+        "typical_nodes": ["Executive council", "Home branch", "Diaspora chapters", "Committees", "Project groups"],
+        "default_modules": ["governance", "members", "vault", "spotlight", "analytics"],
+        "marketplace_role": "optional",
+        "boundary": "A preset for structure and modules only. It does not create, activate, verify, or bill a Community Domain.",
+    },
+    {
+        "template_key": "hospital_health_body",
+        "domain_type": "health_body",
+        "label": "Hospital / health body",
+        "summary": "A clinic, hospital network, medical association, or care group with branches, units, staff, and governance.",
+        "typical_nodes": ["Main facility", "Branches", "Departments", "Clinical units", "Administration"],
+        "default_modules": ["governance", "members", "departments", "vault", "verification", "analytics"],
+        "marketplace_role": "limited",
+        "boundary": "A preset for structure and modules only. It does not create, activate, verify, or bill a Community Domain.",
+    },
+    {
+        "template_key": "ngo_project_network",
+        "domain_type": "ngo_project_network",
+        "label": "NGO / project network",
+        "summary": "A nonprofit, development project, or support network with programs, field offices, teams, and evidence records.",
+        "typical_nodes": ["Head office", "Field offices", "Programs", "Teams", "Project committees"],
+        "default_modules": ["governance", "members", "vault", "spotlight", "verification", "analytics"],
+        "marketplace_role": "optional",
+        "boundary": "A preset for structure and modules only. It does not create, activate, verify, or bill a Community Domain.",
+    },
+    {
+        "template_key": "generic_association",
+        "domain_type": "generic_association",
+        "label": "Generic association",
+        "summary": "A flexible association setup for institutions that need custom branches, roles, committees, and modules.",
+        "typical_nodes": ["Leadership", "Branches", "Departments", "Committees", "Member groups"],
+        "default_modules": ["governance", "members", "departments", "vault", "analytics"],
+        "marketplace_role": "optional",
+        "boundary": "A preset for structure and modules only. It does not create, activate, verify, or bill a Community Domain.",
+    },
+]
 
 
 def _clean_str(value: Optional[str], default: str = "") -> str:
@@ -1600,6 +1682,20 @@ def check_community_domain_availability(
     db: Session = Depends(get_db),
 ):
     return _domain_available_payload(db, domain_name)
+
+
+@router.get("/templates", response_model=dict[str, Any])
+def list_community_domain_templates():
+    return {
+        "ok": True,
+        "items": COMMUNITY_DOMAIN_TEMPLATE_PRESETS,
+        "total": len(COMMUNITY_DOMAIN_TEMPLATE_PRESETS),
+        "boundary": (
+            "Templates are public presets for structure and module planning only. "
+            "They do not create a Community Domain, activate billing, verify ownership, "
+            "or create separate schemas for each society type."
+        ),
+    }
 
 
 @router.post("/drafts", status_code=201, response_model=dict[str, Any])
