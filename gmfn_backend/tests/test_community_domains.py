@@ -3322,6 +3322,218 @@ def test_member_can_read_social_bridge_but_linked_community_details_are_hidden(
     assert "private member records" in social_bridge["boundary"]
 
 
+def test_institutional_profile_projects_real_world_package_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Onitsha Main Market Domain",
+                "display_name": "Onitsha Main Market Traders Association",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": (
+                    "Institutional domain for a large market association with "
+                    "trade lines, committees, and trusted economic activity."
+                ),
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        created_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+                "description": "Electronics traders and section leaders.",
+            },
+        )
+        assert created_line.status_code == 201, created_line.text
+
+        created_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "line-placement-review",
+                "action_key": "node_member.upsert",
+                "review_mode": "node_admin_review",
+                "scope_type": "node",
+                "policy_summary": "Line leaders review trader placement.",
+            },
+        )
+        assert created_policy.status_code == 201, created_policy.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/institutional-profile")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    institutional_profile = payload["institutional_profile"]
+    assert institutional_profile["editable"] is False
+    assert institutional_profile["viewer"] == {"user_id": owner.id, "can_admin": True}
+
+    profile = institutional_profile["institutional_profile"]
+    assert profile["domain_type"] == "market_cooperative"
+    assert profile["template_key"] == "market_cooperative"
+    assert profile["template_label"] == "Market / cooperative"
+    assert profile["marketplace_role"] == "core"
+    assert "shops" in profile["default_modules"]
+    assert "market_line" in {item["node_kind"] for item in profile["node_presets"]}
+    assert "member shops" in profile["activity_lanes"]
+
+    assert institutional_profile["summary"] == {
+        "domain_status": "draft",
+        "verification_status": "unverified",
+        "public_profile_ready": True,
+        "root_node_ready": True,
+        "structure_ready": True,
+        "governance_ready": True,
+        "authority_verified": False,
+        "total_node_count": 2,
+        "operating_unit_count": 1,
+        "active_member_count": 1,
+        "active_policy_count": 1,
+        "pending_review_count": 0,
+        "module_count": len(profile["default_modules"]),
+        "preset_node_kind_count": len(profile["node_presets"]),
+    }
+    assert institutional_profile["primary_next_action"] == {
+        "action_key": "review_institutional_profile",
+        "label": "Review the Community Domain institutional profile",
+        "route_hint": f"/community-domains/{domain_id}/dashboard",
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in institutional_profile["lanes"]}
+    assert lanes["institution_identity"]["status"] == "identified"
+    assert lanes["public_profile"]["status"] == "ready"
+    assert lanes["structure_archetype"]["status"] == "modeled"
+    assert lanes["governance_archetype"]["status"] == "policy_backed"
+    assert lanes["economic_posture"]["status"] == "template_core"
+    assert lanes["authority_evidence"]["status"] == "unverified"
+    assert lanes["customization_boundary"]["status"] == "configuration_not_schema_fork"
+    assert lanes["customization_boundary"]["route_hint"].endswith("/service-settings")
+    assert "custom schema" in institutional_profile["boundary"]
+    assert "custom billing package" in institutional_profile["boundary"]
+    assert "verification" in institutional_profile["boundary"]
+    assert "activation" in institutional_profile["boundary"]
+    assert "private member/review/evidence exposure" in institutional_profile["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_institutional_profile_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "institutional-profile-member@example.com")
+    outsider = _seed_user(3, "institutional-profile-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Dominion Schools Institutional Domain",
+                "display_name": "Dominion Schools Institutional Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        created_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "school-member-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+                "policy_summary": "Domain admins review school member changes.",
+            },
+        )
+        assert created_policy.status_code == 201, created_policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_profile = client.get(
+            f"/community-domains/{domain_id}/institutional-profile"
+        )
+        assert member_profile.status_code == 200, member_profile.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_profile = client.get(
+            f"/community-domains/{domain_id}/institutional-profile"
+        )
+        assert outsider_profile.status_code == 403, outsider_profile.text
+        assert "active Community Domain members" in outsider_profile.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    institutional_profile = member_profile.json()["institutional_profile"]
+    assert institutional_profile["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert institutional_profile["summary"]["active_member_count"] == 2
+    assert institutional_profile["summary"]["active_policy_count"] is None
+    assert institutional_profile["summary"]["pending_review_count"] is None
+    assert institutional_profile["summary"]["public_profile_ready"] is False
+    assert institutional_profile["summary"]["governance_ready"] is True
+    assert institutional_profile["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_institutional_profile",
+        "label": "Ask a Community Domain admin to review the institutional profile",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    profile = institutional_profile["institutional_profile"]
+    assert profile["template_key"] == "school_multi_branch"
+    assert profile["marketplace_role"] == "optional"
+    assert "school_branch" in {item["node_kind"] for item in profile["node_presets"]}
+
+    lanes = {item["lane_key"]: item for item in institutional_profile["lanes"]}
+    assert lanes["institution_identity"]["route_hint"].endswith("/operating-map")
+    assert lanes["public_profile"]["route_hint"] is None
+    assert lanes["structure_archetype"]["route_hint"].endswith("/rollout-tree")
+    assert lanes["governance_archetype"]["route_hint"] is None
+    assert lanes["authority_evidence"]["route_hint"] is None
+    assert lanes["customization_boundary"]["route_hint"] is None
+    assert "private member/review/evidence exposure" in institutional_profile["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

@@ -2414,6 +2414,15 @@ export async function getCommunityDomainSocialBridge(
   return httpJson(communityDomainPath(communityDomainId, "/social-bridge"), "GET");
 }
 
+export async function getCommunityDomainInstitutionalProfile(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/institutional-profile"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {

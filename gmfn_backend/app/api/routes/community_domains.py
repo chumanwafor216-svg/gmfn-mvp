@@ -6740,6 +6740,293 @@ def _community_domain_social_bridge_payload(
     }
 
 
+def _community_domain_institutional_profile_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    operating_blueprint = _community_domain_template_operating_blueprint_payload(
+        template=template
+    )
+    module_keys = list(template.get("default_modules") or [])
+    marketplace_role = _clean_role(template.get("marketplace_role"), "optional")
+    node_presets = list(operating_blueprint.get("node_presets") or [])
+    role_presets = list(operating_blueprint.get("role_presets") or [])
+    policy_presets = list(operating_blueprint.get("policy_presets") or [])
+    activity_lanes = list(operating_blueprint.get("activity_lanes") or [])
+
+    all_node_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .count()
+    )
+    operating_unit_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .filter(CommunityNode.parent_node_id.isnot(None))
+        .count()
+    )
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    pending_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReview.status == "pending")
+        .count()
+    )
+
+    domain_identity_ready = bool(
+        _clean_str(domain.domain_name)
+        and _clean_str(domain.display_name)
+        and _clean_str(domain.domain_type)
+    )
+    public_profile_ready = bool(_clean_str(domain.public_profile))
+    structure_ready = operating_unit_count > 0
+    governance_ready = active_policy_count > 0
+    authority_verified = _clean_role(domain.verification_status) in {
+        "verified",
+        "protected",
+        "approved",
+    }
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: int,
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": int(count),
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "institution_identity",
+            "Institution identity",
+            "identified" if domain_identity_ready else "incomplete",
+            domain_identity_ready,
+            1 if domain_identity_ready else 0,
+            "Keep the institution name, type, and owner anchor clear before any public claim.",
+            route_suffix="/operating-map",
+            requires_admin=False,
+            boundary=(
+                "Identity profile only. This does not verify legal standing or "
+                "publish a public Community Domain."
+            ),
+        ),
+        lane(
+            "public_profile",
+            "Public-safe profile",
+            "ready" if public_profile_ready else "missing",
+            public_profile_ready,
+            1 if public_profile_ready else 0,
+            "Write a public-safe summary that explains the institution without exposing private records.",
+            route_suffix="/network-presence",
+            requires_admin=True,
+            boundary=(
+                "Public profile readiness only. This does not publish a URL, "
+                "create outward links, or expose private member activity."
+            ),
+        ),
+        lane(
+            "structure_archetype",
+            "Structure archetype",
+            "modeled" if structure_ready else "root_only",
+            structure_ready,
+            operating_unit_count,
+            "Model real branches, lines, classes, departments, chapters, or committees as operating units.",
+            route_suffix="/rollout-tree",
+            requires_admin=False,
+            boundary=(
+                "Structure archetype only. This does not create nodes, branches, "
+                "departments, committees, or a separate Community Domain."
+            ),
+        ),
+        lane(
+            "governance_archetype",
+            "Governance archetype",
+            "policy_backed" if governance_ready else "preset_only",
+            governance_ready,
+            active_policy_count,
+            "Add policies that match how this institution actually reviews decisions.",
+            route_suffix="/governance-coverage",
+            requires_admin=True,
+            boundary=(
+                "Governance profile only. This does not create policies, apply "
+                "reviews, grant authority, or override platform rules."
+            ),
+        ),
+        lane(
+            "economic_posture",
+            "Economic posture",
+            f"template_{marketplace_role}",
+            marketplace_role in {"core", "supported", "optional", "limited"},
+            1,
+            "Treat trade, shops, demand, welfare, or supplier activity according to the selected template.",
+            route_suffix="/economic-participation",
+            requires_admin=False,
+            boundary=(
+                "Economic posture only. This does not create marketplace "
+                "activity, shops, listings, demand, payments, or finance records."
+            ),
+        ),
+        lane(
+            "authority_evidence",
+            "Authority evidence",
+            "verified" if authority_verified else "unverified",
+            authority_verified,
+            1 if authority_verified else 0,
+            "Prepare authority evidence before calling the institution verified.",
+            route_suffix="/verification-requirements",
+            requires_admin=True,
+            boundary=(
+                "Authority profile only. This does not upload evidence, verify "
+                "authority, issue credentials, or release proof."
+            ),
+        ),
+        lane(
+            "customization_boundary",
+            "Customization boundary",
+            "configuration_not_schema_fork",
+            True,
+            len(module_keys),
+            "Use template modules and policies first; only design new schema when a real gap is proven.",
+            route_suffix="/service-settings",
+            requires_admin=True,
+            boundary=(
+                "Customization boundary only. This does not create a tenant "
+                "schema fork, custom billing package, custom permissions, or "
+                "private deployment."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_institutional_profile",
+            "label": "Ask a Community Domain admin to review the institutional profile",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not public_profile_ready:
+        primary_next_action = {
+            "action_key": "complete_public_safe_profile",
+            "label": "Complete the public-safe institutional profile",
+            "route_hint": f"/community-domains/{domain_id}/network-presence",
+            "requires_admin": True,
+        }
+    elif not structure_ready:
+        primary_next_action = {
+            "action_key": "model_first_operating_units",
+            "label": "Model the first real operating units",
+            "route_hint": f"/community-domains/{domain_id}/rollout-tree",
+            "requires_admin": True,
+        }
+    elif not governance_ready:
+        primary_next_action = {
+            "action_key": "add_governance_policies",
+            "label": "Add governance policies for real institutional decisions",
+            "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_institutional_profile",
+            "label": "Review the Community Domain institutional profile",
+            "route_hint": f"/community-domains/{domain_id}/dashboard",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "institutional_profile": {
+            "domain_type": domain.domain_type,
+            "template_key": template["template_key"],
+            "template_label": template["label"],
+            "template_summary": template["summary"],
+            "marketplace_role": marketplace_role,
+            "default_modules": module_keys,
+            "typical_nodes": list(template.get("typical_nodes") or []),
+            "activity_lanes": activity_lanes,
+            "node_presets": node_presets,
+            "role_presets": role_presets,
+            "policy_presets": policy_presets,
+            "uses_generic_fallback": bool(
+                operating_blueprint.get("uses_generic_fallback")
+            ),
+        },
+        "summary": {
+            "domain_status": domain.status,
+            "verification_status": domain.verification_status,
+            "public_profile_ready": public_profile_ready,
+            "root_node_ready": root_node is not None,
+            "structure_ready": structure_ready,
+            "governance_ready": governance_ready,
+            "authority_verified": authority_verified,
+            "total_node_count": int(all_node_count),
+            "operating_unit_count": int(operating_unit_count),
+            "active_member_count": int(active_member_count),
+            "active_policy_count": int(active_policy_count) if can_admin else None,
+            "pending_review_count": int(pending_review_count) if can_admin else None,
+            "module_count": len(module_keys),
+            "preset_node_kind_count": len(node_presets),
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain institutional profile is read-only package "
+            "classification. This endpoint does not create a custom schema, "
+            "custom tenant, custom billing package, nodes, members, policies, "
+            "reviews, evidence, marketplace activity, shops, payments, finance "
+            "records, social Community links, verification, activation, public "
+            "publication, or private member/review/evidence exposure."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -8232,6 +8519,27 @@ def get_community_domain_social_bridge(
         "ok": True,
         "community_domain_id": int(domain.id),
         "social_bridge": _community_domain_social_bridge_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/institutional-profile", response_model=dict[str, Any])
+def get_community_domain_institutional_profile(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "institutional_profile": _community_domain_institutional_profile_payload(
             db,
             domain=domain,
             current_user=current_user,
