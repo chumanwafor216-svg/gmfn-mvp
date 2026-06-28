@@ -208,16 +208,68 @@ Must show:
 - Choose your starting path.
 - Create community card
 - Join request membership card
+- Purchase Community Domain card
 - information note: Once your setup or join request is completed, you will sign in from the Existing Member page.
 
 Primary actions:
 - Start community
 - Request to join
+- Purchase Community Domain
 
 Rules:
 - Create community goes to StartCommunityPage.
 - Request to join goes to JoinRequestMembershipPage.
+- Purchase Community Domain goes to CommunityDomainPurchasePage.
+- Purchase Community Domain is a separate institutional path and must not be
+  merged into ordinary Create Community.
 - After successful completion, user returns to SignInPage.
+
+## CommunityDomainPurchasePage
+
+Purpose:
+Let an organization owner start the paid institutional Community Domain path
+without confusing it with ordinary free community creation.
+
+Must show:
+- GSN / Community Domain identity
+- short difference between `Create Community` and `Purchase Community Domain`
+- organization name
+- requested domain name
+- society type/template choice such as school, church, union, market,
+  cooperative, town union, NGO, health body, or generic association
+- domain name availability result
+- package or quote state
+- payment-instruction state when that rail exists
+- pending activation state after payment instruction is generated
+- clear path back to `Create Community` for users who only need a lightweight
+  social community
+- clear sign-in or existing-member recovery when purchase requires an
+  authenticated owner
+
+Rules:
+- This screen is an entry/provisioning screen, not the operating dashboard.
+- It must not show bottom navigation before authentication is complete.
+- `Purchase Community Domain` must not create a live verified institution by
+  itself. A draft, quote, or payment instruction is not activation.
+- Do not call the object `Community Package`. The owned institutional object is
+  `Community Domain`; the paid bundle may be called a package only when talking
+  about pricing, allowance, or renewal.
+- Do not say `Verified Community Domain` unless backend status proves the
+  stronger verification state.
+- Domain availability checks must use the domain name/code, not display-name
+  similarity.
+- Payment instruction generation must be separated from payment confirmation
+  and domain activation.
+- If the payment or activation rail is not available yet, the action must say
+  what is missing instead of pretending the owner can finish purchase.
+- Keep the first screen calm: one main action, compact facts, and deeper package
+  details behind a chooser or collapsed section.
+
+Primary action:
+
+```text
+Check domain name
+```
 
 ## StartCommunityPage
 
@@ -340,6 +392,58 @@ Empty states to support:
 Deferred deeper surfaces:
 - Owner Command Centre / Community Regiment page for deeper owner-side structure.
 - Trust Calendar / Event Timeline placement under Trust Events, What Matters Now, Notifications, or Focus Commitments.
+
+## CommunityDomainDashboardPage
+
+Purpose:
+Operate a purchased or provisioned institutional Community Domain after the
+domain exists.
+
+Must show:
+- Community Domain identity hero
+- domain name/code, display name, owner, status, verification state, and renewal
+  state as compact facts
+- one primary next action based on current state, such as complete activation,
+  add structure, invite members, review pending action, or renew package
+- compact structure preview showing root node and first branches/departments
+- compact member and role summary
+- compact governance/action-review summary
+- compact module status rows for Shops, Spotlight, Vault, Verification,
+  Trust Centre, Analytics, Billing, and Settings
+- clear route back to Dashboard or Community Home
+- empty states for draft, pending activation, active, expired, suspended, and
+  closed domains
+
+Rules:
+- This page is the institutional operating surface. It must not replace
+  CommunityHomePage, which remains the lightweight selected-community home.
+- The first screen must not expose every lane at once. Follow the guided
+  work-surface rule: one identity hero, one main action, compact status rows,
+  and one opened lane at a time.
+- A branch, campus, parish, line, class, committee, ROSCA circle, or welfare
+  group should normally be represented as a `CommunityNode` or activity group,
+  not a separate domain, unless it needs separate billing, public identity, or
+  high autonomy.
+- Marketplace is optional for non-market institutions, but economic activity
+  must remain possible where real life needs it: approved vendors, member shops,
+  ROSCA, welfare, fundraising, jobs, services, and trusted procurement.
+- Governance actions must use scoped roles and policies. A node admin should
+  see only the work their role can handle.
+- `needs_changes` reviews are requester follow-up, not pending reviewer work.
+- Payment, package quote, and renewal status must not be shown as verification.
+- Expired or suspended domains may keep readable history for authorized users,
+  but paid operating actions should explain the renewal or suspension blocker.
+- Public-safe information must stay separate from private member lists, node
+  membership, finance records, evidence attachments, and action-review details.
+- Do not label the domain verified unless backend verification status proves it.
+- Do not expose legal, payment, loan, or transaction authority beyond what the
+  backend route and policy state actually allow.
+
+Primary action:
+
+```text
+Continue setup
+```
 
 ## MarketplacePage
 

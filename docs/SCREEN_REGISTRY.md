@@ -17,6 +17,7 @@ No bottom navigation on these screens.
 8. JoinRequestMembershipPage
 9. CommunityCreatedPage
 10. JoinRequestSubmittedPage
+11. CommunityDomainPurchasePage
 
 ## Public Verification Screens
 
@@ -44,6 +45,7 @@ Bottom navigation is allowed here.
 10. CommunityConfirmationInboxPage
 11. CommunityConfirmationPolicyPage
 12. IdentityIntegrityPage
+13. CommunityDomainDashboardPage
 
 ## Current Repo Name Notes
 
