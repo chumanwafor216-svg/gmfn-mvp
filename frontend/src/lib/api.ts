@@ -2348,6 +2348,15 @@ export async function getCommunityDomainReadiness(
   return httpJson(communityDomainPath(communityDomainId, "/readiness"), "GET");
 }
 
+export async function getCommunityDomainVerificationRequirements(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/verification-requirements"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainNodes(
   communityDomainId: number | string
 ): Promise<any> {

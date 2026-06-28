@@ -1145,6 +1145,139 @@ def test_member_can_read_readiness_but_admin_routes_are_hidden(
     assert "private evidence" in readiness["boundary"]
 
 
+def test_verification_requirements_project_type_specific_authority_without_verifying(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Verification Market Domain",
+                "display_name": "Verification Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        response = client.get(
+            f"/community-domains/{domain_id}/verification-requirements"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    requirements = payload["verification_requirements"]
+    assert requirements["editable"] is False
+    assert requirements["required_total"] == 5
+    assert requirements["submitted_total"] == 0
+    assert requirements["accepted_total"] == 0
+    assert requirements["status"] == {
+        "verification_status": "unverified",
+        "verified": False,
+        "template_key": "market_cooperative",
+        "domain_type": "market_cooperative",
+    }
+    assert requirements["primary_next_action"] == {
+        "action_key": "collect_authority_evidence",
+        "label": "Prepare Community Domain authority evidence",
+        "route_hint": f"/community-domains/{domain_id}/verification",
+        "requires_admin": True,
+    }
+    assert "does not upload evidence" in requirements["boundary"]
+    assert "accept evidence" in requirements["boundary"]
+    assert "verify authority" in requirements["boundary"]
+    assert "activate billing" in requirements["boundary"]
+    assert "private evidence" in requirements["boundary"]
+
+    by_key = {item["requirement_key"]: item for item in requirements["items"]}
+    assert by_key["legal_identity"]["required"] is True
+    assert by_key["authorized_representative"]["status"] == "required"
+    assert by_key["administrative_contact"]["evidence_status"] == "not_tracked_in_this_slice"
+    assert by_key["structure_authority"]["admin_visible"] is True
+    assert by_key["market_authority_letter"]["applies_to"] == "market_cooperative"
+    assert by_key["market_authority_letter"]["route_hint"].endswith("/verification")
+    assert "does not upload" in by_key["market_authority_letter"]["boundary"]
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.status == "draft"
+        assert domain.verification_status == "unverified"
+        assert db.query(CommunityDomainMembership).count() == 1
+        assert db.query(CommunityNode).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_member_can_read_verification_requirements_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "verification-member@example.com")
+    outsider = _seed_user(3, "verification-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Church Verification Domain",
+                "display_name": "Church Verification Domain",
+                "domain_type": "religious_body",
+                "template_key": "church_religious_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        member_response = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": member.id,
+                "role": "member",
+                "title": "Ministry member",
+            },
+        )
+        assert member_response.status_code == 201, member_response.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_requirements = client.get(
+            f"/community-domains/{domain_id}/verification-requirements"
+        )
+        assert member_requirements.status_code == 200, member_requirements.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_requirements = client.get(
+            f"/community-domains/{domain_id}/verification-requirements"
+        )
+        assert outsider_requirements.status_code == 403, outsider_requirements.text
+        assert "active Community Domain members" in outsider_requirements.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    requirements = member_requirements.json()["verification_requirements"]
+    by_key = {item["requirement_key"]: item for item in requirements["items"]}
+    assert requirements["viewer"] == {"can_admin": False}
+    assert requirements["primary_next_action"] == {
+        "action_key": "ask_domain_admin",
+        "label": "Ask a Community Domain admin to prepare authority evidence",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    assert by_key["religious_body_authority"]["applies_to"] == "religious_body"
+    assert by_key["religious_body_authority"]["route_hint"] is None
+    assert by_key["legal_identity"]["route_hint"] is None
+    assert requirements["editable"] is False
+    assert "private evidence" in requirements["boundary"]
+
+
 def test_community_domain_draft_rejects_duplicate_domain_name(
     client: TestClient,
 ):

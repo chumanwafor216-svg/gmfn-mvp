@@ -220,6 +220,92 @@ COMMUNITY_DOMAIN_GOVERNANCE_MODEL_PRESETS: list[dict[str, str]] = [
         "summary": "Requests, decisions, comments, evidence, revisions, and applied actions are kept as governance records.",
     },
 ]
+COMMUNITY_DOMAIN_VERIFICATION_REQUIREMENT_PRESETS: list[dict[str, Any]] = [
+    {
+        "requirement_key": "legal_identity",
+        "label": "Legal or recognized identity",
+        "summary": "A registration, constitution, charter, official letter, or recognized community identity record.",
+        "applies_to": "all",
+        "required": True,
+    },
+    {
+        "requirement_key": "authorized_representative",
+        "label": "Authorized representative",
+        "summary": "Evidence that the person requesting the Community Domain is allowed to stand for the institution.",
+        "applies_to": "all",
+        "required": True,
+    },
+    {
+        "requirement_key": "administrative_contact",
+        "label": "Administrative contact",
+        "summary": "A reliable administrative contact point for the institution.",
+        "applies_to": "all",
+        "required": True,
+    },
+    {
+        "requirement_key": "structure_authority",
+        "label": "Structure authority",
+        "summary": "A statement or record showing how branches, departments, lines, chapters, or units are recognized.",
+        "applies_to": "all",
+        "required": True,
+    },
+    {
+        "requirement_key": "school_registration",
+        "label": "School registration or approval",
+        "summary": "A school registration, proprietor approval, board authority, or branch authorization record.",
+        "applies_to": "school",
+        "required": True,
+    },
+    {
+        "requirement_key": "religious_body_authority",
+        "label": "Religious body authority",
+        "summary": "A church, mosque, ministry, diocese, branch, or trustee authority record.",
+        "applies_to": "religious_body",
+        "required": True,
+    },
+    {
+        "requirement_key": "union_constitution",
+        "label": "Union or association constitution",
+        "summary": "A constitution, executive mandate, chapter authority, or recognized association record.",
+        "applies_to": "professional_union",
+        "required": True,
+    },
+    {
+        "requirement_key": "market_authority_letter",
+        "label": "Market authority letter",
+        "summary": "A market association, cooperative, executive, line-chair, or trade-cluster authority record.",
+        "applies_to": "market_cooperative",
+        "required": True,
+    },
+    {
+        "requirement_key": "town_union_charter",
+        "label": "Town union or diaspora charter",
+        "summary": "A town union, family, age-grade, diaspora chapter, or project authority record.",
+        "applies_to": "town_union",
+        "required": True,
+    },
+    {
+        "requirement_key": "health_body_license",
+        "label": "Health body licence or authorization",
+        "summary": "A clinic, hospital, care group, professional association, or operating authority record.",
+        "applies_to": "health_body",
+        "required": True,
+    },
+    {
+        "requirement_key": "ngo_registration",
+        "label": "NGO or project registration",
+        "summary": "A nonprofit registration, donor mandate, project approval, or field-office authority record.",
+        "applies_to": "ngo_project_network",
+        "required": True,
+    },
+    {
+        "requirement_key": "generic_association_authority",
+        "label": "Association authority record",
+        "summary": "A constitution, executive approval, minutes, or member mandate for a flexible association.",
+        "applies_to": "generic_association",
+        "required": True,
+    },
+]
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
 COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_nodes": 50,
@@ -1375,6 +1461,97 @@ def _community_domain_readiness_payload(
             "This endpoint does not create nodes, add members, assign roles, create "
             "policy, decide reviews, create a payment instruction, activate billing, "
             "activate the Community Domain, verify authority, or expose private evidence."
+        ),
+    }
+
+
+def _community_domain_verification_requirements_payload(
+    *,
+    domain: CommunityDomain,
+    can_admin: bool,
+) -> dict[str, Any]:
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    domain_type = _clean_role(template["domain_type"], "generic_association")
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    is_verified = verification_status == "verified"
+
+    items = []
+    for preset in COMMUNITY_DOMAIN_VERIFICATION_REQUIREMENT_PRESETS:
+        applies_to = _clean_role(preset["applies_to"], "all")
+        if applies_to not in {"all", domain_type, _clean_role(domain.domain_type)}:
+            continue
+        status = "verified_status_recorded" if is_verified else "required"
+        items.append(
+            {
+                "requirement_key": preset["requirement_key"],
+                "label": preset["label"],
+                "summary": preset["summary"],
+                "applies_to": applies_to,
+                "required": bool(preset["required"]),
+                "status": status,
+                "evidence_status": "not_tracked_in_this_slice",
+                "route_hint": (
+                    f"/community-domains/{int(domain.id)}/verification"
+                    if can_admin
+                    else None
+                ),
+                "admin_visible": bool(can_admin),
+                "boundary": (
+                    "Read-only verification requirement. This does not upload, "
+                    "store, accept, reject, verify, or expose evidence."
+                ),
+            }
+        )
+
+    if can_admin and not is_verified:
+        primary_next_action = {
+            "action_key": "collect_authority_evidence",
+            "label": "Prepare Community Domain authority evidence",
+            "route_hint": f"/community-domains/{int(domain.id)}/verification",
+            "requires_admin": True,
+        }
+    elif not can_admin and not is_verified:
+        primary_next_action = {
+            "action_key": "ask_domain_admin",
+            "label": "Ask a Community Domain admin to prepare authority evidence",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "keep_authority_current",
+            "label": "Keep Community Domain authority evidence current",
+            "route_hint": (
+                f"/community-domains/{int(domain.id)}/verification"
+                if can_admin
+                else None
+            ),
+            "requires_admin": True,
+        }
+
+    return {
+        "items": items,
+        "total": len(items),
+        "required_total": sum(1 for item in items if item["required"]),
+        "optional_total": sum(1 for item in items if not item["required"]),
+        "submitted_total": 0,
+        "accepted_total": 0,
+        "status": {
+            "verification_status": verification_status,
+            "verified": bool(is_verified),
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+        },
+        "primary_next_action": primary_next_action,
+        "viewer": {"can_admin": bool(can_admin)},
+        "editable": False,
+        "boundary": (
+            "Verification requirements are read-only guidance in this MVP slice. "
+            "This endpoint does not upload evidence, store evidence, accept evidence, "
+            "reject evidence, verify authority, activate billing, activate the "
+            "Community Domain, create a public claim, or expose private evidence."
         ),
     }
 
@@ -2891,6 +3068,25 @@ def get_community_domain_readiness(
         "community_domain_id": int(domain.id),
         "readiness": _community_domain_readiness_payload(
             db,
+            domain=domain,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/verification-requirements", response_model=dict[str, Any])
+def get_community_domain_verification_requirements(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "verification_requirements": _community_domain_verification_requirements_payload(
             domain=domain,
             can_admin=can_admin,
         ),
