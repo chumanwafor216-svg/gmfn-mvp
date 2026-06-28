@@ -3778,6 +3778,219 @@ def test_member_can_read_delegation_map_but_admin_details_are_hidden(
     assert "private member/review/evidence records" in delegation["boundary"]
 
 
+def test_identity_context_projects_one_member_across_domain_and_social_contexts_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    with SessionLocal() as db:
+        db_owner = db.get(User, owner.id)
+        assert db_owner is not None
+        db_owner.gmfn_id = "GMFN-U-IDENTITY"
+        db_owner.display_name = "Identity Owner"
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Identity Context Market Domain",
+                "display_name": "Identity Context Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        created_clan = client.post(
+            "/clans/",
+            json={
+                "name": "Identity Context Market Circle",
+                "description": "The linked lightweight social Community.",
+            },
+        )
+        assert created_clan.status_code == 201, created_clan.text
+        clan_id = created_clan.json()["id"]
+
+        created_line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert created_line.status_code == 201, created_line.text
+        line_id = created_line.json()["node"]["id"]
+
+        placed_owner = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": owner.id, "role": "line_admin"},
+        )
+        assert placed_owner.status_code == 201, placed_owner.text
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.clan_id = clan_id
+            db.commit()
+            before_counts = {
+                "users": db.query(User).count(),
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "clans": db.query(Clan).count(),
+                "clan_members": db.query(ClanMembership).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/identity-context")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    identity_context = payload["identity_context"]
+    assert identity_context["editable"] is False
+    assert identity_context["member_identity"] == {
+        "user_id": owner.id,
+        "gsn_id": "GMFN-U-IDENTITY",
+        "email": "domain-owner@example.com",
+        "display_name": "Identity Owner",
+        "single_identity_rule": (
+            "One global member identity can carry many Community Domain, "
+            "social Community, marketplace, shop, finance, and trust contexts."
+        ),
+    }
+    assert identity_context["current_domain_context"]["domain_role"] == "owner"
+    assert identity_context["current_domain_context"]["domain_status"] == "active"
+    assert identity_context["current_domain_context"]["role_counts"] == {
+        "line_admin": 1
+    }
+    assert identity_context["current_domain_context"]["admin_assignment_count"] == 1
+    assert len(identity_context["current_domain_context"]["node_placements"]) == 1
+    assert identity_context["context_counts"] == {
+        "active_community_domain_contexts": 1,
+        "active_social_community_contexts": 1,
+        "current_domain_node_placements": 1,
+        "current_domain_open_member_reviews": 0,
+    }
+    assert identity_context["social_bridge"] == {
+        "domain_has_linked_social_community": True,
+        "member_in_linked_social_community": True,
+        "linked_social_state": "member_of_linked_social_community",
+    }
+    lanes = {item["lane_key"]: item for item in identity_context["lanes"]}
+    assert lanes["global_member_identity"]["status"] == "present"
+    assert lanes["domain_membership"]["status"] == "active"
+    assert lanes["node_context"]["status"] == "placed"
+    assert lanes["linked_social_context"]["status"] == "member_of_linked_social_community"
+    assert lanes["open_member_reviews"]["status"] == "clear"
+    assert identity_context["primary_next_action"] == {
+        "action_key": "review_member_context",
+        "label": "Review your Community Domain identity context",
+        "route_hint": f"/community-domains/{domain_id}/dashboard",
+        "requires_admin": False,
+    }
+    assert "does not issue a GSN/GMFN ID" in identity_context["boundary"]
+    assert "merge identities" in identity_context["boundary"]
+    assert "other domain names" in identity_context["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "users": db.query(User).count(),
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "clans": db.query(Clan).count(),
+            "clan_members": db.query(ClanMembership).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_identity_context_rejects_outsider_and_does_not_issue_missing_gsn_id(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "identity-context-member@example.com")
+    outsider = _seed_user(3, "identity-context-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Identity Context School Domain",
+                "display_name": "Identity Context School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_context = client.get(f"/community-domains/{domain_id}/identity-context")
+        assert member_context.status_code == 200, member_context.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_context = client.get(
+            f"/community-domains/{domain_id}/identity-context"
+        )
+        assert outsider_context.status_code == 403, outsider_context.text
+        assert "active Community Domain members" in outsider_context.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    identity_context = member_context.json()["identity_context"]
+    assert identity_context["member_identity"] == {
+        "user_id": member.id,
+        "gsn_id": None,
+        "email": "identity-context-member@example.com",
+        "display_name": None,
+        "single_identity_rule": (
+            "One global member identity can carry many Community Domain, "
+            "social Community, marketplace, shop, finance, and trust contexts."
+        ),
+    }
+    assert identity_context["context_counts"]["active_community_domain_contexts"] == 1
+    assert identity_context["context_counts"]["active_social_community_contexts"] == 0
+    assert identity_context["social_bridge"] == {
+        "domain_has_linked_social_community": False,
+        "member_in_linked_social_community": False,
+        "linked_social_state": "not_linked_to_social_community",
+    }
+    lanes = {item["lane_key"]: item for item in identity_context["lanes"]}
+    assert lanes["global_member_identity"]["status"] == "missing"
+    assert lanes["domain_membership"]["status"] == "active"
+    assert lanes["node_context"]["status"] == "not_placed"
+    assert identity_context["primary_next_action"] == {
+        "action_key": "confirm_global_member_id",
+        "label": "Confirm this member has one stable GSN ID",
+        "route_hint": None,
+        "requires_admin": False,
+    }
+
+    with SessionLocal() as db:
+        db_member = db.get(User, member.id)
+        assert db_member is not None
+        assert db_member.gmfn_id is None
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

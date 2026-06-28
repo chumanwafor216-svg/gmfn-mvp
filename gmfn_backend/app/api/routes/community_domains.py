@@ -7361,6 +7361,270 @@ def _community_domain_delegation_map_payload(
     }
 
 
+def _community_domain_identity_context_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    membership: CommunityDomainMembership,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    user_id = int(current_user.id)
+    db_user = db.get(User, user_id)
+    gmfn_id = getattr(db_user, "gmfn_id", None)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.user_id == user_id)
+        .order_by(
+            CommunityNodeMembership.status.asc(),
+            CommunityNodeMembership.role.asc(),
+            CommunityNodeMembership.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = [
+        row
+        for row in node_memberships
+        if _clean_role(row.status, "inactive") == "active"
+    ]
+    active_domain_context_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.user_id == user_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_social_context_count = (
+        db.query(ClanMembership)
+        .filter(ClanMembership.user_id == user_id)
+        .filter(ClanMembership.left_at.is_(None))
+        .count()
+    )
+    linked_social_membership = None
+    if domain.clan_id is not None:
+        linked_social_membership = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == int(domain.clan_id))
+            .filter(ClanMembership.user_id == user_id)
+            .filter(ClanMembership.left_at.is_(None))
+            .first()
+        )
+
+    open_reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(
+            (
+                CommunityDomainActionReview.subject_user_id == user_id
+            )
+            | (
+                (
+                    CommunityDomainActionReview.target_type.in_(
+                        ["domain_member", "member", "node_member"]
+                    )
+                )
+                & (CommunityDomainActionReview.target_id == str(user_id))
+            )
+        )
+        .filter(
+            CommunityDomainActionReview.status.in_(
+                ["pending", "pending_review", "needs_changes", "approved"]
+            )
+        )
+        .all()
+    )
+
+    admin_assignment_count = 0
+    role_counts: dict[str, int] = {}
+    for row in active_node_memberships:
+        role = _clean_role(row.role, "member")
+        role_counts[role] = role_counts.get(role, 0) + 1
+        if role in NODE_ADMIN_ROLES:
+            admin_assignment_count += 1
+
+    domain_role = _clean_role(membership.role, "member")
+    domain_active = _clean_role(membership.status, "inactive") == "active"
+    linked_social_state = (
+        "not_linked_to_social_community"
+        if domain.clan_id is None
+        else (
+            "member_of_linked_social_community"
+            if linked_social_membership
+            else "not_a_member_of_linked_social_community"
+        )
+    )
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: int,
+        next_step: str,
+        *,
+        route_suffix: str,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": int(count),
+            "route_hint": f"/community-domains/{domain_id}{route_suffix}",
+            "requires_admin": False,
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "global_member_identity",
+            "Global member identity",
+            "present" if gmfn_id else "missing",
+            bool(gmfn_id),
+            1 if gmfn_id else 0,
+            "Keep one member identity across Community Domains and social Communities.",
+            route_suffix="/dashboard",
+            boundary=(
+                "Identity signal only. This does not issue, repair, merge, or "
+                "rename a GSN/GMFN member ID."
+            ),
+        ),
+        lane(
+            "domain_membership",
+            "Current Community Domain membership",
+            "active" if domain_active else _clean_role(membership.status, "inactive"),
+            domain_active,
+            1 if domain_active else 0,
+            "Use this domain role as the member's local institutional context, not as a new person.",
+            route_suffix="/members",
+            boundary=(
+                "Membership signal only. This does not add, remove, approve, or "
+                "change Community Domain membership."
+            ),
+        ),
+        lane(
+            "node_context",
+            "Operating unit context",
+            "placed" if active_node_memberships else "not_placed",
+            bool(active_node_memberships),
+            len(active_node_memberships),
+            "Show where this same member belongs inside branches, lines, departments, classes, or committees.",
+            route_suffix="/nodes/tree",
+            boundary=(
+                "Node context only. This does not place the member, assign roles, "
+                "grant permissions, or expose other members."
+            ),
+        ),
+        lane(
+            "linked_social_context",
+            "Linked social Community context",
+            linked_social_state,
+            bool(domain.clan_id is None or linked_social_membership),
+            1 if linked_social_membership else 0,
+            "Keep social Community membership separate from paid Community Domain membership.",
+            route_suffix="/social-bridge",
+            boundary=(
+                "Social context only. This does not join a social Community, "
+                "link records, copy members, or merge Community and Community "
+                "Domain membership."
+            ),
+        ),
+        lane(
+            "open_member_reviews",
+            "Open member reviews",
+            "open" if open_reviews else "clear",
+            not bool(open_reviews),
+            len(open_reviews),
+            "Resolve open reviews involving this member before treating the context as stable.",
+            route_suffix="/action-reviews/my-requests",
+            boundary=(
+                "Review signal only. This does not expose private review "
+                "payloads, decide reviews, apply reviews, or upload evidence."
+            ),
+        ),
+    ]
+
+    if not gmfn_id:
+        primary_next_action = {
+            "action_key": "confirm_global_member_id",
+            "label": "Confirm this member has one stable GSN ID",
+            "route_hint": None,
+            "requires_admin": False,
+        }
+    elif not active_node_memberships:
+        primary_next_action = {
+            "action_key": "review_unit_context",
+            "label": "Review where this member belongs inside the institution",
+            "route_hint": f"/community-domains/{domain_id}/nodes/tree",
+            "requires_admin": False,
+        }
+    elif open_reviews:
+        primary_next_action = {
+            "action_key": "review_member_requests",
+            "label": "Review open requests involving this member",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews/my-requests",
+            "requires_admin": False,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_member_context",
+            "label": "Review your Community Domain identity context",
+            "route_hint": f"/community-domains/{domain_id}/dashboard",
+            "requires_admin": False,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "member_identity": {
+            "user_id": user_id,
+            "gsn_id": gmfn_id,
+            "email": getattr(db_user, "email", None),
+            "display_name": getattr(db_user, "display_name", None),
+            "single_identity_rule": (
+                "One global member identity can carry many Community Domain, "
+                "social Community, marketplace, shop, finance, and trust contexts."
+            ),
+        },
+        "current_domain_context": {
+            "membership": _domain_member_payload(membership),
+            "domain_role": domain_role,
+            "domain_status": _clean_role(membership.status, "inactive"),
+            "node_placements": [_node_member_payload(row) for row in node_memberships],
+            "role_counts": role_counts,
+            "admin_assignment_count": int(admin_assignment_count),
+        },
+        "context_counts": {
+            "active_community_domain_contexts": int(active_domain_context_count),
+            "active_social_community_contexts": int(active_social_context_count),
+            "current_domain_node_placements": int(len(active_node_memberships)),
+            "current_domain_open_member_reviews": int(len(open_reviews)),
+        },
+        "social_bridge": {
+            "domain_has_linked_social_community": bool(domain.clan_id is not None),
+            "member_in_linked_social_community": bool(linked_social_membership),
+            "linked_social_state": linked_social_state,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain identity context is a read-only current-member "
+            "projection. This endpoint does not issue a GSN/GMFN ID, merge "
+            "identities, create users, create Community Domain memberships, join "
+            "social Communities, link social Communities, copy members, create "
+            "shops, move money, write Trust Passport entries, issue TrustSlips, "
+            "create marketplace activity, verify authority, activate billing, or "
+            "expose other members, other domain names, private finance records, "
+            "private evidence, or private review payloads."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -8899,6 +9163,40 @@ def get_community_domain_delegation_map(
             domain=domain,
             current_user=current_user,
             can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/identity-context", response_model=dict[str, Any])
+def get_community_domain_identity_context(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+    )
+    membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(current_user.id),
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Only active Community Domain members can view this domain.",
+        )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "identity_context": _community_domain_identity_context_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            membership=membership,
         ),
     }
 

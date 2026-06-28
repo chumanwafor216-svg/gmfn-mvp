@@ -2429,6 +2429,12 @@ export async function getCommunityDomainDelegationMap(
   return httpJson(communityDomainPath(communityDomainId, "/delegation-map"), "GET");
 }
 
+export async function getCommunityDomainIdentityContext(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/identity-context"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {
