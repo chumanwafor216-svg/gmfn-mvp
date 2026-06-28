@@ -1289,6 +1289,203 @@ def test_member_can_read_setup_plan_but_admin_actions_are_hidden(
     assert all(item["requires_admin"] is True for item in setup_plan["steps"])
 
 
+def test_capacity_plan_projects_package_usage_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "capacity-plan-admin@example.com")
+    trader = _seed_user(3, "capacity-plan-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Capacity Plan Market Domain",
+                "display_name": "Capacity Plan Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        first_line_id = None
+        for index in range(1, 40):
+            line = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json={
+                    "name": f"Capacity Line {index}",
+                    "parent_node_id": root_node_id,
+                    "node_type": "line",
+                    "node_kind": "market_line",
+                },
+            )
+            assert line.status_code == 201, line.text
+            if first_line_id is None:
+                first_line_id = line.json()["node"]["id"]
+
+        for user, role in ((admin, "domain_admin"), (trader, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placed_admin = client.post(
+            f"/community-domains/{domain_id}/nodes/{first_line_id}/members",
+            json={"user_id": admin.id, "role": "line_admin"},
+        )
+        assert placed_admin.status_code == 201, placed_admin.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/capacity-plan")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["community_domain_id"] == domain_id
+    capacity_plan = payload["capacity_plan"]
+    assert capacity_plan["editable"] is False
+    assert capacity_plan["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert capacity_plan["template"]["template_key"] == "market_cooperative"
+    assert capacity_plan["package_code"] == "community_domain_starter"
+    assert capacity_plan["limits_source"] == "pilot_package_quote_defaults"
+    assert capacity_plan["counts"] == {
+        "nodes": 40,
+        "active_members": 3,
+        "active_node_memberships": 1,
+        "domain_admins": 2,
+        "node_admin_assignments": 1,
+        "admin_assignments": 3,
+    }
+    assert capacity_plan["near_limit_lanes"] == ["nodes"]
+    assert capacity_plan["over_limit_lanes"] == []
+    assert capacity_plan["unmetered_lanes"] == ["shops", "storage"]
+    assert capacity_plan["primary_next_action"] == {
+        "action_key": "review_growth_capacity",
+        "label": "Review Community Domain growth capacity",
+        "route_hint": f"/community-domains/{domain_id}/setup-plan",
+        "requires_admin": False,
+    }
+    assert "does not increase limits" in capacity_plan["boundary"]
+    assert "meter live shop usage" in capacity_plan["boundary"]
+    assert "meter storage usage" in capacity_plan["boundary"]
+    assert "change pricing" in capacity_plan["boundary"]
+    assert "private evidence" in capacity_plan["boundary"]
+
+    lanes = {item["lane_key"]: item for item in capacity_plan["lanes"]}
+    assert lanes["nodes"]["metered"] is True
+    assert lanes["nodes"]["used"] == 40
+    assert lanes["nodes"]["limit"] == 50
+    assert lanes["nodes"]["remaining"] == 10
+    assert lanes["nodes"]["usage_percent"] == 80
+    assert lanes["nodes"]["status"] == "near_limit"
+    assert lanes["nodes"]["route_hint"].endswith("/nodes/tree")
+    assert lanes["members"]["status"] == "within_limit"
+    assert lanes["members"]["route_hint"].endswith("/members")
+    assert lanes["admins"]["used"] == 3
+    assert lanes["admins"]["limit"] == 10
+    assert lanes["admins"]["status"] == "within_limit"
+    assert lanes["shops"]["metered"] is False
+    assert lanes["shops"]["used"] is None
+    assert lanes["shops"]["limit"] == 100
+    assert lanes["shops"]["status"] == "not_metered_in_this_slice"
+    assert "shops belong to global member identity" in lanes["shops"]["summary"]
+    assert "does not create shops" in lanes["shops"]["boundary"]
+    assert lanes["storage"]["metered"] is False
+    assert lanes["storage"]["limit"] == 5
+    assert lanes["storage"]["status"] == "not_metered_in_this_slice"
+    assert "does not upload files" in lanes["storage"]["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_capacity_plan_but_admin_routes_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "capacity-plan-member@example.com")
+    outsider = _seed_user(3, "capacity-plan-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Capacity Plan School Domain",
+                "display_name": "Capacity Plan School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_plan = client.get(f"/community-domains/{domain_id}/capacity-plan")
+        assert member_plan.status_code == 200, member_plan.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_plan = client.get(f"/community-domains/{domain_id}/capacity-plan")
+        assert outsider_plan.status_code == 403, outsider_plan.text
+        assert "active Community Domain members" in outsider_plan.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    capacity_plan = member_plan.json()["capacity_plan"]
+    assert capacity_plan["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert capacity_plan["template"]["template_key"] == "school_multi_branch"
+    assert capacity_plan["near_limit_lanes"] == []
+    assert capacity_plan["over_limit_lanes"] == []
+    assert capacity_plan["primary_next_action"] == {
+        "action_key": "review_setup_plan",
+        "label": "Review Community Domain setup plan",
+        "route_hint": f"/community-domains/{domain_id}/setup-plan",
+        "requires_admin": False,
+    }
+
+    lanes = {item["lane_key"]: item for item in capacity_plan["lanes"]}
+    assert lanes["nodes"]["route_hint"].endswith("/nodes/tree")
+    assert lanes["members"]["route_hint"] is None
+    assert lanes["members"]["requires_admin"] is True
+    assert lanes["members"]["admin_visible"] is False
+    assert lanes["admins"]["route_hint"].endswith("/roles")
+    assert lanes["shops"]["route_hint"].endswith("/economic-participation")
+    assert lanes["storage"]["route_hint"].endswith("/verification-requirements")
+    assert "private evidence" in capacity_plan["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

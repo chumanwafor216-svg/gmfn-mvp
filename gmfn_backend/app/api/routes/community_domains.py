@@ -4186,6 +4186,249 @@ def _community_domain_setup_plan_payload(
     }
 
 
+def _community_domain_capacity_plan_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    limits = dict(COMMUNITY_DOMAIN_PACKAGE_LIMITS)
+
+    node_count = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .count()
+    )
+    active_domain_memberships = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_member_count = len(active_domain_memberships)
+    active_node_member_count = len(active_node_memberships)
+    domain_admin_count = sum(
+        1
+        for row in active_domain_memberships
+        if _clean_role(row.role) in DOMAIN_ADMIN_ROLES
+    )
+    node_admin_count = sum(
+        1
+        for row in active_node_memberships
+        if _clean_role(row.role) in NODE_ADMIN_ROLES
+    )
+    admin_assignment_count = domain_admin_count + node_admin_count
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def metered_lane(
+        lane_key: str,
+        label: str,
+        used: int,
+        limit: int,
+        *,
+        route_suffix: str,
+        requires_admin: bool = False,
+        summary: str,
+    ) -> dict[str, Any]:
+        usage_ratio = (used / limit) if limit else 0
+        if used > limit:
+            status = "over_limit"
+        elif usage_ratio >= 0.8:
+            status = "near_limit"
+        elif used > 0:
+            status = "within_limit"
+        else:
+            status = "unused"
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "metered": True,
+            "used": int(used),
+            "limit": int(limit),
+            "remaining": max(int(limit) - int(used), 0),
+            "usage_percent": round(usage_ratio * 100, 2) if limit else 0,
+            "status": status,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "admin_visible": bool(can_admin),
+            "summary": summary,
+            "boundary": (
+                "Read-only capacity lane. This does not increase limits, create "
+                "nodes, add members, assign roles, create shops, activate billing, "
+                "change package pricing, move money, or verify authority."
+            ),
+        }
+
+    lanes = [
+        metered_lane(
+            "nodes",
+            "Institutional nodes",
+            int(node_count),
+            int(limits["included_nodes"]),
+            route_suffix="/nodes/tree",
+            summary="Branches, departments, lines, chapters, classes, committees, and operating units currently modeled inside this Community Domain.",
+        ),
+        metered_lane(
+            "members",
+            "Active domain members",
+            int(active_member_count),
+            int(limits["included_members"]),
+            route_suffix="/members",
+            requires_admin=True,
+            summary="People with active membership in this Community Domain.",
+        ),
+        metered_lane(
+            "admins",
+            "Admin assignments",
+            int(admin_assignment_count),
+            int(limits["included_admins"]),
+            route_suffix="/roles",
+            summary="Active domain-admin and node-admin assignments currently visible in this Community Domain.",
+        ),
+        {
+            "lane_key": "shops",
+            "label": "Shop allowance",
+            "metered": False,
+            "used": None,
+            "limit": int(limits["included_shops"]),
+            "remaining": None,
+            "usage_percent": None,
+            "status": "not_metered_in_this_slice",
+            "route_hint": route_hint("/economic-participation"),
+            "requires_admin": False,
+            "admin_visible": bool(can_admin),
+            "summary": (
+                "Package allowance exists, but live Community Domain shop usage "
+                "is not metered here because shops belong to global member "
+                "identity and marketplace exposure is not connected to this "
+                "capacity counter in this slice."
+            ),
+            "boundary": (
+                "Allowance visibility only. This does not create shops, connect "
+                "shops to a Community Domain, create listings, create marketplace "
+                "exposure, or change shop ownership."
+            ),
+        },
+        {
+            "lane_key": "storage",
+            "label": "Evidence storage allowance",
+            "metered": False,
+            "used": None,
+            "limit": int(limits["included_storage_gb"]),
+            "remaining": None,
+            "usage_percent": None,
+            "status": "not_metered_in_this_slice",
+            "route_hint": route_hint("/verification-requirements"),
+            "requires_admin": False,
+            "admin_visible": bool(can_admin),
+            "summary": (
+                "Package storage allowance exists, but file storage usage is not "
+                "metered by this Community Domain endpoint in this slice."
+            ),
+            "boundary": (
+                "Allowance visibility only. This does not upload files, reserve "
+                "storage, verify evidence, expose private evidence, or change "
+                "storage billing."
+            ),
+        },
+    ]
+    metered_lanes = [lane for lane in lanes if lane["metered"]]
+    over_limit_lanes = [
+        lane["lane_key"] for lane in metered_lanes if lane["status"] == "over_limit"
+    ]
+    near_limit_lanes = [
+        lane["lane_key"] for lane in metered_lanes if lane["status"] == "near_limit"
+    ]
+    if over_limit_lanes and can_admin:
+        primary_next_action = {
+            "action_key": "review_package_capacity",
+            "label": "Review Community Domain package capacity",
+            "route_hint": route_hint("/package-quote", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif near_limit_lanes and can_admin:
+        primary_next_action = {
+            "action_key": "review_growth_capacity",
+            "label": "Review Community Domain growth capacity",
+            "route_hint": route_hint("/setup-plan"),
+            "requires_admin": False,
+        }
+    elif over_limit_lanes or near_limit_lanes:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_capacity",
+            "label": "Ask a Community Domain admin to review package capacity",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_setup_plan",
+            "label": "Review Community Domain setup plan",
+            "route_hint": route_hint("/setup-plan"),
+            "requires_admin": False,
+        }
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "marketplace_role": _clean_role(template["marketplace_role"], "optional"),
+        },
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "package_code": "community_domain_starter",
+        "package_name": "Community Domain Starter",
+        "limits_source": "pilot_package_quote_defaults",
+        "lanes": lanes,
+        "counts": {
+            "nodes": int(node_count),
+            "active_members": int(active_member_count),
+            "active_node_memberships": int(active_node_member_count),
+            "domain_admins": int(domain_admin_count),
+            "node_admin_assignments": int(node_admin_count),
+            "admin_assignments": int(admin_assignment_count),
+        },
+        "over_limit_lanes": over_limit_lanes,
+        "near_limit_lanes": near_limit_lanes,
+        "unmetered_lanes": [
+            lane["lane_key"] for lane in lanes if not lane["metered"]
+        ],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Capacity plan is a read-only comparison between current Community "
+            "Domain records and the pilot package allowances. It does not "
+            "increase limits, create nodes, add members, assign roles, create "
+            "shops, meter live shop usage, meter storage usage, create policy, "
+            "open reviews, activate billing, change pricing, verify authority, "
+            "create marketplace activity, create a social Community, move money, "
+            "publish a public page, or expose private evidence."
+        ),
+    }
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -5504,6 +5747,25 @@ def get_community_domain_setup_plan(
         "ok": True,
         "community_domain_id": int(domain.id),
         "setup_plan": _community_domain_setup_plan_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/capacity-plan", response_model=dict[str, Any])
+def get_community_domain_capacity_plan(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "capacity_plan": _community_domain_capacity_plan_payload(
             db,
             domain=domain,
             current_user=current_user,

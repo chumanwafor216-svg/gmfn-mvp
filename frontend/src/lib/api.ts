@@ -2351,6 +2351,12 @@ export async function getCommunityDomainSetupPlan(
   return httpJson(communityDomainPath(communityDomainId, "/setup-plan"), "GET");
 }
 
+export async function getCommunityDomainCapacityPlan(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/capacity-plan"), "GET");
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {
