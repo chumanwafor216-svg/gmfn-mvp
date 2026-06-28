@@ -3031,6 +3031,15 @@ def apply_community_domain_action_review(
         current_user=current_user,
     )
 
+    if int(row.requested_by_user_id) == int(current_user.id):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_review_self_apply_forbidden",
+                "message": "The requester cannot apply their own Community Domain action review.",
+            },
+        )
+
     if _clean_role(row.status) == "applied":
         raise HTTPException(
             status_code=409,

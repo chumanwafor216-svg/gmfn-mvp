@@ -1697,6 +1697,17 @@ def test_domain_admin_can_apply_domain_member_upsert_review(
         )
         assert decision.status_code == 200, decision.text
 
+        app.dependency_overrides[get_current_user] = lambda: domain_admin
+        self_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert self_apply.status_code == 403, self_apply.text
+        assert (
+            self_apply.json()["detail"]["code"]
+            == "community_domain_review_self_apply_forbidden"
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: owner
         applied = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
         )
