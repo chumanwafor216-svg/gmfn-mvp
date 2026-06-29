@@ -125,8 +125,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Community Domain engine[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleKeys\.length\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
-  "Community Domain dashboard must present the existing domain as an operating engine for structure, governance, services, and trust relay without overclaiming verification.",
+  /Owner[\s\S]*cleanText\(domain\.owner_user_id, "not recorded"\)[\s\S]*Domain status[\s\S]*Verification[\s\S]*Billing[\s\S]*Activation[\s\S]*Renewal[\s\S]*compactStatus\(renewalState\)[\s\S]*Community Domain engine[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleKeys\.length\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
+  "Community Domain dashboard must show owner, domain, verification, billing, activation, and renewal facts, then present the existing domain as an operating engine without overclaiming verification.",
   { frontend: true }
 );
 

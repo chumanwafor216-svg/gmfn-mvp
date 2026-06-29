@@ -1177,10 +1177,12 @@ export default function CommunityDomainDashboardPage() {
               }}
             >
               {[
+                ["Owner", cleanText(domain.owner_user_id, "not recorded")],
                 ["Domain status", compactStatus(status.domain_status)],
                 ["Verification", compactStatus(status.verification_status)],
                 ["Billing", compactStatus(status.billing_status)],
                 ["Activation", compactStatus(status.activation_status)],
+                ["Renewal", compactStatus(renewalState)],
               ].map(([label, value]) => (
                 <div key={label} style={factTile()}>
                   <div style={sectionLabel(true)}>{label}</div>
