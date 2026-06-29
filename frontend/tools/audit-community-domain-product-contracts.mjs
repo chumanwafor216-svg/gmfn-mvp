@@ -258,6 +258,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainActivityGroupReadiness[\s\S]*activityGroupReadiness[\s\S]*activityGroupSummary[\s\S]*visibleActivityGroups[\s\S]*blockedActivityGroups[\s\S]*activeLane === "structure"[\s\S]*Activity-group readiness[\s\S]*primary_next_action[\s\S]*activity_group_candidate_count[\s\S]*active_node_memberships[\s\S]*active_policies[\s\S]*review_records[\s\S]*activity_group_engine_status[\s\S]*activity_group_records_created[\s\S]*rosca_cycles_created[\s\S]*does\s+not create activity groups, ROSCA cycles, meetings,\s+attendance records, payment instructions, ledger entries,\s+notifications, marketplace records, money movement, TrustSlips,\s+Trust Passport entries, or private member activity/,
+  "Community Domain dashboard Structure lane must show read-only activity-group readiness without implying group/ROSCA/attendance/payment/marketplace/notification/TrustSlip/Trust Passport/private-member writes.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /reviewStatusCounts[\s\S]*governanceReviewCounts[\s\S]*governancePendingCount[\s\S]*governanceApprovedCount[\s\S]*activeLane === "governance"[\s\S]*Governance review pulse[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*does not decide reviews, apply membership,\s+assign roles, expose private evidence, or bypass reviewer policy/,
   "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
   { frontend: true }

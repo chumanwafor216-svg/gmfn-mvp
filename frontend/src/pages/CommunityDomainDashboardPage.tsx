@@ -8,6 +8,7 @@ import {
   createCommunityDomainPackageQuote,
   decideCommunityDomainActionReview,
   getAccessToken,
+  getCommunityDomainActivityGroupReadiness,
   getCommunityDomainActivityMap,
   getCommunityDomainCapacityPlan,
   getCommunityDomainDashboard,
@@ -185,6 +186,23 @@ type ActivityMapLane = {
   status?: string | null;
   ready?: boolean;
   count?: number | string | null;
+  next_step?: string | null;
+};
+
+type ActivityGroupReadinessItem = {
+  node?: {
+    id?: number | string | null;
+    name?: string | null;
+    node_type?: string | null;
+    node_kind?: string | null;
+  } | null;
+  activity_group_status?: string | null;
+  ready_for_activity_group_planning?: boolean;
+  visibility_policy?: string | null;
+  local_member_count?: number | string | null;
+  local_facilitator_count?: number | string | null;
+  local_policy_count?: number | string | null;
+  review_record_count?: number | string | null;
   next_step?: string | null;
 };
 
@@ -699,6 +717,7 @@ export default function CommunityDomainDashboardPage() {
   const [delegationMap, setDelegationMap] = useState<any | null>(null);
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
   const [activityMap, setActivityMap] = useState<any | null>(null);
+  const [activityGroupReadiness, setActivityGroupReadiness] = useState<any | null>(null);
   const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
   const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
@@ -748,6 +767,7 @@ export default function CommunityDomainDashboardPage() {
       setDelegationMap(null);
       setRolloutPlan(null);
       setActivityMap(null);
+      setActivityGroupReadiness(null);
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
@@ -787,6 +807,7 @@ export default function CommunityDomainDashboardPage() {
     setDelegationMap(null);
     setRolloutPlan(null);
     setActivityMap(null);
+    setActivityGroupReadiness(null);
     setEvidenceRecordReadiness(null);
     setEvidenceReleaseReadiness(null);
     setTrustRelayReadiness(null);
@@ -861,6 +882,14 @@ export default function CommunityDomainDashboardPage() {
         setActivityMap(activityMapPayload?.activity_map || null);
       } catch {
         setActivityMap(null);
+      }
+      try {
+        const activityGroupPayload = await getCommunityDomainActivityGroupReadiness(
+          communityDomainId
+        );
+        setActivityGroupReadiness(activityGroupPayload?.activity_group_readiness || null);
+      } catch {
+        setActivityGroupReadiness(null);
       }
       try {
         const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
@@ -979,6 +1008,7 @@ export default function CommunityDomainDashboardPage() {
       setDelegationMap(null);
       setRolloutPlan(null);
       setActivityMap(null);
+      setActivityGroupReadiness(null);
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
@@ -1096,6 +1126,18 @@ export default function CommunityDomainDashboardPage() {
     typeof activityMap?.ready_total === "number"
       ? activityMap.ready_total
       : visibleActivityMapLanes.filter((lane) => lane.ready).length;
+  const activityGroupSummary = activityGroupReadiness?.summary || {};
+  const visibleActivityGroups: ActivityGroupReadinessItem[] = Array.isArray(
+    activityGroupReadiness?.flat_groups
+  )
+    ? activityGroupReadiness.flat_groups
+    : [];
+  const blockedActivityGroups = visibleActivityGroups.filter(
+    (group) => !group.ready_for_activity_group_planning
+  );
+  const activityGroupReadyTotal = visibleActivityGroups.filter(
+    (group) => group.ready_for_activity_group_planning
+  ).length;
   const subscriptionSummary = subscriptionLifecycle?.summary || {};
   const subscriptionPackage = subscriptionLifecycle?.package || {};
   const visibleSubscriptionLanes: SubscriptionLifecycleLane[] = Array.isArray(
@@ -3888,6 +3930,157 @@ export default function CommunityDomainDashboardPage() {
                       records, shops, listings, demand, Spotlight, notifications,
                       TrustSlips, Trust Passport entries, public proof, or private member,
                       review, evidence, or finance exposure.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "structure" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Activity-group readiness</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {activityGroupReadiness
+                        ? `${cleanText(
+                            activityGroupReadiness.primary_next_action?.label,
+                            "Review activity-group readiness"
+                          )}. ${activityGroupReadyTotal} of ${visibleActivityGroups.length} group-like units are ready for future activity-group planning.`
+                        : "GSN could not load the read-only activity-group readiness map for this Community Domain."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        [
+                          "Candidates",
+                          activityGroupSummary.activity_group_candidate_count,
+                        ],
+                        ["Nodes", activityGroupSummary.node_count],
+                        [
+                          "Node members",
+                          activityGroupSummary.active_node_memberships == null
+                            ? "admin only"
+                            : countValue(activityGroupSummary.active_node_memberships),
+                        ],
+                        [
+                          "Policies",
+                          activityGroupSummary.active_policies == null
+                            ? "admin only"
+                            : countValue(activityGroupSummary.active_policies),
+                        ],
+                        [
+                          "Reviews",
+                          activityGroupSummary.review_records == null
+                            ? "admin only"
+                            : countValue(activityGroupSummary.review_records),
+                        ],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={{
+                            borderRadius: 14,
+                            background: "#F7FAFF",
+                            border: "1px solid rgba(9,27,46,0.08)",
+                            padding: 10,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                            {label}
+                          </div>
+                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                            {typeof value === "number" ? countValue(value) : value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                      <span style={statusBadge(activityGroupSummary.activity_group_engine_status)}>
+                        Group engine:{" "}
+                        {compactStatus(activityGroupSummary.activity_group_engine_status)}
+                      </span>
+                      <span style={statusBadge("not_created_in_this_slice")}>
+                        Records created:{" "}
+                        {countValue(activityGroupSummary.activity_group_records_created)}
+                      </span>
+                      <span style={statusBadge("not_created_in_this_slice")}>
+                        ROSCA cycles: {countValue(activityGroupSummary.rosca_cycles_created)}
+                      </span>
+                    </div>
+                    {blockedActivityGroups.length ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        Group-like units needing attention:{" "}
+                        <strong>
+                          {blockedActivityGroups
+                            .slice(0, 3)
+                            .map((group) =>
+                              cleanText(group.node?.name, "activity-group candidate")
+                            )
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : activityGroupReadiness ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        No blocked activity-group candidate is visible, but the
+                        activity-group engine, attendance, payment, and Trust Passport
+                        writes are still not connected here.
+                      </div>
+                    ) : null}
+                    {visibleActivityGroups.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleActivityGroups.slice(0, 4).map((group) => (
+                          <div
+                            key={cleanText(
+                              group.node?.id,
+                              cleanText(group.node?.name, "activity-group")
+                            )}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(group.node?.name, "Activity-group candidate")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  group.next_step,
+                                  "Keep this as group planning until a real activity-group engine exists."
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(group.activity_group_status)}>
+                              {compactStatus(group.activity_group_status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This activity-group readiness map is read-only group planning. It
+                      does not create activity groups, ROSCA cycles, meetings,
+                      attendance records, payment instructions, ledger entries,
+                      notifications, marketplace records, money movement, TrustSlips,
+                      Trust Passport entries, or private member activity.
                     </div>
                   </div>
                 ) : null}
