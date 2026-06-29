@@ -11973,6 +11973,405 @@ def _community_domain_trust_relay_readiness_payload(
     }
 
 
+COMMUNITY_DOMAIN_NOTIFICATION_SCOPE_LANES: list[dict[str, Any]] = [
+    {
+        "lane_key": "domain_wide_audience",
+        "label": "Domain-wide audience",
+        "route_suffix": "/members",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "node_specific_audience",
+        "label": "Node-specific audience",
+        "route_suffix": "/node-participation-map",
+        "requires_admin": False,
+    },
+    {
+        "lane_key": "role_specific_audience",
+        "label": "Role-specific audience",
+        "route_suffix": "/roles",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "notification_scope_policy",
+        "label": "Notification scope policy",
+        "route_suffix": "/governance-coverage",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "reviewer_queue_notice",
+        "label": "Reviewer queue notice",
+        "route_suffix": "/action-reviews/reviewer-queue",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "invite_or_pending_member_audience",
+        "label": "Invite or pending-member audience",
+        "route_suffix": "/social-bridge",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "public_announcement_boundary",
+        "label": "Public announcement boundary",
+        "route_suffix": "/network-presence",
+        "requires_admin": False,
+    },
+    {
+        "lane_key": "emergency_notice_boundary",
+        "label": "Emergency notice boundary",
+        "route_suffix": "/governance-coverage",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "cross_domain_broadcast_boundary",
+        "label": "Cross-domain broadcast boundary",
+        "route_suffix": "/network-exchange-map",
+        "requires_admin": True,
+    },
+]
+
+
+def _community_domain_notification_scope_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    public_profile_present = bool(_clean_str(domain.public_profile))
+    active_member_rows = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    active_node_rows = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .filter(CommunityNode.status == "active")
+        .all()
+    )
+    active_node_member_rows = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policy_rows = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    review_rows = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    open_review_rows = [
+        row
+        for row in review_rows
+        if _clean_role(row.status, "pending")
+        in {"pending", "pending_review", "needs_changes", "approved"}
+    ]
+
+    notification_markers = (
+        "notification",
+        "notice",
+        "announcement",
+        "communication",
+        "reminder",
+    )
+    emergency_markers = ("emergency", "urgent", "safety", "alert")
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def matches_markers(values: list[Optional[str]], markers: tuple[str, ...]) -> bool:
+        text = " ".join(_clean_str(value).lower() for value in values)
+        return any(marker in text for marker in markers)
+
+    domain_role_counts: dict[str, int] = {}
+    for row in active_member_rows:
+        role = _clean_role(row.role, "member")
+        domain_role_counts[role] = domain_role_counts.get(role, 0) + 1
+
+    node_role_counts: dict[str, int] = {}
+    for row in active_node_member_rows:
+        role = _clean_role(row.role, "member")
+        node_role_counts[role] = node_role_counts.get(role, 0) + 1
+
+    notification_policy_rows = [
+        row
+        for row in active_policy_rows
+        if matches_markers(
+            [row.policy_key, row.action_key, row.policy_summary, row.config_json],
+            notification_markers,
+        )
+    ]
+    emergency_policy_rows = [
+        row
+        for row in active_policy_rows
+        if matches_markers(
+            [row.policy_key, row.action_key, row.policy_summary, row.config_json],
+            emergency_markers,
+        )
+    ]
+    notification_review_rows = [
+        row
+        for row in review_rows
+        if matches_markers(
+            [
+                row.action_key,
+                row.target_type,
+                row.request_note,
+                row.decision_note,
+                row.payload_json,
+            ],
+            notification_markers,
+        )
+    ]
+    emergency_review_rows = [
+        row
+        for row in review_rows
+        if matches_markers(
+            [
+                row.action_key,
+                row.target_type,
+                row.request_note,
+                row.decision_note,
+                row.payload_json,
+            ],
+            emergency_markers,
+        )
+    ]
+    open_notification_review_count = sum(
+        1 for row in notification_review_rows if row in open_review_rows
+    )
+
+    active_member_count = len(active_member_rows)
+    active_node_count = len(active_node_rows)
+    active_node_member_count = len(active_node_member_rows)
+    non_root_node_count = sum(
+        1 for row in active_node_rows if row.parent_node_id is not None
+    )
+    role_scope_ready = (
+        len(domain_role_counts) > 1
+        or len(node_role_counts) > 0
+        or any(_clean_role(row.role, "member") in DOMAIN_ADMIN_ROLES for row in active_member_rows)
+    )
+
+    status_by_lane = {
+        "domain_wide_audience": (
+            "audience_present" if active_member_count > 1 else "owner_only_or_empty"
+        ),
+        "node_specific_audience": (
+            "node_audience_mapped"
+            if active_node_member_count
+            else ("operating_units_missing" if non_root_node_count == 0 else "needs_node_members")
+        ),
+        "role_specific_audience": (
+            "role_scope_mapped" if role_scope_ready else "needs_role_trace"
+        ),
+        "notification_scope_policy": (
+            "policy_present" if notification_policy_rows else "policy_needed"
+        ),
+        "reviewer_queue_notice": (
+            "open_reviews_need_attention"
+            if open_notification_review_count
+            else ("review_trace_present" if notification_review_rows else "not_recorded")
+        ),
+        "invite_or_pending_member_audience": "not_connected_in_this_slice",
+        "public_announcement_boundary": (
+            "public_profile_available" if public_profile_present else "profile_needed"
+        ),
+        "emergency_notice_boundary": (
+            "emergency_policy_or_review_signal_present"
+            if emergency_policy_rows or emergency_review_rows
+            else "not_connected_in_this_slice"
+        ),
+        "cross_domain_broadcast_boundary": "not_connected_in_this_slice",
+    }
+    ready_by_lane = {
+        "domain_wide_audience": active_member_count > 1,
+        "node_specific_audience": active_node_member_count > 0,
+        "role_specific_audience": role_scope_ready,
+        "notification_scope_policy": bool(notification_policy_rows),
+        "reviewer_queue_notice": bool(notification_review_rows)
+        and open_notification_review_count == 0,
+        "invite_or_pending_member_audience": False,
+        "public_announcement_boundary": public_profile_present,
+        "emergency_notice_boundary": bool(emergency_policy_rows or emergency_review_rows),
+        "cross_domain_broadcast_boundary": False,
+    }
+    count_by_lane = {
+        "domain_wide_audience": admin_count(active_member_count),
+        "node_specific_audience": admin_count(active_node_member_count),
+        "role_specific_audience": admin_count(
+            len(domain_role_counts) + len(node_role_counts)
+        ),
+        "notification_scope_policy": admin_count(len(notification_policy_rows)),
+        "reviewer_queue_notice": admin_count(len(notification_review_rows)),
+        "invite_or_pending_member_audience": 0,
+        "public_announcement_boundary": 1 if public_profile_present else 0,
+        "emergency_notice_boundary": admin_count(
+            len(emergency_policy_rows) + len(emergency_review_rows)
+        ),
+        "cross_domain_broadcast_boundary": 0,
+    }
+    next_step_by_lane = {
+        "domain_wide_audience": "Confirm who belongs to the domain before any future domain-wide notice.",
+        "node_specific_audience": "Use node membership and participation maps before any future local notice.",
+        "role_specific_audience": "Keep role-based audiences tied to recorded domain or node roles.",
+        "notification_scope_policy": "Define who may request, approve, send, block, or revoke scoped notices.",
+        "reviewer_queue_notice": "Resolve notification-related reviews before treating notice scope as current.",
+        "invite_or_pending_member_audience": "Do not target invitees or pending members until a real pending-member audience exists.",
+        "public_announcement_boundary": "Keep public announcements on public-safe domain identity only.",
+        "emergency_notice_boundary": "Define emergency or urgent notice boundaries before relying on them.",
+        "cross_domain_broadcast_boundary": "Do not broadcast across domains until a real cross-domain audience and approval path exists.",
+    }
+
+    lanes = []
+    for preset in COMMUNITY_DOMAIN_NOTIFICATION_SCOPE_LANES:
+        lane_key = str(preset["lane_key"])
+        lanes.append(
+            {
+                "lane_key": lane_key,
+                "label": preset["label"],
+                "status": status_by_lane[lane_key],
+                "ready": bool(ready_by_lane[lane_key]),
+                "count": count_by_lane[lane_key],
+                "route_hint": route_hint(
+                    str(preset["route_suffix"]),
+                    requires_admin=bool(preset["requires_admin"]),
+                ),
+                "requires_admin": bool(preset["requires_admin"]),
+                "notification_scope_record_status": "not_created_in_this_slice",
+                "notification_job_status": "not_created_in_this_slice",
+                "notification_delivery_status": "not_sent_in_this_slice",
+                "audience_list_status": "not_created_in_this_slice",
+                "public_announcement_status": "not_published_in_this_slice",
+                "cross_domain_broadcast_status": "not_created_in_this_slice",
+                "member_list_status": "not_exposed_in_this_slice",
+                "next_step": next_step_by_lane[lane_key],
+                "boundary": (
+                    "Read-only notification scope lane. This does not send "
+                    "notifications, create notification jobs, send emails, "
+                    "send SMS, send WhatsApp messages, send push notifications, "
+                    "create audience lists, publish public announcements, "
+                    "create cross-domain broadcasts, expose member lists, "
+                    "create marketplace records, or move money."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_notification_scope",
+            "label": "Ask a Community Domain admin to review notification scope",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif active_member_count <= 1:
+        primary_next_action = {
+            "action_key": "confirm_domain_members_before_notifications",
+            "label": "Confirm domain members before notification scope",
+            "route_hint": route_hint("/members", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif non_root_node_count and active_node_member_count == 0:
+        primary_next_action = {
+            "action_key": "place_members_before_local_notices",
+            "label": "Place members before local notice scope",
+            "route_hint": route_hint("/node-participation-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not notification_policy_rows:
+        primary_next_action = {
+            "action_key": "define_notification_scope_policy",
+            "label": "Define notification scope policy",
+            "route_hint": route_hint("/governance-coverage", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif open_notification_review_count:
+        primary_next_action = {
+            "action_key": "resolve_open_notification_reviews",
+            "label": "Resolve open notification reviews",
+            "route_hint": route_hint(
+                "/action-reviews/reviewer-queue", requires_admin=True
+            ),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_notification_boundaries",
+            "label": "Review notification boundaries",
+            "route_hint": route_hint("/node-communication-map", requires_admin=True),
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "notification_scope_engine_status": "not_connected_in_this_slice",
+            "active_member_count": int(active_member_count),
+            "active_node_count": int(active_node_count),
+            "non_root_node_count": int(non_root_node_count),
+            "active_node_member_count": admin_count(active_node_member_count),
+            "domain_role_counts": domain_role_counts if can_admin else None,
+            "node_role_counts": node_role_counts if can_admin else None,
+            "active_policy_count": admin_count(len(active_policy_rows)),
+            "notification_policy_count": admin_count(len(notification_policy_rows)),
+            "emergency_policy_count": admin_count(len(emergency_policy_rows)),
+            "review_record_count": admin_count(len(review_rows)),
+            "notification_review_count": admin_count(len(notification_review_rows)),
+            "open_notification_review_count": admin_count(
+                open_notification_review_count
+            ),
+            "emergency_review_count": admin_count(len(emergency_review_rows)),
+            "notification_scope_records_created": 0,
+            "notification_jobs_created": 0,
+            "notifications_sent": 0,
+            "emails_sent": 0,
+            "sms_sent": 0,
+            "whatsapp_messages_sent": 0,
+            "push_notifications_sent": 0,
+            "audience_lists_created": 0,
+            "public_announcements_published": 0,
+            "cross_domain_broadcasts_created": 0,
+            "member_lists_exposed": 0,
+            "payments_moved": 0,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain notification scope readiness is read-only "
+            "notification scope planning. It uses existing member, node, role, "
+            "policy, and review signals to show future audience boundaries. It "
+            "does not send notifications, create notification jobs, send emails, "
+            "send SMS, send WhatsApp messages, send push notifications, create "
+            "audience lists, publish public announcements, create cross-domain "
+            "broadcasts, expose member lists, create marketplace records, move "
+            "money, issue TrustSlips, write Trust Passport entries, or expose "
+            "private member, review, evidence, marketplace, or finance records."
+        ),
+    }
+
+
 def _community_domain_trust_mobility_payload(
     db: Session,
     *,
@@ -18000,6 +18399,27 @@ def get_community_domain_trust_relay_readiness(
         "ok": True,
         "community_domain_id": int(domain.id),
         "trust_relay_readiness": _community_domain_trust_relay_readiness_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/notification-scope-readiness", response_model=dict[str, Any])
+def get_community_domain_notification_scope_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "notification_scope_readiness": _community_domain_notification_scope_readiness_payload(
             db,
             domain=domain,
             current_user=current_user,

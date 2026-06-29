@@ -2543,6 +2543,15 @@ export async function getCommunityDomainTrustRelayReadiness(
   );
 }
 
+export async function getCommunityDomainNotificationScopeReadiness(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/notification-scope-readiness"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainTrustMobility(
   communityDomainId: number | string
 ): Promise<any> {

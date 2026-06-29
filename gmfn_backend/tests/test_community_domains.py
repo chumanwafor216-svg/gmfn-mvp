@@ -8103,6 +8103,291 @@ def test_member_can_read_trust_relay_readiness_but_admin_counts_are_hidden(
     assert "private member" in readiness["boundary"]
 
 
+def test_notification_scope_readiness_projects_audiences_without_sending(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "notification-scope-admin@example.com")
+    member = _seed_user(3, "notification-scope-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Notification Scope School Domain",
+                "display_name": "Notification Scope School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+                "public_profile": "Public-safe notification scope profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Primary Notice Branch",
+                "parent_node_id": root_node_id,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "visibility_policy": "members",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        branch_id = branch.json()["node"]["id"]
+
+        for user, role in ((admin, "domain_admin"), (member, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        for user, role in ((admin, "branch_admin"), (member, "member")):
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{branch_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        notification_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "notification-scope-review",
+                "action_key": "notice.publish",
+                "community_node_id": branch_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "policy_summary": "Notice and announcement scope must be reviewed.",
+            },
+        )
+        assert notification_policy.status_code == 201, notification_policy.text
+
+        emergency_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "emergency-alert-review",
+                "action_key": "emergency.alert",
+                "community_node_id": branch_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "policy_summary": "Emergency notices require admin review.",
+            },
+        )
+        assert emergency_policy.status_code == 201, emergency_policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "notice.publish",
+                "community_node_id": branch_id,
+                "target_type": "notification_scope",
+                "target_id": str(branch_id),
+                "request_note": "Review notification audience before sending any notices.",
+                "payload": {"audience": "branch members"},
+            },
+        )
+        assert review.status_code == 201, review.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/notification-scope-readiness"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    readiness = payload["notification_scope_readiness"]
+    assert readiness["editable"] is False
+    assert readiness["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert readiness["summary"]["notification_scope_engine_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert readiness["summary"]["active_member_count"] == 3
+    assert readiness["summary"]["active_node_count"] == 2
+    assert readiness["summary"]["non_root_node_count"] == 1
+    assert readiness["summary"]["active_node_member_count"] == 2
+    assert readiness["summary"]["notification_policy_count"] == 2
+    assert readiness["summary"]["emergency_policy_count"] == 1
+    assert readiness["summary"]["notification_review_count"] == 1
+    assert readiness["summary"]["open_notification_review_count"] == 1
+    assert readiness["summary"]["notification_scope_records_created"] == 0
+    assert readiness["summary"]["notification_jobs_created"] == 0
+    assert readiness["summary"]["notifications_sent"] == 0
+    assert readiness["summary"]["emails_sent"] == 0
+    assert readiness["summary"]["sms_sent"] == 0
+    assert readiness["summary"]["whatsapp_messages_sent"] == 0
+    assert readiness["summary"]["push_notifications_sent"] == 0
+    assert readiness["summary"]["audience_lists_created"] == 0
+    assert readiness["summary"]["public_announcements_published"] == 0
+    assert readiness["summary"]["cross_domain_broadcasts_created"] == 0
+    assert readiness["summary"]["member_lists_exposed"] == 0
+    assert readiness["summary"]["payments_moved"] == 0
+
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["domain_wide_audience"]["status"] == "audience_present"
+    assert lanes["node_specific_audience"]["status"] == "node_audience_mapped"
+    assert lanes["role_specific_audience"]["status"] == "role_scope_mapped"
+    assert lanes["notification_scope_policy"]["status"] == "policy_present"
+    assert lanes["reviewer_queue_notice"]["status"] == "open_reviews_need_attention"
+    assert lanes["invite_or_pending_member_audience"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lanes["public_announcement_boundary"]["status"] == (
+        "public_profile_available"
+    )
+    assert lanes["emergency_notice_boundary"]["status"] == (
+        "emergency_policy_or_review_signal_present"
+    )
+    assert lanes["cross_domain_broadcast_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lanes["domain_wide_audience"]["notification_job_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert lanes["node_specific_audience"]["notification_delivery_status"] == (
+        "not_sent_in_this_slice"
+    )
+    assert lanes["role_specific_audience"]["audience_list_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert readiness["primary_next_action"] == {
+        "action_key": "resolve_open_notification_reviews",
+        "label": "Resolve open notification reviews",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "requires_admin": True,
+    }
+    assert "read-only notification scope planning" in readiness["boundary"]
+    assert "does not send notifications" in readiness["boundary"]
+    assert "create notification jobs" in readiness["boundary"]
+    assert "send emails" in readiness["boundary"]
+    assert "send SMS" in readiness["boundary"]
+    assert "send WhatsApp messages" in readiness["boundary"]
+    assert "send push notifications" in readiness["boundary"]
+    assert "audience lists" in readiness["boundary"]
+    assert "public announcements" in readiness["boundary"]
+    assert "cross-domain broadcasts" in readiness["boundary"]
+    assert "expose member lists" in readiness["boundary"]
+    assert "move money" in readiness["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_notification_scope_readiness_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "notification-scope-visible-member@example.com")
+    outsider = _seed_user(3, "notification-scope-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Notification Scope Member School",
+                "display_name": "Notification Scope Member School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_readiness = client.get(
+            f"/community-domains/{domain_id}/notification-scope-readiness"
+        )
+        assert member_readiness.status_code == 200, member_readiness.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_readiness = client.get(
+            f"/community-domains/{domain_id}/notification-scope-readiness"
+        )
+        assert outsider_readiness.status_code == 403, outsider_readiness.text
+        assert "active Community Domain members" in outsider_readiness.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_readiness.json()["notification_scope_readiness"]
+    assert readiness["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert readiness["summary"]["active_member_count"] == 2
+    assert readiness["summary"]["active_node_count"] == 1
+    assert readiness["summary"]["active_node_member_count"] is None
+    assert readiness["summary"]["domain_role_counts"] is None
+    assert readiness["summary"]["node_role_counts"] is None
+    assert readiness["summary"]["active_policy_count"] is None
+    assert readiness["summary"]["notification_policy_count"] is None
+    assert readiness["summary"]["emergency_policy_count"] is None
+    assert readiness["summary"]["review_record_count"] is None
+    assert readiness["summary"]["notification_review_count"] is None
+    assert readiness["summary"]["open_notification_review_count"] is None
+    assert readiness["summary"]["notification_jobs_created"] == 0
+    assert readiness["summary"]["notifications_sent"] == 0
+    assert readiness["summary"]["audience_lists_created"] == 0
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_notification_scope",
+        "label": "Ask a Community Domain admin to review notification scope",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["domain_wide_audience"]["route_hint"] is None
+    assert lanes["node_specific_audience"]["route_hint"].endswith(
+        "/node-participation-map"
+    )
+    assert lanes["role_specific_audience"]["route_hint"] is None
+    assert lanes["notification_scope_policy"]["route_hint"] is None
+    assert lanes["reviewer_queue_notice"]["route_hint"] is None
+    assert lanes["public_announcement_boundary"]["route_hint"].endswith(
+        "/network-presence"
+    )
+    assert lanes["cross_domain_broadcast_boundary"]["route_hint"] is None
+    assert lanes["notification_scope_policy"]["count"] is None
+    assert "does not send notifications" in readiness["boundary"]
+    assert "expose member lists" in readiness["boundary"]
+    assert "private member" in readiness["boundary"]
+
+
 def test_trust_mobility_projects_portability_readiness_without_issuing_records(
     client: TestClient,
 ):
