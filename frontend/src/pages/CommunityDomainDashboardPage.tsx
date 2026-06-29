@@ -11,6 +11,7 @@ import {
   getCommunityDomainCapacityPlan,
   getCommunityDomainDashboard,
   getCommunityDomainEvidenceRecordReadiness,
+  getCommunityDomainEvidenceReleaseReadiness,
   getCommunityDomainGovernanceCoverage,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
@@ -180,6 +181,22 @@ type EvidenceRecordReadinessType = {
   review_evidence_metadata_count?: number | string | null;
   evidence_record_status?: string | null;
   file_upload_status?: string | null;
+  credential_status?: string | null;
+  trustslip_status?: string | null;
+  trust_passport_status?: string | null;
+  next_step?: string | null;
+};
+
+type EvidenceReleaseReadinessLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  audience?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  release_status?: string | null;
+  currentness_status?: string | null;
+  public_url_status?: string | null;
   credential_status?: string | null;
   trustslip_status?: string | null;
   trust_passport_status?: string | null;
@@ -593,6 +610,7 @@ export default function CommunityDomainDashboardPage() {
   const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
   const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
+  const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
@@ -633,6 +651,7 @@ export default function CommunityDomainDashboardPage() {
       setGovernanceCoverage(null);
       setRolloutPlan(null);
       setEvidenceRecordReadiness(null);
+      setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
       try {
         const payload = await listMyCommunityDomains();
@@ -663,6 +682,7 @@ export default function CommunityDomainDashboardPage() {
     setGovernanceCoverage(null);
     setRolloutPlan(null);
     setEvidenceRecordReadiness(null);
+    setEvidenceReleaseReadiness(null);
     setTrustRelayReadiness(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
@@ -725,6 +745,16 @@ export default function CommunityDomainDashboardPage() {
         setEvidenceRecordReadiness(null);
       }
       try {
+        const releaseReadinessPayload = await getCommunityDomainEvidenceReleaseReadiness(
+          communityDomainId
+        );
+        setEvidenceReleaseReadiness(
+          releaseReadinessPayload?.evidence_release_readiness || null
+        );
+      } catch {
+        setEvidenceReleaseReadiness(null);
+      }
+      try {
         const relayReadinessPayload = await getCommunityDomainTrustRelayReadiness(
           communityDomainId
         );
@@ -772,6 +802,7 @@ export default function CommunityDomainDashboardPage() {
       setGovernanceCoverage(null);
       setRolloutPlan(null);
       setEvidenceRecordReadiness(null);
+      setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
       await loadOwnMembershipRequests();
       setMessage(
@@ -876,6 +907,19 @@ export default function CommunityDomainDashboardPage() {
       ? evidenceRecordReadiness.ready_total
       : visibleEvidenceRecordTypes.filter((record) => record.ready_for_future_evidence_record)
           .length;
+  const evidenceReleaseSummary = evidenceReleaseReadiness?.summary || {};
+  const visibleEvidenceReleaseLanes: EvidenceReleaseReadinessLane[] = Array.isArray(
+    evidenceReleaseReadiness?.lanes
+  )
+    ? evidenceReleaseReadiness.lanes
+    : [];
+  const blockedEvidenceReleaseLanes = visibleEvidenceReleaseLanes.filter(
+    (lane) => !lane.ready
+  );
+  const evidenceReleaseReadyTotal =
+    typeof evidenceReleaseReadiness?.ready_total === "number"
+      ? evidenceReleaseReadiness.ready_total
+      : visibleEvidenceReleaseLanes.filter((lane) => lane.ready).length;
   const trustRelaySummary = trustRelayReadiness?.summary || {};
   const visibleTrustRelayLanes: TrustRelayReadinessLane[] = Array.isArray(
     trustRelayReadiness?.lanes
@@ -2208,6 +2252,136 @@ export default function CommunityDomainDashboardPage() {
                         verify legal authority, move money, activate billing, create marketplace
                         activity, create a social Community, expose private member evidence, or
                         score trust.
+                      </div>
+                    </div>
+
+                    <div style={softCard()}>
+                      <div style={sectionLabel()}>Evidence release readiness</div>
+                      <div style={{ ...helperText(), marginTop: 7 }}>
+                        {evidenceReleaseReadiness
+                          ? `${cleanText(
+                              evidenceReleaseReadiness.primary_next_action?.label,
+                              "Review evidence release readiness"
+                            )}. ${evidenceReleaseReadyTotal} of ${visibleEvidenceReleaseLanes.length} release checks are ready.`
+                          : "GSN could not load the read-only evidence release readiness view for this Community Domain."}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                          gap: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        {[
+                          [
+                            "Release engine",
+                            compactStatus(evidenceReleaseSummary.evidence_release_engine_status),
+                          ],
+                          [
+                            "Releases made",
+                            countValue(evidenceReleaseSummary.evidence_releases_created),
+                          ],
+                          [
+                            "Public proofs",
+                            countValue(evidenceReleaseSummary.public_proofs_published),
+                          ],
+                          [
+                            "Release evidence",
+                            evidenceReleaseSummary.release_evidence_count == null
+                              ? "admin only"
+                              : countValue(evidenceReleaseSummary.release_evidence_count),
+                          ],
+                        ].map(([label, value]) => (
+                          <div
+                            key={String(label)}
+                            style={{
+                              borderRadius: 14,
+                              background: "#F7FAFF",
+                              border: "1px solid rgba(9,27,46,0.08)",
+                              padding: 10,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                              {label}
+                            </div>
+                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                              {value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {blockedEvidenceReleaseLanes.length ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          Evidence release checks needing attention:{" "}
+                          <strong>
+                            {blockedEvidenceReleaseLanes
+                              .slice(0, 3)
+                              .map((lane) => cleanText(lane.label, lane.lane_key || "release check"))
+                              .join(", ")}
+                          </strong>
+                          .
+                        </div>
+                      ) : evidenceReleaseReadiness ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          No blocked evidence release lane is visible, but public proof is still
+                          not being released here.
+                        </div>
+                      ) : null}
+                      {visibleEvidenceReleaseLanes.length ? (
+                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                          {visibleEvidenceReleaseLanes.slice(0, 4).map((lane) => (
+                            <div
+                              key={cleanText(
+                                lane.lane_key,
+                                cleanText(lane.label, "evidence release")
+                              )}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "minmax(0, 1fr) auto",
+                                gap: 10,
+                                alignItems: "center",
+                                borderRadius: 14,
+                                border: "1px solid rgba(9,27,46,0.10)",
+                                background: "rgba(255,255,255,0.72)",
+                                padding: "10px 10px 10px 12px",
+                              }}
+                            >
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: "block", fontWeight: 950 }}>
+                                  {cleanText(lane.label, "Evidence release check")}
+                                </span>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    color: "#4F647A",
+                                    fontSize: 12.5,
+                                    lineHeight: 1.45,
+                                    marginTop: 3,
+                                  }}
+                                >
+                                  {cleanText(
+                                    lane.next_step,
+                                    "Keep this as public-safe planning until a real release path exists."
+                                  )}
+                                </span>
+                              </span>
+                              <span style={statusBadge(lane.status)}>
+                                {compactStatus(lane.status)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        This evidence release view is read-only public-safe proof planning. It
+                        does not release evidence, expose files, expose storage keys, publish
+                        public proof, create public URLs, create QR codes, issue credentials,
+                        issue TrustSlips, write Trust Passport entries, share records across
+                        domains, create trust relay paths, verify legal authority, move money,
+                        activate billing, create marketplace activity, create a social Community,
+                        change permissions, expose private member evidence, or score trust.
                       </div>
                     </div>
 

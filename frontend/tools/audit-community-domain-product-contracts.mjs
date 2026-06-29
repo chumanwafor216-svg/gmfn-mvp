@@ -174,6 +174,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainEvidenceReleaseReadiness[\s\S]*evidenceReleaseReadiness[\s\S]*evidenceReleaseSummary[\s\S]*visibleEvidenceReleaseLanes[\s\S]*blockedEvidenceReleaseLanes[\s\S]*activeLane === "modules"[\s\S]*Evidence release readiness[\s\S]*primary_next_action[\s\S]*evidence_release_engine_status[\s\S]*evidence_releases_created[\s\S]*public_proofs_published[\s\S]*release_evidence_count[\s\S]*does not release evidence, expose files, expose storage keys, publish\s+public proof, create public URLs, create QR codes, issue credentials,\s+issue TrustSlips, write Trust Passport entries, share records across\s+domains, create trust relay paths, verify legal authority, move money,\s+activate billing, create marketplace activity, create a social Community,\s+change permissions, expose private member evidence, or score trust/,
+  "Community Domain dashboard Services lane must show read-only evidence release readiness without implying evidence release, file or storage-key exposure, public proof publishing, public URL or QR creation, credentials, TrustSlips, Trust Passport writes, cross-domain sharing, trust relay paths, legal verification, money movement, billing activation, marketplace activity, social Community creation, permission changes, private evidence exposure, or trust scoring.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainTrustRelayReadiness[\s\S]*trustRelayReadiness[\s\S]*trustRelaySummary[\s\S]*visibleTrustRelayLanes[\s\S]*blockedTrustRelayLanes[\s\S]*activeLane === "modules"[\s\S]*Trust relay readiness[\s\S]*primary_next_action[\s\S]*trust_relay_engine_status[\s\S]*relay_paths_created[\s\S]*bridge_member_candidates[\s\S]*open_relay_review_count[\s\S]*does not create relay paths,\s+record source-domain, bridge-member, or destination-domain rows, publish\s+proof, repost Spotlight, create cross-domain discovery, share private\s+records, expose evidence files, expose storage keys, issue TrustSlips,\s+write Trust Passport entries, create credentials, create marketplace\s+activity, create affiliations, activate billing, or move money/,
   "Community Domain dashboard Services lane must show read-only trust relay readiness without implying relay path creation, Spotlight reposting, proof publishing, cross-domain discovery, private evidence access, TrustSlip issuing, Trust Passport writes, credentials, marketplace activity, affiliations, billing activation, or money movement.",
   { frontend: true }
