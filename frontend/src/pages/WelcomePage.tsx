@@ -228,6 +228,12 @@ export default function WelcomePage() {
     navigate(createTo);
   }
 
+  function openCommunityDomainPurchase() {
+    writeStorage(ENTRY_MODE_KEY, "create");
+    writeStorage(ENTRY_INVITE_CODE_KEY, null);
+    navigate("/community-domain/purchase");
+  }
+
   function openJoin() {
     writeStorage(ENTRY_MODE_KEY, "invite");
     writeStorage(ENTRY_CREATE_CODE_KEY, null);
@@ -587,9 +593,9 @@ export default function WelcomePage() {
             >
               <div
                 style={{
-                  width: "min(100%, 680px)",
+                  width: "min(100%, 980px)",
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 318px))",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 302px))",
                   justifyContent: "center",
                   gap: isCompact ? 16 : 20,
                   padding: 0,
@@ -659,6 +665,40 @@ export default function WelcomePage() {
                       style={{ width: "100%" }}
                     >
                       Join community
+                    </EntryActionButton>
+                  </div>
+                </div>
+
+                <div style={choiceCard()}>
+                  <div style={iconBadge()} aria-hidden="true">
+                    <WelcomeIcon name="public-globe" />
+                  </div>
+
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={routePill()}>Institution</div>
+                    <div
+                      style={{
+                        fontSize: isCompact ? 24 : 28,
+                        fontWeight: 900,
+                        lineHeight: 1.08,
+                        textShadow: "0 10px 24px rgba(0,0,0,0.12)",
+                      }}
+                    >
+                      Purchase Community Domain
+                    </div>
+                    <div style={supportText()}>
+                      Check a paid institutional domain name before setup.
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", justifyContent: "center", gridColumn: "1 / -1" }}>
+                    <EntryActionButton
+                      type="button"
+                      onClick={openCommunityDomainPurchase}
+                      debugId="welcome.new.purchase-community-domain"
+                      style={{ width: "100%" }}
+                    >
+                      Check domain name
                     </EntryActionButton>
                   </div>
                 </div>

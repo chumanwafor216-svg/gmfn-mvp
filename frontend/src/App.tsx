@@ -25,6 +25,9 @@ import { gmfnBrand } from "./styles/gmfnBrand";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
 const CreateEntryPage = React.lazy(() => import("./pages/CreateEntryPage"));
+const CommunityDomainPurchasePage = React.lazy(
+  () => import("./pages/CommunityDomainPurchasePage")
+);
 const WelcomePage = React.lazy(() => import("./pages/WelcomePage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const JoinEntryPage = React.lazy(() => import("./pages/JoinEntryPage"));
@@ -728,6 +731,19 @@ export default function App() {
       <Route path="/register" element={<PreserveRedirect to="/create" />} />
       <Route path="/founder" element={<RedirectToCover entry="create" />} />
       <Route path="/public-create" element={<RedirectToCover entry="create" />} />
+
+      <Route
+        path="/community-domain/purchase"
+        element={<CommunityDomainPurchasePage />}
+      />
+      <Route
+        path="/purchase-community-domain"
+        element={<PreserveRedirect to="/community-domain/purchase" />}
+      />
+      <Route
+        path="/community-domain"
+        element={<PreserveRedirect to="/community-domain/purchase" />}
+      />
 
       <Route path="/join" element={<JoinEntryPage />} />
       <Route path="/join/:code" element={<JoinEntryPage />} />
