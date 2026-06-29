@@ -123,6 +123,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
+  /hasCreatedDraft[\s\S]*disabled=\{hasCreatedDraft\}[\s\S]*disabled=\{hasCreatedDraft\}[\s\S]*disabled=\{hasCreatedDraft\}[\s\S]*disabled=\{busy === "availability" \|\| hasCreatedDraft\}[\s\S]*Draft created/,
+  "Community Domain purchase page must lock form inputs after draft creation so the visible form cannot drift away from the created draft.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
   /draftActionLabel[\s\S]*Check name first[\s\S]*Choose another name[\s\S]*Sign in to create draft[\s\S]*if \(!availability\)[\s\S]*Check an available domain name before creating a draft request[\s\S]*if \(!availability\.available\)[\s\S]*Choose an available domain name before creating a draft request[\s\S]*if \(!isSignedIn\)[\s\S]*\/login\?force=1/,
   "Community Domain purchase draft action must explain missing availability before sending the owner to sign in.",
   { frontend: true }

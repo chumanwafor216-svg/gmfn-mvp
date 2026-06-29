@@ -364,6 +364,7 @@ export default function CommunityDomainPurchasePage() {
       ? "ready"
       : "blocked"
     : "waiting";
+  const hasCreatedDraft = Boolean(draftResult?.community_domain?.id);
   const draftActionLabel = draftResult
     ? "Draft request created"
     : busy === "draft"
@@ -581,6 +582,7 @@ export default function CommunityDomainPurchasePage() {
                     <input
                       value={organizationName}
                       onChange={(event) => setOrganizationName(event.target.value)}
+                      disabled={hasCreatedDraft}
                       placeholder="Dominion Schools Network"
                       style={inputStyle()}
                     />
@@ -596,6 +598,7 @@ export default function CommunityDomainPurchasePage() {
                         setDraftResult(null);
                         setQuoteResult(null);
                       }}
+                      disabled={hasCreatedDraft}
                       placeholder="dominion-schools"
                       style={inputStyle()}
                     />
@@ -614,6 +617,7 @@ export default function CommunityDomainPurchasePage() {
                     <select
                       value={templateKey}
                       onChange={(event) => setTemplateKey(event.target.value)}
+                      disabled={hasCreatedDraft}
                       style={inputStyle()}
                     >
                       {templates.map((template) => (
@@ -629,6 +633,7 @@ export default function CommunityDomainPurchasePage() {
                     <input
                       value={country}
                       onChange={(event) => setCountry(event.target.value)}
+                      disabled={hasCreatedDraft}
                       placeholder="Nigeria"
                       style={inputStyle()}
                     />
@@ -639,6 +644,7 @@ export default function CommunityDomainPurchasePage() {
                     <input
                       value={stateName}
                       onChange={(event) => setStateName(event.target.value)}
+                      disabled={hasCreatedDraft}
                       placeholder="Lagos"
                       style={inputStyle()}
                     />
@@ -659,11 +665,15 @@ export default function CommunityDomainPurchasePage() {
                   </div>
                   <EntryActionButton
                     type="submit"
-                    disabled={busy === "availability"}
+                    disabled={busy === "availability" || hasCreatedDraft}
                     debugId="community-domain-purchase.check-domain"
                     style={{ minWidth: isCompact ? "100%" : 190 }}
                   >
-                    {busy === "availability" ? "Checking..." : "Check domain name"}
+                    {hasCreatedDraft
+                      ? "Draft created"
+                      : busy === "availability"
+                      ? "Checking..."
+                      : "Check domain name"}
                   </EntryActionButton>
                 </div>
               </div>
