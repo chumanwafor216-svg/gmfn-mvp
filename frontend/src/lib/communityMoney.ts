@@ -216,6 +216,35 @@ function apiBase(): string {
   return String(raw || "").trim().replace(/\/+$/, "");
 }
 
+const COMMUNITY_MONEY_JSON_TIMEOUT_MS = 30000;
+
+async function fetchWithCommunityMoneyTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    COMMUNITY_MONEY_JSON_TIMEOUT_MS
+  );
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 function buildHeaders(clanId?: number): Record<string, string> {
   const token =
     typeof (api as any).getAccessToken === "function"
@@ -238,7 +267,7 @@ function buildHeaders(clanId?: number): Record<string, string> {
 }
 
 async function fetchJson(path: string, clanId?: number): Promise<any | null> {
-  const res = await fetch(`${apiBase()}${path}`, {
+  const res = await fetchWithCommunityMoneyTimeout(`${apiBase()}${path}`, {
     method: "GET",
     headers: buildHeaders(clanId),
     credentials: "include",
@@ -270,7 +299,7 @@ async function postJson(
   clanId?: number,
   method = "POST"
 ): Promise<any | null> {
-  const res = await fetch(`${apiBase()}${path}`, {
+  const res = await fetchWithCommunityMoneyTimeout(`${apiBase()}${path}`, {
     method,
     headers: {
       ...buildHeaders(clanId),
