@@ -90,8 +90,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainDashboard[\s\S]*primaryActionLaneKey[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*owner\/admin tools that check permissions[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
-  "Community Domain dashboard page must use the scoped backend summary, open matching lanes honestly, and keep payment, activation, and verification boundaries honest.",
+  /getCommunityDomainDashboard[\s\S]*setupPrimaryActionHasLane[\s\S]*hasServicesLane[\s\S]*setupPrimaryActionLaneKey === "verification"[\s\S]*\? "modules"[\s\S]*primaryActionFallbackNote[\s\S]*authority verification is shown there as a read-only readiness row[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*owner\/admin tools that check permissions[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
+  "Community Domain dashboard page must use the scoped backend summary, route authority-verification readiness to Services instead of an unrelated lane, and keep payment, activation, and verification boundaries honest.",
   { frontend: true }
 );
 

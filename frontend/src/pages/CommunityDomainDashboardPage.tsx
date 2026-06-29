@@ -670,12 +670,20 @@ export default function CommunityDomainDashboardPage() {
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
-  const primaryActionLaneKey = lanes.some((lane) => lane.lane_key === setupPrimaryActionLaneKey)
+  const setupPrimaryActionHasLane = lanes.some((lane) => lane.lane_key === setupPrimaryActionLaneKey);
+  const hasServicesLane = lanes.some((lane) => lane.lane_key === "modules");
+  const primaryActionLaneKey = setupPrimaryActionHasLane
     ? setupPrimaryActionLaneKey
+    : setupPrimaryActionLaneKey === "verification" && hasServicesLane
+    ? "modules"
     : dashboardPrimaryActionLaneKey;
   const primaryActionLane =
     lanes.find((lane) => lane.lane_key === primaryActionLaneKey) || selectedLane;
   const primaryActionLaneLabel = laneDisplayLabel(primaryActionLane, "work");
+  const primaryActionFallbackNote =
+    !setupPrimaryActionHasLane && setupPrimaryActionLaneKey === "verification" && hasServicesLane
+      ? "GSN opens Services because authority verification is shown there as a read-only readiness row. Actual authority verification still needs its separate owner/admin path."
+      : "";
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
   const packageReviewActionLabel = isAdmin
@@ -1324,6 +1332,11 @@ export default function CommunityDomainDashboardPage() {
                   GSN opens the matching lane here first; deeper changes still use
                   owner/admin tools that check permissions.
                 </div>
+                {primaryActionFallbackNote ? (
+                  <div style={{ ...helperText(), fontSize: 13 }}>
+                    {primaryActionFallbackNote}
+                  </div>
+                ) : null}
                 <StableButton
                   type="button"
                   kind="primary"
