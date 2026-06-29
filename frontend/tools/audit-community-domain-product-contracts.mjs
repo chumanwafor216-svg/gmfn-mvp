@@ -124,6 +124,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Community Domain engine[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleKeys\.length\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
+  "Community Domain dashboard must present the existing domain as an operating engine for structure, governance, services, and trust relay without overclaiming verification.",
+  { frontend: true }
+);
+
+assertContains(
   "src/lib/api.ts",
   /listMyCommunityDomains[\s\S]*\/community-domains\/my[\s\S]*getCommunityDomain\(/,
   "Frontend API layer must expose the signed-in Community Domain selector before single-domain reads.",

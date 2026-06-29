@@ -542,6 +542,65 @@ export default function CommunityDomainDashboardPage() {
             </div>
           </section>
 
+          <section style={whiteCard()}>
+            <div style={{ display: "grid", gap: 12 }}>
+              <div>
+                <div style={sectionLabel()}>Community Domain engine</div>
+                <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
+                  One institutional home for structure, rules, services, and trust.
+                </h2>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {[
+                  [
+                    "Structure",
+                    `${countValue(counts.nodes)} nodes`,
+                    "Branches, departments, classes, zones, or committees belong inside this domain.",
+                  ],
+                  [
+                    "Governance",
+                    `${countValue(counts.active_policies)} policies`,
+                    "Rules and reviews control who can change members, structure, and evidence.",
+                  ],
+                  [
+                    "Services",
+                    `${countValue(moduleKeys.length)} services`,
+                    "Shops, verification, analytics, vault, and other enabled services stay scoped here.",
+                  ],
+                  [
+                    "Trust relay",
+                    compactStatus(status.verification_status),
+                    "Evidence can travel with the domain, but verification still depends on current status.",
+                  ],
+                ].map(([label, value, detail]) => (
+                  <div key={String(label)} style={softCard()}>
+                    <div style={sectionLabel()}>{String(label)}</div>
+                    <div
+                      style={{
+                        marginTop: 5,
+                        fontSize: 20,
+                        lineHeight: 1.1,
+                        fontWeight: 950,
+                        textTransform: String(label) === "Trust relay" ? "capitalize" : "none",
+                      }}
+                    >
+                      {String(value)}
+                    </div>
+                    <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
+                      {String(detail)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
           <section
             style={{
               display: "grid",
