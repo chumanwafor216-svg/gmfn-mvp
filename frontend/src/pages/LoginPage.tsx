@@ -336,7 +336,7 @@ function signInSessionError(error: unknown, tokenStored: boolean): string {
   if (status === 401 || status === 403) {
     return (
       "Sign-in accepted, but the live system did not recognize the session token when opening your member record. " +
-      "Try once more. If it repeats, the backend session service needs checking."
+      "Try once more. If it repeats, the secure sign-in service needs checking."
     );
   }
 
@@ -346,8 +346,8 @@ function signInSessionError(error: unknown, tokenStored: boolean): string {
     lowerMessage.includes("network error")
   ) {
     return (
-      "Sign-in accepted, but the browser could not reach the member-session check. " +
-      "Check the connection and try again. If it repeats on this live site, the API or CORS setting needs checking."
+      "Sign-in accepted, but the browser could not reach the member record check. " +
+      "Check the connection and try again. If it repeats on this live site, the secure sign-in connection needs checking."
     );
   }
 

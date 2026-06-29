@@ -80,6 +80,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoginPage.tsx",
+  /function signInSessionError[\s\S]*secure sign-in service needs checking[\s\S]*member record check[\s\S]*secure sign-in connection needs checking/,
+  "Sign In session recovery errors must explain the problem without exposing backend/API/CORS language."
+);
+
+assertVisibleStringsDoNotContain(
+  "src/pages/LoginPage.tsx",
+  /\b(?:backend session service|API or CORS setting|member-session check)\b/i,
+  "Sign In session recovery copy must not expose builder-facing service language."
+);
+
+assertContains(
   "src/pages/CreateEntryPage.tsx",
   /buildActionBlockedMessage[\s\S]*?showError\(feedbackTargetForFinish[\s\S]*?buildActionSuccessMessage[\s\S]*?Opening First Circle now/,
   "Create Community must explain blockers and show a success handoff before the next route."
