@@ -216,6 +216,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainSocialBridge[\s\S]*socialBridge[\s\S]*socialBridgeSummary[\s\S]*linkedSocialCommunity[\s\S]*visibleSocialBridgeLanes[\s\S]*blockedSocialBridgeLanes[\s\S]*activeLane === "identity"[\s\S]*Social bridge readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*upgrade_path_status[\s\S]*linked_member_count[\s\S]*does not\s+create a social Community, upgrade an existing Community, set clan_id,\s+create affiliations, decide affiliations, copy members, invite members,\s+move marketplace activity, activate billing, verify authority, merge\s+Community and Community Domain records, or expose private member records/,
+  "Community Domain dashboard Identity lane must show read-only social bridge readiness without implying social Community creation, Community upgrade, clan_id linking, affiliation writes or decisions, member copying/invites, marketplace movement, billing activation, authority verification, record merging, or private member exposure.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainSubscriptionLifecycle[\s\S]*subscriptionLifecycle[\s\S]*subscriptionSummary[\s\S]*subscriptionPackage[\s\S]*visibleSubscriptionLanes[\s\S]*blockedSubscriptionLanes[\s\S]*activeLane === "billing"[\s\S]*Subscription lifecycle[\s\S]*primary_next_action[\s\S]*pricing_status[\s\S]*billing_status[\s\S]*renewal_status[\s\S]*does not\s+create quote acceptance, create payment instruction, create expected payment,\s+record payment, confirm payment, create invoices, create receipts, activate\s+billing, activate the Community Domain, create entitlements, renew a domain,\s+suspend a domain, reactivate a domain, verify authority, move money, or\s+expose private finance, member, evidence, or review records/,
   "Community Domain dashboard Billing lane must show read-only subscription lifecycle without implying quote acceptance, payment instruction, expected payment, payment records, invoices, receipts, billing activation, Community Domain activation, entitlements, renewal, suspension, reactivation, authority verification, money movement, or private record exposure.",
   { frontend: true }
