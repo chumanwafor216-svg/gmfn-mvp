@@ -53,6 +53,8 @@ import {
 
 type NoticeTone = "success" | "error" | "info";
 
+const API_JSON_TIMEOUT_MS = 30000;
+
 function labelWithIcon(name: GsnIconName, label: React.ReactNode): React.ReactNode {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
@@ -537,12 +539,32 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
     cleanPath = cleanPath.slice(4);
   }
   const url = `${root}${cleanPath}`;
-  const res = await fetch(url, {
-    ...init,
-    headers,
-    credentials: "include",
-    cache: "no-store",
-  });
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    API_JSON_TIMEOUT_MS
+  );
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      headers,
+      credentials: "include",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+
   const text = await res.text();
   if (!res.ok) {
     try {
