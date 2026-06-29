@@ -131,6 +131,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /requestCommunityDomainMembership[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*community-domain-dashboard\.error\.request-membership[\s\S]*Request access/,
+  "Community Domain dashboard denied-access state must expose the real membership request path without implying instant membership.",
+  { frontend: true }
+);
+
+assertContains(
   "src/lib/api.ts",
   /listMyCommunityDomains[\s\S]*\/community-domains\/my[\s\S]*getCommunityDomain\(/,
   "Frontend API layer must expose the signed-in Community Domain selector before single-domain reads.",

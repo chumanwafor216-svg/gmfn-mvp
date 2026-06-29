@@ -5,8 +5,10 @@ import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
 import { StableButton, StableCtaLink } from "../components/StableButton";
 import {
   createCommunityDomainPackageQuote,
+  getAccessToken,
   getCommunityDomainDashboard,
   listMyCommunityDomains,
+  requestCommunityDomainMembership,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 
@@ -199,6 +201,7 @@ export default function CommunityDomainDashboardPage() {
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
   const [busyQuote, setBusyQuote] = useState(false);
+  const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
   const [message, setMessage] = useState("");
 
   const loadDashboard = useCallback(async () => {
@@ -308,6 +311,47 @@ export default function CommunityDomainDashboardPage() {
     }
   }
 
+  async function requestDomainAccess() {
+    if (!communityDomainId) return;
+    if (!getAccessToken()) {
+      setMessage("Sign in first so GSN can attach the Community Domain request to your account.");
+      return;
+    }
+
+    setBusyMembershipRequest(true);
+    try {
+      const payload = await requestCommunityDomainMembership(communityDomainId, {
+        request_note: "Requesting access from the Community Domain dashboard.",
+      });
+      const reviewId = payload?.action_review?.id;
+      setMessage(
+        reviewId
+          ? `Access request sent for owner/admin review. Review ${reviewId} must still be approved and applied before membership changes.`
+          : "Access request sent for owner/admin review. It must still be approved and applied before membership changes."
+      );
+    } catch (err: any) {
+      const detail = err?.detail;
+      const code = detail?.code || "";
+      const text =
+        detail?.message ||
+        err?.message ||
+        "GSN could not send the Community Domain access request.";
+      if (code === "community_domain_membership_request_pending") {
+        setMessage(
+          "You already have a pending access request for this Community Domain. An owner/admin still needs to approve and apply it."
+        );
+      } else if (code === "community_domain_member_already_active") {
+        setMessage(
+          "You are already recorded as an active member. Try opening the dashboard again."
+        );
+      } else {
+        setMessage(text);
+      }
+    } finally {
+      setBusyMembershipRequest(false);
+    }
+  }
+
   return (
     <main style={pageShell()}>
       <PageTopNav
@@ -369,6 +413,17 @@ export default function CommunityDomainDashboardPage() {
             >
               Purchase path
             </StableCtaLink>
+            {communityDomainId ? (
+              <StableButton
+                type="button"
+                kind="secondary"
+                debugId="community-domain-dashboard.error.request-membership"
+                disabled={busyMembershipRequest}
+                onClick={requestDomainAccess}
+              >
+                {busyMembershipRequest ? "Sending request..." : "Request access"}
+              </StableButton>
+            ) : null}
           </div>
         </section>
       ) : null}
