@@ -13,6 +13,31 @@ type Row = {
   methods: string[];
 };
 
+const OPENAPI_TIMEOUT_MS = 30000;
+
+async function fetchOpenApiSpec(): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    OPENAPI_TIMEOUT_MS
+  );
+
+  try {
+    return await fetch("/api/openapi.json", {
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 export default function ApiPage() {
   const [title, setTitle] = useState("-");
   const [version, setVersion] = useState("-");
@@ -45,7 +70,7 @@ export default function ApiPage() {
       setErr(null);
       try {
         // Keep this on the frontend proxy so it reaches the configured backend.
-        const res = await fetch("/api/openapi.json");
+        const res = await fetchOpenApiSpec();
         if (!res.ok) throw new Error(await res.text());
 
         const spec = (await res.json()) as OpenApiSpec;
