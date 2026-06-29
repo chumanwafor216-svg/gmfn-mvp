@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Dict, List, Optional
 
@@ -9,6 +9,10 @@ from sqlalchemy.orm import Session
 
 from app.db.models import Loan, PoolEvent
 from app.services.notification_hooks import notify_pool_deposit_confirmed
+
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def _d(x: object) -> Decimal:
@@ -137,7 +141,7 @@ def request_deposit(
         currency=ccy,
         reference=build_reference(clan_id=int(clan_id), user_id=int(user_id)),
         note=(note or None),
-        created_at=datetime.utcnow(),
+        created_at=_now_utc(),
         confirmed_at=None,
         confirmed_by_user_id=None,
     )
@@ -174,7 +178,7 @@ def request_withdrawal(
         currency=ccy,
         reference=build_reference(clan_id=int(clan_id), user_id=int(user_id)),
         note=(note or None),
-        created_at=datetime.utcnow(),
+        created_at=_now_utc(),
         confirmed_at=None,
         confirmed_by_user_id=None,
     )
@@ -227,7 +231,7 @@ def confirm_pool_event(
     else:
         raise ValueError("Pool event is not pending")
 
-    e.confirmed_at = datetime.utcnow()
+    e.confirmed_at = _now_utc()
     e.confirmed_by_user_id = int(confirmed_by_user_id)
 
     if note:
