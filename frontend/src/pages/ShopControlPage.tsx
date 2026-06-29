@@ -722,6 +722,35 @@ function shopControlRequestErrorMessage(error: any): string {
   return message || "Shop Control could not complete that request.";
 }
 
+const SHOP_CONTROL_JSON_TIMEOUT_MS = 30000;
+
+async function fetchShopControlJson(
+  input: RequestInfo | URL,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    SHOP_CONTROL_JSON_TIMEOUT_MS
+  );
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   const headers = new Headers(init?.headers || {});
@@ -735,7 +764,7 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 
   let res: Response;
   try {
-    res = await fetch(apiUrl(path), {
+    res = await fetchShopControlJson(apiUrl(path), {
       ...init,
       headers,
       credentials: "include",
