@@ -3736,10 +3736,14 @@ export async function observeIdentityRisk(
     headers["X-Client-Fingerprint"] = effectiveFingerprint;
   }
 
-  const res = await fetch(buildUrl("/identity-risk/observe"), {
-    method: "POST",
-    headers,
-  });
+  const res = await fetchWithTimeout(
+    buildUrl("/identity-risk/observe"),
+    {
+      method: "POST",
+      headers,
+    },
+    DEFAULT_JSON_TIMEOUT_MS
+  );
 
   if (!res.ok) {
     throw new HttpStatusError(res.status, await parseError(res));
@@ -4078,7 +4082,7 @@ export async function fetchIdentityVerificationEvidenceBlob(
   const tok = getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
 
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     buildUrl(
       `/admin/identity-verification-checks/${encodeURIComponent(String(checkId))}/evidence`
     ),
@@ -4086,7 +4090,8 @@ export async function fetchIdentityVerificationEvidenceBlob(
       method: "GET",
       headers,
       cache: "no-store",
-    }
+    },
+    DEFAULT_JSON_TIMEOUT_MS
   );
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
