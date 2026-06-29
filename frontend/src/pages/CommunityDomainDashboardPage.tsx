@@ -14,6 +14,7 @@ import {
   getCommunityDomainEvidenceReleaseReadiness,
   getCommunityDomainAffiliationReadiness,
   getCommunityDomainGovernanceCoverage,
+  getCommunityDomainInstitutionalProfile,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
   getCommunityDomainNotificationScopeReadiness,
@@ -257,6 +258,15 @@ type AffiliationReadinessLane = {
 };
 
 type SocialBridgeLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  next_step?: string | null;
+};
+
+type InstitutionalProfileLane = {
   lane_key?: string | null;
   label?: string | null;
   status?: string | null;
@@ -672,6 +682,7 @@ export default function CommunityDomainDashboardPage() {
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
   const [notificationScopeReadiness, setNotificationScopeReadiness] = useState<any | null>(null);
   const [trustMobility, setTrustMobility] = useState<any | null>(null);
+  const [institutionalProfile, setInstitutionalProfile] = useState<any | null>(null);
   const [socialBridge, setSocialBridge] = useState<any | null>(null);
   const [affiliationReadiness, setAffiliationReadiness] = useState<any | null>(null);
   const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<any | null>(null);
@@ -718,6 +729,7 @@ export default function CommunityDomainDashboardPage() {
       setTrustRelayReadiness(null);
       setNotificationScopeReadiness(null);
       setTrustMobility(null);
+      setInstitutionalProfile(null);
       setSocialBridge(null);
       setAffiliationReadiness(null);
       setSubscriptionLifecycle(null);
@@ -754,6 +766,7 @@ export default function CommunityDomainDashboardPage() {
     setTrustRelayReadiness(null);
     setNotificationScopeReadiness(null);
     setTrustMobility(null);
+    setInstitutionalProfile(null);
     setSocialBridge(null);
     setAffiliationReadiness(null);
     setSubscriptionLifecycle(null);
@@ -860,6 +873,16 @@ export default function CommunityDomainDashboardPage() {
         setTrustMobility(null);
       }
       try {
+        const institutionalProfilePayload = await getCommunityDomainInstitutionalProfile(
+          communityDomainId
+        );
+        setInstitutionalProfile(
+          institutionalProfilePayload?.institutional_profile || null
+        );
+      } catch {
+        setInstitutionalProfile(null);
+      }
+      try {
         const socialBridgePayload = await getCommunityDomainSocialBridge(communityDomainId);
         setSocialBridge(socialBridgePayload?.social_bridge || null);
       } catch {
@@ -919,6 +942,7 @@ export default function CommunityDomainDashboardPage() {
       setTrustRelayReadiness(null);
       setNotificationScopeReadiness(null);
       setTrustMobility(null);
+      setInstitutionalProfile(null);
       setSocialBridge(null);
       setAffiliationReadiness(null);
       setSubscriptionLifecycle(null);
@@ -1087,6 +1111,20 @@ export default function CommunityDomainDashboardPage() {
     typeof trustMobility?.ready_total === "number"
       ? trustMobility.ready_total
       : visibleTrustMobilityLanes.filter((lane) => lane.ready).length;
+  const institutionalProfileSummary = institutionalProfile?.summary || {};
+  const institutionalProfileDetails = institutionalProfile?.institutional_profile || {};
+  const visibleInstitutionalProfileLanes: InstitutionalProfileLane[] = Array.isArray(
+    institutionalProfile?.lanes
+  )
+    ? institutionalProfile.lanes
+    : [];
+  const blockedInstitutionalProfileLanes = visibleInstitutionalProfileLanes.filter(
+    (lane) => !lane.ready
+  );
+  const institutionalProfileReadyTotal =
+    typeof institutionalProfile?.ready_total === "number"
+      ? institutionalProfile.ready_total
+      : visibleInstitutionalProfileLanes.filter((lane) => lane.ready).length;
   const socialBridgeSummary = socialBridge?.summary || {};
   const linkedSocialCommunity = socialBridge?.linked_community || {};
   const visibleSocialBridgeLanes: SocialBridgeLane[] = Array.isArray(socialBridge?.lanes)
@@ -2125,6 +2163,161 @@ export default function CommunityDomainDashboardPage() {
                       This identity view does not expose owner contact details,
                       private member lists, finance records, evidence files, or
                       verification proof.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "identity" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Institutional profile</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {institutionalProfile
+                        ? `${cleanText(
+                            institutionalProfile.primary_next_action?.label,
+                            "Review the institutional profile"
+                          )}. ${institutionalProfileReadyTotal} of ${visibleInstitutionalProfileLanes.length} institutional checks are ready.`
+                        : "GSN could not load the read-only institutional profile for this Community Domain."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        [
+                          "Template",
+                          cleanText(
+                            institutionalProfileDetails.template_label,
+                            cleanText(template.label, "Institution")
+                          ),
+                        ],
+                        [
+                          "Market posture",
+                          compactStatus(institutionalProfileDetails.marketplace_role),
+                        ],
+                        [
+                          "Members",
+                          countValue(institutionalProfileSummary.active_member_count),
+                        ],
+                        [
+                          "Policies",
+                          institutionalProfileSummary.active_policy_count == null
+                            ? "admin only"
+                            : countValue(institutionalProfileSummary.active_policy_count),
+                        ],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={{
+                            borderRadius: 14,
+                            background: "#F7FAFF",
+                            border: "1px solid rgba(9,27,46,0.08)",
+                            padding: 10,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                            {label}
+                          </div>
+                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                            {value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                      <span style={statusBadge(institutionalProfileSummary.domain_status)}>
+                        Domain: {compactStatus(institutionalProfileSummary.domain_status)}
+                      </span>
+                      <span style={statusBadge(institutionalProfileSummary.verification_status)}>
+                        Verification: {compactStatus(institutionalProfileSummary.verification_status)}
+                      </span>
+                      <span style={statusBadge(institutionalProfileSummary.structure_ready ? "ready" : "needs structure")}>
+                        Structure:{" "}
+                        {institutionalProfileSummary.structure_ready ? "ready" : "needs structure"}
+                      </span>
+                      <span style={statusBadge(institutionalProfileSummary.authority_verified ? "verified" : "unverified")}>
+                        Authority:{" "}
+                        {institutionalProfileSummary.authority_verified ? "verified" : "unverified"}
+                      </span>
+                    </div>
+                    {blockedInstitutionalProfileLanes.length ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        Institutional checks needing attention:{" "}
+                        <strong>
+                          {blockedInstitutionalProfileLanes
+                            .slice(0, 3)
+                            .map((lane) =>
+                              cleanText(
+                                lane.label,
+                                lane.lane_key || "institutional check"
+                              )
+                            )
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : institutionalProfile ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        No blocked institutional lane is visible, but verification,
+                        publication, billing, and custom schema are still separate.
+                      </div>
+                    ) : null}
+                    {visibleInstitutionalProfileLanes.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleInstitutionalProfileLanes.slice(0, 4).map((lane) => (
+                          <div
+                            key={cleanText(
+                              lane.lane_key,
+                              cleanText(lane.label, "institutional profile")
+                            )}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(lane.label, "Institutional check")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  lane.next_step,
+                                  "Keep this as institution planning until the matching operating path exists."
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(lane.status)}>
+                              {compactStatus(lane.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This institutional profile view is read-only package classification. It
+                      does not create a custom schema, custom tenant, custom billing package,
+                      nodes, members, policies, reviews, evidence, marketplace activity,
+                      shops, payments, finance records, social Community links, verification,
+                      activation, public publication, or private member, review, or evidence
+                      exposure.
                     </div>
                   </div>
                 ) : null}

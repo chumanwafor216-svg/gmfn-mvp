@@ -223,6 +223,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainInstitutionalProfile[\s\S]*institutionalProfile[\s\S]*institutionalProfileSummary[\s\S]*institutionalProfileDetails[\s\S]*visibleInstitutionalProfileLanes[\s\S]*blockedInstitutionalProfileLanes[\s\S]*activeLane === "identity"[\s\S]*Institutional profile[\s\S]*primary_next_action[\s\S]*template_label[\s\S]*marketplace_role[\s\S]*active_member_count[\s\S]*active_policy_count[\s\S]*does not\s+create a custom schema, custom tenant, custom billing package,\s+nodes, members, policies, reviews, evidence, marketplace activity,\s+shops, payments, finance records, social Community links, verification,\s+activation, public publication, or private member, review, or evidence\s+exposure/,
+  "Community Domain dashboard Identity lane must show read-only institutional profile classification without implying custom schema, tenant, billing package, node/member/policy/review/evidence writes, marketplace/shop/payment/finance records, social Community links, verification, activation, publication, or private record exposure.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainSubscriptionLifecycle[\s\S]*subscriptionLifecycle[\s\S]*subscriptionSummary[\s\S]*subscriptionPackage[\s\S]*visibleSubscriptionLanes[\s\S]*blockedSubscriptionLanes[\s\S]*activeLane === "billing"[\s\S]*Subscription lifecycle[\s\S]*primary_next_action[\s\S]*pricing_status[\s\S]*billing_status[\s\S]*renewal_status[\s\S]*does not\s+create quote acceptance, create payment instruction, create expected payment,\s+record payment, confirm payment, create invoices, create receipts, activate\s+billing, activate the Community Domain, create entitlements, renew a domain,\s+suspend a domain, reactivate a domain, verify authority, move money, or\s+expose private finance, member, evidence, or review records/,
   "Community Domain dashboard Billing lane must show read-only subscription lifecycle without implying quote acceptance, payment instruction, expected payment, payment records, invoices, receipts, billing activation, Community Domain activation, entitlements, renewal, suspension, reactivation, authority verification, money movement, or private record exposure.",
   { frontend: true }
