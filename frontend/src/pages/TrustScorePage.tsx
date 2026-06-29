@@ -330,6 +330,8 @@ function rowsOf<T = any>(input: any): T[] {
   return [];
 }
 
+const FETCH_FIRST_JSON_TIMEOUT_MS = 30000;
+
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -421,13 +423,25 @@ async function fetchFirstJson(
             headers["Authorization"] = `Bearer ${token}`;
           }
 
-          const res = await fetch(url, {
-            method,
-            headers,
-            credentials: "include",
-            cache: "no-store",
-            body: method === "POST" ? "{}" : undefined,
-          });
+          const controller = new AbortController();
+          const timer = globalThis.setTimeout(
+            () => controller.abort(),
+            FETCH_FIRST_JSON_TIMEOUT_MS
+          );
+
+          let res: Response;
+          try {
+            res = await fetch(url, {
+              method,
+              headers,
+              credentials: "include",
+              cache: "no-store",
+              body: method === "POST" ? "{}" : undefined,
+              signal: controller.signal,
+            });
+          } finally {
+            globalThis.clearTimeout(timer);
+          }
 
           if (!res.ok) continue;
 

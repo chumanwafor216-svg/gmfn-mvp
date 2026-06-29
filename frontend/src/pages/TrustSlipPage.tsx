@@ -325,6 +325,7 @@ type CommunityConfirmationOutcome = {
 const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v4";
 const GSN_EXEC_SUMMARY_URL = "/GSN_FINAL_WHITE.pdf";
 const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
+const FETCH_FIRST_JSON_TIMEOUT_MS = 30000;
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -495,12 +496,24 @@ async function fetchFirstJson(
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const res = await fetch(joinUrl(base, path), {
-          method: "GET",
-          headers,
-          credentials: "include",
-          cache: "no-store",
-        });
+        const controller = new AbortController();
+        const timer = globalThis.setTimeout(
+          () => controller.abort(),
+          FETCH_FIRST_JSON_TIMEOUT_MS
+        );
+
+        let res: Response;
+        try {
+          res = await fetch(joinUrl(base, path), {
+            method: "GET",
+            headers,
+            credentials: "include",
+            cache: "no-store",
+            signal: controller.signal,
+          });
+        } finally {
+          globalThis.clearTimeout(timer);
+        }
 
         if (!res.ok) continue;
 
