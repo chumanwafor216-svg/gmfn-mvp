@@ -3,6 +3,35 @@
 
 import { getAccessToken } from "./api";
 
+const TRUST_API_TIMEOUT_MS = 30000;
+
+async function fetchTrustApi(
+  input: RequestInfo | URL,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    TRUST_API_TIMEOUT_MS
+  );
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 async function parseOrText(res: Response) {
   const text = await res.text();
   try {
@@ -19,7 +48,7 @@ export async function apiGet<T>(path: string, token?: string): Promise<T> {
   const headers: Record<string, string> = {};
   if (t) headers["Authorization"] = `Bearer ${t}`;
 
-  const res = await fetch(url, { method: "GET", headers });
+  const res = await fetchTrustApi(url, { method: "GET", headers });
   const data: any = await parseOrText(res);
 
   if (res.status === 401) {
@@ -40,7 +69,7 @@ export async function apiPost<T>(path: string, body: any, token?: string): Promi
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (t) headers["Authorization"] = `Bearer ${t}`;
 
-  const res = await fetch(url, {
+  const res = await fetchTrustApi(url, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
