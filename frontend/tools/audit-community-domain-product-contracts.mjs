@@ -132,6 +132,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainReadiness[\s\S]*setupReadiness[\s\S]*blockedSetupReadinessItems[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention[\s\S]*does not create nodes, add members, assign roles,\s+decide reviews, create payment instructions, activate billing,\s+activate the domain, verify authority, or expose private evidence/,
+  "Community Domain dashboard must show read-only setup readiness blockers without implying setup, payment, activation, verification, or private-evidence writes.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainModuleScopeReadiness[\s\S]*SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*moduleScopeReadiness[\s\S]*serviceReadinessRows[\s\S]*Service readiness[\s\S]*Billing[\s\S]*Settings[\s\S]*does not enable services, activate billing, grant\s+permissions, publish Spotlight, create shops, open vault links, write Trust\s+Passport records, or expose private member activity/,
   "Community Domain dashboard Services lane must use read-only module-scope readiness rows for core services, billing, and settings without implying activation or private-record writes.",
   { frontend: true }

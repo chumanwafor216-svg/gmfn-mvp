@@ -11,6 +11,7 @@ import {
   getCommunityDomainDashboard,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
+  getCommunityDomainReadiness,
   getCommunityDomainReviewerQueue,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
@@ -87,6 +88,17 @@ type ServiceReadinessItem = {
   enabled_by_template?: boolean;
   module_scope_status?: string | null;
   ready_for_future_module_scope?: boolean;
+  next_step?: string | null;
+  route_hint?: string | null;
+  requires_admin?: boolean;
+};
+
+type SetupReadinessItem = {
+  lane_key?: string | null;
+  label?: string | null;
+  state?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
   next_step?: string | null;
   route_hint?: string | null;
   requires_admin?: boolean;
@@ -253,6 +265,7 @@ function statusBadge(status: unknown): React.CSSProperties {
 function laneForAction(actionKey: unknown): string {
   const key = cleanText(actionKey).toLowerCase();
   if (key.includes("package") || key.includes("billing")) return "billing";
+  if (key.includes("verify") || key.includes("verification")) return "verification";
   if (key.includes("review") || key.includes("governance")) return "governance";
   if (key.includes("member")) return "members";
   if (key.includes("module")) return "modules";
@@ -390,6 +403,7 @@ export default function CommunityDomainDashboardPage() {
   const [placementSummary, setPlacementSummary] = useState<any | null>(null);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
+  const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -423,6 +437,7 @@ export default function CommunityDomainDashboardPage() {
       setPlacementSummary(null);
       setNodeTree([]);
       setModuleScopeReadiness(null);
+      setSetupReadiness(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -446,6 +461,7 @@ export default function CommunityDomainDashboardPage() {
     setPlacementSummary(null);
     setNodeTree([]);
     setModuleScopeReadiness(null);
+    setSetupReadiness(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -457,6 +473,12 @@ export default function CommunityDomainDashboardPage() {
         setNodeTree(Array.isArray(treePayload?.items) ? treePayload.items : []);
       } catch {
         setNodeTree([]);
+      }
+      try {
+        const readinessPayload = await getCommunityDomainReadiness(communityDomainId);
+        setSetupReadiness(readinessPayload?.readiness || null);
+      } catch {
+        setSetupReadiness(null);
       }
       try {
         const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
@@ -498,6 +520,7 @@ export default function CommunityDomainDashboardPage() {
       setPlacementSummary(null);
       setNodeTree([]);
       setModuleScopeReadiness(null);
+      setSetupReadiness(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -551,7 +574,16 @@ export default function CommunityDomainDashboardPage() {
     ? governancePendingCount
     : Number(counts.open_reviews || 0);
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
-  const primaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
+  const visibleSetupReadinessItems: SetupReadinessItem[] = Array.isArray(setupReadiness?.items)
+    ? setupReadiness.items
+    : [];
+  const blockedSetupReadinessItems = visibleSetupReadinessItems.filter((item) => !item.ready);
+  const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
+  const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
+  const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
+  const primaryActionLaneKey = lanes.some((lane) => lane.lane_key === setupPrimaryActionLaneKey)
+    ? setupPrimaryActionLaneKey
+    : dashboardPrimaryActionLaneKey;
   const primaryActionLane =
     lanes.find((lane) => lane.lane_key === primaryActionLaneKey) || selectedLane;
   const primaryActionLaneLabel = laneDisplayLabel(primaryActionLane, "work");
@@ -1143,7 +1175,7 @@ export default function CommunityDomainDashboardPage() {
                 </h2>
                 <div style={helperText()}>
                   {cleanText(
-                    dashboard.primary_next_action?.label,
+                    setupPrimaryAction?.label,
                     "Review the current Community Domain setup state."
                   )}{" "}
                   GSN opens the matching lane here first; deeper changes still use
@@ -1180,6 +1212,72 @@ export default function CommunityDomainDashboardPage() {
                   <span style={statusBadge(status.verification_status)}>
                     {compactStatus(status.verification_status)}
                   </span>
+                </div>
+              </div>
+            </div>
+
+            <div style={whiteCard()}>
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={sectionLabel()}>Setup readiness</div>
+                <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
+                  {setupReadiness
+                    ? `${countValue(setupReadiness.ready_total)} of ${countValue(
+                        setupReadiness.total
+                      )} checks ready`
+                    : "Readiness is not loaded"}
+                </h2>
+                <div style={helperText()}>
+                  {setupReadiness
+                    ? `${countValue(
+                        setupReadiness.blocked_total
+                      )} setup checks still need attention before this domain should be treated as fully ready.`
+                    : "GSN could not load the read-only setup checklist for this view."}
+                </div>
+                {blockedSetupReadinessItems.length ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {blockedSetupReadinessItems.slice(0, 3).map((item) => (
+                      <div
+                        key={cleanText(item.lane_key, cleanText(item.label, "setup-check"))}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1fr) auto",
+                          gap: 10,
+                          alignItems: "center",
+                          borderRadius: 14,
+                          border: "1px solid rgba(146,94,8,0.16)",
+                          background: "rgba(255,247,226,0.62)",
+                          padding: "10px 10px 10px 12px",
+                        }}
+                      >
+                        <span style={{ minWidth: 0 }}>
+                          <span style={{ display: "block", fontWeight: 950 }}>
+                            {cleanText(item.label, "Setup check")}
+                          </span>
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#4F647A",
+                              fontSize: 12.5,
+                              lineHeight: 1.45,
+                              marginTop: 3,
+                            }}
+                          >
+                            {cleanText(item.next_step, "Review this setup area before launch.")}
+                          </span>
+                        </span>
+                        <span style={statusBadge(item.state)}>{compactStatus(item.state)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : setupReadiness ? (
+                  <div style={{ ...helperText(), fontSize: 13 }}>
+                    No setup blocker is visible in the read-only readiness checklist.
+                  </div>
+                ) : null}
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  This checklist does not create nodes, add members, assign roles,
+                  decide reviews, create payment instructions, activate billing,
+                  activate the domain, verify authority, or expose private evidence.
                 </div>
               </div>
             </div>
