@@ -2879,6 +2879,18 @@ export async function requestCommunityDomainMembership(
   );
 }
 
+export async function listMyCommunityDomainMembershipRequests(
+  communityDomainId: number | string,
+  params: { status?: string | null } = {}
+): Promise<any> {
+  return httpJson(
+    `${communityDomainPath(communityDomainId, "/membership-requests/my")}${buildQuery({
+      status: params.status || undefined,
+    })}`,
+    "GET"
+  );
+}
+
 export async function upsertCommunityDomainMember(
   communityDomainId: number | string,
   payload: CommunityDomainMembershipPayload

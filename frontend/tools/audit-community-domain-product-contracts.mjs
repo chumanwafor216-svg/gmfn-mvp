@@ -132,8 +132,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /requestCommunityDomainMembership[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*community-domain-dashboard\.error\.request-membership[\s\S]*Request access/,
+  /requestCommunityDomainMembership[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*community-domain-dashboard\.error\.request-membership/,
   "Community Domain dashboard denied-access state must expose the real membership request path without implying instant membership.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /listMyCommunityDomainMembershipRequests[\s\S]*membershipRequestStatusText[\s\S]*An owner\/admin still needs to approve and apply[\s\S]*loadOwnMembershipRequests[\s\S]*Your access request[\s\S]*community-domain-dashboard\.error\.request-membership/,
+  "Community Domain dashboard denied-access state must show the current user's own membership-request status without exposing the owner queue.",
   { frontend: true }
 );
 
@@ -412,9 +419,28 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /@router\.get\(\s*"\/\{community_domain_id\}\/membership-requests\/my"[\s\S]*def list_my_community_domain_membership_requests[\s\S]*requested_by_user_id == int\(current_user\.id\)[\s\S]*subject_user_id == int\(current_user\.id\)[\s\S]*target_type == "domain_member"[\s\S]*target_id == str\(int\(current_user\.id\)\)[\s\S]*own Community Domain membership requests only[\s\S]*does not expose the reviewer queue[\s\S]*or grant membership/,
+  "Backend must expose a requester-only Community Domain membership-request status route without exposing reviewer queues or granting membership."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_can_track_only_own_domain_membership_request[\s\S]*\/membership-requests\/my[\s\S]*own Community Domain membership requests only[\s\S]*other_requests\.json\(\)\["total"\] == 0[\s\S]*db\.query\(CommunityDomainMembership\)[\s\S]*== 0[\s\S]*review_row\.status == "rejected"[\s\S]*review_row\.applied_at is None/,
+  "Backend tests must prove non-members can track only their own Community Domain membership-request status without becoming members."
+);
+
+assertContains(
   "src/lib/api.ts",
   /CommunityDomainMembershipRequestPayload[\s\S]*requestCommunityDomainMembership[\s\S]*\/membership-requests[\s\S]*request_note[\s\S]*title/,
   "Frontend API layer must expose the real Community Domain membership request route.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /listMyCommunityDomainMembershipRequests[\s\S]*\/membership-requests\/my[\s\S]*status: params\.status/,
+  "Frontend API layer must expose the requester-only Community Domain membership request status route.",
   { frontend: true }
 );
 

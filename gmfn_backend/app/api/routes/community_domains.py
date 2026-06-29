@@ -19575,6 +19575,47 @@ def request_community_domain_membership(
     }
 
 
+@router.get(
+    "/{community_domain_id}/membership-requests/my",
+    response_model=dict[str, Any],
+)
+def list_my_community_domain_membership_requests(
+    community_domain_id: int,
+    status: Optional[str] = Query(default=None, max_length=24),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    query = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReview.action_key == "domain_member.upsert")
+        .filter(CommunityDomainActionReview.requested_by_user_id == int(current_user.id))
+        .filter(CommunityDomainActionReview.subject_user_id == int(current_user.id))
+        .filter(CommunityDomainActionReview.target_type == "domain_member")
+        .filter(CommunityDomainActionReview.target_id == str(int(current_user.id)))
+    )
+    if status:
+        query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
+
+    rows = query.order_by(
+        CommunityDomainActionReview.created_at.desc(),
+        CommunityDomainActionReview.id.desc(),
+    ).all()
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "items": [_action_review_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "Current user's own Community Domain membership requests only. "
+            "This does not expose the reviewer queue, member lists, owner notes "
+            "outside the review payload, private evidence, governance records, "
+            "or grant membership."
+        ),
+    }
+
+
 @router.post("/{community_domain_id}/members", status_code=201, response_model=dict[str, Any])
 def upsert_community_domain_member(
     community_domain_id: int,

@@ -18471,6 +18471,117 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
         assert review_row.applied_at is not None
 
 
+def test_outsider_can_track_only_own_domain_membership_request(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "track-domain-request@example.com")
+    other_outsider = _seed_user(3, "track-domain-other@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Tracked Membership Request Union",
+                "display_name": "Tracked Membership Request Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "tracked-membership-request-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please let me into this domain."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+
+        my_requests = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my"
+        )
+        assert my_requests.status_code == 200, my_requests.text
+        my_data = my_requests.json()
+        assert my_data["total"] == 1
+        assert "own Community Domain membership requests only" in my_data["boundary"]
+        assert "does not expose the reviewer queue" in my_data["boundary"]
+        assert "or grant membership" in my_data["boundary"]
+        my_review = my_data["items"][0]
+        assert my_review["id"] == review["id"]
+        assert my_review["status"] == "pending"
+        assert my_review["action_key"] == "domain_member.upsert"
+        assert my_review["requested_by_user_id"] == requester.id
+        assert my_review["subject_user_id"] == requester.id
+        assert my_review["target_type"] == "domain_member"
+        assert my_review["target_id"] == str(requester.id)
+
+        filtered = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my",
+            params={"status": "approved"},
+        )
+        assert filtered.status_code == 200, filtered.text
+        assert filtered.json()["total"] == 0
+
+        app.dependency_overrides[get_current_user] = lambda: other_outsider
+        other_requests = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my"
+        )
+        assert other_requests.status_code == 200, other_requests.text
+        assert other_requests.json()["total"] == 0
+
+        with SessionLocal() as db:
+            assert db.query(CommunityDomainMembership).count() == 1
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        rejected = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "reject",
+                "decision_note": "Not enough relationship evidence yet.",
+            },
+        )
+        assert rejected.status_code == 200, rejected.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        rejected_status = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my",
+            params={"status": "rejected"},
+        )
+        assert rejected_status.status_code == 200, rejected_status.text
+        assert rejected_status.json()["total"] == 1
+        assert rejected_status.json()["items"][0]["id"] == review["id"]
+        assert rejected_status.json()["items"][0]["status"] == "rejected"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == requester.id)
+            .count()
+            == 0
+        )
+        review_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == review["id"])
+            .one()
+        )
+        assert review_row.status == "rejected"
+        assert review_row.applied_at is None
+
+
 def test_domain_member_review_rejects_numeric_target_mismatch(
     client: TestClient,
 ):

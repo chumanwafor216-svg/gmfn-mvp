@@ -11,6 +11,7 @@ import {
   getCommunityDomainDashboard,
   getCommunityDomainReviewerQueue,
   listCommunityDomainActionReviews,
+  listMyCommunityDomainMembershipRequests,
   listMyCommunityDomains,
   requestCommunityDomainMembership,
 } from "../lib/api";
@@ -240,6 +241,38 @@ function reviewRequesterLabel(review: ActionReviewItem): string {
   );
 }
 
+function membershipRequestStatusText(review: ActionReviewItem | null): string {
+  const status = cleanText(review?.status, "pending").toLowerCase();
+  const reviewId = cleanText(review?.id);
+  const reviewLabel = reviewId ? ` Review ${reviewId}` : "";
+  if (status === "pending" || status === "pending_review") {
+    return `${reviewLabel} is pending. An owner/admin still needs to approve and apply it before membership changes.`;
+  }
+  if (status === "approved") {
+    return `${reviewLabel} is approved, but membership still has to be applied by an owner/admin before this dashboard opens.`;
+  }
+  if (status === "applied") {
+    return `${reviewLabel} has been applied. Try opening the dashboard again so GSN can refresh your membership view.`;
+  }
+  if (status === "rejected") {
+    return `${reviewLabel} was declined. You can request again when you have clearer community proof or owner guidance.`;
+  }
+  return `${reviewLabel} is marked ${compactStatus(status)}. This status does not grant dashboard access by itself.`;
+}
+
+function membershipRequestButtonLabel(
+  review: ActionReviewItem | null,
+  busy: boolean
+): string {
+  if (busy) return "Sending request...";
+  const status = cleanText(review?.status).toLowerCase();
+  if (status === "pending" || status === "pending_review") return "Request pending";
+  if (status === "approved") return "Approved, waiting to add";
+  if (status === "applied") return "Try dashboard again";
+  if (status === "rejected") return "Request again";
+  return "Request access";
+}
+
 function mergeActionReviews(...groups: ActionReviewItem[][]): ActionReviewItem[] {
   const byId = new Map<string, ActionReviewItem>();
   groups.flat().forEach((item) => {
@@ -255,6 +288,7 @@ export default function CommunityDomainDashboardPage() {
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [domainItems, setDomainItems] = useState<any[]>([]);
   const [reviewerQueue, setReviewerQueue] = useState<ActionReviewItem[]>([]);
+  const [ownMembershipRequests, setOwnMembershipRequests] = useState<ActionReviewItem[]>([]);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -264,10 +298,27 @@ export default function CommunityDomainDashboardPage() {
   const [busyReviewId, setBusyReviewId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
+  const loadOwnMembershipRequests = useCallback(async () => {
+    if (!communityDomainId || !getAccessToken()) {
+      setOwnMembershipRequests([]);
+      return [];
+    }
+    try {
+      const payload = await listMyCommunityDomainMembershipRequests(communityDomainId);
+      const items = Array.isArray(payload?.items) ? payload.items : [];
+      setOwnMembershipRequests(items);
+      return items;
+    } catch {
+      setOwnMembershipRequests([]);
+      return [];
+    }
+  }, [communityDomainId]);
+
   const loadDashboard = useCallback(async () => {
     if (!communityDomainId) {
       setLoading(true);
       setMessage("");
+      setOwnMembershipRequests([]);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -287,6 +338,7 @@ export default function CommunityDomainDashboardPage() {
     setMessage("");
     setDomainItems([]);
     setReviewerQueue([]);
+    setOwnMembershipRequests([]);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -312,6 +364,7 @@ export default function CommunityDomainDashboardPage() {
       }
     } catch (err: any) {
       setDashboard(null);
+      await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
           "GSN could not open this Community Domain dashboard. Check that you are signed in as an active domain member."
@@ -319,7 +372,7 @@ export default function CommunityDomainDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [communityDomainId]);
+  }, [communityDomainId, loadOwnMembershipRequests]);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -337,6 +390,13 @@ export default function CommunityDomainDashboardPage() {
   const counts = dashboard?.counts || {};
   const lanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
+  const latestMembershipRequest = ownMembershipRequests[0] || null;
+  const latestMembershipRequestStatus = cleanText(latestMembershipRequest?.status).toLowerCase();
+  const requestAccessLocked =
+    busyMembershipRequest ||
+    latestMembershipRequestStatus === "pending" ||
+    latestMembershipRequestStatus === "pending_review" ||
+    latestMembershipRequestStatus === "approved";
   const membershipAccessRequests = reviewerQueue.filter(
     (review) => cleanText(review.action_key) === "domain_member.upsert"
   );
@@ -517,6 +577,7 @@ export default function CommunityDomainDashboardPage() {
         request_note: "Requesting access from the Community Domain dashboard.",
       });
       const reviewId = payload?.action_review?.id;
+      await loadOwnMembershipRequests();
       setMessage(
         reviewId
           ? `Access request sent for owner/admin review. Review ${reviewId} must still be approved and applied before membership changes.`
@@ -530,6 +591,7 @@ export default function CommunityDomainDashboardPage() {
         err?.message ||
         "GSN could not send the Community Domain access request.";
       if (code === "community_domain_membership_request_pending") {
+        await loadOwnMembershipRequests();
         setMessage(
           "You already have a pending access request for this Community Domain. An owner/admin still needs to approve and apply it."
         );
@@ -579,6 +641,22 @@ export default function CommunityDomainDashboardPage() {
               : "Your Community Domains could not be loaded."}
           </h2>
           <div style={helperText()}>{message}</div>
+          {latestMembershipRequest ? (
+            <div
+              style={{
+                marginTop: 12,
+                borderRadius: 16,
+                border: "1px solid rgba(146,94,8,0.22)",
+                background: "rgba(255,247,226,0.72)",
+                padding: 12,
+              }}
+            >
+              <div style={sectionLabel()}>Your access request</div>
+              <div style={{ ...helperText(), marginTop: 6 }}>
+                {membershipRequestStatusText(latestMembershipRequest)}
+              </div>
+            </div>
+          ) : null}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
             <StableButton
               type="button"
@@ -611,10 +689,17 @@ export default function CommunityDomainDashboardPage() {
                 type="button"
                 kind="secondary"
                 debugId="community-domain-dashboard.error.request-membership"
-                disabled={busyMembershipRequest}
-                onClick={requestDomainAccess}
+                disabled={requestAccessLocked}
+                onClick={
+                  latestMembershipRequestStatus === "applied"
+                    ? loadDashboard
+                    : requestDomainAccess
+                }
               >
-                {busyMembershipRequest ? "Sending request..." : "Request access"}
+                {membershipRequestButtonLabel(
+                  latestMembershipRequest,
+                  busyMembershipRequest
+                )}
               </StableButton>
             ) : null}
           </div>
