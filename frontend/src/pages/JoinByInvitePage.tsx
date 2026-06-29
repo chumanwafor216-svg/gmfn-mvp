@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { PrimaryButton, StableCtaLink } from "../components/StableButton";
+import { getInvitePreview } from "../lib/api";
 
 type Preview = {
   code: string;
@@ -13,38 +14,8 @@ type Preview = {
   revoked_at?: string | null;
 };
 
-async function parseError(res: Response): Promise<string> {
-  const text = await res.text();
-  try {
-    const j = JSON.parse(text);
-    return j?.detail || text || `HTTP ${res.status}`;
-  } catch {
-    return text || `HTTP ${res.status}`;
-  }
-}
-
 function cleanText(value: any): string {
   return String(value ?? "").trim();
-}
-
-function apiBase(): string {
-  const raw =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      (import.meta as any).env.VITE_API_BASE_URL) ||
-    "/api";
-
-  return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function apiUrl(path: string): string {
-  const raw = cleanText(path);
-  if (/^https?:\/\//i.test(raw)) return raw;
-
-  let cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
-  if (cleanPath.startsWith("/api/")) cleanPath = cleanPath.slice(4);
-
-  return `${apiBase()}${cleanPath}`;
 }
 
 function fmtDate(iso?: string | null): string {
@@ -243,7 +214,8 @@ export default function JoinByInvitePage() {
   }, []);
 
   useEffect(() => {
-    if (!code) return;
+    const inviteCode = cleanText(code);
+    if (!inviteCode) return;
 
     let cancelled = false;
 
@@ -252,10 +224,7 @@ export default function JoinByInvitePage() {
         setErr(null);
         setLoading(true);
 
-        const res = await fetch(apiUrl(`/api/invites/preview/${code}`));
-        if (!res.ok) throw new Error(await parseError(res));
-
-        const data = (await res.json()) as Preview;
+        const data = (await getInvitePreview(inviteCode)) as Preview;
         if (!cancelled) setPreview(data);
       } catch (e: any) {
         if (!cancelled) setErr(e?.message || "Failed to load invitation");
