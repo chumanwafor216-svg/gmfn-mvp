@@ -146,6 +146,8 @@ type RevenuePreview = {
 
 type FeedbackTone = "success" | "error";
 
+const FETCH_JSON_TIMEOUT_MS = 30000;
+
 type CollapseState = {
   overview: boolean;
   guarantors: boolean;
@@ -441,11 +443,30 @@ function authHeaders(clanId?: number) {
 }
 
 async function fetchJson(path: string, clanId?: number): Promise<any> {
-  const res = await fetch(apiUrl(path), {
-    method: "GET",
-    headers: authHeaders(clanId),
-    credentials: "include",
-  });
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    FETCH_JSON_TIMEOUT_MS
+  );
+
+  let res: Response;
+  try {
+    res = await fetch(apiUrl(path), {
+      method: "GET",
+      headers: authHeaders(clanId),
+      credentials: "include",
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const message = await res.text().catch(() => "");
