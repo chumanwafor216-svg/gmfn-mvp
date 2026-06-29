@@ -42,6 +42,7 @@ type SettingsState = {
 type NoticeTone = "success" | "error";
 
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
+const SLOW_WORKSPACE_SETTINGS_LOAD_MS = 8000;
 
 const DEFAULT_SETTINGS: SettingsState = {
   notificationsMode: "summary",
@@ -886,6 +887,7 @@ export default function MyGMFNAndIPage() {
   );
 
   const [loading, setLoading] = useState(true);
+  const [slowLoad, setSlowLoad] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{
     tone: NoticeTone;
@@ -933,6 +935,19 @@ export default function MyGMFNAndIPage() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!loading || !isAppRoute) {
+      setSlowLoad(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSlowLoad(true);
+    }, SLOW_WORKSPACE_SETTINGS_LOAD_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [loading, isAppRoute]);
 
   useEffect(() => {
     let alive = true;
@@ -1183,9 +1198,25 @@ export default function MyGMFNAndIPage() {
         />
 
         <section style={pageCard()}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading workspace settings...
+          <div style={{ color: "#64748B", lineHeight: 1.8, fontWeight: 800 }}>
+            {slowLoad
+              ? "This is taking longer than expected."
+              : "Loading workspace settings..."}
           </div>
+          {slowLoad ? (
+            <p
+              style={{
+                margin: "10px 0 0",
+                color: "#617085",
+                fontSize: 14,
+                lineHeight: 1.65,
+                maxWidth: 680,
+              }}
+            >
+              Your guide can still open from Dashboard after the connection
+              settles. Wait here, or use the Dashboard link above and come back.
+            </p>
+          ) : null}
         </section>
       </div>
     );
