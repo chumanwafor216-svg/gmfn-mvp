@@ -10,6 +10,7 @@ import {
   getAccessToken,
   getCommunityDomainDashboard,
   getCommunityDomainMemberPlacementSummary,
+  getCommunityDomainModuleScopeReadiness,
   getCommunityDomainReviewerQueue,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
@@ -79,6 +80,18 @@ type StructureNode = {
   children?: StructureNode[];
 };
 
+type ServiceReadinessItem = {
+  module_key?: string | null;
+  label?: string | null;
+  summary?: string | null;
+  enabled_by_template?: boolean;
+  module_scope_status?: string | null;
+  ready_for_future_module_scope?: boolean;
+  next_step?: string | null;
+  route_hint?: string | null;
+  requires_admin?: boolean;
+};
+
 const MODULE_LABELS: Record<string, string> = {
   governance: "Governance",
   members: "Members",
@@ -88,7 +101,26 @@ const MODULE_LABELS: Record<string, string> = {
   spotlight: "Spotlight",
   vault: "Vault",
   verification: "Verification",
+  trust_centre: "Trust Centre",
   analytics: "Analytics",
+  billing: "Billing",
+  settings: "Settings",
+};
+
+const SERVICE_READINESS_KEYS = [
+  "shops",
+  "spotlight",
+  "vault",
+  "verification",
+  "trust_centre",
+  "analytics",
+] as const;
+
+type ServiceReadinessRow = {
+  key: string;
+  label: string;
+  status: string;
+  detail: string;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -188,7 +220,14 @@ function factTile(): React.CSSProperties {
 
 function statusBadge(status: unknown): React.CSSProperties {
   const text = cleanText(status).toLowerCase();
-  const warning = text.includes("draft") || text.includes("quote") || text.includes("not");
+  const warning =
+    text.includes("draft") ||
+    text.includes("quote") ||
+    text.includes("not") ||
+    text.includes("needs") ||
+    text.includes("pending") ||
+    text.includes("optional") ||
+    text.includes("read only");
   const danger = text.includes("suspended") || text.includes("expired") || text.includes("closed");
   const palette = danger
     ? { bg: "rgba(153,27,27,0.10)", color: "#991B1B", border: "rgba(153,27,27,0.20)" }
@@ -223,6 +262,26 @@ function laneForAction(actionKey: unknown): string {
 function moduleLabel(moduleKey: unknown): string {
   const key = cleanText(moduleKey);
   return MODULE_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, (x) => x.toUpperCase());
+}
+
+function serviceReadinessStatus(item: ServiceReadinessItem | undefined, fallbackEnabled: boolean): string {
+  const status = cleanText(item?.module_scope_status).toLowerCase();
+  if (!item) return fallbackEnabled ? "template listed" : "not listed";
+  if (status === "ready_for_future_module_scope") return "planning ready";
+  if (status === "needs_operating_units") return "needs structure";
+  if (status === "needs_node_participants") return "needs placements";
+  if (status === "needs_domain_policy") return "needs domain policy";
+  if (status === "needs_scope_policy") return "needs service policy";
+  if (status === "needs_review_signal") return "needs review signal";
+  if (status === "optional_module_not_enabled") return "optional, not included";
+  return compactStatus(status || (item.ready_for_future_module_scope ? "planning ready" : "not ready"));
+}
+
+function serviceFallbackDetail(serviceKey: string, fallbackEnabled: boolean): string {
+  if (fallbackEnabled) {
+    return "Listed by this Community Domain template. Readiness details are not loaded yet.";
+  }
+  return "Not included by the current template unless an owner later chooses to configure it.";
 }
 
 function laneDisplayLabel(lane: any, fallback = "Lane"): string {
@@ -330,6 +389,7 @@ export default function CommunityDomainDashboardPage() {
   const [ownMembershipRequests, setOwnMembershipRequests] = useState<ActionReviewItem[]>([]);
   const [placementSummary, setPlacementSummary] = useState<any | null>(null);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
+  const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -362,6 +422,7 @@ export default function CommunityDomainDashboardPage() {
       setOwnMembershipRequests([]);
       setPlacementSummary(null);
       setNodeTree([]);
+      setModuleScopeReadiness(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -384,6 +445,7 @@ export default function CommunityDomainDashboardPage() {
     setOwnMembershipRequests([]);
     setPlacementSummary(null);
     setNodeTree([]);
+    setModuleScopeReadiness(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -395,6 +457,12 @@ export default function CommunityDomainDashboardPage() {
         setNodeTree(Array.isArray(treePayload?.items) ? treePayload.items : []);
       } catch {
         setNodeTree([]);
+      }
+      try {
+        const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
+        setModuleScopeReadiness(readinessPayload?.module_scope_readiness || null);
+      } catch {
+        setModuleScopeReadiness(null);
       }
       const viewerUserId = nextDashboard?.viewer?.user_id;
       if (viewerUserId) {
@@ -429,6 +497,7 @@ export default function CommunityDomainDashboardPage() {
       setDashboard(null);
       setPlacementSummary(null);
       setNodeTree([]);
+      setModuleScopeReadiness(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -503,6 +572,50 @@ export default function CommunityDomainDashboardPage() {
       : [];
     return Array.from(new Set([...included, ...templateModules])).slice(0, 8);
   }, [quote, template]);
+
+  const serviceReadinessRows = useMemo(() => {
+    const readinessItems: ServiceReadinessItem[] = Array.isArray(moduleScopeReadiness?.modules)
+      ? moduleScopeReadiness.modules
+      : [];
+    const byKey = new Map(
+      readinessItems
+        .map((item) => [cleanText(item.module_key), item] as const)
+        .filter(([key]) => Boolean(key))
+    );
+    const listedKeys = new Set(moduleKeys.map((key) => cleanText(key)));
+    const serviceRows: ServiceReadinessRow[] = SERVICE_READINESS_KEYS.map((serviceKey) => {
+      const item = byKey.get(serviceKey);
+      const fallbackEnabled = listedKeys.has(serviceKey);
+      return {
+        key: serviceKey,
+        label: cleanText(item?.label, moduleLabel(serviceKey)),
+        status: serviceReadinessStatus(item, fallbackEnabled),
+        detail: cleanText(
+          item?.next_step || item?.summary,
+          serviceFallbackDetail(serviceKey, fallbackEnabled)
+        ),
+      };
+    });
+
+    serviceRows.push({
+      key: "billing",
+      label: "Billing",
+      status: compactStatus(status.billing_status || quote?.pricing_status || quote?.quote_status),
+      detail: billingIsActive
+        ? "Billing is shown as active here, but payment instructions and renewals remain separate owner/admin work."
+        : "Package, payment instruction, activation, and renewal are still separate from service readiness.",
+    });
+    serviceRows.push({
+      key: "settings",
+      label: "Settings",
+      status: moduleScopeReadiness ? "read only" : "not loaded",
+      detail: moduleScopeReadiness
+        ? "Settings are shown as planning status here. This page does not enable services or grant permissions."
+        : "Service settings could not be loaded for this view. No setting has been changed.",
+    });
+
+    return serviceRows;
+  }, [billingIsActive, moduleKeys, moduleScopeReadiness, quote, status.billing_status]);
 
   async function loadAccessReviewItems(showLoading = false) {
     if (!communityDomainId) return;
@@ -1213,22 +1326,56 @@ export default function CommunityDomainDashboardPage() {
 
                 {activeLane === "modules" ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>Service rows</div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {(moduleKeys.length ? moduleKeys : ["governance", "members", "analytics"]).map(
-                        (moduleKey) => (
-                          <div key={String(moduleKey)} style={statusBadge("ready")}>
-                            {moduleLabel(moduleKey)}
-                          </div>
-                        )
-                      )}
+                    <div style={sectionLabel()}>Service readiness</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      Shops, Spotlight, Vault, Verification, Trust Centre, Analytics, Billing,
+                      and Settings are shown as scoped planning rows for this Community Domain.
+                    </div>
+                    {moduleScopeReadiness?.primary_next_action?.label ? (
+                      <div style={{ ...helperText(), marginTop: 7 }}>
+                        Next owner/admin step:{" "}
+                        <strong>{moduleScopeReadiness.primary_next_action.label}</strong>.
+                      </div>
+                    ) : null}
+                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                      {serviceReadinessRows.map((row) => (
+                        <div
+                          key={row.key}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0, 1fr) auto",
+                            gap: 10,
+                            alignItems: "center",
+                            borderRadius: 14,
+                            border: "1px solid rgba(9,27,46,0.10)",
+                            background: "rgba(255,255,255,0.72)",
+                            padding: "10px 10px 10px 12px",
+                          }}
+                        >
+                          <span style={{ minWidth: 0 }}>
+                            <span style={{ display: "block", fontWeight: 950 }}>
+                              {row.label}
+                            </span>
+                            <span
+                              style={{
+                                display: "block",
+                                color: "#4F647A",
+                                fontSize: 12.5,
+                                lineHeight: 1.45,
+                                marginTop: 3,
+                              }}
+                            >
+                              {row.detail}
+                            </span>
+                          </span>
+                          <span style={statusBadge(row.status)}>{row.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This readiness view does not enable services, activate billing, grant
+                      permissions, publish Spotlight, create shops, open vault links, write Trust
+                      Passport records, or expose private member activity.
                     </div>
                   </div>
                 ) : null}

@@ -51,14 +51,14 @@ function assertNotContains(rootedPath, pattern, message, options = {}) {
 
 assertContains(
   "docs/PROJECT_PROTOCOL.md",
-  /Community versus Community Domain[\s\S]*?\*\*Community\*\*[\s\S]*?\*\*Community Domain\*\*[\s\S]*?Purchase Community Domain[\s\S]*?Do not call the institutional object a `Community Package`/,
-  "Project protocol must keep lightweight Community and institutional Community Domain separate."
+  /Committee, Community, and Community Domain[\s\S]*?\*\*Committee\*\*[\s\S]*?future product language for the lightweight[\s\S]*?\*\*Community Domain\*\* means the institutional\/paid domain layer[\s\S]*?Purchase Community Domain[\s\S]*?Do not call the institutional object a `Community Package`/,
+  "Project protocol must keep lightweight Committee compatibility and institutional Community Domain separate."
 );
 
 assertContains(
   "docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md",
-  /Create Community[\s\S]*?Purchase Community Domain[\s\S]*?free social entry path separate from the institutional SaaS\s+entry path/,
-  "Canonical skeleton must keep the two entry paths separate."
+  /Create Committee[\s\S]*?Purchase Community Domain[\s\S]*?Existing `Create Community` compatibility surfaces[\s\S]*?free\/self-created committee path must stay separate from[\s\S]*?institutional Community Domain SaaS path/,
+  "Canonical skeleton must keep the lightweight committee path separate from the institutional Community Domain path."
 );
 
 assertContains(
@@ -127,6 +127,13 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /Community Domain engine[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleKeys\.length\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
   "Community Domain dashboard must present the existing domain as an operating engine for structure, governance, services, and trust relay without overclaiming verification.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainModuleScopeReadiness[\s\S]*SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*moduleScopeReadiness[\s\S]*serviceReadinessRows[\s\S]*Service readiness[\s\S]*Billing[\s\S]*Settings[\s\S]*does not enable services, activate billing, grant\s+permissions, publish Spotlight, create shops, open vault links, write Trust\s+Passport records, or expose private member activity/,
+  "Community Domain dashboard Services lane must use read-only module-scope readiness rows for core services, billing, and settings without implying activation or private-record writes.",
   { frontend: true }
 );
 
