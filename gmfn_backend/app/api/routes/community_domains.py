@@ -10825,6 +10825,428 @@ def _community_domain_evidence_map_payload(
     }
 
 
+COMMUNITY_DOMAIN_EVIDENCE_RECORD_PRESETS: list[dict[str, Any]] = [
+    {
+        "record_type": "domain_registration",
+        "label": "Domain registration",
+        "subject_type": "community_domain",
+        "issuer_type": "domain_admin",
+        "required_scope": "domain",
+        "markers": ("domain_registration", "domain.registration", "registration"),
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "owner_attestation",
+        "label": "Owner attestation",
+        "subject_type": "community_domain_owner",
+        "issuer_type": "domain_owner",
+        "required_scope": "domain",
+        "markers": ("owner_attestation", "owner.attestation", "owner", "attestation"),
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "member_witness",
+        "label": "Member witness",
+        "subject_type": "domain_member",
+        "issuer_type": "member_or_admin",
+        "required_scope": "member",
+        "markers": ("member_witness", "member.witness", "witness", "verification"),
+        "requires_member": True,
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "role_appointment",
+        "label": "Role appointment",
+        "subject_type": "domain_or_node_role",
+        "issuer_type": "domain_admin",
+        "required_scope": "role",
+        "markers": ("role_appointment", "role.appointment", "role", "admin"),
+        "requires_admin_role": True,
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "department_membership",
+        "label": "Department membership",
+        "subject_type": "community_node_member",
+        "issuer_type": "node_admin_or_domain_admin",
+        "required_scope": "node",
+        "markers": (
+            "department_membership",
+            "department.membership",
+            "node_member",
+            "membership",
+        ),
+        "requires_node": True,
+        "requires_node_member": True,
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "meeting_record",
+        "label": "Meeting record",
+        "subject_type": "community_node_or_activity_group",
+        "issuer_type": "meeting_admin",
+        "required_scope": "node_or_future_activity_group",
+        "markers": ("meeting_record", "meeting.record", "meeting", "attendance"),
+        "requires_node": True,
+        "requires_node_member": True,
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "shop_visibility_grant",
+        "label": "Shop visibility grant",
+        "subject_type": "shop_visibility",
+        "issuer_type": "domain_admin",
+        "required_scope": "domain_or_node",
+        "markers": ("shop_visibility_grant", "shop.visibility", "shop", "vendor"),
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "spotlight_publication",
+        "label": "Spotlight publication",
+        "subject_type": "spotlight",
+        "issuer_type": "domain_admin",
+        "required_scope": "domain_or_node",
+        "markers": ("spotlight_publication", "spotlight.publication", "spotlight"),
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "vault_access_grant",
+        "label": "Vault access grant",
+        "subject_type": "vault_access",
+        "issuer_type": "domain_admin",
+        "required_scope": "domain_or_node",
+        "markers": ("vault_access_grant", "vault.access", "vault"),
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+    {
+        "record_type": "trust_relay",
+        "label": "Trust relay",
+        "subject_type": "trust_context",
+        "issuer_type": "domain_admin",
+        "required_scope": "domain_or_member",
+        "markers": ("trust_relay", "trust.relay", "trust", "passport"),
+        "requires_member": True,
+        "requires_policy": True,
+        "requires_review": True,
+        "requires_evidence": True,
+    },
+]
+
+
+def _community_domain_evidence_record_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    active_nodes = [
+        node for node in nodes if _clean_role(node.status, "active") == "active"
+    ]
+    active_non_root_nodes = [
+        node for node in active_nodes if node.parent_node_id is not None
+    ]
+    active_memberships = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policy_rows = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    review_rows = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    active_evidence_rows = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .all()
+    )
+
+    domain_admin_count = sum(
+        1
+        for row in active_memberships
+        if _clean_role(row.role, "member") in DOMAIN_ADMIN_ROLES
+    )
+    node_admin_count = sum(
+        1
+        for row in active_node_memberships
+        if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def matches(markers: tuple[str, ...], value: Optional[str]) -> bool:
+        candidate = _clean_str(value).lower()
+        if not candidate:
+            return False
+        return any(marker in candidate for marker in markers)
+
+    def count_matching_policies(markers: tuple[str, ...]) -> int:
+        return sum(1 for row in active_policy_rows if matches(markers, row.action_key))
+
+    def count_matching_reviews(markers: tuple[str, ...]) -> int:
+        return sum(1 for row in review_rows if matches(markers, row.action_key))
+
+    def count_matching_evidence(markers: tuple[str, ...]) -> int:
+        return sum(
+            1
+            for row in active_evidence_rows
+            if matches(markers, row.evidence_type)
+            or matches(markers, getattr(row.action_review, "action_key", None))
+        )
+
+    evidence_type_counts: dict[str, int] = {}
+    for row in active_evidence_rows:
+        evidence_type = _clean_role(row.evidence_type, "document")
+        evidence_type_counts[evidence_type] = evidence_type_counts.get(evidence_type, 0) + 1
+
+    status_counts: dict[str, int] = {}
+    record_types: list[dict[str, Any]] = []
+    identity_present = bool(_clean_str(domain.domain_name))
+    member_trace_present = len(active_memberships) > 1
+    admin_trace_present = bool(domain_admin_count or node_admin_count)
+
+    for preset in COMMUNITY_DOMAIN_EVIDENCE_RECORD_PRESETS:
+        markers = tuple(str(marker).lower() for marker in preset["markers"])
+        policy_count = count_matching_policies(markers)
+        review_count = count_matching_reviews(markers)
+        evidence_count = count_matching_evidence(markers)
+
+        if not identity_present:
+            status = "needs_domain_identity"
+            next_step = "Review the Community Domain identity before durable records depend on it."
+            admin_route = "/operating-map"
+            ready = False
+        elif preset.get("requires_node") and not active_non_root_nodes:
+            status = "needs_operating_units"
+            next_step = "Model branches, departments, lines, or units before this record type can be grounded."
+            admin_route = "/rollout-tree"
+            ready = False
+        elif preset.get("requires_member") and not member_trace_present:
+            status = "needs_member_trace"
+            next_step = "Add active members before this record type can represent real community witness."
+            admin_route = "/members"
+            ready = False
+        elif preset.get("requires_node_member") and not active_node_memberships:
+            status = "needs_member_or_node_trace"
+            next_step = "Place members into operating units before this record type can carry node-level truth."
+            admin_route = "/node-participation-map"
+            ready = False
+        elif preset.get("requires_admin_role") and not admin_trace_present:
+            status = "needs_role_trace"
+            next_step = "Assign domain or local admins before this record type can prove role authority."
+            admin_route = "/roles"
+            ready = False
+        elif preset.get("requires_policy") and policy_count == 0:
+            status = "needs_evidence_policy"
+            next_step = "Define policy for who may issue, review, or rely on this evidence record type."
+            admin_route = "/governance-coverage"
+            ready = False
+        elif preset.get("requires_review") and review_count == 0:
+            status = "needs_review_signal"
+            next_step = "Run a real action-review signal before this record type is treated as ready."
+            admin_route = "/action-reviews"
+            ready = False
+        elif preset.get("requires_evidence") and evidence_count == 0:
+            status = "needs_review_evidence_metadata"
+            next_step = "Attach private evidence metadata to the relevant action review before durable records exist."
+            admin_route = "/action-reviews"
+            ready = False
+        else:
+            status = "ready_for_future_evidence_record"
+            next_step = "Keep this as planning readiness until a real CommunityDomainEvidenceRecord table exists."
+            admin_route = "/evidence-map"
+            ready = True
+
+        status_counts[status] = status_counts.get(status, 0) + 1
+        record_types.append(
+            {
+                "record_type": preset["record_type"],
+                "label": preset["label"],
+                "subject_type": preset["subject_type"],
+                "issuer_type": preset["issuer_type"],
+                "required_scope": preset["required_scope"],
+                "readiness_status": status,
+                "ready_for_future_evidence_record": bool(ready),
+                "active_policy_count": admin_count(policy_count),
+                "review_record_count": admin_count(review_count),
+                "review_evidence_metadata_count": admin_count(evidence_count),
+                "source_reference_status": (
+                    "metadata_trace_present"
+                    if evidence_count
+                    else "not_recorded_in_this_slice"
+                ),
+                "validity_status": "not_calculated_in_this_slice",
+                "visibility_policy_status": "not_persisted_in_this_slice",
+                "evidence_record_status": "not_created_in_this_slice",
+                "file_upload_status": "not_uploaded_in_this_slice",
+                "storage_key_status": "not_exposed_in_this_slice",
+                "credential_status": "not_issued_in_this_slice",
+                "trustslip_status": "not_issued_in_this_slice",
+                "trust_passport_status": "not_written_in_this_slice",
+                "route_hint": route_hint(admin_route, requires_admin=True),
+                "requires_admin": True,
+                "next_step": next_step,
+                "boundary": (
+                    "This is a read-only durable evidence record readiness item. "
+                    "It does not create CommunityDomainEvidenceRecord rows, upload files, "
+                    "expose storage keys, calculate validity, persist "
+                    "visibility policy, issue credentials, issue TrustSlips, "
+                    "write Trust Passport entries, publish proof, or expose "
+                    "private member evidence."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_evidence_records",
+            "label": "Ask a Community Domain admin to review evidence record readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_domain_identity", 0):
+        primary_next_action = {
+            "action_key": "review_domain_identity",
+            "label": "Review Community Domain identity before evidence records",
+            "route_hint": route_hint("/operating-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_operating_units", 0):
+        primary_next_action = {
+            "action_key": "model_units_before_evidence_records",
+            "label": "Model operating units before evidence records",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_member_trace", 0) or status_counts.get(
+        "needs_member_or_node_trace", 0
+    ):
+        primary_next_action = {
+            "action_key": "complete_member_trace_before_evidence_records",
+            "label": "Complete member and unit placement before evidence records",
+            "route_hint": route_hint("/member-verification-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_evidence_policy", 0):
+        primary_next_action = {
+            "action_key": "define_evidence_record_policy",
+            "label": "Define policy for durable evidence records",
+            "route_hint": route_hint("/governance-coverage", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_review_signal", 0) or status_counts.get(
+        "needs_review_evidence_metadata", 0
+    ):
+        primary_next_action = {
+            "action_key": "review_evidence_record_signals",
+            "label": "Review action signals and evidence metadata",
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_evidence_record_boundaries",
+            "label": "Review evidence record boundaries",
+            "route_hint": route_hint("/evidence-map", requires_admin=True),
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "evidence_record_engine_status": "not_connected_in_this_slice",
+            "evidence_records_created": 0,
+            "files_uploaded": 0,
+            "storage_keys_exposed": 0,
+            "credentials_issued": 0,
+            "trustslips_issued": 0,
+            "trust_passport_entries_written": 0,
+            "public_proofs_published": 0,
+            "trust_records_created": 0,
+            "record_type_count": len(record_types),
+            "active_member_count": len(active_memberships),
+            "active_node_count": len(active_non_root_nodes),
+            "active_node_member_count": admin_count(len(active_node_memberships)),
+            "active_policy_count": admin_count(len(active_policy_rows)),
+            "review_record_count": admin_count(len(review_rows)),
+            "review_evidence_metadata_count": admin_count(len(active_evidence_rows)),
+        },
+        "evidence_type_counts": evidence_type_counts if can_admin else None,
+        "status_counts": status_counts,
+        "record_types": record_types,
+        "ready_total": sum(
+            1 for item in record_types if item["ready_for_future_evidence_record"]
+        ),
+        "blocked_record_types": [
+            item["record_type"]
+            for item in record_types
+            if not item["ready_for_future_evidence_record"]
+        ],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain evidence-record readiness is read-only durable "
+            "evidence planning. This endpoint does not create "
+            "CommunityDomainEvidenceRecord rows, upload files, expose storage "
+            "keys, calculate validity windows, persist visibility policy, issue "
+            "credentials, issue TrustSlips, write Trust Passport entries, publish "
+            "public proof, verify legal authority, move money, activate billing, "
+            "create marketplace activity, create a social Community, or expose "
+            "private member evidence or review payloads."
+        ),
+    }
+
+
 def _community_domain_trust_mobility_payload(
     db: Session,
     *,
@@ -16793,6 +17215,27 @@ def get_community_domain_evidence_map(
             db,
             domain=domain,
             current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/evidence-record-readiness", response_model=dict[str, Any])
+def get_community_domain_evidence_record_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "evidence_record_readiness": _community_domain_evidence_record_readiness_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
         ),
     }
 
