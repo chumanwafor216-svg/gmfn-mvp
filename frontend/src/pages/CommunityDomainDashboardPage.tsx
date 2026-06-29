@@ -10,6 +10,7 @@ import {
   getAccessToken,
   getCommunityDomainCapacityPlan,
   getCommunityDomainDashboard,
+  getCommunityDomainDelegationMap,
   getCommunityDomainEvidenceRecordReadiness,
   getCommunityDomainEvidenceReleaseReadiness,
   getCommunityDomainAffiliationReadiness,
@@ -267,6 +268,15 @@ type SocialBridgeLane = {
 };
 
 type InstitutionalProfileLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  next_step?: string | null;
+};
+
+type DelegationMapLane = {
   lane_key?: string | null;
   label?: string | null;
   status?: string | null;
@@ -676,6 +686,7 @@ export default function CommunityDomainDashboardPage() {
   const [setupPlan, setSetupPlan] = useState<any | null>(null);
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
   const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
+  const [delegationMap, setDelegationMap] = useState<any | null>(null);
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
   const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
   const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
@@ -723,6 +734,7 @@ export default function CommunityDomainDashboardPage() {
       setSetupPlan(null);
       setCapacityPlan(null);
       setGovernanceCoverage(null);
+      setDelegationMap(null);
       setRolloutPlan(null);
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
@@ -760,6 +772,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupPlan(null);
     setCapacityPlan(null);
     setGovernanceCoverage(null);
+    setDelegationMap(null);
     setRolloutPlan(null);
     setEvidenceRecordReadiness(null);
     setEvidenceReleaseReadiness(null);
@@ -815,6 +828,14 @@ export default function CommunityDomainDashboardPage() {
         setGovernanceCoverage(governanceCoveragePayload?.governance_coverage || null);
       } catch {
         setGovernanceCoverage(null);
+      }
+      try {
+        const delegationMapPayload = await getCommunityDomainDelegationMap(
+          communityDomainId
+        );
+        setDelegationMap(delegationMapPayload?.delegation_map || null);
+      } catch {
+        setDelegationMap(null);
       }
       try {
         const rolloutPlanPayload = await getCommunityDomainRolloutPlan(communityDomainId);
@@ -936,6 +957,7 @@ export default function CommunityDomainDashboardPage() {
       setSetupPlan(null);
       setCapacityPlan(null);
       setGovernanceCoverage(null);
+      setDelegationMap(null);
       setRolloutPlan(null);
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
@@ -1024,6 +1046,15 @@ export default function CommunityDomainDashboardPage() {
     const statusText = cleanText(item.governance_status).toLowerCase();
     return statusText.includes("needs") || statusText.includes("inactive");
   });
+  const delegationMapSummary = delegationMap?.summary || {};
+  const visibleDelegationLanes: DelegationMapLane[] = Array.isArray(delegationMap?.lanes)
+    ? delegationMap.lanes
+    : [];
+  const blockedDelegationLanes = visibleDelegationLanes.filter((lane) => !lane.ready);
+  const delegationReadyTotal =
+    typeof delegationMap?.ready_total === "number"
+      ? delegationMap.ready_total
+      : visibleDelegationLanes.filter((lane) => lane.ready).length;
   const rolloutPlanCounts = rolloutPlan?.counts || {};
   const visibleRolloutPhases: RolloutPlanPhase[] = Array.isArray(rolloutPlan?.phases)
     ? rolloutPlan.phases
@@ -3739,6 +3770,159 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
                       This summary does not decide reviews, apply membership,
                       assign roles, expose private evidence, or bypass reviewer policy.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "governance" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Delegation map</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {delegationMap
+                        ? `${cleanText(
+                            delegationMap.primary_next_action?.label,
+                            "Review delegation"
+                          )}. ${delegationReadyTotal} of ${visibleDelegationLanes.length} authority checks are ready.`
+                        : "GSN could not load the read-only delegation map for this Community Domain."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        [
+                          "Central authority",
+                          delegationMapSummary.central_authority_count == null
+                            ? "admin only"
+                            : countValue(delegationMapSummary.central_authority_count),
+                        ],
+                        [
+                          "Local admins",
+                          delegationMapSummary.operating_units_with_local_admin == null
+                            ? "admin only"
+                            : countValue(
+                                delegationMapSummary.operating_units_with_local_admin
+                              ),
+                        ],
+                        [
+                          "Policies",
+                          delegationMapSummary.active_policy_count == null
+                            ? "admin only"
+                            : countValue(delegationMapSummary.active_policy_count),
+                        ],
+                        [
+                          "Open reviews",
+                          delegationMapSummary.open_review_count == null
+                            ? "admin only"
+                            : countValue(delegationMapSummary.open_review_count),
+                        ],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={{
+                            borderRadius: 14,
+                            background: "#F7FAFF",
+                            border: "1px solid rgba(9,27,46,0.08)",
+                            padding: 10,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                            {label}
+                          </div>
+                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                            {value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                      <span style={statusBadge(delegationMapSummary.verification_status)}>
+                        Authority: {compactStatus(delegationMapSummary.verification_status)}
+                      </span>
+                      <span style={statusBadge("recorded")}>
+                        Units: {countValue(delegationMapSummary.active_operating_unit_count)}
+                      </span>
+                      <span style={statusBadge("recorded")}>
+                        Inherited policy:{" "}
+                        {countValue(delegationMapSummary.operating_units_using_inherited_policy)}
+                      </span>
+                    </div>
+                    {blockedDelegationLanes.length ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        Delegation checks needing attention:{" "}
+                        <strong>
+                          {blockedDelegationLanes
+                            .slice(0, 3)
+                            .map((lane) =>
+                              cleanText(lane.label, lane.lane_key || "delegation check")
+                            )
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : delegationMap ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        No blocked delegation lane is visible, but legal authority
+                        verification and role assignment remain separate.
+                      </div>
+                    ) : null}
+                    {visibleDelegationLanes.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleDelegationLanes.slice(0, 4).map((lane) => (
+                          <div
+                            key={cleanText(
+                              lane.lane_key,
+                              cleanText(lane.label, "delegation")
+                            )}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(lane.label, "Delegation check")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  lane.next_step,
+                                  "Keep this as authority planning until the matching governance path is used."
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(lane.status)}>
+                              {compactStatus(lane.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This delegation view is read-only authority projection. It does not
+                      assign roles, create node memberships, create policies, create action
+                      reviews, decide reviews, apply reviews, change inheritance, verify
+                      legal or institutional authority, activate billing, create marketplace
+                      activity, create a social Community, publish proof, or expose private
+                      member, review, or evidence records.
                     </div>
                   </div>
                 ) : null}

@@ -265,6 +265,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainDelegationMap[\s\S]*delegationMap[\s\S]*delegationMapSummary[\s\S]*visibleDelegationLanes[\s\S]*blockedDelegationLanes[\s\S]*activeLane === "governance"[\s\S]*Delegation map[\s\S]*primary_next_action[\s\S]*central_authority_count[\s\S]*operating_units_with_local_admin[\s\S]*active_policy_count[\s\S]*open_review_count[\s\S]*does not\s+assign roles, create node memberships, create policies, create action\s+reviews, decide reviews, apply reviews, change inheritance, verify\s+legal or institutional authority, activate billing, create marketplace\s+activity, create a social Community, publish proof, or expose private\s+member, review, or evidence records/,
+  "Community Domain dashboard Governance lane must show read-only delegation authority without implying role assignment, node memberships, policy/review writes, inheritance changes, authority verification, billing, marketplace activity, social Community creation, proof publication, or private record exposure.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainMemberPlacementSummary[\s\S]*placementSummary[\s\S]*placementCounts[\s\S]*visibleNodePlacements[\s\S]*activeLane === "members"[\s\S]*Your placement[\s\S]*Active operating-unit placements[\s\S]*This is read-only[\s\S]*Admins still control placement, role changes,\s+and review decisions/,
   "Community Domain dashboard Members lane must show the current viewer's read-only placement summary without implying self-service placement or role changes.",
   { frontend: true }
