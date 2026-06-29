@@ -554,7 +554,7 @@ export default function CommunityDomainDashboardPage() {
                     "Review the current Community Domain setup state."
                   )}{" "}
                   GSN opens the matching lane here first; deeper changes still use
-                  backend-scoped tools.
+                  owner/admin tools that check permissions.
                 </div>
                 <StableButton
                   type="button"
@@ -756,7 +756,7 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ ...helperText(), marginTop: 7 }}>
                       Use this lane to review setup state first. Creation, member changes,
                       policy decisions, payment, and verification remain separate actions
-                      controlled by backend permissions.
+                      with owner/admin permission checks.
                     </div>
                   </div>
                 ) : null}

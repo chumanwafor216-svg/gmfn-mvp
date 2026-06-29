@@ -90,8 +90,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainDashboard[\s\S]*primaryActionLaneKey[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*backend-scoped tools[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
+  /getCommunityDomainDashboard[\s\S]*primaryActionLaneKey[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*owner\/admin tools that check permissions[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
   "Community Domain dashboard page must use the scoped backend summary, open matching lanes honestly, and keep payment, activation, and verification boundaries honest.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /backend-scoped tools|backend permissions/,
+  "Community Domain dashboard user copy must not expose builder-facing backend language.",
   { frontend: true }
 );
 
