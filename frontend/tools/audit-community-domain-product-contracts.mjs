@@ -116,8 +116,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /\/app\/community-domain\/[\s\S]*Open domain dashboard[\s\S]*Draft request created/,
+  /draftActionLabel[\s\S]*Draft request created[\s\S]*\/app\/community-domain\/[\s\S]*Open domain dashboard/,
   "Community Domain purchase page must hand signed-in owners to the authenticated domain dashboard after draft creation.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /draftActionLabel[\s\S]*Check name first[\s\S]*Choose another name[\s\S]*Sign in to create draft[\s\S]*if \(!availability\)[\s\S]*Check an available domain name before creating a draft request[\s\S]*if \(!availability\.available\)[\s\S]*Choose an available domain name before creating a draft request[\s\S]*if \(!isSignedIn\)[\s\S]*\/login\?force=1/,
+  "Community Domain purchase draft action must explain missing availability before sending the owner to sign in.",
   { frontend: true }
 );
 

@@ -285,6 +285,17 @@ export default function CommunityDomainPurchasePage() {
       ? "ready"
       : "blocked"
     : "waiting";
+  const draftActionLabel = draftResult
+    ? "Draft request created"
+    : busy === "draft"
+    ? "Creating draft..."
+    : !availability
+    ? "Check name first"
+    : !availability.available
+    ? "Choose another name"
+    : isSignedIn
+    ? "Create draft request"
+    : "Sign in to create draft";
 
   async function handleCheckAvailability(event: React.FormEvent) {
     event.preventDefault();
@@ -319,18 +330,23 @@ export default function CommunityDomainPurchasePage() {
   async function handleCreateDraft() {
     setMessage("");
 
-    if (!isSignedIn) {
-      navigate(`/login?force=1&next=${encodeURIComponent(location.pathname + location.search)}`);
+    if (!availability) {
+      setMessage("Check an available domain name before creating a draft request.");
       return;
     }
 
-    if (!availability?.available) {
-      setMessage("Check an available domain name before creating a draft request.");
+    if (!availability.available) {
+      setMessage("Choose an available domain name before creating a draft request.");
       return;
     }
 
     if (!organizationName.trim()) {
       setMessage("Add the organization name before creating a draft request.");
+      return;
+    }
+
+    if (!isSignedIn) {
+      navigate(`/login?force=1&next=${encodeURIComponent(location.pathname + location.search)}`);
       return;
     }
 
@@ -669,7 +685,7 @@ export default function CommunityDomainPurchasePage() {
                     type="button"
                     variant="secondary"
                     onClick={handleCreateDraft}
-                    disabled={busy === "draft" || !availability?.available || Boolean(draftResult)}
+                    disabled={busy === "draft" || Boolean(draftResult)}
                     debugId="community-domain-purchase.create-draft"
                     style={{
                       width: "100%",
@@ -681,11 +697,7 @@ export default function CommunityDomainPurchasePage() {
                         "0 14px 28px rgba(7,20,36,0.07), inset 0 1px 0 rgba(255,255,255,0.86)",
                     }}
                   >
-                    {draftResult
-                      ? "Draft request created"
-                      : isSignedIn
-                      ? "Create draft request"
-                      : "Sign in to continue"}
+                    {draftActionLabel}
                   </EntryActionButton>
                 </div>
               </div>
