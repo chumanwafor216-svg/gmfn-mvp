@@ -7808,6 +7808,301 @@ def test_member_can_read_evidence_release_readiness_but_admin_counts_are_hidden(
     assert "private member evidence" in readiness["boundary"]
 
 
+def test_trust_relay_readiness_projects_relay_path_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "trust-relay-admin@example.com")
+    bridge_member = _seed_user(3, "trust-relay-bridge@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Trust Relay Market Domain",
+                "display_name": "Trust Relay Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "Public-safe market trust relay profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        with SessionLocal() as db:
+            linked_clan = Clan(
+                name="Trust Relay Market Circle",
+                description="Linked source social Community.",
+                community_code="TRUST-RELAY-SOURCE",
+                invite_code="trust-relay-source",
+                created_by_user_id=owner.id,
+            )
+            destination_clan = Clan(
+                name="Trust Relay Destination Circle",
+                description="Approved destination context.",
+                community_code="TRUST-RELAY-DESTINATION",
+                invite_code="trust-relay-destination",
+                created_by_user_id=owner.id,
+            )
+            db.add_all([linked_clan, destination_clan])
+            db.flush()
+            linked_clan_id = int(linked_clan.id)
+            destination_clan_id = int(destination_clan.id)
+            domain_row = db.get(CommunityDomain, domain_id)
+            assert domain_row is not None
+            domain_row.clan_id = linked_clan_id
+            domain_row.verification_status = "verified"
+            db.add(
+                CommunityDomainAffiliation(
+                    parent_clan_id=linked_clan_id,
+                    affiliate_clan_id=destination_clan_id,
+                    requested_by_user_id=owner.id,
+                    decided_by_user_id=owner.id,
+                    status="approved",
+                    request_note="Approved destination signal.",
+                    decision_note="Approved before trust relay readiness.",
+                )
+            )
+            db.commit()
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Relay Bridge Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        for user, role in ((admin, "domain_admin"), (bridge_member, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": bridge_member.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "trust-relay-review",
+                "action_key": "trust.relay",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "trust.relay",
+                "community_node_id": line_id,
+                "subject_user_id": bridge_member.id,
+                "target_type": "trust_relay",
+                "target_id": str(destination_clan_id),
+                "request_note": "Review source, bridge member, and destination before relay.",
+                "payload": {
+                    "source_domain_id": domain_id,
+                    "bridge_member_id": bridge_member.id,
+                    "destination_clan_id": destination_clan_id,
+                },
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "trust_relay",
+                "title": "Trust relay bridge evidence",
+                "file_name": "trust-relay-bridge.pdf",
+                "storage_key": "private/evidence/trust-relay-bridge.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "clans": db.query(Clan).count(),
+                "affiliations": db.query(CommunityDomainAffiliation).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/trust-relay-readiness")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    readiness = payload["trust_relay_readiness"]
+    assert readiness["editable"] is False
+    assert readiness["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert readiness["summary"]["trust_relay_engine_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert readiness["summary"]["source_domain_id"] == domain_id
+    assert readiness["summary"]["verification_status"] == "verified"
+    assert readiness["summary"]["bridge_member_candidates"] == 3
+    assert readiness["summary"]["approved_destination_signals"] == 1
+    assert readiness["summary"]["relay_policy_count"] == 1
+    assert readiness["summary"]["relay_review_count"] == 1
+    assert readiness["summary"]["open_relay_review_count"] == 1
+    assert readiness["summary"]["relay_evidence_count"] == 1
+    assert readiness["summary"]["relay_paths_created"] == 0
+    assert readiness["summary"]["spotlight_reposts_created"] == 0
+    assert readiness["summary"]["cross_domain_discovery_created"] == 0
+    assert readiness["summary"]["trustslips_issued"] == 0
+    assert readiness["summary"]["trust_passport_entries_written"] == 0
+    assert readiness["summary"]["credentials_issued"] == 0
+    assert readiness["summary"]["public_proofs_published"] == 0
+    assert readiness["summary"]["marketplace_records_created"] == 0
+    assert readiness["summary"]["payments_moved"] == 0
+
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["source_domain_context"]["status"] == "source_ready"
+    assert lanes["bridge_member_context"]["status"] == "bridge_candidates_present"
+    assert lanes["destination_domain_signal"]["status"] == (
+        "approved_affiliate_signal_present"
+    )
+    assert lanes["relay_policy"]["status"] == "policy_present"
+    assert lanes["relay_review_signal"]["status"] == "open_reviews_need_attention"
+    assert lanes["relay_evidence_currentness"]["status"] == "evidence_present"
+    assert lanes["spotlight_repost_boundary"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lanes["external_reader_boundary"]["status"] == "privacy_boundary_only"
+    assert lanes["destination_domain_signal"]["destination_domain_status"] == (
+        "clan_affiliation_signal_only"
+    )
+    assert lanes["spotlight_repost_boundary"]["spotlight_repost_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert lanes["external_reader_boundary"]["trust_passport_status"] == (
+        "not_written_in_this_slice"
+    )
+    assert readiness["primary_next_action"] == {
+        "action_key": "resolve_open_trust_relay_reviews",
+        "label": "Resolve open trust relay reviews",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "requires_admin": True,
+    }
+    assert "read-only relay path planning" in readiness["boundary"]
+    assert "does not create trust relay path records" in readiness["boundary"]
+    assert "source-domain/bridge-member/destination-domain rows" in readiness["boundary"]
+    assert "repost Spotlight" in readiness["boundary"]
+    assert "cross-domain discovery" in readiness["boundary"]
+    assert "Trust Passport entries" in readiness["boundary"]
+    assert "private/evidence/trust-relay-bridge.pdf" not in str(readiness)
+    assert "trust-relay-bridge.pdf" not in str(readiness)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "clans": db.query(Clan).count(),
+            "affiliations": db.query(CommunityDomainAffiliation).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_trust_relay_readiness_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "trust-relay-member@example.com")
+    outsider = _seed_user(3, "trust-relay-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Trust Relay School Domain",
+                "display_name": "Trust Relay School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+                "public_profile": "Public-safe school trust relay profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_readiness = client.get(
+            f"/community-domains/{domain_id}/trust-relay-readiness"
+        )
+        assert member_readiness.status_code == 200, member_readiness.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_readiness = client.get(
+            f"/community-domains/{domain_id}/trust-relay-readiness"
+        )
+        assert outsider_readiness.status_code == 403, outsider_readiness.text
+        assert "active Community Domain members" in outsider_readiness.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_readiness.json()["trust_relay_readiness"]
+    assert readiness["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert readiness["summary"]["source_domain_id"] is None
+    assert readiness["summary"]["active_member_count"] == 2
+    assert readiness["summary"]["active_node_member_count"] is None
+    assert readiness["summary"]["bridge_member_candidates"] is None
+    assert readiness["summary"]["approved_destination_signals"] is None
+    assert readiness["summary"]["relay_policy_count"] is None
+    assert readiness["summary"]["relay_review_count"] is None
+    assert readiness["summary"]["relay_evidence_count"] is None
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_trust_relay",
+        "label": "Ask a Community Domain admin to review trust relay readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["source_domain_context"]["route_hint"].endswith("/network-presence")
+    assert lanes["bridge_member_context"]["route_hint"] is None
+    assert lanes["destination_domain_signal"]["route_hint"] is None
+    assert lanes["relay_policy"]["route_hint"] is None
+    assert lanes["relay_review_signal"]["route_hint"] is None
+    assert lanes["external_reader_boundary"]["route_hint"].endswith("/record-privacy-map")
+    assert "private member" in readiness["boundary"]
+
+
 def test_trust_mobility_projects_portability_readiness_without_issuing_records(
     client: TestClient,
 ):

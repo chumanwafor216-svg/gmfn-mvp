@@ -2534,6 +2534,15 @@ export async function getCommunityDomainEvidenceReleaseReadiness(
   );
 }
 
+export async function getCommunityDomainTrustRelayReadiness(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/trust-relay-readiness"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainTrustMobility(
   communityDomainId: number | string
 ): Promise<any> {

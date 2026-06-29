@@ -11598,6 +11598,381 @@ def _community_domain_evidence_release_readiness_payload(
     }
 
 
+COMMUNITY_DOMAIN_TRUST_RELAY_LANES: list[dict[str, Any]] = [
+    {
+        "lane_key": "source_domain_context",
+        "label": "Source domain context",
+        "route_suffix": "/network-presence",
+        "requires_admin": False,
+    },
+    {
+        "lane_key": "bridge_member_context",
+        "label": "Bridge member context",
+        "route_suffix": "/member-verification-map",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "destination_domain_signal",
+        "label": "Destination domain signal",
+        "route_suffix": "/affiliation-readiness",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "relay_policy",
+        "label": "Relay policy",
+        "route_suffix": "/governance-coverage",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "relay_review_signal",
+        "label": "Relay review signal",
+        "route_suffix": "/action-reviews",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "relay_evidence_currentness",
+        "label": "Relay evidence currentness",
+        "route_suffix": "/evidence-release-readiness",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "spotlight_repost_boundary",
+        "label": "Spotlight repost boundary",
+        "route_suffix": "/network-exchange-map",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "external_reader_boundary",
+        "label": "External reader boundary",
+        "route_suffix": "/record-privacy-map",
+        "requires_admin": False,
+    },
+]
+
+
+def _community_domain_trust_relay_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    verification_status = _clean_role(domain.verification_status, "unverified")
+    public_profile_present = bool(_clean_str(domain.public_profile))
+
+    active_member_rows = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    active_node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_policy_rows = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    review_rows = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    open_review_rows = [
+        row
+        for row in review_rows
+        if _clean_role(row.status, "pending")
+        in {"pending", "pending_review", "needs_changes", "approved"}
+    ]
+    active_evidence_rows = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .all()
+    )
+
+    linked_clan_id = int(domain.clan_id) if domain.clan_id is not None else None
+    outbound_affiliations: list[CommunityDomainAffiliation] = []
+    inbound_affiliations: list[CommunityDomainAffiliation] = []
+    if linked_clan_id is not None:
+        outbound_affiliations = (
+            db.query(CommunityDomainAffiliation)
+            .filter(CommunityDomainAffiliation.parent_clan_id == linked_clan_id)
+            .all()
+        )
+        inbound_affiliations = (
+            db.query(CommunityDomainAffiliation)
+            .filter(CommunityDomainAffiliation.affiliate_clan_id == linked_clan_id)
+            .all()
+        )
+    approved_affiliation_count = sum(
+        1
+        for row in [*outbound_affiliations, *inbound_affiliations]
+        if _clean_role(row.status, "pending") == "approved"
+    )
+    pending_affiliation_count = sum(
+        1
+        for row in [*outbound_affiliations, *inbound_affiliations]
+        if _clean_role(row.status, "pending") == "pending"
+    )
+
+    relay_markers = (
+        "trust.relay",
+        "relay",
+        "repost",
+        "spotlight.relay",
+        "external.trust",
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def matches(value: Optional[str]) -> bool:
+        candidate = _clean_str(value).lower()
+        if not candidate:
+            return False
+        return any(marker in candidate for marker in relay_markers)
+
+    relay_policy_count = sum(1 for row in active_policy_rows if matches(row.action_key))
+    relay_review_rows = [row for row in review_rows if matches(row.action_key)]
+    open_relay_review_count = sum(
+        1
+        for row in relay_review_rows
+        if _clean_role(row.status, "pending")
+        in {"pending", "pending_review", "needs_changes", "approved"}
+    )
+    relay_evidence_count = sum(
+        1
+        for row in active_evidence_rows
+        if matches(row.evidence_type) or matches(getattr(row.action_review, "action_key", None))
+    )
+
+    active_member_count = len(active_member_rows)
+    bridge_member_ready = active_member_count > 1 and int(active_node_member_count) > 0
+    source_ready = public_profile_present and verification_status == "verified"
+    destination_ready = approved_affiliation_count > 0
+
+    status_by_lane = {
+        "source_domain_context": (
+            "source_ready"
+            if source_ready
+            else ("profile_needed" if not public_profile_present else verification_status)
+        ),
+        "bridge_member_context": (
+            "bridge_candidates_present" if bridge_member_ready else "needs_bridge_member_trace"
+        ),
+        "destination_domain_signal": (
+            "approved_affiliate_signal_present"
+            if destination_ready
+            else ("pending_affiliation_review" if pending_affiliation_count else "no_destination_signal")
+        ),
+        "relay_policy": "policy_present" if relay_policy_count else "policy_needed",
+        "relay_review_signal": (
+            "open_reviews_need_attention"
+            if open_relay_review_count
+            else ("review_trace_present" if relay_review_rows else "not_recorded")
+        ),
+        "relay_evidence_currentness": (
+            "evidence_present" if relay_evidence_count else "not_recorded"
+        ),
+        "spotlight_repost_boundary": "not_connected_in_this_slice",
+        "external_reader_boundary": "privacy_boundary_only",
+    }
+    ready_by_lane = {
+        "source_domain_context": source_ready,
+        "bridge_member_context": bridge_member_ready,
+        "destination_domain_signal": destination_ready,
+        "relay_policy": relay_policy_count > 0,
+        "relay_review_signal": bool(relay_review_rows) and open_relay_review_count == 0,
+        "relay_evidence_currentness": relay_evidence_count > 0,
+        "spotlight_repost_boundary": False,
+        "external_reader_boundary": True,
+    }
+    count_by_lane: dict[str, Optional[int]] = {
+        "source_domain_context": 1 if source_ready else 0,
+        "bridge_member_context": admin_count(active_member_count),
+        "destination_domain_signal": admin_count(approved_affiliation_count),
+        "relay_policy": admin_count(relay_policy_count),
+        "relay_review_signal": admin_count(len(relay_review_rows)),
+        "relay_evidence_currentness": admin_count(relay_evidence_count),
+        "spotlight_repost_boundary": 0,
+        "external_reader_boundary": 1,
+    }
+    next_step_by_lane = {
+        "source_domain_context": "Prepare a verified public-safe source domain before trust can relay outward.",
+        "bridge_member_context": "Confirm the member or local unit whose standing will bridge the trust context.",
+        "destination_domain_signal": "Use approved affiliation context only as a planning signal until real destination-domain rows exist.",
+        "relay_policy": "Define who may request, approve, block, or revoke a trust relay.",
+        "relay_review_signal": "Resolve relay-related reviews before treating relay evidence as current.",
+        "relay_evidence_currentness": "Keep evidence metadata private until a public-safe release and relay path exists.",
+        "spotlight_repost_boundary": "Do not repost or relay Spotlight content until a real relay path is recorded.",
+        "external_reader_boundary": "Keep external readers on public-safe summaries only.",
+    }
+
+    lanes = []
+    for preset in COMMUNITY_DOMAIN_TRUST_RELAY_LANES:
+        lane_key = str(preset["lane_key"])
+        lanes.append(
+            {
+                "lane_key": lane_key,
+                "label": preset["label"],
+                "status": status_by_lane[lane_key],
+                "ready": bool(ready_by_lane[lane_key]),
+                "count": count_by_lane[lane_key],
+                "route_hint": route_hint(
+                    str(preset["route_suffix"]),
+                    requires_admin=bool(preset["requires_admin"]),
+                ),
+                "requires_admin": bool(preset["requires_admin"]),
+                "relay_path_status": "not_created_in_this_slice",
+                "source_domain_status": (
+                    "projected_current_domain" if lane_key == "source_domain_context" else "not_persisted_in_this_slice"
+                ),
+                "bridge_member_status": (
+                    "aggregate_only" if lane_key == "bridge_member_context" else "not_persisted_in_this_slice"
+                ),
+                "destination_domain_status": (
+                    "clan_affiliation_signal_only"
+                    if lane_key == "destination_domain_signal"
+                    else "not_persisted_in_this_slice"
+                ),
+                "spotlight_repost_status": "not_created_in_this_slice",
+                "trustslip_status": "not_issued_in_this_slice",
+                "trust_passport_status": "not_written_in_this_slice",
+                "next_step": next_step_by_lane[lane_key],
+                "boundary": (
+                    "Read-only trust relay readiness lane. This does not create "
+                    "relay path records, repost Spotlight, publish proof, create "
+                    "cross-domain discovery, share private records, issue TrustSlips, "
+                    "write Trust Passport entries, create credentials, create "
+                    "marketplace activity, or move money."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_trust_relay",
+            "label": "Ask a Community Domain admin to review trust relay readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not source_ready:
+        primary_next_action = {
+            "action_key": "prepare_source_domain_for_relay",
+            "label": "Prepare source domain before trust relay",
+            "route_hint": route_hint("/network-presence", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not bridge_member_ready:
+        primary_next_action = {
+            "action_key": "prepare_bridge_member_trace",
+            "label": "Prepare bridge member trace before trust relay",
+            "route_hint": route_hint("/member-verification-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not destination_ready:
+        primary_next_action = {
+            "action_key": "prepare_destination_domain_signal",
+            "label": "Prepare destination-domain signal before trust relay",
+            "route_hint": route_hint("/affiliation-readiness", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif relay_policy_count == 0:
+        primary_next_action = {
+            "action_key": "define_trust_relay_policy",
+            "label": "Define trust relay policy",
+            "route_hint": route_hint("/governance-coverage", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif open_relay_review_count:
+        primary_next_action = {
+            "action_key": "resolve_open_trust_relay_reviews",
+            "label": "Resolve open trust relay reviews",
+            "route_hint": route_hint("/action-reviews/reviewer-queue", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif relay_evidence_count == 0:
+        primary_next_action = {
+            "action_key": "record_trust_relay_evidence_metadata",
+            "label": "Record trust relay evidence metadata",
+            "route_hint": route_hint("/evidence-release-readiness", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_trust_relay_boundaries",
+            "label": "Review trust relay boundaries",
+            "route_hint": route_hint("/network-exchange-map", requires_admin=True),
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "trust_relay_engine_status": "not_connected_in_this_slice",
+            "source_domain_id": domain_id if can_admin else None,
+            "source_domain_status": "projected_current_domain",
+            "public_profile_present": public_profile_present,
+            "verification_status": verification_status,
+            "active_member_count": int(active_member_count),
+            "active_node_member_count": admin_count(int(active_node_member_count)),
+            "bridge_member_candidates": admin_count(active_member_count),
+            "linked_social_community": bool(linked_clan_id is not None),
+            "approved_destination_signals": admin_count(approved_affiliation_count),
+            "pending_destination_signals": admin_count(pending_affiliation_count),
+            "active_policy_count": admin_count(len(active_policy_rows)),
+            "relay_policy_count": admin_count(relay_policy_count),
+            "review_record_count": admin_count(len(review_rows)),
+            "relay_review_count": admin_count(len(relay_review_rows)),
+            "open_relay_review_count": admin_count(open_relay_review_count),
+            "active_evidence_count": admin_count(len(active_evidence_rows)),
+            "relay_evidence_count": admin_count(relay_evidence_count),
+            "relay_paths_created": 0,
+            "spotlight_reposts_created": 0,
+            "cross_domain_discovery_created": 0,
+            "trustslips_issued": 0,
+            "trust_passport_entries_written": 0,
+            "credentials_issued": 0,
+            "public_proofs_published": 0,
+            "marketplace_records_created": 0,
+            "payments_moved": 0,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain trust relay readiness is read-only relay path "
+            "planning. This endpoint does not create trust relay path records, "
+            "record source-domain/bridge-member/destination-domain rows, repost "
+            "Spotlight, publish proof, create cross-domain discovery, create "
+            "public member directories, share private records, expose evidence "
+            "files, expose storage keys, issue TrustSlips, write Trust Passport entries, "
+            "create credentials, create marketplace activity, create "
+            "affiliations, move money, activate billing, or expose private member, "
+            "review, evidence, marketplace, or finance records."
+        ),
+    }
+
+
 def _community_domain_trust_mobility_payload(
     db: Session,
     *,
@@ -17604,6 +17979,27 @@ def get_community_domain_evidence_release_readiness(
         "ok": True,
         "community_domain_id": int(domain.id),
         "evidence_release_readiness": _community_domain_evidence_release_readiness_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/trust-relay-readiness", response_model=dict[str, Any])
+def get_community_domain_trust_relay_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "trust_relay_readiness": _community_domain_trust_relay_readiness_payload(
             db,
             domain=domain,
             current_user=current_user,
