@@ -904,7 +904,7 @@ export default function CommunityDomainPurchasePage() {
               The owner reviews the draft, requests a package quote, receives payment
               instructions only when that rail exists, and waits for payment confirmation
               plus admin activation. Public verification language should only appear after
-              backend status proves it.
+              the live domain status confirms it.
             </div>
           </details>
         </div>

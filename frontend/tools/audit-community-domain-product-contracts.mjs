@@ -184,6 +184,13 @@ assertNotContains(
   { frontend: true }
 );
 
+assertNotContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /backend status proves it/,
+  "Community Domain purchase user copy must not expose builder-facing backend language.",
+  { frontend: true }
+);
+
 assertContains(
   "src/pages/LoginPage.tsx",
   /function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*if \(nextTarget\) return nextTarget;[\s\S]*nav\(publishRecoveryTarget\(\) \|\| redirectTarget/,
