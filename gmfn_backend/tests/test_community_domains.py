@@ -18269,6 +18269,126 @@ def test_domain_admin_can_apply_domain_member_upsert_review(
         assert review_row.applied_at is not None
 
 
+def test_outsider_can_request_domain_membership_without_auto_membership(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "request-domain-membership@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Membership Request Union",
+                "display_name": "Membership Request Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "membership-request-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={
+                "request_note": "I belong to this union and need access.",
+                "title": "Applicant member",
+            },
+        )
+        assert requested.status_code == 201, requested.text
+        request_data = requested.json()
+        review = request_data["action_review"]
+        assert review["status"] == "pending"
+        assert review["action_key"] == "domain_member.upsert"
+        assert review["requested_by_user_id"] == requester.id
+        assert review["subject_user_id"] == requester.id
+        assert review["target_type"] == "domain_member"
+        assert review["target_id"] == str(requester.id)
+        assert review["payload"]["user_id"] == requester.id
+        assert review["payload"]["role"] == "member"
+        assert review["payload"]["status"] == "active"
+        assert review["payload"]["title"] == "Applicant member"
+        assert "does not add the member" in request_data["boundary"]
+        assert "approve and apply" in request_data["boundary"]
+
+        duplicate = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Trying twice."},
+        )
+        assert duplicate.status_code == 409, duplicate.text
+        assert (
+            duplicate.json()["detail"]["code"]
+            == "community_domain_membership_request_pending"
+        )
+
+        with SessionLocal() as db:
+            assert db.query(CommunityDomainMembership).count() == 1
+            pending_review = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            assert pending_review.policy_id == policy.json()["policy"]["id"]
+            assert pending_review.applied_at is None
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "approve",
+                "decision_note": "Requester is known to the union.",
+            },
+        )
+        assert decision.status_code == 200, decision.text
+        applied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert applied.status_code == 200, applied.text
+        assert applied.json()["applied"]["type"] == "domain_member"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        active_again = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Trying after approval."},
+        )
+        assert active_again.status_code == 409, active_again.text
+        assert (
+            active_again.json()["detail"]["code"]
+            == "community_domain_member_already_active"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == requester.id)
+            .one()
+        )
+        assert membership.role == "member"
+        assert membership.status == "active"
+        assert membership.title == "Applicant member"
+        review_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.requested_by_user_id == requester.id)
+            .one()
+        )
+        assert review_row.status == "applied"
+        assert review_row.applied_by_user_id == owner.id
+        assert review_row.applied_at is not None
+
+
 def test_domain_member_review_rejects_numeric_target_mismatch(
     client: TestClient,
 ):

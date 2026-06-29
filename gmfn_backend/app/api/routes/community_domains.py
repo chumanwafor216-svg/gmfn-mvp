@@ -16677,6 +16677,13 @@ class CommunityDomainMemberUpsertIn(BaseModel):
     title: Optional[str] = Field(default=None, max_length=120)
 
 
+class CommunityDomainMembershipRequestIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    request_note: Optional[str] = Field(default=None, max_length=1200)
+    title: Optional[str] = Field(default=None, max_length=120)
+
+
 class CommunityNodeMemberUpsertIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -19384,6 +19391,105 @@ def get_community_domain_member_placement_summary(
             membership=membership,
             can_admin=can_admin,
             self_view=self_view,
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/membership-requests",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def request_community_domain_membership(
+    community_domain_id: int,
+    payload: CommunityDomainMembershipRequestIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    existing_membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(current_user.id),
+    )
+    if (
+        existing_membership is not None
+        and _clean_role(existing_membership.status, "inactive") == "active"
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_member_already_active",
+                "message": "This account is already an active member of this Community Domain.",
+            },
+        )
+
+    existing_request = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReview.action_key == "domain_member.upsert")
+        .filter(CommunityDomainActionReview.subject_user_id == int(current_user.id))
+        .filter(CommunityDomainActionReview.target_type == "domain_member")
+        .filter(CommunityDomainActionReview.target_id == str(int(current_user.id)))
+        .filter(CommunityDomainActionReview.status.in_(REVIEWER_QUEUE_PENDING_STATUSES))
+        .order_by(
+            CommunityDomainActionReview.created_at.desc(),
+            CommunityDomainActionReview.id.desc(),
+        )
+        .first()
+    )
+    if existing_request is not None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_membership_request_pending",
+                "message": "This account already has a pending Community Domain membership request.",
+                "action_review": _action_review_payload(existing_request),
+            },
+        )
+
+    policy = _matching_policy(
+        db,
+        community_domain_id=int(domain.id),
+        action_key="domain_member.upsert",
+        community_node_id=None,
+    )
+    request_payload = {
+        "user_id": int(current_user.id),
+        "role": "member",
+        "status": "active",
+    }
+    title = _clean_str(payload.title)
+    if title:
+        request_payload["title"] = title
+
+    row = CommunityDomainActionReview(
+        community_domain_id=int(domain.id),
+        policy_id=int(policy.id) if policy is not None else None,
+        action_key="domain_member.upsert",
+        requested_by_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        target_type="domain_member",
+        target_id=str(int(current_user.id)),
+        status="pending",
+        request_note=_clean_str(payload.request_note) or None,
+        payload_json=_json_dump(request_payload),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review": _action_review_payload(row),
+        "boundary": (
+            "Membership request recorded as a Community Domain governance review. "
+            "This does not add the member, place the member in a node, assign "
+            "roles, grant permissions, activate billing, verify authority, send "
+            "notifications, or expose private member records. An authorized "
+            "Community Domain reviewer must approve and apply the review before "
+            "membership changes."
         ),
     }
 

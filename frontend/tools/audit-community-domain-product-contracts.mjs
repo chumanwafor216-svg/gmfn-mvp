@@ -374,6 +374,25 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
+  /class CommunityDomainMembershipRequestIn[\s\S]*request_note[\s\S]*@router\.post\(\s*"\/\{community_domain_id\}\/membership-requests"[\s\S]*def request_community_domain_membership[\s\S]*action_key="domain_member\.upsert"[\s\S]*requested_by_user_id=int\(current_user\.id\)[\s\S]*subject_user_id=int\(current_user\.id\)[\s\S]*target_type="domain_member"[\s\S]*does not add the member[\s\S]*approve and apply/,
+  "Backend route must let an authenticated outsider request Community Domain membership as a pending governance review without auto-membership or side effects."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_can_request_domain_membership_without_auto_membership[\s\S]*\/membership-requests[\s\S]*domain_member\.upsert[\s\S]*community_domain_membership_request_pending[\s\S]*db\.query\(CommunityDomainMembership\)\.count\(\) == 1[\s\S]*\/decision[\s\S]*\/apply[\s\S]*community_domain_member_already_active/,
+  "Backend tests must prove Community Domain membership requests do not create membership until an admin approves and applies the review."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /CommunityDomainMembershipRequestPayload[\s\S]*requestCommunityDomainMembership[\s\S]*\/membership-requests[\s\S]*request_note[\s\S]*title/,
+  "Frontend API layer must expose the real Community Domain membership request route.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
   /def _community_domain_operating_map_payload[\s\S]*does not create a payment instruction[\s\S]*\/domains\/:name[\s\S]*\/community-domains\/:name[\s\S]*private member evidence[\s\S]*@router\.get\("\/\{community_domain_id\}\/operating-map"[\s\S]*def get_community_domain_operating_map[\s\S]*_require_domain_member_scope/,
   "Backend route must expose a scoped read-only Community Domain operating map without payment, activation, verification, public URL finalization, marketplace, social Community, money, or private-record leakage."
 );

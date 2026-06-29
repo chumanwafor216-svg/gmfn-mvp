@@ -2212,6 +2212,11 @@ export type CommunityDomainMembershipPayload = {
   status?: string | null;
 };
 
+export type CommunityDomainMembershipRequestPayload = {
+  request_note?: string | null;
+  title?: string | null;
+};
+
 export type CommunityDomainPolicyPayload = {
   policy_key: string;
   action_key: string;
@@ -2850,6 +2855,20 @@ export async function getCommunityDomainMemberPlacementSummary(
       `/members/${encodeURIComponent(String(userId))}/placement-summary`
     ),
     "GET"
+  );
+}
+
+export async function requestCommunityDomainMembership(
+  communityDomainId: number | string,
+  payload: CommunityDomainMembershipRequestPayload = {}
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/membership-requests"),
+    "POST",
+    {
+      request_note: payload.request_note || undefined,
+      title: payload.title || undefined,
+    }
   );
 }
 
