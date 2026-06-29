@@ -10,6 +10,7 @@ import {
   getAccessToken,
   getCommunityDomainCapacityPlan,
   getCommunityDomainDashboard,
+  getCommunityDomainGovernanceCoverage,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
   getCommunityDomainReadiness,
@@ -126,6 +127,22 @@ type CapacityPlanLane = {
   usage_percent?: number | string | null;
   status?: string | null;
   summary?: string | null;
+};
+
+type GovernanceCoverageNode = {
+  node?: {
+    id?: number | string | null;
+    name?: string | null;
+    parent_node_id?: number | string | null;
+  } | null;
+  governance_status?: string | null;
+  ready_for_delegation?: boolean;
+  local_policy_count?: number | string | null;
+  inherited_policy_count?: number | string | null;
+  effective_policy_count?: number | string | null;
+  local_admin_count?: number | string | null;
+  open_review_count?: number | string | null;
+  next_step?: string | null;
 };
 
 const MODULE_LABELS: Record<string, string> = {
@@ -519,6 +536,7 @@ export default function CommunityDomainDashboardPage() {
   const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
   const [setupPlan, setSetupPlan] = useState<any | null>(null);
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
+  const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -555,6 +573,7 @@ export default function CommunityDomainDashboardPage() {
       setSetupReadiness(null);
       setSetupPlan(null);
       setCapacityPlan(null);
+      setGovernanceCoverage(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -581,6 +600,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupReadiness(null);
     setSetupPlan(null);
     setCapacityPlan(null);
+    setGovernanceCoverage(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -610,6 +630,14 @@ export default function CommunityDomainDashboardPage() {
         setCapacityPlan(capacityPlanPayload?.capacity_plan || null);
       } catch {
         setCapacityPlan(null);
+      }
+      try {
+        const governanceCoveragePayload = await getCommunityDomainGovernanceCoverage(
+          communityDomainId
+        );
+        setGovernanceCoverage(governanceCoveragePayload?.governance_coverage || null);
+      } catch {
+        setGovernanceCoverage(null);
       }
       try {
         const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
@@ -654,6 +682,7 @@ export default function CommunityDomainDashboardPage() {
       setSetupReadiness(null);
       setSetupPlan(null);
       setCapacityPlan(null);
+      setGovernanceCoverage(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -721,6 +750,16 @@ export default function CommunityDomainDashboardPage() {
   const attentionCapacityLanes = visibleCapacityLanes.filter((lane) => {
     const statusText = cleanText(lane.status).toLowerCase();
     return statusText.includes("near") || statusText.includes("over");
+  });
+  const governanceCoverageCounts = governanceCoverage?.counts || {};
+  const visibleGovernanceCoverageNodes: GovernanceCoverageNode[] = Array.isArray(
+    governanceCoverage?.flat_nodes
+  )
+    ? governanceCoverage.flat_nodes
+    : [];
+  const governanceCoverageGaps = visibleGovernanceCoverageNodes.filter((item) => {
+    const statusText = cleanText(item.governance_status).toLowerCase();
+    return statusText.includes("needs") || statusText.includes("inactive");
   });
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
@@ -2023,6 +2062,99 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
                       This summary does not decide reviews, apply membership,
                       assign roles, expose private evidence, or bypass reviewer policy.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "governance" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Governance coverage</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {governanceCoverage
+                        ? `${cleanText(
+                            governanceCoverage.primary_next_action?.label,
+                            "Review Community Domain governance coverage"
+                          )}. This shows whether operating units have local admins and policy coverage.`
+                        : "GSN could not load the read-only governance coverage map for this view."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        ["Domain policies", governanceCoverageCounts.domain_policies],
+                        ["Local policies", governanceCoverageCounts.node_scoped_policies],
+                        ["Needs admin", governanceCoverageCounts.needs_local_admin],
+                        ["Needs policy", governanceCoverageCounts.needs_policy],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={statusBadge(Number(value) > 0 ? "recorded" : "not recorded")}
+                        >
+                          {String(label)}: {countValue(value)}
+                        </div>
+                      ))}
+                    </div>
+                    {governanceCoverageGaps.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {governanceCoverageGaps.slice(0, 3).map((item) => (
+                          <div
+                            key={`${cleanText(item.node?.id)}:${cleanText(
+                              item.node?.name,
+                              "governance-node"
+                            )}`}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(item.node?.name, "Operating unit")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  item.next_step,
+                                  "Review local admin and policy coverage."
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(item.governance_status)}>
+                              {compactStatus(item.governance_status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : governanceCoverage ? (
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        No local-admin or policy coverage gap is visible in the
+                        read-only governance map.
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This coverage view does not create policy, assign roles,
+                      create reviews, decide reviews, apply reviews, verify legal
+                      or institutional authority, move money, activate billing,
+                      publish a public page, create marketplace activity, create
+                      a social Community, or expose private review payloads.
                     </div>
                   </div>
                 ) : null}
