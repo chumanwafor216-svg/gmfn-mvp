@@ -2525,6 +2525,15 @@ export async function getCommunityDomainEvidenceRecordReadiness(
   );
 }
 
+export async function getCommunityDomainEvidenceReleaseReadiness(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/evidence-release-readiness"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainTrustMobility(
   communityDomainId: number | string
 ): Promise<any> {

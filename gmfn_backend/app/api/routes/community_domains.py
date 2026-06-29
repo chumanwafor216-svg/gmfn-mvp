@@ -11247,6 +11247,357 @@ def _community_domain_evidence_record_readiness_payload(
     }
 
 
+COMMUNITY_DOMAIN_EVIDENCE_RELEASE_LANES: list[dict[str, Any]] = [
+    {
+        "lane_key": "public_safe_identity",
+        "label": "Public-safe identity",
+        "audience": "public",
+        "route_suffix": "/network-presence",
+        "requires_admin": False,
+    },
+    {
+        "lane_key": "authority_currentness",
+        "label": "Authority currentness",
+        "audience": "public_or_external_verifier",
+        "route_suffix": "/verification-requirements",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "release_policy",
+        "label": "Release policy",
+        "audience": "domain_admin",
+        "route_suffix": "/governance-coverage",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "evidence_metadata",
+        "label": "Evidence metadata",
+        "audience": "domain_admin",
+        "route_suffix": "/evidence-map",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "visibility_scope",
+        "label": "Visibility scope",
+        "audience": "members_or_public_safe_viewers",
+        "route_suffix": "/record-privacy-map",
+        "requires_admin": False,
+    },
+    {
+        "lane_key": "review_currentness",
+        "label": "Review currentness",
+        "audience": "domain_admin",
+        "route_suffix": "/action-reviews",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "dispute_and_revocation",
+        "label": "Dispute and revocation",
+        "audience": "domain_admin",
+        "route_suffix": "/appeal-readiness",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "public_proof_shell",
+        "label": "Public proof shell",
+        "audience": "public",
+        "route_suffix": "/network-presence",
+        "requires_admin": True,
+    },
+    {
+        "lane_key": "external_trust_relay",
+        "label": "External trust relay",
+        "audience": "external_domain_or_verifier",
+        "route_suffix": "/trust-mobility",
+        "requires_admin": True,
+    },
+]
+
+
+def _community_domain_evidence_release_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    public_profile_present = bool(_clean_str(domain.public_profile))
+    verification_status = _clean_role(domain.verification_status, "unverified")
+
+    active_nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .filter(CommunityNode.status == "active")
+        .all()
+    )
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_policy_rows = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    review_rows = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    open_review_rows = [
+        row
+        for row in review_rows
+        if _clean_role(row.status, "pending")
+        in {"pending", "pending_review", "needs_changes", "approved"}
+    ]
+    active_evidence_rows = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .all()
+    )
+
+    visibility_policy_counts: dict[str, int] = {}
+    for node in active_nodes:
+        key = _clean_role(node.visibility_policy, "members")
+        visibility_policy_counts[key] = visibility_policy_counts.get(key, 0) + 1
+
+    release_policy_markers = (
+        "evidence.release",
+        "evidence.publish",
+        "public.proof",
+        "proof.release",
+        "trust.relay",
+        "evidence.verify",
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def matches(value: Optional[str], markers: tuple[str, ...]) -> bool:
+        candidate = _clean_str(value).lower()
+        if not candidate:
+            return False
+        return any(marker in candidate for marker in markers)
+
+    release_policy_count = sum(
+        1 for row in active_policy_rows if matches(row.action_key, release_policy_markers)
+    )
+    release_review_count = sum(
+        1 for row in review_rows if matches(row.action_key, release_policy_markers)
+    )
+    release_evidence_count = sum(
+        1
+        for row in active_evidence_rows
+        if matches(row.evidence_type, release_policy_markers)
+        or matches(getattr(row.action_review, "action_key", None), release_policy_markers)
+    )
+
+    status_by_lane = {
+        "public_safe_identity": (
+            "profile_present" if public_profile_present else "profile_needed"
+        ),
+        "authority_currentness": (
+            "verified" if verification_status == "verified" else verification_status
+        ),
+        "release_policy": (
+            "policy_present" if release_policy_count else "policy_needed"
+        ),
+        "evidence_metadata": (
+            "metadata_present" if active_evidence_rows else "not_recorded"
+        ),
+        "visibility_scope": (
+            "visibility_mapped" if visibility_policy_counts else "not_mapped"
+        ),
+        "review_currentness": (
+            "open_reviews_need_attention"
+            if open_review_rows
+            else ("review_trace_present" if review_rows else "not_recorded")
+        ),
+        "dispute_and_revocation": "not_connected_in_this_slice",
+        "public_proof_shell": "not_created_in_this_slice",
+        "external_trust_relay": "not_connected_in_this_slice",
+    }
+    ready_by_lane = {
+        "public_safe_identity": public_profile_present,
+        "authority_currentness": verification_status == "verified",
+        "release_policy": release_policy_count > 0,
+        "evidence_metadata": bool(active_evidence_rows),
+        "visibility_scope": bool(visibility_policy_counts),
+        "review_currentness": bool(review_rows) and not bool(open_review_rows),
+        "dispute_and_revocation": False,
+        "public_proof_shell": False,
+        "external_trust_relay": False,
+    }
+    count_by_lane: dict[str, Optional[int]] = {
+        "public_safe_identity": 1 if public_profile_present else 0,
+        "authority_currentness": 1 if verification_status == "verified" else 0,
+        "release_policy": admin_count(release_policy_count),
+        "evidence_metadata": admin_count(len(active_evidence_rows)),
+        "visibility_scope": len(visibility_policy_counts),
+        "review_currentness": admin_count(len(review_rows)),
+        "dispute_and_revocation": 0,
+        "public_proof_shell": 0,
+        "external_trust_relay": 0,
+    }
+    next_step_by_lane = {
+        "public_safe_identity": "Prepare public-safe wording before any evidence is shown outside the domain.",
+        "authority_currentness": "Keep authority current before outsiders rely on institutional evidence.",
+        "release_policy": "Define who may prepare, approve, or block evidence release.",
+        "evidence_metadata": "Keep file and storage details private; expose only safe evidence summaries later.",
+        "visibility_scope": "Review which units are public, member-visible, or admin-only before release.",
+        "review_currentness": "Resolve open reviews before treating evidence as current for release.",
+        "dispute_and_revocation": "Do not release proof without a future dispute and revocation path.",
+        "public_proof_shell": "Do not publish public proof until an official document shell and URL decision exist.",
+        "external_trust_relay": "Do not relay proof to outside domains until trust relay paths are real.",
+    }
+
+    lanes = []
+    for preset in COMMUNITY_DOMAIN_EVIDENCE_RELEASE_LANES:
+        lane_key = str(preset["lane_key"])
+        lanes.append(
+            {
+                "lane_key": lane_key,
+                "label": preset["label"],
+                "audience": preset["audience"],
+                "status": status_by_lane[lane_key],
+                "ready": bool(ready_by_lane[lane_key]),
+                "count": count_by_lane[lane_key],
+                "route_hint": route_hint(
+                    str(preset["route_suffix"]),
+                    requires_admin=bool(preset["requires_admin"]),
+                ),
+                "requires_admin": bool(preset["requires_admin"]),
+                "release_status": "not_released_in_this_slice",
+                "currentness_status": (
+                    "not_calculated_in_this_slice"
+                    if lane_key in {"dispute_and_revocation", "public_proof_shell", "external_trust_relay"}
+                    else status_by_lane[lane_key]
+                ),
+                "file_status": "not_exposed_in_this_slice",
+                "public_url_status": "not_created_in_this_slice",
+                "credential_status": "not_issued_in_this_slice",
+                "trustslip_status": "not_issued_in_this_slice",
+                "trust_passport_status": "not_written_in_this_slice",
+                "next_step": next_step_by_lane[lane_key],
+                "boundary": (
+                    "Read-only evidence release readiness lane. This does not "
+                    "release evidence, expose files, expose storage keys, publish "
+                    "public proof, create URLs, create QR codes, issue credentials, "
+                    "issue TrustSlips, write Trust Passport entries, share records "
+                    "across domains, or change permissions."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_evidence_release",
+            "label": "Ask a Community Domain admin to review evidence release readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not public_profile_present:
+        primary_next_action = {
+            "action_key": "prepare_public_safe_identity",
+            "label": "Prepare public-safe identity before evidence release",
+            "route_hint": route_hint("/network-presence", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif verification_status != "verified":
+        primary_next_action = {
+            "action_key": "prepare_authority_currentness",
+            "label": "Prepare authority currentness before evidence release",
+            "route_hint": route_hint("/verification-requirements", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif release_policy_count == 0:
+        primary_next_action = {
+            "action_key": "define_evidence_release_policy",
+            "label": "Define evidence release policy",
+            "route_hint": route_hint("/governance-coverage", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif not active_evidence_rows:
+        primary_next_action = {
+            "action_key": "record_private_evidence_metadata",
+            "label": "Record private evidence metadata before release planning",
+            "route_hint": route_hint("/evidence-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif open_review_rows:
+        primary_next_action = {
+            "action_key": "resolve_open_release_reviews",
+            "label": "Resolve open reviews before evidence release",
+            "route_hint": route_hint("/action-reviews/reviewer-queue", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_release_boundaries",
+            "label": "Review evidence release boundaries",
+            "route_hint": route_hint("/record-privacy-map", requires_admin=True),
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "evidence_release_engine_status": "not_connected_in_this_slice",
+            "public_profile_present": public_profile_present,
+            "verification_status": verification_status,
+            "active_member_count": int(active_member_count),
+            "visibility_policy_counts": visibility_policy_counts if can_admin else None,
+            "active_policy_count": admin_count(len(active_policy_rows)),
+            "release_policy_count": admin_count(release_policy_count),
+            "review_record_count": admin_count(len(review_rows)),
+            "open_review_count": admin_count(len(open_review_rows)),
+            "release_review_count": admin_count(release_review_count),
+            "active_evidence_count": admin_count(len(active_evidence_rows)),
+            "release_evidence_count": admin_count(release_evidence_count),
+            "evidence_releases_created": 0,
+            "files_exposed": 0,
+            "storage_keys_exposed": 0,
+            "public_proofs_published": 0,
+            "public_urls_created": 0,
+            "qr_codes_created": 0,
+            "credentials_issued": 0,
+            "trustslips_issued": 0,
+            "trust_passport_entries_written": 0,
+            "cross_domain_shares_created": 0,
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain evidence release readiness is read-only public-safe "
+            "proof planning. This endpoint does not release evidence, expose "
+            "files, expose storage keys, publish public proof, create public "
+            "URLs, create QR codes, issue credentials, issue TrustSlips, write "
+            "Trust Passport entries, share records across domains, create trust "
+            "relay paths, verify legal authority, move money, activate billing, "
+            "create marketplace activity, create a social Community, change "
+            "permissions, or expose private member evidence or review payloads."
+        ),
+    }
+
+
 def _community_domain_trust_mobility_payload(
     db: Session,
     *,
@@ -17232,6 +17583,27 @@ def get_community_domain_evidence_record_readiness(
         "ok": True,
         "community_domain_id": int(domain.id),
         "evidence_record_readiness": _community_domain_evidence_record_readiness_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/evidence-release-readiness", response_model=dict[str, Any])
+def get_community_domain_evidence_release_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "evidence_release_readiness": _community_domain_evidence_release_readiness_payload(
             db,
             domain=domain,
             current_user=current_user,

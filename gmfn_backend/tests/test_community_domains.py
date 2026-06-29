@@ -7560,6 +7560,254 @@ def test_member_can_read_evidence_record_readiness_but_admin_counts_are_hidden(
     assert "private member evidence" in readiness["boundary"]
 
 
+def test_evidence_release_readiness_projects_public_safe_release_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "evidence-release-admin@example.com")
+    member = _seed_user(3, "evidence-release-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Evidence Release Market Domain",
+                "display_name": "Evidence Release Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+                "public_profile": "Public-safe market evidence release profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        with SessionLocal() as db:
+            domain_row = db.get(CommunityDomain, domain_id)
+            assert domain_row is not None
+            domain_row.verification_status = "verified"
+            db.commit()
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Public Evidence Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+                "visibility_policy": "public",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        for user, role in ((admin, "domain_admin"), (member, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "evidence-release-review",
+                "action_key": "evidence.release",
+                "community_node_id": line_id,
+                "scope_type": "node",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "evidence.release",
+                "community_node_id": line_id,
+                "request_note": "Review whether this evidence can become public-safe.",
+                "payload": {"release_scope": "public_safe_summary"},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
+            json={
+                "evidence_type": "public_safe_summary",
+                "title": "Public-safe line summary",
+                "file_name": "public-safe-line-summary.pdf",
+                "storage_key": "private/evidence/public-safe-line-summary.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/evidence-release-readiness"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    readiness = payload["evidence_release_readiness"]
+    assert readiness["editable"] is False
+    assert readiness["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert readiness["summary"]["evidence_release_engine_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert readiness["summary"]["verification_status"] == "verified"
+    assert readiness["summary"]["release_policy_count"] == 1
+    assert readiness["summary"]["release_review_count"] == 1
+    assert readiness["summary"]["release_evidence_count"] == 1
+    assert readiness["summary"]["evidence_releases_created"] == 0
+    assert readiness["summary"]["files_exposed"] == 0
+    assert readiness["summary"]["storage_keys_exposed"] == 0
+    assert readiness["summary"]["public_proofs_published"] == 0
+    assert readiness["summary"]["public_urls_created"] == 0
+    assert readiness["summary"]["qr_codes_created"] == 0
+    assert readiness["summary"]["credentials_issued"] == 0
+    assert readiness["summary"]["trustslips_issued"] == 0
+    assert readiness["summary"]["trust_passport_entries_written"] == 0
+    assert readiness["summary"]["cross_domain_shares_created"] == 0
+    assert readiness["summary"]["visibility_policy_counts"] == {
+        "members": 1,
+        "public": 1,
+    }
+
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["public_safe_identity"]["status"] == "profile_present"
+    assert lanes["authority_currentness"]["status"] == "verified"
+    assert lanes["release_policy"]["status"] == "policy_present"
+    assert lanes["evidence_metadata"]["status"] == "metadata_present"
+    assert lanes["visibility_scope"]["status"] == "visibility_mapped"
+    assert lanes["review_currentness"]["status"] == "open_reviews_need_attention"
+    assert lanes["public_proof_shell"]["public_url_status"] == "not_created_in_this_slice"
+    assert lanes["external_trust_relay"]["trust_passport_status"] == (
+        "not_written_in_this_slice"
+    )
+    assert readiness["primary_next_action"] == {
+        "action_key": "resolve_open_release_reviews",
+        "label": "Resolve open reviews before evidence release",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "requires_admin": True,
+    }
+    assert "read-only public-safe proof planning" in readiness["boundary"]
+    assert "does not release evidence" in readiness["boundary"]
+    assert "expose storage keys" in readiness["boundary"]
+    assert "publish public proof" in readiness["boundary"]
+    assert "create public URLs" in readiness["boundary"]
+    assert "issue TrustSlips" in readiness["boundary"]
+    assert "Trust Passport entries" in readiness["boundary"]
+    assert "private/evidence/public-safe-line-summary.pdf" not in str(readiness)
+    assert "public-safe-line-summary.pdf" not in str(readiness)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_evidence_release_readiness_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "evidence-release-member-reader@example.com")
+    outsider = _seed_user(3, "evidence-release-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Evidence Release School Domain",
+                "display_name": "Evidence Release School Domain",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+                "public_profile": "A public-safe school evidence profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_readiness = client.get(
+            f"/community-domains/{domain_id}/evidence-release-readiness"
+        )
+        assert member_readiness.status_code == 200, member_readiness.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_readiness = client.get(
+            f"/community-domains/{domain_id}/evidence-release-readiness"
+        )
+        assert outsider_readiness.status_code == 403, outsider_readiness.text
+        assert "active Community Domain members" in outsider_readiness.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_readiness.json()["evidence_release_readiness"]
+    assert readiness["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert readiness["summary"]["active_member_count"] == 2
+    assert readiness["summary"]["visibility_policy_counts"] is None
+    assert readiness["summary"]["active_policy_count"] is None
+    assert readiness["summary"]["release_policy_count"] is None
+    assert readiness["summary"]["review_record_count"] is None
+    assert readiness["summary"]["active_evidence_count"] is None
+    assert readiness["summary"]["release_evidence_count"] is None
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_evidence_release",
+        "label": "Ask a Community Domain admin to review evidence release readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["release_policy"]["route_hint"] is None
+    assert lanes["evidence_metadata"]["route_hint"] is None
+    assert lanes["review_currentness"]["route_hint"] is None
+    assert lanes["public_safe_identity"]["route_hint"].endswith("/network-presence")
+    assert lanes["visibility_scope"]["route_hint"].endswith("/record-privacy-map")
+    assert "private member evidence" in readiness["boundary"]
+
+
 def test_trust_mobility_projects_portability_readiness_without_issuing_records(
     client: TestClient,
 ):
