@@ -17,6 +17,7 @@ let shellFreshnessRegistered = false;
 let shellFreshnessChecking = false;
 
 const SHELL_FRESHNESS_INTERVAL_MS = 5 * 60 * 1000;
+const SHELL_FRESHNESS_TIMEOUT_MS = 10000;
 const SHELL_RELOAD_SIGNATURE_KEY = "gsn.pwa.shellReloadSignature";
 const SHELL_ASSET_PATTERN = /\/assets\/[^"'<> ]+\.(?:js|css)/g;
 
@@ -172,13 +173,26 @@ async function checkForFreshInstalledShell(): Promise<void> {
 
   shellFreshnessChecking = true;
   try {
-    const response = await fetch(`/?gsn_shell_check=${Date.now()}`, {
-      cache: "no-store",
-      credentials: "same-origin",
-      headers: {
-        "Cache-Control": "no-cache",
-      },
-    });
+    const controller = new AbortController();
+    const timer = window.setTimeout(
+      () => controller.abort(),
+      SHELL_FRESHNESS_TIMEOUT_MS
+    );
+
+    let response: Response;
+    try {
+      response = await fetch(`/?gsn_shell_check=${Date.now()}`, {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+        signal: controller.signal,
+      });
+    } finally {
+      window.clearTimeout(timer);
+    }
+
     if (!response.ok) return;
 
     const latestSignature = shellSignatureFromHtml(await response.text());
