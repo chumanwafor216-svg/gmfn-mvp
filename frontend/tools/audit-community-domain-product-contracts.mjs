@@ -216,6 +216,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainSubscriptionLifecycle[\s\S]*subscriptionLifecycle[\s\S]*subscriptionSummary[\s\S]*subscriptionPackage[\s\S]*visibleSubscriptionLanes[\s\S]*blockedSubscriptionLanes[\s\S]*activeLane === "billing"[\s\S]*Subscription lifecycle[\s\S]*primary_next_action[\s\S]*pricing_status[\s\S]*billing_status[\s\S]*renewal_status[\s\S]*does not\s+create quote acceptance, create payment instruction, create expected payment,\s+record payment, confirm payment, create invoices, create receipts, activate\s+billing, activate the Community Domain, create entitlements, renew a domain,\s+suspend a domain, reactivate a domain, verify authority, move money, or\s+expose private finance, member, evidence, or review records/,
+  "Community Domain dashboard Billing lane must show read-only subscription lifecycle without implying quote acceptance, payment instruction, expected payment, payment records, invoices, receipts, billing activation, Community Domain activation, entitlements, renewal, suspension, reactivation, authority verification, money movement, or private record exposure.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /listCommunityDomainNodeTree[\s\S]*structurePreviewRows[\s\S]*nodeTree[\s\S]*visibleStructureRows[\s\S]*activeLane === "structure"[\s\S]*Structure preview[\s\S]*read-only Community Domain tree[\s\S]*No operating-unit structure has been mapped yet[\s\S]*does not create nodes, change parentage, place\s+members, grant roles, activate billing, or verify a branch/,
   "Community Domain dashboard Structure lane must show a compact read-only node-tree preview without implying structure writes or authority changes.",
   { frontend: true }

@@ -23,6 +23,7 @@ import {
   getCommunityDomainSetupPlan,
   getCommunityDomainTrustRelayReadiness,
   getCommunityDomainTrustMobility,
+  getCommunityDomainSubscriptionLifecycle,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
   listMyCommunityDomainMembershipRequests,
@@ -251,6 +252,15 @@ type AffiliationReadinessLane = {
   status?: string | null;
   ready?: boolean;
   count?: number | string | null;
+  next_step?: string | null;
+};
+
+type SubscriptionLifecycleLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  summary?: string | null;
+  status?: string | null;
+  ready?: boolean;
   next_step?: string | null;
 };
 
@@ -653,6 +663,7 @@ export default function CommunityDomainDashboardPage() {
   const [notificationScopeReadiness, setNotificationScopeReadiness] = useState<any | null>(null);
   const [trustMobility, setTrustMobility] = useState<any | null>(null);
   const [affiliationReadiness, setAffiliationReadiness] = useState<any | null>(null);
+  const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -697,6 +708,7 @@ export default function CommunityDomainDashboardPage() {
       setNotificationScopeReadiness(null);
       setTrustMobility(null);
       setAffiliationReadiness(null);
+      setSubscriptionLifecycle(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -731,6 +743,7 @@ export default function CommunityDomainDashboardPage() {
     setNotificationScopeReadiness(null);
     setTrustMobility(null);
     setAffiliationReadiness(null);
+    setSubscriptionLifecycle(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -760,6 +773,14 @@ export default function CommunityDomainDashboardPage() {
         setCapacityPlan(capacityPlanPayload?.capacity_plan || null);
       } catch {
         setCapacityPlan(null);
+      }
+      try {
+        const subscriptionPayload = await getCommunityDomainSubscriptionLifecycle(
+          communityDomainId
+        );
+        setSubscriptionLifecycle(subscriptionPayload?.subscription_lifecycle || null);
+      } catch {
+        setSubscriptionLifecycle(null);
       }
       try {
         const governanceCoveragePayload = await getCommunityDomainGovernanceCoverage(
@@ -880,6 +901,7 @@ export default function CommunityDomainDashboardPage() {
       setNotificationScopeReadiness(null);
       setTrustMobility(null);
       setAffiliationReadiness(null);
+      setSubscriptionLifecycle(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -969,6 +991,20 @@ export default function CommunityDomainDashboardPage() {
   const rolloutUnitsNeedingAttention = visibleRolloutUnits.filter(
     (unit) => !unit.ready_for_pilot
   );
+  const subscriptionSummary = subscriptionLifecycle?.summary || {};
+  const subscriptionPackage = subscriptionLifecycle?.package || {};
+  const visibleSubscriptionLanes: SubscriptionLifecycleLane[] = Array.isArray(
+    subscriptionLifecycle?.lanes
+  )
+    ? subscriptionLifecycle.lanes
+    : [];
+  const blockedSubscriptionLanes = visibleSubscriptionLanes.filter(
+    (lane) => !lane.ready
+  );
+  const subscriptionReadyTotal =
+    typeof subscriptionLifecycle?.ready_total === "number"
+      ? subscriptionLifecycle.ready_total
+      : visibleSubscriptionLanes.filter((lane) => lane.ready).length;
   const evidenceRecordSummary = evidenceRecordReadiness?.summary || {};
   const visibleEvidenceRecordTypes: EvidenceRecordReadinessType[] = Array.isArray(
     evidenceRecordReadiness?.record_types
@@ -2229,6 +2265,140 @@ export default function CommunityDomainDashboardPage() {
                     >
                       {packageReviewActionLabel}
                     </StableButton>
+                  </div>
+                ) : null}
+
+                {activeLane === "billing" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Subscription lifecycle</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {subscriptionLifecycle
+                        ? `${cleanText(
+                            subscriptionLifecycle.primary_next_action?.label,
+                            "Review subscription setup"
+                          )}. ${subscriptionReadyTotal} of ${visibleSubscriptionLanes.length} billing checks are ready.`
+                        : "GSN could not load the read-only subscription lifecycle view for this Community Domain."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        [
+                          "Package",
+                          cleanText(subscriptionPackage.package_name, "not selected"),
+                        ],
+                        [
+                          "Pricing",
+                          compactStatus(subscriptionPackage.pricing_status),
+                        ],
+                        [
+                          "Billing",
+                          compactStatus(subscriptionSummary.billing_status),
+                        ],
+                        [
+                          "Renewal",
+                          compactStatus(subscriptionSummary.renewal_status),
+                        ],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={{
+                            borderRadius: 14,
+                            background: "#F7FAFF",
+                            border: "1px solid rgba(9,27,46,0.08)",
+                            padding: 10,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                            {label}
+                          </div>
+                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                            {value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {blockedSubscriptionLanes.length ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        Billing checks needing attention:{" "}
+                        <strong>
+                          {blockedSubscriptionLanes
+                            .slice(0, 3)
+                            .map((lane) =>
+                              cleanText(lane.label, lane.lane_key || "billing check")
+                            )
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : subscriptionLifecycle ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        No blocked billing lane is visible, but payment and renewal automation are
+                        still not connected here.
+                      </div>
+                    ) : null}
+                    {visibleSubscriptionLanes.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleSubscriptionLanes.slice(0, 4).map((lane) => (
+                          <div
+                            key={cleanText(
+                              lane.lane_key,
+                              cleanText(lane.label, "subscription")
+                            )}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(lane.label, "Subscription check")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  lane.next_step,
+                                  cleanText(
+                                    lane.summary,
+                                    "Keep billing as planning until a real payment path exists."
+                                  )
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(lane.status)}>
+                              {compactStatus(lane.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This subscription lifecycle view is read-only billing planning. It does not
+                      create quote acceptance, create payment instruction, create expected payment,
+                      record payment, confirm payment, create invoices, create receipts, activate
+                      billing, activate the Community Domain, create entitlements, renew a domain,
+                      suspend a domain, reactivate a domain, verify authority, move money, or
+                      expose private finance, member, evidence, or review records.
+                    </div>
                   </div>
                 ) : null}
 
