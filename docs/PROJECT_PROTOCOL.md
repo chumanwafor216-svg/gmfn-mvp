@@ -34,6 +34,11 @@ development-finance explanation work, also read:
 
 - `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`
 
+For Trust Event, Trust Passport, TrustSlip, Community Domain settings, or future
+Committee evidence-capture work, also read:
+
+- `docs/GSN_TRUST_EVENT_STANDARDIZATION_PROTOCOL_2026-06-29.md`
+
 The canonical system skeleton is the current authoritative skeleton for:
 
 - Community Home
@@ -264,10 +269,12 @@ A community likely has:
 Community is not a decorative concept.
 It is a structural domain that influences access, actions, and navigation.
 
-### 5.2.1 Community versus Community Domain
-The product now separates two concepts that must not be collapsed.
+### 5.2.1 Committee, Community, and Community Domain
+The product now separates lightweight self-created groups from organized
+Community Domains. These concepts must not be collapsed.
 
-**Community** means the lightweight social/community relationship layer:
+**Committee** is the future product language for the lightweight
+social/relationship layer:
 
 - created through ordinary `Create Community` flows;
 - invite-based;
@@ -276,6 +283,15 @@ The product now separates two concepts that must not be collapsed.
 - no institutional governance required by default;
 - implemented today through the existing community/clan/community-membership
   spine unless later migrations change the names.
+
+Current implementation note:
+
+- many existing routes, tables, and UI labels still say `Community`, `Clan`, or
+  similar historical names;
+- do not rename backend models, routes, API contracts, or database tables
+  casually;
+- a full rename from lightweight `Community` to `Committee` needs a separate
+  compatibility and migration plan.
 
 **Community Domain** means the institutional/paid domain layer:
 
@@ -291,7 +307,9 @@ The product now separates two concepts that must not be collapsed.
 
 Product language rule:
 
-- Use `Create Community` for the free/social path.
+- Directionally, use `Create Committee` for the free/self-created lightweight
+  path once the rename is planned and implemented. Until then, existing
+  `Create Community` routes may remain as compatibility surfaces.
 - Use `Purchase Community Domain` or `Create Community Domain` for the
   institutional path, depending on whether payment is part of the current step.
 - Do not call the institutional object a `Community Package`. A package is a
@@ -302,9 +320,52 @@ Product language rule:
   satisfied. Do not present every Community Domain as verified by default.
 
 Unabated truth: coders should eventually treat `Community` and
-`CommunityDomain` as different product concepts, and likely as different data
-objects. That migration is not authorized merely by this terminology decision;
-it needs schema, route, permission, billing, and UI planning.
+`CommunityDomain` as different product concepts, with the lightweight side
+moving toward `Committee` language. That migration is not authorized merely by
+this terminology decision; it needs schema, route, permission, billing, UX,
+compatibility, and documentation planning.
+
+### 5.2.2 Trust Event standardization doctrine
+
+GSN must not create separate trust systems for schools, churches, markets,
+unions, hospitals, cooperatives, families, and committees.
+
+The standard architecture is:
+
+```text
+Community Domain
+-> Activity Catalogue
+-> Community Activity Type
+-> Universal Evidence Dimension
+-> Trust Event
+-> Trust Passport
+-> TrustSlip
+```
+
+Every official Trust Event should map local activity language into a small
+universal evidence vocabulary:
+
+- participation;
+- contribution;
+- responsibility;
+- reliability;
+- support;
+- leadership;
+- learning and development;
+- recognition.
+
+Community Domains may define their own activity catalogues, but the universal
+evidence dimensions are controlled by GSN and must not be casually edited by
+local admins.
+
+MVP must focus on clean evidence capture, approval, provenance, Trust Passport
+display, and category summaries. Do not build complex trust scoring, community
+rankings, automatic approvals, or hidden risk scores until the evidence
+ontology is stable.
+
+Source of truth:
+
+- `docs/GSN_TRUST_EVENT_STANDARDIZATION_PROTOCOL_2026-06-29.md`
 
 ### 5.3 Invite
 An invite is a controlled access mechanism.

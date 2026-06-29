@@ -28,6 +28,10 @@ For innovation-case, investor, policy, TrustSlip, merchant-verification, or
 development-finance explanation work, also read
 `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`.
 
+For Trust Event, Trust Passport, TrustSlip, Community Domain settings, or future
+Committee evidence-capture work, also read
+`docs/GSN_TRUST_EVENT_STANDARDIZATION_PROTOCOL_2026-06-29.md`.
+
 ## Backend
 
 The backend is built with **FastAPI**, **SQLAlchemy**, and **Alembic**.

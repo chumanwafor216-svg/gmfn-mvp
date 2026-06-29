@@ -43,7 +43,9 @@ system identity.
 
 Terminology update:
 
-- a lightweight `Community` is the ordinary social/invite relationship unit;
+- the lightweight self-created group layer should move toward `Committee`
+  product language, even though existing implementation may still say
+  `Community`, `Clan`, or similar historical names;
 - a `Community Domain` is the institutional/paid domain unit for a real
   organization, branch network, association, school, church, union, or similar
   body;
@@ -55,12 +57,21 @@ Terminology update:
 Future route language should therefore separate:
 
 ```text
-Create Community
+Create Committee
 Purchase Community Domain
 ```
 
-This keeps the free social entry path separate from the institutional SaaS
-entry path.
+Existing `Create Community` compatibility surfaces should not be renamed
+casually. The rename needs a separate migration plan. The important product
+boundary is that the free/self-created committee path must stay separate from
+the institutional Community Domain SaaS path.
+
+Trust Event architecture note:
+
+- Community Domain work remains the active build priority.
+- Trust Events must be standardized through the universal evidence dimensions
+  in `docs/GSN_TRUST_EVENT_STANDARDIZATION_PROTOCOL_2026-06-29.md`.
+- Do not build separate trust engines per organization type.
 
 ### 2. Member identity
 Each individual has:

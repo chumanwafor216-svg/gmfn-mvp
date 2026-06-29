@@ -91,15 +91,17 @@ Unabated truth:
 
 GSN now has two community concepts.
 
-### Type 1 - Community
+### Type 1 - Committee
 
-A `Community` is the lightweight social/invite relationship layer.
+A `Committee` is the future product language for the lightweight social/invite
+relationship layer. Existing implementation may still say `Community`, `Clan`,
+or similar historical names until a planned migration is approved.
 
 It supports:
 
-- create a community;
+- create a committee;
 - invite friends or known members;
-- join an existing community;
+- join an existing committee;
 - basic membership and participation;
 - ordinary social trust context.
 
@@ -126,9 +128,13 @@ It supports:
 The user-facing entrances should stay separate:
 
 ```text
-Create Community
+Create Committee
 Purchase Community Domain
 ```
+
+Compatibility note: existing `Create Community` screens/routes may remain until
+the rename is planned. Do not casually rename backend contracts during
+Community Domain work.
 
 Optional third entrance for later:
 
@@ -146,7 +152,7 @@ Use these names consistently.
 
 | Name | Meaning |
 | --- | --- |
-| Community | Free/lightweight social unit. |
+| Committee | Free/lightweight self-created social unit; future product language for the current lightweight Community path. |
 | Community Domain | Durable institutional object bought/owned by an organization. |
 | Community Domain Package | The commercial subscription/package that activates or renews the domain. |
 | Verified Community Domain | A stronger verified/protected state of a Community Domain. |
@@ -163,6 +169,16 @@ Devil's advocate:
 - Hard-coding separate engines for school, church, union, and market would
   make the system expensive and brittle. The correct object is one configurable
   Community Domain with generic hierarchy nodes and module settings.
+
+Trust Event standardization:
+
+- Community Domain settings should later expose a Trust Event Setup surface.
+- Each Community Domain should define its own activity catalogue.
+- Each activity must map to the universal evidence dimensions in
+  `docs/GSN_TRUST_EVENT_STANDARDIZATION_PROTOCOL_2026-06-29.md`.
+- Do not build complex trust scoring until structured evidence capture,
+  approval, provenance, Trust Passport display, and category summaries are
+  implemented.
 
 ## 2.1 Research Principles Applied to GSN
 
@@ -1007,7 +1023,8 @@ GET    /community-domains/{id}/analytics
 
 Compatibility rule:
 
-- Existing `/clans` routes can remain the lightweight community surface.
+- Existing `/clans` routes can remain the lightweight community/committee
+  compatibility surface.
 - New paid institutional work should use `/community-domains` so coders do not
   confuse social community actions with institutional administration.
 
@@ -1018,11 +1035,13 @@ Compatibility rule:
 Pre-auth or early-auth entry should show:
 
 ```text
-Create Community
+Create Committee
 Purchase Community Domain
 ```
 
-`Create Community` remains the simple starter/founder flow.
+`Create Committee` is the future simple starter/founder flow. Existing
+`Create Community` screens/routes may remain as compatibility surfaces until
+the rename is planned and safely implemented.
 
 `Purchase Community Domain` opens an institutional purchase/provisioning flow.
 
