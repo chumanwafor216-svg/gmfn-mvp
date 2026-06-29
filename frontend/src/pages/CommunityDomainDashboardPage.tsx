@@ -638,17 +638,20 @@ export default function CommunityDomainDashboardPage() {
                 {lanes.map((lane) => {
                   const selected = lane.lane_key === activeLane;
                   return (
-                    <button
+                    <StableButton
                       key={cleanText(lane.lane_key, lane.label)}
                       type="button"
+                      kind="secondary"
                       onClick={() => setActiveLane(cleanText(lane.lane_key))}
-                      data-cta-id={`community-domain-dashboard.lane.${cleanText(lane.lane_key)}`}
+                      debugId={`community-domain-dashboard.lane.${cleanText(lane.lane_key)}`}
+                      fullWidth
+                      stableHeight={58}
                       style={{
                         display: "grid",
                         gridTemplateColumns: "minmax(0, 1fr) auto",
+                        justifyContent: "stretch",
                         gap: 10,
                         alignItems: "center",
-                        minHeight: 58,
                         borderRadius: 16,
                         border: selected
                           ? "1px solid rgba(12,79,168,0.34)"
@@ -680,7 +683,7 @@ export default function CommunityDomainDashboardPage() {
                         </span>
                       </span>
                       <span style={statusBadge(lane.status)}>{countValue(lane.count)}</span>
-                    </button>
+                    </StableButton>
                   );
                 })}
               </div>
