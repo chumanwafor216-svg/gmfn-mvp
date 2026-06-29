@@ -726,6 +726,19 @@ function friendlyJoinError(value: any): string {
     return "This invitation has already reached its use limit. Ask the inviter to create a fresh GSN invite link.";
   }
 
+  if (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("network error") ||
+    lower.includes("server did not finish") ||
+    lower.includes("check your connection")
+  ) {
+    return (
+      "GSN could not send the join request because the connection did not finish. " +
+      "Check the phone connection, then try once more. If it repeats, ask the community helper to keep the invite open while the connection is checked."
+    );
+  }
+
   if (lower.includes("pending join request already exists")) {
     return (
       "Your join request is already waiting for community review. " +

@@ -1239,11 +1239,15 @@ export async function submitJoinRequest(
   const tok = options?.includeAuth === false ? null : getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
 
-  const res = await fetch(buildUrl("/clans/join-requests"), {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload),
-  });
+  const res = await fetchWithTimeout(
+    buildUrl("/clans/join-requests"),
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    },
+    DEFAULT_JSON_TIMEOUT_MS
+  );
 
   if (res.ok) {
     if (res.status === 204) return null;
