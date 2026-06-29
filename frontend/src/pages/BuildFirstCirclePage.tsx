@@ -900,7 +900,8 @@ export default function BuildFirstCirclePage() {
 
   function buildJoinInviteMessageForLink(link: string): string {
     const lines = [
-      `Hello, I am building my trusted first circle on GSN for ${communityName}.`,
+      "Hi! I am inviting you to join me on GSN.",
+      `I am building my trusted first circle for ${communityName}.`,
       "GSN asks how people are known so the trust record can show that this invite came through a real relationship.",
       "If you already know me and this community, use this invite link to request to join.",
       link,
