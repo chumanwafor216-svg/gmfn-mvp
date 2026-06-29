@@ -28,6 +28,16 @@ type AvailabilityResult = {
   reason?: string | null;
 };
 
+type PurchaseDraftSnapshot = {
+  organizationName?: string;
+  domainName?: string;
+  country?: string;
+  stateName?: string;
+  templateKey?: string;
+};
+
+const PURCHASE_DRAFT_STORAGE_KEY = "gsn.communityDomainPurchaseDraft.v1";
+
 const FALLBACK_TEMPLATES: TemplateOption[] = [
   {
     template_key: "school_multi_branch",
@@ -184,6 +194,45 @@ function compactValue(value: unknown, fallback = "Not set"): string {
   return text || fallback;
 }
 
+function compactOptional(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function readPurchaseDraftSnapshot(): PurchaseDraftSnapshot | null {
+  if (typeof window === "undefined" || !window.sessionStorage) return null;
+  try {
+    const raw = window.sessionStorage.getItem(PURCHASE_DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PurchaseDraftSnapshot;
+    return {
+      organizationName: compactOptional(parsed?.organizationName),
+      domainName: compactOptional(parsed?.domainName),
+      country: compactOptional(parsed?.country),
+      stateName: compactOptional(parsed?.stateName),
+      templateKey: compactOptional(parsed?.templateKey),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePurchaseDraftSnapshot(snapshot: PurchaseDraftSnapshot) {
+  if (typeof window === "undefined" || !window.sessionStorage) return;
+  const safeSnapshot: PurchaseDraftSnapshot = {
+    organizationName: compactOptional(snapshot.organizationName),
+    domainName: compactOptional(snapshot.domainName),
+    country: compactOptional(snapshot.country),
+    stateName: compactOptional(snapshot.stateName),
+    templateKey: compactOptional(snapshot.templateKey),
+  };
+  window.sessionStorage.setItem(PURCHASE_DRAFT_STORAGE_KEY, JSON.stringify(safeSnapshot));
+}
+
+function clearPurchaseDraftSnapshot() {
+  if (typeof window === "undefined" || !window.sessionStorage) return;
+  window.sessionStorage.removeItem(PURCHASE_DRAFT_STORAGE_KEY);
+}
+
 function availabilityReasonText(reason: unknown): string {
   const key = compactValue(reason, "").toLowerCase();
   if (key === "domain_name_required") {
@@ -225,15 +274,20 @@ function normalizeTemplateItems(payload: any): TemplateOption[] {
 export default function CommunityDomainPurchasePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const restoredDraft = useMemo(() => readPurchaseDraftSnapshot(), []);
   const [isCompact, setIsCompact] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 860;
   });
-  const [organizationName, setOrganizationName] = useState("");
-  const [domainName, setDomainName] = useState("");
-  const [country, setCountry] = useState("");
-  const [stateName, setStateName] = useState("");
-  const [templateKey, setTemplateKey] = useState(FALLBACK_TEMPLATES[0].template_key);
+  const [organizationName, setOrganizationName] = useState(
+    restoredDraft?.organizationName || ""
+  );
+  const [domainName, setDomainName] = useState(restoredDraft?.domainName || "");
+  const [country, setCountry] = useState(restoredDraft?.country || "");
+  const [stateName, setStateName] = useState(restoredDraft?.stateName || "");
+  const [templateKey, setTemplateKey] = useState(
+    restoredDraft?.templateKey || FALLBACK_TEMPLATES[0].template_key
+  );
   const [templates, setTemplates] = useState<TemplateOption[]>(FALLBACK_TEMPLATES);
   const [availability, setAvailability] = useState<AvailabilityResult | null>(null);
   const [draftResult, setDraftResult] = useState<any>(null);
@@ -248,6 +302,14 @@ export default function CommunityDomainPurchasePage() {
       document.title = "GSN | Purchase Community Domain";
     }
   }, []);
+
+  useEffect(() => {
+    if (restoredDraft?.domainName || restoredDraft?.organizationName) {
+      setMessage(
+        "Your Community Domain draft details were restored after sign-in. Check the name again before creating the draft."
+      );
+    }
+  }, [restoredDraft]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -363,6 +425,13 @@ export default function CommunityDomainPurchasePage() {
     }
 
     if (!isSignedIn) {
+      savePurchaseDraftSnapshot({
+        organizationName,
+        domainName,
+        country,
+        stateName,
+        templateKey,
+      });
       navigate(`/login?force=1&next=${encodeURIComponent(location.pathname + location.search)}`);
       return;
     }
@@ -380,6 +449,7 @@ export default function CommunityDomainPurchasePage() {
       });
 
       setDraftResult(draft);
+      clearPurchaseDraftSnapshot();
 
       const domainId = draft?.community_domain?.id;
       if (domainId) {
