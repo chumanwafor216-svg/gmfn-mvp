@@ -10,6 +10,7 @@ import {
   getAccessToken,
   getCommunityDomainCapacityPlan,
   getCommunityDomainDashboard,
+  getCommunityDomainEvidenceRecordReadiness,
   getCommunityDomainGovernanceCoverage,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
@@ -166,6 +167,22 @@ type RolloutPlanUnit = {
   ready_for_pilot?: boolean;
   member_count?: number | string | null;
   admin_count?: number | string | null;
+  next_step?: string | null;
+};
+
+type EvidenceRecordReadinessType = {
+  record_type?: string | null;
+  label?: string | null;
+  readiness_status?: string | null;
+  ready_for_future_evidence_record?: boolean;
+  active_policy_count?: number | string | null;
+  review_record_count?: number | string | null;
+  review_evidence_metadata_count?: number | string | null;
+  evidence_record_status?: string | null;
+  file_upload_status?: string | null;
+  credential_status?: string | null;
+  trustslip_status?: string | null;
+  trust_passport_status?: string | null;
   next_step?: string | null;
 };
 
@@ -575,6 +592,7 @@ export default function CommunityDomainDashboardPage() {
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
   const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
+  const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
@@ -614,6 +632,7 @@ export default function CommunityDomainDashboardPage() {
       setCapacityPlan(null);
       setGovernanceCoverage(null);
       setRolloutPlan(null);
+      setEvidenceRecordReadiness(null);
       setTrustRelayReadiness(null);
       try {
         const payload = await listMyCommunityDomains();
@@ -643,6 +662,7 @@ export default function CommunityDomainDashboardPage() {
     setCapacityPlan(null);
     setGovernanceCoverage(null);
     setRolloutPlan(null);
+    setEvidenceRecordReadiness(null);
     setTrustRelayReadiness(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
@@ -695,6 +715,16 @@ export default function CommunityDomainDashboardPage() {
         setModuleScopeReadiness(null);
       }
       try {
+        const evidenceReadinessPayload = await getCommunityDomainEvidenceRecordReadiness(
+          communityDomainId
+        );
+        setEvidenceRecordReadiness(
+          evidenceReadinessPayload?.evidence_record_readiness || null
+        );
+      } catch {
+        setEvidenceRecordReadiness(null);
+      }
+      try {
         const relayReadinessPayload = await getCommunityDomainTrustRelayReadiness(
           communityDomainId
         );
@@ -741,6 +771,7 @@ export default function CommunityDomainDashboardPage() {
       setCapacityPlan(null);
       setGovernanceCoverage(null);
       setRolloutPlan(null);
+      setEvidenceRecordReadiness(null);
       setTrustRelayReadiness(null);
       await loadOwnMembershipRequests();
       setMessage(
@@ -831,6 +862,20 @@ export default function CommunityDomainDashboardPage() {
   const rolloutUnitsNeedingAttention = visibleRolloutUnits.filter(
     (unit) => !unit.ready_for_pilot
   );
+  const evidenceRecordSummary = evidenceRecordReadiness?.summary || {};
+  const visibleEvidenceRecordTypes: EvidenceRecordReadinessType[] = Array.isArray(
+    evidenceRecordReadiness?.record_types
+  )
+    ? evidenceRecordReadiness.record_types
+    : [];
+  const blockedEvidenceRecordTypes = visibleEvidenceRecordTypes.filter(
+    (record) => !record.ready_for_future_evidence_record
+  );
+  const evidenceRecordReadyTotal =
+    typeof evidenceRecordReadiness?.ready_total === "number"
+      ? evidenceRecordReadiness.ready_total
+      : visibleEvidenceRecordTypes.filter((record) => record.ready_for_future_evidence_record)
+          .length;
   const trustRelaySummary = trustRelayReadiness?.summary || {};
   const visibleTrustRelayLanes: TrustRelayReadinessLane[] = Array.isArray(
     trustRelayReadiness?.lanes
@@ -2034,6 +2079,135 @@ export default function CommunityDomainDashboardPage() {
                         This readiness view does not enable services, activate billing, grant
                         permissions, publish Spotlight, create shops, open vault links, write Trust
                         Passport records, or expose private member activity.
+                      </div>
+                    </div>
+
+                    <div style={softCard()}>
+                      <div style={sectionLabel()}>Evidence record readiness</div>
+                      <div style={{ ...helperText(), marginTop: 7 }}>
+                        {evidenceRecordReadiness
+                          ? `${cleanText(
+                              evidenceRecordReadiness.primary_next_action?.label,
+                              "Review evidence record readiness"
+                            )}. ${evidenceRecordReadyTotal} of ${visibleEvidenceRecordTypes.length} record types are ready for future evidence records.`
+                          : "GSN could not load the read-only evidence record readiness view for this Community Domain."}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                          gap: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        {[
+                          [
+                            "Record engine",
+                            compactStatus(evidenceRecordSummary.evidence_record_engine_status),
+                          ],
+                          ["Record types", countValue(evidenceRecordSummary.record_type_count)],
+                          [
+                            "Records created",
+                            countValue(evidenceRecordSummary.evidence_records_created),
+                          ],
+                          [
+                            "Evidence notes",
+                            evidenceRecordSummary.review_evidence_metadata_count == null
+                              ? "admin only"
+                              : countValue(evidenceRecordSummary.review_evidence_metadata_count),
+                          ],
+                        ].map(([label, value]) => (
+                          <div
+                            key={String(label)}
+                            style={{
+                              borderRadius: 14,
+                              background: "#F7FAFF",
+                              border: "1px solid rgba(9,27,46,0.08)",
+                              padding: 10,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                              {label}
+                            </div>
+                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                              {value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {blockedEvidenceRecordTypes.length ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          Evidence record types needing attention:{" "}
+                          <strong>
+                            {blockedEvidenceRecordTypes
+                              .slice(0, 3)
+                              .map((record) =>
+                                cleanText(record.label, record.record_type || "record type")
+                              )
+                              .join(", ")}
+                          </strong>
+                          .
+                        </div>
+                      ) : evidenceRecordReadiness ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          No blocked evidence record type is visible, but durable evidence records
+                          are still not being created here.
+                        </div>
+                      ) : null}
+                      {visibleEvidenceRecordTypes.length ? (
+                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                          {visibleEvidenceRecordTypes.slice(0, 4).map((record) => (
+                            <div
+                              key={cleanText(
+                                record.record_type,
+                                cleanText(record.label, "evidence record")
+                              )}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "minmax(0, 1fr) auto",
+                                gap: 10,
+                                alignItems: "center",
+                                borderRadius: 14,
+                                border: "1px solid rgba(9,27,46,0.10)",
+                                background: "rgba(255,255,255,0.72)",
+                                padding: "10px 10px 10px 12px",
+                              }}
+                            >
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: "block", fontWeight: 950 }}>
+                                  {cleanText(record.label, "Evidence record type")}
+                                </span>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    color: "#4F647A",
+                                    fontSize: 12.5,
+                                    lineHeight: 1.45,
+                                    marginTop: 3,
+                                  }}
+                                >
+                                  {cleanText(
+                                    record.next_step,
+                                    "Keep this as planning readiness until durable evidence records exist."
+                                  )}
+                                </span>
+                              </span>
+                              <span style={statusBadge(record.readiness_status)}>
+                                {compactStatus(record.readiness_status)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        This evidence record view is read-only planning. It does not create
+                        CommunityDomainEvidenceRecord rows, upload files, expose storage keys,
+                        calculate validity windows, persist visibility policy, issue credentials,
+                        issue TrustSlips, write Trust Passport entries, publish public proof,
+                        verify legal authority, move money, activate billing, create marketplace
+                        activity, create a social Community, expose private member evidence, or
+                        score trust.
                       </div>
                     </div>
 
